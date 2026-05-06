@@ -1,0 +1,3 @@
+[submodule "submodules/hd-map-asset-example"]
+	path = submodules/hd-map-asset-example
+	url = https://github.com/ASCS-eV/hd-map-asset-example.git

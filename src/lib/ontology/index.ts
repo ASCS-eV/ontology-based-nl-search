@@ -6,18 +6,31 @@ const CACHE_DIR = path.join(process.cwd(), '.ontology-cache')
 const CONTEXT_FILE = path.join(CACHE_DIR, 'context.txt')
 const ONTOLOGY_FILES_DIR = path.join(CACHE_DIR, 'files')
 
+/** Path to local submodule containing ontology-management-base */
+const LOCAL_OMB_PATH = path.join(
+  process.cwd(),
+  'submodules',
+  'hd-map-asset-example',
+  'submodules',
+  'sl-5-8-asset-tools',
+  'submodules',
+  'ontology-management-base',
+)
+
+/** Ontology artifacts to load (relative to OMB root) */
+const ONTOLOGY_ARTIFACTS = ['artifacts/hdmap/hdmap.owl.ttl']
+
 /**
  * Get the ontology context string for LLM prompting.
- * Fetches from GitHub if not cached, otherwise uses cache.
+ * Reads from local submodule if available, otherwise fetches from GitHub.
+ * Results are cached for performance.
  */
 export async function getOntologyContext(): Promise<string> {
-  // Try cache first
   if (existsSync(CONTEXT_FILE)) {
     return readFile(CONTEXT_FILE, 'utf-8')
   }
 
-  // Fetch and build context
-  const context = await fetchAndBuildContext()
+  const context = await buildOntologyContext()
   return context
 }
 
@@ -25,50 +38,53 @@ export async function getOntologyContext(): Promise<string> {
  * Force refresh of the ontology cache.
  */
 export async function refreshOntologyCache(): Promise<string> {
-  return fetchAndBuildContext()
+  return buildOntologyContext()
 }
 
-async function fetchAndBuildContext(): Promise<string> {
+async function buildOntologyContext(): Promise<string> {
   await mkdir(ONTOLOGY_FILES_DIR, { recursive: true })
-
-  const repo = process.env.ONTOLOGY_REPO || 'ASCS-eV/ontology-management-base'
-  const branch = process.env.ONTOLOGY_BRANCH || 'main'
-
-  // Fetch the SimulationAsset ontology files
-  const ontologyPaths = [
-    'ENVITED-X_Ontology/SimulationAsset/ENVITED-X_SimulationAsset.ttl',
-  ]
 
   const ontologyContents: string[] = []
 
-  for (const ontologyPath of ontologyPaths) {
-    try {
-      const url = `https://raw.githubusercontent.com/${repo}/${branch}/${ontologyPath}`
-      const response = await fetch(url)
-
-      if (!response.ok) {
-        console.warn(`Failed to fetch ontology: ${url} (${response.status})`)
-        continue
+  // Prefer local submodule path
+  if (existsSync(LOCAL_OMB_PATH)) {
+    for (const artifact of ONTOLOGY_ARTIFACTS) {
+      const fullPath = path.join(LOCAL_OMB_PATH, artifact)
+      if (existsSync(fullPath)) {
+        const content = await readFile(fullPath, 'utf-8')
+        ontologyContents.push(content)
+      } else {
+        console.warn(`Ontology artifact not found locally: ${fullPath}`)
       }
+    }
+  } else {
+    // Fallback: fetch from GitHub
+    const repo = process.env.ONTOLOGY_REPO || 'ASCS-eV/ontology-management-base'
+    const branch = process.env.ONTOLOGY_BRANCH || 'main'
 
-      const content = await response.text()
+    for (const artifact of ONTOLOGY_ARTIFACTS) {
+      try {
+        const url = `https://raw.githubusercontent.com/${repo}/${branch}/${artifact}`
+        const response = await fetch(url)
 
-      // Cache the file locally
-      const localPath = path.join(ONTOLOGY_FILES_DIR, path.basename(ontologyPath))
-      await writeFile(localPath, content, 'utf-8')
+        if (!response.ok) {
+          console.warn(`Failed to fetch ontology: ${url} (${response.status})`)
+          continue
+        }
 
-      ontologyContents.push(content)
-    } catch (error) {
-      console.warn(`Error fetching ontology ${ontologyPath}:`, error)
+        const content = await response.text()
+        const localPath = path.join(ONTOLOGY_FILES_DIR, path.basename(artifact))
+        await writeFile(localPath, content, 'utf-8')
+        ontologyContents.push(content)
+      } catch (error) {
+        console.warn(`Error fetching ontology ${artifact}:`, error)
+      }
     }
   }
 
-  // Build a summarized context for the LLM
   const context = buildContextFromOntologies(ontologyContents)
 
-  // Cache the built context
   await writeFile(CONTEXT_FILE, context, 'utf-8')
-
   return context
 }
 
@@ -79,7 +95,8 @@ async function fetchAndBuildContext(): Promise<string> {
 function buildContextFromOntologies(ontologyContents: string[]): string {
   const prefixes: string[] = []
   const classes: string[] = []
-  const properties: string[] = []
+  const objectProperties: string[] = []
+  const dataProperties: string[] = []
 
   for (const content of ontologyContents) {
     // Extract prefixes
@@ -88,23 +105,42 @@ function buildContextFromOntologies(ontologyContents: string[]): string {
       prefixes.push(`PREFIX ${match[1]} <${match[2]}>`)
     }
 
-    // Extract class definitions
-    const classMatches = content.matchAll(/(\S+)\s+a\s+(?:owl:Class|rdfs:Class)/g)
+    // Extract class definitions with their comments
+    const classMatches = content.matchAll(
+      /(\S+)\s+a\s+owl:Class\s*;[^.]*?rdfs:comment\s+"([^"]+)"/g,
+    )
     for (const match of classMatches) {
-      classes.push(match[1])
+      classes.push(`${match[1]} — ${match[2]}`)
     }
 
-    // Extract properties
-    const propMatches = content.matchAll(/(\S+)\s+a\s+(?:owl:(?:Object|Data|Annotation)Property|rdf:Property)/g)
-    for (const match of propMatches) {
-      properties.push(match[1])
+    // Also capture classes without comments
+    const simpleClassMatches = content.matchAll(/(\S+)\s+a\s+owl:Class\s*;/g)
+    for (const match of simpleClassMatches) {
+      if (!classes.some((c) => c.startsWith(match[1]))) {
+        classes.push(match[1])
+      }
+    }
+
+    // Extract object properties with domain/range
+    const objPropMatches = content.matchAll(
+      /(\S+)\s+a\s+owl:ObjectProperty\s*;[^.]*?rdfs:domain\s+(\S+)\s*;[^.]*?rdfs:range\s+([^;.]+)/g,
+    )
+    for (const match of objPropMatches) {
+      objectProperties.push(`${match[1]} (${match[2].trim()} → ${match[3].trim()})`)
+    }
+
+    // Extract data properties
+    const dataPropMatches = content.matchAll(
+      /(\S+)\s+a\s+owl:DatatypeProperty\s*;[^.]*?rdfs:domain\s+(\S+)/g,
+    )
+    for (const match of dataPropMatches) {
+      dataProperties.push(`${match[1]} (domain: ${match[2].trim()})`)
     }
   }
 
-  // If no structured data was extracted, provide the raw content (truncated)
-  if (classes.length === 0 && properties.length === 0 && ontologyContents.length > 0) {
+  // If regex extraction yielded nothing, provide raw content (truncated)
+  if (classes.length === 0 && objectProperties.length === 0 && ontologyContents.length > 0) {
     const rawContent = ontologyContents.join('\n\n')
-    // Truncate to fit in LLM context
     const maxLength = 8000
     return rawContent.length > maxLength
       ? rawContent.substring(0, maxLength) + '\n\n... (truncated)'
@@ -112,13 +148,16 @@ function buildContextFromOntologies(ontologyContents: string[]): string {
   }
 
   return [
-    '## Prefixes',
+    '## SPARQL Prefixes',
     ...prefixes,
     '',
     '## Classes',
-    ...classes.map(c => `- ${c}`),
+    ...classes.map((c) => `- ${c}`),
     '',
-    '## Properties',
-    ...properties.map(p => `- ${p}`),
+    '## Object Properties (relationships)',
+    ...objectProperties.map((p) => `- ${p}`),
+    '',
+    '## Data Properties (literal values)',
+    ...dataProperties.map((p) => `- ${p}`),
   ].join('\n')
 }
