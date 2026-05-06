@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+tsconfig.tsbuildinfo
+
+# Environment
+.env.local
+.env.*.local
+
+# Ontology cache (fetched at runtime)
+.ontology-cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test output
+coverage/
+playwright-report/
+test-results/
