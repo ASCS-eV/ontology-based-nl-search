@@ -2,7 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 
 /**
  * Get the configured AI model based on environment variables.
- * Supports: openai, copilot (GitHub Models), ollama
+ * Supports: openai, ollama (copilot is handled via @github/copilot-sdk separately)
  */
 export function getModel() {
   const provider = process.env.AI_PROVIDER || 'openai'
@@ -16,15 +16,6 @@ export function getModel() {
       return openai(modelId)
     }
 
-    case 'copilot': {
-      // GitHub Copilot / GitHub Models — OpenAI-compatible endpoint
-      const copilot = createOpenAI({
-        baseURL: 'https://api.githubcopilot.com',
-        apiKey: process.env.GITHUB_TOKEN,
-      })
-      return copilot(modelId)
-    }
-
     case 'ollama': {
       // Ollama is compatible with OpenAI API format
       const ollama = createOpenAI({
@@ -36,8 +27,7 @@ export function getModel() {
 
     default:
       throw new Error(
-        `Unsupported AI_PROVIDER: "${provider}". Supported: openai, copilot, ollama. ` +
-          `Install additional @ai-sdk/* packages for more providers.`,
+        `Unsupported AI_PROVIDER: "${provider}". Supported: openai, copilot, ollama.`,
       )
   }
 }

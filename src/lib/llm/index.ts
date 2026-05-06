@@ -1,5 +1,6 @@
 import { generateText } from 'ai'
 import { getModel } from './provider'
+import { generateWithCopilot } from './copilot-provider'
 import { getOntologyContext } from '@/lib/ontology'
 import { extractSparql as extractSparqlFromResponse } from './sparql-utils'
 
@@ -9,13 +10,25 @@ import { extractSparql as extractSparqlFromResponse } from './sparql-utils'
  */
 export async function generateSparql(naturalLanguageQuery: string): Promise<string> {
   const ontologyContext = await getOntologyContext()
-  const model = getModel()
+  const provider = process.env.AI_PROVIDER || 'openai'
+  const modelId = process.env.AI_MODEL || 'gpt-4o'
+  const systemPrompt = buildSystemPrompt(ontologyContext)
 
-  const { text } = await generateText({
-    model,
-    system: buildSystemPrompt(ontologyContext),
-    prompt: naturalLanguageQuery,
-  })
+  let text: string
+
+  if (provider === 'copilot') {
+    // Use @github/copilot-sdk — handles enterprise OAuth internally
+    text = await generateWithCopilot(systemPrompt, naturalLanguageQuery, modelId)
+  } else {
+    // Use Vercel AI SDK (openai, ollama)
+    const model = getModel()
+    const result = await generateText({
+      model,
+      system: systemPrompt,
+      prompt: naturalLanguageQuery,
+    })
+    text = result.text
+  }
 
   // Extract SPARQL from the response (may be wrapped in markdown code blocks)
   return extractSparqlFromResponse(text)
