@@ -1,16 +1,28 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Search Page', () => {
-  test('should load the homepage with search bar', async ({ page }) => {
+  test('should load the homepage with search bar and dataset count', async ({ page }) => {
+    // Mock stats endpoint
+    await page.route('/api/stats', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ totalAssets: 8, ontology: 'hdmap v6' }),
+      })
+    })
+
     await page.goto('/')
 
     // Title is visible
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'ENVITED-X Simulation Asset Search'
+      'ENVITED-X Simulation Asset Search',
     )
 
+    // Dataset count badge
+    await expect(page.getByText('8 HD map assets in graph')).toBeVisible()
+
     // Search bar is present and empty
-    const searchInput = page.getByPlaceholder(/show me all/i)
+    const searchInput = page.getByLabel('Natural language search query')
     await expect(searchInput).toBeVisible()
     await expect(searchInput).toHaveValue('')
 
@@ -27,7 +39,7 @@ test.describe('Search Page', () => {
   test('should enable search button when text is entered', async ({ page }) => {
     await page.goto('/')
 
-    const searchInput = page.getByPlaceholder(/show me all/i)
+    const searchInput = page.getByLabel('Natural language search query')
     await searchInput.fill('German highways')
 
     const button = page.getByRole('button', { name: /search/i })
@@ -35,7 +47,6 @@ test.describe('Search Page', () => {
   })
 
   test('should show error when API is unavailable', async ({ page }) => {
-    // Mock the API to return an error
     await page.route('/api/search', (route) => {
       route.fulfill({
         status: 500,
@@ -46,7 +57,7 @@ test.describe('Search Page', () => {
 
     await page.goto('/')
 
-    const searchInput = page.getByPlaceholder(/show me all/i)
+    const searchInput = page.getByLabel('Natural language search query')
     await searchInput.fill('show me all highways')
     await searchInput.press('Enter')
 
@@ -54,32 +65,80 @@ test.describe('Search Page', () => {
     await expect(page.getByText('LLM provider not configured')).toBeVisible()
   })
 
-  test('should display results when search succeeds', async ({ page }) => {
-    // Mock the API response
+  test('should display interpretation, gaps, and results on successful search', async ({
+    page,
+  }) => {
     await page.route('/api/search', (route) => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          sparql: 'SELECT ?asset WHERE { ?asset a envx:SimulationAsset }',
-          results: [
-            { asset: 'http://example.org/asset1', name: 'Highway A9', country: 'Germany' },
-            { asset: 'http://example.org/asset2', name: 'Urban B27', country: 'Germany' },
+          interpretation: {
+            summary: 'Looking for HD maps in Germany with motorway road type',
+            mappedTerms: [
+              {
+                input: 'German',
+                mapped: 'country code DE',
+                confidence: 'high',
+                property: 'georeference:country',
+              },
+              {
+                input: 'highways',
+                mapped: 'motorway road type',
+                confidence: 'medium',
+                property: 'hdmap:roadTypes',
+              },
+            ],
+          },
+          gaps: [
+            {
+              term: 'cats',
+              reason: 'Animals are not defined in the HD map ontology',
+              suggestions: ['hdmap:numberObjects'],
+            },
           ],
+          sparql:
+            'PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>\nSELECT ?asset WHERE { ?asset a hdmap:HdMap }',
+          results: [
+            { asset: 'http://example.org/asset1', name: 'A9 Autobahn' },
+            { asset: 'http://example.org/asset2', name: 'A5 Highway' },
+          ],
+          meta: { totalDatasets: 8, matchCount: 2, executionTimeMs: 150 },
         }),
       })
     })
 
     await page.goto('/')
 
-    const searchInput = page.getByPlaceholder(/show me all/i)
-    await searchInput.fill('German roads')
+    const searchInput = page.getByLabel('Natural language search query')
+    await searchInput.fill('German highways and cats')
     await searchInput.press('Enter')
 
-    // Results should appear
+    // Interpretation section
+    await expect(
+      page.getByText('Looking for HD maps in Germany with motorway road type'),
+    ).toBeVisible()
+    await expect(page.getByText('German')).toBeVisible()
+    await expect(page.getByText('country code DE')).toBeVisible()
+
+    // Confidence badges
+    await expect(page.getByText('high').first()).toBeVisible()
+    await expect(page.getByText('medium').first()).toBeVisible()
+
+    // Ontology gaps
+    await expect(page.getByText('"cats"')).toBeVisible()
+    await expect(
+      page.getByText('Animals are not defined in the HD map ontology'),
+    ).toBeVisible()
+
+    // Results
     await expect(page.getByText('2 matches')).toBeVisible()
-    await expect(page.getByText('Highway A9')).toBeVisible()
-    await expect(page.getByText('Urban B27')).toBeVisible()
+    await expect(page.getByText('A9 Autobahn')).toBeVisible()
+    await expect(page.getByText('A5 Highway')).toBeVisible()
+
+    // Meta info
+    await expect(page.getByText('2 results')).toBeVisible()
+    await expect(page.getByText('150ms')).toBeVisible()
   })
 
   test('should show and hide SPARQL preview', async ({ page }) => {
@@ -88,16 +147,19 @@ test.describe('Search Page', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
+          interpretation: { summary: 'Test query', mappedTerms: [] },
+          gaps: [],
           sparql:
             'PREFIX envx: <https://w3id.org/2024/2/2/envited-x/>\nSELECT ?asset WHERE { ?asset a envx:SimulationAsset }',
           results: [{ asset: 'http://example.org/asset1' }],
+          meta: { totalDatasets: 8, matchCount: 1, executionTimeMs: 50 },
         }),
       })
     })
 
     await page.goto('/')
 
-    const searchInput = page.getByPlaceholder(/show me all/i)
+    const searchInput = page.getByLabel('Natural language search query')
     await searchInput.fill('anything')
     await searchInput.press('Enter')
 
@@ -114,24 +176,53 @@ test.describe('Search Page', () => {
     await expect(page.getByText('PREFIX envx:')).not.toBeVisible()
   })
 
-  test('should handle empty results gracefully', async ({ page }) => {
+  test('should handle empty results with helpful guidance', async ({ page }) => {
     await page.route('/api/search', (route) => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          sparql: 'SELECT ?asset WHERE { ?asset a envx:NonExistent }',
+          interpretation: { summary: 'Looking for non-existent assets', mappedTerms: [] },
+          gaps: [],
+          sparql: 'SELECT ?asset WHERE { ?asset a <http://nothing> }',
           results: [],
+          meta: { totalDatasets: 8, matchCount: 0, executionTimeMs: 30 },
         }),
       })
     })
 
     await page.goto('/')
 
-    const searchInput = page.getByPlaceholder(/show me all/i)
+    const searchInput = page.getByLabel('Natural language search query')
     await searchInput.fill('non-existent assets')
     await searchInput.press('Enter')
 
     await expect(page.getByText(/no results found/i)).toBeVisible()
+    await expect(page.getByText(/try broadening your search/i)).toBeVisible()
+  })
+
+  test('should show export buttons when results exist', async ({ page }) => {
+    await page.route('/api/search', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          interpretation: { summary: 'All assets', mappedTerms: [] },
+          gaps: [],
+          sparql: 'SELECT ?asset WHERE { ?asset a hdmap:HdMap }',
+          results: [{ asset: 'http://example.org/asset1', name: 'Test Asset' }],
+          meta: { totalDatasets: 8, matchCount: 1, executionTimeMs: 20 },
+        }),
+      })
+    })
+
+    await page.goto('/')
+
+    const searchInput = page.getByLabel('Natural language search query')
+    await searchInput.fill('all assets')
+    await searchInput.press('Enter')
+
+    await expect(page.getByLabel('Export results as CSV')).toBeVisible()
+    await expect(page.getByLabel('Export results as JSON-LD')).toBeVisible()
   })
 })
