@@ -85,7 +85,6 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
   }
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 function containsService(patterns: any[] | undefined): boolean {
   if (!patterns) return false
   for (const p of patterns) {
@@ -95,4 +94,3 @@ function containsService(patterns: any[] | undefined): boolean {
   }
   return false
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
