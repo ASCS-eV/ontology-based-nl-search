@@ -1,15 +1,15 @@
 import { readFileSync } from 'fs'
 import path from 'path'
 
-import { generateText } from 'ai'
+import { generateText, stepCountIs } from 'ai'
 
 import { matchConcepts } from '@/lib/ontology'
 import { compileSlots } from '@/lib/search/compiler'
-import { type LegacySearchSlots, type SearchSlots, fromLegacySlots } from '@/lib/search/slots'
+import { type SearchSlots, fromLegacySlots } from '@/lib/search/slots'
 
 import { getModel } from '../provider'
 import type { LlmStructuredResponse } from '../types'
-import { agentTools } from './tools'
+import { type SlotSubmissionParams, agentTools } from './tools'
 
 const SKILL_PATH = path.join(__dirname, 'skill.md')
 
@@ -81,8 +81,8 @@ export async function runSparqlAgent(
     system: systemPrompt,
     prompt: promptContext,
     tools: agentTools,
-    maxSteps: MAX_STEPS,
     toolChoice: 'required',
+    stopWhen: stepCountIs(MAX_STEPS),
   })
 
   // Extract the submit_slots call from tool results
@@ -91,11 +91,7 @@ export async function runSparqlAgent(
     .find((r) => r.toolName === 'submit_slots')
 
   if (submitCall) {
-    const answer = submitCall.result as {
-      slots: LegacySearchSlots
-      interpretation: LlmStructuredResponse['interpretation']
-      gaps: LlmStructuredResponse['gaps']
-    }
+    const answer = submitCall.output as SlotSubmissionParams
 
     // Step 3: Convert LLM legacy slots + merge with pre-extracted
     const llmSlots = fromLegacySlots(answer.slots)
