@@ -3,57 +3,39 @@ import Image from 'next/image'
 export function Footer() {
   return (
     <footer className="mt-auto border-t border-gray-200 bg-white">
-      {/* Acknowledgements */}
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <p className="text-sm font-medium text-gray-700 mb-4">
-            This tool is developed as part of the{' '}
-            <a
-              href="https://synergies-ccam.eu"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue hover:underline"
-            >
-              SYNERGIES project
-            </a>
-            .
-          </p>
-
-          <div className="flex items-center justify-center gap-8 mb-6">
-            <a href="https://synergies-ccam.eu" target="_blank" rel="noopener noreferrer">
-              <Image
-                src="/logos/synergies.svg"
-                alt="SYNERGIES - Real and synthetic scenarios for CCAM systems"
-                width={200}
-                height={60}
-                className="h-14 w-auto"
-              />
-            </a>
-          </div>
-
-          <p className="mx-auto max-w-2xl text-xs text-gray-500 mb-6">
-            Funded by the European Union. Views and opinions expressed are however those of the
-            author(s) only and do not necessarily reflect those of the European Union or European
-            Climate, Infrastructure and Environment Executive Agency (CINEA). Neither the European
-            Union nor the granting authority can be held responsible for them.
-          </p>
-
-          <div className="flex items-center justify-center gap-8">
+      {/* Compact acknowledgement row */}
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+          <div className="flex items-center gap-4">
             <Image
               src="/logos/funded-by-eu.svg"
               alt="Funded by the European Union"
-              width={200}
-              height={50}
-              className="h-12 w-auto"
+              width={120}
+              height={30}
+              className="h-8 w-auto"
             />
+            <a href="https://synergies-ccam.eu" target="_blank" rel="noopener noreferrer">
+              <Image
+                src="/logos/synergies.svg"
+                alt="SYNERGIES project"
+                width={120}
+                height={36}
+                className="h-8 w-auto"
+              />
+            </a>
           </div>
+          <p className="max-w-xl text-[10px] leading-tight text-gray-400 text-center sm:text-right">
+            Funded by the European Union. Views and opinions expressed are those of the author(s)
+            only and do not necessarily reflect those of the EU or CINEA. Neither the EU nor the
+            granting authority can be held responsible for them.
+          </p>
         </div>
       </div>
 
       {/* Bottom bar */}
       <div className="border-t border-gray-100 bg-gray-50">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
             <span className="text-xs text-gray-500">
               © {new Date().getFullYear()} Automotive Solution Center for Simulation e.V.
             </span>
