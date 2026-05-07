@@ -43,6 +43,10 @@ async function getSystemPrompt(): Promise<string> {
   return cachedSystemPrompt
 }
 
+export interface AgentOptions {
+  domain?: string
+}
+
 /**
  * Run the slot-filling agent.
  *
@@ -52,7 +56,11 @@ async function getSystemPrompt(): Promise<string> {
  * 3. Merge pre-processed + LLM slots
  * 4. Compile slots to SPARQL deterministically
  */
-export async function runSparqlAgent(naturalLanguageQuery: string): Promise<LlmStructuredResponse> {
+export async function runSparqlAgent(
+  naturalLanguageQuery: string,
+  options?: AgentOptions
+): Promise<LlmStructuredResponse> {
+  const targetDomain = options?.domain ?? 'hdmap'
   const systemPrompt = await getSystemPrompt()
   const model = getModel()
 
@@ -60,7 +68,7 @@ export async function runSparqlAgent(naturalLanguageQuery: string): Promise<LlmS
   const matchResult = await matchConcepts(naturalLanguageQuery)
 
   // Convert matched concepts to generic slots
-  const preSlots = matchResultToSlots(matchResult.matches)
+  const preSlots = matchResultToSlots(matchResult.matches, targetDomain)
 
   // Step 2: LLM fills remaining slots from the remainder
   const promptContext =
@@ -136,10 +144,11 @@ export async function runSparqlAgent(naturalLanguageQuery: string): Promise<LlmS
  * Groups by domain based on the property's ontology prefix.
  */
 function matchResultToSlots(
-  matches: { property: string; value: string; domain?: string }[]
+  matches: { property: string; value: string; domain?: string }[],
+  defaultDomain = 'hdmap'
 ): SearchSlots {
   const slots: SearchSlots = {
-    domains: ['hdmap'], // Default domain; will be overridden if matches indicate otherwise
+    domains: [defaultDomain],
     filters: {},
     ranges: {},
   }
@@ -147,7 +156,7 @@ function matchResultToSlots(
   const detectedDomains = new Set<string>()
 
   for (const match of matches) {
-    const domain = match.domain || 'hdmap'
+    const domain = match.domain || defaultDomain
     detectedDomains.add(domain)
 
     // Location properties go to the location field

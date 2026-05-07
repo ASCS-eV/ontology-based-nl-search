@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { DomainSelector } from '@/components/DomainSelector'
 import { InterpretationDisplay } from '@/components/InterpretationDisplay'
 import { OntologyGapsDisplay } from '@/components/OntologyGapsDisplay'
 import { QueryRefinement } from '@/components/QueryRefinement'
@@ -46,6 +47,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [totalAssets, setTotalAssets] = useState<number | null>(null)
   const [history, setHistory] = useState<string[]>([])
+  const [selectedDomains, setSelectedDomains] = useState<string[]>(['hdmap'])
   const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -56,153 +58,159 @@ export default function Home() {
       .catch(() => {})
   }, [])
 
-  const handleSearch = useCallback(async (naturalLanguageQuery: string) => {
-    // Abort any in-flight request
-    abortControllerRef.current?.abort()
-    const controller = new AbortController()
-    abortControllerRef.current = controller
+  const handleSearch = useCallback(
+    async (naturalLanguageQuery: string) => {
+      // Abort any in-flight request
+      abortControllerRef.current?.abort()
+      const controller = new AbortController()
+      abortControllerRef.current = controller
 
-    setLoading(true)
-    setError(null)
-    setInterpretation(null)
-    setGaps(null)
-    setSparql(null)
-    setResults(null)
-    setMeta(null)
-    setPhase('interpreting')
+      setLoading(true)
+      setError(null)
+      setInterpretation(null)
+      setGaps(null)
+      setSparql(null)
+      setResults(null)
+      setMeta(null)
+      setPhase('interpreting')
 
-    try {
-      const res = await fetch('/api/search/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: naturalLanguageQuery }),
-        signal: controller.signal,
-      })
+      try {
+        const res = await fetch('/api/search/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: naturalLanguageQuery, domains: selectedDomains }),
+          signal: controller.signal,
+        })
 
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Search failed')
-      }
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || 'Search failed')
+        }
 
-      const reader = res.body?.getReader()
-      if (!reader) throw new Error('No response stream')
+        const reader = res.body?.getReader()
+        if (!reader) throw new Error('No response stream')
 
-      const decoder = new TextDecoder()
-      let buffer = ''
+        const decoder = new TextDecoder()
+        let buffer = ''
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
 
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
 
-        let currentEvent = ''
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            currentEvent = line.slice(7)
-          } else if (line.startsWith('data: ') && currentEvent) {
-            const data = JSON.parse(line.slice(6))
-            switch (currentEvent) {
-              case 'status':
-                setPhase(data.phase as SearchPhase)
-                break
-              case 'interpretation':
-                setInterpretation(data)
-                break
-              case 'gaps':
-                setGaps(data)
-                break
-              case 'sparql':
-                setSparql(data)
-                break
-              case 'results':
-                setResults(data.results)
-                if (data.error) setError(data.error)
-                break
-              case 'meta':
-                setMeta(data)
-                if (data.totalDatasets) setTotalAssets(data.totalDatasets)
-                break
-              case 'done':
-                setPhase('done')
-                break
-              case 'error':
-                setError(data.message)
-                break
+          let currentEvent = ''
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              currentEvent = line.slice(7)
+            } else if (line.startsWith('data: ') && currentEvent) {
+              const data = JSON.parse(line.slice(6))
+              switch (currentEvent) {
+                case 'status':
+                  setPhase(data.phase as SearchPhase)
+                  break
+                case 'interpretation':
+                  setInterpretation(data)
+                  break
+                case 'gaps':
+                  setGaps(data)
+                  break
+                case 'sparql':
+                  setSparql(data)
+                  break
+                case 'results':
+                  setResults(data.results)
+                  if (data.error) setError(data.error)
+                  break
+                case 'meta':
+                  setMeta(data)
+                  if (data.totalDatasets) setTotalAssets(data.totalDatasets)
+                  break
+                case 'done':
+                  setPhase('done')
+                  break
+                case 'error':
+                  setError(data.message)
+                  break
+              }
+              currentEvent = ''
             }
-            currentEvent = ''
           }
         }
+
+        saveToHistory(naturalLanguageQuery)
+        setHistory(getSearchHistory())
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          // User started a new search — silently ignore
+          return
+        }
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      } finally {
+        setLoading(false)
+        setPhase('done')
       }
+    },
+    [selectedDomains]
+  )
 
-      saveToHistory(naturalLanguageQuery)
-      setHistory(getSearchHistory())
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        // User started a new search — silently ignore
-        return
-      }
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
-    } finally {
-      setLoading(false)
-      setPhase('done')
-    }
-  }, [])
+  const handleRefine = useCallback(
+    async (updatedTerms: MappedTerm[]) => {
+      setLoading(true)
+      setError(null)
+      setResults(null)
+      setMeta(null)
+      setPhase('executing')
 
-  const handleRefine = useCallback(async (updatedTerms: MappedTerm[]) => {
-    setLoading(true)
-    setError(null)
-    setResults(null)
-    setMeta(null)
-    setPhase('executing')
+      try {
+        // Convert mapped terms to generic SearchSlots format
+        const filters: Record<string, string> = {}
+        const location: Record<string, string> = {}
 
-    try {
-      // Convert mapped terms to generic SearchSlots format
-      const filters: Record<string, string> = {}
-      const location: Record<string, string> = {}
-
-      for (const term of updatedTerms) {
-        if (term.property && term.mapped) {
-          if (isLocationProperty(term.property)) {
-            location[term.property] = term.mapped
-          } else {
-            filters[term.property] = term.mapped
+        for (const term of updatedTerms) {
+          if (term.property && term.mapped) {
+            if (isLocationProperty(term.property)) {
+              location[term.property] = term.mapped
+            } else {
+              filters[term.property] = term.mapped
+            }
           }
         }
+
+        const slots = {
+          domains: selectedDomains,
+          filters,
+          ranges: {},
+          ...(Object.keys(location).length > 0 ? { location } : {}),
+        }
+
+        const res = await fetch('/api/search/refine', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slots }),
+        })
+
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || 'Refine failed')
+        }
+
+        const data = await res.json()
+        setSparql(data.sparql)
+        setResults(data.results)
+        setMeta(data.meta)
+        setPhase('done')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Refine failed')
+      } finally {
+        setLoading(false)
+        setPhase('done')
       }
-
-      const slots = {
-        domains: ['hdmap'],
-        filters,
-        ranges: {},
-        ...(Object.keys(location).length > 0 ? { location } : {}),
-      }
-
-      const res = await fetch('/api/search/refine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slots }),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Refine failed')
-      }
-
-      const data = await res.json()
-      setSparql(data.sparql)
-      setResults(data.results)
-      setMeta(data.meta)
-      setPhase('done')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Refine failed')
-    } finally {
-      setLoading(false)
-      setPhase('done')
-    }
-  }, [])
+    },
+    [selectedDomains]
+  )
 
   const hasResponse = interpretation || gaps || sparql || results
 
@@ -213,14 +221,19 @@ export default function Home() {
         <h1 className="text-3xl font-bold text-gray-900 mb-3">Simulation Asset Search</h1>
         <p className="text-gray-500 max-w-lg mx-auto text-sm leading-relaxed">
           Describe what you&apos;re looking for in plain language. The AI will interpret your query
-          against the HD map ontology and find matching assets.
+          against the ontology and find matching assets.
         </p>
         {totalAssets !== null && totalAssets > 0 && (
           <span className="inline-flex items-center gap-1.5 mt-4 px-3 py-1 bg-blue-50 text-blue-900 text-sm font-medium rounded-full border border-blue-100">
             <span className="w-2 h-2 bg-blue rounded-full animate-pulse" />
-            {totalAssets} HD map assets in graph
+            {totalAssets} assets in graph
           </span>
         )}
+      </div>
+
+      {/* Domain Selector */}
+      <div className="w-full max-w-2xl mb-4">
+        <DomainSelector selectedDomains={selectedDomains} onChange={setSelectedDomains} />
       </div>
 
       {/* Search */}

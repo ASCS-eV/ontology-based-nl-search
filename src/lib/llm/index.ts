@@ -2,6 +2,10 @@ import { runSparqlAgent } from './agent'
 import { runCopilotAgent } from './agent/copilot-agent'
 import type { LlmStructuredResponse } from './types'
 
+export interface SearchOptions {
+  domain?: string
+}
+
 /**
  * Translate a natural language query into a structured response containing
  * interpretation, ontology gaps, and SPARQL query.
@@ -11,16 +15,18 @@ import type { LlmStructuredResponse } from './types'
  * - copilot: Native Copilot SDK tool calling
  */
 export async function generateStructuredSearch(
-  naturalLanguageQuery: string
+  naturalLanguageQuery: string,
+  options?: SearchOptions
 ): Promise<LlmStructuredResponse> {
   const provider = process.env.AI_PROVIDER || 'openai'
+  const domain = options?.domain ?? 'hdmap'
 
   if (provider === 'copilot') {
-    return runCopilotAgent(naturalLanguageQuery)
+    return runCopilotAgent(naturalLanguageQuery, { domain })
   }
 
   // Use the full agentic flow with Vercel AI SDK tool calling
-  return runSparqlAgent(naturalLanguageQuery)
+  return runSparqlAgent(naturalLanguageQuery, { domain })
 }
 
 /**

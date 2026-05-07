@@ -8,6 +8,7 @@ import { compileSlots } from '@/lib/search/compiler'
 import { type LegacySearchSlots, type SearchSlots, fromLegacySlots } from '@/lib/search/slots'
 
 import type { LlmStructuredResponse } from '../types'
+import type { AgentOptions } from './index'
 
 interface SlotSubmission {
   slots: LegacySearchSlots
@@ -47,8 +48,10 @@ async function getClient(): Promise<CopilotClient> {
  * Pipeline: synonym pre-process → LLM fills slots → compile to SPARQL.
  */
 export async function runCopilotAgent(
-  naturalLanguageQuery: string
+  naturalLanguageQuery: string,
+  options?: AgentOptions
 ): Promise<LlmStructuredResponse> {
+  const targetDomain = options?.domain ?? 'hdmap'
   const systemPrompt = await getSystemPrompt()
   const modelId = process.env.AI_MODEL || 'claude-sonnet-4.5'
   const c = await getClient()
@@ -56,7 +59,7 @@ export async function runCopilotAgent(
   // Step 1: Ontology-driven concept matching (SKOS + SHACL vocabulary)
   const matchResult = await matchConcepts(naturalLanguageQuery)
 
-  const preSlots = matchResultToSlots(matchResult.matches)
+  const preSlots = matchResultToSlots(matchResult.matches, targetDomain)
 
   // Track the submitted answer
   let submittedSlots: SlotSubmission | null = null
@@ -205,10 +208,11 @@ export async function runCopilotAgent(
  * Convert concept match results to generic SearchSlots.
  */
 function matchResultToSlots(
-  matches: { property: string; value: string; domain?: string }[]
+  matches: { property: string; value: string; domain?: string }[],
+  defaultDomain = 'hdmap'
 ): SearchSlots {
   const slots: SearchSlots = {
-    domains: ['hdmap'],
+    domains: [defaultDomain],
     filters: {},
     ranges: {},
   }
@@ -216,7 +220,7 @@ function matchResultToSlots(
   const detectedDomains = new Set<string>()
 
   for (const match of matches) {
-    const domain = match.domain || 'hdmap'
+    const domain = match.domain || defaultDomain
     detectedDomains.add(domain)
 
     if (['country', 'state', 'region', 'city'].includes(match.property)) {

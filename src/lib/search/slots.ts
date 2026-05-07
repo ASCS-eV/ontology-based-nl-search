@@ -79,9 +79,9 @@ export interface LegacySearchSlots {
  * Convert legacy hdmap-specific slots to the generic format.
  * Used during the transition period until all callers are updated.
  */
-export function fromLegacySlots(legacy: LegacySearchSlots): SearchSlots {
+export function fromLegacySlots(legacy: LegacySearchSlots, domain = 'hdmap'): SearchSlots {
   const slots: SearchSlots = {
-    domains: ['hdmap'],
+    domains: [domain],
     filters: {},
     ranges: {},
   }

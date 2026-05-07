@@ -12,7 +12,7 @@ import { enforceSparqlPolicy } from '@/lib/sparql/policy'
  * Supports client-side abort via AbortSignal (request.signal).
  */
 export async function POST(request: NextRequest) {
-  let body: { query?: unknown }
+  let body: { query?: unknown; domains?: unknown }
   try {
     body = await request.json()
   } catch {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  const { query } = body
+  const { query, domains: rawDomains } = body
 
   if (!query || typeof query !== 'string') {
     return new Response(JSON.stringify({ error: 'Missing or invalid "query" field' }), {
@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
     })
   }
+
+  const domains = Array.isArray(rawDomains) ? rawDomains.filter((d) => typeof d === 'string') : []
+  const targetDomain = domains.length > 0 ? domains[0] : 'hdmap'
 
   const encoder = new TextEncoder()
   const requestId = generateRequestId()
@@ -66,7 +69,7 @@ export async function POST(request: NextRequest) {
         }
 
         const endLlm = logger.time('llm-interpretation')
-        const structured = await generateStructuredSearch(query)
+        const structured = await generateStructuredSearch(query, { domain: targetDomain })
         endLlm()
 
         if (signal.aborted) {
@@ -125,7 +128,7 @@ export async function POST(request: NextRequest) {
         let totalDatasets = 0
         try {
           const { compileCountQuery } = await import('@/lib/search/compiler')
-          const countSparql = await compileCountQuery('hdmap')
+          const countSparql = await compileCountQuery(targetDomain)
           const countResult = await store.query(countSparql)
           const countBinding = countResult.results.bindings[0]
           if (countBinding?.count) {
