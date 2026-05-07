@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 
 import { generateStructuredSearch } from '@/lib/llm'
+import { RequestLogger, generateRequestId } from '@/lib/logging'
 import { getInitializedStore } from '@/lib/search/init'
 import { enforceSparqlPolicy } from '@/lib/sparql/policy'
 
@@ -29,6 +30,8 @@ export async function POST(request: NextRequest) {
   }
 
   const encoder = new TextEncoder()
+  const requestId = generateRequestId()
+  const logger = new RequestLogger({ requestId, query })
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -38,7 +41,8 @@ export async function POST(request: NextRequest) {
 
       try {
         const store = await getInitializedStore()
-        const startTime = performance.now()
+        const endStoreInit = logger.time('store-init')
+        endStoreInit()
 
         // Phase 1: LLM generates interpretation + SPARQL
         send('status', {
@@ -46,7 +50,10 @@ export async function POST(request: NextRequest) {
           message: 'Interpreting query…',
         })
 
+        const endLlm = logger.time('llm-interpretation')
         const structured = await generateStructuredSearch(query)
+        endLlm()
+
         // Phase 2: Send interpretation immediately
         send('interpretation', structured.interpretation)
 
@@ -68,9 +75,12 @@ export async function POST(request: NextRequest) {
 
         if (!policy.allowed) {
           sparqlError = `Query policy violation: ${policy.violations.join('; ')}`
+          logger.warn('SPARQL policy violation', { violations: policy.violations })
         } else {
           try {
+            const endQuery = logger.time('sparql-execution')
             const sparqlResults = await store.query(policy.query)
+            endQuery()
             results = sparqlResults.results.bindings.map((binding) => {
               const row: Record<string, string> = {}
               for (const [key, value] of Object.entries(binding)) {
@@ -80,6 +90,7 @@ export async function POST(request: NextRequest) {
             })
           } catch (err) {
             sparqlError = err instanceof Error ? err.message : 'SPARQL execution failed'
+            logger.error('SPARQL execution failed', err)
           }
         }
 
@@ -99,18 +110,22 @@ export async function POST(request: NextRequest) {
           // Non-critical
         }
 
-        const executionTimeMs = Math.round(performance.now() - startTime)
+        const executionTimeMs = logger.getTotalMs()
 
         send('meta', {
+          requestId,
           totalDatasets,
           matchCount: results.length,
           executionTimeMs,
+          timings: logger.getTimings(),
         })
 
         send('done', {})
+        logger.info('Search completed', { matchCount: results.length, totalDatasets })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Internal server error'
-        send('error', { message })
+        send('error', { message, requestId })
+        logger.error('Search stream failed', error)
       } finally {
         controller.close()
       }
