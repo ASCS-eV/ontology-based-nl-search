@@ -3,18 +3,15 @@ import { join } from 'path'
 
 import type { SparqlStore } from '@/lib/sparql'
 
-/** Named graph URI for sample HD map data */
-const HDMAP_GRAPH = 'urn:graph:hdmap-assets'
-
 /**
- * Load sample TTL data from file (100 diverse HD map assets).
- * Falls back to a minimal inline dataset if file is not found.
+ * Load sample TTL data files for development/testing.
+ * Loads HD map assets (100) and scenario assets (50).
  */
-function getSampleData(): string {
+function loadDataFile(filename: string): string {
   try {
-    return readFileSync(join(process.cwd(), 'src', 'lib', 'data', 'sample-assets.ttl'), 'utf-8')
+    return readFileSync(join(process.cwd(), 'src', 'lib', 'data', filename), 'utf-8')
   } catch {
-    return FALLBACK_TURTLE
+    return ''
   }
 }
 
@@ -70,11 +67,13 @@ const FALLBACK_TURTLE = `
 
 /**
  * Load sample data into the SPARQL store for development/testing.
- * Loads into the default graph for simple query compatibility.
- * Named graph URI is exported for future multi-ontology isolation.
  */
 export async function loadSampleData(store: SparqlStore): Promise<void> {
-  await store.loadTurtle(getSampleData())
-}
+  const hdmapData = loadDataFile('sample-assets.ttl') || FALLBACK_TURTLE
+  await store.loadTurtle(hdmapData)
 
-export { HDMAP_GRAPH }
+  const scenarioData = loadDataFile('sample-scenarios.ttl')
+  if (scenarioData) {
+    await store.loadTurtle(scenarioData)
+  }
+}

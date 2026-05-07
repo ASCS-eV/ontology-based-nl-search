@@ -4,6 +4,26 @@ import { buildDomainRegistry } from '@/lib/ontology/domain-registry'
 import { compileCountQuery } from '@/lib/search/compiler'
 import { getInitializedStore } from '@/lib/search/init'
 
+/**
+ * Domains that represent actual searchable asset types.
+ * Excludes supporting ontologies (georeference, manifest, gx, openlabel, envited-x, general).
+ */
+const ASSET_DOMAINS = new Set([
+  'automotive-simulator',
+  'environment-model',
+  'hdmap',
+  'leakage-test',
+  'ositrace',
+  'scenario',
+  'service',
+  'simulated-sensor',
+  'simulation-model',
+  'surface-model',
+  'survey',
+  'tzip21',
+  'vv-report',
+])
+
 export async function GET() {
   try {
     const store = await getInitializedStore()
@@ -13,6 +33,7 @@ export async function GET() {
     let totalAssets = 0
 
     for (const domainName of registry.domainNames) {
+      if (!ASSET_DOMAINS.has(domainName)) continue
       try {
         const query = await compileCountQuery(domainName)
         const result = await store.query(query)

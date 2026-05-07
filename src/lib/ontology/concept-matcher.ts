@@ -35,6 +35,8 @@ export interface ConceptMatch {
   matchType: 'exact' | 'synonym' | 'related' | 'similar'
   /** If matched via related concept, the preferred label of the related concept */
   via?: string
+  /** Domain this concept belongs to (e.g., "hdmap", "scenario") */
+  domain?: string
 }
 
 export interface ConceptGap {
@@ -67,6 +69,8 @@ interface SkosConcept {
   prefLabel: string
   altLabels: string[]
   ontologyProperty: string
+  /** Domain this concept belongs to (extracted from property IRI) */
+  domain: string
   ontologyValue: string
   broader: string[]
   narrower: string[]
@@ -228,6 +232,7 @@ async function loadSkosStore(): Promise<void> {
       prefLabel: row.get('prefLabel')?.value || '',
       altLabels: [],
       ontologyProperty: extractLocalName(row.get('ontologyProperty')?.value || ''),
+      domain: extractDomainFromIri(row.get('ontologyProperty')?.value || ''),
       ontologyValue: row.get('ontologyValue')?.value || '',
       broader: [],
       narrower: [],
@@ -278,10 +283,19 @@ async function loadSkosStore(): Promise<void> {
   // Build label → URI reverse index
   const index = new Map<string, string>()
   for (const [uri, concept] of conceptMap) {
-    index.set(concept.prefLabel.toLowerCase(), uri)
-    index.set(concept.ontologyValue.toLowerCase(), uri)
+    const addWithVariants = (label: string) => {
+      const lower = label.toLowerCase()
+      index.set(lower, uri)
+      // Add space-separated variant of hyphenated terms (e.g., "lane-change" → "lane change")
+      if (lower.includes('-')) {
+        index.set(lower.replace(/-/g, ' '), uri)
+      }
+    }
+
+    addWithVariants(concept.prefLabel)
+    addWithVariants(concept.ontologyValue)
     for (const alt of concept.altLabels) {
-      index.set(alt.toLowerCase(), uri)
+      addWithVariants(alt)
     }
   }
 
@@ -319,6 +333,7 @@ export async function matchConcepts(query: string): Promise<MatchResult> {
           value: concept.ontologyValue,
           confidence: 'high',
           matchType: isExact ? 'exact' : 'synonym',
+          domain: concept.domain,
         })
         remainder = remainder.replace(regex, ' ').trim()
       }
@@ -412,6 +427,7 @@ function findRelatedConcept(word: string): ConceptMatch | null {
             confidence: 'medium',
             matchType: 'related',
             via: concept.prefLabel,
+            domain: relatedConcept.domain,
           }
         }
       }
@@ -523,6 +539,12 @@ function extractLocalName(iri: string): string {
   const slashIdx = iri.lastIndexOf('/')
   const idx = Math.max(hashIdx, slashIdx)
   return idx >= 0 ? iri.substring(idx + 1) : iri
+}
+
+/** Extract domain name from ENVITED-X property IRI (e.g., .../scenario/v6/scenarioCategory → scenario) */
+function extractDomainFromIri(iri: string): string {
+  const match = iri.match(/\/envited-x\/([^/]+)\/v\d+\//)
+  return match?.[1] || 'unknown'
 }
 
 function escapeRegex(str: string): string {
