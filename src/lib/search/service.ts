@@ -10,7 +10,7 @@
  */
 import { generateStructuredSearch } from '@/lib/llm'
 import type { LlmStructuredResponse } from '@/lib/llm/types'
-import { RequestLogger, generateRequestId } from '@/lib/logging'
+import { generateRequestId, RequestLogger } from '@/lib/logging'
 import { enforceSparqlPolicy } from '@/lib/sparql/policy'
 import type { SparqlBinding } from '@/lib/sparql/types'
 

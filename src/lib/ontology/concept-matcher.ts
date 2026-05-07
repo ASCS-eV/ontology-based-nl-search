@@ -16,7 +16,7 @@
  *
  * @see https://www.w3.org/TR/skos-reference/
  */
-import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 
 import { lookupGlossaryBatch } from './glossary'

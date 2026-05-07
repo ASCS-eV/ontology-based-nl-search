@@ -1,15 +1,14 @@
+import { generateText, stepCountIs } from 'ai'
 import { readFileSync } from 'fs'
 import path from 'path'
 
-import { generateText, stepCountIs } from 'ai'
-
 import { matchConcepts } from '@/lib/ontology'
 import { compileSlots } from '@/lib/search/compiler'
-import { type SearchSlots, fromLegacySlots } from '@/lib/search/slots'
+import { fromLegacySlots, type SearchSlots } from '@/lib/search/slots'
 
 import { getModel } from '../provider'
 import type { LlmStructuredResponse } from '../types'
-import { type SlotSubmissionParams, agentTools } from './tools'
+import { agentTools, type SlotSubmissionParams } from './tools'
 
 const SKILL_PATH = path.join(__dirname, 'skill.md')
 

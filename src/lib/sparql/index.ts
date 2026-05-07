@@ -33,4 +33,4 @@ export function getSparqlStore(): SparqlStore {
   return storeInstance
 }
 
-export type { SparqlStore, SparqlResults, SparqlBinding } from './types'
+export type { SparqlBinding, SparqlResults, SparqlStore } from './types'

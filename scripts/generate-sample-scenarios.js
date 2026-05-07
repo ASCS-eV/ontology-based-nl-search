@@ -1,19 +1,38 @@
 const fs = require('fs')
 
 const categories = [
-  'cut-in', 'lane-change', 'intersection-crossing', 'following', 'overtaking',
-  'pedestrian-crossing', 'emergency-braking', 'free-driving', 'turning', 'parking', 'merging'
+  'cut-in',
+  'lane-change',
+  'intersection-crossing',
+  'following',
+  'overtaking',
+  'pedestrian-crossing',
+  'emergency-braking',
+  'free-driving',
+  'turning',
+  'parking',
+  'merging',
 ]
 const weathers = ['clear', 'rain', 'snow', 'fog', 'night', 'windy', 'mixed']
 const entities = ['car', 'truck', 'pedestrian', 'bicycle', 'bus', 'motorbike', 'van']
 const formats = ['ASAM OpenSCENARIO', 'ASAM OpenSCENARIO DSL']
 const abstraction = ['Abstract', 'Functional', 'Logical', 'Concrete']
 const cities = [
-  ['Munich', 'DE'], ['Berlin', 'DE'], ['Stuttgart', 'DE'],
-  ['San Francisco', 'US'], ['Detroit', 'US'], ['Tokyo', 'JP'],
-  ['Paris', 'FR'], ['London', 'GB'], ['Shanghai', 'CN'], ['Seoul', 'KR'],
-  ['Milan', 'IT'], ['Amsterdam', 'NL'], ['Gothenburg', 'SE'],
-  ['Hamburg', 'DE'], ['Frankfurt', 'DE']
+  ['Munich', 'DE'],
+  ['Berlin', 'DE'],
+  ['Stuttgart', 'DE'],
+  ['San Francisco', 'US'],
+  ['Detroit', 'US'],
+  ['Tokyo', 'JP'],
+  ['Paris', 'FR'],
+  ['London', 'GB'],
+  ['Shanghai', 'CN'],
+  ['Seoul', 'KR'],
+  ['Milan', 'IT'],
+  ['Amsterdam', 'NL'],
+  ['Gothenburg', 'SE'],
+  ['Hamburg', 'DE'],
+  ['Frankfurt', 'DE'],
 ]
 const providers = ['simcorp', 'testfactory', 'drivesim', 'scengen', 'autosimco']
 
@@ -37,7 +56,13 @@ for (let i = 0; i < 50; i++) {
   const [city, country] = cities[i % cities.length]
   const prov = providers[i % providers.length]
   const cslug = city.toLowerCase().replace(/ /g, '-')
-  const nm = cat.split('-').map(x => x[0].toUpperCase() + x.slice(1)).join(' ') + ' in ' + city
+  const nm =
+    cat
+      .split('-')
+      .map((x) => x[0].toUpperCase() + x.slice(1))
+      .join(' ') +
+    ' in ' +
+    city
 
   const uri = `did:web:${prov}.io:Scenario:${cat}-${cslug}-${String(i + 1).padStart(3, '0')}`
 

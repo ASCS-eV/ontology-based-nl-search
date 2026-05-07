@@ -12,7 +12,7 @@
  *
  * @see https://www.w3.org/TR/shacl/#InConstraintComponent
  */
-import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { basename, join } from 'path'
 
 import { getConfig } from '@/lib/config'

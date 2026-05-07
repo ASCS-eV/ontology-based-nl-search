@@ -1,12 +1,11 @@
+import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { readFileSync } from 'fs'
 import path from 'path'
-
-import { CopilotClient, type CopilotSession, approveAll, defineTool } from '@github/copilot-sdk'
 
 import { getConfig } from '@/lib/config'
 import { matchConcepts } from '@/lib/ontology'
 import { compileSlots } from '@/lib/search/compiler'
-import { type LegacySearchSlots, type SearchSlots, fromLegacySlots } from '@/lib/search/slots'
+import { fromLegacySlots, type LegacySearchSlots, type SearchSlots } from '@/lib/search/slots'
 
 import type { LlmStructuredResponse } from '../types'
 import type { AgentOptions } from './index'

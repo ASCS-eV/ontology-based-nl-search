@@ -11,7 +11,7 @@
  *
  * @see https://www.w3.org/TR/shacl/#targetClass
  */
-import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 
 /** Metadata for a single ontology domain (e.g., hdmap, scenario) */

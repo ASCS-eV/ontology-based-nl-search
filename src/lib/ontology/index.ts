@@ -3,11 +3,10 @@ import { mkdir, readFile, writeFile } from 'fs/promises'
 import path from 'path'
 
 // Re-export new ontology-driven modules
-export { buildVocabularyIndex, resetVocabularyIndex } from './vocabulary-index'
+export type { ConceptGap, ConceptMatch, MatchResult } from './concept-matcher'
+export { jaroWinklerDistance, matchConcepts, resetConceptMatcher } from './concept-matcher'
 export type { VocabularyIndex, VocabularyProperty } from './vocabulary-index'
-
-export { matchConcepts, jaroWinklerDistance, resetConceptMatcher } from './concept-matcher'
-export type { ConceptMatch, ConceptGap, MatchResult } from './concept-matcher'
+export { buildVocabularyIndex, resetVocabularyIndex } from './vocabulary-index'
 
 const CACHE_DIR = path.join(process.cwd(), '.ontology-cache')
 const CONTEXT_FILE = path.join(CACHE_DIR, 'context.txt')

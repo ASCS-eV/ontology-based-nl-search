@@ -1,7 +1,7 @@
 import { getConfig } from '@/lib/config'
 import { loadSampleData } from '@/lib/data/loader'
-import { getSparqlStore } from '@/lib/sparql'
 import type { SparqlStore } from '@/lib/sparql'
+import { getSparqlStore } from '@/lib/sparql'
 
 /**
  * Shared store initialization — singleton promise.

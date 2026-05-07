@@ -15,7 +15,7 @@
  *
  * @see https://www.w3.org/TR/sparql11-query/
  */
-import { type DomainDescriptor, buildDomainRegistry } from '@/lib/ontology/domain-registry'
+import { buildDomainRegistry, type DomainDescriptor } from '@/lib/ontology/domain-registry'
 import { buildVocabularyIndex } from '@/lib/ontology/vocabulary-index'
 
 import type { SearchSlots } from './slots'

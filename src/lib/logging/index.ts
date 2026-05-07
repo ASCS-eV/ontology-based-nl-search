@@ -54,7 +54,7 @@ export class RequestLogger {
       data: { ...this.context, ...data },
     }
     // Use console.info in production (captured by hosting platform)
-    console.info(formatLog(entry)) // eslint-disable-line no-console
+    console.info(formatLog(entry))
   }
 
   warn(message: string, data?: Record<string, unknown>): void {
