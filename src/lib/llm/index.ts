@@ -29,12 +29,3 @@ export async function generateStructuredSearch(
 
   return runSparqlAgent(naturalLanguageQuery, { domain })
 }
-
-/**
- * Legacy function: Translate NL query directly to SPARQL.
- * Kept for backward compatibility with existing tests.
- */
-export async function generateSparql(naturalLanguageQuery: string): Promise<string> {
-  const response = await generateStructuredSearch(naturalLanguageQuery)
-  return response.sparql
-}

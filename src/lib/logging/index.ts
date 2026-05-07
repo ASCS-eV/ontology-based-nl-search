@@ -28,9 +28,9 @@ function formatLog(entry: LogEntry): string {
   return JSON.stringify(entry)
 }
 
-/** Generate a short unique request ID */
+/** Generate a unique request ID using cryptographic randomness */
 export function generateRequestId(): string {
-  return `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
+  return `req_${crypto.randomUUID()}`
 }
 
 /**

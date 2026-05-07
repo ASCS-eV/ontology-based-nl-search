@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 
 import mermaid from 'mermaid'
 
@@ -12,15 +12,25 @@ mermaid.initialize({
 
 export function Mermaid({ chart }: { chart: string }) {
   const ref = useRef<HTMLDivElement>(null)
+  const id = useId().replace(/:/g, '')
 
   useEffect(() => {
-    if (ref.current) {
-      ref.current.innerHTML = ''
-      mermaid.render(`mermaid-${Math.random().toString(36).slice(2)}`, chart).then(({ svg }) => {
-        if (ref.current) ref.current.innerHTML = svg
-      })
+    const container = ref.current
+    if (!container) return
+
+    let cancelled = false
+
+    mermaid.render(`mermaid-${id}`, chart).then(({ svg }) => {
+      if (!cancelled && container) {
+        container.replaceChildren()
+        container.insertAdjacentHTML('afterbegin', svg)
+      }
+    })
+
+    return () => {
+      cancelled = true
     }
-  }, [chart])
+  }, [chart, id])
 
   return (
     <div
