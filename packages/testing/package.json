@@ -1,0 +1,13 @@
+{
+  "name": "@ontology-search/testing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./fixtures/*": "./fixtures/*",
+    "./helpers": {
+      "types": "./helpers/index.ts",
+      "default": "./helpers/index.ts"
+    }
+  }
+}

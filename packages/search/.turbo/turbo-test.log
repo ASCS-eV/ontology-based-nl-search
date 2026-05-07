@@ -1,0 +1,17 @@
+
+> @ontology-search/search@0.1.0 test /home/q413005/workspace/ontology-based-nl-search/packages/search
+> vitest run
+
+
+ RUN  v3.2.4 /home/q413005/workspace/ontology-based-nl-search/packages/search
+
+ ✓ src/__tests__/service.test.ts (8 tests) 12ms
+ ✓ src/__tests__/init.test.ts (3 tests) 108ms
+ ✓ src/__tests__/compiler.test.ts (16 tests) 2647ms
+   ✓ compileSlots > generates minimal query with empty slots  2629ms
+
+ Test Files  3 passed (3)
+      Tests  27 passed (27)
+   Start at  21:50:08
+   Duration  3.70s (transform 303ms, setup 0ms, collect 372ms, tests 2.77s, environment 1ms, prepare 1.02s)
+

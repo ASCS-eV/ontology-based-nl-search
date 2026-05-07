@@ -1,0 +1,39 @@
+{
+  "name": "@ontology-search/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./config": {
+      "types": "./src/config/index.ts",
+      "import": "./src/config/index.ts",
+      "default": "./dist/config/index.js"
+    },
+    "./logging": {
+      "types": "./src/logging/index.ts",
+      "import": "./src/logging/index.ts",
+      "default": "./dist/logging/index.js"
+    },
+    "./errors": {
+      "types": "./src/errors/index.ts",
+      "import": "./src/errors/index.ts",
+      "default": "./dist/errors/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "check-types": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@ontology-search/typescript-config": "workspace:*",
+    "rimraf": "^6.0.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.0"
+  }
+}

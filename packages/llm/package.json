@@ -1,0 +1,40 @@
+{
+  "name": "@ontology-search/llm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "import": "./src/types.ts",
+      "default": "./dist/types.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "check-types": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^2.0.106",
+    "@github/copilot-sdk": "^0.3.0",
+    "@ontology-search/core": "workspace:*",
+    "@ontology-search/ontology": "workspace:*",
+    "@ontology-search/search": "workspace:*",
+    "ai": "^5.0.185",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@ontology-search/typescript-config": "workspace:*",
+    "rimraf": "^6.0.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.0"
+  }
+}

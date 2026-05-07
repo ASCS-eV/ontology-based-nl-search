@@ -1,6 +1,4 @@
 import eslintConfigPrettier from 'eslint-config-prettier'
-import nextPlugin from '@next/eslint-plugin-next'
-import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
@@ -15,18 +13,22 @@ export default tseslint.config(
       'coverage/',
       'submodules/',
       'public/',
+      'dist/',
+      '**/dist/**',
       '*.config.js',
       '*.config.ts',
+      '*.config.mjs',
       'next-env.d.ts',
+      '**/routeTree.gen.ts',
     ],
   },
 
   // Base TypeScript configuration
   ...tseslint.configs.recommended,
 
-  // Application source files
+  // All source files
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['packages/*/src/**/*.{ts,tsx}', 'apps/*/src/**/*.{ts,tsx}', 'src/**/*.{ts,tsx}'],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -34,19 +36,10 @@ export default tseslint.config(
       },
     },
     plugins: {
-      '@next/next': nextPlugin,
-      'react-hooks': reactHooksPlugin,
       'simple-import-sort': simpleImportSort,
     },
     rules: {
-      // Next.js rules (subset of core-web-vitals)
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs['core-web-vitals'].rules,
-
-      // React hooks
-      ...reactHooksPlugin.configs.recommended.rules,
-
-      // Import sorting (replaces prettier-plugin-organize-imports)
+      // Import sorting
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
 
@@ -82,6 +75,7 @@ export default tseslint.config(
     files: ['scripts/**/*'],
     rules: {
       'no-console': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 

@@ -1,0 +1,32 @@
+
+> @ontology-search/ontology@0.1.0 test /home/q413005/workspace/ontology-based-nl-search/packages/ontology
+> vitest run
+
+
+ RUN  v3.2.4 /home/q413005/workspace/ontology-based-nl-search/packages/ontology
+
+ ✓ src/__tests__/glossary.test.ts (8 tests) 75ms
+ ✓ src/__tests__/domain-registry.test.ts (10 tests) 192ms
+ ✓ src/__tests__/vocabulary-index.test.ts (7 tests) 16423ms
+   ✓ VocabularyIndex > discovers and parses SHACL files from artifacts directory  2710ms
+   ✓ VocabularyIndex > extracts roadTypes with allowed values from hdmap SHACL  2367ms
+   ✓ VocabularyIndex > extracts laneTypes with correct values including exit/onRamp  2260ms
+   ✓ VocabularyIndex > extracts formatType allowed values  2126ms
+   ✓ VocabularyIndex > extracts heightSystem from georeference SHACL  2268ms
+   ✓ VocabularyIndex > builds reverse index for value lookup  2463ms
+   ✓ VocabularyIndex > extracts numeric properties without sh:in  2227ms
+ ✓ src/__tests__/concept-matcher.test.ts (13 tests) 19033ms
+   ✓ matchConcepts > matches "German" to country DE via SKOS altLabel  2659ms
+   ✓ matchConcepts > matches "highway" to roadTypes motorway via SKOS altLabel  2250ms
+   ✓ matchConcepts > matches "exit" directly to laneTypes exit via SKOS prefLabel  2348ms
+   ✓ matchConcepts > matches "OpenDRIVE" to formatType via SKOS altLabel  2502ms
+   ✓ matchConcepts > matches multi-word phrases like "United States"  2301ms
+   ✓ matchConcepts > ignores stopwords in query  2400ms
+   ✓ matchConcepts > reports gaps for completely unmapped terms  2279ms
+   ✓ matchConcepts > handles on-ramp as a valid lane type concept  2286ms
+
+ Test Files  4 passed (4)
+      Tests  38 passed (38)
+   Start at  21:50:08
+   Duration  20.33s (transform 461ms, setup 0ms, collect 719ms, tests 35.72s, environment 1ms, prepare 819ms)
+

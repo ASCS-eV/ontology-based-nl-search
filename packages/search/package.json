@@ -1,0 +1,42 @@
+{
+  "name": "@ontology-search/search",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./slots": {
+      "types": "./src/slots.ts",
+      "import": "./src/slots.ts",
+      "default": "./dist/slots.js"
+    },
+    "./compiler": {
+      "types": "./src/compiler.ts",
+      "import": "./src/compiler.ts",
+      "default": "./dist/compiler.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "check-types": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@ontology-search/core": "workspace:*",
+    "@ontology-search/ontology": "workspace:*",
+    "@ontology-search/sparql": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@ontology-search/typescript-config": "workspace:*",
+    "rimraf": "^6.0.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.0"
+  }
+}

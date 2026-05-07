@@ -1,0 +1,42 @@
+{
+  "name": "@ontology-search/sparql",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "import": "./src/types.ts",
+      "default": "./dist/types.js"
+    },
+    "./policy": {
+      "types": "./src/policy.ts",
+      "import": "./src/policy.ts",
+      "default": "./dist/policy.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "check-types": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@ontology-search/core": "workspace:*",
+    "oxigraph": "^0.4.0-alpha.8",
+    "sparqljs": "^3.7.4"
+  },
+  "devDependencies": {
+    "@ontology-search/typescript-config": "workspace:*",
+    "@types/sparqljs": "^3.1.12",
+    "rimraf": "^6.0.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.0"
+  }
+}

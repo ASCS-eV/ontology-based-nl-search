@@ -1,0 +1,35 @@
+{
+  "name": "@ontology-search/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ontology-search/core": "workspace:*",
+    "@tanstack/react-query": "^5.75.5",
+    "@tanstack/react-router": "^1.120.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@ontology-search/typescript-config": "workspace:*",
+    "@tanstack/router-plugin": "^1.120.3",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.1.4",
+    "@types/react-dom": "^19.1.5",
+    "@tailwindcss/vite": "^4.1.7",
+    "@vitejs/plugin-react-swc": "^4.3.0",
+    "jsdom": "^26.1.0",
+    "tailwindcss": "^4.1.7",
+    "typescript": "~5.9.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.0"
+  }
+}
