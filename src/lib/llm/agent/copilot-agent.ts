@@ -5,13 +5,19 @@ import path from 'path'
 import { getConfig } from '@/lib/config'
 import { matchConcepts } from '@/lib/ontology'
 import { compileSlots } from '@/lib/search/compiler'
-import { fromLegacySlots, type LegacySearchSlots, type SearchSlots } from '@/lib/search/slots'
+import type { SearchSlots } from '@/lib/search/slots'
 
 import type { LlmStructuredResponse } from '../types'
 import type { AgentOptions } from './index'
 
 interface SlotSubmission {
-  slots: LegacySearchSlots
+  slots: {
+    domains?: string[]
+    filters?: Record<string, string | string[]>
+    ranges?: Record<string, { min?: number; max?: number }>
+    location?: { country?: string; state?: string; region?: string; city?: string }
+    license?: string
+  }
   interpretation: LlmStructuredResponse['interpretation']
   gaps: LlmStructuredResponse['gaps']
 }
@@ -75,7 +81,7 @@ export async function runCopilotAgent(
   })
 
   try {
-    // Register slot-filling tool
+    // Register slot-filling tool with generic SearchSlots schema
     session.registerTools([
       defineTool('submit_slots', {
         description:
@@ -86,25 +92,33 @@ export async function runCopilotAgent(
             slots: {
               type: 'object',
               properties: {
-                country: { type: 'string' },
-                state: { type: 'string' },
-                region: { type: 'string' },
-                city: { type: 'string' },
-                roadType: { type: 'string' },
-                laneType: { type: 'string' },
-                levelOfDetail: { type: 'string' },
-                trafficDirection: { type: 'string' },
-                formatType: { type: 'string' },
-                formatVersion: { type: 'string' },
-                dataSource: { type: 'string' },
+                domains: { type: 'array', items: { type: 'string' } },
+                filters: {
+                  type: 'object',
+                  additionalProperties: {
+                    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+                  },
+                },
+                ranges: {
+                  type: 'object',
+                  additionalProperties: {
+                    type: 'object',
+                    properties: {
+                      min: { type: 'number' },
+                      max: { type: 'number' },
+                    },
+                  },
+                },
+                location: {
+                  type: 'object',
+                  properties: {
+                    country: { type: 'string' },
+                    state: { type: 'string' },
+                    region: { type: 'string' },
+                    city: { type: 'string' },
+                  },
+                },
                 license: { type: 'string' },
-                minLength: { type: 'number' },
-                maxLength: { type: 'number' },
-                minIntersections: { type: 'number' },
-                minTrafficLights: { type: 'number' },
-                minTrafficSigns: { type: 'number' },
-                minSpeedLimit: { type: 'number' },
-                maxSpeedLimit: { type: 'number' },
               },
             },
             interpretation: {
@@ -162,8 +176,14 @@ export async function runCopilotAgent(
 
     const result = submittedSlots as SlotSubmission | null
     if (result) {
-      // Convert LLM legacy slots + merge with pre-extracted
-      const llmSlots = fromLegacySlots(result.slots)
+      // LLM now emits SearchSlots directly — merge with pre-extracted
+      const llmSlots: SearchSlots = {
+        domains: result.slots.domains ?? [targetDomain],
+        filters: result.slots.filters ?? {},
+        ranges: result.slots.ranges ?? {},
+        location: result.slots.location,
+        license: result.slots.license,
+      }
       const mergedSlots: SearchSlots = mergeSlots(llmSlots, preSlots)
       const sparql = await compileSlots(mergedSlots)
 

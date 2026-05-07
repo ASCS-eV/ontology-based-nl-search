@@ -4,7 +4,7 @@ import path from 'path'
 
 import { matchConcepts } from '@/lib/ontology'
 import { compileSlots } from '@/lib/search/compiler'
-import { fromLegacySlots, type SearchSlots } from '@/lib/search/slots'
+import type { SearchSlots } from '@/lib/search/slots'
 
 import { getModel } from '../provider'
 import type { LlmStructuredResponse } from '../types'
@@ -92,9 +92,15 @@ export async function runSparqlAgent(
   if (submitCall) {
     const answer = submitCall.output as SlotSubmissionParams
 
-    // Step 3: Convert LLM legacy slots + merge with pre-extracted
-    const llmSlots = fromLegacySlots(answer.slots)
-    const mergedSlots: SearchSlots = mergeSlots(llmSlots, preSlots)
+    // Step 3: LLM now emits SearchSlots directly — merge with pre-extracted
+    const llmSlots: SearchSlots = {
+      domains: answer.slots.domains ?? [targetDomain],
+      filters: answer.slots.filters ?? {},
+      ranges: answer.slots.ranges ?? {},
+      location: answer.slots.location,
+      license: answer.slots.license,
+    }
+    const mergedSlots = mergeSlots(llmSlots, preSlots)
 
     // Step 4: Compile to SPARQL
     const sparql = await compileSlots(mergedSlots)

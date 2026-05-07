@@ -1,30 +1,37 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
+/**
+ * Tool schema for the LLM slot-filling agent.
+ *
+ * Design: The schema mirrors SearchSlots directly — no conversion needed.
+ * The LLM fills property names matching the ontology local names
+ * (e.g., "roadTypes", "laneTypes", "formatType") as documented in skill.md.
+ */
 const slotSubmissionSchema = z.object({
   slots: z
     .object({
-      country: z.string().optional(),
-      state: z.string().optional(),
-      region: z.string().optional(),
-      city: z.string().optional(),
-      roadType: z.string().optional(),
-      laneType: z.string().optional(),
-      levelOfDetail: z.string().optional(),
-      trafficDirection: z.string().optional(),
-      formatType: z.string().optional(),
-      formatVersion: z.string().optional(),
-      dataSource: z.string().optional(),
-      license: z.string().optional(),
-      minLength: z.number().optional(),
-      maxLength: z.number().optional(),
-      minIntersections: z.number().optional(),
-      minTrafficLights: z.number().optional(),
-      minTrafficSigns: z.number().optional(),
-      minSpeedLimit: z.number().optional(),
-      maxSpeedLimit: z.number().optional(),
+      domains: z.array(z.string()).default(['hdmap']).describe('Target domain(s)'),
+      filters: z
+        .record(z.string(), z.union([z.string(), z.array(z.string())]))
+        .default({})
+        .describe('Property filters: localName → value(s)'),
+      ranges: z
+        .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
+        .default({})
+        .describe('Numeric ranges: localName → { min?, max? }'),
+      location: z
+        .object({
+          country: z.string().optional(),
+          state: z.string().optional(),
+          region: z.string().optional(),
+          city: z.string().optional(),
+        })
+        .optional()
+        .describe('Geographic location filters'),
+      license: z.string().optional().describe('License identifier'),
     })
-    .describe('Search slots: only fill keys where the user expressed intent'),
+    .describe('Search slots: fill only properties where the user expressed intent'),
   interpretation: z.object({
     summary: z.string().describe('Human-readable summary of what was understood'),
     mappedTerms: z.array(
@@ -32,7 +39,7 @@ const slotSubmissionSchema = z.object({
         input: z.string().describe('What the user said'),
         mapped: z.string().describe('Ontology concept/slot value it maps to'),
         confidence: z.enum(['high', 'medium', 'low']).describe('Mapping confidence'),
-        property: z.string().optional().describe('The slot name used'),
+        property: z.string().optional().describe('The property name used'),
       })
     ),
   }),
