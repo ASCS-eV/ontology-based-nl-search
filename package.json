@@ -18,6 +18,7 @@
     "test:e2e:ui": "playwright test --ui",
     "validate": "npm run typecheck && npm run lint && npm run format:check && npm run test",
     "ontology:update": "pwsh ./scripts/update-ontology.ps1",
+    "ontology:generate-skos": "tsx scripts/generate-skos.ts",
     "prepare": "husky"
   },
   "lint-staged": {

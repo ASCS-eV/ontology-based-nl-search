@@ -12,7 +12,13 @@
     {
       "name": "nl-search-concepts",
       "path": "src/lib/ontology/skos-annotations.ttl",
-      "description": "SKOS concept scheme with synonyms and relationships for natural language matching"
+      "description": "Manual SKOS concept scheme with synonyms, definitions, and relationships for natural language matching"
+    },
+    {
+      "name": "generated-skos",
+      "path": "src/lib/ontology/generated",
+      "directory": true,
+      "description": "Auto-generated SKOS concepts from SHACL sh:in enumerations (one file per domain)"
     }
   ]
 }

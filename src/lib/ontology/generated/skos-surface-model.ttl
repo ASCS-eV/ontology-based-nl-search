@@ -1,0 +1,29 @@
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix nlsearch: <https://w3id.org/ascs-ev/ontology-based-nl-search/concepts/> .
+@prefix surface-model: <https://w3id.org/ascs-ev/envited-x/surface-model/v6/> .
+
+# ============================================================
+# Auto-generated SKOS concepts for domain: surface-model
+# Generated from SHACL sh:in enumerations via Oxigraph SPARQL.
+# DO NOT EDIT — regenerate with: npm run ontology:generate-skos
+# Manual synonyms go in skos-annotations.ttl (overlay)
+# ============================================================
+
+nlsearch:surface-modelScheme a skos:ConceptScheme ;
+    rdfs:label "surface-model NL Search Vocabulary"@en ;
+    rdfs:comment "Auto-generated SKOS concepts for surface-model ontology domain."@en .
+
+# --- format type (surface-model:formatType) ---
+
+nlsearch:surface-model-formatType-asam-opencrg a skos:Concept ;
+    skos:inScheme nlsearch:surface-modelScheme ;
+    skos:prefLabel "ASAM OpenCRG"@en ;
+    nlsearch:ontologyProperty surface-model:formatType ;
+    nlsearch:ontologyValue "ASAM OpenCRG" .
+
+nlsearch:surface-model-formatType-dlm a skos:Concept ;
+    skos:inScheme nlsearch:surface-modelScheme ;
+    skos:prefLabel "DLM"@en ;
+    nlsearch:ontologyProperty surface-model:formatType ;
+    nlsearch:ontologyValue "DLM" .

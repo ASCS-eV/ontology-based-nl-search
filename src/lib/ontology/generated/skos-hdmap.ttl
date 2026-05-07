@@ -1,0 +1,499 @@
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix nlsearch: <https://w3id.org/ascs-ev/ontology-based-nl-search/concepts/> .
+@prefix hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/> .
+
+# ============================================================
+# Auto-generated SKOS concepts for domain: hdmap
+# Generated from SHACL sh:in enumerations via Oxigraph SPARQL.
+# DO NOT EDIT — regenerate with: npm run ontology:generate-skos
+# Manual synonyms go in skos-annotations.ttl (overlay)
+# ============================================================
+
+nlsearch:hdmapScheme a skos:ConceptScheme ;
+    rdfs:label "hdmap NL Search Vocabulary"@en ;
+    rdfs:comment "Auto-generated SKOS concepts for hdmap ontology domain."@en .
+
+# --- type (hdmap:formatType) ---
+
+nlsearch:hdmap-formatType-asam-opendrive a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "ASAM OpenDRIVE"@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "ASAM OpenDRIVE" .
+
+nlsearch:hdmap-formatType-lanelet a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "Lanelet"@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "Lanelet" .
+
+nlsearch:hdmap-formatType-road5 a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "Road5"@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "Road5" .
+
+nlsearch:hdmap-formatType-shape a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "Shape"@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "Shape" .
+
+nlsearch:hdmap-formatType-road2sim a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "road2sim"@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "road2sim" .
+
+nlsearch:hdmap-formatType-roadxml a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "roadXML"@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "roadXML" .
+
+# --- lane types (hdmap:laneTypes) ---
+
+nlsearch:hdmap-laneTypes-hov a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "HOV"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "HOV" .
+
+nlsearch:hdmap-laneTypes-bidirectional a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "bidirectional"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "bidirectional" .
+
+nlsearch:hdmap-laneTypes-biking a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "biking"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "biking" .
+
+nlsearch:hdmap-laneTypes-border a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "border"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "border" .
+
+nlsearch:hdmap-laneTypes-bus a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "bus"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "bus" .
+
+nlsearch:hdmap-laneTypes-connectingramp a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "connectingRamp"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "connectingRamp" .
+
+nlsearch:hdmap-laneTypes-curb a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "curb"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "curb" .
+
+nlsearch:hdmap-laneTypes-driving a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "driving"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "driving" .
+
+nlsearch:hdmap-laneTypes-entry a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "entry"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "entry" .
+
+nlsearch:hdmap-laneTypes-exit a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "exit"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "exit" .
+
+nlsearch:hdmap-laneTypes-median a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "median"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "median" .
+
+nlsearch:hdmap-laneTypes-mwyentry a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "mwyEntry"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "mwyEntry" .
+
+nlsearch:hdmap-laneTypes-mwyexit a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "mwyExit"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "mwyExit" .
+
+nlsearch:hdmap-laneTypes-none a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "none"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "none" .
+
+nlsearch:hdmap-laneTypes-offramp a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "offRamp"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "offRamp" .
+
+nlsearch:hdmap-laneTypes-onramp a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "onRamp"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "onRamp" .
+
+nlsearch:hdmap-laneTypes-parking a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "parking"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "parking" .
+
+nlsearch:hdmap-laneTypes-rail a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "rail"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "rail" .
+
+nlsearch:hdmap-laneTypes-restricted a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "restricted"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "restricted" .
+
+nlsearch:hdmap-laneTypes-roadworks a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "roadWorks"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "roadWorks" .
+
+nlsearch:hdmap-laneTypes-shared a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "shared"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "shared" .
+
+nlsearch:hdmap-laneTypes-shoulder a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "shoulder"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "shoulder" .
+
+nlsearch:hdmap-laneTypes-sidewalk a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "sidewalk"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "sidewalk" .
+
+nlsearch:hdmap-laneTypes-sliplane a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "slipLane"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "slipLane" .
+
+nlsearch:hdmap-laneTypes-special1 a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "special1"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "special1" .
+
+nlsearch:hdmap-laneTypes-special2 a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "special2"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "special2" .
+
+nlsearch:hdmap-laneTypes-special3 a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "special3"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "special3" .
+
+nlsearch:hdmap-laneTypes-stop a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "stop"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "stop" .
+
+nlsearch:hdmap-laneTypes-taxi a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "taxi"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "taxi" .
+
+nlsearch:hdmap-laneTypes-tram a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "tram"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "tram" .
+
+nlsearch:hdmap-laneTypes-walking a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "walking"@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "walking" .
+
+# --- level of detail (hdmap:levelOfDetail) ---
+
+nlsearch:hdmap-levelOfDetail-barrier a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "barrier"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "barrier" .
+
+nlsearch:hdmap-levelOfDetail-bike a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "bike"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "bike" .
+
+nlsearch:hdmap-levelOfDetail-building a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "building"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "building" .
+
+nlsearch:hdmap-levelOfDetail-bus a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "bus"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "bus" .
+
+nlsearch:hdmap-levelOfDetail-car a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "car"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "car" .
+
+nlsearch:hdmap-levelOfDetail-crosswalk a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "crosswalk"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "crosswalk" .
+
+nlsearch:hdmap-levelOfDetail-gantry a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "gantry"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "gantry" .
+
+nlsearch:hdmap-levelOfDetail-motorbike a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "motorbike"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "motorbike" .
+
+nlsearch:hdmap-levelOfDetail-none a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "none"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "none" .
+
+nlsearch:hdmap-levelOfDetail-obstacle a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "obstacle"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "obstacle" .
+
+nlsearch:hdmap-levelOfDetail-parkingspace a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "parkingSpace"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "parkingSpace" .
+
+nlsearch:hdmap-levelOfDetail-patch a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "patch"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "patch" .
+
+nlsearch:hdmap-levelOfDetail-pedestrian a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "pedestrian"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "pedestrian" .
+
+nlsearch:hdmap-levelOfDetail-pole a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "pole"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "pole" .
+
+nlsearch:hdmap-levelOfDetail-railing a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "railing"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "railing" .
+
+nlsearch:hdmap-levelOfDetail-roadmark a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "roadMark"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "roadMark" .
+
+nlsearch:hdmap-levelOfDetail-roadsurface a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "roadSurface"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "roadSurface" .
+
+nlsearch:hdmap-levelOfDetail-soundbarrier a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "soundBarrier"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "soundBarrier" .
+
+nlsearch:hdmap-levelOfDetail-streetlamp a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "streetLamp"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "streetLamp" .
+
+nlsearch:hdmap-levelOfDetail-trafficisland a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "trafficIsland"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "trafficIsland" .
+
+nlsearch:hdmap-levelOfDetail-trailer a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "trailer"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "trailer" .
+
+nlsearch:hdmap-levelOfDetail-train a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "train"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "train" .
+
+nlsearch:hdmap-levelOfDetail-tram a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "tram"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "tram" .
+
+nlsearch:hdmap-levelOfDetail-tree a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "tree"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "tree" .
+
+nlsearch:hdmap-levelOfDetail-van a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "van"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "van" .
+
+nlsearch:hdmap-levelOfDetail-vegetation a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "vegetation"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "vegetation" .
+
+nlsearch:hdmap-levelOfDetail-wind a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "wind"@en ;
+    nlsearch:ontologyProperty hdmap:levelOfDetail ;
+    nlsearch:ontologyValue "wind" .
+
+# --- road types (hdmap:roadTypes) ---
+
+nlsearch:hdmap-roadTypes-bicycle a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "bicycle"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "bicycle" .
+
+nlsearch:hdmap-roadTypes-lowspeed a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "lowSpeed"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "lowSpeed" .
+
+nlsearch:hdmap-roadTypes-motorway a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "motorway"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "motorway" .
+
+nlsearch:hdmap-roadTypes-pedestrian a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "pedestrian"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "pedestrian" .
+
+nlsearch:hdmap-roadTypes-rural a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "rural"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "rural" .
+
+nlsearch:hdmap-roadTypes-town a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "town"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "town" .
+
+nlsearch:hdmap-roadTypes-townarterial a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "townArterial"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "townArterial" .
+
+nlsearch:hdmap-roadTypes-towncollector a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "townCollector"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "townCollector" .
+
+nlsearch:hdmap-roadTypes-townexpressway a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "townExpressway"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "townExpressway" .
+
+nlsearch:hdmap-roadTypes-townlocal a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "townLocal"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "townLocal" .
+
+nlsearch:hdmap-roadTypes-townplaystreet a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "townPlayStreet"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "townPlayStreet" .
+
+nlsearch:hdmap-roadTypes-townprivate a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "townPrivate"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "townPrivate" .
+
+nlsearch:hdmap-roadTypes-unknown a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "unknown"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "unknown" .
+
+# --- traffic direction (hdmap:trafficDirection) ---
+
+nlsearch:hdmap-trafficDirection-left-hand a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "left-hand"@en ;
+    nlsearch:ontologyProperty hdmap:trafficDirection ;
+    nlsearch:ontologyValue "left-hand" .
+
+nlsearch:hdmap-trafficDirection-right-hand a skos:Concept ;
+    skos:inScheme nlsearch:hdmapScheme ;
+    skos:prefLabel "right-hand"@en ;
+    nlsearch:ontologyProperty hdmap:trafficDirection ;
+    nlsearch:ontologyValue "right-hand" .

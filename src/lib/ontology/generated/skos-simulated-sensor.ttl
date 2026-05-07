@@ -1,0 +1,71 @@
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix nlsearch: <https://w3id.org/ascs-ev/ontology-based-nl-search/concepts/> .
+@prefix simulated-sensor: <https://w3id.org/gaia-x4plcaad/ontologies/simulated-sensor/v2/> .
+
+# ============================================================
+# Auto-generated SKOS concepts for domain: simulated-sensor
+# Generated from SHACL sh:in enumerations via Oxigraph SPARQL.
+# DO NOT EDIT — regenerate with: npm run ontology:generate-skos
+# Manual synonyms go in skos-annotations.ttl (overlay)
+# ============================================================
+
+nlsearch:simulated-sensorScheme a skos:ConceptScheme ;
+    rdfs:label "simulated-sensor NL Search Vocabulary"@en ;
+    rdfs:comment "Auto-generated SKOS concepts for simulated-sensor ontology domain."@en .
+
+# --- mounting position (simulated-sensor:mountingPosition) ---
+
+nlsearch:simulated-sensor-mountingPosition-back-left a skos:Concept ;
+    skos:inScheme nlsearch:simulated-sensorScheme ;
+    skos:prefLabel "Back-left"@en ;
+    nlsearch:ontologyProperty simulated-sensor:mountingPosition ;
+    nlsearch:ontologyValue "Back-left" .
+
+nlsearch:simulated-sensor-mountingPosition-back-mid a skos:Concept ;
+    skos:inScheme nlsearch:simulated-sensorScheme ;
+    skos:prefLabel "Back-mid"@en ;
+    nlsearch:ontologyProperty simulated-sensor:mountingPosition ;
+    nlsearch:ontologyValue "Back-mid" .
+
+nlsearch:simulated-sensor-mountingPosition-back-right a skos:Concept ;
+    skos:inScheme nlsearch:simulated-sensorScheme ;
+    skos:prefLabel "Back-right"@en ;
+    nlsearch:ontologyProperty simulated-sensor:mountingPosition ;
+    nlsearch:ontologyValue "Back-right" .
+
+nlsearch:simulated-sensor-mountingPosition-front-left a skos:Concept ;
+    skos:inScheme nlsearch:simulated-sensorScheme ;
+    skos:prefLabel "Front-left"@en ;
+    nlsearch:ontologyProperty simulated-sensor:mountingPosition ;
+    nlsearch:ontologyValue "Front-left" .
+
+nlsearch:simulated-sensor-mountingPosition-front-mid a skos:Concept ;
+    skos:inScheme nlsearch:simulated-sensorScheme ;
+    skos:prefLabel "Front-mid"@en ;
+    nlsearch:ontologyProperty simulated-sensor:mountingPosition ;
+    nlsearch:ontologyValue "Front-mid" .
+
+nlsearch:simulated-sensor-mountingPosition-front-right a skos:Concept ;
+    skos:inScheme nlsearch:simulated-sensorScheme ;
+    skos:prefLabel "Front-right"@en ;
+    nlsearch:ontologyProperty simulated-sensor:mountingPosition ;
+    nlsearch:ontologyValue "Front-right" .
+
+nlsearch:simulated-sensor-mountingPosition-top-left a skos:Concept ;
+    skos:inScheme nlsearch:simulated-sensorScheme ;
+    skos:prefLabel "Top-left"@en ;
+    nlsearch:ontologyProperty simulated-sensor:mountingPosition ;
+    nlsearch:ontologyValue "Top-left" .
+
+nlsearch:simulated-sensor-mountingPosition-top-mid a skos:Concept ;
+    skos:inScheme nlsearch:simulated-sensorScheme ;
+    skos:prefLabel "Top-mid"@en ;
+    nlsearch:ontologyProperty simulated-sensor:mountingPosition ;
+    nlsearch:ontologyValue "Top-mid" .
+
+nlsearch:simulated-sensor-mountingPosition-top-right a skos:Concept ;
+    skos:inScheme nlsearch:simulated-sensorScheme ;
+    skos:prefLabel "Top-right"@en ;
+    nlsearch:ontologyProperty simulated-sensor:mountingPosition ;
+    nlsearch:ontologyValue "Top-right" .

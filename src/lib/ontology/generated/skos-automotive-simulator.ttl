@@ -1,0 +1,73 @@
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix nlsearch: <https://w3id.org/ascs-ev/ontology-based-nl-search/concepts/> .
+@prefix automotive-simulator: <https://w3id.org/gaia-x4plcaad/ontologies/automotive-simulator/v2/> .
+
+# ============================================================
+# Auto-generated SKOS concepts for domain: automotive-simulator
+# Generated from SHACL sh:in enumerations via Oxigraph SPARQL.
+# DO NOT EDIT — regenerate with: npm run ontology:generate-skos
+# Manual synonyms go in skos-annotations.ttl (overlay)
+# ============================================================
+
+nlsearch:automotive-simulatorScheme a skos:ConceptScheme ;
+    rdfs:label "automotive-simulator NL Search Vocabulary"@en ;
+    rdfs:comment "Auto-generated SKOS concepts for automotive-simulator ontology domain."@en .
+
+# --- interface (automotive-simulator:interface) ---
+
+nlsearch:automotive-simulator-interface-pythonapi a skos:Concept ;
+    skos:inScheme nlsearch:automotive-simulatorScheme ;
+    skos:prefLabel "PythonAPI"@en ;
+    nlsearch:ontologyProperty automotive-simulator:interface ;
+    nlsearch:ontologyValue "PythonAPI" .
+
+nlsearch:automotive-simulator-interface-ros1 a skos:Concept ;
+    skos:inScheme nlsearch:automotive-simulatorScheme ;
+    skos:prefLabel "ROS1"@en ;
+    nlsearch:ontologyProperty automotive-simulator:interface ;
+    nlsearch:ontologyValue "ROS1" .
+
+nlsearch:automotive-simulator-interface-ros2 a skos:Concept ;
+    skos:inScheme nlsearch:automotive-simulatorScheme ;
+    skos:prefLabel "ROS2"@en ;
+    nlsearch:ontologyProperty automotive-simulator:interface ;
+    nlsearch:ontologyValue "ROS2" .
+
+nlsearch:automotive-simulator-interface-tcp a skos:Concept ;
+    skos:inScheme nlsearch:automotive-simulatorScheme ;
+    skos:prefLabel "TCP"@en ;
+    nlsearch:ontologyProperty automotive-simulator:interface ;
+    nlsearch:ontologyValue "TCP" .
+
+nlsearch:automotive-simulator-interface-udp a skos:Concept ;
+    skos:inScheme nlsearch:automotive-simulatorScheme ;
+    skos:prefLabel "UDP"@en ;
+    nlsearch:ontologyProperty automotive-simulator:interface ;
+    nlsearch:ontologyValue "UDP" .
+
+# --- scenario definition (automotive-simulator:scenarioDefinition) ---
+
+nlsearch:automotive-simulator-scenarioDefinition-asam-openscenario-1-x a skos:Concept ;
+    skos:inScheme nlsearch:automotive-simulatorScheme ;
+    skos:prefLabel "ASAM OpenSCENARIO 1.x"@en ;
+    nlsearch:ontologyProperty automotive-simulator:scenarioDefinition ;
+    nlsearch:ontologyValue "ASAM OpenSCENARIO 1.x" .
+
+nlsearch:automotive-simulator-scenarioDefinition-asam-openscenario-2-x a skos:Concept ;
+    skos:inScheme nlsearch:automotive-simulatorScheme ;
+    skos:prefLabel "ASAM OpenSCENARIO 2.x"@en ;
+    nlsearch:ontologyProperty automotive-simulator:scenarioDefinition ;
+    nlsearch:ontologyValue "ASAM OpenSCENARIO 2.x" .
+
+nlsearch:automotive-simulator-scenarioDefinition-proprietary a skos:Concept ;
+    skos:inScheme nlsearch:automotive-simulatorScheme ;
+    skos:prefLabel "proprietary"@en ;
+    nlsearch:ontologyProperty automotive-simulator:scenarioDefinition ;
+    nlsearch:ontologyValue "proprietary" .
+
+nlsearch:automotive-simulator-scenarioDefinition-scenic a skos:Concept ;
+    skos:inScheme nlsearch:automotive-simulatorScheme ;
+    skos:prefLabel "scenic"@en ;
+    nlsearch:ontologyProperty automotive-simulator:scenarioDefinition ;
+    nlsearch:ontologyValue "scenic" .

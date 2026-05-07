@@ -1,0 +1,61 @@
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix nlsearch: <https://w3id.org/ascs-ev/ontology-based-nl-search/concepts/> .
+@prefix environment-model: <https://w3id.org/ascs-ev/envited-x/environment-model/v5/> .
+
+# ============================================================
+# Auto-generated SKOS concepts for domain: environment-model
+# Generated from SHACL sh:in enumerations via Oxigraph SPARQL.
+# DO NOT EDIT — regenerate with: npm run ontology:generate-skos
+# Manual synonyms go in skos-annotations.ttl (overlay)
+# ============================================================
+
+nlsearch:environment-modelScheme a skos:ConceptScheme ;
+    rdfs:label "environment-model NL Search Vocabulary"@en ;
+    rdfs:comment "Auto-generated SKOS concepts for environment-model ontology domain."@en .
+
+# --- detail level (environment-model:detailLevel) ---
+
+nlsearch:environment-model-detailLevel-high a skos:Concept ;
+    skos:inScheme nlsearch:environment-modelScheme ;
+    skos:prefLabel "High"@en ;
+    nlsearch:ontologyProperty environment-model:detailLevel ;
+    nlsearch:ontologyValue "High" .
+
+nlsearch:environment-model-detailLevel-low a skos:Concept ;
+    skos:inScheme nlsearch:environment-modelScheme ;
+    skos:prefLabel "Low"@en ;
+    nlsearch:ontologyProperty environment-model:detailLevel ;
+    nlsearch:ontologyValue "Low" .
+
+nlsearch:environment-model-detailLevel-medium a skos:Concept ;
+    skos:inScheme nlsearch:environment-modelScheme ;
+    skos:prefLabel "Medium"@en ;
+    nlsearch:ontologyProperty environment-model:detailLevel ;
+    nlsearch:ontologyValue "Medium" .
+
+# --- format type (environment-model:formatType) ---
+
+nlsearch:environment-model-formatType-autodesk-fbx a skos:Concept ;
+    skos:inScheme nlsearch:environment-modelScheme ;
+    skos:prefLabel "Autodesk FBX"@en ;
+    nlsearch:ontologyProperty environment-model:formatType ;
+    nlsearch:ontologyValue "Autodesk FBX" .
+
+nlsearch:environment-model-formatType-openscenegraph a skos:Concept ;
+    skos:inScheme nlsearch:environment-modelScheme ;
+    skos:prefLabel "OpenSceneGraph"@en ;
+    nlsearch:ontologyProperty environment-model:formatType ;
+    nlsearch:ontologyValue "OpenSceneGraph" .
+
+nlsearch:environment-model-formatType-unreal-datasmith a skos:Concept ;
+    skos:inScheme nlsearch:environment-modelScheme ;
+    skos:prefLabel "Unreal Datasmith"@en ;
+    nlsearch:ontologyProperty environment-model:formatType ;
+    nlsearch:ontologyValue "Unreal Datasmith" .
+
+nlsearch:environment-model-formatType-gltf a skos:Concept ;
+    skos:inScheme nlsearch:environment-modelScheme ;
+    skos:prefLabel "glTF"@en ;
+    nlsearch:ontologyProperty environment-model:formatType ;
+    nlsearch:ontologyValue "glTF" .

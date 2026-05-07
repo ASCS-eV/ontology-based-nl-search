@@ -16,7 +16,7 @@
  *
  * @see https://www.w3.org/TR/skos-reference/
  */
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
 
 import { lookupGlossaryBatch } from './glossary'
@@ -80,6 +80,7 @@ let labelIndex: Map<string, string> | null = null
 
 /**
  * Get SKOS annotation file paths from ontology-sources.json config.
+ * Supports both individual files and directories (scans for *.ttl).
  */
 function getSkosFilePaths(): string[] {
   const configPath = join(process.cwd(), 'ontology-sources.json')
@@ -88,7 +89,25 @@ function getSkosFilePaths(): string[] {
     try {
       const config = JSON.parse(readFileSync(configPath, 'utf-8'))
       const skos = config.skos || []
-      return skos.map((s: { path: string }) => join(process.cwd(), s.path))
+      const paths: string[] = []
+
+      for (const entry of skos) {
+        const fullPath = join(process.cwd(), entry.path)
+        if (entry.directory) {
+          // Scan directory for all .ttl files
+          if (existsSync(fullPath) && statSync(fullPath).isDirectory()) {
+            for (const file of readdirSync(fullPath)) {
+              if (file.endsWith('.ttl')) {
+                paths.push(join(fullPath, file))
+              }
+            }
+          }
+        } else {
+          paths.push(fullPath)
+        }
+      }
+
+      return paths
     } catch {
       // Fall through to default
     }

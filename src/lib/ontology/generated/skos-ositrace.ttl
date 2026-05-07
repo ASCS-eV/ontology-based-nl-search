@@ -1,0 +1,387 @@
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix nlsearch: <https://w3id.org/ascs-ev/ontology-based-nl-search/concepts/> .
+@prefix ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/> .
+
+# ============================================================
+# Auto-generated SKOS concepts for domain: ositrace
+# Generated from SHACL sh:in enumerations via Oxigraph SPARQL.
+# DO NOT EDIT — regenerate with: npm run ontology:generate-skos
+# Manual synonyms go in skos-annotations.ttl (overlay)
+# ============================================================
+
+nlsearch:ositraceScheme a skos:ConceptScheme ;
+    rdfs:label "ositrace NL Search Vocabulary"@en ;
+    rdfs:comment "Auto-generated SKOS concepts for ositrace ontology domain."@en .
+
+# --- compression (ositrace:compression) ---
+
+nlsearch:ositrace-compression-lz4 a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "lz4"@en ;
+    nlsearch:ontologyProperty ositrace:compression ;
+    nlsearch:ontologyValue "lz4" .
+
+nlsearch:ositrace-compression-uncompressed a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "uncompressed"@en ;
+    nlsearch:ontologyProperty ositrace:compression ;
+    nlsearch:ontologyValue "uncompressed" .
+
+nlsearch:ositrace-compression-zstd a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "zstd"@en ;
+    nlsearch:ontologyProperty ositrace:compression ;
+    nlsearch:ontologyValue "zstd" .
+
+# --- file format (ositrace:fileFormat) ---
+
+nlsearch:ositrace-fileFormat-mcap a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "MCAP"@en ;
+    nlsearch:ontologyProperty ositrace:fileFormat ;
+    nlsearch:ontologyValue "MCAP" .
+
+# --- type (ositrace:formatType) ---
+
+nlsearch:ositrace-formatType-asam-osi-groundtruth a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "ASAM OSI GroundTruth"@en ;
+    nlsearch:ontologyProperty ositrace:formatType ;
+    nlsearch:ontologyValue "ASAM OSI GroundTruth" .
+
+nlsearch:ositrace-formatType-asam-osi-sensordata a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "ASAM OSI SensorData"@en ;
+    nlsearch:ontologyProperty ositrace:formatType ;
+    nlsearch:ontologyValue "ASAM OSI SensorData" .
+
+nlsearch:ositrace-formatType-asam-osi-sensorview a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "ASAM OSI SensorView"@en ;
+    nlsearch:ontologyProperty ositrace:formatType ;
+    nlsearch:ontologyValue "ASAM OSI SensorView" .
+
+# --- granularity (ositrace:granularity) ---
+
+nlsearch:ositrace-granularity-detection-list a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "detection list"@en ;
+    nlsearch:ontologyProperty ositrace:granularity ;
+    nlsearch:ontologyValue "detection list" .
+
+nlsearch:ositrace-granularity-object-list a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "object list"@en ;
+    nlsearch:ontologyProperty ositrace:granularity ;
+    nlsearch:ontologyValue "object list" .
+
+# --- lane types (ositrace:laneTypes) ---
+
+nlsearch:ositrace-laneTypes-biking a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "biking"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "biking" .
+
+nlsearch:ositrace-laneTypes-border a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "border"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "border" .
+
+nlsearch:ositrace-laneTypes-connectingramp a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "connectingRamp"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "connectingRamp" .
+
+nlsearch:ositrace-laneTypes-curb a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "curb"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "curb" .
+
+nlsearch:ositrace-laneTypes-driving a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "driving"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "driving" .
+
+nlsearch:ositrace-laneTypes-entry a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "entry"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "entry" .
+
+nlsearch:ositrace-laneTypes-exit a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "exit"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "exit" .
+
+nlsearch:ositrace-laneTypes-median a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "median"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "median" .
+
+nlsearch:ositrace-laneTypes-none a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "none"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "none" .
+
+nlsearch:ositrace-laneTypes-offramp a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "offRamp"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "offRamp" .
+
+nlsearch:ositrace-laneTypes-onramp a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "onRamp"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "onRamp" .
+
+nlsearch:ositrace-laneTypes-parking a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "parking"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "parking" .
+
+nlsearch:ositrace-laneTypes-restricted a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "restricted"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "restricted" .
+
+nlsearch:ositrace-laneTypes-shoulder a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "shoulder"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "shoulder" .
+
+nlsearch:ositrace-laneTypes-sliplane a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "slipLane"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "slipLane" .
+
+nlsearch:ositrace-laneTypes-stop a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "stop"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "stop" .
+
+nlsearch:ositrace-laneTypes-walking a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "walking"@en ;
+    nlsearch:ontologyProperty ositrace:laneTypes ;
+    nlsearch:ontologyValue "walking" .
+
+# --- level of detail (ositrace:levelOfDetail) ---
+
+nlsearch:ositrace-levelOfDetail-barrier a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "barrier"@en ;
+    nlsearch:ontologyProperty ositrace:levelOfDetail ;
+    nlsearch:ontologyValue "barrier" .
+
+nlsearch:ositrace-levelOfDetail-bike a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "bike"@en ;
+    nlsearch:ontologyProperty ositrace:levelOfDetail ;
+    nlsearch:ontologyValue "bike" .
+
+nlsearch:ositrace-levelOfDetail-building a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "building"@en ;
+    nlsearch:ontologyProperty ositrace:levelOfDetail ;
+    nlsearch:ontologyValue "building" .
+
+nlsearch:ositrace-levelOfDetail-bus a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "bus"@en ;
+    nlsearch:ontologyProperty ositrace:levelOfDetail ;
+    nlsearch:ontologyValue "bus" .
+
+nlsearch:ositrace-levelOfDetail-car a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "car"@en ;
+    nlsearch:ontologyProperty ositrace:levelOfDetail ;
+    nlsearch:ontologyValue "car" .
+
+nlsearch:ositrace-levelOfDetail-crosswalk a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "crosswalk"@en ;
+    nlsearch:ontologyProperty ositrace:levelOfDetail ;
+    nlsearch:ontologyValue "crosswalk" .
+
+nlsearch:ositrace-levelOfDetail-gantry a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "gantry"@en ;
+    nlsearch:ontologyProperty ositrace:levelOfDetail ;
+    nlsearch:ontologyValue "gantry" .
+
+nlsearch:ositrace-levelOfDetail-motorbike a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "motorbike"@en ;
+    nlsearch:ontologyProperty ositrace:levelOfDetail ;
+    nlsearch:ontologyValue "motorbike" .
+
+# --- message type (ositrace:messageType) ---
+
+nlsearch:ositrace-messageType-groundtruth a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "GroundTruth"@en ;
+    nlsearch:ontologyProperty ositrace:messageType ;
+    nlsearch:ontologyValue "GroundTruth" .
+
+nlsearch:ositrace-messageType-hostvehicledata a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "HostVehicleData"@en ;
+    nlsearch:ontologyProperty ositrace:messageType ;
+    nlsearch:ontologyValue "HostVehicleData" .
+
+nlsearch:ositrace-messageType-motionrequest a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "MotionRequest"@en ;
+    nlsearch:ontologyProperty ositrace:messageType ;
+    nlsearch:ontologyValue "MotionRequest" .
+
+nlsearch:ositrace-messageType-sensordata a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "SensorData"@en ;
+    nlsearch:ontologyProperty ositrace:messageType ;
+    nlsearch:ontologyValue "SensorData" .
+
+nlsearch:ositrace-messageType-sensorview a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "SensorView"@en ;
+    nlsearch:ontologyProperty ositrace:messageType ;
+    nlsearch:ontologyValue "SensorView" .
+
+nlsearch:ositrace-messageType-sensorviewconfiguration a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "SensorViewConfiguration"@en ;
+    nlsearch:ontologyProperty ositrace:messageType ;
+    nlsearch:ontologyValue "SensorViewConfiguration" .
+
+nlsearch:ositrace-messageType-streamingupdate a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "StreamingUpdate"@en ;
+    nlsearch:ontologyProperty ositrace:messageType ;
+    nlsearch:ontologyValue "StreamingUpdate" .
+
+nlsearch:ositrace-messageType-trafficcommand a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "TrafficCommand"@en ;
+    nlsearch:ontologyProperty ositrace:messageType ;
+    nlsearch:ontologyValue "TrafficCommand" .
+
+nlsearch:ositrace-messageType-trafficcommandupdate a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "TrafficCommandUpdate"@en ;
+    nlsearch:ontologyProperty ositrace:messageType ;
+    nlsearch:ontologyValue "TrafficCommandUpdate" .
+
+nlsearch:ositrace-messageType-trafficupdate a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "TrafficUpdate"@en ;
+    nlsearch:ontologyProperty ositrace:messageType ;
+    nlsearch:ontologyValue "TrafficUpdate" .
+
+# --- road types (ositrace:roadTypes) ---
+
+nlsearch:ositrace-roadTypes-bicycle a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "bicycle"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "bicycle" .
+
+nlsearch:ositrace-roadTypes-lowspeed a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "lowSpeed"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "lowSpeed" .
+
+nlsearch:ositrace-roadTypes-motorway a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "motorway"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "motorway" .
+
+nlsearch:ositrace-roadTypes-pedestrian a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "pedestrian"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "pedestrian" .
+
+nlsearch:ositrace-roadTypes-rural a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "rural"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "rural" .
+
+nlsearch:ositrace-roadTypes-town a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "town"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "town" .
+
+nlsearch:ositrace-roadTypes-townarterial a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "townArterial"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "townArterial" .
+
+nlsearch:ositrace-roadTypes-towncollector a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "townCollector"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "townCollector" .
+
+nlsearch:ositrace-roadTypes-townexpressway a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "townExpressway"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "townExpressway" .
+
+nlsearch:ositrace-roadTypes-townlocal a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "townLocal"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "townLocal" .
+
+nlsearch:ositrace-roadTypes-townplaystreet a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "townPlayStreet"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "townPlayStreet" .
+
+nlsearch:ositrace-roadTypes-townprivate a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "townPrivate"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "townPrivate" .
+
+nlsearch:ositrace-roadTypes-unknown a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "unknown"@en ;
+    nlsearch:ontologyProperty ositrace:roadTypes ;
+    nlsearch:ontologyValue "unknown" .
+
+# --- traffic direction (ositrace:trafficDirection) ---
+
+nlsearch:ositrace-trafficDirection-left-hand a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "left-hand"@en ;
+    nlsearch:ontologyProperty ositrace:trafficDirection ;
+    nlsearch:ontologyValue "left-hand" .
+
+nlsearch:ositrace-trafficDirection-right-hand a skos:Concept ;
+    skos:inScheme nlsearch:ositraceScheme ;
+    skos:prefLabel "right-hand"@en ;
+    nlsearch:ontologyProperty ositrace:trafficDirection ;
+    nlsearch:ontologyValue "right-hand" .
