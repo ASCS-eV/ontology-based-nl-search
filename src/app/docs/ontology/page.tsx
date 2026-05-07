@@ -1,197 +1,111 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 import { Mermaid } from '@/components/Mermaid'
+import { Slide, SlideControls, SlideDeck, SlideProvider } from '@/components/slides'
 
-export default function DocsOntology() {
+const TOTAL_SLIDES = 4
+
+export default function OntologyPresentation() {
+  const router = useRouter()
+
   return (
-    <>
-      <h1>Ontology Integration</h1>
-      <p>
-        The system uses the <strong>ENVITED-X hdmap v6</strong> ontology from the{' '}
-        <a
-          href="https://github.com/ASCS-eV/ontology-management-base"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          ontology-management-base
-        </a>{' '}
-        repository as the knowledge schema for interpreting user queries.
-      </p>
+    <SlideProvider totalSlides={TOTAL_SLIDES} onComplete={() => router.push('/docs/agent')}>
+      <SlideDeck>
+        <Slide index={0} variant="title">
+          <h1 className="text-4xl font-bold text-gray-900">Ontology Model</h1>
+          <p className="mt-4 text-lg text-gray-500">
+            ENVITED-X: A modular ontology for simulation asset metadata
+          </p>
+        </Slide>
 
-      <h2>Class Hierarchy</h2>
-      <Mermaid
-        chart={`graph TD
-    HM[hdmap:HdMap] --> RD[envited-x:ResourceDescription]
-    HM --> DS[hdmap:DomainSpecification]
-    DS --> FMT[hdmap:Format]
-    DS --> CNT[hdmap:Content]
-    DS --> QTY[hdmap:Quantity]
-    DS --> QLT[hdmap:Quality]
-    DS --> SRC[hdmap:DataSource]
-    DS --> GEO[georeference:Georeference]
-    GEO --> LOC[georeference:ProjectLocation]
-    LOC --> BB[georeference:BoundingBox]
-    QTY --> SPD[hdmap:Range2D<br/>speedLimit]
+        <Slide index={1}>
+          <h2 className="text-3xl font-bold text-gray-900">Domain Structure</h2>
+          <p className="mt-4 text-gray-600">
+            Each simulation asset type has its own domain ontology with a consistent structure:
+            Asset → Specification → (Content, Format, Quality, Quantity, DataSource, Georeference).
+          </p>
+          <div className="mt-6">
+            <Mermaid
+              chart={`graph TD
+    A["Asset (e.g., HDMap)"] --> DS["hasDomainSpecification"]
+    DS --> C["hasContent<br/>(road types, lanes, ...)"]
+    DS --> F["hasFormat<br/>(OpenDRIVE, lanelet2, ...)"]
+    DS --> Q["hasQuantity<br/>(length, intersections, ...)"]
+    DS --> QL["hasQuality<br/>(accuracy, source, ...)"]
+    DS --> GR["hasGeoreference<br/>(country, region, ...)"]
+    style A fill:#dbeafe,stroke:#3b82f6
+    style DS fill:#f0f9ff,stroke:#798bb3`}
+            />
+          </div>
+        </Slide>
 
-    style HM fill:#848ab7,stroke:#5a6f9f,color:#fff
-    style DS fill:#798bb3,stroke:#5a6f9f,color:#fff
-    style GEO fill:#f0f9ff,stroke:#798bb3`}
-      />
+        <Slide index={2}>
+          <h2 className="text-3xl font-bold text-gray-900">SKOS Vocabularies</h2>
+          <p className="mt-4 text-gray-600">
+            Controlled vocabularies define the valid values for each property. These are what the
+            concept matcher uses to ground user input.
+          </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 text-sm">
+            {[
+              { vocab: 'Road Types', examples: 'motorway, urban, rural, intersection' },
+              { vocab: 'Lane Types', examples: 'driving, parking, sidewalk, biking' },
+              { vocab: 'Formats', examples: 'ASAM OpenDRIVE, lanelet2, road5' },
+              { vocab: 'Traffic Direction', examples: 'left-hand, right-hand' },
+              { vocab: 'Data Sources', examples: 'lidar, camera, surveying' },
+              { vocab: 'Countries', examples: 'DE, US, JP, CN (ISO 3166-1)' },
+            ].map((item) => (
+              <div key={item.vocab} className="rounded-lg border border-gray-200 p-3">
+                <div className="font-medium text-gray-900">{item.vocab}</div>
+                <div className="mt-1 text-gray-500">{item.examples}</div>
+              </div>
+            ))}
+          </div>
+        </Slide>
 
-      <h2>Key Properties</h2>
+        <Slide index={3}>
+          <h2 className="text-3xl font-bold text-gray-900">Multi-Domain Support</h2>
+          <p className="mt-4 text-gray-600">
+            The system supports 13 asset domains. Cross-domain queries are possible where domains
+            reference each other (e.g., a scenario referencing an HD map).
+          </p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {[
+              'hdmap',
+              'scenario',
+              'environment-model',
+              'simulation-model',
+              'simulated-sensor',
+              'surface-model',
+              'ositrace',
+              'survey',
+              'vv-report',
+              'service',
+              'automotive-simulator',
+              'leakage-test',
+              'tzip21',
+            ].map((domain) => (
+              <span
+                key={domain}
+                className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
+              >
+                {domain}
+              </span>
+            ))}
+          </div>
+          <div className="mt-6">
+            <Mermaid
+              chart={`graph LR
+    SC["Scenario"] -->|"hasReferencedArtifacts"| HD["HD Map"]
+    SC -->|"hasReferencedArtifacts"| EM["Environment Model"]
+    style SC fill:#848ab7,stroke:#5a6f9f,color:#fff`}
+            />
+          </div>
+        </Slide>
+      </SlideDeck>
 
-      <h3>Content Properties</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Property</th>
-            <th>Allowed Values</th>
-            <th>NL Mapping</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <code>hdmap:roadTypes</code>
-            </td>
-            <td>motorway, rural, town, motorway_entry, custom</td>
-            <td>&quot;highway&quot; → motorway, &quot;city&quot; → town</td>
-          </tr>
-          <tr>
-            <td>
-              <code>hdmap:laneTypes</code>
-            </td>
-            <td>driving, shoulder, biking, walking, bus, parking, emergency</td>
-            <td>&quot;bike lane&quot; → biking</td>
-          </tr>
-          <tr>
-            <td>
-              <code>hdmap:trafficDirection</code>
-            </td>
-            <td>right-hand, left-hand</td>
-            <td>&quot;UK roads&quot; → left-hand</td>
-          </tr>
-          <tr>
-            <td>
-              <code>hdmap:levelOfDetail</code>
-            </td>
-            <td>lane, pole, crosswalk, flat-marking, wall, curb</td>
-            <td>&quot;detailed&quot; → crosswalk or pole</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3>Format Properties</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Property</th>
-            <th>Allowed Values</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <code>hdmap:formatType</code>
-            </td>
-            <td>ASAM OpenDRIVE, Lanelet2, NDS.Live, HERE HD Live Map, Shape, Road5</td>
-          </tr>
-          <tr>
-            <td>
-              <code>hdmap:version</code>
-            </td>
-            <td>1.4, 1.5, 1.6, 1.7, 1.8 (OpenDRIVE); 1.0, 1.1 (Lanelet2); etc.</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3>Georeference Properties</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Property</th>
-            <th>Type</th>
-            <th>Example</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <code>georeference:country</code>
-            </td>
-            <td>ISO 3166-1 alpha-2</td>
-            <td>DE, US, JP, GB</td>
-          </tr>
-          <tr>
-            <td>
-              <code>georeference:state</code>
-            </td>
-            <td>ISO 3166-2</td>
-            <td>DE-BY, US-CA</td>
-          </tr>
-          <tr>
-            <td>
-              <code>georeference:city</code>
-            </td>
-            <td>String</td>
-            <td>Munich, Tokyo</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h2>How the Ontology Guides the LLM</h2>
-      <p>
-        The complete vocabulary is embedded in <code>skill.md</code> — the agent&apos;s system
-        prompt. This means the LLM knows:
-      </p>
-      <ol>
-        <li>
-          All valid property paths (e.g., <code>hdmap:hasContent/hdmap:roadTypes</code>)
-        </li>
-        <li>All allowed values for each property</li>
-        <li>Natural language → ontology term mappings</li>
-        <li>The SPARQL patterns needed to query each property</li>
-      </ol>
-
-      <h2>Example Triple</h2>
-      <pre>
-        <code>{`<did:web:provider1.net:HdMap:munich-highway-001> a hdmap:HdMap ;
-  rdfs:label "Munich Highway HD Map"@en ;
-  hdmap:hasDomainSpecification [
-    a hdmap:DomainSpecification ;
-    hdmap:hasFormat [
-      a hdmap:Format ;
-      hdmap:formatType "ASAM OpenDRIVE" ;
-      hdmap:version "1.6"
-    ] ;
-    hdmap:hasContent [
-      a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving" , "shoulder" ;
-      hdmap:trafficDirection "right-hand"
-    ]
-  ] .`}</code>
-      </pre>
-
-      <h2>Ontology Gap Detection</h2>
-      <p>
-        When users search for concepts not in the ontology (e.g., &quot;roundabout with cats&quot;),
-        the system identifies these gaps and reports them. This provides valuable feedback for
-        ontology evolution — highlighting what real users expect but the schema doesn&apos;t yet
-        cover.
-      </p>
-
-      <Mermaid
-        chart={`graph LR
-    U[User Query] --> M{Mapped?}
-    M -->|Yes| T[Ontology Term<br/>+ Confidence]
-    M -->|No| G[Gap Detected<br/>+ Suggestion]
-    G --> F[Feedback for<br/>Ontology Improvement]
-
-    style T fill:#f0fdf4,stroke:#22c55e
-    style G fill:#fef3c7,stroke:#f59e0b
-    style F fill:#f0f9ff,stroke:#798bb3`}
-      />
-    </>
+      <SlideControls />
+    </SlideProvider>
   )
 }

@@ -1,136 +1,124 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 import { Mermaid } from '@/components/Mermaid'
+import { Slide, SlideControls, SlideDeck, SlideProvider } from '@/components/slides'
 
-export default function DocsFlow() {
+const TOTAL_SLIDES = 5
+
+export default function FlowPresentation() {
+  const router = useRouter()
+
   return (
-    <>
-      <h1>Query Flow</h1>
-      <p>
-        When a user submits a natural language query, it passes through a multi-step agentic
-        pipeline before results are returned.
-      </p>
+    <SlideProvider totalSlides={TOTAL_SLIDES} onComplete={() => router.push('/docs/ontology')}>
+      <SlideDeck>
+        <Slide index={0} variant="title">
+          <h1 className="text-4xl font-bold text-gray-900">Query Flow</h1>
+          <p className="mt-4 text-lg text-gray-500">
+            From &quot;motorway maps in Germany&quot; to SPARQL results in milliseconds
+          </p>
+        </Slide>
 
-      <h2>Sequence Diagram</h2>
-      <Mermaid
-        chart={`sequenceDiagram
-    participant U as User
-    participant UI as React UI
-    participant API as /api/search
-    participant Agent as LLM Agent
-    participant LLM as AI Model
-    participant Val as validate_sparql
-    participant Exec as execute_sparql
-    participant Sub as submit_answer
+        <Slide index={1}>
+          <h2 className="text-3xl font-bold text-gray-900">Step 1: Concept Matching</h2>
+          <p className="mt-4 text-gray-600">
+            Before the LLM runs, we extract known ontology concepts from the query using SKOS
+            vocabulary matching. This provides grounding and context for the agent.
+          </p>
+          <div className="mt-6 rounded-lg bg-gray-50 p-4 font-mono text-sm">
+            <div className="text-gray-500"># Input</div>
+            <div className="text-gray-900">
+              &quot;motorway HD maps in Germany with OpenDRIVE&quot;
+            </div>
+            <div className="mt-3 text-gray-500"># Matched concepts</div>
+            <div className="text-green-700">
+              roadTypes: &quot;motorway&quot; (confidence: high)
+              <br />
+              country: &quot;DE&quot; (confidence: high)
+              <br />
+              formatType: &quot;ASAM OpenDRIVE&quot; (confidence: high)
+            </div>
+          </div>
+        </Slide>
 
-    U->>UI: Types NL query
-    UI->>API: POST {query}
-    API->>Agent: generateStructuredSearch(query)
-    Agent->>LLM: System prompt + user query
+        <Slide index={2}>
+          <h2 className="text-3xl font-bold text-gray-900">Step 2: LLM Slot Filling</h2>
+          <p className="mt-4 text-gray-600">
+            The LLM agent receives pre-matched concepts and fills remaining slots. It uses a single
+            tool — <code className="rounded bg-gray-100 px-1 text-sm">submit_slots</code> — to
+            declare what it found.
+          </p>
+          <div className="mt-6">
+            <Mermaid
+              chart={`graph LR
+    CM["Pre-matched<br/>concepts"] --> AG["LLM Agent"]
+    AG -->|"submit_slots()"| SL["SearchSlots"]
+    SL --> MG["Merge with<br/>pre-matches"]
+    style CM fill:#dcfce7,stroke:#22c55e
+    style AG fill:#848ab7,stroke:#5a6f9f,color:#fff
+    style MG fill:#dbeafe,stroke:#3b82f6`}
+            />
+          </div>
+          <p className="mt-4 text-sm text-gray-500">
+            The agent runs with a step limit of 3 — it must decide quickly. Pre-extraction means it
+            rarely needs more than one tool call.
+          </p>
+        </Slide>
 
-    Note over LLM: Agent reads skill.md with<br/>full ontology vocabulary
+        <Slide index={3}>
+          <h2 className="text-3xl font-bold text-gray-900">Step 3: Compilation &amp; Execution</h2>
+          <p className="mt-4 text-gray-600">
+            Filled slots are compiled into SPARQL using the domain registry. The compiler resolves
+            property IRIs, builds graph patterns, and generates filters.
+          </p>
+          <div className="mt-6 rounded-lg bg-gray-900 p-4 text-sm text-gray-100 overflow-x-auto">
+            <pre>{`PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v4.0/>
+PREFIX geo:   <https://w3id.org/ascs-ev/envited-x/georeference/v4.0/>
 
-    LLM->>Val: tool call: validate_sparql(query)
-    Val-->>LLM: {valid: true, variables: [...]}
+SELECT ?asset ?name ?roadTypes ?country
+WHERE {
+  ?asset a hdmap:HDMap ;
+         hdmap:hasContent/hdmap:roadTypes ?roadTypes ;
+         geo:hasGeoreference/geo:country ?country .
+  FILTER(?roadTypes = "motorway")
+  FILTER(?country = "DE")
+}
+LIMIT 500`}</pre>
+          </div>
+        </Slide>
 
-    LLM->>Exec: tool call: execute_sparql(query)
-    Exec-->>LLM: {results: [...], count: N}
+        <Slide index={4}>
+          <h2 className="text-3xl font-bold text-gray-900">Step 4: Streaming Response</h2>
+          <p className="mt-4 text-gray-600">Results stream progressively via Server-Sent Events:</p>
+          <div className="mt-6 space-y-2 text-sm">
+            {[
+              { event: 'status', desc: 'Phase indicator (interpreting → executing)' },
+              { event: 'interpretation', desc: 'Mapped terms with confidence levels' },
+              { event: 'gaps', desc: 'Concepts not found in ontology (with suggestions)' },
+              { event: 'sparql', desc: 'Generated query for transparency' },
+              { event: 'results', desc: 'Matching assets as structured rows' },
+              { event: 'meta', desc: 'Timing, counts, request ID' },
+            ].map((item) => (
+              <div
+                key={item.event}
+                className="flex items-center gap-3 rounded border border-gray-100 p-2"
+              >
+                <code className="w-28 flex-shrink-0 rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+                  {item.event}
+                </code>
+                <span className="text-gray-600">{item.desc}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-gray-500">
+            The UI renders each phase as it arrives — users see interpretation immediately while
+            SPARQL execution happens in the background.
+          </p>
+        </Slide>
+      </SlideDeck>
 
-    LLM->>Sub: tool call: submit_answer(structured)
-    Sub-->>Agent: Final structured response
-
-    Agent-->>API: SearchResponse
-    API-->>UI: JSON response
-    UI-->>U: Render interpretation + results`}
-      />
-
-      <h2>Step-by-Step Breakdown</h2>
-
-      <h3>1. Query Submission</h3>
-      <p>
-        The user types a query like{' '}
-        <em>&quot;German highway with 3 lanes in OpenDRIVE format&quot;</em>. The React frontend
-        sends this to the API route.
-      </p>
-
-      <h3>2. Agent Initialization</h3>
-      <p>
-        The agent loads <code>skill.md</code> as the system prompt. This contains the complete hdmap
-        v6 vocabulary — all property paths, allowed values, and natural language mapping hints. This
-        eliminates the need for a separate &quot;lookup&quot; step.
-      </p>
-
-      <h3>3. SPARQL Generation &amp; Validation</h3>
-      <p>
-        The LLM generates a SPARQL query based on its understanding of the ontology and calls{' '}
-        <code>validate_sparql</code>. The sparqljs parser checks syntax. If invalid, the LLM gets
-        error feedback and retries.
-      </p>
-
-      <h3>4. Query Execution</h3>
-      <p>
-        Once validated, <code>execute_sparql</code> runs the query against the Oxigraph store and
-        returns matching triples.
-      </p>
-
-      <h3>5. Structured Answer</h3>
-      <p>
-        The LLM calls <code>submit_answer</code> with the final structured response including:
-      </p>
-      <ul>
-        <li>Mapped terms (user concept → ontology property, with confidence)</li>
-        <li>Ontology gaps (concepts not found in schema)</li>
-        <li>The validated SPARQL query</li>
-        <li>Formatted results</li>
-      </ul>
-
-      <h2>Error Handling</h2>
-      <Mermaid
-        chart={`stateDiagram-v2
-    [*] --> GenerateSPARQL
-    GenerateSPARQL --> Validate
-    Validate --> Execute: valid
-    Validate --> GenerateSPARQL: invalid (retry)
-    Execute --> Submit: results
-    Execute --> Submit: empty results
-    Submit --> [*]
-
-    note right of Validate: sparqljs parser\\nchecks syntax
-    note right of Execute: Oxigraph WASM\\nruns SPARQL 1.1`}
-      />
-
-      <h2>Performance Characteristics</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Step</th>
-            <th>Typical Duration</th>
-            <th>Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>LLM inference (per step)</td>
-            <td>3–8s</td>
-            <td>Depends on model and provider</td>
-          </tr>
-          <tr>
-            <td>SPARQL validation</td>
-            <td>&lt;5ms</td>
-            <td>Local sparqljs parse</td>
-          </tr>
-          <tr>
-            <td>SPARQL execution</td>
-            <td>&lt;50ms</td>
-            <td>Oxigraph WASM, 100 assets</td>
-          </tr>
-          <tr>
-            <td>Total (optimized, 2 steps)</td>
-            <td>8–15s</td>
-            <td>validate + submit</td>
-          </tr>
-        </tbody>
-      </table>
-    </>
+      <SlideControls />
+    </SlideProvider>
   )
 }

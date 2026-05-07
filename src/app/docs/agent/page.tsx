@@ -1,145 +1,109 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 import { Mermaid } from '@/components/Mermaid'
+import { Slide, SlideControls, SlideDeck, SlideProvider } from '@/components/slides'
 
-export default function DocsAgent() {
+const TOTAL_SLIDES = 4
+
+export default function AgentPresentation() {
+  const router = useRouter()
+
   return (
-    <>
-      <h1>Agentic LLM Design</h1>
-      <p>
-        Instead of generating SPARQL as plain text (fragile, unvalidated), we use an{' '}
-        <strong>agentic tool-use pattern</strong> where the LLM communicates exclusively through
-        structured tool calls.
-      </p>
+    <SlideProvider totalSlides={TOTAL_SLIDES} onComplete={() => router.push('/docs/data')}>
+      <SlideDeck>
+        <Slide index={0} variant="title">
+          <h1 className="text-4xl font-bold text-gray-900">Agent Design</h1>
+          <p className="mt-4 text-lg text-gray-500">
+            Constrained tool-use pattern for reliable structured output
+          </p>
+        </Slide>
 
-      <h2>Why Not Naive Prompting?</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Approach</th>
-            <th>Pros</th>
-            <th>Cons</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <strong>Naive text generation</strong>
-            </td>
-            <td>Simple, one LLM call</td>
-            <td>
-              No validation, brittle parsing, hallucinated properties, no structured output
-              guarantee
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <strong>Agentic tool-use ✓</strong>
-            </td>
-            <td>Validated SPARQL, structured output, self-correcting, observable pipeline</td>
-            <td>Multiple LLM calls (2–3 typical)</td>
-          </tr>
-        </tbody>
-      </table>
+        <Slide index={1}>
+          <h2 className="text-3xl font-bold text-gray-900">Single-Tool Agent</h2>
+          <p className="mt-4 text-gray-600">
+            The agent has exactly one tool:{' '}
+            <code className="rounded bg-gray-100 px-1 text-sm">submit_slots</code>. This constrains
+            the LLM to produce valid, typed search parameters.
+          </p>
+          <div className="mt-6">
+            <Mermaid
+              chart={`sequenceDiagram
+    participant S as System
+    participant L as LLM
+    participant T as submit_slots
 
-      <h2>Tool-Use Architecture</h2>
-      <Mermaid
-        chart={`stateDiagram-v2
-    [*] --> ReadPrompt: User query arrives
-    ReadPrompt --> GenerateQuery: skill.md loaded with vocabulary
-    GenerateQuery --> ValidateSPARQL: LLM calls validate_sparql
+    S->>L: Context + vocabulary + query
+    L->>T: submit_slots({ filters, ranges, location })
+    T-->>S: Validated SearchSlots
+    Note over S: Merge with pre-matched concepts
+    Note over S: Compile to SPARQL`}
+            />
+          </div>
+        </Slide>
 
-    state ValidateSPARQL {
-      [*] --> Parse
-      Parse --> Valid: sparqljs OK
-      Parse --> Invalid: syntax error
-      Invalid --> ReturnError
-    }
+        <Slide index={2}>
+          <h2 className="text-3xl font-bold text-gray-900">Context Engineering</h2>
+          <p className="mt-4 text-gray-600">
+            The system prompt includes the ontology vocabulary so the LLM knows exactly what values
+            are valid. Pre-matched concepts reduce hallucination.
+          </p>
+          <div className="mt-6 space-y-3 text-sm">
+            <div className="rounded border border-gray-200 p-3">
+              <div className="font-mono text-xs text-gray-400">System prompt includes:</div>
+              <ul className="mt-2 space-y-1 text-gray-700">
+                <li>✓ Domain vocabulary (all valid enum values)</li>
+                <li>✓ Property descriptions and constraints</li>
+                <li>✓ Pre-extracted concept matches (already grounded)</li>
+                <li>✓ Instructions to use submit_slots tool</li>
+              </ul>
+            </div>
+            <div className="rounded border border-green-200 bg-green-50 p-3">
+              <div className="text-green-800">
+                <strong>Step limit: 3</strong> — The agent must decide quickly. With pre-extraction,
+                most queries need only 1 tool call.
+              </div>
+            </div>
+          </div>
+        </Slide>
 
-    ValidateSPARQL --> ExecuteQuery: valid
-    ValidateSPARQL --> GenerateQuery: invalid (retry)
-    ExecuteQuery --> SubmitAnswer: results available
-    SubmitAnswer --> [*]: structured response returned`}
-      />
+        <Slide index={3}>
+          <h2 className="text-3xl font-bold text-gray-900">Provider Flexibility</h2>
+          <p className="mt-4 text-gray-600">
+            The agent works with multiple LLM providers through the Vercel AI SDK:
+          </p>
+          <div className="mt-6 space-y-3">
+            {[
+              { provider: 'OpenAI', desc: 'GPT-4o / GPT-4o-mini — best quality, cloud-hosted' },
+              {
+                provider: 'Ollama',
+                desc: 'Local models (Llama, Mistral) — privacy-first, no API costs',
+              },
+              {
+                provider: 'GitHub Copilot',
+                desc: 'Native Copilot SDK integration for enterprise contexts',
+              },
+            ].map((item) => (
+              <div
+                key={item.provider}
+                className="flex items-start gap-3 rounded border border-gray-200 p-3"
+              >
+                <span className="w-32 flex-shrink-0 font-medium text-gray-900">
+                  {item.provider}
+                </span>
+                <span className="text-sm text-gray-600">{item.desc}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-gray-500">
+            Configured via the AI_PROVIDER environment variable. Same agent logic, different model
+            backends.
+          </p>
+        </Slide>
+      </SlideDeck>
 
-      <h2>The Tools</h2>
-
-      <h3>
-        <code>validate_sparql</code>
-      </h3>
-      <p>
-        Parses the SPARQL query using <code>sparqljs</code> (SPARQL 1.1 compliant parser). Returns
-        validity, extracted variables, and error messages if invalid. This is the{' '}
-        <strong>quality gate</strong> — syntactically broken queries never reach the store.
-      </p>
-
-      <h3>
-        <code>execute_sparql</code>
-      </h3>
-      <p>
-        Runs the validated query against the Oxigraph WASM store. Returns result bindings as JSON.
-      </p>
-
-      <h3>
-        <code>submit_answer</code>
-      </h3>
-      <p>
-        The &quot;return&quot; tool. The LLM calls this with the final structured answer
-        (interpretation, gaps, SPARQL, confidence scores). This guarantees a well-typed response
-        regardless of LLM behavior.
-      </p>
-
-      <h3>
-        <code>lookup_ontology_terms</code> (deprecated)
-      </h3>
-      <p>
-        Originally used for the LLM to search the ontology index. Now unnecessary because the full
-        vocabulary is embedded directly in <code>skill.md</code>, saving one LLM round-trip.
-      </p>
-
-      <h2>skill.md — The Agent&apos;s Brain</h2>
-      <p>
-        The system prompt (<code>src/lib/llm/agent/skill.md</code>) contains:
-      </p>
-      <ol>
-        <li>Task description and output format specification</li>
-        <li>Complete ontology vocabulary (all property paths + allowed values)</li>
-        <li>Natural language → ontology term mapping hints</li>
-        <li>SPARQL pattern templates</li>
-        <li>Constraints (never invent properties, always validate first)</li>
-      </ol>
-
-      <div className="not-prose rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-        <p className="text-sm text-yellow-800">
-          <strong>Design decision:</strong> Embedding the full vocabulary in the system prompt adds
-          ~2KB but eliminates one LLM round-trip (the &quot;lookup&quot; step), reducing total
-          latency by 30–50%.
-        </p>
-      </div>
-
-      <h2>Vercel AI SDK Integration</h2>
-      <pre>
-        <code>{`const result = await generateText({
-  model: provider(modelId),
-  system: skillPrompt,
-  prompt: userQuery,
-  tools: { validate_sparql, execute_sparql, submit_answer },
-  toolChoice: 'required',
-  maxSteps: 5,
-})`}</code>
-      </pre>
-      <p>
-        The <code>toolChoice: &apos;required&apos;</code> constraint ensures the LLM never generates
-        raw text — it must always call a tool. This gives us predictable, parseable responses every
-        time.
-      </p>
-
-      <h2>Observability</h2>
-      <p>
-        Every tool call is logged with timing. The response includes{' '}
-        <code>meta.executionTimeMs</code> so users (and developers) can see exactly how long the
-        pipeline took. Future work: OpenTelemetry traces for each agent step.
-      </p>
-    </>
+      <SlideControls />
+    </SlideProvider>
   )
 }
