@@ -16,19 +16,14 @@
  *
  * @see https://www.w3.org/TR/skos-reference/
  */
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
-import { join } from 'path'
-
 import { lookupGlossaryBatch } from './glossary'
+import type { SkosIndex } from './skos-loader'
+import { loadSkosIndex, resetSkosIndex } from './skos-loader'
+import { jaroWinklerDistance } from './string-similarity'
 import { buildVocabularyIndex } from './vocabulary-index'
 
-/** Oxigraph RDF term (subset of RDF/JS Term) */
-interface RdfTerm {
-  value: string
-}
-
-/** Row from an Oxigraph SELECT query */
-type OxigraphRow = Map<string, RdfTerm>
+// Re-export for public API backward compatibility
+export { jaroWinklerDistance } from './string-similarity'
 
 export interface ConceptMatch {
   /** What the user said */
@@ -69,63 +64,6 @@ export interface MatchResult {
   gaps: ConceptGap[]
   /** Remainder of query after removing matched terms */
   remainder: string
-}
-
-/** SKOS concept as extracted from the TTL */
-interface SkosConcept {
-  uri: string
-  prefLabel: string
-  altLabels: string[]
-  ontologyProperty: string
-  /** Domain this concept belongs to (extracted from property IRI) */
-  domain: string
-  ontologyValue: string
-  broader: string[]
-  narrower: string[]
-  related: string[]
-}
-
-/** Cached SKOS store */
-let skosStore: Map<string, SkosConcept> | null = null
-/** Label → concept URI reverse index (all labels lowercased) */
-let labelIndex: Map<string, string> | null = null
-
-/**
- * Get SKOS annotation file paths from ontology-sources.json config.
- * Supports both individual files and directories (scans for *.ttl).
- */
-function getSkosFilePaths(): string[] {
-  const configPath = join(process.cwd(), 'ontology-sources.json')
-
-  if (existsSync(configPath)) {
-    try {
-      const config = JSON.parse(readFileSync(configPath, 'utf-8'))
-      const skos = config.skos || []
-      const paths: string[] = []
-
-      for (const entry of skos) {
-        const fullPath = join(process.cwd(), entry.path)
-        if (entry.directory) {
-          // Scan directory for all .ttl files
-          if (existsSync(fullPath) && statSync(fullPath).isDirectory()) {
-            for (const file of readdirSync(fullPath)) {
-              if (file.endsWith('.ttl')) {
-                paths.push(join(fullPath, file))
-              }
-            }
-          }
-        } else {
-          paths.push(fullPath)
-        }
-      }
-
-      return paths
-    } catch {
-      // Fall through to default
-    }
-  }
-
-  return [join(process.cwd(), 'src', 'lib', 'ontology', 'skos-annotations.ttl')]
 }
 
 /** Stopwords to ignore when tokenizing user queries */
@@ -195,128 +133,15 @@ const STOPWORDS = new Set([
   'much',
 ])
 
-/**
- * Load and index the SKOS concept scheme.
- * Uses Oxigraph to parse the TTL and SPARQL to extract concepts.
- */
-async function loadSkosStore(): Promise<void> {
-  if (skosStore) return
-
-  const oxigraph = await import('oxigraph')
-  const store = new oxigraph.Store()
-
-  const skosPaths = getSkosFilePaths()
-  for (const skosPath of skosPaths) {
-    try {
-      const ttl = readFileSync(skosPath, 'utf-8')
-      store.load(ttl, { format: 'text/turtle' })
-    } catch {
-      // Skip missing SKOS files gracefully
-    }
-  }
-
-  // Extract all concepts with their labels and properties
-  const conceptSparql = `
-    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-    PREFIX nlsearch: <https://w3id.org/ascs-ev/ontology-based-nl-search/concepts/>
-
-    SELECT ?concept ?prefLabel ?ontologyProperty ?ontologyValue WHERE {
-      ?concept a skos:Concept ;
-        skos:prefLabel ?prefLabel ;
-        nlsearch:ontologyProperty ?ontologyProperty ;
-        nlsearch:ontologyValue ?ontologyValue .
-    }
-  `
-
-  const concepts = store.query(conceptSparql) as OxigraphRow[]
-  const conceptMap = new Map<string, SkosConcept>()
-
-  for (const row of concepts) {
-    const uri = row.get('concept')?.value
-    if (!uri || conceptMap.has(uri)) continue
-
-    conceptMap.set(uri, {
-      uri,
-      prefLabel: row.get('prefLabel')?.value || '',
-      altLabels: [],
-      ontologyProperty: extractLocalName(row.get('ontologyProperty')?.value || ''),
-      domain: extractDomainFromIri(row.get('ontologyProperty')?.value || ''),
-      ontologyValue: row.get('ontologyValue')?.value || '',
-      broader: [],
-      narrower: [],
-      related: [],
-    })
-  }
-
-  // Extract altLabels
-  const altLabelSparql = `
-    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-    SELECT ?concept ?altLabel WHERE {
-      ?concept a skos:Concept ;
-        skos:altLabel ?altLabel .
-    }
-  `
-  const altResults = store.query(altLabelSparql) as OxigraphRow[]
-  for (const row of altResults) {
-    const uri = row.get('concept')?.value
-    const label = row.get('altLabel')?.value
-    if (uri && label && conceptMap.has(uri)) {
-      conceptMap.get(uri)!.altLabels.push(label)
-    }
-  }
-
-  // Extract broader/narrower/related relationships
-  const relSparql = `
-    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-    SELECT ?concept ?rel ?target WHERE {
-      ?concept a skos:Concept .
-      VALUES ?relType { skos:broader skos:narrower skos:related }
-      ?concept ?relType ?target .
-      BIND(REPLACE(STR(?relType), ".*#", "") AS ?rel)
-    }
-  `
-  const relResults = store.query(relSparql) as OxigraphRow[]
-  for (const row of relResults) {
-    const uri = row.get('concept')?.value
-    const rel = row.get('rel')?.value
-    const target = row.get('target')?.value
-    if (uri && rel && target && conceptMap.has(uri)) {
-      const concept = conceptMap.get(uri)!
-      if (rel === 'broader') concept.broader.push(target)
-      else if (rel === 'narrower') concept.narrower.push(target)
-      else if (rel === 'related') concept.related.push(target)
-    }
-  }
-
-  // Build label → URI reverse index
-  const index = new Map<string, string>()
-  for (const [uri, concept] of conceptMap) {
-    const addWithVariants = (label: string) => {
-      const lower = label.toLowerCase()
-      index.set(lower, uri)
-      // Add space-separated variant of hyphenated terms (e.g., "lane-change" → "lane change")
-      if (lower.includes('-')) {
-        index.set(lower.replace(/-/g, ' '), uri)
-      }
-    }
-
-    addWithVariants(concept.prefLabel)
-    addWithVariants(concept.ontologyValue)
-    for (const alt of concept.altLabels) {
-      addWithVariants(alt)
-    }
-  }
-
-  skosStore = conceptMap
-  labelIndex = index
-}
+/** Similarity threshold for Jaro-Winkler fuzzy matching */
+const SIMILARITY_THRESHOLD = 0.85
 
 /**
  * Match user natural language query against the ontology vocabulary.
  * Uses SKOS concept scheme for synonym resolution and gap detection.
  */
 export async function matchConcepts(query: string): Promise<MatchResult> {
-  await loadSkosStore()
+  const index = await loadSkosIndex()
   await buildVocabularyIndex()
 
   const matches: ConceptMatch[] = []
@@ -324,14 +149,14 @@ export async function matchConcepts(query: string): Promise<MatchResult> {
   let remainder = query.toLowerCase()
 
   // Phase 1: Try matching multi-word phrases first (longer matches take priority)
-  const allLabels = [...labelIndex!.keys()].sort((a, b) => b.length - a.length)
+  const allLabels = [...index.labelIndex.keys()].sort((a, b) => b.length - a.length)
 
   for (const label of allLabels) {
     if (label.length < 2) continue
     const regex = new RegExp(`\\b${escapeRegex(label)}\\b`, 'i')
     if (regex.test(remainder)) {
-      const conceptUri = labelIndex!.get(label)!
-      const concept = skosStore!.get(conceptUri)
+      const conceptUri = index.labelIndex.get(label)!
+      const concept = index.concepts.get(conceptUri)
       if (concept) {
         const isExact =
           label === concept.prefLabel.toLowerCase() || label === concept.ontologyValue.toLowerCase()
@@ -353,16 +178,14 @@ export async function matchConcepts(query: string): Promise<MatchResult> {
   const remainingWords = remainder.split(/\s+/).filter((w) => w.length > 2 && !STOPWORDS.has(w))
 
   for (const word of remainingWords) {
-    // Check if word matches any concept via related/broader
-    const relatedMatch = findRelatedConcept(word)
+    const relatedMatch = findRelatedConcept(word, index)
     if (relatedMatch) {
       matches.push(relatedMatch)
       remainder = remainder.replace(new RegExp(`\\b${escapeRegex(word)}\\b`, 'i'), ' ').trim()
       continue
     }
 
-    // Check string similarity against all ontology values
-    const similarMatch = findSimilarConcept(word)
+    const similarMatch = findSimilarConcept(word, index)
     if (similarMatch) {
       gaps.push({
         term: word,
@@ -411,23 +234,21 @@ export async function matchConcepts(query: string): Promise<MatchResult> {
   return { matches, gaps, remainder: remainder.replace(/\s+/g, ' ').trim() }
 }
 
+// ─── Private Helpers ──────────────────────────────────────────────────────────
+
 /**
  * Find a concept that is related to the given word via SKOS relationships.
- * For example, "exit" → exitLane concept directly, or "ramp" → connectingRamp.
  */
-function findRelatedConcept(word: string): ConceptMatch | null {
-  if (!skosStore || !labelIndex) return null
-
-  // First check if any concept's related concepts mention this word
-  for (const [, concept] of skosStore) {
+function findRelatedConcept(word: string, index: SkosIndex): ConceptMatch | null {
+  for (const [, concept] of index.concepts) {
     for (const relatedUri of concept.related) {
-      const relatedConcept = skosStore.get(relatedUri)
+      const relatedConcept = index.concepts.get(relatedUri)
       if (relatedConcept) {
         const relLabels = [
           relatedConcept.prefLabel.toLowerCase(),
-          ...relatedConcept.altLabels.map((l) => l.toLowerCase()),
+          ...relatedConcept.altLabels.map((l: string) => l.toLowerCase()),
         ]
-        if (relLabels.some((l) => l === word || l.includes(word))) {
+        if (relLabels.some((l: string) => l === word || l.includes(word))) {
           return {
             input: word,
             property: relatedConcept.ontologyProperty,
@@ -447,31 +268,24 @@ function findRelatedConcept(word: string): ConceptMatch | null {
 
 /**
  * Find the most similar concept using Jaro-Winkler distance.
- * Only returns a match if similarity exceeds threshold (0.85).
- *
- * Jaro-Winkler (Winkler, 1990) is preferred over Levenshtein for
- * short strings because it gives higher scores to strings matching
- * from the beginning, which aligns with how users typically
- * abbreviate or misspell concept names.
+ * Only returns a match if similarity exceeds threshold.
  */
 function findSimilarConcept(
-  word: string
+  word: string,
+  index: SkosIndex
 ): { value: string; property: string; score: number } | null {
-  if (!skosStore) return null
-
-  const THRESHOLD = 0.85
   let bestMatch: { value: string; property: string; score: number } | null = null
 
-  for (const [, concept] of skosStore) {
+  for (const [, concept] of index.concepts) {
     const candidates = [
       concept.prefLabel.toLowerCase(),
       concept.ontologyValue.toLowerCase(),
-      ...concept.altLabels.map((l) => l.toLowerCase()),
+      ...concept.altLabels.map((l: string) => l.toLowerCase()),
     ]
 
     for (const candidate of candidates) {
       const score = jaroWinklerDistance(word, candidate)
-      if (score >= THRESHOLD && (!bestMatch || score > bestMatch.score)) {
+      if (score >= SIMILARITY_THRESHOLD && (!bestMatch || score > bestMatch.score)) {
         bestMatch = {
           value: concept.ontologyValue,
           property: concept.ontologyProperty,
@@ -484,83 +298,11 @@ function findSimilarConcept(
   return bestMatch
 }
 
-/**
- * Jaro-Winkler string similarity distance.
- * Returns a value between 0 (no similarity) and 1 (exact match).
- *
- * Reference: Winkler, W. E. (1990). "String Comparator Metrics and
- * Enhanced Decision Rules in the Fellegi-Sunter Model of Record Linkage."
- */
-export function jaroWinklerDistance(s1: string, s2: string): number {
-  if (s1 === s2) return 1.0
-  if (s1.length === 0 || s2.length === 0) return 0.0
-
-  const matchWindow = Math.max(0, Math.floor(Math.max(s1.length, s2.length) / 2) - 1)
-
-  const s1Matches = new Array(s1.length).fill(false)
-  const s2Matches = new Array(s2.length).fill(false)
-
-  let matches = 0
-  let transpositions = 0
-
-  // Find matching characters
-  for (let i = 0; i < s1.length; i++) {
-    const start = Math.max(0, i - matchWindow)
-    const end = Math.min(i + matchWindow + 1, s2.length)
-
-    for (let j = start; j < end; j++) {
-      if (s2Matches[j] || s1[i] !== s2[j]) continue
-      s1Matches[i] = true
-      s2Matches[j] = true
-      matches++
-      break
-    }
-  }
-
-  if (matches === 0) return 0.0
-
-  // Count transpositions
-  let k = 0
-  for (let i = 0; i < s1.length; i++) {
-    if (!s1Matches[i]) continue
-    while (!s2Matches[k]) k++
-    if (s1[i] !== s2[k]) transpositions++
-    k++
-  }
-
-  const jaro =
-    (matches / s1.length + matches / s2.length + (matches - transpositions / 2) / matches) / 3
-
-  // Winkler modification: boost for common prefix (up to 4 chars)
-  let prefix = 0
-  for (let i = 0; i < Math.min(4, Math.min(s1.length, s2.length)); i++) {
-    if (s1[i] === s2[i]) prefix++
-    else break
-  }
-
-  return jaro + prefix * 0.1 * (1 - jaro)
-}
-
-/** Extract local name from IRI */
-function extractLocalName(iri: string): string {
-  const hashIdx = iri.lastIndexOf('#')
-  const slashIdx = iri.lastIndexOf('/')
-  const idx = Math.max(hashIdx, slashIdx)
-  return idx >= 0 ? iri.substring(idx + 1) : iri
-}
-
-/** Extract domain name from ENVITED-X property IRI (e.g., .../scenario/v6/scenarioCategory → scenario) */
-function extractDomainFromIri(iri: string): string {
-  const match = iri.match(/\/envited-x\/([^/]+)\/v\d+\//)
-  return match?.[1] || 'unknown'
-}
-
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/** Reset caches (for testing) */
+/** Reset all caches (for testing) */
 export function resetConceptMatcher(): void {
-  skosStore = null
-  labelIndex = null
+  resetSkosIndex()
 }

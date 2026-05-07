@@ -5,6 +5,8 @@ import path from 'path'
 // Re-export new ontology-driven modules
 export type { ConceptGap, ConceptMatch, MatchResult } from './concept-matcher'
 export { jaroWinklerDistance, matchConcepts, resetConceptMatcher } from './concept-matcher'
+export type { SkosConcept, SkosIndex } from './skos-loader'
+export { loadSkosIndex, resetSkosIndex } from './skos-loader'
 export type { VocabularyIndex, VocabularyProperty } from './vocabulary-index'
 export { buildVocabularyIndex, resetVocabularyIndex } from './vocabulary-index'
 
