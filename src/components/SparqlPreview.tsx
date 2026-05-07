@@ -17,10 +17,10 @@ export function SparqlPreview({ sparql }: SparqlPreviewProps) {
   }
 
   return (
-    <div className="mt-4 w-full max-w-2xl">
+    <div className="mt-4 w-full">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
+        className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors"
         aria-expanded={expanded}
         aria-controls="sparql-preview"
       >

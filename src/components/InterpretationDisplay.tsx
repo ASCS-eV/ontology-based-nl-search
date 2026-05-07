@@ -6,10 +6,10 @@ interface InterpretationDisplayProps {
 
 function confidenceBadge(confidence: MappedTerm['confidence']) {
   const styles = {
-    high: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700',
+    high: 'bg-green-50 text-green-700 border-green-200',
     medium:
-      'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700',
-    low: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700',
+      'bg-blue-50 text-blue-900 border-blue-100',
+    low: 'bg-red-50 text-red-700 border-red-200',
   }
 
   const icons = { high: '✓', medium: '~', low: '?' }
@@ -29,15 +29,15 @@ export function InterpretationDisplay({
 }: InterpretationDisplayProps) {
   return (
     <div
-      className="mt-4 w-full max-w-2xl"
+      className="w-full"
       role="region"
       aria-label="Query interpretation"
       aria-live="polite"
     >
-      <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
         Interpreted as
       </h2>
-      <p className="text-base text-gray-800 dark:text-gray-200 mb-3">
+      <p className="text-base text-gray-800 mb-3">
         {interpretation.summary}
       </p>
 
@@ -46,18 +46,18 @@ export function InterpretationDisplay({
           {interpretation.mappedTerms.map((term, i) => (
             <div
               key={i}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm"
             >
-              <span className="text-gray-500 dark:text-gray-400 line-through text-xs">
+              <span className="text-gray-400 line-through text-xs">
                 {term.input}
               </span>
-              <span className="text-gray-400 dark:text-gray-500">→</span>
-              <span className="font-medium text-gray-800 dark:text-gray-200">
+              <span className="text-gray-400">→</span>
+              <span className="font-medium text-gray-800">
                 {term.mapped}
               </span>
               {confidenceBadge(term.confidence)}
               {term.property && (
-                <code className="text-xs text-gray-400 dark:text-gray-500 font-mono">
+                <code className="text-xs text-gray-400 font-mono">
                   {term.property}
                 </code>
               )}

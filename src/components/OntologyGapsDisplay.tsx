@@ -9,12 +9,12 @@ export function OntologyGapsDisplay({ gaps }: OntologyGapsDisplayProps) {
 
   return (
     <div
-      className="mt-4 w-full max-w-2xl"
+      className="w-full"
       role="region"
       aria-label="Ontology gaps"
       aria-live="polite"
     >
-      <h2 className="text-sm font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+      <h2 className="text-sm font-semibold text-orange-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
         <svg
           className="w-4 h-4"
           fill="none"
@@ -36,23 +36,23 @@ export function OntologyGapsDisplay({ gaps }: OntologyGapsDisplayProps) {
         {gaps.map((gap, i) => (
           <div
             key={i}
-            className="px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg"
+            className="px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg"
           >
             <div className="flex items-start gap-2">
-              <span className="font-medium text-amber-800 dark:text-amber-200">
+              <span className="font-medium text-orange-800">
                 &ldquo;{gap.term}&rdquo;
               </span>
-              <span className="text-sm text-amber-700 dark:text-amber-300">
+              <span className="text-sm text-orange-700">
                 — {gap.reason}
               </span>
             </div>
             {gap.suggestions && gap.suggestions.length > 0 && (
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-orange-600">
                 <span>Nearest concepts:</span>
                 {gap.suggestions.map((s, j) => (
                   <code
                     key={j}
-                    className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-800/40 rounded font-mono"
+                    className="px-1.5 py-0.5 bg-orange-100 rounded font-mono"
                   >
                     {s}
                   </code>

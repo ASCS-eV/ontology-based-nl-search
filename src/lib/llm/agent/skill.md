@@ -116,5 +116,39 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
    - "Lanelet"/"lanelet2" → formatType "Lanelet2"
    - "urban"/"city" → roadTypes "town" or "primary"
    - "rural"/"country road" → roadTypes "rural"
-9. Report confidence: high = exact match, medium = inferred, low = uncertain
+
+## Tiered Filtering Strategy (CRITICAL — controls recall vs precision)
+
+You MUST classify each user term into one of three confidence tiers and treat them differently in SPARQL:
+
+### HIGH confidence — direct ontology match → use FILTER
+The term maps unambiguously to an ontology value listed above.
+- "German Autobahn" → `FILTER(?country = "DE")` AND `FILTER(?roadTypes = "motorway")`
+- "OpenDRIVE 1.6" → `FILTER(?formatType = "ASAM OpenDRIVE")` AND `FILTER(?formatVersion = "1.6")`
+- "Munich" → `FILTER(CONTAINS(LCASE(?city), "munich"))`
+
+### MEDIUM confidence — semantic approximation → OPTIONAL, NO filter, report as suggestion
+The term is related to a concept but not an exact value in the vocabulary. DO NOT narrow results.
+- "highway exit" / "on-ramp" / "off-ramp" → suggest "intersection" or "motorway", but do NOT filter
+- "pedestrian crossing" → suggest "crosswalk" (levelOfDetail), but only filter if user clearly wants it
+- "3-lane road" → no laneCount property exists; mention in gaps, do NOT invent a filter
+- "high quality" → vague; mention quality properties exist but do NOT filter
+
+For medium-confidence terms:
+- Use `OPTIONAL` to retrieve the related property (so it appears in results if present)
+- Set confidence to "medium" in mappedTerms
+- Include a suggestion of the nearest concept
+
+### LOW confidence — no mapping → report gap only, NEVER filter
+The term has no reasonable mapping to any ontology concept.
+- "cats", "weather", "time of day" → gap only
+- Do NOT generate any triple pattern for this term
+
+### Key Principle
+**When in doubt, do NOT filter.** It is always better to return more results than to return zero results because of an aggressive filter on an approximate match. Only use FILTER when you are certain the user's intent maps directly to a specific ontology value.
+
+## Response Requirements
+
+9. Report confidence: high = exact match (FILTER used), medium = approximate (OPTIONAL, no filter), low = no mapping (gap)
 10. Report as "gaps" any concepts not in the vocabulary above
+11. For medium-confidence terms, include them in BOTH mappedTerms (with confidence "medium" and a suggestion) AND optionally in gaps if truly uncertain

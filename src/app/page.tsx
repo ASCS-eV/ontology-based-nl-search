@@ -114,7 +114,7 @@ export default function Home() {
 
       {/* Progressive results */}
       {response && (
-        <div className="mt-8 w-full max-w-4xl space-y-4">
+        <div className="mt-8 w-full max-w-4xl mx-auto space-y-4">
           <InterpretationDisplay interpretation={response.interpretation} />
           <OntologyGapsDisplay gaps={response.gaps} />
           <SparqlPreview sparql={response.sparql} />
