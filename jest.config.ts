@@ -16,6 +16,19 @@ const config: Config = {
       },
     },
     {
+      displayName: 'api',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      roots: ['<rootDir>/src/app/api'],
+      testMatch: ['**/__tests__/**/*.test.ts'],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+      },
+      transform: {
+        '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
+      },
+    },
+    {
       displayName: 'components',
       preset: 'ts-jest',
       testEnvironment: 'jsdom',
