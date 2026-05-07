@@ -5,13 +5,13 @@
 
  RUN  v3.2.4 /home/q413005/workspace/ontology-based-nl-search/packages/search
 
- ✓ src/__tests__/service.test.ts (8 tests) 12ms
- ✓ src/__tests__/init.test.ts (3 tests) 113ms
- ✓ src/__tests__/compiler.test.ts (16 tests) 2512ms
-   ✓ compileSlots > generates minimal query with empty slots  2499ms
+ ✓ src/__tests__/service.test.ts (8 tests) 13ms
+ ✓ src/__tests__/init.test.ts (3 tests) 149ms
+ ✓ src/__tests__/compiler.test.ts (16 tests) 2980ms
+   ✓ compileSlots > generates minimal query with empty slots  2906ms
 
  Test Files  3 passed (3)
       Tests  27 passed (27)
-   Start at  21:56:23
-   Duration  3.65s (transform 363ms, setup 0ms, collect 465ms, tests 2.64s, environment 1ms, prepare 697ms)
+   Start at  22:02:27
+   Duration  4.40s (transform 399ms, setup 0ms, collect 516ms, tests 3.14s, environment 1ms, prepare 497ms)
 
