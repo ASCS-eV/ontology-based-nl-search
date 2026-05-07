@@ -254,7 +254,7 @@ function extractDomain(iri: string): string {
   const parts = iri.split('/')
   // Pattern: .../domain/vN/propertyName
   const versionIdx = parts.findIndex((p) => /^v\d+$/.test(p))
-  if (versionIdx > 0) return parts[versionIdx - 1]
+  if (versionIdx > 0) return parts[versionIdx - 1] ?? 'unknown'
   return 'unknown'
 }
 

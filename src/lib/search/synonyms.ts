@@ -151,7 +151,7 @@ export function extractKnownTerms(query: string): {
         terms.push({
           original: key,
           property,
-          value: map[key],
+          value: map[key] ?? key,
           confidence: 'high',
         })
         remainder = remainder.replace(regex, ' ').trim()
@@ -356,11 +356,13 @@ export function detectGaps(remainder: string): DetectedGap[] {
     const regex = new RegExp(`\\b${escapeRegex(key)}\\b`, 'i')
     if (regex.test(processedRemainder)) {
       const miss = NEAR_MISS_MAP[key]
-      gaps.push({
-        term: key,
-        reason: miss.reason,
-        suggestions: miss.suggestion ? [miss.suggestion] : [],
-      })
+      if (miss) {
+        gaps.push({
+          term: key,
+          reason: miss.reason,
+          suggestions: miss.suggestion ? [miss.suggestion] : [],
+        })
+      }
       processedRemainder = processedRemainder.replace(regex, ' ').trim()
     }
   }
@@ -371,8 +373,8 @@ export function detectGaps(remainder: string): DetectedGap[] {
   for (const word of remainingWords) {
     if (STOPWORDS.has(word) || word.length <= 2) continue
 
-    if (NEAR_MISS_MAP[word]) {
-      const miss = NEAR_MISS_MAP[word]
+    const miss = NEAR_MISS_MAP[word]
+    if (miss) {
       gaps.push({
         term: word,
         reason: miss.reason,

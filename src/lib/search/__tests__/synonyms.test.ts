@@ -114,8 +114,8 @@ describe('detectGaps', () => {
   it('detects "exit" as a near-miss for intersection', () => {
     const gaps = detectGaps('with exit')
     expect(gaps).toHaveLength(1)
-    expect(gaps[0].term).toBe('exit')
-    expect(gaps[0].suggestions).toContain('intersection')
+    expect(gaps[0]!.term).toBe('exit')
+    expect(gaps[0]!.suggestions).toContain('intersection')
   })
 
   it('detects "ramp" as a near-miss for intersection', () => {

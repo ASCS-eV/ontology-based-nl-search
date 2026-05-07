@@ -33,7 +33,7 @@ describe('OxigraphStore', () => {
         'SELECT ?o WHERE { <http://example.org/subject> <http://example.org/predicate> ?o }'
       )
       expect(results.results.bindings).toHaveLength(1)
-      expect(results.results.bindings[0].o.value).toBe('object')
+      expect(results.results.bindings[0]!.o!.value).toBe('object')
     })
 
     it('should load data into a named graph', async () => {
@@ -51,7 +51,7 @@ describe('OxigraphStore', () => {
         }
       `)
       expect(results.results.bindings).toHaveLength(1)
-      expect(results.results.bindings[0].o.value).toBe('value')
+      expect(results.results.bindings[0]!.o!.value).toBe('value')
     })
   })
 
@@ -113,7 +113,7 @@ describe('OxigraphStore', () => {
         } LIMIT 1
       `)
 
-      expect(results.results.bindings[0].asset.type).toBe('uri')
+      expect(results.results.bindings[0]!.asset!.type).toBe('uri')
     })
 
     it('should return literal type for values', async () => {
@@ -123,8 +123,8 @@ describe('OxigraphStore', () => {
         }
       `)
 
-      expect(results.results.bindings[0].country.type).toBe('literal')
-      expect(results.results.bindings[0].country.value).toBe('Germany')
+      expect(results.results.bindings[0]!.country!.type).toBe('literal')
+      expect(results.results.bindings[0]!.country!.value).toBe('Germany')
     })
 
     it('should handle empty results', async () => {
@@ -153,7 +153,7 @@ describe('OxigraphStore', () => {
       `)
 
       expect(results.results.bindings).toHaveLength(1)
-      expect(results.results.bindings[0].o.value).toBe('new value')
+      expect(results.results.bindings[0]!.o!.value).toBe('new value')
     })
 
     it('should delete triples via SPARQL UPDATE', async () => {

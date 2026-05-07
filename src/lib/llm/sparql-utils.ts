@@ -2,7 +2,7 @@
 export function extractSparql(text: string): string {
   // Try to find SPARQL in a code block
   const codeBlockMatch = text.match(/```(?:sparql)?\s*\n?([\s\S]*?)```/)
-  if (codeBlockMatch) {
+  if (codeBlockMatch?.[1]) {
     return codeBlockMatch[1].trim()
   }
 

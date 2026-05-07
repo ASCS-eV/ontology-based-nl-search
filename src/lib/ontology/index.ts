@@ -117,14 +117,15 @@ function buildContextFromOntologies(ontologyContents: string[]): string {
       /(\S+)\s+a\s+owl:Class\s*;[^.]*?rdfs:comment\s+"([^"]+)"/g
     )
     for (const match of classMatches) {
-      classes.push(`${match[1]} — ${match[2]}`)
+      classes.push(`${match[1] ?? ''} — ${match[2] ?? ''}`)
     }
 
     // Also capture classes without comments
     const simpleClassMatches = content.matchAll(/(\S+)\s+a\s+owl:Class\s*;/g)
     for (const match of simpleClassMatches) {
-      if (!classes.some((c) => c.startsWith(match[1]))) {
-        classes.push(match[1])
+      const className = match[1] ?? ''
+      if (!classes.some((c) => c.startsWith(className))) {
+        classes.push(className)
       }
     }
 
@@ -133,7 +134,9 @@ function buildContextFromOntologies(ontologyContents: string[]): string {
       /(\S+)\s+a\s+owl:ObjectProperty\s*;[^.]*?rdfs:domain\s+(\S+)\s*;[^.]*?rdfs:range\s+([^;.]+)/g
     )
     for (const match of objPropMatches) {
-      objectProperties.push(`${match[1]} (${match[2].trim()} → ${match[3].trim()})`)
+      objectProperties.push(
+        `${match[1] ?? ''} (${(match[2] ?? '').trim()} → ${(match[3] ?? '').trim()})`
+      )
     }
 
     // Extract data properties
@@ -141,7 +144,7 @@ function buildContextFromOntologies(ontologyContents: string[]): string {
       /(\S+)\s+a\s+owl:DatatypeProperty\s*;[^.]*?rdfs:domain\s+(\S+)/g
     )
     for (const match of dataPropMatches) {
-      dataProperties.push(`${match[1]} (domain: ${match[2].trim()})`)
+      dataProperties.push(`${match[1] ?? ''} (domain: ${(match[2] ?? '').trim()})`)
     }
   }
 

@@ -20,7 +20,7 @@ export function ResultsDisplay({ results }: ResultsDisplayProps) {
     )
   }
 
-  const columns = Object.keys(results[0])
+  const columns = Object.keys(results[0] ?? {})
 
   const exportCsv = () => {
     const header = columns.join(',')

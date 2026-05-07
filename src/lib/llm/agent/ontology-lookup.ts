@@ -49,10 +49,10 @@ async function getOntologyIndex(): Promise<OntologyIndex> {
       const content = line.slice(2)
       if (section === 'classes') {
         const [name, ...rest] = content.split(' — ')
-        classes.push({ name: name.trim(), comment: rest.join(' — ').trim() })
+        classes.push({ name: name?.trim() ?? '', comment: rest.join(' — ').trim() })
       } else if (section === 'objectProperties') {
         const match = content.match(/^(\S+)\s+\((\S+)\s*→\s*(.+)\)$/)
-        if (match) {
+        if (match?.[1] && match[2] && match[3]) {
           objectProperties.push({
             name: match[1],
             domain: match[2],
@@ -61,7 +61,7 @@ async function getOntologyIndex(): Promise<OntologyIndex> {
         }
       } else if (section === 'dataProperties') {
         const match = content.match(/^(\S+)\s+\(domain:\s*(.+)\)$/)
-        if (match) {
+        if (match?.[1] && match[2]) {
           dataProperties.push({ name: match[1], domain: match[2].trim() })
         }
       }
