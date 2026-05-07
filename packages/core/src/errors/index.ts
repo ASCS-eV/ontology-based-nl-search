@@ -21,9 +21,12 @@ export type ErrorCode =
   | 'INTERNAL_ERROR'
   | 'SERVICE_UNAVAILABLE'
 
+/** HTTP status codes used by error responses */
+export type HttpErrorStatus = 400 | 422 | 500 | 503
+
 /** Structured error with HTTP status for use by any framework's response builder */
 export interface HttpError {
-  status: number
+  status: HttpErrorStatus
   body: ApiErrorResponse
 }
 

@@ -5,8 +5,64 @@
 
  RUN  v3.2.4 /home/q413005/workspace/ontology-based-nl-search/apps/api
 
-No test files found, exiting with code 0
+stdout | src/__tests__/routes.test.ts > GET /health > returns 200 with status ok
+<-- GET /health
 
-include: **/*.{test,spec}.?(c|m)[jt]s?(x)
-exclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*
+stdout | src/__tests__/routes.test.ts > GET /health > returns 200 with status ok
+--> GET /health [32m200[0m 3ms
+
+stdout | src/__tests__/routes.test.ts > GET /health > includes x-request-id header
+<-- GET /health
+
+stdout | src/__tests__/routes.test.ts > GET /health > includes x-request-id header
+--> GET /health [32m200[0m 0ms
+
+stdout | src/__tests__/routes.test.ts > POST /search/stream > returns 200 for valid request
+<-- POST /search/stream
+
+stdout | src/__tests__/routes.test.ts > POST /search/stream > returns 200 for valid request
+--> POST /search/stream [32m200[0m 2ms
+
+stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error for missing query
+<-- POST /search/stream
+
+stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error for missing query
+--> POST /search/stream [32m200[0m 1ms
+
+stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error for invalid JSON
+<-- POST /search/stream
+
+stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error for invalid JSON
+--> POST /search/stream [32m200[0m 0ms
+
+stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 400 for missing slots field
+<-- POST /search/refine
+
+stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 400 for missing slots field
+--> POST /search/refine [33m400[0m 0ms
+
+stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 200 with results for valid slots
+<-- POST /search/refine
+
+stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 200 with results for valid slots
+--> POST /search/refine [32m200[0m 1ms
+
+stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 422 for invalid slot shape
+<-- POST /search/refine
+
+stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 422 for invalid slot shape
+--> POST /search/refine [33m422[0m 1ms
+
+stdout | src/__tests__/routes.test.ts > GET /stats > returns stats with domain counts
+<-- GET /stats
+
+stdout | src/__tests__/routes.test.ts > GET /stats > returns stats with domain counts
+--> GET /stats [32m200[0m 1ms
+
+ ✓ src/__tests__/routes.test.ts (9 tests) 32ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  21:56:23
+   Duration  1.26s (transform 208ms, setup 0ms, collect 226ms, tests 32ms, environment 0ms, prepare 479ms)
 
