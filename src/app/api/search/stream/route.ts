@@ -8,6 +8,8 @@ import { enforceSparqlPolicy } from '@/lib/sparql/policy'
 /**
  * Streaming search endpoint using Server-Sent Events (SSE).
  * Progressively sends: interpretation → gaps → sparql → results → meta
+ *
+ * Supports client-side abort via AbortSignal (request.signal).
  */
 export async function POST(request: NextRequest) {
   let body: { query?: unknown }
@@ -32,14 +34,22 @@ export async function POST(request: NextRequest) {
   const encoder = new TextEncoder()
   const requestId = generateRequestId()
   const logger = new RequestLogger({ requestId, query })
+  const signal = request.signal
 
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: string, data: unknown) => {
+        if (signal.aborted) return
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
       }
 
       try {
+        // Check abort before heavy work
+        if (signal.aborted) {
+          controller.close()
+          return
+        }
+
         const store = await getInitializedStore()
         const endStoreInit = logger.time('store-init')
         endStoreInit()
@@ -50,9 +60,19 @@ export async function POST(request: NextRequest) {
           message: 'Interpreting query…',
         })
 
+        if (signal.aborted) {
+          controller.close()
+          return
+        }
+
         const endLlm = logger.time('llm-interpretation')
         const structured = await generateStructuredSearch(query)
         endLlm()
+
+        if (signal.aborted) {
+          controller.close()
+          return
+        }
 
         // Phase 2: Send interpretation immediately
         send('interpretation', structured.interpretation)
@@ -94,6 +114,11 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        if (signal.aborted) {
+          controller.close()
+          return
+        }
+
         send('results', { results, error: sparqlError })
 
         // Phase 6: Send meta
@@ -123,9 +148,13 @@ export async function POST(request: NextRequest) {
         send('done', {})
         logger.info('Search completed', { matchCount: results.length, totalDatasets })
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Internal server error'
-        send('error', { message, requestId })
-        logger.error('Search stream failed', error)
+        if (signal.aborted) {
+          logger.info('Request aborted by client')
+        } else {
+          const message = error instanceof Error ? error.message : 'Internal server error'
+          send('error', { message, requestId })
+          logger.error('Search stream failed', error)
+        }
       } finally {
         controller.close()
       }

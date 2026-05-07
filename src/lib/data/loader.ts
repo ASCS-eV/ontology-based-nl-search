@@ -3,6 +3,9 @@ import { join } from 'path'
 
 import type { SparqlStore } from '@/lib/sparql'
 
+/** Named graph URI for sample HD map data */
+const HDMAP_GRAPH = 'urn:graph:hdmap-assets'
+
 /**
  * Load sample TTL data from file (100 diverse HD map assets).
  * Falls back to a minimal inline dataset if file is not found.
@@ -67,7 +70,11 @@ const FALLBACK_TURTLE = `
 
 /**
  * Load sample data into the SPARQL store for development/testing.
+ * Loads into the default graph for simple query compatibility.
+ * Named graph URI is exported for future multi-ontology isolation.
  */
 export async function loadSampleData(store: SparqlStore): Promise<void> {
   await store.loadTurtle(getSampleData())
 }
+
+export { HDMAP_GRAPH }

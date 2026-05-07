@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { InterpretationDisplay } from '@/components/InterpretationDisplay'
 import { OntologyGapsDisplay } from '@/components/OntologyGapsDisplay'
@@ -60,6 +60,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [totalAssets, setTotalAssets] = useState<number | null>(null)
   const [history, setHistory] = useState<string[]>([])
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     setHistory(getSearchHistory())
@@ -70,6 +71,11 @@ export default function Home() {
   }, [])
 
   const handleSearch = useCallback(async (naturalLanguageQuery: string) => {
+    // Abort any in-flight request
+    abortControllerRef.current?.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     setLoading(true)
     setError(null)
     setInterpretation(null)
@@ -84,6 +90,7 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: naturalLanguageQuery }),
+        signal: controller.signal,
       })
 
       if (!res.ok) {
@@ -147,6 +154,10 @@ export default function Home() {
       saveToHistory(naturalLanguageQuery)
       setHistory(getSearchHistory())
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        // User started a new search — silently ignore
+        return
+      }
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setLoading(false)

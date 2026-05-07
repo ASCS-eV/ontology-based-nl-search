@@ -12,12 +12,12 @@ describe('getSparqlStore', () => {
     process.env = originalEnv
   })
 
-  it('should return OxigraphStore when SPARQL_MODE is memory', async () => {
+  it('should return CachedSparqlStore wrapping OxigraphStore when SPARQL_MODE is memory', async () => {
     process.env.SPARQL_MODE = 'memory'
     const { getSparqlStore: getStore } = await import('../index')
     const store = getStore()
     expect(store).toBeDefined()
-    expect(store.constructor.name).toBe('OxigraphStore')
+    expect(store.constructor.name).toBe('CachedSparqlStore')
   })
 
   it('should throw when SPARQL_MODE is remote without endpoint', async () => {
@@ -27,11 +27,11 @@ describe('getSparqlStore', () => {
     expect(() => getStore()).toThrow('SPARQL_ENDPOINT must be set')
   })
 
-  it('should return RemoteSparqlStore when properly configured', async () => {
+  it('should return CachedSparqlStore wrapping RemoteSparqlStore when properly configured', async () => {
     process.env.SPARQL_MODE = 'remote'
     process.env.SPARQL_ENDPOINT = 'http://localhost:3030/test/sparql'
     const { getSparqlStore: getStore } = await import('../index')
     const store = getStore()
-    expect(store.constructor.name).toBe('RemoteSparqlStore')
+    expect(store.constructor.name).toBe('CachedSparqlStore')
   })
 })
