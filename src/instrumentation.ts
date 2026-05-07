@@ -9,16 +9,19 @@
 export async function register() {
   // Only preload on the server (not edge runtime)
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { createComponentLogger } = await import('@/lib/logging')
     const { getInitializedStore } = await import('@/lib/search/init')
     const { warmupOntologyIndexes } = await import('@/lib/ontology/warmup')
+
+    const logger = createComponentLogger('instrumentation')
 
     // Fire and forget — don't block server start, but handle errors
     Promise.all([getInitializedStore(), warmupOntologyIndexes()])
       .then(() => {
-        console.info('[instrumentation] SPARQL store and ontology indexes warmed up')
+        logger.info('SPARQL store and ontology indexes warmed up')
       })
       .catch((err: unknown) => {
-        console.error('[instrumentation] Warmup failed:', err)
+        logger.error('Warmup failed', err)
       })
   }
 }

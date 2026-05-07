@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server'
 
-import { extractErrorMessage, internalError } from '@/lib/errors'
+import { internalError } from '@/lib/errors'
+import { generateRequestId, REQUEST_ID_HEADER, RequestLogger } from '@/lib/logging'
 import { buildDomainRegistry } from '@/lib/ontology/domain-registry'
 import { ASSET_DOMAINS, compileCountQuery } from '@/lib/search/compiler'
 import { getInitializedStore } from '@/lib/search/init'
 
 export async function GET() {
+  const requestId = generateRequestId()
+  const logger = new RequestLogger({ requestId })
+
   try {
+    logger.info('Stats request started')
     const store = await getInitializedStore()
     const registry = await buildDomainRegistry()
 
@@ -28,13 +33,14 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({
-      totalAssets,
-      domains: counts,
-      availableDomains: registry.domainNames,
-    })
+    logger.info('Stats request completed', { totalAssets, domainCount: Object.keys(counts).length })
+
+    return NextResponse.json(
+      { totalAssets, domains: counts, availableDomains: registry.domainNames },
+      { headers: { [REQUEST_ID_HEADER]: requestId } }
+    )
   } catch (error) {
-    console.error('Stats API error:', extractErrorMessage(error))
+    logger.error('Stats API error', error)
     return internalError('Failed to retrieve statistics')
   }
 }

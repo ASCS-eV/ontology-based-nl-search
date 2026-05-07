@@ -29,6 +29,9 @@ const envSchema = z.object({
   ONTOLOGY_BRANCH: z.string().default('main'),
   ONTOLOGY_ARTIFACTS_PATH: z.string().optional(),
 
+  // Logging
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).optional(),
+
   // Runtime (set by Next.js)
   NEXT_RUNTIME: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

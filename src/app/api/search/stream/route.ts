@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 
 import { badRequest } from '@/lib/errors'
+import { generateRequestId, REQUEST_ID_HEADER, RequestLogger } from '@/lib/logging'
 import { searchNl } from '@/lib/search/service'
 
 /**
@@ -11,6 +12,8 @@ import { searchNl } from '@/lib/search/service'
  * Supports client-side abort via AbortSignal (request.signal).
  */
 export async function POST(request: NextRequest) {
+  const requestId = generateRequestId()
+
   let body: { query?: unknown }
   try {
     body = await request.json()
@@ -23,6 +26,9 @@ export async function POST(request: NextRequest) {
   if (!query || typeof query !== 'string') {
     return badRequest('Missing or invalid "query" field')
   }
+
+  const logger = new RequestLogger({ requestId, query: String(query) })
+  logger.info('Stream search started')
 
   const signal = request.signal
   const encoder = new TextEncoder()
@@ -54,10 +60,16 @@ export async function POST(request: NextRequest) {
         })
         send('meta', result.meta)
         send('done', {})
+
+        logger.info('Stream search completed', {
+          matchCount: result.meta.matchCount,
+          totalMs: result.meta.executionTimeMs,
+        })
       } catch (error) {
         if (signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
-          // Client disconnected — silent close
+          logger.info('Stream aborted by client')
         } else {
+          logger.error('Stream search failed', error)
           const message = error instanceof Error ? error.message : 'Internal server error'
           send('error', { message })
         }
@@ -72,6 +84,7 @@ export async function POST(request: NextRequest) {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
+      [REQUEST_ID_HEADER]: requestId,
     },
   })
 }

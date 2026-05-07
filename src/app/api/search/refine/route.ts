@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 
-import { badRequest, extractErrorMessage, internalError, unprocessable } from '@/lib/errors'
+import { badRequest, internalError, unprocessable } from '@/lib/errors'
+import { generateRequestId, REQUEST_ID_HEADER, RequestLogger } from '@/lib/logging'
 import { searchRefine } from '@/lib/search/service'
 
 /** Zod schema for validating SearchSlots from the client */
@@ -28,6 +29,9 @@ const searchSlotsSchema = z.object({
  * Bypasses LLM — used when user edits the interpreted query directly.
  */
 export async function POST(request: NextRequest) {
+  const requestId = generateRequestId()
+  const logger = new RequestLogger({ requestId })
+
   let body: unknown
   try {
     body = await request.json()
@@ -46,19 +50,22 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    logger.info('Refine search started', { slots: parseResult.data })
     const result = await searchRefine({ slots: parseResult.data })
 
     if (result.execution.error) {
+      logger.warn('Refine query failed', { error: result.execution.error })
       return unprocessable(result.execution.error)
     }
 
-    return Response.json({
-      sparql: result.sparql,
-      results: result.execution.results,
-      meta: result.meta,
-    })
+    logger.info('Refine search completed', { matchCount: result.meta.matchCount })
+
+    return Response.json(
+      { sparql: result.sparql, results: result.execution.results, meta: result.meta },
+      { headers: { [REQUEST_ID_HEADER]: requestId } }
+    )
   } catch (error) {
-    console.error('Refine search failed:', extractErrorMessage(error))
+    logger.error('Refine search failed', error)
     return internalError()
   }
 }
