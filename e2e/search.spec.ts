@@ -39,7 +39,7 @@ test.describe('Search Page', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Simulation Asset Search')
 
     // Dataset count badge
-    await expect(page.getByText('8 HD map assets in graph')).toBeVisible()
+    await expect(page.getByText('8 assets in graph')).toBeVisible()
 
     // Search bar is present and empty
     const searchInput = page.getByLabel('Natural language search query')
@@ -144,8 +144,8 @@ test.describe('Search Page', () => {
     await expect(
       page.getByText('Looking for HD maps in Germany with motorway road type')
     ).toBeVisible()
-    await expect(page.getByText('German', { exact: true })).toBeVisible()
-    await expect(page.getByText('country code DE')).toBeVisible()
+    await expect(page.getByText('German', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('country code DE').first()).toBeVisible()
 
     // Confidence badges
     await expect(page.getByText('high').first()).toBeVisible()
