@@ -373,7 +373,7 @@ export async function matchConcepts(query: string): Promise<MatchResult> {
     if (!gaps.find((g) => g.term === word) && !matches.find((m) => m.input === word)) {
       gaps.push({
         term: word,
-        reason: 'No matching concept found in the HD map ontology',
+        reason: 'No matching concept found in the ontology',
         suggestions: [],
       })
     }

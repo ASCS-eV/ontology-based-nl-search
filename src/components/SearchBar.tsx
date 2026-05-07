@@ -108,7 +108,7 @@ export function SearchBar({ onSearch, loading, history = [] }: SearchBarProps) {
       </div>
       <p id="search-hint" className="mt-2 text-xs text-gray-400 dark:text-gray-500 text-center">
         Describe what you&apos;re looking for in plain language. The AI will interpret your query
-        against the HD map ontology.
+        against the ENVITED-X ontology domains.
       </p>
     </form>
   )
