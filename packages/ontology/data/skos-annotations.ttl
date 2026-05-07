@@ -1,6 +1,8 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/> .
+@prefix scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/> .
 @prefix georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/> .
+@prefix gx: <https://w3id.org/gaia-x/development#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix nlsearch: <https://w3id.org/ascs-ev/ontology-based-nl-search/concepts/> .
@@ -145,8 +147,8 @@ nlsearch:offRamp a skos:Concept ;
 nlsearch:mwyEntry a skos:Concept ;
     skos:inScheme nlsearch:ConceptScheme ;
     skos:prefLabel "mwyEntry"@en ;
-    skos:altLabel "motorway entry"@en ;
-    skos:altLabel "Autobahnauffahrt"@de ;
+    skos:altLabel "motorway entry lane"@en ;
+    skos:altLabel "Autobahnauffahrt-Spur"@de ;
     skos:broader nlsearch:entryLane ;
     nlsearch:ontologyProperty hdmap:laneTypes ;
     nlsearch:ontologyValue "mwyEntry" .
@@ -248,13 +250,13 @@ nlsearch:asamOpenDrive a skos:Concept ;
 
 nlsearch:lanelet a skos:Concept ;
     skos:inScheme nlsearch:ConceptScheme ;
-    skos:prefLabel "Lanelet"@en ;
-    skos:altLabel "Lanelet2"@en ;
+    skos:prefLabel "Lanelet2"@en ;
+    skos:altLabel "Lanelet"@en ;
     skos:altLabel "lanelet"@en ;
     skos:altLabel "lanelet2"@en ;
     skos:definition "Lanelet map format for autonomous driving."@en ;
     nlsearch:ontologyProperty hdmap:formatType ;
-    nlsearch:ontologyValue "Lanelet" .
+    nlsearch:ontologyValue "Lanelet2" .
 
 nlsearch:road2sim a skos:Concept ;
     skos:inScheme nlsearch:ConceptScheme ;
@@ -663,3 +665,437 @@ nlsearch:ndsLive a skos:Concept ;
     skos:definition "An open standard for HD map data in automotive systems (NDS.Live is the cloud-native evolution of NDS)."@en ;
     skos:scopeNote "NDS.Live is a format type. Use formatType filter to find assets in this format."@en ;
     nlsearch:domainOnly true .
+
+# ============================================================
+# Road Type — motorway_entry
+# ============================================================
+
+nlsearch:motorwayEntry a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "motorway_entry"@en ;
+    skos:altLabel "motorway entry"@en ;
+    skos:altLabel "motorway entry ramp"@en ;
+    skos:altLabel "highway on-ramp"@en ;
+    skos:altLabel "motorway ramp"@en ;
+    skos:altLabel "entry ramp"@en ;
+    skos:altLabel "on-ramp"@en ;
+    skos:altLabel "Autobahnauffahrt"@de ;
+    skos:broader nlsearch:motorway ;
+    skos:definition "A road segment leading onto a motorway."@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "motorway_entry" .
+
+# ============================================================
+# HD Map Format — Lanelet2 (filterable)
+# ============================================================
+
+nlsearch:lanelet2Format a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "Lanelet2"@en ;
+    skos:altLabel "lanelet"@en ;
+    skos:altLabel "Lanelet 2"@en ;
+    skos:definition "Lanelet2 is an open-source library for handling map data in autonomous driving."@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "Lanelet2" .
+
+# ============================================================
+# HD Map Format — NDS.Live (filterable)
+# ============================================================
+
+nlsearch:ndsLiveFormat a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "NDS Live"@en ;
+    skos:altLabel "NDS.Live"@en ;
+    skos:altLabel "NDS"@en ;
+    skos:altLabel "Navigation Data Standard"@en ;
+    skos:definition "An open standard for HD map data in automotive systems."@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "NDS.Live" .
+
+# ============================================================
+# HD Map Lane Types — biking
+# ============================================================
+
+nlsearch:bikeLane a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "biking"@en ;
+    skos:altLabel "bike lane"@en ;
+    skos:altLabel "bicycle lane"@en ;
+    skos:altLabel "cycling lane"@en ;
+    skos:altLabel "bike"@en ;
+    skos:altLabel "Radweg"@de ;
+    skos:definition "A lane designated for bicycle traffic."@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "biking" .
+
+# ============================================================
+# Scenario Domain — Scenario Categories
+# ============================================================
+
+nlsearch:cutIn a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "cut-in"@en ;
+    skos:altLabel "cut in"@en ;
+    skos:altLabel "cutting in"@en ;
+    skos:altLabel "lane intrusion"@en ;
+    skos:definition "A scenario where a vehicle moves into the ego vehicle's lane."@en ;
+    nlsearch:ontologyProperty scenario:scenarioCategory ;
+    nlsearch:ontologyValue "cut-in" .
+
+nlsearch:laneChange a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "lane-change"@en ;
+    skos:altLabel "lane change"@en ;
+    skos:altLabel "changing lanes"@en ;
+    skos:altLabel "Spurwechsel"@de ;
+    skos:definition "A scenario involving a vehicle changing from one lane to another."@en ;
+    nlsearch:ontologyProperty scenario:scenarioCategory ;
+    nlsearch:ontologyValue "lane-change" .
+
+nlsearch:pedestrianCrossing a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "pedestrian-crossing"@en ;
+    skos:altLabel "pedestrian crossing"@en ;
+    skos:altLabel "crosswalk scenario"@en ;
+    skos:altLabel "jaywalking"@en ;
+    skos:definition "A scenario where pedestrians cross the road."@en ;
+    nlsearch:ontologyProperty scenario:scenarioCategory ;
+    nlsearch:ontologyValue "pedestrian-crossing" .
+
+nlsearch:emergencyBrake a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "emergency-braking"@en ;
+    skos:altLabel "emergency brake"@en ;
+    skos:altLabel "emergency braking"@en ;
+    skos:altLabel "hard braking"@en ;
+    skos:altLabel "AEB"@en ;
+    skos:altLabel "Notbremsung"@de ;
+    skos:definition "A scenario involving sudden braking to avoid collision."@en ;
+    nlsearch:ontologyProperty scenario:scenarioCategory ;
+    nlsearch:ontologyValue "emergency-braking" .
+
+nlsearch:intersectionScenario a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "intersection-crossing"@en ;
+    skos:altLabel "intersection scenario"@en ;
+    skos:altLabel "junction"@en ;
+    skos:altLabel "crossing"@en ;
+    skos:altLabel "Kreuzung"@de ;
+    skos:definition "A scenario taking place at a road intersection."@en ;
+    nlsearch:ontologyProperty scenario:scenarioCategory ;
+    nlsearch:ontologyValue "intersection-crossing" .
+
+# ============================================================
+# Scenario Domain — Weather
+# ============================================================
+
+nlsearch:weatherClear a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "clear"@en ;
+    skos:altLabel "clear weather"@en ;
+    skos:altLabel "sunny"@en ;
+    skos:altLabel "good weather"@en ;
+    skos:definition "Clear weather conditions with good visibility."@en ;
+    nlsearch:ontologyProperty scenario:weatherSummary ;
+    nlsearch:ontologyValue "clear" .
+
+nlsearch:weatherRain a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "rain"@en ;
+    skos:altLabel "rainy"@en ;
+    skos:altLabel "wet"@en ;
+    skos:altLabel "Regen"@de ;
+    skos:definition "Rainy weather conditions reducing visibility and grip."@en ;
+    nlsearch:ontologyProperty scenario:weatherSummary ;
+    nlsearch:ontologyValue "rain" .
+
+nlsearch:weatherFog a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "fog"@en ;
+    skos:altLabel "foggy"@en ;
+    skos:altLabel "misty"@en ;
+    skos:altLabel "Nebel"@de ;
+    skos:definition "Foggy conditions with severely reduced visibility."@en ;
+    nlsearch:ontologyProperty scenario:weatherSummary ;
+    nlsearch:ontologyValue "fog" .
+
+nlsearch:weatherNight a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "night"@en ;
+    skos:altLabel "nighttime"@en ;
+    skos:altLabel "dark"@en ;
+    skos:altLabel "Nacht"@de ;
+    skos:definition "Nighttime driving conditions with reduced visibility."@en ;
+    nlsearch:ontologyProperty scenario:weatherSummary ;
+    nlsearch:ontologyValue "night" .
+
+# ============================================================
+# Scenario Domain — Entity Types
+# ============================================================
+
+nlsearch:entityCar a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "car"@en ;
+    skos:altLabel "vehicle"@en ;
+    skos:altLabel "automobile"@en ;
+    skos:altLabel "Auto"@de ;
+    skos:definition "A passenger car in a scenario."@en ;
+    nlsearch:ontologyProperty scenario:entityTypes ;
+    nlsearch:ontologyValue "car" .
+
+nlsearch:entityTruck a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "truck"@en ;
+    skos:altLabel "lorry"@en ;
+    skos:altLabel "heavy vehicle"@en ;
+    skos:altLabel "LKW"@de ;
+    skos:definition "A truck or heavy goods vehicle in a scenario."@en ;
+    nlsearch:ontologyProperty scenario:entityTypes ;
+    nlsearch:ontologyValue "truck" .
+
+nlsearch:entityPedestrian a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "pedestrian"@en ;
+    skos:altLabel "walker"@en ;
+    skos:altLabel "person walking"@en ;
+    skos:definition "A pedestrian in a scenario."@en ;
+    nlsearch:ontologyProperty scenario:entityTypes ;
+    nlsearch:ontologyValue "pedestrian" .
+
+nlsearch:entityBicycle a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "bicycle"@en ;
+    skos:altLabel "cyclist"@en ;
+    skos:altLabel "bike rider"@en ;
+    skos:altLabel "Radfahrer"@de ;
+    skos:definition "A cyclist in a scenario."@en ;
+    nlsearch:ontologyProperty scenario:entityTypes ;
+    nlsearch:ontologyValue "bicycle" .
+
+# ============================================================
+# Scenario Domain — Format Type
+# ============================================================
+
+nlsearch:openscenarioFormat a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "ASAM OpenSCENARIO"@en ;
+    skos:altLabel "OpenSCENARIO"@en ;
+    skos:altLabel "openscenario"@en ;
+    skos:altLabel "xosc"@en ;
+    skos:altLabel "scenario format"@en ;
+    skos:definition "ASAM OpenSCENARIO standard for scenario description."@en ;
+    nlsearch:ontologyProperty scenario:formatType ;
+    nlsearch:ontologyValue "ASAM OpenSCENARIO" .
+
+# ============================================================
+# Scenario Domain — Additional Categories
+# ============================================================
+
+nlsearch:mergingScenario a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "merging"@en ;
+    skos:altLabel "merge"@en ;
+    skos:altLabel "on-ramp merge"@en ;
+    skos:altLabel "highway merging"@en ;
+    skos:altLabel "Einfädeln"@de ;
+    skos:definition "A scenario where a vehicle merges into traffic."@en ;
+    nlsearch:ontologyProperty scenario:scenarioCategory ;
+    nlsearch:ontologyValue "merging" .
+
+nlsearch:overtakingScenario a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "overtaking"@en ;
+    skos:altLabel "overtake"@en ;
+    skos:altLabel "passing"@en ;
+    skos:altLabel "Überholen"@de ;
+    skos:definition "A scenario where a vehicle overtakes another."@en ;
+    nlsearch:ontologyProperty scenario:scenarioCategory ;
+    nlsearch:ontologyValue "overtaking" .
+
+nlsearch:followingScenario a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "following"@en ;
+    skos:altLabel "car following"@en ;
+    skos:altLabel "tailgating"@en ;
+    skos:altLabel "Folgefahrt"@de ;
+    skos:definition "A scenario where a vehicle follows another."@en ;
+    nlsearch:ontologyProperty scenario:scenarioCategory ;
+    nlsearch:ontologyValue "following" .
+
+# ============================================================
+# Scenario Domain — Entity Types
+# ============================================================
+
+nlsearch:truckEntity a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "truck"@en ;
+    skos:altLabel "trucks"@en ;
+    skos:altLabel "lorry"@en ;
+    skos:altLabel "HGV"@en ;
+    skos:altLabel "heavy vehicle"@en ;
+    skos:altLabel "LKW"@de ;
+    skos:definition "A heavy goods vehicle entity in a scenario."@en ;
+    nlsearch:ontologyProperty scenario:entityTypes ;
+    nlsearch:ontologyValue "truck" .
+
+nlsearch:pedestrianEntity a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "pedestrian"@en ;
+    skos:altLabel "pedestrians"@en ;
+    skos:altLabel "walker"@en ;
+    skos:altLabel "person"@en ;
+    skos:altLabel "Fußgänger"@de ;
+    skos:definition "A pedestrian entity in a scenario."@en ;
+    nlsearch:ontologyProperty scenario:entityTypes ;
+    nlsearch:ontologyValue "pedestrian" .
+
+nlsearch:bicycleEntity a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "bicycle"@en ;
+    skos:altLabel "cyclist"@en ;
+    skos:altLabel "bike"@en ;
+    skos:altLabel "Fahrrad"@de ;
+    skos:definition "A bicycle/cyclist entity in a scenario."@en ;
+    nlsearch:ontologyProperty scenario:entityTypes ;
+    nlsearch:ontologyValue "bicycle" .
+
+# ============================================================
+# HD Map — Quantity/Range Concepts (for SKOS matching of numeric queries)
+# ============================================================
+
+nlsearch:speedLimit a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "speed limit"@en ;
+    skos:altLabel "speed"@en ;
+    skos:altLabel "velocity"@en ;
+    skos:altLabel "Geschwindigkeitsbegrenzung"@de ;
+    skos:definition "Maximum allowed speed on the road segment."@en ;
+    nlsearch:ontologyProperty hdmap:speedLimit ;
+    nlsearch:ontologyValue "range" .
+
+nlsearch:trafficLights a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "traffic lights"@en ;
+    skos:altLabel "traffic light"@en ;
+    skos:altLabel "signal"@en ;
+    skos:altLabel "traffic signal"@en ;
+    skos:altLabel "Ampel"@de ;
+    skos:definition "Traffic light signals present in the HD map."@en ;
+    nlsearch:ontologyProperty hdmap:numberTrafficLights ;
+    nlsearch:ontologyValue "range" .
+
+nlsearch:intersectionCount a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "intersections"@en ;
+    skos:altLabel "intersection"@en ;
+    skos:altLabel "junction"@en ;
+    skos:altLabel "crossroad"@en ;
+    skos:altLabel "Kreuzung"@de ;
+    skos:definition "Number of intersections in the HD map."@en ;
+    nlsearch:ontologyProperty hdmap:numberIntersections ;
+    nlsearch:ontologyValue "range" .
+
+nlsearch:mapLength a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "length"@en ;
+    skos:altLabel "distance"@en ;
+    skos:altLabel "long"@en ;
+    skos:altLabel "short"@en ;
+    skos:altLabel "km"@en ;
+    skos:altLabel "Länge"@de ;
+    skos:definition "Total road network length in kilometers."@en ;
+    nlsearch:ontologyProperty hdmap:length ;
+    nlsearch:ontologyValue "range" .
+
+nlsearch:scenarioDuration a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "duration"@en ;
+    skos:altLabel "time"@en ;
+    skos:altLabel "seconds"@en ;
+    skos:altLabel "Dauer"@de ;
+    skos:definition "Duration of the scenario in seconds."@en ;
+    nlsearch:ontologyProperty scenario:duration ;
+    nlsearch:ontologyValue "range" .
+
+# ============================================================
+# License Concepts
+# ============================================================
+
+nlsearch:licenseCcBy a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "CC-BY-4.0"@en ;
+    skos:altLabel "Creative Commons Attribution"@en ;
+    skos:altLabel "CC BY"@en ;
+    skos:altLabel "CC-BY"@en ;
+    skos:definition "Creative Commons Attribution 4.0 license."@en ;
+    nlsearch:ontologyProperty gx:license ;
+    nlsearch:ontologyValue "CC-BY-4.0" .
+
+nlsearch:licenseCc0 a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "CC0-1.0"@en ;
+    skos:altLabel "public domain"@en ;
+    skos:altLabel "CC0"@en ;
+    skos:altLabel "CC Zero"@en ;
+    skos:definition "Creative Commons Zero / public domain dedication."@en ;
+    nlsearch:ontologyProperty gx:license ;
+    nlsearch:ontologyValue "CC0-1.0" .
+
+nlsearch:licenseFree a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "free license"@en ;
+    skos:altLabel "free"@en ;
+    skos:altLabel "open source"@en ;
+    skos:altLabel "open license"@en ;
+    skos:altLabel "freely licensed"@en ;
+    skos:definition "Freely available / open license content."@en ;
+    nlsearch:ontologyProperty gx:license ;
+    nlsearch:ontologyValue "CC-BY-4.0" .
+
+nlsearch:licenseMit a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "MIT"@en ;
+    skos:altLabel "MIT license"@en ;
+    skos:definition "MIT permissive software license."@en ;
+    nlsearch:ontologyProperty gx:license ;
+    nlsearch:ontologyValue "MIT" .
+
+# ============================================================
+# City → Country Mappings
+# ============================================================
+
+nlsearch:cityBerlin a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "Berlin"@en ;
+    skos:definition "Capital city of Germany."@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "DE" .
+
+nlsearch:cityMunich a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "Munich"@en ;
+    skos:altLabel "München"@de ;
+    skos:definition "Capital of Bavaria, Germany."@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "DE" .
+
+nlsearch:cityParis a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "Paris"@en ;
+    skos:definition "Capital city of France."@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "FR" .
+
+nlsearch:cityTokyo a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "Tokyo"@en ;
+    skos:definition "Capital city of Japan."@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "JP" .
+
+nlsearch:cityLondon a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "London"@en ;
+    skos:definition "Capital city of the United Kingdom."@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "GB" .

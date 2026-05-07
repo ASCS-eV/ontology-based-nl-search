@@ -255,19 +255,42 @@ function buildDomainPatterns(
   }
 
   // Quantity / range filters
+  // Some properties (e.g., speedLimit) use Range2D structure: prop → [a Range2D; hdmap:min; hdmap:max]
+  const range2DProperties = new Set(['speedLimit'])
+
   if (rangeEntries.length > 0) {
     const qtyVar = `?qty${suffix}`
     patterns.push(`${specVar} ${domain.prefix}:hasQuantity ${qtyVar} .`)
     for (const [propName, range] of rangeEntries) {
-      const varName = `?${propName}${suffix}`
       const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
-      patterns.push(`${qtyVar} ${propDomain}:${propName} ${varName} .`)
-      selectVars.add(varName)
-      if (range.min !== undefined) {
-        filters.push(`FILTER(xsd:float(${varName}) >= ${range.min})`)
-      }
-      if (range.max !== undefined) {
-        filters.push(`FILTER(xsd:float(${varName}) <= ${range.max})`)
+
+      if (range2DProperties.has(propName)) {
+        // Range2D: property links to blank node with hdmap:min and hdmap:max
+        const rangeNode = `?${propName}Range${suffix}`
+        patterns.push(`${qtyVar} ${propDomain}:${propName} ${rangeNode} .`)
+        if (range.min !== undefined) {
+          const maxVar = `?${propName}Max${suffix}`
+          patterns.push(`${rangeNode} ${propDomain}:max ${maxVar} .`)
+          filters.push(`FILTER(xsd:float(${maxVar}) >= ${range.min})`)
+          selectVars.add(maxVar)
+        }
+        if (range.max !== undefined) {
+          const minVar = `?${propName}Min${suffix}`
+          patterns.push(`${rangeNode} ${propDomain}:min ${minVar} .`)
+          filters.push(`FILTER(xsd:float(${minVar}) <= ${range.max})`)
+          selectVars.add(minVar)
+        }
+      } else {
+        // Simple literal property
+        const varName = `?${propName}${suffix}`
+        patterns.push(`${qtyVar} ${propDomain}:${propName} ${varName} .`)
+        selectVars.add(varName)
+        if (range.min !== undefined) {
+          filters.push(`FILTER(xsd:float(${varName}) >= ${range.min})`)
+        }
+        if (range.max !== undefined) {
+          filters.push(`FILTER(xsd:float(${varName}) <= ${range.max})`)
+        }
       }
     }
   }
@@ -436,6 +459,8 @@ function classifyProperty(propName: string, _iri: string): string {
     'temporaryTrafficObjects',
     'numberTrafficObjects',
     'permanentTrafficObjects',
+    'numberOfEntities',
+    'duration',
   ])
   if (quantityProps.has(propName)) return 'Quantity'
 

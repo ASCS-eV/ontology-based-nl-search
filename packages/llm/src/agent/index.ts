@@ -111,31 +111,45 @@ export async function runSparqlAgent(
     }
   }
 
-  // Fallback: if agent didn't call submit_slots, compile from pre-extracted only
-  if (matchResult.matches.length > 0) {
-    const sparql = await compileSlots(preSlots)
-    return {
-      interpretation: {
-        summary: 'Interpreted via ontology concept matching (SKOS)',
-        mappedTerms: matchResult.matches.map((m) => ({
-          input: m.input,
-          mapped: m.value,
-          confidence: m.confidence,
-          property: m.property,
-        })),
-      },
-      gaps: matchResult.gaps,
-      sparql,
-    }
+  // Fallback: compile from pre-extracted slots or broad domain query
+  const fallbackSlots: SearchSlots =
+    matchResult.matches.length > 0
+      ? preSlots
+      : { domains: [options?.domain ?? 'hdmap'], filters: {}, ranges: {} }
+  const sparql = await compileSlots(fallbackSlots)
+  return {
+    interpretation: {
+      summary:
+        matchResult.matches.length > 0
+          ? 'Interpreted via ontology concept matching (SKOS)'
+          : `Broad ${options?.domain ?? 'hdmap'} search (no specific filters matched)`,
+      mappedTerms: matchResult.matches.map((m) => ({
+        input: m.input,
+        mapped: m.value,
+        confidence: m.confidence,
+        property: m.property,
+      })),
+    },
+    gaps: matchResult.gaps,
+    sparql,
   }
-
-  throw new Error('Agent failed to produce a result after maximum steps')
 }
 
 /**
  * Convert concept match results to generic SearchSlots.
  * Groups by domain based on the property's ontology prefix.
  */
+/** Supporting ontologies that should not override the primary asset domain */
+const SUPPORTING_DOMAINS = new Set([
+  'georeference',
+  'manifest',
+  'gx',
+  'envited-x',
+  'general',
+  'openlabel',
+  'unknown',
+])
+
 function matchResultToSlots(
   matches: { property: string; value: string; domain?: string }[],
   defaultDomain = 'hdmap'
@@ -146,16 +160,25 @@ function matchResultToSlots(
     ranges: {},
   }
 
-  const detectedDomains = new Set<string>()
+  const detectedAssetDomains = new Set<string>()
 
   for (const match of matches) {
     const domain = match.domain || defaultDomain
-    detectedDomains.add(domain)
+
+    // Only track actual asset domains (not supporting ontologies)
+    if (!SUPPORTING_DOMAINS.has(domain)) {
+      detectedAssetDomains.add(domain)
+    }
 
     // Location properties go to the location field
     if (['country', 'state', 'region', 'city'].includes(match.property)) {
       if (!slots.location) slots.location = {}
       slots.location[match.property as keyof NonNullable<SearchSlots['location']>] = match.value
+    } else if (match.property === 'license') {
+      slots.license = match.value
+    } else if (match.value === 'range') {
+      // Quantity properties: signal "has any value" via min: 1
+      slots.ranges[match.property] = { min: 1 }
     } else {
       // All other properties go to filters
       const existing = slots.filters[match.property]
@@ -170,8 +193,8 @@ function matchResultToSlots(
     }
   }
 
-  if (detectedDomains.size > 0) {
-    slots.domains = [...detectedDomains]
+  if (detectedAssetDomains.size > 0) {
+    slots.domains = [...detectedAssetDomains]
   }
 
   return slots
