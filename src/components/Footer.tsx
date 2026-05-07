@@ -93,7 +93,7 @@ export function Footer() {
               </a>
               <span className="text-gray-300">|</span>
               <a
-                href="https://ascs-ev.de"
+                href="https://ascs.digital"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-blue transition-colors"
