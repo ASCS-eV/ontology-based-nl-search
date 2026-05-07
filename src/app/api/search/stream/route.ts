@@ -1,14 +1,12 @@
 import { NextRequest } from 'next/server'
 
-import { generateStructuredSearch } from '@/lib/llm'
-import { RequestLogger, generateRequestId } from '@/lib/logging'
-import { getInitializedStore } from '@/lib/search/init'
-import { enforceSparqlPolicy } from '@/lib/sparql/policy'
+import { searchNl } from '@/lib/search/service'
 
 /**
  * Streaming search endpoint using Server-Sent Events (SSE).
- * Progressively sends: interpretation → gaps → sparql → results → meta
+ * Thin HTTP adapter — delegates all orchestration to the search service.
  *
+ * Progressively sends: status → interpretation → gaps → sparql → results → meta → done
  * Supports client-side abort via AbortSignal (request.signal).
  */
 export async function POST(request: NextRequest) {
@@ -31,10 +29,8 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  const encoder = new TextEncoder()
-  const requestId = generateRequestId()
-  const logger = new RequestLogger({ requestId, query })
   const signal = request.signal
+  const encoder = new TextEncoder()
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -44,118 +40,31 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Check abort before heavy work
         if (signal.aborted) {
           controller.close()
           return
         }
 
-        const store = await getInitializedStore()
-        const endStoreInit = logger.time('store-init')
-        endStoreInit()
+        send('status', { phase: 'interpreting', message: 'Interpreting query…' })
 
-        // Phase 1: LLM generates interpretation + SPARQL
-        send('status', {
-          phase: 'interpreting',
-          message: 'Interpreting query…',
+        const result = await searchNl({ query, signal })
+
+        send('interpretation', result.interpretation)
+        send('gaps', result.gaps)
+        send('sparql', result.sparql)
+        send('status', { phase: 'executing', message: 'Executing SPARQL query…' })
+        send('results', {
+          results: result.execution.results,
+          error: result.execution.error,
         })
-
-        if (signal.aborted) {
-          controller.close()
-          return
-        }
-
-        const endLlm = logger.time('llm-interpretation')
-        const structured = await generateStructuredSearch(query)
-        endLlm()
-
-        if (signal.aborted) {
-          controller.close()
-          return
-        }
-
-        // Phase 2: Send interpretation immediately
-        send('interpretation', structured.interpretation)
-
-        // Phase 3: Send gaps
-        send('gaps', structured.gaps)
-
-        // Phase 4: Send SPARQL
-        send('sparql', structured.sparql)
-
-        // Phase 5: Enforce policy + execute SPARQL
-        send('status', {
-          phase: 'executing',
-          message: 'Executing SPARQL query…',
-        })
-
-        const policy = enforceSparqlPolicy(structured.sparql)
-        let results: Record<string, string>[] = []
-        let sparqlError: string | undefined
-
-        if (!policy.allowed) {
-          sparqlError = `Query policy violation: ${policy.violations.join('; ')}`
-          logger.warn('SPARQL policy violation', { violations: policy.violations })
-        } else {
-          try {
-            const endQuery = logger.time('sparql-execution')
-            const sparqlResults = await store.query(policy.query)
-            endQuery()
-            results = sparqlResults.results.bindings.map((binding) => {
-              const row: Record<string, string> = {}
-              for (const [key, value] of Object.entries(binding)) {
-                row[key] = value.value
-              }
-              return row
-            })
-          } catch (err) {
-            sparqlError = err instanceof Error ? err.message : 'SPARQL execution failed'
-            logger.error('SPARQL execution failed', err)
-          }
-        }
-
-        if (signal.aborted) {
-          controller.close()
-          return
-        }
-
-        send('results', { results, error: sparqlError })
-
-        // Phase 6: Send meta — count total assets across all domains
-        let totalDatasets = 0
-        try {
-          const { compileAllCountQueries } = await import('@/lib/search/compiler')
-          const countQueries = await compileAllCountQueries()
-          for (const { query: countSparql } of countQueries) {
-            const countResult = await store.query(countSparql)
-            const countBinding = countResult.results.bindings[0]
-            if (countBinding?.count) {
-              totalDatasets += parseInt(countBinding.count.value, 10)
-            }
-          }
-        } catch {
-          // Non-critical
-        }
-
-        const executionTimeMs = logger.getTotalMs()
-
-        send('meta', {
-          requestId,
-          totalDatasets,
-          matchCount: results.length,
-          executionTimeMs,
-          timings: logger.getTimings(),
-        })
-
+        send('meta', result.meta)
         send('done', {})
-        logger.info('Search completed', { matchCount: results.length, totalDatasets })
       } catch (error) {
-        if (signal.aborted) {
-          logger.info('Request aborted by client')
+        if (signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+          // Client disconnected — silent close
         } else {
           const message = error instanceof Error ? error.message : 'Internal server error'
-          send('error', { message, requestId })
-          logger.error('Search stream failed', error)
+          send('error', { message })
         }
       } finally {
         controller.close()

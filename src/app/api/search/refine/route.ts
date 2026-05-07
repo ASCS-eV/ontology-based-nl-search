@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { z } from 'zod'
 
-import { RequestLogger, generateRequestId } from '@/lib/logging'
-import { compileSlots } from '@/lib/search/compiler'
-import { getInitializedStore } from '@/lib/search/init'
-import { enforceSparqlPolicy } from '@/lib/sparql/policy'
+import { searchRefine } from '@/lib/search/service'
 
 /** Zod schema for validating SearchSlots from the client */
 const searchSlotsSchema = z.object({
@@ -27,6 +24,7 @@ const searchSlotsSchema = z.object({
 
 /**
  * Refine endpoint: takes pre-filled slots, compiles SPARQL, executes.
+ * Thin HTTP adapter — validates input then delegates to search service.
  * Bypasses LLM — used when user edits the interpreted query directly.
  */
 export async function POST(request: NextRequest) {
@@ -47,55 +45,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Invalid slots: ${issues.join('; ')}` }, { status: 422 })
   }
 
-  const slots = parseResult.data
-  const requestId = generateRequestId()
-  const logger = new RequestLogger({ requestId })
-
   try {
-    const store = await getInitializedStore()
+    const result = await searchRefine({ slots: parseResult.data })
 
-    const endCompile = logger.time('compile-slots')
-    const sparql = await compileSlots(slots)
-    endCompile()
-
-    const policy = enforceSparqlPolicy(sparql)
-    if (!policy.allowed) {
-      logger.warn('Refine: policy violation', { violations: policy.violations })
+    if (result.execution.error) {
       return NextResponse.json(
-        { error: `Query policy violation: ${policy.violations.join('; ')}`, sparql },
+        { error: result.execution.error, sparql: result.sparql },
         { status: 422 }
       )
     }
 
-    const endQuery = logger.time('sparql-execution')
-    const sparqlResults = await store.query(policy.query)
-    endQuery()
-
-    const results = sparqlResults.results.bindings.map((binding) => {
-      const row: Record<string, string> = {}
-      for (const [key, value] of Object.entries(binding)) {
-        row[key] = value.value
-      }
-      return row
-    })
-
-    logger.info('Refine completed', { matchCount: results.length })
-
     return NextResponse.json({
-      sparql: policy.query,
-      results,
-      meta: {
-        requestId,
-        matchCount: results.length,
-        executionTimeMs: logger.getTotalMs(),
-        timings: logger.getTimings(),
-      },
+      sparql: result.sparql,
+      results: result.execution.results,
+      meta: result.meta,
     })
   } catch (error) {
-    logger.error('Refine failed', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
