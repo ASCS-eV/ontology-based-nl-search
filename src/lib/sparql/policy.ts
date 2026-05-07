@@ -5,16 +5,21 @@ export interface PolicyResult {
   violations: string[]
 }
 
-const ALLOWED_PREFIXES = new Set([
-  'https://w3id.org/ascs-ev/envited-x/hdmap/v6/',
-  'https://w3id.org/ascs-ev/envited-x/envited-x/v3/',
-  'https://w3id.org/ascs-ev/envited-x/georeference/v5/',
-  'https://w3id.org/ascs-ev/envited-x/manifest/v5/',
-  'https://w3id.org/gaia-x/development#',
+/** Base prefixes that are always allowed (W3C standards + GAIA-X) */
+const BASE_ALLOWED_PREFIXES = new Set([
   'http://www.w3.org/2000/01/rdf-schema#',
   'http://www.w3.org/2001/XMLSchema#',
   'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+  'http://www.w3.org/2002/07/owl#',
+  'http://www.w3.org/ns/shacl#',
+  'https://w3id.org/gaia-x/development#',
 ])
+
+/**
+ * Pattern for ASCS/ENVITED-X ontology IRIs.
+ * Matches: https://w3id.org/ascs-ev/envited-x/{domain}/{version}/
+ */
+const ENVITED_X_PATTERN = /^https:\/\/w3id\.org\/ascs-ev\/envited-x\//
 
 const MAX_LIMIT = 500
 
@@ -58,11 +63,12 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
     violations.push('SERVICE clauses are not allowed (no federation)')
   }
 
-  // Check prefixes
+  // Check prefixes — allow W3C standards, GAIA-X, and any ENVITED-X ontology
   if (parsed.prefixes) {
     for (const [, iri] of Object.entries(parsed.prefixes)) {
-      if (!ALLOWED_PREFIXES.has(iri as string)) {
-        violations.push(`Prefix IRI not in allowlist: ${iri}`)
+      const iriStr = iri as string
+      if (!BASE_ALLOWED_PREFIXES.has(iriStr) && !ENVITED_X_PATTERN.test(iriStr)) {
+        violations.push(`Prefix IRI not in allowlist: ${iriStr}`)
       }
     }
   }

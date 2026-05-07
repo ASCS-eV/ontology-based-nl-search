@@ -1,21 +1,38 @@
 import { NextResponse } from 'next/server'
 
+import { buildDomainRegistry } from '@/lib/ontology/domain-registry'
+import { compileCountQuery } from '@/lib/search/compiler'
 import { getInitializedStore } from '@/lib/search/init'
 
 export async function GET() {
   try {
     const store = await getInitializedStore()
+    const registry = await buildDomainRegistry()
 
-    const countResult = await store.query(
-      `PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
-       SELECT (COUNT(DISTINCT ?asset) AS ?count) WHERE { ?asset a hdmap:HdMap }`
-    )
+    const counts: Record<string, number> = {}
+    let totalAssets = 0
 
-    const count = parseInt(countResult.results.bindings[0]?.count?.value || '0', 10)
+    for (const domainName of registry.domainNames) {
+      try {
+        const query = await compileCountQuery(domainName)
+        const result = await store.query(query)
+        const count = parseInt(result.results.bindings[0]?.count?.value || '0', 10)
+        if (count > 0) {
+          counts[domainName] = count
+          totalAssets += count
+        }
+      } catch {
+        // Skip domains that fail (no data loaded)
+      }
+    }
 
-    return NextResponse.json({ totalAssets: count, ontology: 'hdmap v6' })
+    return NextResponse.json({
+      totalAssets,
+      domains: counts,
+      availableDomains: registry.domainNames,
+    })
   } catch (error) {
     console.error('Stats API error:', error)
-    return NextResponse.json({ totalAssets: 0, ontology: 'hdmap v6' })
+    return NextResponse.json({ totalAssets: 0, domains: {}, availableDomains: [] })
   }
 }

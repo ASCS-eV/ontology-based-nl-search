@@ -13,23 +13,9 @@ import type { MappedTerm, OntologyGap, QueryInterpretation, SearchResponse } fro
 const HISTORY_KEY = 'nl-search-history'
 const MAX_HISTORY = 10
 
-/** Map ontology property names to SearchSlots keys */
-function propertyToSlotKey(property: string): string | null {
-  const mapping: Record<string, string> = {
-    country: 'country',
-    roadTypes: 'roadType',
-    laneTypes: 'laneType',
-    formatType: 'formatType',
-    formatVersion: 'formatVersion',
-    trafficDirection: 'trafficDirection',
-    state: 'state',
-    region: 'region',
-    city: 'city',
-    dataSource: 'dataSource',
-    license: 'license',
-    levelOfDetail: 'levelOfDetail',
-  }
-  return mapping[property] ?? null
+/** Map ontology property names to their filter group for SearchSlots */
+function isLocationProperty(property: string): boolean {
+  return ['country', 'state', 'region', 'city'].includes(property)
 }
 
 function getSearchHistory(): string[] {
@@ -173,15 +159,25 @@ export default function Home() {
     setPhase('executing')
 
     try {
-      // Convert mapped terms back to SearchSlots
-      const slots: Record<string, string> = {}
+      // Convert mapped terms to generic SearchSlots format
+      const filters: Record<string, string> = {}
+      const location: Record<string, string> = {}
+
       for (const term of updatedTerms) {
         if (term.property && term.mapped) {
-          const slotKey = propertyToSlotKey(term.property)
-          if (slotKey) {
-            slots[slotKey] = term.mapped
+          if (isLocationProperty(term.property)) {
+            location[term.property] = term.mapped
+          } else {
+            filters[term.property] = term.mapped
           }
         }
+      }
+
+      const slots = {
+        domains: ['hdmap'],
+        filters,
+        ranges: {},
+        ...(Object.keys(location).length > 0 ? { location } : {}),
       }
 
       const res = await fetch('/api/search/refine', {

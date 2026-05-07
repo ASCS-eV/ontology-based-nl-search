@@ -5,7 +5,7 @@ import { generateText } from 'ai'
 
 import { matchConcepts } from '@/lib/ontology'
 import { compileSlots } from '@/lib/search/compiler'
-import type { SearchSlots } from '@/lib/search/slots'
+import { type LegacySearchSlots, type SearchSlots, fromLegacySlots } from '@/lib/search/slots'
 
 import { getModel } from '../provider'
 import type { LlmStructuredResponse } from '../types'
@@ -59,11 +59,8 @@ export async function runSparqlAgent(naturalLanguageQuery: string): Promise<LlmS
   // Step 1: Ontology-driven concept matching (SKOS + SHACL vocabulary)
   const matchResult = await matchConcepts(naturalLanguageQuery)
 
-  // Convert matched concepts to partial slots
-  const preSlots: Partial<SearchSlots> = {}
-  for (const match of matchResult.matches) {
-    applyMatchToSlots(preSlots, match.property, match.value)
-  }
+  // Convert matched concepts to generic slots
+  const preSlots = matchResultToSlots(matchResult.matches)
 
   // Step 2: LLM fills remaining slots from the remainder
   const promptContext =
@@ -87,16 +84,17 @@ export async function runSparqlAgent(naturalLanguageQuery: string): Promise<LlmS
 
   if (submitCall) {
     const answer = submitCall.result as {
-      slots: SearchSlots
+      slots: LegacySearchSlots
       interpretation: LlmStructuredResponse['interpretation']
       gaps: LlmStructuredResponse['gaps']
     }
 
-    // Step 3: Merge pre-processed slots with LLM slots (pre-processed wins for conflicts)
-    const mergedSlots: SearchSlots = { ...answer.slots, ...preSlots }
+    // Step 3: Convert LLM legacy slots + merge with pre-extracted
+    const llmSlots = fromLegacySlots(answer.slots)
+    const mergedSlots: SearchSlots = mergeSlots(llmSlots, preSlots)
 
     // Step 4: Compile to SPARQL
-    const sparql = compileSlots(mergedSlots)
+    const sparql = await compileSlots(mergedSlots)
 
     // Merge deterministic gaps with LLM-reported gaps (deduplicate by term)
     const llmGapTerms = new Set(answer.gaps.map((g) => g.term.toLowerCase()))
@@ -114,7 +112,7 @@ export async function runSparqlAgent(naturalLanguageQuery: string): Promise<LlmS
 
   // Fallback: if agent didn't call submit_slots, compile from pre-extracted only
   if (matchResult.matches.length > 0) {
-    const sparql = compileSlots(preSlots as SearchSlots)
+    const sparql = await compileSlots(preSlots)
     return {
       interpretation: {
         summary: 'Interpreted via ontology concept matching (SKOS)',
@@ -134,35 +132,58 @@ export async function runSparqlAgent(naturalLanguageQuery: string): Promise<LlmS
 }
 
 /**
- * Map an ontology property name (from SHACL) to the SearchSlots field.
- * Generic: maps property local names to slot fields.
+ * Convert concept match results to generic SearchSlots.
+ * Groups by domain based on the property's ontology prefix.
  */
-function applyMatchToSlots(slots: Partial<SearchSlots>, property: string, value: string): void {
-  switch (property) {
-    case 'country':
-      slots.country = value
-      break
-    case 'roadTypes':
-      slots.roadType = value
-      break
-    case 'laneTypes':
-      slots.laneType = value
-      break
-    case 'formatType':
-      slots.formatType = value
-      break
-    case 'trafficDirection':
-      slots.trafficDirection = value
-      break
-    // Georeference properties
-    case 'state':
-      slots.state = value
-      break
-    case 'city':
-      slots.city = value
-      break
-    case 'region':
-      slots.region = value
-      break
+function matchResultToSlots(
+  matches: { property: string; value: string; domain?: string }[]
+): SearchSlots {
+  const slots: SearchSlots = {
+    domains: ['hdmap'], // Default domain; will be overridden if matches indicate otherwise
+    filters: {},
+    ranges: {},
+  }
+
+  const detectedDomains = new Set<string>()
+
+  for (const match of matches) {
+    const domain = match.domain || 'hdmap'
+    detectedDomains.add(domain)
+
+    // Location properties go to the location field
+    if (['country', 'state', 'region', 'city'].includes(match.property)) {
+      if (!slots.location) slots.location = {}
+      slots.location[match.property as keyof NonNullable<SearchSlots['location']>] = match.value
+    } else {
+      // All other properties go to filters
+      const existing = slots.filters[match.property]
+      if (existing) {
+        // Multiple values for same property → array
+        slots.filters[match.property] = Array.isArray(existing)
+          ? [...existing, match.value]
+          : [existing, match.value]
+      } else {
+        slots.filters[match.property] = match.value
+      }
+    }
+  }
+
+  if (detectedDomains.size > 0) {
+    slots.domains = [...detectedDomains]
+  }
+
+  return slots
+}
+
+/**
+ * Merge two slot sets. Pre-extracted (deterministic) wins on conflicts.
+ */
+function mergeSlots(base: SearchSlots, override: SearchSlots): SearchSlots {
+  return {
+    domains: override.domains.length > 0 ? override.domains : base.domains,
+    filters: { ...base.filters, ...override.filters },
+    ranges: { ...base.ranges, ...override.ranges },
+    location: { ...base.location, ...override.location },
+    license: override.license || base.license,
   }
 }

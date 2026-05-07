@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const store = await getInitializedStore()
 
     const endCompile = logger.time('compile-slots')
-    const sparql = compileSlots(slots as SearchSlots)
+    const sparql = await compileSlots(slots as SearchSlots)
     endCompile()
 
     const policy = enforceSparqlPolicy(sparql)

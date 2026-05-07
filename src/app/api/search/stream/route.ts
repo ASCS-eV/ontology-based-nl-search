@@ -124,9 +124,9 @@ export async function POST(request: NextRequest) {
         // Phase 6: Send meta
         let totalDatasets = 0
         try {
-          const countResult = await store.query(
-            'PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>\nSELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s a hdmap:HdMap }'
-          )
+          const { compileCountQuery } = await import('@/lib/search/compiler')
+          const countSparql = await compileCountQuery('hdmap')
+          const countResult = await store.query(countSparql)
           const countBinding = countResult.results.bindings[0]
           if (countBinding?.count) {
             totalDatasets = parseInt(countBinding.count.value, 10)
