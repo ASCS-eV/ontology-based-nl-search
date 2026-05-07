@@ -19,6 +19,7 @@
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 
+import { lookupGlossaryBatch } from './glossary'
 import { buildVocabularyIndex } from './vocabulary-index'
 
 export interface ConceptMatch {
@@ -43,6 +44,12 @@ export interface ConceptGap {
   reason: string
   /** Nearest concepts if any (from string similarity or related concepts) */
   suggestions: string[]
+  /** Domain glossary definition if the term is a known domain concept */
+  definition?: string
+  /** Usage guidance from the glossary (how to achieve what user wants) */
+  scopeNote?: string
+  /** Whether this is a recognized domain concept (just not filterable) */
+  isDomainConcept?: boolean
 }
 
 export interface MatchResult {
@@ -335,6 +342,27 @@ export async function matchConcepts(query: string): Promise<MatchResult> {
         reason: 'No matching concept found in the HD map ontology',
         suggestions: [],
       })
+    }
+  }
+
+  // Phase 4: Enrich gaps with glossary context
+  if (gaps.length > 0) {
+    const gapTerms = gaps.map((g) => g.term)
+    const glossaryEntries = await lookupGlossaryBatch(gapTerms)
+
+    for (const gap of gaps) {
+      const entry = glossaryEntries.get(gap.term)
+      if (entry) {
+        gap.isDomainConcept = true
+        gap.definition = entry.definition
+        gap.scopeNote = entry.scopeNote
+        if (entry.relatedTerms.length > 0) {
+          gap.suggestions = [...new Set([...gap.suggestions, ...entry.relatedTerms])]
+        }
+        if (!entry.filterable) {
+          gap.reason = `Recognized domain concept but not a filterable property in the current ontology`
+        }
+      }
     }
   }
 

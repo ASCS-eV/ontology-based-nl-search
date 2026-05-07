@@ -442,3 +442,224 @@ nlsearch:leftHand a skos:Concept ;
     skos:altLabel "Linksverkehr"@de ;
     nlsearch:ontologyProperty hdmap:trafficDirection ;
     nlsearch:ontologyValue "left-hand" .
+
+# ============================================================
+# Domain Glossary Concepts (NOT directly filterable in ontology)
+#
+# These represent common OpenDRIVE / simulation domain concepts
+# that users may reference. They are not mapped to ontology
+# properties but provide rich explanations and suggest
+# related filterable concepts.
+#
+# Marked with nlsearch:domainOnly true to distinguish them
+# from filterable concepts.
+# ============================================================
+
+nlsearch:intersection a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "intersection"@en ;
+    skos:altLabel "junction"@en ;
+    skos:altLabel "crossing"@en ;
+    skos:altLabel "crossroads"@en ;
+    skos:altLabel "Kreuzung"@de ;
+    skos:definition "A point where two or more roads meet or cross. In OpenDRIVE, modeled as a junction element connecting multiple roads."@en ;
+    skos:scopeNote "The ontology tracks intersection count per asset (minIntersections). Use 'town' or 'townArterial' road types to find maps likely to contain intersections."@en ;
+    skos:related nlsearch:town ;
+    skos:related nlsearch:townArterial ;
+    nlsearch:domainOnly true .
+
+nlsearch:roundabout a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "roundabout"@en ;
+    skos:altLabel "traffic circle"@en ;
+    skos:altLabel "rotary"@en ;
+    skos:altLabel "Kreisverkehr"@de ;
+    skos:definition "A circular road junction where traffic flows in one direction around a central island. In OpenDRIVE, represented as a junction with circular connecting roads."@en ;
+    skos:scopeNote "Not a distinct road type in the current ontology. Assets with roundabouts typically have 'town' road type and multiple intersections."@en ;
+    skos:related nlsearch:town ;
+    nlsearch:domainOnly true .
+
+nlsearch:tunnel a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "tunnel"@en ;
+    skos:altLabel "underpass"@en ;
+    skos:altLabel "Tunnel"@de ;
+    skos:definition "An enclosed passage for road traffic through a mountain, under a body of water, or beneath a building. In OpenDRIVE, defined via road object elements with tunnel geometry."@en ;
+    skos:scopeNote "Not currently a filterable property in the HD map ontology. Tunnel presence may correlate with 'motorway' road types."@en ;
+    skos:related nlsearch:motorway ;
+    nlsearch:domainOnly true .
+
+nlsearch:bridge a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "bridge"@en ;
+    skos:altLabel "overpass"@en ;
+    skos:altLabel "viaduct"@en ;
+    skos:altLabel "Brücke"@de ;
+    skos:definition "A structure carrying a road over an obstacle such as a river or another road. In OpenDRIVE, represented via bridge elements with associated geometry."@en ;
+    skos:scopeNote "Not currently a filterable property in the HD map ontology. Bridges are common in motorway and townArterial road environments."@en ;
+    skos:related nlsearch:motorway ;
+    skos:related nlsearch:townArterial ;
+    nlsearch:domainOnly true .
+
+nlsearch:trafficLight a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "traffic light"@en ;
+    skos:altLabel "traffic signal"@en ;
+    skos:altLabel "signal"@en ;
+    skos:altLabel "Ampel"@de ;
+    skos:altLabel "Lichtsignalanlage"@de ;
+    skos:definition "A signaling device at road intersections that controls traffic flow using colored lights (red, yellow, green)."@en ;
+    skos:scopeNote "The ontology tracks traffic light count per asset (minTrafficLights). Use numeric filters rather than keyword matching."@en ;
+    skos:related nlsearch:town ;
+    skos:related nlsearch:intersection ;
+    nlsearch:domainOnly true .
+
+nlsearch:trafficSign a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "traffic sign"@en ;
+    skos:altLabel "road sign"@en ;
+    skos:altLabel "sign"@en ;
+    skos:altLabel "Verkehrszeichen"@de ;
+    skos:altLabel "Schild"@de ;
+    skos:definition "A sign along a road providing information, warnings, or regulations to road users."@en ;
+    skos:scopeNote "The ontology tracks traffic sign count per asset (minTrafficSigns). Use numeric filters rather than keyword matching."@en ;
+    nlsearch:domainOnly true .
+
+nlsearch:speedLimit a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "speed limit"@en ;
+    skos:altLabel "speed restriction"@en ;
+    skos:altLabel "max speed"@en ;
+    skos:altLabel "Geschwindigkeitsbegrenzung"@de ;
+    skos:altLabel "Tempolimit"@de ;
+    skos:definition "The maximum legal speed allowed on a road segment, typically indicated by road signs."@en ;
+    skos:scopeNote "The ontology provides maxSpeedLimit and minSpeedLimit filters (in km/h). Use numeric filters, e.g., 'speed limit 50' → maxSpeedLimit: 50."@en ;
+    nlsearch:domainOnly true .
+
+nlsearch:laneMarking a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "lane marking"@en ;
+    skos:altLabel "road marking"@en ;
+    skos:altLabel "road paint"@en ;
+    skos:altLabel "line marking"@en ;
+    skos:altLabel "Fahrbahnmarkierung"@de ;
+    skos:definition "Painted lines, symbols or patterns on the road surface to guide traffic and indicate lane boundaries."@en ;
+    skos:scopeNote "Lane markings are part of the 'lane-marking' level of detail. Use levelOfDetail filter to find assets with detailed lane marking data."@en ;
+    nlsearch:domainOnly true .
+
+nlsearch:crosswalk a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "crosswalk"@en ;
+    skos:altLabel "pedestrian crossing"@en ;
+    skos:altLabel "zebra crossing"@en ;
+    skos:altLabel "Zebrastreifen"@de ;
+    skos:altLabel "Fußgängerüberweg"@de ;
+    skos:definition "A marked area on a road where pedestrians have priority to cross."@en ;
+    skos:scopeNote "Crosswalks are part of the 'crosswalk' level of detail. Use levelOfDetail filter to find assets with crosswalk data."@en ;
+    skos:related nlsearch:walkingLane ;
+    nlsearch:domainOnly true .
+
+nlsearch:guardrail a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "guardrail"@en ;
+    skos:altLabel "crash barrier"@en ;
+    skos:altLabel "Leitplanke"@de ;
+    skos:altLabel "safety barrier"@en ;
+    skos:definition "A safety barrier along roads to prevent vehicles from leaving the roadway or crossing into opposing traffic."@en ;
+    skos:scopeNote "Not currently a filterable property. Guardrails are common on motorways and may appear in high level-of-detail assets."@en ;
+    skos:related nlsearch:motorway ;
+    nlsearch:domainOnly true .
+
+nlsearch:curb a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "curb"@en ;
+    skos:altLabel "kerb"@en ;
+    skos:altLabel "Bordstein"@de ;
+    skos:definition "A raised edge at the side of a road or sidewalk separating the carriageway from the pavement or verge."@en ;
+    skos:scopeNote "Not currently a filterable property. Curbs are typical in urban (town) environments."@en ;
+    skos:related nlsearch:town ;
+    nlsearch:domainOnly true .
+
+nlsearch:slope a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "slope"@en ;
+    skos:altLabel "gradient"@en ;
+    skos:altLabel "incline"@en ;
+    skos:altLabel "hill"@en ;
+    skos:altLabel "Steigung"@de ;
+    skos:definition "The inclination of a road surface relative to the horizontal plane, expressed as a percentage or angle."@en ;
+    skos:scopeNote "Not currently a filterable property in the HD map ontology. OpenDRIVE encodes elevation profiles per road."@en ;
+    nlsearch:domainOnly true .
+
+nlsearch:curvature a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "curvature"@en ;
+    skos:altLabel "curve"@en ;
+    skos:altLabel "bend"@en ;
+    skos:altLabel "winding"@en ;
+    skos:altLabel "Kurve"@de ;
+    skos:definition "The degree to which a road deviates from a straight line, measured by the inverse of the radius of curvature."@en ;
+    skos:scopeNote "Not currently a filterable property. OpenDRIVE encodes geometry elements (spirals, arcs) that define curvature."@en ;
+    nlsearch:domainOnly true .
+
+nlsearch:lidar a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "lidar"@en ;
+    skos:altLabel "LiDAR"@en ;
+    skos:altLabel "laser scanning"@en ;
+    skos:altLabel "point cloud"@en ;
+    skos:altLabel "Laserscanner"@de ;
+    skos:definition "Light Detection and Ranging — a remote sensing method using laser pulses to measure distances and create 3D point clouds of the environment."@en ;
+    skos:scopeNote "LiDAR is a common data source for HD map creation. Use the dataSource filter with value 'lidar'."@en ;
+    nlsearch:domainOnly true .
+
+nlsearch:camera a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "camera"@en ;
+    skos:altLabel "video"@en ;
+    skos:altLabel "imagery"@en ;
+    skos:altLabel "Kamera"@de ;
+    skos:definition "An optical sensor capturing images or video of the road environment, used for map creation and feature extraction."@en ;
+    skos:scopeNote "Camera is a data source for HD maps. Use the dataSource filter with value 'camera'."@en ;
+    nlsearch:domainOnly true .
+
+nlsearch:autonomousDriving a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "autonomous driving"@en ;
+    skos:altLabel "self-driving"@en ;
+    skos:altLabel "AD"@en ;
+    skos:altLabel "ADAS"@en ;
+    skos:altLabel "automated driving"@en ;
+    skos:altLabel "autonomes Fahren"@de ;
+    skos:definition "Technology enabling vehicles to navigate and operate without human input, relying on sensors, HD maps, and AI."@en ;
+    skos:scopeNote "All HD map assets in this catalog support autonomous driving simulation. Filter by specific requirements like road type, level of detail, or format."@en ;
+    nlsearch:domainOnly true .
+
+nlsearch:scenarioSimulation a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "scenario"@en ;
+    skos:altLabel "simulation scenario"@en ;
+    skos:altLabel "test scenario"@en ;
+    skos:altLabel "Szenario"@de ;
+    skos:definition "A defined set of conditions and events for testing automated driving functions in simulation, typically built on top of HD map data."@en ;
+    skos:scopeNote "Scenarios are built using HD map assets. Filter by road type and features (intersections, traffic lights) to find maps suitable for specific scenarios."@en ;
+    nlsearch:domainOnly true .
+
+nlsearch:openscenario a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "OpenSCENARIO"@en ;
+    skos:altLabel "ASAM OpenSCENARIO"@en ;
+    skos:altLabel "xosc"@en ;
+    skos:altLabel "scenario format"@en ;
+    skos:definition "ASAM OpenSCENARIO — a standard for describing dynamic content in driving simulation (traffic participants, maneuvers, conditions)."@en ;
+    skos:scopeNote "OpenSCENARIO describes scenarios on top of road networks. This catalog contains HD map assets (OpenDRIVE), not scenario files directly. Use formatType to filter map formats."@en ;
+    nlsearch:domainOnly true .
+
+nlsearch:ndsLive a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "NDS.Live"@en ;
+    skos:altLabel "NDS"@en ;
+    skos:altLabel "Navigation Data Standard"@en ;
+    skos:definition "An open standard for HD map data in automotive systems (NDS.Live is the cloud-native evolution of NDS)."@en ;
+    skos:scopeNote "NDS.Live is a format type. Use formatType filter to find assets in this format."@en ;
+    nlsearch:domainOnly true .

@@ -32,11 +32,24 @@ export function OntologyGapsDisplay({ gaps }: OntologyGapsDisplayProps) {
           <div key={i} className="px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg">
             <div className="flex items-start gap-2">
               <span className="font-medium text-orange-800">&ldquo;{gap.term}&rdquo;</span>
+              {gap.isDomainConcept && (
+                <span className="inline-flex px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded font-medium">
+                  Domain concept
+                </span>
+              )}
               <span className="text-sm text-orange-700">— {gap.reason}</span>
             </div>
+            {gap.definition && (
+              <p className="mt-1.5 text-sm text-orange-700 italic">{gap.definition}</p>
+            )}
+            {gap.scopeNote && (
+              <p className="mt-1 text-xs text-orange-600 bg-orange-100/50 px-2 py-1 rounded">
+                💡 {gap.scopeNote}
+              </p>
+            )}
             {gap.suggestions && gap.suggestions.length > 0 && (
               <div className="mt-1.5 flex items-center gap-1.5 text-xs text-orange-600">
-                <span>Nearest concepts:</span>
+                <span>Related concepts:</span>
                 {gap.suggestions.map((s, j) => (
                   <code key={j} className="px-1.5 py-0.5 bg-orange-100 rounded font-mono">
                     {s}

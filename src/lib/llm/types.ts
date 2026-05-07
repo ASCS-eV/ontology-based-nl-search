@@ -18,6 +18,12 @@ export interface OntologyGap {
   reason: string
   /** Nearest concepts in the ontology that might be relevant */
   suggestions?: string[]
+  /** Domain glossary definition if available */
+  definition?: string
+  /** Usage guidance (how to achieve what the user wants) */
+  scopeNote?: string
+  /** Whether this is a recognized domain concept (just not filterable) */
+  isDomainConcept?: boolean
 }
 
 /** The LLM's structured interpretation of a user query */
