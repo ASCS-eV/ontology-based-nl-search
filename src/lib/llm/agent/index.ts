@@ -4,7 +4,7 @@ import { generateText } from 'ai'
 import { getModel } from '../provider'
 import { agentTools } from './tools'
 import { compileSlots } from '@/lib/search/compiler'
-import { extractKnownTerms } from '@/lib/search/synonyms'
+import { matchConcepts } from '@/lib/ontology'
 import type { SearchSlots } from '@/lib/search/slots'
 import type { LlmStructuredResponse } from '../types'
 
@@ -53,35 +53,19 @@ export async function runSparqlAgent(naturalLanguageQuery: string): Promise<LlmS
   const systemPrompt = await getSystemPrompt()
   const model = getModel()
 
-  // Step 1: Deterministic synonym pre-processing
-  const { terms: preExtracted, remainder } = extractKnownTerms(naturalLanguageQuery)
+  // Step 1: Ontology-driven concept matching (SKOS + SHACL vocabulary)
+  const matchResult = await matchConcepts(naturalLanguageQuery)
 
-  // Convert pre-extracted terms to partial slots
+  // Convert matched concepts to partial slots
   const preSlots: Partial<SearchSlots> = {}
-  for (const term of preExtracted) {
-    switch (term.property) {
-      case 'country':
-        preSlots.country = term.value
-        break
-      case 'roadType':
-        preSlots.roadType = term.value
-        break
-      case 'formatType':
-        preSlots.formatType = term.value
-        break
-      case 'dataSource':
-        preSlots.dataSource = term.value
-        break
-      case 'laneType':
-        preSlots.laneType = term.value
-        break
-    }
+  for (const match of matchResult.matches) {
+    applyMatchToSlots(preSlots, match.property, match.value)
   }
 
   // Step 2: LLM fills remaining slots from the remainder
   const promptContext =
-    preExtracted.length > 0
-      ? `Pre-extracted slots (already determined, do not override unless wrong): ${JSON.stringify(preSlots)}\n\nRemaining query to classify: "${remainder || naturalLanguageQuery}"\n\nOriginal full query: "${naturalLanguageQuery}"`
+    matchResult.matches.length > 0
+      ? `Pre-extracted slots (already determined, do not override unless wrong): ${JSON.stringify(preSlots)}\n\nRemaining query to classify: "${matchResult.remainder || naturalLanguageQuery}"\n\nOriginal full query: "${naturalLanguageQuery}"`
       : naturalLanguageQuery
 
   const result = await generateText({
@@ -111,30 +95,71 @@ export async function runSparqlAgent(naturalLanguageQuery: string): Promise<LlmS
     // Step 4: Compile to SPARQL
     const sparql = compileSlots(mergedSlots)
 
+    // Merge deterministic gaps with LLM-reported gaps (deduplicate by term)
+    const llmGapTerms = new Set(answer.gaps.map((g) => g.term.toLowerCase()))
+    const mergedGaps = [
+      ...answer.gaps,
+      ...matchResult.gaps.filter((g) => !llmGapTerms.has(g.term.toLowerCase())),
+    ]
+
     return {
       interpretation: answer.interpretation,
-      gaps: answer.gaps,
+      gaps: mergedGaps,
       sparql,
     }
   }
 
   // Fallback: if agent didn't call submit_slots, compile from pre-extracted only
-  if (preExtracted.length > 0) {
+  if (matchResult.matches.length > 0) {
     const sparql = compileSlots(preSlots as SearchSlots)
     return {
       interpretation: {
-        summary: 'Partial interpretation from deterministic extraction',
-        mappedTerms: preExtracted.map((t) => ({
-          input: t.original,
-          mapped: t.value,
-          confidence: 'high' as const,
-          property: t.property,
+        summary: 'Interpreted via ontology concept matching (SKOS)',
+        mappedTerms: matchResult.matches.map((m) => ({
+          input: m.input,
+          mapped: m.value,
+          confidence: m.confidence,
+          property: m.property,
         })),
       },
-      gaps: [],
+      gaps: matchResult.gaps,
       sparql,
     }
   }
 
   throw new Error('Agent failed to produce a result after maximum steps')
+}
+
+/**
+ * Map an ontology property name (from SHACL) to the SearchSlots field.
+ * Generic: maps property local names to slot fields.
+ */
+function applyMatchToSlots(slots: Partial<SearchSlots>, property: string, value: string): void {
+  switch (property) {
+    case 'country':
+      slots.country = value
+      break
+    case 'roadTypes':
+      slots.roadType = value
+      break
+    case 'laneTypes':
+      slots.laneType = value
+      break
+    case 'formatType':
+      slots.formatType = value
+      break
+    case 'trafficDirection':
+      slots.trafficDirection = value
+      break
+    // Georeference properties
+    case 'state':
+      slots.state = value
+      break
+    case 'city':
+      slots.city = value
+      break
+    case 'region':
+      slots.region = value
+      break
+  }
 }

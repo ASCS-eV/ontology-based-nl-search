@@ -28,11 +28,11 @@ If using `npm run dev` instead (dev mode with hot reload), steps 2–4 are not n
 
 ### Quick Reference for the User
 
-| Action | Command |
-|--------|---------|
-| Dev server (hot reload) | `npm run dev` |
+| Action                   | Command                           |
+| ------------------------ | --------------------------------- |
+| Dev server (hot reload)  | `npm run dev`                     |
 | Production build + serve | `npm run build && npx next start` |
-| Run all checks | `npm run validate` |
-| Run only tests | `npm test` |
-| Run e2e tests | `npx playwright test` |
-| Hard refresh browser | Ctrl+Shift+R |
+| Run all checks           | `npm run validate`                |
+| Run only tests           | `npm test`                        |
+| Run e2e tests            | `npx playwright test`             |
+| Hard refresh browser     | Ctrl+Shift+R                      |

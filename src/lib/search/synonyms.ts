@@ -189,3 +189,197 @@ export function getAllowedValues(property: string): string[] {
       return []
   }
 }
+
+export interface DetectedGap {
+  term: string
+  reason: string
+  suggestions: string[]
+}
+
+/**
+ * Near-miss concepts: terms that are semantically related to ontology values
+ * but not direct synonyms. These get reported as gaps with suggestions.
+ */
+const NEAR_MISS_MAP: Record<string, { suggestion: string; property: string; reason: string }> = {
+  exit: {
+    suggestion: 'intersection',
+    property: 'roadType',
+    reason:
+      'Highway exits are not a distinct concept in the HD map ontology; intersections are the closest representation',
+  },
+  ramp: {
+    suggestion: 'intersection',
+    property: 'roadType',
+    reason: 'On/off ramps are not modeled separately; intersections capture road connectivity',
+  },
+  'on-ramp': {
+    suggestion: 'intersection',
+    property: 'roadType',
+    reason: 'On-ramps are not modeled separately; intersections capture road connectivity',
+  },
+  'off-ramp': {
+    suggestion: 'intersection',
+    property: 'roadType',
+    reason: 'Off-ramps are not modeled separately; intersections capture road connectivity',
+  },
+  bridge: {
+    suggestion: 'motorway',
+    property: 'roadType',
+    reason:
+      'Bridges are not a distinct road type in the ontology; they appear within motorway or primary road datasets',
+  },
+  tunnel: {
+    suggestion: 'motorway',
+    property: 'roadType',
+    reason:
+      'Tunnels are not a distinct road type in the ontology; they appear within motorway or primary road datasets',
+  },
+  'traffic light': {
+    suggestion: 'intersection',
+    property: 'roadType',
+    reason: 'Traffic lights are attributes of intersections, not a separate road type',
+  },
+  'speed limit': {
+    suggestion: 'motorway',
+    property: 'roadType',
+    reason: 'Speed limits are attributes across road types, not a road type themselves',
+  },
+  pedestrian: {
+    suggestion: 'walking',
+    property: 'laneType',
+    reason: 'Pedestrian infrastructure maps to walking lane type',
+  },
+  crosswalk: {
+    suggestion: 'intersection',
+    property: 'roadType',
+    reason: 'Crosswalks are associated with intersections in the ontology',
+  },
+  'bike lane': {
+    suggestion: 'biking',
+    property: 'laneType',
+    reason: 'Bike lanes map to biking lane type',
+  },
+  weather: {
+    suggestion: '',
+    property: '',
+    reason: 'Weather conditions are not part of the HD map ontology',
+  },
+  slope: {
+    suggestion: '',
+    property: '',
+    reason: 'Elevation/slope data is not a searchable attribute in the current ontology',
+  },
+}
+
+/** Stopwords to ignore when detecting gaps */
+const STOPWORDS = new Set([
+  'i',
+  'a',
+  'an',
+  'the',
+  'want',
+  'need',
+  'looking',
+  'for',
+  'with',
+  'and',
+  'or',
+  'that',
+  'has',
+  'have',
+  'having',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'been',
+  'being',
+  'do',
+  'does',
+  'did',
+  'will',
+  'would',
+  'could',
+  'should',
+  'may',
+  'might',
+  'can',
+  'of',
+  'in',
+  'on',
+  'at',
+  'to',
+  'from',
+  'by',
+  'about',
+  'like',
+  'find',
+  'search',
+  'show',
+  'me',
+  'some',
+  'any',
+  'all',
+  'get',
+  'give',
+  'please',
+  'map',
+  'maps',
+  'data',
+  'dataset',
+  'datasets',
+  'hd',
+  'simulation',
+  'asset',
+  'assets',
+])
+
+/**
+ * Detect ontology gaps from unmatched remainder text.
+ * Identifies meaningful words not covered by the synonym layer
+ * and suggests the nearest ontology concept where possible.
+ */
+export function detectGaps(remainder: string): DetectedGap[] {
+  if (!remainder.trim()) return []
+
+  const gaps: DetectedGap[] = []
+
+  // Check multi-word near-misses first
+  const multiWordKeys = Object.keys(NEAR_MISS_MAP)
+    .filter((k) => k.includes(' ') || k.includes('-'))
+    .sort((a, b) => b.length - a.length)
+
+  let processedRemainder = remainder.toLowerCase()
+
+  for (const key of multiWordKeys) {
+    const regex = new RegExp(`\\b${escapeRegex(key)}\\b`, 'i')
+    if (regex.test(processedRemainder)) {
+      const miss = NEAR_MISS_MAP[key]
+      gaps.push({
+        term: key,
+        reason: miss.reason,
+        suggestions: miss.suggestion ? [miss.suggestion] : [],
+      })
+      processedRemainder = processedRemainder.replace(regex, ' ').trim()
+    }
+  }
+
+  // Check remaining single words
+  const remainingWords = processedRemainder.split(/\s+/).filter((w) => w.length > 0)
+
+  for (const word of remainingWords) {
+    if (STOPWORDS.has(word) || word.length <= 2) continue
+
+    if (NEAR_MISS_MAP[word]) {
+      const miss = NEAR_MISS_MAP[word]
+      gaps.push({
+        term: word,
+        reason: miss.reason,
+        suggestions: miss.suggestion ? [miss.suggestion] : [],
+      })
+    }
+  }
+
+  return gaps
+}

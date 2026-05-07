@@ -1,0 +1,444 @@
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/> .
+@prefix georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix nlsearch: <https://w3id.org/ascs-ev/ontology-based-nl-search/concepts/> .
+
+# ============================================================
+# SKOS Concept Scheme for Natural Language Search
+#
+# Scientific basis: W3C SKOS (Simple Knowledge Organization System)
+# provides a standard model for expressing knowledge organization
+# systems. This file defines:
+# - skos:prefLabel: canonical ontology value
+# - skos:altLabel: known synonyms (user language variants)
+# - skos:broader/narrower: hierarchical relationships
+# - skos:related: associative (non-hierarchical) relationships
+#
+# @see https://www.w3.org/TR/skos-reference/
+# ============================================================
+
+nlsearch:ConceptScheme a skos:ConceptScheme ;
+    rdfs:label "HD Map NL Search Vocabulary"@en ;
+    rdfs:comment "SKOS concept scheme for mapping natural language to HD map ontology values."@en .
+
+# ============================================================
+# Road Type Concepts
+# ============================================================
+
+nlsearch:motorway a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "motorway"@en ;
+    skos:altLabel "highway"@en ;
+    skos:altLabel "autobahn"@de ;
+    skos:altLabel "freeway"@en ;
+    skos:altLabel "expressway"@en ;
+    skos:altLabel "interstate"@en ;
+    skos:definition "A high-speed controlled-access road for through traffic."@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "motorway" .
+
+nlsearch:rural a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "rural"@en ;
+    skos:altLabel "country road"@en ;
+    skos:altLabel "countryside"@en ;
+    skos:altLabel "Landstraße"@de ;
+    skos:definition "A road outside urban areas."@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "rural" .
+
+nlsearch:town a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "town"@en ;
+    skos:altLabel "urban"@en ;
+    skos:altLabel "city road"@en ;
+    skos:altLabel "Stadtstraße"@de ;
+    skos:definition "A road within a built-up area."@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "town" .
+
+nlsearch:townArterial a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "townArterial"@en ;
+    skos:altLabel "arterial road"@en ;
+    skos:altLabel "main road"@en ;
+    skos:altLabel "Hauptstraße"@de ;
+    skos:broader nlsearch:town ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "townArterial" .
+
+nlsearch:townExpressway a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "townExpressway"@en ;
+    skos:altLabel "urban expressway"@en ;
+    skos:altLabel "Schnellstraße"@de ;
+    skos:broader nlsearch:town ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "townExpressway" .
+
+nlsearch:pedestrian a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "pedestrian"@en ;
+    skos:altLabel "pedestrian zone"@en ;
+    skos:altLabel "Fußgängerzone"@de ;
+    skos:altLabel "walking area"@en ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "pedestrian" .
+
+nlsearch:lowSpeed a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "lowSpeed"@en ;
+    skos:altLabel "low speed"@en ;
+    skos:altLabel "Tempo 30"@de ;
+    nlsearch:ontologyProperty hdmap:roadTypes ;
+    nlsearch:ontologyValue "lowSpeed" .
+
+# ============================================================
+# Lane Type Concepts
+# ============================================================
+
+nlsearch:exitLane a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "exit"@en ;
+    skos:altLabel "exit lane"@en ;
+    skos:altLabel "highway exit"@en ;
+    skos:altLabel "Ausfahrt"@de ;
+    skos:related nlsearch:offRamp ;
+    skos:related nlsearch:mwyExit ;
+    skos:definition "A lane leading away from the main carriageway."@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "exit" .
+
+nlsearch:entryLane a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "entry"@en ;
+    skos:altLabel "entry lane"@en ;
+    skos:altLabel "Einfahrt"@de ;
+    skos:related nlsearch:onRamp ;
+    skos:related nlsearch:mwyEntry ;
+    skos:definition "A lane leading onto the main carriageway."@en ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "entry" .
+
+nlsearch:onRamp a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "onRamp"@en ;
+    skos:altLabel "on-ramp"@en ;
+    skos:altLabel "on ramp"@en ;
+    skos:altLabel "Auffahrt"@de ;
+    skos:broader nlsearch:entryLane ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "onRamp" .
+
+nlsearch:offRamp a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "offRamp"@en ;
+    skos:altLabel "off-ramp"@en ;
+    skos:altLabel "off ramp"@en ;
+    skos:altLabel "Abfahrt"@de ;
+    skos:broader nlsearch:exitLane ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "offRamp" .
+
+nlsearch:mwyEntry a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "mwyEntry"@en ;
+    skos:altLabel "motorway entry"@en ;
+    skos:altLabel "Autobahnauffahrt"@de ;
+    skos:broader nlsearch:entryLane ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "mwyEntry" .
+
+nlsearch:mwyExit a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "mwyExit"@en ;
+    skos:altLabel "motorway exit"@en ;
+    skos:altLabel "Autobahnausfahrt"@de ;
+    skos:broader nlsearch:exitLane ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "mwyExit" .
+
+nlsearch:drivingLane a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "driving"@en ;
+    skos:altLabel "travel lane"@en ;
+    skos:altLabel "Fahrspur"@de ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "driving" .
+
+nlsearch:shoulderLane a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "shoulder"@en ;
+    skos:altLabel "hard shoulder"@en ;
+    skos:altLabel "Standstreifen"@de ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "shoulder" .
+
+nlsearch:parkingLane a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "parking"@en ;
+    skos:altLabel "parking lane"@en ;
+    skos:altLabel "Parkstreifen"@de ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "parking" .
+
+nlsearch:walkingLane a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "walking"@en ;
+    skos:altLabel "sidewalk"@en ;
+    skos:altLabel "pavement"@en ;
+    skos:altLabel "footpath"@en ;
+    skos:altLabel "Gehweg"@de ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "walking" .
+
+nlsearch:bikingLane a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "biking"@en ;
+    skos:altLabel "bike lane"@en ;
+    skos:altLabel "bicycle lane"@en ;
+    skos:altLabel "cycling"@en ;
+    skos:altLabel "Radweg"@de ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "biking" .
+
+nlsearch:busLane a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "bus"@en ;
+    skos:altLabel "bus lane"@en ;
+    skos:altLabel "Busspur"@de ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "bus" .
+
+nlsearch:emergencyLane a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "emergency"@en ;
+    skos:altLabel "emergency lane"@en ;
+    skos:altLabel "Rettungsgasse"@de ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "emergency" .
+
+nlsearch:connectingRamp a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "connectingRamp"@en ;
+    skos:altLabel "connecting ramp"@en ;
+    skos:altLabel "ramp"@en ;
+    skos:altLabel "Rampe"@de ;
+    skos:related nlsearch:onRamp ;
+    skos:related nlsearch:offRamp ;
+    nlsearch:ontologyProperty hdmap:laneTypes ;
+    nlsearch:ontologyValue "connectingRamp" .
+
+# ============================================================
+# Format Type Concepts
+# ============================================================
+
+nlsearch:asamOpenDrive a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "ASAM OpenDRIVE"@en ;
+    skos:altLabel "OpenDRIVE"@en ;
+    skos:altLabel "opendrive"@en ;
+    skos:altLabel "XODR"@en ;
+    skos:altLabel "xodr"@en ;
+    skos:definition "ASAM OpenDRIVE standard for road network description."@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "ASAM OpenDRIVE" .
+
+nlsearch:lanelet a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "Lanelet"@en ;
+    skos:altLabel "Lanelet2"@en ;
+    skos:altLabel "lanelet"@en ;
+    skos:altLabel "lanelet2"@en ;
+    skos:definition "Lanelet map format for autonomous driving."@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "Lanelet" .
+
+nlsearch:road2sim a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "road2sim"@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "road2sim" .
+
+nlsearch:shape a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "Shape"@en ;
+    skos:altLabel "shapefile"@en ;
+    skos:altLabel "shape file"@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "Shape" .
+
+nlsearch:roadXML a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "roadXML"@en ;
+    skos:altLabel "road XML"@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "roadXML" .
+
+nlsearch:road5 a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "Road5"@en ;
+    skos:altLabel "road5"@en ;
+    nlsearch:ontologyProperty hdmap:formatType ;
+    nlsearch:ontologyValue "Road5" .
+
+# ============================================================
+# Country Concepts (ISO 3166-1 alpha-2)
+# ============================================================
+
+nlsearch:countryDE a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "DE"@en ;
+    skos:altLabel "Germany"@en ;
+    skos:altLabel "German"@en ;
+    skos:altLabel "Deutschland"@de ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "DE" .
+
+nlsearch:countryUS a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "US"@en ;
+    skos:altLabel "USA"@en ;
+    skos:altLabel "United States"@en ;
+    skos:altLabel "America"@en ;
+    skos:altLabel "American"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "US" .
+
+nlsearch:countryJP a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "JP"@en ;
+    skos:altLabel "Japan"@en ;
+    skos:altLabel "Japanese"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "JP" .
+
+nlsearch:countryFR a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "FR"@en ;
+    skos:altLabel "France"@en ;
+    skos:altLabel "French"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "FR" .
+
+nlsearch:countryGB a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "GB"@en ;
+    skos:altLabel "United Kingdom"@en ;
+    skos:altLabel "UK"@en ;
+    skos:altLabel "Britain"@en ;
+    skos:altLabel "British"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "GB" .
+
+nlsearch:countryCN a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "CN"@en ;
+    skos:altLabel "China"@en ;
+    skos:altLabel "Chinese"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "CN" .
+
+nlsearch:countryAT a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "AT"@en ;
+    skos:altLabel "Austria"@en ;
+    skos:altLabel "Austrian"@en ;
+    skos:altLabel "Österreich"@de ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "AT" .
+
+nlsearch:countryCH a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "CH"@en ;
+    skos:altLabel "Switzerland"@en ;
+    skos:altLabel "Swiss"@en ;
+    skos:altLabel "Schweiz"@de ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "CH" .
+
+nlsearch:countryNL a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "NL"@en ;
+    skos:altLabel "Netherlands"@en ;
+    skos:altLabel "Dutch"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "NL" .
+
+nlsearch:countryIT a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "IT"@en ;
+    skos:altLabel "Italy"@en ;
+    skos:altLabel "Italian"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "IT" .
+
+nlsearch:countryKR a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "KR"@en ;
+    skos:altLabel "South Korea"@en ;
+    skos:altLabel "Korea"@en ;
+    skos:altLabel "Korean"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "KR" .
+
+nlsearch:countrySE a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "SE"@en ;
+    skos:altLabel "Sweden"@en ;
+    skos:altLabel "Swedish"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "SE" .
+
+nlsearch:countryAU a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "AU"@en ;
+    skos:altLabel "Australia"@en ;
+    skos:altLabel "Australian"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "AU" .
+
+nlsearch:countrySG a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "SG"@en ;
+    skos:altLabel "Singapore"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "SG" .
+
+nlsearch:countryFI a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "FI"@en ;
+    skos:altLabel "Finland"@en ;
+    skos:altLabel "Finnish"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "FI" .
+
+nlsearch:countryES a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "ES"@en ;
+    skos:altLabel "Spain"@en ;
+    skos:altLabel "Spanish"@en ;
+    nlsearch:ontologyProperty georeference:country ;
+    nlsearch:ontologyValue "ES" .
+
+# ============================================================
+# Traffic Direction Concepts
+# ============================================================
+
+nlsearch:rightHand a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "right-hand"@en ;
+    skos:altLabel "right-hand traffic"@en ;
+    skos:altLabel "Rechtsverkehr"@de ;
+    nlsearch:ontologyProperty hdmap:trafficDirection ;
+    nlsearch:ontologyValue "right-hand" .
+
+nlsearch:leftHand a skos:Concept ;
+    skos:inScheme nlsearch:ConceptScheme ;
+    skos:prefLabel "left-hand"@en ;
+    skos:altLabel "left-hand traffic"@en ;
+    skos:altLabel "Linksverkehr"@de ;
+    nlsearch:ontologyProperty hdmap:trafficDirection ;
+    nlsearch:ontologyValue "left-hand" .

@@ -1,4 +1,4 @@
-import { extractKnownTerms, getAllowedValues } from '../synonyms'
+import { extractKnownTerms, getAllowedValues, detectGaps } from '../synonyms'
 
 describe('extractKnownTerms', () => {
   it('extracts country from query', () => {
@@ -107,5 +107,52 @@ describe('getAllowedValues', () => {
 
   it('returns empty for unknown property', () => {
     expect(getAllowedValues('unknown:prop')).toHaveLength(0)
+  })
+})
+
+describe('detectGaps', () => {
+  it('detects "exit" as a near-miss for intersection', () => {
+    const gaps = detectGaps('with exit')
+    expect(gaps).toHaveLength(1)
+    expect(gaps[0].term).toBe('exit')
+    expect(gaps[0].suggestions).toContain('intersection')
+  })
+
+  it('detects "ramp" as a near-miss for intersection', () => {
+    const gaps = detectGaps('on-ramp connection')
+    expect(gaps).toContainEqual(
+      expect.objectContaining({ term: 'on-ramp', suggestions: ['intersection'] })
+    )
+  })
+
+  it('ignores stopwords', () => {
+    const gaps = detectGaps('i want a with the')
+    expect(gaps).toHaveLength(0)
+  })
+
+  it('returns empty for empty remainder', () => {
+    expect(detectGaps('')).toHaveLength(0)
+    expect(detectGaps('   ')).toHaveLength(0)
+  })
+
+  it('detects multiple gaps', () => {
+    const gaps = detectGaps('exit and tunnel nearby')
+    expect(gaps.length).toBeGreaterThanOrEqual(2)
+    const terms = gaps.map((g) => g.term)
+    expect(terms).toContain('exit')
+    expect(terms).toContain('tunnel')
+  })
+
+  it('does not flag words shorter than 3 characters', () => {
+    const gaps = detectGaps('at to in')
+    expect(gaps).toHaveLength(0)
+  })
+
+  it('works with full extraction pipeline', () => {
+    const { remainder } = extractKnownTerms('I want a German Autobahn with exit')
+    const gaps = detectGaps(remainder)
+    expect(gaps).toContainEqual(
+      expect.objectContaining({ term: 'exit', suggestions: ['intersection'] })
+    )
   })
 })

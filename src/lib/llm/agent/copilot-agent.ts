@@ -2,7 +2,7 @@ import { readFileSync } from 'fs'
 import path from 'path'
 import { CopilotClient, approveAll, defineTool, type CopilotSession } from '@github/copilot-sdk'
 import { compileSlots } from '@/lib/search/compiler'
-import { extractKnownTerms } from '@/lib/search/synonyms'
+import { matchConcepts } from '@/lib/ontology'
 import type { SearchSlots } from '@/lib/search/slots'
 import type { LlmStructuredResponse } from '../types'
 
@@ -50,28 +50,12 @@ export async function runCopilotAgent(
   const modelId = process.env.AI_MODEL || 'claude-sonnet-4.5'
   const c = await getClient()
 
-  // Step 1: Deterministic synonym pre-processing
-  const { terms: preExtracted, remainder } = extractKnownTerms(naturalLanguageQuery)
+  // Step 1: Ontology-driven concept matching (SKOS + SHACL vocabulary)
+  const matchResult = await matchConcepts(naturalLanguageQuery)
 
   const preSlots: Partial<SearchSlots> = {}
-  for (const term of preExtracted) {
-    switch (term.property) {
-      case 'country':
-        preSlots.country = term.value
-        break
-      case 'roadType':
-        preSlots.roadType = term.value
-        break
-      case 'formatType':
-        preSlots.formatType = term.value
-        break
-      case 'dataSource':
-        preSlots.dataSource = term.value
-        break
-      case 'laneType':
-        preSlots.laneType = term.value
-        break
-    }
+  for (const match of matchResult.matches) {
+    applyMatchToSlots(preSlots, match.property, match.value)
   }
 
   // Track the submitted answer
@@ -166,8 +150,8 @@ export async function runCopilotAgent(
 
     // Build prompt with pre-extracted context
     const promptContext =
-      preExtracted.length > 0
-        ? `Pre-extracted slots (already determined): ${JSON.stringify(preSlots)}\n\nRemaining query: "${remainder || naturalLanguageQuery}"\n\nOriginal: "${naturalLanguageQuery}"`
+      matchResult.matches.length > 0
+        ? `Pre-extracted slots (already determined): ${JSON.stringify(preSlots)}\n\nRemaining query: "${matchResult.remainder || naturalLanguageQuery}"\n\nOriginal: "${naturalLanguageQuery}"`
         : naturalLanguageQuery
 
     await session.sendAndWait({ prompt: promptContext })
@@ -181,27 +165,34 @@ export async function runCopilotAgent(
       }
       const sparql = compileSlots(mergedSlots)
 
+      // Merge deterministic gaps with LLM-reported gaps (deduplicate by term)
+      const llmGapTerms = new Set(result.gaps.map((g) => g.term.toLowerCase()))
+      const mergedGaps = [
+        ...result.gaps,
+        ...matchResult.gaps.filter((g) => !llmGapTerms.has(g.term.toLowerCase())),
+      ]
+
       return {
         interpretation: result.interpretation,
-        gaps: result.gaps,
+        gaps: mergedGaps,
         sparql,
       }
     }
 
     // Fallback: compile from pre-extracted only
-    if (preExtracted.length > 0) {
+    if (matchResult.matches.length > 0) {
       const sparql = compileSlots(preSlots as SearchSlots)
       return {
         interpretation: {
-          summary: 'Partial interpretation from deterministic extraction',
-          mappedTerms: preExtracted.map((t) => ({
-            input: t.original,
-            mapped: t.value,
-            confidence: 'high' as const,
-            property: t.property,
+          summary: 'Interpreted via ontology concept matching (SKOS)',
+          mappedTerms: matchResult.matches.map((m) => ({
+            input: m.input,
+            mapped: m.value,
+            confidence: m.confidence,
+            property: m.property,
           })),
         },
-        gaps: [],
+        gaps: matchResult.gaps,
         sparql,
       }
     }
@@ -209,5 +200,37 @@ export async function runCopilotAgent(
     throw new Error('Agent did not call submit_slots')
   } finally {
     await session.disconnect()
+  }
+}
+
+/**
+ * Map an ontology property name (from SHACL) to the SearchSlots field.
+ */
+function applyMatchToSlots(slots: Partial<SearchSlots>, property: string, value: string): void {
+  switch (property) {
+    case 'country':
+      slots.country = value
+      break
+    case 'roadTypes':
+      slots.roadType = value
+      break
+    case 'laneTypes':
+      slots.laneType = value
+      break
+    case 'formatType':
+      slots.formatType = value
+      break
+    case 'trafficDirection':
+      slots.trafficDirection = value
+      break
+    case 'state':
+      slots.state = value
+      break
+    case 'city':
+      slots.city = value
+      break
+    case 'region':
+      slots.region = value
+      break
   }
 }

@@ -1,0 +1,18 @@
+{
+  "$schema": "./ontology-sources.schema.json",
+  "description": "Configuration for ontology source directories. Each entry points to a directory containing domain subdirectories with *.shacl.ttl and *.owl.ttl files.",
+  "sources": [
+    {
+      "name": "ontology-management-base",
+      "path": "submodules/hd-map-asset-example/submodules/sl-5-8-asset-tools/submodules/ontology-management-base/artifacts",
+      "description": "ASCS ontology-management-base containing HD map, georeference, scenario, and other domain ontologies"
+    }
+  ],
+  "skos": [
+    {
+      "name": "nl-search-concepts",
+      "path": "src/lib/ontology/skos-annotations.ttl",
+      "description": "SKOS concept scheme with synonyms and relationships for natural language matching"
+    }
+  ]
+}
