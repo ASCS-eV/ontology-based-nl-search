@@ -1,28 +1,8 @@
 import { NextResponse } from 'next/server'
 
 import { buildDomainRegistry } from '@/lib/ontology/domain-registry'
-import { compileCountQuery } from '@/lib/search/compiler'
+import { ASSET_DOMAINS, compileCountQuery } from '@/lib/search/compiler'
 import { getInitializedStore } from '@/lib/search/init'
-
-/**
- * Domains that represent actual searchable asset types.
- * Excludes supporting ontologies (georeference, manifest, gx, openlabel, envited-x, general).
- */
-const ASSET_DOMAINS = new Set([
-  'automotive-simulator',
-  'environment-model',
-  'hdmap',
-  'leakage-test',
-  'ositrace',
-  'scenario',
-  'service',
-  'simulated-sensor',
-  'simulation-model',
-  'surface-model',
-  'survey',
-  'tzip21',
-  'vv-report',
-])
 
 export async function GET() {
   try {

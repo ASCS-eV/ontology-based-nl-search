@@ -21,6 +21,26 @@ import { buildVocabularyIndex } from '@/lib/ontology/vocabulary-index'
 import type { SearchSlots } from './slots'
 
 /**
+ * Domains that represent actual searchable asset types.
+ * Excludes supporting ontologies (georeference, manifest, gx, openlabel, envited-x, general).
+ */
+export const ASSET_DOMAINS = new Set([
+  'automotive-simulator',
+  'environment-model',
+  'hdmap',
+  'leakage-test',
+  'ositrace',
+  'scenario',
+  'service',
+  'simulated-sensor',
+  'simulation-model',
+  'surface-model',
+  'survey',
+  'tzip21',
+  'vv-report',
+])
+
+/**
  * Domain hierarchy: which domains can reference which others.
  * Derived from SHACL: scenario's manifest can reference hdmap and environment-model.
  * This relationship allows cross-domain queries (scenario that uses an hdmap with X).
@@ -487,6 +507,7 @@ export async function compileAllCountQueries(): Promise<{ domain: string; query:
   const queries: { domain: string; query: string }[] = []
 
   for (const domainName of registry.domainNames) {
+    if (!ASSET_DOMAINS.has(domainName)) continue
     const domain = registry.domains.get(domainName)!
     const prefixes = registry.prefixesFor(domainName)
     queries.push({
