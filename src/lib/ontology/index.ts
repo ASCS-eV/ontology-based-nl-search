@@ -66,8 +66,10 @@ async function buildOntologyContext(): Promise<string> {
     }
   } else {
     // Fallback: fetch from GitHub
-    const repo = process.env.ONTOLOGY_REPO || 'ASCS-eV/ontology-management-base'
-    const branch = process.env.ONTOLOGY_BRANCH || 'main'
+    const { getConfig } = await import('@/lib/config')
+    const config = getConfig()
+    const repo = config.ONTOLOGY_REPO
+    const branch = config.ONTOLOGY_BRANCH
 
     for (const artifact of ONTOLOGY_ARTIFACTS) {
       try {

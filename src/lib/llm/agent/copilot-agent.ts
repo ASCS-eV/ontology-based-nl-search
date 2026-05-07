@@ -3,6 +3,7 @@ import path from 'path'
 
 import { CopilotClient, type CopilotSession, approveAll, defineTool } from '@github/copilot-sdk'
 
+import { getConfig } from '@/lib/config'
 import { matchConcepts } from '@/lib/ontology'
 import { compileSlots } from '@/lib/search/compiler'
 import { type LegacySearchSlots, type SearchSlots, fromLegacySlots } from '@/lib/search/slots'
@@ -53,7 +54,8 @@ export async function runCopilotAgent(
 ): Promise<LlmStructuredResponse> {
   const targetDomain = options?.domain ?? 'hdmap'
   const systemPrompt = await getSystemPrompt()
-  const modelId = process.env.AI_MODEL || 'claude-sonnet-4.5'
+  const config = getConfig()
+  const modelId = config.AI_MODEL
   const c = await getClient()
 
   // Step 1: Ontology-driven concept matching (SKOS + SHACL vocabulary)

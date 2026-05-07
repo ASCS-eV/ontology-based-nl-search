@@ -1,3 +1,5 @@
+import { getConfig } from '@/lib/config'
+
 import { runSparqlAgent } from './agent'
 import { runCopilotAgent } from './agent/copilot-agent'
 import type { LlmStructuredResponse } from './types'
@@ -18,14 +20,13 @@ export async function generateStructuredSearch(
   naturalLanguageQuery: string,
   options?: SearchOptions
 ): Promise<LlmStructuredResponse> {
-  const provider = process.env.AI_PROVIDER || 'openai'
+  const config = getConfig()
   const domain = options?.domain ?? 'hdmap'
 
-  if (provider === 'copilot') {
+  if (config.AI_PROVIDER === 'copilot') {
     return runCopilotAgent(naturalLanguageQuery, { domain })
   }
 
-  // Use the full agentic flow with Vercel AI SDK tool calling
   return runSparqlAgent(naturalLanguageQuery, { domain })
 }
 

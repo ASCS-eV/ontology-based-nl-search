@@ -1,25 +1,26 @@
 import { createOpenAI } from '@ai-sdk/openai'
 
+import { getConfig } from '@/lib/config'
+
 /**
- * Get the configured AI model based on environment variables.
+ * Get the configured AI model based on validated application config.
  * Supports: openai, ollama (copilot is handled via @github/copilot-sdk separately)
  */
 export function getModel() {
-  const provider = process.env.AI_PROVIDER || 'openai'
-  const modelId = process.env.AI_MODEL || 'gpt-4o'
+  const config = getConfig()
+  const { AI_PROVIDER: provider, AI_MODEL: modelId } = config
 
   switch (provider) {
     case 'openai': {
       const openai = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
+        apiKey: config.OPENAI_API_KEY,
       })
       return openai(modelId)
     }
 
     case 'ollama': {
-      // Ollama is compatible with OpenAI API format
       const ollama = createOpenAI({
-        baseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
+        baseURL: config.OLLAMA_BASE_URL,
         apiKey: 'ollama',
       })
       return ollama(modelId)

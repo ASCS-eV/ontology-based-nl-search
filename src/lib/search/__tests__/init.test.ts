@@ -37,7 +37,10 @@ describe('getInitializedStore', () => {
 
   it('skips loadSampleData when SPARQL_MODE is remote', async () => {
     process.env.SPARQL_MODE = 'remote'
+    process.env.SPARQL_ENDPOINT = 'http://localhost:3030/test/sparql'
 
+    const { resetConfig } = await import('@/lib/config')
+    resetConfig()
     const { loadSampleData } = await import('@/lib/data/loader')
     const { getInitializedStore: getStore } = await import('../init')
 
@@ -46,5 +49,7 @@ describe('getInitializedStore', () => {
     expect(loadSampleData).not.toHaveBeenCalled()
 
     delete process.env.SPARQL_MODE
+    delete process.env.SPARQL_ENDPOINT
+    resetConfig()
   })
 })

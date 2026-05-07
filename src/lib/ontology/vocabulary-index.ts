@@ -15,6 +15,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
 import { basename, join } from 'path'
 
+import { getConfig } from '@/lib/config'
+
 /** A property with its allowed values as defined by sh:in in SHACL */
 export interface VocabularyProperty {
   /** Full IRI of the property */
@@ -61,8 +63,9 @@ function getArtifactRoots(): string[] {
   }
 
   // Fallback: env var or default path
-  if (process.env.ONTOLOGY_ARTIFACTS_PATH) {
-    return [process.env.ONTOLOGY_ARTIFACTS_PATH]
+  const config = getConfig()
+  if (config.ONTOLOGY_ARTIFACTS_PATH) {
+    return [config.ONTOLOGY_ARTIFACTS_PATH]
   }
 
   return [

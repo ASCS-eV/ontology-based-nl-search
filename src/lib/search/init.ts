@@ -1,3 +1,4 @@
+import { getConfig } from '@/lib/config'
 import { loadSampleData } from '@/lib/data/loader'
 import { getSparqlStore } from '@/lib/sparql'
 import type { SparqlStore } from '@/lib/sparql'
@@ -13,8 +14,9 @@ export function getInitializedStore(): Promise<SparqlStore> {
 
   initPromise = (async () => {
     const store = getSparqlStore()
+    const config = getConfig()
 
-    if (process.env.SPARQL_MODE !== 'remote') {
+    if (config.SPARQL_MODE !== 'remote') {
       await loadSampleData(store)
     }
 
