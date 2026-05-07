@@ -1,21 +1,31 @@
 import { CopilotClient, approveAll, type CopilotSession } from '@github/copilot-sdk'
 
 let client: CopilotClient | null = null
-let session: CopilotSession | null = null
 
 /**
- * Get or create a persistent CopilotClient + session.
- * The SDK handles all auth internally via the Copilot CLI.
+ * Get or create the shared CopilotClient.
+ * The client is reused, but sessions are created per-request.
  */
-async function getSession(modelId: string, systemPrompt: string): Promise<CopilotSession> {
-  if (session) return session
+async function getClient(): Promise<CopilotClient> {
+  if (client) return client
 
-  if (!client) {
-    client = new CopilotClient()
-    await client.start()
-  }
+  client = new CopilotClient()
+  await client.start()
+  return client
+}
 
-  session = await client.createSession({
+/**
+ * Generate text using the Copilot CLI as LLM provider.
+ * Creates a fresh session per request to avoid cross-query context contamination.
+ */
+export async function generateWithCopilot(
+  systemPrompt: string,
+  userPrompt: string,
+  modelId: string
+): Promise<string> {
+  const c = await getClient()
+
+  const session: CopilotSession = await c.createSession({
     model: modelId,
     onPermissionRequest: approveAll,
     systemMessage: {
@@ -24,33 +34,18 @@ async function getSession(modelId: string, systemPrompt: string): Promise<Copilo
     },
   })
 
-  return session
-}
-
-/**
- * Generate text using the Copilot CLI as LLM provider.
- * Uses @github/copilot-sdk which handles enterprise OAuth auth internally.
- */
-export async function generateWithCopilot(
-  systemPrompt: string,
-  userPrompt: string,
-  modelId: string
-): Promise<string> {
-  const s = await getSession(modelId, systemPrompt)
-
-  const response = await s.sendAndWait({ prompt: userPrompt })
-
-  return response?.data?.content ?? ''
+  try {
+    const response = await session.sendAndWait({ prompt: userPrompt })
+    return response?.data?.content ?? ''
+  } finally {
+    await session.disconnect()
+  }
 }
 
 /**
  * Clean up the Copilot client on process exit.
  */
 export async function disposeCopilotClient(): Promise<void> {
-  if (session) {
-    await session.disconnect()
-    session = null
-  }
   if (client) {
     await client.stop()
     client = null

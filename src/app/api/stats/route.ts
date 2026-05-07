@@ -1,16 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getSparqlStore } from '@/lib/sparql'
-import { loadSampleData } from '@/lib/data/loader'
-
-let dataLoaded = false
+import { getInitializedStore } from '@/lib/search/init'
 
 export async function GET() {
   try {
-    const store = getSparqlStore()
-    if (process.env.SPARQL_MODE !== 'remote' && !dataLoaded) {
-      await loadSampleData(store)
-      dataLoaded = true
-    }
+    const store = await getInitializedStore()
 
     const countResult = await store.query(
       `PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>

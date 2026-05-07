@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateStructuredSearch } from '@/lib/llm'
-import { getSparqlStore } from '@/lib/sparql'
-import { loadSampleData } from '@/lib/data/loader'
+import { getInitializedStore } from '@/lib/search/init'
+import { enforceSparqlPolicy } from '@/lib/sparql/policy'
 import type { SearchResponse } from '@/lib/llm/types'
-
-let dataLoaded = false
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,33 +12,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing or invalid "query" field' }, { status: 400 })
     }
 
-    // Ensure sample data is loaded in memory mode
-    const store = getSparqlStore()
-    if (process.env.SPARQL_MODE !== 'remote' && !dataLoaded) {
-      await loadSampleData(store)
-      dataLoaded = true
-    }
-
+    const store = await getInitializedStore()
     const startTime = performance.now()
 
     // Generate structured interpretation + SPARQL from natural language
     const structured = await generateStructuredSearch(query)
 
-    // Execute the SPARQL query
+    // Execute the SPARQL query (with policy enforcement)
+    const policy = enforceSparqlPolicy(structured.sparql)
     let results: Record<string, string>[] = []
     let sparqlError: string | undefined
 
-    try {
-      const sparqlResults = await store.query(structured.sparql)
-      results = sparqlResults.results.bindings.map((binding) => {
-        const row: Record<string, string> = {}
-        for (const [key, value] of Object.entries(binding)) {
-          row[key] = value.value
-        }
-        return row
-      })
-    } catch (err) {
-      sparqlError = err instanceof Error ? err.message : 'SPARQL execution failed'
+    if (!policy.allowed) {
+      sparqlError = `Query policy violation: ${policy.violations.join('; ')}`
+    } else {
+      try {
+        const sparqlResults = await store.query(policy.query)
+        results = sparqlResults.results.bindings.map((binding) => {
+          const row: Record<string, string> = {}
+          for (const [key, value] of Object.entries(binding)) {
+            row[key] = value.value
+          }
+          return row
+        })
+      } catch (err) {
+        sparqlError = err instanceof Error ? err.message : 'SPARQL execution failed'
+      }
     }
 
     // Count total datasets in the graph

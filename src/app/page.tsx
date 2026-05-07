@@ -6,7 +6,7 @@ import { InterpretationDisplay } from '@/components/InterpretationDisplay'
 import { OntologyGapsDisplay } from '@/components/OntologyGapsDisplay'
 import { SparqlPreview } from '@/components/SparqlPreview'
 import { ResultsDisplay } from '@/components/ResultsDisplay'
-import type { SearchResponse } from '@/lib/llm/types'
+import type { SearchResponse, QueryInterpretation, OntologyGap } from '@/lib/llm/types'
 
 const HISTORY_KEY = 'nl-search-history'
 const MAX_HISTORY = 10
@@ -26,8 +26,15 @@ function saveToHistory(query: string) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)))
 }
 
+type SearchPhase = 'idle' | 'interpreting' | 'executing' | 'done'
+
 export default function Home() {
-  const [response, setResponse] = useState<SearchResponse | null>(null)
+  const [interpretation, setInterpretation] = useState<QueryInterpretation | null>(null)
+  const [gaps, setGaps] = useState<OntologyGap[] | null>(null)
+  const [sparql, setSparql] = useState<string | null>(null)
+  const [results, setResults] = useState<Record<string, string>[] | null>(null)
+  const [meta, setMeta] = useState<SearchResponse['meta'] | null>(null)
+  const [phase, setPhase] = useState<SearchPhase>('idle')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [totalAssets, setTotalAssets] = useState<number | null>(null)
@@ -35,7 +42,6 @@ export default function Home() {
 
   useEffect(() => {
     setHistory(getSearchHistory())
-    // Fetch dataset count on mount
     fetch('/api/stats')
       .then((r) => r.json())
       .then((data) => setTotalAssets(data.totalAssets))
@@ -45,10 +51,15 @@ export default function Home() {
   const handleSearch = useCallback(async (naturalLanguageQuery: string) => {
     setLoading(true)
     setError(null)
-    setResponse(null)
+    setInterpretation(null)
+    setGaps(null)
+    setSparql(null)
+    setResults(null)
+    setMeta(null)
+    setPhase('interpreting')
 
     try {
-      const res = await fetch('/api/search', {
+      const res = await fetch('/api/search/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: naturalLanguageQuery }),
@@ -59,16 +70,70 @@ export default function Home() {
         throw new Error(errorData.error || 'Search failed')
       }
 
-      const data: SearchResponse = await res.json()
-      setResponse(data)
+      const reader = res.body?.getReader()
+      if (!reader) throw new Error('No response stream')
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        let currentEvent = ''
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7)
+          } else if (line.startsWith('data: ') && currentEvent) {
+            const data = JSON.parse(line.slice(6))
+            switch (currentEvent) {
+              case 'status':
+                setPhase(data.phase as SearchPhase)
+                break
+              case 'interpretation':
+                setInterpretation(data)
+                break
+              case 'gaps':
+                setGaps(data)
+                break
+              case 'sparql':
+                setSparql(data)
+                break
+              case 'results':
+                setResults(data.results)
+                if (data.error) setError(data.error)
+                break
+              case 'meta':
+                setMeta(data)
+                if (data.totalDatasets) setTotalAssets(data.totalDatasets)
+                break
+              case 'done':
+                setPhase('done')
+                break
+              case 'error':
+                setError(data.message)
+                break
+            }
+            currentEvent = ''
+          }
+        }
+      }
+
       saveToHistory(naturalLanguageQuery)
       setHistory(getSearchHistory())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setLoading(false)
+      setPhase('done')
     }
   }, [])
+
+  const hasResponse = interpretation || gaps || sparql || results
 
   return (
     <div className="flex flex-col items-center px-4 pt-12 pb-16">
@@ -91,7 +156,7 @@ export default function Home() {
       <SearchBar onSearch={handleSearch} loading={loading} history={history} />
 
       {/* Error */}
-      {error && (
+      {error && !results && (
         <div
           className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 max-w-2xl w-full"
           role="alert"
@@ -101,19 +166,32 @@ export default function Home() {
       )}
 
       {/* Progressive results */}
-      {response && (
+      {hasResponse && (
         <div className="mt-8 w-full max-w-4xl mx-auto space-y-4">
-          <InterpretationDisplay interpretation={response.interpretation} />
-          <OntologyGapsDisplay gaps={response.gaps} />
-          <SparqlPreview sparql={response.sparql} />
-          <ResultsDisplay results={response.results} />
+          {interpretation && <InterpretationDisplay interpretation={interpretation} />}
+
+          {gaps && <OntologyGapsDisplay gaps={gaps} />}
+
+          {sparql && <SparqlPreview sparql={sparql} />}
+
+          {/* Loading indicator between interpretation and results */}
+          {phase === 'executing' && !results && (
+            <div className="flex items-center gap-2 text-sm text-gray-500 py-3">
+              <span className="w-4 h-4 border-2 border-blue border-t-transparent rounded-full animate-spin" />
+              Executing SPARQL query…
+            </div>
+          )}
+
+          {results && <ResultsDisplay results={results} />}
 
           {/* Execution metadata */}
-          <div className="pt-2 text-xs text-gray-400 flex items-center gap-3">
-            <span>{response.meta.matchCount} results</span>
-            <span className="text-gray-300">·</span>
-            <span>{response.meta.executionTimeMs}ms</span>
-          </div>
+          {meta && (
+            <div className="pt-2 text-xs text-gray-400 flex items-center gap-3 justify-center">
+              <span>{meta.matchCount} results</span>
+              <span className="text-gray-300">·</span>
+              <span>{meta.executionTimeMs}ms</span>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { getOntologyContext } from '@/lib/ontology'
 import { generateWithCopilot } from './copilot-provider'
 import { runSparqlAgent } from './agent'
 import { extractSparql as extractSparqlFromResponse } from './sparql-utils'
+import { validateLlmOutput } from './schemas'
 import type { LlmStructuredResponse } from './types'
 
 /**
@@ -60,7 +61,9 @@ function parseStructuredResponse(text: string): LlmStructuredResponse {
 
   try {
     const parsed = JSON.parse(jsonText)
-    return {
+
+    // Normalize before validation
+    const normalized = {
       interpretation: {
         summary: parsed.interpretation?.summary || 'Query interpreted',
         mappedTerms: Array.isArray(parsed.interpretation?.mappedTerms)
@@ -70,6 +73,13 @@ function parseStructuredResponse(text: string): LlmStructuredResponse {
       gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],
       sparql: extractSparqlFromResponse(parsed.sparql || ''),
     }
+
+    // Validate with Zod
+    const validation = validateLlmOutput(normalized)
+    if (!validation.success) {
+      console.warn('LLM output validation warning:', validation.error)
+    }
+    return validation.data
   } catch {
     const sparql = extractSparqlFromResponse(text)
     return {
