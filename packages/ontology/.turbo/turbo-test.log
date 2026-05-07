@@ -5,28 +5,28 @@
 
  RUN  v3.2.4 /home/q413005/workspace/ontology-based-nl-search/packages/ontology
 
- ✓ src/__tests__/glossary.test.ts (8 tests) 72ms
- ✓ src/__tests__/domain-registry.test.ts (10 tests) 231ms
- ✓ src/__tests__/vocabulary-index.test.ts (7 tests) 17476ms
-   ✓ VocabularyIndex > discovers and parses SHACL files from artifacts directory  2796ms
-   ✓ VocabularyIndex > extracts roadTypes with allowed values from hdmap SHACL  2412ms
-   ✓ VocabularyIndex > extracts laneTypes with correct values including exit/onRamp  2410ms
-   ✓ VocabularyIndex > extracts formatType allowed values  2325ms
-   ✓ VocabularyIndex > extracts heightSystem from georeference SHACL  2488ms
-   ✓ VocabularyIndex > builds reverse index for value lookup  2731ms
-   ✓ VocabularyIndex > extracts numeric properties without sh:in  2313ms
- ✓ src/__tests__/concept-matcher.test.ts (13 tests) 19741ms
-   ✓ matchConcepts > matches "German" to country DE via SKOS altLabel  2935ms
-   ✓ matchConcepts > matches "highway" to roadTypes motorway via SKOS altLabel  2452ms
-   ✓ matchConcepts > matches "exit" directly to laneTypes exit via SKOS prefLabel  2352ms
-   ✓ matchConcepts > matches "OpenDRIVE" to formatType via SKOS altLabel  2429ms
-   ✓ matchConcepts > matches multi-word phrases like "United States"  2337ms
-   ✓ matchConcepts > ignores stopwords in query  2603ms
-   ✓ matchConcepts > reports gaps for completely unmapped terms  2443ms
-   ✓ matchConcepts > handles on-ramp as a valid lane type concept  2184ms
+ ✓ src/__tests__/glossary.test.ts (8 tests) 105ms
+ ✓ src/__tests__/domain-registry.test.ts (10 tests) 232ms
+ ✓ src/__tests__/vocabulary-index.test.ts (7 tests) 17544ms
+   ✓ VocabularyIndex > discovers and parses SHACL files from artifacts directory  3040ms
+   ✓ VocabularyIndex > extracts roadTypes with allowed values from hdmap SHACL  2475ms
+   ✓ VocabularyIndex > extracts laneTypes with correct values including exit/onRamp  2468ms
+   ✓ VocabularyIndex > extracts formatType allowed values  2317ms
+   ✓ VocabularyIndex > extracts heightSystem from georeference SHACL  2408ms
+   ✓ VocabularyIndex > builds reverse index for value lookup  2366ms
+   ✓ VocabularyIndex > extracts numeric properties without sh:in  2468ms
+ ✓ src/__tests__/concept-matcher.test.ts (13 tests) 19901ms
+   ✓ matchConcepts > matches "German" to country DE via SKOS altLabel  2950ms
+   ✓ matchConcepts > matches "highway" to roadTypes motorway via SKOS altLabel  2420ms
+   ✓ matchConcepts > matches "exit" directly to laneTypes exit via SKOS prefLabel  2404ms
+   ✓ matchConcepts > matches "OpenDRIVE" to formatType via SKOS altLabel  2542ms
+   ✓ matchConcepts > matches multi-word phrases like "United States"  2300ms
+   ✓ matchConcepts > ignores stopwords in query  2344ms
+   ✓ matchConcepts > reports gaps for completely unmapped terms  2521ms
+   ✓ matchConcepts > handles on-ramp as a valid lane type concept  2414ms
 
  Test Files  4 passed (4)
       Tests  38 passed (38)
-   Start at  22:02:27
-   Duration  20.93s (transform 217ms, setup 0ms, collect 427ms, tests 37.52s, environment 1ms, prepare 390ms)
+   Start at  22:10:54
+   Duration  21.17s (transform 301ms, setup 0ms, collect 586ms, tests 37.78s, environment 1ms, prepare 364ms)
 

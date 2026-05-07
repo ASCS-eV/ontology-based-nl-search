@@ -21,7 +21,7 @@ stdout | src/__tests__/routes.test.ts > POST /search/stream > returns 200 for va
 <-- POST /search/stream
 
 stdout | src/__tests__/routes.test.ts > POST /search/stream > returns 200 for valid request
---> POST /search/stream [32m200[0m 2ms
+--> POST /search/stream [32m200[0m 4ms
 
 stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error for missing query
 <-- POST /search/stream
@@ -33,7 +33,7 @@ stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error 
 <-- POST /search/stream
 
 stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error for invalid JSON
---> POST /search/stream [32m200[0m 0ms
+--> POST /search/stream [32m200[0m 1ms
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 400 for missing slots field
 <-- POST /search/refine
@@ -45,13 +45,13 @@ stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 200 with r
 <-- POST /search/refine
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 200 with results for valid slots
---> POST /search/refine [32m200[0m 2ms
+--> POST /search/refine [32m200[0m 3ms
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 422 for invalid slot shape
 <-- POST /search/refine
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 422 for invalid slot shape
---> POST /search/refine [33m422[0m 1ms
+--> POST /search/refine [33m422[0m 2ms
 
 stdout | src/__tests__/routes.test.ts > GET /stats > returns stats with domain counts
 <-- GET /stats
@@ -59,10 +59,10 @@ stdout | src/__tests__/routes.test.ts > GET /stats > returns stats with domain c
 stdout | src/__tests__/routes.test.ts > GET /stats > returns stats with domain counts
 --> GET /stats [32m200[0m 1ms
 
- ✓ src/__tests__/routes.test.ts (9 tests) 39ms
+ ✓ src/__tests__/routes.test.ts (9 tests) 69ms
 
  Test Files  1 passed (1)
       Tests  9 passed (9)
-   Start at  22:02:27
-   Duration  1.29s (transform 211ms, setup 0ms, collect 208ms, tests 39ms, environment 0ms, prepare 546ms)
+   Start at  22:10:54
+   Duration  1.33s (transform 310ms, setup 0ms, collect 291ms, tests 69ms, environment 0ms, prepare 396ms)
 

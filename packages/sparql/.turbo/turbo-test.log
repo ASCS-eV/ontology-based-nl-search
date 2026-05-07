@@ -5,14 +5,14 @@
 
  RUN  v3.2.4 /home/q413005/workspace/ontology-based-nl-search/packages/sparql
 
- ✓ src/__tests__/policy.test.ts (10 tests) 30ms
- ✓ src/__tests__/remote-store.test.ts (10 tests) 11ms
- ✓ src/__tests__/cache.test.ts (8 tests) 5ms
- ✓ src/__tests__/store-factory.test.ts (3 tests) 243ms
- ✓ src/__tests__/oxigraph-store.test.ts (11 tests) 79ms
+ ✓ src/__tests__/remote-store.test.ts (10 tests) 12ms
+ ✓ src/__tests__/cache.test.ts (8 tests) 7ms
+ ✓ src/__tests__/policy.test.ts (10 tests) 31ms
+ ✓ src/__tests__/oxigraph-store.test.ts (11 tests) 71ms
+ ✓ src/__tests__/store-factory.test.ts (3 tests) 143ms
 
  Test Files  5 passed (5)
       Tests  42 passed (42)
-   Start at  22:02:27
-   Duration  1.23s (transform 638ms, setup 0ms, collect 589ms, tests 368ms, environment 2ms, prepare 1.99s)
+   Start at  22:10:54
+   Duration  1.29s (transform 501ms, setup 0ms, collect 654ms, tests 264ms, environment 1ms, prepare 2.35s)
 

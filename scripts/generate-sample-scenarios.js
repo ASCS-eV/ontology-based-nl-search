@@ -126,5 +126,5 @@ for (let i = 0; i < 50; i++) {
   }
 }
 
-fs.writeFileSync('src/lib/data/sample-scenarios.ttl', t)
+fs.writeFileSync('packages/ontology/data/sample-scenarios.ttl', t)
 console.log(`Generated 50 scenario assets (${(t.length / 1024).toFixed(1)} KB)`)

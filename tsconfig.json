@@ -1,30 +1,17 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "skipLibCheck": true,
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
-    "downlevelIteration": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "types": ["jest", "node"],
-    "allowJs": true,
-    "target": "ES2017"
+    "noEmit": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "submodules"]
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/sparql" },
+    { "path": "packages/ontology" },
+    { "path": "packages/search" },
+    { "path": "packages/llm" },
+    { "path": "apps/api" },
+    { "path": "apps/web" }
+  ],
+  "include": [],
+  "exclude": ["node_modules"]
 }

@@ -29,7 +29,7 @@ interface ExtractedValue {
 }
 
 /** Output directory for generated SKOS files */
-const OUTPUT_DIR = join(process.cwd(), 'src', 'lib', 'ontology', 'generated')
+const OUTPUT_DIR = join(process.cwd(), 'packages', 'ontology', 'data', 'generated')
 
 /**
  * Get artifact roots from ontology-sources.json configuration.
