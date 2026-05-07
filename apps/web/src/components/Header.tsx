@@ -19,7 +19,7 @@ export function Header() {
             Search
           </Link>
           <a
-            href="/docs"
+            href="http://localhost:5175/docs/"
             className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
           >
             Documentation

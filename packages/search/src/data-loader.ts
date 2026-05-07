@@ -1,6 +1,11 @@
 import type { SparqlStore } from '@ontology-search/sparql/types'
 import { readFileSync } from 'fs'
-import { join } from 'path'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const DATA_DIR = join(__dirname, '..', 'data')
 
 /**
  * Load sample TTL data files for development/testing.
@@ -8,7 +13,7 @@ import { join } from 'path'
  */
 function loadDataFile(filename: string): string {
   try {
-    return readFileSync(join(process.cwd(), 'src', 'lib', 'data', filename), 'utf-8')
+    return readFileSync(join(DATA_DIR, filename), 'utf-8')
   } catch {
     return ''
   }

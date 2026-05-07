@@ -4,7 +4,8 @@ import { matchConcepts } from '@ontology-search/ontology'
 import { compileSlots } from '@ontology-search/search/compiler'
 import type { SearchSlots } from '@ontology-search/search/slots'
 import { readFileSync } from 'fs'
-import path from 'path'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 
 import type { LlmStructuredResponse } from '../types.js'
 import type { AgentOptions } from './index.js'
@@ -21,7 +22,9 @@ interface SlotSubmission {
   gaps: LlmStructuredResponse['gaps']
 }
 
-const SKILL_PATH = path.join(__dirname, 'skill.md')
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const SKILL_PATH = join(__dirname, 'skill.md')
 
 let cachedSystemPrompt: string | null = null
 let client: CopilotClient | null = null
@@ -29,14 +32,7 @@ let client: CopilotClient | null = null
 async function getSystemPrompt(): Promise<string> {
   if (cachedSystemPrompt) return cachedSystemPrompt
 
-  try {
-    cachedSystemPrompt = readFileSync(SKILL_PATH, 'utf-8')
-  } catch {
-    cachedSystemPrompt = readFileSync(
-      path.join(process.cwd(), 'src', 'lib', 'llm', 'agent', 'skill.md'),
-      'utf-8'
-    )
-  }
+  cachedSystemPrompt = readFileSync(SKILL_PATH, 'utf-8')
 
   return cachedSystemPrompt
 }

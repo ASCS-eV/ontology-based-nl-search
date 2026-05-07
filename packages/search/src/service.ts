@@ -265,28 +265,21 @@ let instance: SearchService | null = null
  * Get the singleton SearchService instance with production dependencies.
  * Routes call this; tests construct SearchService directly with mock deps.
  */
-export function getSearchService(): SearchService {
+export async function getSearchService(): Promise<SearchService> {
   if (instance) return instance
 
-  // Lazy import to avoid circular deps at module load time
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { generateStructuredSearch } = require('@ontology-search/llm') as {
-    generateStructuredSearch: SearchDependencies['interpretQuery']
-  }
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { compileSlots, compileAllCountQueries } = require('./compiler') as {
-    compileSlots: SearchDependencies['compileSlots']
-    compileCountQueries: SearchDependencies['compileCountQueries']
-    compileAllCountQueries: SearchDependencies['compileCountQueries']
-  }
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { getInitializedStore } = require('./init') as {
-    getInitializedStore: SearchDependencies['getStore']
-  }
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { enforceSparqlPolicy } = require('@ontology-search/sparql/policy') as {
-    enforceSparqlPolicy: SearchDependencies['enforcePolicy']
-  }
+  // Lazy dynamic imports to avoid circular deps at module load time
+  const [
+    { generateStructuredSearch },
+    { compileSlots, compileAllCountQueries },
+    { getInitializedStore },
+    { enforceSparqlPolicy },
+  ] = await Promise.all([
+    import('@ontology-search/llm'),
+    import('./compiler.js'),
+    import('./init.js'),
+    import('@ontology-search/sparql/policy'),
+  ])
 
   instance = new SearchService({
     getStore: getInitializedStore,
@@ -311,7 +304,8 @@ export function resetSearchService(): void {
  * Delegates to singleton SearchService.
  */
 export async function searchNl(options: NlSearchOptions): Promise<SearchResult> {
-  return getSearchService().searchNl(options)
+  const service = await getSearchService()
+  return service.searchNl(options)
 }
 
 /**
@@ -319,5 +313,6 @@ export async function searchNl(options: NlSearchOptions): Promise<SearchResult> 
  * Delegates to singleton SearchService.
  */
 export async function searchRefine(options: RefineOptions): Promise<RefineResult> {
-  return getSearchService().searchRefine(options)
+  const service = await getSearchService()
+  return service.searchRefine(options)
 }

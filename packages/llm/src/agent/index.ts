@@ -3,13 +3,16 @@ import { compileSlots } from '@ontology-search/search/compiler'
 import type { SearchSlots } from '@ontology-search/search/slots'
 import { generateText, stepCountIs } from 'ai'
 import { readFileSync } from 'fs'
-import path from 'path'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 
 import { getModel } from '../provider.js'
 import type { LlmStructuredResponse } from '../types.js'
 import { agentTools, type SlotSubmissionParams } from './tools.js'
 
-const SKILL_PATH = path.join(__dirname, 'skill.md')
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const SKILL_PATH = join(__dirname, 'skill.md')
 
 /**
  * Maximum tool-calling steps. With slot-filling, the agent typically
@@ -27,17 +30,7 @@ let cachedSystemPrompt: string | null = null
 async function getSystemPrompt(): Promise<string> {
   if (cachedSystemPrompt) return cachedSystemPrompt
 
-  let skillContent: string
-  try {
-    skillContent = readFileSync(SKILL_PATH, 'utf-8')
-  } catch {
-    skillContent = readFileSync(
-      path.join(process.cwd(), 'src', 'lib', 'llm', 'agent', 'skill.md'),
-      'utf-8'
-    )
-  }
-
-  cachedSystemPrompt = skillContent
+  cachedSystemPrompt = readFileSync(SKILL_PATH, 'utf-8')
   return cachedSystemPrompt
 }
 

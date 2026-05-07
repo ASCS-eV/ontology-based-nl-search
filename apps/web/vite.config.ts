@@ -6,10 +6,10 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [TanStackRouterVite({ routesDirectory: './src/routes' }), react(), tailwindcss()],
   server: {
-    port: 3000,
+    port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3003',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
