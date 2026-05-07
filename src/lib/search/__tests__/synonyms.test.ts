@@ -1,4 +1,4 @@
-import { extractKnownTerms, getAllowedValues, detectGaps } from '../synonyms'
+import { detectGaps, extractKnownTerms, getAllowedValues } from '../synonyms'
 
 describe('extractKnownTerms', () => {
   it('extracts country from query', () => {

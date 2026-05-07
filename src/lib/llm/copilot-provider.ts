@@ -1,4 +1,4 @@
-import { CopilotClient, approveAll, type CopilotSession } from '@github/copilot-sdk'
+import { CopilotClient, type CopilotSession, approveAll } from '@github/copilot-sdk'
 
 let client: CopilotClient | null = null
 

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { SearchBar } from '@/components/SearchBar'
+import { useCallback, useEffect, useState } from 'react'
+
 import { InterpretationDisplay } from '@/components/InterpretationDisplay'
 import { OntologyGapsDisplay } from '@/components/OntologyGapsDisplay'
-import { SparqlPreview } from '@/components/SparqlPreview'
 import { ResultsDisplay } from '@/components/ResultsDisplay'
-import type { SearchResponse, QueryInterpretation, OntologyGap } from '@/lib/llm/types'
+import { SearchBar } from '@/components/SearchBar'
+import { SparqlPreview } from '@/components/SparqlPreview'
+import type { OntologyGap, QueryInterpretation, SearchResponse } from '@/lib/llm/types'
 
 const HISTORY_KEY = 'nl-search-history'
 const MAX_HISTORY = 10

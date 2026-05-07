@@ -12,9 +12,8 @@
  *
  * @see https://www.w3.org/TR/shacl/#InConstraintComponent
  */
-
-import { readFileSync, readdirSync, statSync, existsSync } from 'fs'
-import { join, basename } from 'path'
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
+import { basename, join } from 'path'
 
 /** A property with its allowed values as defined by sh:in in SHACL */
 export interface VocabularyProperty {

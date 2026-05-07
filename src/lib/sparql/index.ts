@@ -1,6 +1,6 @@
-import type { SparqlStore } from './types'
 import { OxigraphStore } from './oxigraph-store'
 import { RemoteSparqlStore } from './remote-store'
+import type { SparqlStore } from './types'
 
 let storeInstance: SparqlStore | null = null
 

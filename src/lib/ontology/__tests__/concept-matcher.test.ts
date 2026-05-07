@@ -1,4 +1,4 @@
-import { matchConcepts, jaroWinklerDistance, resetConceptMatcher } from '../concept-matcher'
+import { jaroWinklerDistance, matchConcepts, resetConceptMatcher } from '../concept-matcher'
 import { resetVocabularyIndex } from '../vocabulary-index'
 
 describe('jaroWinklerDistance', () => {

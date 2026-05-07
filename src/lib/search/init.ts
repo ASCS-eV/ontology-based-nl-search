@@ -1,5 +1,5 @@
-import { getSparqlStore } from '@/lib/sparql'
 import { loadSampleData } from '@/lib/data/loader'
+import { getSparqlStore } from '@/lib/sparql'
 import type { SparqlStore } from '@/lib/sparql'
 
 /**

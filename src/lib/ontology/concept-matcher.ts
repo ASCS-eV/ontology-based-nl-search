@@ -16,9 +16,9 @@
  *
  * @see https://www.w3.org/TR/skos-reference/
  */
-
-import { readFileSync, existsSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
+
 import { buildVocabularyIndex } from './vocabulary-index'
 
 export interface ConceptMatch {

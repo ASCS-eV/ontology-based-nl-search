@@ -1,4 +1,4 @@
-import type { SparqlStore, SparqlResults } from './types'
+import type { SparqlResults, SparqlStore } from './types'
 
 /**
  * Remote SPARQL store that sends queries to an external endpoint.

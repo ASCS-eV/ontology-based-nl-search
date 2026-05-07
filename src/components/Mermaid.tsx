@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+
 import mermaid from 'mermaid'
 
 mermaid.initialize({

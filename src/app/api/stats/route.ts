@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+
 import { getInitializedStore } from '@/lib/search/init'
 
 export async function GET() {

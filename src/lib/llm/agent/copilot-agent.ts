@@ -1,9 +1,12 @@
 import { readFileSync } from 'fs'
 import path from 'path'
-import { CopilotClient, approveAll, defineTool, type CopilotSession } from '@github/copilot-sdk'
-import { compileSlots } from '@/lib/search/compiler'
+
+import { CopilotClient, type CopilotSession, approveAll, defineTool } from '@github/copilot-sdk'
+
 import { matchConcepts } from '@/lib/ontology'
+import { compileSlots } from '@/lib/search/compiler'
 import type { SearchSlots } from '@/lib/search/slots'
+
 import type { LlmStructuredResponse } from '../types'
 
 interface SlotSubmission {

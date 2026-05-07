@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+
 import { generateStructuredSearch } from '@/lib/llm'
+import type { SearchResponse } from '@/lib/llm/types'
 import { getInitializedStore } from '@/lib/search/init'
 import { enforceSparqlPolicy } from '@/lib/sparql/policy'
-import type { SearchResponse } from '@/lib/llm/types'
 
 export async function POST(request: NextRequest) {
   try {

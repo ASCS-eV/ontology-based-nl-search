@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+
 import { generateStructuredSearch } from '@/lib/llm'
 import { getInitializedStore } from '@/lib/search/init'
 import { enforceSparqlPolicy } from '@/lib/sparql/policy'

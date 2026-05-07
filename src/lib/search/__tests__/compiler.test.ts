@@ -1,5 +1,6 @@
-import { compileSlots } from '../compiler'
 import { enforceSparqlPolicy } from '@/lib/sparql/policy'
+
+import { compileSlots } from '../compiler'
 
 describe('compileSlots', () => {
   it('generates minimal query with no slots', () => {

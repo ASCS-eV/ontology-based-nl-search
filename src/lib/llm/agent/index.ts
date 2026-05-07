@@ -1,12 +1,15 @@
 import { readFileSync } from 'fs'
 import path from 'path'
+
 import { generateText } from 'ai'
-import { getModel } from '../provider'
-import { agentTools } from './tools'
-import { compileSlots } from '@/lib/search/compiler'
+
 import { matchConcepts } from '@/lib/ontology'
+import { compileSlots } from '@/lib/search/compiler'
 import type { SearchSlots } from '@/lib/search/slots'
+
+import { getModel } from '../provider'
 import type { LlmStructuredResponse } from '../types'
+import { agentTools } from './tools'
 
 const SKILL_PATH = path.join(__dirname, 'skill.md')
 

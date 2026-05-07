@@ -1,4 +1,4 @@
-import type { SparqlStore, SparqlResults } from './types'
+import type { SparqlResults, SparqlStore } from './types'
 
 /**
  * In-memory SPARQL store using Oxigraph WASM.
