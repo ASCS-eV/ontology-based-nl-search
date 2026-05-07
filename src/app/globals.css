@@ -2,19 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-rgb: 10, 10, 10;
+@layer base {
+  body {
+    @apply bg-surface text-gray-800 antialiased;
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
+@layer components {
+  .card {
+    @apply rounded-lg bg-white shadow-sm border border-gray-100 p-6;
+  }
+  .btn-primary {
+    @apply inline-flex items-center px-4 py-2 rounded-md bg-blue text-white font-medium
+           hover:bg-blue-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-800 focus:ring-offset-2;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center px-4 py-2 rounded-md border border-blue text-blue font-medium
+           hover:bg-blue hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-800 focus:ring-offset-2;
+  }
 }

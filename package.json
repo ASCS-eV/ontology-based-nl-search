@@ -31,7 +31,9 @@
   "dependencies": {
     "@ai-sdk/openai": "^0.0.40",
     "@github/copilot-sdk": "^0.3.0",
+    "@tailwindcss/typography": "^0.5.19",
     "ai": "^3.0.0",
+    "mermaid": "^11.14.0",
     "next": "^14.2.0",
     "oxigraph": "^0.4.0-alpha.8",
     "react": "^18.2.0",

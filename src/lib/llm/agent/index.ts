@@ -2,46 +2,53 @@ import { readFileSync } from 'fs'
 import path from 'path'
 import { generateText } from 'ai'
 import { getModel } from '../provider'
-import { getOntologyContext } from '@/lib/ontology'
 import { agentTools } from './tools'
 import type { LlmStructuredResponse } from '../types'
 
 const SKILL_PATH = path.join(__dirname, 'skill.md')
 
-/** Maximum tool-calling steps before we force a result */
-const MAX_STEPS = 10
+/**
+ * Maximum tool-calling steps. With the optimized skill prompt,
+ * the agent typically needs only 2 steps: validate_sparql + submit_answer.
+ * Allow 5 for retries on validation failure.
+ */
+const MAX_STEPS = 5
+
+/** Cached system prompt (skill + ontology vocab are static) */
+let cachedSystemPrompt: string | null = null
 
 /**
- * Load the skill definition (system prompt for the agent).
- * Appends live ontology context so the LLM has full knowledge.
+ * Load the skill definition which embeds the full ontology vocabulary.
+ * Cached after first load since the ontology doesn't change at runtime.
  */
-async function buildSystemPrompt(): Promise<string> {
+async function getSystemPrompt(): Promise<string> {
+  if (cachedSystemPrompt) return cachedSystemPrompt
+
   let skillContent: string
   try {
     skillContent = readFileSync(SKILL_PATH, 'utf-8')
   } catch {
-    // Fallback if bundled path doesn't resolve (Next.js webpack)
-    skillContent = getSkillFallback()
+    skillContent = readFileSync(
+      path.join(process.cwd(), 'src', 'lib', 'llm', 'agent', 'skill.md'),
+      'utf-8',
+    )
   }
 
-  const ontologyContext = await getOntologyContext()
-
-  return `${skillContent}
-
-## Full Ontology Reference
-
-${ontologyContext}`
+  cachedSystemPrompt = skillContent
+  return cachedSystemPrompt
 }
 
 /**
  * Run the SPARQL generator agent with tool use.
- * The agent calls tools (lookup, validate, execute) and submits
- * its final answer through the submit_answer tool.
+ *
+ * Optimized flow (2 steps typical):
+ * 1. LLM reads vocab from system prompt → generates SPARQL → calls validate_sparql
+ * 2. If valid → calls submit_answer. If invalid → fixes and retries.
  */
 export async function runSparqlAgent(
   naturalLanguageQuery: string,
 ): Promise<LlmStructuredResponse> {
-  const systemPrompt = await buildSystemPrompt()
+  const systemPrompt = await getSystemPrompt()
   const model = getModel()
 
   const result = await generateText({
@@ -84,32 +91,4 @@ export async function runSparqlAgent(
   }
 
   throw new Error('Agent failed to produce a result after maximum steps')
-}
-
-/**
- * Inline fallback skill content for environments where file reads fail.
- */
-function getSkillFallback(): string {
-  return `# SPARQL Generator Agent — Skill Definition
-
-You are a SPARQL query generation agent for the ENVITED-X HD Map knowledge graph.
-
-## Your Task
-Translate a user's natural language query into a valid SPARQL query.
-You communicate ONLY through tool calls — never reply with plain text.
-
-## Workflow
-1. Call lookup_ontology_terms to find matching ontology properties
-2. Build a SPARQL query using validated terms
-3. Call validate_sparql to check syntax
-4. Call execute_sparql to verify results
-5. Call submit_answer with the final structured output
-
-## Prefixes
-PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
-PREFIX envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
-PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>`
 }

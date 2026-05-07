@@ -76,19 +76,20 @@ export default function Home() {
   }, [])
 
   return (
-    <main className="min-h-screen flex flex-col items-center px-4 pt-16 pb-12">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">
-          ENVITED-X Simulation Asset Search
+    <div className="flex flex-col items-center px-4 pt-12 pb-16">
+      {/* Hero */}
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          Simulation Asset Search
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 max-w-lg mx-auto">
-          Search simulation assets using natural language. Your query is
-          translated into SPARQL using ontology-guided AI.
+        <p className="text-gray-500 max-w-lg mx-auto text-sm leading-relaxed">
+          Describe what you&apos;re looking for in plain language. The AI will
+          interpret your query against the HD map ontology and find matching
+          assets.
         </p>
         {totalAssets !== null && totalAssets > 0 && (
-          <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium rounded-full border border-blue-200 dark:border-blue-700">
-            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 mt-4 px-3 py-1 bg-blue-50 text-blue-900 text-sm font-medium rounded-full border border-blue-100">
+            <span className="w-2 h-2 bg-blue rounded-full animate-pulse" />
             {totalAssets} HD map assets in graph
           </span>
         )}
@@ -104,7 +105,7 @@ export default function Home() {
       {/* Error */}
       {error && (
         <div
-          className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-red-700 dark:text-red-300 max-w-2xl w-full"
+          className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 max-w-2xl w-full"
           role="alert"
         >
           {error}
@@ -113,20 +114,20 @@ export default function Home() {
 
       {/* Progressive results */}
       {response && (
-        <>
+        <div className="mt-8 w-full max-w-4xl space-y-4">
           <InterpretationDisplay interpretation={response.interpretation} />
           <OntologyGapsDisplay gaps={response.gaps} />
           <SparqlPreview sparql={response.sparql} />
           <ResultsDisplay results={response.results} />
 
           {/* Execution metadata */}
-          <div className="mt-4 w-full max-w-4xl text-xs text-gray-400 dark:text-gray-500 flex items-center gap-4">
+          <div className="pt-2 text-xs text-gray-400 flex items-center gap-3">
             <span>{response.meta.matchCount} results</span>
-            <span>·</span>
+            <span className="text-gray-300">·</span>
             <span>{response.meta.executionTimeMs}ms</span>
           </div>
-        </>
+        </div>
       )}
-    </main>
+    </div>
   )
 }
