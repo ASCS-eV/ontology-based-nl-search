@@ -20,9 +20,7 @@ export const agentTools = {
     parameters: z.object({
       terms: z
         .array(z.string())
-        .describe(
-          'Concepts to look up (e.g., ["country", "motorway", "lanes", "traffic lights"])',
-        ),
+        .describe('Concepts to look up (e.g., ["country", "motorway", "lanes", "traffic lights"])'),
     }),
     execute: async ({ terms }) => {
       const results = await lookupOntologyTerms(terms)
@@ -93,34 +91,22 @@ export const agentTools = {
       'Submit the final structured answer. Call this exactly once as your last action after validating the SPARQL query.',
     parameters: z.object({
       interpretation: z.object({
-        summary: z
-          .string()
-          .describe('Human-readable summary of what was understood'),
+        summary: z.string().describe('Human-readable summary of what was understood'),
         mappedTerms: z.array(
           z.object({
             input: z.string().describe('What the user said'),
             mapped: z.string().describe('Ontology concept it maps to'),
-            confidence: z
-              .enum(['high', 'medium', 'low'])
-              .describe('Mapping confidence'),
-            property: z
-              .string()
-              .optional()
-              .describe('The ontology property used'),
-          }),
+            confidence: z.enum(['high', 'medium', 'low']).describe('Mapping confidence'),
+            property: z.string().optional().describe('The ontology property used'),
+          })
         ),
       }),
       gaps: z.array(
         z.object({
           term: z.string().describe('Unmapped user term'),
-          reason: z
-            .string()
-            .describe('Why it could not be mapped to the ontology'),
-          suggestions: z
-            .array(z.string())
-            .optional()
-            .describe('Nearest ontology concepts'),
-        }),
+          reason: z.string().describe('Why it could not be mapped to the ontology'),
+          suggestions: z.array(z.string()).optional().describe('Nearest ontology concepts'),
+        })
       ),
       sparql: z.string().describe('The validated SPARQL query'),
     }),

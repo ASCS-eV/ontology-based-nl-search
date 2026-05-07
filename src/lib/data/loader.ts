@@ -8,10 +8,7 @@ import type { SparqlStore } from '@/lib/sparql'
  */
 function getSampleData(): string {
   try {
-    return readFileSync(
-      join(process.cwd(), 'src', 'lib', 'data', 'sample-assets.ttl'),
-      'utf-8'
-    )
+    return readFileSync(join(process.cwd(), 'src', 'lib', 'data', 'sample-assets.ttl'), 'utf-8')
   } catch {
     return FALLBACK_TURTLE
   }

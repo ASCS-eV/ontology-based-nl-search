@@ -15,11 +15,9 @@ export function Mermaid({ chart }: { chart: string }) {
   useEffect(() => {
     if (ref.current) {
       ref.current.innerHTML = ''
-      mermaid
-        .render(`mermaid-${Math.random().toString(36).slice(2)}`, chart)
-        .then(({ svg }) => {
-          if (ref.current) ref.current.innerHTML = svg
-        })
+      mermaid.render(`mermaid-${Math.random().toString(36).slice(2)}`, chart).then(({ svg }) => {
+        if (ref.current) ref.current.innerHTML = svg
+      })
     }
   }, [chart])
 

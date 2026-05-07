@@ -13,17 +13,12 @@ const NAV_ITEMS = [
   { href: '/docs/roadmap', label: 'Roadmap' },
 ]
 
-export default function DocsLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function DocsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   const currentIdx = NAV_ITEMS.findIndex((item) => item.href === pathname)
   const prev = currentIdx > 0 ? NAV_ITEMS[currentIdx - 1] : null
-  const next =
-    currentIdx < NAV_ITEMS.length - 1 ? NAV_ITEMS[currentIdx + 1] : null
+  const next = currentIdx < NAV_ITEMS.length - 1 ? NAV_ITEMS[currentIdx + 1] : null
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -63,9 +58,7 @@ export default function DocsLayout({
                 href={prev.href}
                 className="group flex items-center gap-2 text-sm text-gray-500 hover:text-blue"
               >
-                <span className="transition-transform group-hover:-translate-x-1">
-                  ←
-                </span>
+                <span className="transition-transform group-hover:-translate-x-1">←</span>
                 {prev.label}
               </Link>
             ) : (
@@ -77,9 +70,7 @@ export default function DocsLayout({
                 className="group flex items-center gap-2 text-sm text-gray-500 hover:text-blue"
               >
                 {next.label}
-                <span className="transition-transform group-hover:translate-x-1">
-                  →
-                </span>
+                <span className="transition-transform group-hover:translate-x-1">→</span>
               </Link>
             ) : (
               <span />

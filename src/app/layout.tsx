@@ -8,14 +8,11 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'ENVITED-X Simulation Asset Search',
-  description: 'Natural language search for ENVITED-X simulation assets using ontology-based SPARQL generation',
+  description:
+    'Natural language search for ENVITED-X simulation assets using ontology-based SPARQL generation',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${inter.className} flex min-h-screen flex-col`}>

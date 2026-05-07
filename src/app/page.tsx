@@ -23,10 +23,7 @@ function getSearchHistory(): string[] {
 function saveToHistory(query: string) {
   const history = getSearchHistory().filter((h) => h !== query)
   history.unshift(query)
-  localStorage.setItem(
-    HISTORY_KEY,
-    JSON.stringify(history.slice(0, MAX_HISTORY)),
-  )
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)))
 }
 
 export default function Home() {
@@ -67,9 +64,7 @@ export default function Home() {
       saveToHistory(naturalLanguageQuery)
       setHistory(getSearchHistory())
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'An unexpected error occurred',
-      )
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -79,13 +74,10 @@ export default function Home() {
     <div className="flex flex-col items-center px-4 pt-12 pb-16">
       {/* Hero */}
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">
-          Simulation Asset Search
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">Simulation Asset Search</h1>
         <p className="text-gray-500 max-w-lg mx-auto text-sm leading-relaxed">
-          Describe what you&apos;re looking for in plain language. The AI will
-          interpret your query against the HD map ontology and find matching
-          assets.
+          Describe what you&apos;re looking for in plain language. The AI will interpret your query
+          against the HD map ontology and find matching assets.
         </p>
         {totalAssets !== null && totalAssets > 0 && (
           <span className="inline-flex items-center gap-1.5 mt-4 px-3 py-1 bg-blue-50 text-blue-900 text-sm font-medium rounded-full border border-blue-100">
@@ -96,11 +88,7 @@ export default function Home() {
       </div>
 
       {/* Search */}
-      <SearchBar
-        onSearch={handleSearch}
-        loading={loading}
-        history={history}
-      />
+      <SearchBar onSearch={handleSearch} loading={loading} history={history} />
 
       {/* Error */}
       {error && (

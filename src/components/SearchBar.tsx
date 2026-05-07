@@ -30,10 +30,7 @@ export function SearchBar({ onSearch, loading, history = [] }: SearchBarProps) {
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target as Node)
-      ) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setShowHistory(false)
       }
     }
@@ -109,12 +106,9 @@ export function SearchBar({ onSearch, loading, history = [] }: SearchBarProps) {
           </ul>
         )}
       </div>
-      <p
-        id="search-hint"
-        className="mt-2 text-xs text-gray-400 dark:text-gray-500 text-center"
-      >
-        Describe what you&apos;re looking for in plain language. The AI will
-        interpret your query against the HD map ontology.
+      <p id="search-hint" className="mt-2 text-xs text-gray-400 dark:text-gray-500 text-center">
+        Describe what you&apos;re looking for in plain language. The AI will interpret your query
+        against the HD map ontology.
       </p>
     </form>
   )

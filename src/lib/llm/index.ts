@@ -13,7 +13,7 @@ import type { LlmStructuredResponse } from './types'
  * for the copilot SDK which uses a chat interface.
  */
 export async function generateStructuredSearch(
-  naturalLanguageQuery: string,
+  naturalLanguageQuery: string
 ): Promise<LlmStructuredResponse> {
   const provider = process.env.AI_PROVIDER || 'openai'
 
@@ -40,7 +40,7 @@ export async function generateSparql(naturalLanguageQuery: string): Promise<stri
  * Uses a structured JSON prompt and parses the response.
  */
 async function generateWithStructuredPrompt(
-  naturalLanguageQuery: string,
+  naturalLanguageQuery: string
 ): Promise<LlmStructuredResponse> {
   const ontologyContext = await getOntologyContext()
   const modelId = process.env.AI_MODEL || 'gpt-4o'

@@ -11,10 +11,7 @@ export async function POST(request: NextRequest) {
     const { query } = await request.json()
 
     if (!query || typeof query !== 'string') {
-      return NextResponse.json(
-        { error: 'Missing or invalid "query" field' },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: 'Missing or invalid "query" field' }, { status: 400 })
     }
 
     // Ensure sample data is loaded in memory mode
@@ -43,15 +40,14 @@ export async function POST(request: NextRequest) {
         return row
       })
     } catch (err) {
-      sparqlError =
-        err instanceof Error ? err.message : 'SPARQL execution failed'
+      sparqlError = err instanceof Error ? err.message : 'SPARQL execution failed'
     }
 
     // Count total datasets in the graph
     let totalDatasets = 0
     try {
       const countResult = await store.query(
-        'SELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s a ?type }',
+        'SELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s a ?type }'
       )
       const countBinding = countResult.results.bindings[0]
       if (countBinding?.count) {
@@ -76,17 +72,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (sparqlError) {
-      return NextResponse.json(
-        { ...response, error: sparqlError },
-        { status: 200 },
-      )
+      return NextResponse.json({ ...response, error: sparqlError }, { status: 200 })
     }
 
     return NextResponse.json(response)
   } catch (error) {
     console.error('Search API error:', error)
-    const message =
-      error instanceof Error ? error.message : 'Internal server error'
+    const message = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

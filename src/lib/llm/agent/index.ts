@@ -30,7 +30,7 @@ async function getSystemPrompt(): Promise<string> {
   } catch {
     skillContent = readFileSync(
       path.join(process.cwd(), 'src', 'lib', 'llm', 'agent', 'skill.md'),
-      'utf-8',
+      'utf-8'
     )
   }
 
@@ -45,9 +45,7 @@ async function getSystemPrompt(): Promise<string> {
  * 1. LLM reads vocab from system prompt → generates SPARQL → calls validate_sparql
  * 2. If valid → calls submit_answer. If invalid → fixes and retries.
  */
-export async function runSparqlAgent(
-  naturalLanguageQuery: string,
-): Promise<LlmStructuredResponse> {
+export async function runSparqlAgent(naturalLanguageQuery: string): Promise<LlmStructuredResponse> {
   const systemPrompt = await getSystemPrompt()
   const model = getModel()
 

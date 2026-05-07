@@ -28,9 +28,7 @@ export class OxigraphStore implements SparqlStore {
     // Convert Oxigraph results to standard SPARQL JSON format
     if (Array.isArray(rawResults)) {
       // SELECT query - results are an array of Maps
-      const vars = rawResults.length > 0
-        ? [...rawResults[0].keys()]
-        : []
+      const vars = rawResults.length > 0 ? [...rawResults[0].keys()] : []
 
       const bindings = rawResults.map((row: Map<string, any>) => {
         const binding: Record<string, any> = {}
@@ -84,7 +82,12 @@ export class OxigraphStore implements SparqlStore {
 }
 
 /** Convert an Oxigraph term to SPARQL JSON binding format */
-function termToBinding(term: any): { type: string; value: string; datatype?: string; 'xml:lang'?: string } {
+function termToBinding(term: any): {
+  type: string
+  value: string
+  datatype?: string
+  'xml:lang'?: string
+} {
   if (term.termType === 'NamedNode') {
     return { type: 'uri', value: term.value }
   }

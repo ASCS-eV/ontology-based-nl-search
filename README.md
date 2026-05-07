@@ -6,15 +6,15 @@ A locally running TypeScript web application with a Google-style search bar that
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Next.js 14 (App Router), React 18, TailwindCSS |
-| **LLM Integration** | Vercel AI SDK (OpenAI, Anthropic, Ollama, etc.) |
-| **SPARQL Store (dev)** | Oxigraph WASM (in-memory, zero setup) |
-| **SPARQL Store (prod)** | Apache Jena Fuseki (remote endpoint) |
-| **Ontology Source** | Fetched & cached from ontology-management-base |
-| **Testing** | Jest (unit/integration), Playwright (E2E) |
-| **Quality** | ESLint, Prettier, Husky, lint-staged, GitHub Actions CI |
+| Layer                   | Technology                                              |
+| ----------------------- | ------------------------------------------------------- |
+| **Frontend**            | Next.js 14 (App Router), React 18, TailwindCSS          |
+| **LLM Integration**     | Vercel AI SDK (OpenAI, Anthropic, Ollama, etc.)         |
+| **SPARQL Store (dev)**  | Oxigraph WASM (in-memory, zero setup)                   |
+| **SPARQL Store (prod)** | Apache Jena Fuseki (remote endpoint)                    |
+| **Ontology Source**     | Fetched & cached from ontology-management-base          |
+| **Testing**             | Jest (unit/integration), Playwright (E2E)               |
+| **Quality**             | ESLint, Prettier, Husky, lint-staged, GitHub Actions CI |
 
 ## Quick Start
 
@@ -76,17 +76,16 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 ## Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SPARQL_MODE` | `memory` (Oxigraph WASM) or `remote` (Fuseki) | `memory` |
-| `SPARQL_ENDPOINT` | Remote SPARQL endpoint URL | — |
-| `AI_PROVIDER` | LLM provider: `openai`, `ollama` | `openai` |
-| `AI_MODEL` | Model identifier | `gpt-4o` |
-| `OPENAI_API_KEY` | OpenAI API key | — |
-| `OLLAMA_BASE_URL` | Ollama server URL | `http://localhost:11434` |
-| `ONTOLOGY_REPO` | GitHub repo for ontologies | `ASCS-eV/ontology-management-base` |
+| Variable          | Description                                   | Default                            |
+| ----------------- | --------------------------------------------- | ---------------------------------- |
+| `SPARQL_MODE`     | `memory` (Oxigraph WASM) or `remote` (Fuseki) | `memory`                           |
+| `SPARQL_ENDPOINT` | Remote SPARQL endpoint URL                    | —                                  |
+| `AI_PROVIDER`     | LLM provider: `openai`, `ollama`              | `openai`                           |
+| `AI_MODEL`        | Model identifier                              | `gpt-4o`                           |
+| `OPENAI_API_KEY`  | OpenAI API key                                | —                                  |
+| `OLLAMA_BASE_URL` | Ollama server URL                             | `http://localhost:11434`           |
+| `ONTOLOGY_REPO`   | GitHub repo for ontologies                    | `ASCS-eV/ontology-management-base` |
 
 ## License
 
 See [LICENSE](./LICENSE).
-

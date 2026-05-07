@@ -173,9 +173,8 @@ export default function DocsRoadmap() {
       <h2>Integration with SYNERGIES</h2>
       <p>
         As part of the SYNERGIES project, this tool contributes to the
-        <strong> federated Scenario Dataspace</strong> by demonstrating how
-        ontology-based metadata can be made searchable through AI. The approach
-        can be extended to:
+        <strong> federated Scenario Dataspace</strong> by demonstrating how ontology-based metadata
+        can be made searchable through AI. The approach can be extended to:
       </p>
       <ul>
         <li>Scenario databases across European partners</li>

@@ -34,7 +34,7 @@ async function getSession(modelId: string, systemPrompt: string): Promise<Copilo
 export async function generateWithCopilot(
   systemPrompt: string,
   userPrompt: string,
-  modelId: string,
+  modelId: string
 ): Promise<string> {
   const s = await getSession(modelId, systemPrompt)
 

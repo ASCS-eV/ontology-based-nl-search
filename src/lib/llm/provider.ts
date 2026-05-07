@@ -26,8 +26,6 @@ export function getModel() {
     }
 
     default:
-      throw new Error(
-        `Unsupported AI_PROVIDER: "${provider}". Supported: openai, copilot, ollama.`,
-      )
+      throw new Error(`Unsupported AI_PROVIDER: "${provider}". Supported: openai, copilot, ollama.`)
   }
 }

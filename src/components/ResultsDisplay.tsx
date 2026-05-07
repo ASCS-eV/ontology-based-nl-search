@@ -11,12 +11,10 @@ export function ResultsDisplay({ results }: ResultsDisplayProps) {
         className="p-6 bg-gray-50 border border-gray-200 rounded-lg w-full text-center"
         role="status"
       >
-        <p className="text-gray-700 font-medium">
-          No results found for your query.
-        </p>
+        <p className="text-gray-700 font-medium">No results found for your query.</p>
         <p className="text-sm text-gray-500 mt-2">
-          Try broadening your search — use fewer filters or more general terms.
-          Check the interpretation above to see how your query was understood.
+          Try broadening your search — use fewer filters or more general terms. Check the
+          interpretation above to see how your query was understood.
         </p>
       </div>
     )
@@ -27,7 +25,7 @@ export function ResultsDisplay({ results }: ResultsDisplayProps) {
   const exportCsv = () => {
     const header = columns.join(',')
     const rows = results.map((row) =>
-      columns.map((col) => `"${(row[col] || '').replace(/"/g, '""')}"`).join(','),
+      columns.map((col) => `"${(row[col] || '').replace(/"/g, '""')}"`).join(',')
     )
     const csv = [header, ...rows].join('\n')
     downloadFile(csv, 'search-results.csv', 'text/csv')
@@ -51,11 +49,7 @@ export function ResultsDisplay({ results }: ResultsDisplayProps) {
         return entry
       }),
     }
-    downloadFile(
-      JSON.stringify(jsonLd, null, 2),
-      'search-results.jsonld',
-      'application/ld+json',
-    )
+    downloadFile(JSON.stringify(jsonLd, null, 2), 'search-results.jsonld', 'application/ld+json')
   }
 
   return (
@@ -98,15 +92,9 @@ export function ResultsDisplay({ results }: ResultsDisplayProps) {
           </thead>
           <tbody>
             {results.map((row, i) => (
-              <tr
-                key={i}
-                className="hover:bg-gray-50 transition-colors"
-              >
+              <tr key={i} className="hover:bg-gray-50 transition-colors">
                 {columns.map((col) => (
-                  <td
-                    key={col}
-                    className="px-4 py-2.5 border-b border-gray-100 text-gray-700"
-                  >
+                  <td key={col} className="px-4 py-2.5 border-b border-gray-100 text-gray-700">
                     {formatValue(row[col])}
                   </td>
                 ))}

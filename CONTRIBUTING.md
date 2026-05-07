@@ -26,11 +26,11 @@ npm run validate
 
 ### Testing Requirements
 
-| Type | Tool | Coverage Target | When |
-|------|------|----------------|------|
-| Unit | Jest | 70% branches/lines | Every PR |
-| Integration | Jest | Key flows | Every PR |
-| E2E | Playwright | Critical paths | Every PR |
+| Type        | Tool       | Coverage Target    | When     |
+| ----------- | ---------- | ------------------ | -------- |
+| Unit        | Jest       | 70% branches/lines | Every PR |
+| Integration | Jest       | Key flows          | Every PR |
+| E2E         | Playwright | Critical paths     | Every PR |
 
 ### Commit Conventions
 
@@ -80,19 +80,19 @@ e2e/                        # Playwright E2E tests
 
 ## Available Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Start dev server |
-| `npm run build` | Production build |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Auto-fix lint issues |
-| `npm run format` | Format all files |
-| `npm run format:check` | Check formatting |
-| `npm run typecheck` | TypeScript type checking |
-| `npm run test` | Run unit tests |
-| `npm run test:coverage` | Tests with coverage report |
-| `npm run test:e2e` | Run E2E tests |
-| `npm run validate` | Full quality gate (CI runs this) |
+| Script                  | Description                      |
+| ----------------------- | -------------------------------- |
+| `npm run dev`           | Start dev server                 |
+| `npm run build`         | Production build                 |
+| `npm run lint`          | Run ESLint                       |
+| `npm run lint:fix`      | Auto-fix lint issues             |
+| `npm run format`        | Format all files                 |
+| `npm run format:check`  | Check formatting                 |
+| `npm run typecheck`     | TypeScript type checking         |
+| `npm run test`          | Run unit tests                   |
+| `npm run test:coverage` | Tests with coverage report       |
+| `npm run test:e2e`      | Run E2E tests                    |
+| `npm run validate`      | Full quality gate (CI runs this) |
 
 ## Pull Request Checklist
 

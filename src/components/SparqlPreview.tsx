@@ -24,9 +24,7 @@ export function SparqlPreview({ sparql }: SparqlPreviewProps) {
         aria-expanded={expanded}
         aria-controls="sparql-preview"
       >
-        <span
-          className={`transition-transform inline-block ${expanded ? 'rotate-90' : ''}`}
-        >
+        <span className={`transition-transform inline-block ${expanded ? 'rotate-90' : ''}`}>
           ▶
         </span>
         {expanded ? 'Hide' : 'Show'} generated SPARQL query

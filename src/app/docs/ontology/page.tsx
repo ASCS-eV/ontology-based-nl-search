@@ -7,8 +7,7 @@ export default function DocsOntology() {
     <>
       <h1>Ontology Integration</h1>
       <p>
-        The system uses the <strong>ENVITED-X hdmap v6</strong> ontology from
-        the{' '}
+        The system uses the <strong>ENVITED-X hdmap v6</strong> ontology from the{' '}
         <a
           href="https://github.com/ASCS-eV/ontology-management-base"
           target="_blank"
@@ -52,22 +51,30 @@ export default function DocsOntology() {
         </thead>
         <tbody>
           <tr>
-            <td><code>hdmap:roadTypes</code></td>
+            <td>
+              <code>hdmap:roadTypes</code>
+            </td>
             <td>motorway, rural, town, motorway_entry, custom</td>
             <td>&quot;highway&quot; → motorway, &quot;city&quot; → town</td>
           </tr>
           <tr>
-            <td><code>hdmap:laneTypes</code></td>
+            <td>
+              <code>hdmap:laneTypes</code>
+            </td>
             <td>driving, shoulder, biking, walking, bus, parking, emergency</td>
             <td>&quot;bike lane&quot; → biking</td>
           </tr>
           <tr>
-            <td><code>hdmap:trafficDirection</code></td>
+            <td>
+              <code>hdmap:trafficDirection</code>
+            </td>
             <td>right-hand, left-hand</td>
             <td>&quot;UK roads&quot; → left-hand</td>
           </tr>
           <tr>
-            <td><code>hdmap:levelOfDetail</code></td>
+            <td>
+              <code>hdmap:levelOfDetail</code>
+            </td>
             <td>lane, pole, crosswalk, flat-marking, wall, curb</td>
             <td>&quot;detailed&quot; → crosswalk or pole</td>
           </tr>
@@ -84,11 +91,15 @@ export default function DocsOntology() {
         </thead>
         <tbody>
           <tr>
-            <td><code>hdmap:formatType</code></td>
+            <td>
+              <code>hdmap:formatType</code>
+            </td>
             <td>ASAM OpenDRIVE, Lanelet2, NDS.Live, HERE HD Live Map, Shape, Road5</td>
           </tr>
           <tr>
-            <td><code>hdmap:version</code></td>
+            <td>
+              <code>hdmap:version</code>
+            </td>
             <td>1.4, 1.5, 1.6, 1.7, 1.8 (OpenDRIVE); 1.0, 1.1 (Lanelet2); etc.</td>
           </tr>
         </tbody>
@@ -105,17 +116,23 @@ export default function DocsOntology() {
         </thead>
         <tbody>
           <tr>
-            <td><code>georeference:country</code></td>
+            <td>
+              <code>georeference:country</code>
+            </td>
             <td>ISO 3166-1 alpha-2</td>
             <td>DE, US, JP, GB</td>
           </tr>
           <tr>
-            <td><code>georeference:state</code></td>
+            <td>
+              <code>georeference:state</code>
+            </td>
             <td>ISO 3166-2</td>
             <td>DE-BY, US-CA</td>
           </tr>
           <tr>
-            <td><code>georeference:city</code></td>
+            <td>
+              <code>georeference:city</code>
+            </td>
             <td>String</td>
             <td>Munich, Tokyo</td>
           </tr>
@@ -124,11 +141,13 @@ export default function DocsOntology() {
 
       <h2>How the Ontology Guides the LLM</h2>
       <p>
-        The complete vocabulary is embedded in <code>skill.md</code> — the
-        agent&apos;s system prompt. This means the LLM knows:
+        The complete vocabulary is embedded in <code>skill.md</code> — the agent&apos;s system
+        prompt. This means the LLM knows:
       </p>
       <ol>
-        <li>All valid property paths (e.g., <code>hdmap:hasContent/hdmap:roadTypes</code>)</li>
+        <li>
+          All valid property paths (e.g., <code>hdmap:hasContent/hdmap:roadTypes</code>)
+        </li>
         <li>All allowed values for each property</li>
         <li>Natural language → ontology term mappings</li>
         <li>The SPARQL patterns needed to query each property</li>
@@ -156,10 +175,10 @@ export default function DocsOntology() {
 
       <h2>Ontology Gap Detection</h2>
       <p>
-        When users search for concepts not in the ontology (e.g., &quot;roundabout
-        with cats&quot;), the system identifies these gaps and reports them. This
-        provides valuable feedback for ontology evolution — highlighting what
-        real users expect but the schema doesn&apos;t yet cover.
+        When users search for concepts not in the ontology (e.g., &quot;roundabout with cats&quot;),
+        the system identifies these gaps and reports them. This provides valuable feedback for
+        ontology evolution — highlighting what real users expect but the schema doesn&apos;t yet
+        cover.
       </p>
 
       <Mermaid

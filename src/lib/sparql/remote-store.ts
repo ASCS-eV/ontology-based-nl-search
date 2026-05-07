@@ -20,7 +20,7 @@ export class RemoteSparqlStore implements SparqlStore {
         method: 'POST',
         headers: {
           'Content-Type': 'application/sparql-query',
-          'Accept': 'application/sparql-results+json',
+          Accept: 'application/sparql-results+json',
         },
         body: 'ASK { ?s ?p ?o }',
       })
@@ -35,7 +35,7 @@ export class RemoteSparqlStore implements SparqlStore {
       method: 'POST',
       headers: {
         'Content-Type': 'application/sparql-query',
-        'Accept': 'application/sparql-results+json',
+        Accept: 'application/sparql-results+json',
       },
       body: sparql,
     })

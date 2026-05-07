@@ -9,26 +9,24 @@ export default function DocsOverview() {
 
       <div className="not-prose rounded-lg border border-blue-100 bg-blue-50 p-4 mb-6">
         <p className="text-sm text-blue-900">
-          <strong>Proof of Concept</strong> — Demonstrating how ontology-guided
-          AI can bridge the gap between natural language and structured
-          simulation asset metadata in the ENVITED-X Data Space.
+          <strong>Proof of Concept</strong> — Demonstrating how ontology-guided AI can bridge the
+          gap between natural language and structured simulation asset metadata in the ENVITED-X
+          Data Space.
         </p>
       </div>
 
       <h2>What is this?</h2>
       <p>
-        This tool allows users to search for HD map simulation assets using
-        plain language. Instead of requiring users to know SPARQL query syntax or
-        the exact structure of the ENVITED-X metadata schema, an AI agent
-        translates natural language into precise SPARQL queries.
+        This tool allows users to search for HD map simulation assets using plain language. Instead
+        of requiring users to know SPARQL query syntax or the exact structure of the ENVITED-X
+        metadata schema, an AI agent translates natural language into precise SPARQL queries.
       </p>
 
       <h2>Why does it matter?</h2>
       <p>
-        The ENVITED-X Data Space contains simulation assets described with rich,
-        ontology-based metadata (road types, lane configurations, geographic
-        locations, quality measures, etc.). However, this metadata is only useful
-        if users can actually query it effectively.
+        The ENVITED-X Data Space contains simulation assets described with rich, ontology-based
+        metadata (road types, lane configurations, geographic locations, quality measures, etc.).
+        However, this metadata is only useful if users can actually query it effectively.
       </p>
 
       <Mermaid
@@ -45,21 +43,20 @@ export default function DocsOverview() {
       <h2>Key Capabilities</h2>
       <ul>
         <li>
-          <strong>Ontology-aware interpretation</strong> — Maps user concepts to
-          ontology terms with confidence scoring
+          <strong>Ontology-aware interpretation</strong> — Maps user concepts to ontology terms with
+          confidence scoring
         </li>
         <li>
-          <strong>Gap detection</strong> — Identifies concepts the user asked
-          about that don&apos;t exist in the ontology (feedback for ontology
-          improvement)
+          <strong>Gap detection</strong> — Identifies concepts the user asked about that don&apos;t
+          exist in the ontology (feedback for ontology improvement)
         </li>
         <li>
-          <strong>SPARQL generation &amp; validation</strong> — Generates
-          syntactically valid SPARQL 1.1 queries with automated validation
+          <strong>SPARQL generation &amp; validation</strong> — Generates syntactically valid SPARQL
+          1.1 queries with automated validation
         </li>
         <li>
-          <strong>Agentic tool-use</strong> — LLM uses structured tools rather
-          than generating free-form text
+          <strong>Agentic tool-use</strong> — LLM uses structured tools rather than generating
+          free-form text
         </li>
         <li>
           <strong>Export</strong> — Results exportable as CSV or JSON-LD
@@ -68,10 +65,9 @@ export default function DocsOverview() {
 
       <h2>Target Audience</h2>
       <p>
-        Simulation engineers, data consumers, and CCAM researchers who need to
-        find specific HD map assets within a growing catalogue of ENVITED-X
-        simulation resources — without needing to understand RDF, SPARQL, or the
-        underlying ontology structure.
+        Simulation engineers, data consumers, and CCAM researchers who need to find specific HD map
+        assets within a growing catalogue of ENVITED-X simulation resources — without needing to
+        understand RDF, SPARQL, or the underlying ontology structure.
       </p>
 
       <h2>Technology Stack</h2>

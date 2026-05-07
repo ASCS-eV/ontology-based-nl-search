@@ -20,11 +20,7 @@ export function Footer() {
           </p>
 
           <div className="flex items-center justify-center gap-8 mb-6">
-            <a
-              href="https://synergies-ccam.eu"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href="https://synergies-ccam.eu" target="_blank" rel="noopener noreferrer">
               <Image
                 src="/logos/synergies.svg"
                 alt="SYNERGIES - Real and synthetic scenarios for CCAM systems"
@@ -36,11 +32,10 @@ export function Footer() {
           </div>
 
           <p className="mx-auto max-w-2xl text-xs text-gray-500 mb-6">
-            Funded by the European Union. Views and opinions expressed are
-            however those of the author(s) only and do not necessarily reflect
-            those of the European Union or European Climate, Infrastructure and
-            Environment Executive Agency (CINEA). Neither the European Union nor
-            the granting authority can be held responsible for them.
+            Funded by the European Union. Views and opinions expressed are however those of the
+            author(s) only and do not necessarily reflect those of the European Union or European
+            Climate, Infrastructure and Environment Executive Agency (CINEA). Neither the European
+            Union nor the granting authority can be held responsible for them.
           </p>
 
           <div className="flex items-center justify-center gap-8">
@@ -60,8 +55,7 @@ export function Footer() {
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <span className="text-xs text-gray-500">
-              © {new Date().getFullYear()} Automotive Solution Center for
-              Simulation e.V.
+              © {new Date().getFullYear()} Automotive Solution Center for Simulation e.V.
             </span>
 
             <nav className="flex items-center gap-4 text-xs text-gray-500">

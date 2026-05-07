@@ -15,7 +15,7 @@ test.describe('Search Page', () => {
 
     // Title is visible
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'ENVITED-X Simulation Asset Search',
+      'ENVITED-X Simulation Asset Search'
     )
 
     // Dataset count badge
@@ -116,7 +116,7 @@ test.describe('Search Page', () => {
 
     // Interpretation section
     await expect(
-      page.getByText('Looking for HD maps in Germany with motorway road type'),
+      page.getByText('Looking for HD maps in Germany with motorway road type')
     ).toBeVisible()
     await expect(page.getByText('German')).toBeVisible()
     await expect(page.getByText('country code DE')).toBeVisible()
@@ -127,9 +127,7 @@ test.describe('Search Page', () => {
 
     // Ontology gaps
     await expect(page.getByText('"cats"')).toBeVisible()
-    await expect(
-      page.getByText('Animals are not defined in the HD map ontology'),
-    ).toBeVisible()
+    await expect(page.getByText('Animals are not defined in the HD map ontology')).toBeVisible()
 
     // Results
     await expect(page.getByText('2 matches')).toBeVisible()

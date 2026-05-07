@@ -7,8 +7,8 @@ export default function DocsArchitecture() {
     <>
       <h1>System Architecture</h1>
       <p>
-        The system follows a layered architecture with clear separation between
-        the UI, AI agent, and knowledge graph layers.
+        The system follows a layered architecture with clear separation between the UI, AI agent,
+        and knowledge graph layers.
       </p>
 
       <h2>High-Level Overview</h2>
@@ -69,8 +69,8 @@ export default function DocsArchitecture() {
       <h3>API Layer (Next.js Route Handlers)</h3>
       <ul>
         <li>
-          <code>POST /api/search</code> — Receives NL query, invokes agent,
-          returns structured response
+          <code>POST /api/search</code> — Receives NL query, invokes agent, returns structured
+          response
         </li>
         <li>
           <code>GET /api/stats</code> — Returns total asset count from graph
@@ -81,11 +81,12 @@ export default function DocsArchitecture() {
       <ul>
         <li>System prompt with full ontology vocabulary embedded</li>
         <li>
-          Tool-calling loop using Vercel AI SDK (<code>generateText</code> +{' '}
-          <code>tools</code>)
+          Tool-calling loop using Vercel AI SDK (<code>generateText</code> + <code>tools</code>)
         </li>
         <li>Max 5 steps to prevent runaway loops</li>
-        <li>Structured output via <code>submit_answer</code> tool</li>
+        <li>
+          Structured output via <code>submit_answer</code> tool
+        </li>
       </ul>
 
       <h3>Knowledge Graph</h3>

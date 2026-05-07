@@ -7,8 +7,8 @@ export default function DocsFlow() {
     <>
       <h1>Query Flow</h1>
       <p>
-        When a user submits a natural language query, it passes through a
-        multi-step agentic pipeline before results are returned.
+        When a user submits a natural language query, it passes through a multi-step agentic
+        pipeline before results are returned.
       </p>
 
       <h2>Sequence Diagram</h2>
@@ -49,35 +49,33 @@ export default function DocsFlow() {
       <h3>1. Query Submission</h3>
       <p>
         The user types a query like{' '}
-        <em>&quot;German highway with 3 lanes in OpenDRIVE format&quot;</em>.
-        The React frontend sends this to the API route.
+        <em>&quot;German highway with 3 lanes in OpenDRIVE format&quot;</em>. The React frontend
+        sends this to the API route.
       </p>
 
       <h3>2. Agent Initialization</h3>
       <p>
-        The agent loads <code>skill.md</code> as the system prompt. This
-        contains the complete hdmap v6 vocabulary — all property paths, allowed
-        values, and natural language mapping hints. This eliminates the need for
-        a separate &quot;lookup&quot; step.
+        The agent loads <code>skill.md</code> as the system prompt. This contains the complete hdmap
+        v6 vocabulary — all property paths, allowed values, and natural language mapping hints. This
+        eliminates the need for a separate &quot;lookup&quot; step.
       </p>
 
       <h3>3. SPARQL Generation &amp; Validation</h3>
       <p>
-        The LLM generates a SPARQL query based on its understanding of the
-        ontology and calls <code>validate_sparql</code>. The sparqljs parser
-        checks syntax. If invalid, the LLM gets error feedback and retries.
+        The LLM generates a SPARQL query based on its understanding of the ontology and calls{' '}
+        <code>validate_sparql</code>. The sparqljs parser checks syntax. If invalid, the LLM gets
+        error feedback and retries.
       </p>
 
       <h3>4. Query Execution</h3>
       <p>
-        Once validated, <code>execute_sparql</code> runs the query against the
-        Oxigraph store and returns matching triples.
+        Once validated, <code>execute_sparql</code> runs the query against the Oxigraph store and
+        returns matching triples.
       </p>
 
       <h3>5. Structured Answer</h3>
       <p>
-        The LLM calls <code>submit_answer</code> with the final structured
-        response including:
+        The LLM calls <code>submit_answer</code> with the final structured response including:
       </p>
       <ul>
         <li>Mapped terms (user concept → ontology property, with confidence)</li>

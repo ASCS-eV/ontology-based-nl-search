@@ -14,7 +14,7 @@ const LOCAL_OMB_PATH = path.join(
   'submodules',
   'sl-5-8-asset-tools',
   'submodules',
-  'ontology-management-base',
+  'ontology-management-base'
 )
 
 /** Ontology artifacts to load (relative to OMB root) */
@@ -107,7 +107,7 @@ function buildContextFromOntologies(ontologyContents: string[]): string {
 
     // Extract class definitions with their comments
     const classMatches = content.matchAll(
-      /(\S+)\s+a\s+owl:Class\s*;[^.]*?rdfs:comment\s+"([^"]+)"/g,
+      /(\S+)\s+a\s+owl:Class\s*;[^.]*?rdfs:comment\s+"([^"]+)"/g
     )
     for (const match of classMatches) {
       classes.push(`${match[1]} — ${match[2]}`)
@@ -123,7 +123,7 @@ function buildContextFromOntologies(ontologyContents: string[]): string {
 
     // Extract object properties with domain/range
     const objPropMatches = content.matchAll(
-      /(\S+)\s+a\s+owl:ObjectProperty\s*;[^.]*?rdfs:domain\s+(\S+)\s*;[^.]*?rdfs:range\s+([^;.]+)/g,
+      /(\S+)\s+a\s+owl:ObjectProperty\s*;[^.]*?rdfs:domain\s+(\S+)\s*;[^.]*?rdfs:range\s+([^;.]+)/g
     )
     for (const match of objPropMatches) {
       objectProperties.push(`${match[1]} (${match[2].trim()} → ${match[3].trim()})`)
@@ -131,7 +131,7 @@ function buildContextFromOntologies(ontologyContents: string[]): string {
 
     // Extract data properties
     const dataPropMatches = content.matchAll(
-      /(\S+)\s+a\s+owl:DatatypeProperty\s*;[^.]*?rdfs:domain\s+(\S+)/g,
+      /(\S+)\s+a\s+owl:DatatypeProperty\s*;[^.]*?rdfs:domain\s+(\S+)/g
     )
     for (const match of dataPropMatches) {
       dataProperties.push(`${match[1]} (domain: ${match[2].trim()})`)

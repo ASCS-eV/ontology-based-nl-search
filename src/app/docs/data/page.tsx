@@ -7,9 +7,9 @@ export default function DocsData() {
     <>
       <h1>Data Model</h1>
       <p>
-        The knowledge graph currently contains <strong>100 diverse HD map
-        assets</strong> covering 27 countries, 14 road scenarios, and 6 map
-        formats. This section explains the data structure and how to extend it.
+        The knowledge graph currently contains <strong>100 diverse HD map assets</strong> covering
+        27 countries, 14 road scenarios, and 6 map formats. This section explains the data structure
+        and how to extend it.
       </p>
 
       <h2>Asset Structure</h2>
@@ -93,8 +93,8 @@ export default function DocsData() {
 
       <h2>Turtle (TTL) Format</h2>
       <p>
-        Assets are stored in Turtle format — the standard serialization for RDF
-        data. Here&apos;s a simplified example:
+        Assets are stored in Turtle format — the standard serialization for RDF data. Here&apos;s a
+        simplified example:
       </p>
       <pre>
         <code>{`@prefix hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/> .
@@ -145,8 +145,7 @@ export default function DocsData() {
       <h2>Adding More Data</h2>
       <ol>
         <li>
-          Edit <code>scripts/generate-test-data.js</code> to add new scenarios
-          or countries
+          Edit <code>scripts/generate-test-data.js</code> to add new scenarios or countries
         </li>
         <li>
           Run <code>node scripts/generate-test-data.js</code> to regenerate{' '}
@@ -155,8 +154,8 @@ export default function DocsData() {
         <li>Restart the server — data is loaded on first request</li>
       </ol>
       <p>
-        For production: connect to an Apache Jena Fuseki endpoint that serves
-        the real ENVITED-X registry data via SPARQL protocol.
+        For production: connect to an Apache Jena Fuseki endpoint that serves the real ENVITED-X
+        registry data via SPARQL protocol.
       </p>
     </>
   )
