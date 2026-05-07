@@ -134,11 +134,11 @@ export function extractKnownTerms(query: string): {
 
   // Try longer phrases first (multi-word entries)
   const allMaps: { map: Record<string, string>; property: string }[] = [
-    { map: COUNTRY_MAP, property: 'georeference:country' },
-    { map: ROAD_TYPE_MAP, property: 'hdmap:roadTypes' },
-    { map: FORMAT_MAP, property: 'hdmap:formatType' },
-    { map: DATA_SOURCE_MAP, property: 'hdmap:usedDataSources' },
-    { map: LANE_TYPE_MAP, property: 'hdmap:laneTypes' },
+    { map: COUNTRY_MAP, property: 'country' },
+    { map: ROAD_TYPE_MAP, property: 'roadType' },
+    { map: FORMAT_MAP, property: 'formatType' },
+    { map: DATA_SOURCE_MAP, property: 'dataSource' },
+    { map: LANE_TYPE_MAP, property: 'laneType' },
   ]
 
   for (const { map, property } of allMaps) {
@@ -175,15 +175,15 @@ function escapeRegex(str: string): string {
  */
 export function getAllowedValues(property: string): string[] {
   switch (property) {
-    case 'georeference:country':
+    case 'country':
       return [...new Set(Object.values(COUNTRY_MAP))]
-    case 'hdmap:roadTypes':
+    case 'roadType':
       return [...new Set(Object.values(ROAD_TYPE_MAP))]
-    case 'hdmap:formatType':
+    case 'formatType':
       return [...new Set(Object.values(FORMAT_MAP))]
-    case 'hdmap:usedDataSources':
+    case 'dataSource':
       return [...new Set(Object.values(DATA_SOURCE_MAP))]
-    case 'hdmap:laneTypes':
+    case 'laneType':
       return [...new Set(Object.values(LANE_TYPE_MAP))]
     default:
       return []

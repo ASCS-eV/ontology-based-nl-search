@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
         })
 
         const structured = await generateStructuredSearch(query)
-
         // Phase 2: Send interpretation immediately
         send('interpretation', structured.interpretation)
 
@@ -89,7 +88,7 @@ export async function POST(request: NextRequest) {
         let totalDatasets = 0
         try {
           const countResult = await store.query(
-            'SELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s a ?type }'
+            'PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>\nSELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s a hdmap:HdMap }'
           )
           const countBinding = countResult.results.bindings[0]
           if (countBinding?.count) {

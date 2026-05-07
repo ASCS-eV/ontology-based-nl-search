@@ -5,13 +5,13 @@ describe('extractKnownTerms', () => {
     const { terms, remainder } = extractKnownTerms('I need a German highway map')
     expect(terms).toContainEqual({
       original: 'german',
-      property: 'georeference:country',
+      property: 'country',
       value: 'DE',
       confidence: 'high',
     })
     expect(terms).toContainEqual({
       original: 'highway',
-      property: 'hdmap:roadTypes',
+      property: 'roadType',
       value: 'motorway',
       confidence: 'high',
     })
@@ -23,19 +23,19 @@ describe('extractKnownTerms', () => {
     const { terms } = extractKnownTerms('OpenDRIVE roundabout in France')
     expect(terms).toContainEqual({
       original: 'opendrive',
-      property: 'hdmap:formatType',
+      property: 'formatType',
       value: 'ASAM OpenDRIVE',
       confidence: 'high',
     })
     expect(terms).toContainEqual({
       original: 'roundabout',
-      property: 'hdmap:roadTypes',
+      property: 'roadType',
       value: 'roundabout',
       confidence: 'high',
     })
     expect(terms).toContainEqual({
       original: 'france',
-      property: 'georeference:country',
+      property: 'country',
       value: 'FR',
       confidence: 'high',
     })
@@ -45,7 +45,7 @@ describe('extractKnownTerms', () => {
     const { terms } = extractKnownTerms('map from United States')
     expect(terms).toContainEqual({
       original: 'united states',
-      property: 'georeference:country',
+      property: 'country',
       value: 'US',
       confidence: 'high',
     })
@@ -61,7 +61,7 @@ describe('extractKnownTerms', () => {
     const { terms } = extractKnownTerms('lidar-scanned road')
     expect(terms).toContainEqual({
       original: 'lidar',
-      property: 'hdmap:usedDataSources',
+      property: 'dataSource',
       value: 'lidar',
       confidence: 'high',
     })
@@ -77,13 +77,13 @@ describe('extractKnownTerms', () => {
     const { terms } = extractKnownTerms('JAPANESE MOTORWAY')
     expect(terms).toContainEqual({
       original: 'japanese',
-      property: 'georeference:country',
+      property: 'country',
       value: 'JP',
       confidence: 'high',
     })
     expect(terms).toContainEqual({
       original: 'motorway',
-      property: 'hdmap:roadTypes',
+      property: 'roadType',
       value: 'motorway',
       confidence: 'high',
     })
@@ -92,7 +92,7 @@ describe('extractKnownTerms', () => {
 
 describe('getAllowedValues', () => {
   it('returns unique country codes', () => {
-    const values = getAllowedValues('georeference:country')
+    const values = getAllowedValues('country')
     expect(values).toContain('DE')
     expect(values).toContain('US')
     // Should be unique
@@ -100,7 +100,7 @@ describe('getAllowedValues', () => {
   })
 
   it('returns road types', () => {
-    const values = getAllowedValues('hdmap:roadTypes')
+    const values = getAllowedValues('roadType')
     expect(values).toContain('motorway')
     expect(values).toContain('roundabout')
   })
