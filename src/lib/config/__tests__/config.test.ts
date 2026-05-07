@@ -76,16 +76,19 @@ describe('config', () => {
   })
 
   it('enforces OPENAI_API_KEY requirement in non-test mode', () => {
-    process.env.NODE_ENV = 'production'
+    // Use Object.defineProperty to bypass readonly restriction in tests
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true })
     process.env.AI_PROVIDER = 'openai'
     delete process.env.OPENAI_API_KEY
     resetConfig()
 
     expect(() => getConfig()).toThrow('OPENAI_API_KEY is required when AI_PROVIDER is "openai"')
+
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'test', writable: true })
   })
 
   it('does not require OPENAI_API_KEY in test mode', () => {
-    process.env.NODE_ENV = 'test'
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'test', writable: true })
     process.env.AI_PROVIDER = 'openai'
     delete process.env.OPENAI_API_KEY
     resetConfig()

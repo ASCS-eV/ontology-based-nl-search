@@ -174,6 +174,7 @@ export default function Home() {
       }
 
       const slots = {
+        domains: ['hdmap'],
         filters,
         ranges: {},
         ...(Object.keys(location).length > 0 ? { location } : {}),
