@@ -4,13 +4,33 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { InterpretationDisplay } from '@/components/InterpretationDisplay'
 import { OntologyGapsDisplay } from '@/components/OntologyGapsDisplay'
+import { QueryRefinement } from '@/components/QueryRefinement'
 import { ResultsDisplay } from '@/components/ResultsDisplay'
 import { SearchBar } from '@/components/SearchBar'
 import { SparqlPreview } from '@/components/SparqlPreview'
-import type { OntologyGap, QueryInterpretation, SearchResponse } from '@/lib/llm/types'
+import type { MappedTerm, OntologyGap, QueryInterpretation, SearchResponse } from '@/lib/llm/types'
 
 const HISTORY_KEY = 'nl-search-history'
 const MAX_HISTORY = 10
+
+/** Map ontology property names to SearchSlots keys */
+function propertyToSlotKey(property: string): string | null {
+  const mapping: Record<string, string> = {
+    country: 'country',
+    roadTypes: 'roadType',
+    laneTypes: 'laneType',
+    formatType: 'formatType',
+    formatVersion: 'formatVersion',
+    trafficDirection: 'trafficDirection',
+    state: 'state',
+    region: 'region',
+    city: 'city',
+    dataSource: 'dataSource',
+    license: 'license',
+    levelOfDetail: 'levelOfDetail',
+  }
+  return mapping[property] ?? null
+}
 
 function getSearchHistory(): string[] {
   if (typeof window === 'undefined') return []
@@ -134,6 +154,49 @@ export default function Home() {
     }
   }, [])
 
+  const handleRefine = useCallback(async (updatedTerms: MappedTerm[]) => {
+    setLoading(true)
+    setError(null)
+    setResults(null)
+    setMeta(null)
+    setPhase('executing')
+
+    try {
+      // Convert mapped terms back to SearchSlots
+      const slots: Record<string, string> = {}
+      for (const term of updatedTerms) {
+        if (term.property && term.mapped) {
+          const slotKey = propertyToSlotKey(term.property)
+          if (slotKey) {
+            slots[slotKey] = term.mapped
+          }
+        }
+      }
+
+      const res = await fetch('/api/search/refine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slots }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Refine failed')
+      }
+
+      const data = await res.json()
+      setSparql(data.sparql)
+      setResults(data.results)
+      setMeta(data.meta)
+      setPhase('done')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Refine failed')
+    } finally {
+      setLoading(false)
+      setPhase('done')
+    }
+  }, [])
+
   const hasResponse = interpretation || gaps || sparql || results
 
   return (
@@ -170,6 +233,14 @@ export default function Home() {
       {hasResponse && (
         <div className="mt-8 w-full max-w-4xl mx-auto space-y-4">
           {interpretation && <InterpretationDisplay interpretation={interpretation} />}
+
+          {interpretation && interpretation.mappedTerms.length > 0 && (
+            <QueryRefinement
+              mappedTerms={interpretation.mappedTerms}
+              onRerun={handleRefine}
+              loading={loading}
+            />
+          )}
 
           {gaps && <OntologyGapsDisplay gaps={gaps} />}
 
