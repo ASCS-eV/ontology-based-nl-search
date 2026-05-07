@@ -12,7 +12,7 @@ import { enforceSparqlPolicy } from '@/lib/sparql/policy'
  * Supports client-side abort via AbortSignal (request.signal).
  */
 export async function POST(request: NextRequest) {
-  let body: { query?: unknown; domains?: unknown }
+  let body: { query?: unknown }
   try {
     body = await request.json()
   } catch {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  const { query, domains: rawDomains } = body
+  const { query } = body
 
   if (!query || typeof query !== 'string') {
     return new Response(JSON.stringify({ error: 'Missing or invalid "query" field' }), {
@@ -30,9 +30,6 @@ export async function POST(request: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
     })
   }
-
-  const domains = Array.isArray(rawDomains) ? rawDomains.filter((d) => typeof d === 'string') : []
-  const targetDomain = domains.length > 0 ? domains[0] : 'hdmap'
 
   const encoder = new TextEncoder()
   const requestId = generateRequestId()
@@ -69,7 +66,7 @@ export async function POST(request: NextRequest) {
         }
 
         const endLlm = logger.time('llm-interpretation')
-        const structured = await generateStructuredSearch(query, { domain: targetDomain })
+        const structured = await generateStructuredSearch(query)
         endLlm()
 
         if (signal.aborted) {
@@ -124,15 +121,17 @@ export async function POST(request: NextRequest) {
 
         send('results', { results, error: sparqlError })
 
-        // Phase 6: Send meta
+        // Phase 6: Send meta — count total assets across all domains
         let totalDatasets = 0
         try {
-          const { compileCountQuery } = await import('@/lib/search/compiler')
-          const countSparql = await compileCountQuery(targetDomain)
-          const countResult = await store.query(countSparql)
-          const countBinding = countResult.results.bindings[0]
-          if (countBinding?.count) {
-            totalDatasets = parseInt(countBinding.count.value, 10)
+          const { compileAllCountQueries } = await import('@/lib/search/compiler')
+          const countQueries = await compileAllCountQueries()
+          for (const { query: countSparql } of countQueries) {
+            const countResult = await store.query(countSparql)
+            const countBinding = countResult.results.bindings[0]
+            if (countBinding?.count) {
+              totalDatasets += parseInt(countBinding.count.value, 10)
+            }
           }
         } catch {
           // Non-critical

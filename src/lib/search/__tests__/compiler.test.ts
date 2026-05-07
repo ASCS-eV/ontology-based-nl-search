@@ -23,7 +23,7 @@ describe('compileSlots', () => {
       location: { country: 'DE' },
     }
     const sparql = await compileSlots(slots)
-    expect(sparql).toContain('FILTER(?country = "DE")')
+    expect(sparql).toContain('FILTER(CONTAINS(LCASE(?country), "de"))')
     expect(sparql).toContain('georeference:country ?country')
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
@@ -49,7 +49,7 @@ describe('compileSlots', () => {
       location: { country: 'DE' },
     }
     const sparql = await compileSlots(slots)
-    expect(sparql).toContain('FILTER(?country = "DE")')
+    expect(sparql).toContain('FILTER(CONTAINS(LCASE(?country), "de"))')
     expect(sparql).toContain('FILTER(?roadTypes = "motorway")')
     expect(sparql).toContain('FILTER(?formatType = "ASAM OpenDRIVE")')
     const policy = enforceSparqlPolicy(sparql)
@@ -153,6 +153,24 @@ describe('compileSlots', () => {
   it('throws for unknown domain', async () => {
     const slots: SearchSlots = { domains: ['nonexistent'], filters: {}, ranges: {} }
     await expect(compileSlots(slots)).rejects.toThrow('Unknown domain: nonexistent')
+  })
+
+  it('generates cross-domain query for scenario + hdmap', async () => {
+    const slots: SearchSlots = {
+      domains: ['scenario', 'hdmap'],
+      filters: { scenarioCategory: 'lane-change', roadTypes: 'motorway' },
+      ranges: {},
+    }
+    const sparql = await compileSlots(slots)
+    // Primary domain is scenario (it references hdmap)
+    expect(sparql).toContain('?asset a scenario:Scenario')
+    expect(sparql).toContain('FILTER(?scenarioCategory')
+    // Cross-domain join to hdmap
+    expect(sparql).toContain('manifest:hasReferencedArtifacts')
+    expect(sparql).toContain('hdmap:HdMap')
+    expect(sparql).toContain('FILTER(?roadTypes')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
   })
 })
 

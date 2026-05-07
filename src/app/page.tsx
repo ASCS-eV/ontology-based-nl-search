@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { DomainSelector } from '@/components/DomainSelector'
 import { InterpretationDisplay } from '@/components/InterpretationDisplay'
 import { OntologyGapsDisplay } from '@/components/OntologyGapsDisplay'
 import { QueryRefinement } from '@/components/QueryRefinement'
@@ -47,7 +46,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [totalAssets, setTotalAssets] = useState<number | null>(null)
   const [history, setHistory] = useState<string[]>([])
-  const [selectedDomains, setSelectedDomains] = useState<string[]>(['hdmap'])
   const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -58,159 +56,152 @@ export default function Home() {
       .catch(() => {})
   }, [])
 
-  const handleSearch = useCallback(
-    async (naturalLanguageQuery: string) => {
-      // Abort any in-flight request
-      abortControllerRef.current?.abort()
-      const controller = new AbortController()
-      abortControllerRef.current = controller
+  const handleSearch = useCallback(async (naturalLanguageQuery: string) => {
+    // Abort any in-flight request
+    abortControllerRef.current?.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
 
-      setLoading(true)
-      setError(null)
-      setInterpretation(null)
-      setGaps(null)
-      setSparql(null)
-      setResults(null)
-      setMeta(null)
-      setPhase('interpreting')
+    setLoading(true)
+    setError(null)
+    setInterpretation(null)
+    setGaps(null)
+    setSparql(null)
+    setResults(null)
+    setMeta(null)
+    setPhase('interpreting')
 
-      try {
-        const res = await fetch('/api/search/stream', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: naturalLanguageQuery, domains: selectedDomains }),
-          signal: controller.signal,
-        })
+    try {
+      const res = await fetch('/api/search/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: naturalLanguageQuery }),
+        signal: controller.signal,
+      })
 
-        if (!res.ok) {
-          const errorData = await res.json()
-          throw new Error(errorData.error || 'Search failed')
-        }
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Search failed')
+      }
 
-        const reader = res.body?.getReader()
-        if (!reader) throw new Error('No response stream')
+      const reader = res.body?.getReader()
+      if (!reader) throw new Error('No response stream')
 
-        const decoder = new TextDecoder()
-        let buffer = ''
+      const decoder = new TextDecoder()
+      let buffer = ''
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
 
-          let currentEvent = ''
-          for (const line of lines) {
-            if (line.startsWith('event: ')) {
-              currentEvent = line.slice(7)
-            } else if (line.startsWith('data: ') && currentEvent) {
-              const data = JSON.parse(line.slice(6))
-              switch (currentEvent) {
-                case 'status':
-                  setPhase(data.phase as SearchPhase)
-                  break
-                case 'interpretation':
-                  setInterpretation(data)
-                  break
-                case 'gaps':
-                  setGaps(data)
-                  break
-                case 'sparql':
-                  setSparql(data)
-                  break
-                case 'results':
-                  setResults(data.results)
-                  if (data.error) setError(data.error)
-                  break
-                case 'meta':
-                  setMeta(data)
-                  if (data.totalDatasets) setTotalAssets(data.totalDatasets)
-                  break
-                case 'done':
-                  setPhase('done')
-                  break
-                case 'error':
-                  setError(data.message)
-                  break
-              }
-              currentEvent = ''
+        let currentEvent = ''
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7)
+          } else if (line.startsWith('data: ') && currentEvent) {
+            const data = JSON.parse(line.slice(6))
+            switch (currentEvent) {
+              case 'status':
+                setPhase(data.phase as SearchPhase)
+                break
+              case 'interpretation':
+                setInterpretation(data)
+                break
+              case 'gaps':
+                setGaps(data)
+                break
+              case 'sparql':
+                setSparql(data)
+                break
+              case 'results':
+                setResults(data.results)
+                if (data.error) setError(data.error)
+                break
+              case 'meta':
+                setMeta(data)
+                if (data.totalDatasets) setTotalAssets(data.totalDatasets)
+                break
+              case 'done':
+                setPhase('done')
+                break
+              case 'error':
+                setError(data.message)
+                break
             }
+            currentEvent = ''
           }
         }
-
-        saveToHistory(naturalLanguageQuery)
-        setHistory(getSearchHistory())
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          // User started a new search — silently ignore
-          return
-        }
-        setError(err instanceof Error ? err.message : 'An unexpected error occurred')
-      } finally {
-        setLoading(false)
-        setPhase('done')
       }
-    },
-    [selectedDomains]
-  )
 
-  const handleRefine = useCallback(
-    async (updatedTerms: MappedTerm[]) => {
-      setLoading(true)
-      setError(null)
-      setResults(null)
-      setMeta(null)
-      setPhase('executing')
+      saveToHistory(naturalLanguageQuery)
+      setHistory(getSearchHistory())
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        // User started a new search — silently ignore
+        return
+      }
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+    } finally {
+      setLoading(false)
+      setPhase('done')
+    }
+  }, [])
 
-      try {
-        // Convert mapped terms to generic SearchSlots format
-        const filters: Record<string, string> = {}
-        const location: Record<string, string> = {}
+  const handleRefine = useCallback(async (updatedTerms: MappedTerm[]) => {
+    setLoading(true)
+    setError(null)
+    setResults(null)
+    setMeta(null)
+    setPhase('executing')
 
-        for (const term of updatedTerms) {
-          if (term.property && term.mapped) {
-            if (isLocationProperty(term.property)) {
-              location[term.property] = term.mapped
-            } else {
-              filters[term.property] = term.mapped
-            }
+    try {
+      // Convert mapped terms to generic SearchSlots format
+      const filters: Record<string, string> = {}
+      const location: Record<string, string> = {}
+
+      for (const term of updatedTerms) {
+        if (term.property && term.mapped) {
+          if (isLocationProperty(term.property)) {
+            location[term.property] = term.mapped
+          } else {
+            filters[term.property] = term.mapped
           }
         }
-
-        const slots = {
-          domains: selectedDomains,
-          filters,
-          ranges: {},
-          ...(Object.keys(location).length > 0 ? { location } : {}),
-        }
-
-        const res = await fetch('/api/search/refine', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slots }),
-        })
-
-        if (!res.ok) {
-          const errorData = await res.json()
-          throw new Error(errorData.error || 'Refine failed')
-        }
-
-        const data = await res.json()
-        setSparql(data.sparql)
-        setResults(data.results)
-        setMeta(data.meta)
-        setPhase('done')
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Refine failed')
-      } finally {
-        setLoading(false)
-        setPhase('done')
       }
-    },
-    [selectedDomains]
-  )
+
+      const slots = {
+        filters,
+        ranges: {},
+        ...(Object.keys(location).length > 0 ? { location } : {}),
+      }
+
+      const res = await fetch('/api/search/refine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slots }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Refine failed')
+      }
+
+      const data = await res.json()
+      setSparql(data.sparql)
+      setResults(data.results)
+      setMeta(data.meta)
+      setPhase('done')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Refine failed')
+    } finally {
+      setLoading(false)
+      setPhase('done')
+    }
+  }, [])
 
   const hasResponse = interpretation || gaps || sparql || results
 
@@ -229,11 +220,6 @@ export default function Home() {
             {totalAssets} assets in graph
           </span>
         )}
-      </div>
-
-      {/* Domain Selector */}
-      <div className="w-full max-w-2xl mb-4">
-        <DomainSelector selectedDomains={selectedDomains} onChange={setSelectedDomains} />
       </div>
 
       {/* Search */}
