@@ -17,6 +17,14 @@ import { basename, join } from 'path'
 
 import { getConfig } from '@/lib/config'
 
+/** Oxigraph RDF term (subset of RDF/JS Term) */
+interface RdfTerm {
+  value: string
+}
+
+/** Row from an Oxigraph SELECT query */
+type OxigraphRow = Map<string, RdfTerm>
+
 /** A property with its allowed values as defined by sh:in in SHACL */
 export interface VocabularyProperty {
   /** Full IRI of the property */
@@ -153,7 +161,7 @@ export async function buildVocabularyIndex(): Promise<VocabularyIndex> {
     ORDER BY ?path ?value
   `
 
-  const results = store.query(sparql) as Map<string, any>[]
+  const results = store.query(sparql) as OxigraphRow[]
   const properties = new Map<string, VocabularyProperty>()
 
   for (const row of results) {
@@ -203,7 +211,7 @@ export async function buildVocabularyIndex(): Promise<VocabularyIndex> {
     }
   `
 
-  const numResults = store.query(numericSparql) as Map<string, any>[]
+  const numResults = store.query(numericSparql) as OxigraphRow[]
   for (const row of numResults) {
     const pathTerm = row.get('path')
     const nameTerm = row.get('name')

@@ -1,18 +1,39 @@
-import type { SparqlResults, SparqlStore } from './types'
+import type { SparqlBinding, SparqlResults, SparqlStore } from './types'
+
+/** RDF/JS-compatible term from Oxigraph */
+interface OxigraphTerm {
+  termType: 'NamedNode' | 'Literal' | 'BlankNode' | 'DefaultGraph'
+  value: string
+  datatype?: { value: string }
+  language?: string
+}
+
+/** Oxigraph Store instance (dynamically imported WASM module) */
+interface OxigraphStoreInstance {
+  query(sparql: string): Map<string, OxigraphTerm>[] | boolean
+  update(sparql: string): void
+  load(data: string, options: { format: string; to_graph_name?: OxigraphTerm }): void
+}
+
+/** Oxigraph WASM module */
+interface OxigraphModule {
+  Store: new () => OxigraphStoreInstance
+  namedNode(iri: string): OxigraphTerm
+}
 
 /**
  * In-memory SPARQL store using Oxigraph WASM.
  * Used for development/testing with small datasets (<1000 entries).
  */
 export class OxigraphStore implements SparqlStore {
-  private store: any = null
-  private oxigraph: any = null
+  private store: OxigraphStoreInstance | null = null
+  private oxigraph: OxigraphModule | null = null
 
   async initialize(): Promise<void> {
     if (this.store) return
 
     // Dynamic import to avoid bundling WASM in client
-    this.oxigraph = await import('oxigraph')
+    this.oxigraph = (await import('oxigraph')) as unknown as OxigraphModule
     this.store = new this.oxigraph.Store()
   }
 
@@ -23,15 +44,15 @@ export class OxigraphStore implements SparqlStore {
   async query(sparql: string): Promise<SparqlResults> {
     await this.initialize()
 
-    const rawResults = this.store.query(sparql)
+    const rawResults = this.store!.query(sparql)
 
-    // Convert Oxigraph results to standard SPARQL JSON format
+    // SELECT query - results are an array of Maps
     if (Array.isArray(rawResults)) {
-      // SELECT query - results are an array of Maps
-      const vars = rawResults.length > 0 ? [...rawResults[0].keys()] : []
+      const firstRow = rawResults[0]
+      const vars = firstRow ? [...firstRow.keys()] : []
 
-      const bindings = rawResults.map((row: Map<string, any>) => {
-        const binding: Record<string, any> = {}
+      const bindings: SparqlBinding[] = rawResults.map((row) => {
+        const binding: SparqlBinding = {}
         for (const [key, term] of row.entries()) {
           if (term) {
             binding[key] = termToBinding(term)
@@ -52,47 +73,39 @@ export class OxigraphStore implements SparqlStore {
 
   async update(sparql: string): Promise<void> {
     await this.initialize()
-    this.store.update(sparql)
+    this.store!.update(sparql)
   }
 
   async loadTurtle(data: string, graphUri?: string): Promise<void> {
     await this.initialize()
 
     if (graphUri) {
-      const graph = this.oxigraph.namedNode(graphUri)
-      this.store.load(data, { format: 'text/turtle', to_graph_name: graph })
+      const graph = this.oxigraph!.namedNode(graphUri)
+      this.store!.load(data, { format: 'text/turtle', to_graph_name: graph })
     } else {
-      this.store.load(data, { format: 'text/turtle' })
+      this.store!.load(data, { format: 'text/turtle' })
     }
   }
 
   async loadJsonLd(data: string, graphUri?: string): Promise<void> {
     await this.initialize()
 
-    // Oxigraph WASM doesn't natively support JSON-LD parsing,
-    // so we convert to N-Quads format first using a simple approach.
-    // For production, consider using jsonld.js for proper expansion.
     if (graphUri) {
-      const graph = this.oxigraph.namedNode(graphUri)
-      this.store.load(data, { format: 'application/ld+json', to_graph_name: graph })
+      const graph = this.oxigraph!.namedNode(graphUri)
+      this.store!.load(data, { format: 'application/ld+json', to_graph_name: graph })
     } else {
-      this.store.load(data, { format: 'application/ld+json' })
+      this.store!.load(data, { format: 'application/ld+json' })
     }
   }
 }
 
 /** Convert an Oxigraph term to SPARQL JSON binding format */
-function termToBinding(term: any): {
-  type: string
-  value: string
-  datatype?: string
-  'xml:lang'?: string
-} {
+function termToBinding(term: OxigraphTerm): SparqlBinding[string] {
   if (term.termType === 'NamedNode') {
     return { type: 'uri', value: term.value }
   }
   if (term.termType === 'Literal') {
-    const result: any = { type: 'literal', value: term.value }
+    const result: SparqlBinding[string] = { type: 'literal', value: term.value }
     if (term.datatype && term.datatype.value !== 'http://www.w3.org/2001/XMLSchema#string') {
       result.datatype = term.datatype.value
     }

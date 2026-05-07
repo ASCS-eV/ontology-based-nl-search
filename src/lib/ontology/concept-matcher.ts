@@ -22,6 +22,14 @@ import { join } from 'path'
 import { lookupGlossaryBatch } from './glossary'
 import { buildVocabularyIndex } from './vocabulary-index'
 
+/** Oxigraph RDF term (subset of RDF/JS Term) */
+interface RdfTerm {
+  value: string
+}
+
+/** Row from an Oxigraph SELECT query */
+type OxigraphRow = Map<string, RdfTerm>
+
 export interface ConceptMatch {
   /** What the user said */
   input: string
@@ -220,7 +228,7 @@ async function loadSkosStore(): Promise<void> {
     }
   `
 
-  const concepts = store.query(conceptSparql) as Map<string, any>[]
+  const concepts = store.query(conceptSparql) as OxigraphRow[]
   const conceptMap = new Map<string, SkosConcept>()
 
   for (const row of concepts) {
@@ -248,7 +256,7 @@ async function loadSkosStore(): Promise<void> {
         skos:altLabel ?altLabel .
     }
   `
-  const altResults = store.query(altLabelSparql) as Map<string, any>[]
+  const altResults = store.query(altLabelSparql) as OxigraphRow[]
   for (const row of altResults) {
     const uri = row.get('concept')?.value
     const label = row.get('altLabel')?.value
@@ -267,7 +275,7 @@ async function loadSkosStore(): Promise<void> {
       BIND(REPLACE(STR(?relType), ".*#", "") AS ?rel)
     }
   `
-  const relResults = store.query(relSparql) as Map<string, any>[]
+  const relResults = store.query(relSparql) as OxigraphRow[]
   for (const row of relResults) {
     const uri = row.get('concept')?.value
     const rel = row.get('rel')?.value

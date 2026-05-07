@@ -59,7 +59,7 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
   }
 
   // No SERVICE clauses (check recursively in where patterns)
-  if ('where' in parsed && containsService(parsed.where)) {
+  if ('where' in parsed && containsService(parsed.where as unknown as SparqlPattern[])) {
     violations.push('SERVICE clauses are not allowed (no federation)')
   }
 
@@ -91,7 +91,13 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
   }
 }
 
-function containsService(patterns: any[] | undefined): boolean {
+interface SparqlPattern {
+  type?: string
+  patterns?: SparqlPattern[]
+  triples?: SparqlPattern[]
+}
+
+function containsService(patterns: SparqlPattern[] | undefined): boolean {
   if (!patterns) return false
   for (const p of patterns) {
     if (p.type === 'service') return true
