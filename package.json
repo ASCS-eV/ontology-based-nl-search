@@ -42,6 +42,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
     "@jest/globals": "^29.7.0",
     "@playwright/test": "^1.59.1",
     "@testing-library/dom": "^10.4.1",
