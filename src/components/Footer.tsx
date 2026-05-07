@@ -59,19 +59,10 @@ export function Footer() {
       <div className="border-t border-gray-100 bg-gray-50">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <div className="flex items-center gap-4">
-              <Image
-                src="/logos/ascs-2020.png"
-                alt="ASCS e.V."
-                width={80}
-                height={30}
-                className="h-7 w-auto"
-              />
-              <span className="text-xs text-gray-500">
-                © {new Date().getFullYear()} Automotive Solution Center for
-                Simulation e.V.
-              </span>
-            </div>
+            <span className="text-xs text-gray-500">
+              © {new Date().getFullYear()} Automotive Solution Center for
+              Simulation e.V.
+            </span>
 
             <nav className="flex items-center gap-4 text-xs text-gray-500">
               <a
