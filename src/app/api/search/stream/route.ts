@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 
+import { badRequest } from '@/lib/errors'
 import { searchNl } from '@/lib/search/service'
 
 /**
@@ -14,19 +15,13 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return badRequest('Invalid JSON body')
   }
 
   const { query } = body
 
   if (!query || typeof query !== 'string') {
-    return new Response(JSON.stringify({ error: 'Missing or invalid "query" field' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return badRequest('Missing or invalid "query" field')
   }
 
   const signal = request.signal

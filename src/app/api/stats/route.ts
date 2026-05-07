@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { extractErrorMessage, internalError } from '@/lib/errors'
 import { buildDomainRegistry } from '@/lib/ontology/domain-registry'
 import { ASSET_DOMAINS, compileCountQuery } from '@/lib/search/compiler'
 import { getInitializedStore } from '@/lib/search/init'
@@ -23,7 +24,7 @@ export async function GET() {
           totalAssets += count
         }
       } catch {
-        // Skip domains that fail (no data loaded)
+        // Skip domains that fail (no data loaded) — degraded response is OK
       }
     }
 
@@ -33,7 +34,7 @@ export async function GET() {
       availableDomains: registry.domainNames,
     })
   } catch (error) {
-    console.error('Stats API error:', error)
-    return NextResponse.json({ totalAssets: 0, domains: {}, availableDomains: [] })
+    console.error('Stats API error:', extractErrorMessage(error))
+    return internalError('Failed to retrieve statistics')
   }
 }

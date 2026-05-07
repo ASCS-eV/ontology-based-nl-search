@@ -54,6 +54,7 @@ export default function Home() {
     async function loadStats() {
       try {
         const response = await fetch('/api/stats')
+        if (!response.ok) return
         const data = await response.json()
         setTotalAssets(data.totalAssets)
       } catch {

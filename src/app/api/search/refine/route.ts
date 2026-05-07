@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
 
+import { badRequest, extractErrorMessage, internalError, unprocessable } from '@/lib/errors'
 import { searchRefine } from '@/lib/search/service'
 
 /** Zod schema for validating SearchSlots from the client */
@@ -31,36 +32,33 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    return badRequest('Invalid JSON body')
   }
 
   if (!body || typeof body !== 'object' || !('slots' in body)) {
-    return NextResponse.json({ error: 'Missing "slots" field in request body' }, { status: 400 })
+    return badRequest('Missing "slots" field in request body')
   }
 
   const parseResult = searchSlotsSchema.safeParse((body as { slots: unknown }).slots)
   if (!parseResult.success) {
     const issues = parseResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)
-    return NextResponse.json({ error: `Invalid slots: ${issues.join('; ')}` }, { status: 422 })
+    return unprocessable('Invalid slots', issues)
   }
 
   try {
     const result = await searchRefine({ slots: parseResult.data })
 
     if (result.execution.error) {
-      return NextResponse.json(
-        { error: result.execution.error, sparql: result.sparql },
-        { status: 422 }
-      )
+      return unprocessable(result.execution.error)
     }
 
-    return NextResponse.json({
+    return Response.json({
       sparql: result.sparql,
       results: result.execution.results,
       meta: result.meta,
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal server error'
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('Refine search failed:', extractErrorMessage(error))
+    return internalError()
   }
 }
