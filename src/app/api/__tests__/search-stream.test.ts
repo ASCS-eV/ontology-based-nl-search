@@ -1,30 +1,22 @@
 /**
  * Integration tests for the streaming search API route.
- * Mocks the LLM layer and uses real stream parsing to verify SSE format.
+ * Mocks the search service (not individual deps) to test HTTP/SSE behavior.
  */
 import { NextRequest } from 'next/server'
 
-import { generateStructuredSearch } from '@/lib/llm'
-import { getInitializedStore } from '@/lib/search/init'
+import { searchNl } from '@/lib/search/service'
 
 import { POST } from '../search/stream/route'
 
-// Mock the LLM module
-jest.mock('@/lib/llm', () => ({
-  generateStructuredSearch: jest.fn(),
+jest.mock('@/lib/search/service', () => ({
+  searchNl: jest.fn(),
+  searchRefine: jest.fn(),
+  getSearchService: jest.fn(),
+  resetSearchService: jest.fn(),
+  SearchService: jest.fn(),
 }))
 
-// Mock the store init
-jest.mock('@/lib/search/init', () => ({
-  getInitializedStore: jest.fn(),
-}))
-
-const mockGenerateStructuredSearch = generateStructuredSearch as jest.MockedFunction<
-  typeof generateStructuredSearch
->
-const mockGetInitializedStore = getInitializedStore as jest.MockedFunction<
-  typeof getInitializedStore
->
+const mockSearchNl = searchNl as jest.MockedFunction<typeof searchNl>
 
 /** Parse SSE stream into events */
 async function parseSSE(response: Response): Promise<Array<{ event: string; data: unknown }>> {
@@ -88,28 +80,21 @@ describe('POST /api/search/stream', () => {
   })
 
   it('returns SSE stream with correct event sequence for valid query', async () => {
-    const mockStore = {
-      query: jest.fn().mockResolvedValue({
-        results: {
-          bindings: [
-            {
-              asset: { type: 'uri', value: 'http://ex.org/a1' },
-              name: { type: 'literal', value: 'Asset 1' },
-            },
-          ],
-        },
-      }),
-      update: jest.fn(),
-      loadTurtle: jest.fn(),
-      loadJsonLd: jest.fn(),
-      isReady: jest.fn().mockResolvedValue(true),
-    }
-
-    mockGetInitializedStore.mockResolvedValue(mockStore)
-    mockGenerateStructuredSearch.mockResolvedValue({
+    mockSearchNl.mockResolvedValue({
       interpretation: { summary: 'Test query', mappedTerms: [] },
       gaps: [],
       sparql: 'SELECT ?asset ?name WHERE { ?asset a hdmap:HdMap ; rdfs:label ?name } LIMIT 10',
+      execution: {
+        results: [{ asset: 'http://ex.org/a1', name: 'Asset 1' }],
+        sparql: 'SELECT ?asset ?name WHERE { ?asset a hdmap:HdMap ; rdfs:label ?name } LIMIT 10',
+      },
+      meta: {
+        requestId: 'req_test',
+        totalDatasets: 50,
+        matchCount: 1,
+        executionTimeMs: 42,
+        timings: [],
+      },
     })
 
     const response = await POST(makeRequest({ query: 'test search' }))
@@ -128,17 +113,8 @@ describe('POST /api/search/stream', () => {
     expect(eventTypes).toContain('done')
   })
 
-  it('sends interpretation data matching LLM response', async () => {
-    const mockStore = {
-      query: jest.fn().mockResolvedValue({ results: { bindings: [] } }),
-      update: jest.fn(),
-      loadTurtle: jest.fn(),
-      loadJsonLd: jest.fn(),
-      isReady: jest.fn().mockResolvedValue(true),
-    }
-
-    mockGetInitializedStore.mockResolvedValue(mockStore)
-    mockGenerateStructuredSearch.mockResolvedValue({
+  it('sends interpretation data matching search result', async () => {
+    mockSearchNl.mockResolvedValue({
       interpretation: {
         summary: 'German motorways',
         mappedTerms: [
@@ -147,6 +123,14 @@ describe('POST /api/search/stream', () => {
       },
       gaps: [{ term: 'roundabout', reason: 'Not in ontology', suggestions: ['intersection'] }],
       sparql: 'SELECT ?a WHERE { ?a a hdmap:HdMap } LIMIT 10',
+      execution: { results: [], sparql: 'SELECT ?a WHERE { ?a a hdmap:HdMap } LIMIT 10' },
+      meta: {
+        requestId: 'req_test2',
+        totalDatasets: 0,
+        matchCount: 0,
+        executionTimeMs: 10,
+        timings: [],
+      },
     })
 
     const response = await POST(makeRequest({ query: 'German autobahn with roundabout' }))
@@ -166,20 +150,23 @@ describe('POST /api/search/stream', () => {
     ])
   })
 
-  it('includes error in results event on SPARQL policy violation', async () => {
-    const mockStore = {
-      query: jest.fn(),
-      update: jest.fn(),
-      loadTurtle: jest.fn(),
-      loadJsonLd: jest.fn(),
-      isReady: jest.fn().mockResolvedValue(true),
-    }
-
-    mockGetInitializedStore.mockResolvedValue(mockStore)
-    mockGenerateStructuredSearch.mockResolvedValue({
+  it('includes error in results event when execution has error', async () => {
+    mockSearchNl.mockResolvedValue({
       interpretation: { summary: 'Test', mappedTerms: [] },
       gaps: [],
       sparql: 'DELETE WHERE { ?s ?p ?o }',
+      execution: {
+        results: [],
+        sparql: 'DELETE WHERE { ?s ?p ?o }',
+        error: 'Query policy violation: Only SELECT queries are allowed',
+      },
+      meta: {
+        requestId: 'req_test3',
+        totalDatasets: 0,
+        matchCount: 0,
+        executionTimeMs: 1,
+        timings: [],
+      },
     })
 
     const response = await POST(makeRequest({ query: 'delete everything' }))
@@ -187,21 +174,10 @@ describe('POST /api/search/stream', () => {
 
     const results = events.find((e) => e.event === 'results')
     expect((results?.data as { error: string }).error).toContain('policy violation')
-    // Store is still called for count query (meta), but NOT for the malicious query
-    expect(mockStore.query).not.toHaveBeenCalledWith('DELETE WHERE { ?s ?p ?o }')
   })
 
-  it('sends error event when LLM throws', async () => {
-    const mockStore = {
-      query: jest.fn(),
-      update: jest.fn(),
-      loadTurtle: jest.fn(),
-      loadJsonLd: jest.fn(),
-      isReady: jest.fn().mockResolvedValue(true),
-    }
-
-    mockGetInitializedStore.mockResolvedValue(mockStore)
-    mockGenerateStructuredSearch.mockRejectedValue(new Error('LLM API timeout'))
+  it('sends error event when search service throws', async () => {
+    mockSearchNl.mockRejectedValue(new Error('LLM API timeout'))
 
     const response = await POST(makeRequest({ query: 'any query' }))
     const events = await parseSSE(response)
@@ -212,40 +188,24 @@ describe('POST /api/search/stream', () => {
   })
 
   it('includes meta with execution time and match count', async () => {
-    const mockStore = {
-      query: jest.fn().mockImplementation((sparql: string) => {
-        if (sparql.includes('COUNT')) {
-          return Promise.resolve({
-            results: { bindings: [{ count: { type: 'literal', value: '100' } }] },
-          })
-        }
-        return Promise.resolve({
-          results: {
-            bindings: [
-              {
-                asset: { type: 'uri', value: 'http://ex.org/a1' },
-                name: { type: 'literal', value: 'A' },
-              },
-              {
-                asset: { type: 'uri', value: 'http://ex.org/a2' },
-                name: { type: 'literal', value: 'B' },
-              },
-            ],
-          },
-        })
-      }),
-      update: jest.fn(),
-      loadTurtle: jest.fn(),
-      loadJsonLd: jest.fn(),
-      isReady: jest.fn().mockResolvedValue(true),
-    }
-
-    mockGetInitializedStore.mockResolvedValue(mockStore)
-    mockGenerateStructuredSearch.mockResolvedValue({
+    mockSearchNl.mockResolvedValue({
       interpretation: { summary: 'Test', mappedTerms: [] },
       gaps: [],
-      sparql:
-        'PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nSELECT ?asset ?name WHERE { ?asset a hdmap:HdMap ; rdfs:label ?name } LIMIT 100',
+      sparql: 'SELECT ?asset WHERE { ?asset a hdmap:HdMap } LIMIT 100',
+      execution: {
+        results: [
+          { asset: 'http://ex.org/a1', name: 'A' },
+          { asset: 'http://ex.org/a2', name: 'B' },
+        ],
+        sparql: 'SELECT ?asset WHERE { ?asset a hdmap:HdMap } LIMIT 100',
+      },
+      meta: {
+        requestId: 'req_test4',
+        totalDatasets: 100,
+        matchCount: 2,
+        executionTimeMs: 55,
+        timings: [{ stage: 'sparql-execution', durationMs: 30 }],
+      },
     })
 
     const response = await POST(makeRequest({ query: 'all maps' }))
@@ -257,7 +217,7 @@ describe('POST /api/search/stream', () => {
       matchCount: number
       executionTimeMs: number
     }
-    expect(metaData.totalDatasets).toBeGreaterThan(0)
+    expect(metaData.totalDatasets).toBe(100)
     expect(metaData.matchCount).toBe(2)
     expect(metaData.executionTimeMs).toBeGreaterThanOrEqual(0)
   })

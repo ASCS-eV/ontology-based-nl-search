@@ -1,22 +1,39 @@
 /**
  * Unified Search Service — single orchestration layer for all search operations.
  *
+ * Architecture:
+ * - SearchService class with constructor-injected dependencies (Dependency Inversion)
+ * - No global state — all external I/O accessed through typed interfaces
+ * - Module-level factory provides production wiring; tests inject mocks directly
+ *
  * Responsibilities:
  * 1. Full NL search: init → LLM interpret → compile → policy → execute → count
  * 2. Refine search: init → compile pre-filled slots → policy → execute
- *
- * Routes become thin HTTP adapters that call this service.
- * This eliminates duplicated SPARQL execution logic across API routes.
  */
-import { generateStructuredSearch } from '@/lib/llm'
 import type { LlmStructuredResponse } from '@/lib/llm/types'
 import { generateRequestId, RequestLogger } from '@/lib/logging'
-import { enforceSparqlPolicy } from '@/lib/sparql/policy'
-import type { SparqlBinding } from '@/lib/sparql/types'
+import type { PolicyResult } from '@/lib/sparql/policy'
+import type { SparqlBinding, SparqlStore } from '@/lib/sparql/types'
 
-import { compileAllCountQueries, compileSlots } from './compiler'
-import { getInitializedStore } from './init'
 import type { SearchSlots } from './slots'
+
+// ─── Dependency Interfaces ───────────────────────────────────────────────────
+
+/** External dependencies required by SearchService */
+export interface SearchDependencies {
+  /** Resolve the initialized SPARQL store (handles lazy init + data loading) */
+  getStore: () => Promise<SparqlStore>
+  /** Translate natural language → structured interpretation + SPARQL */
+  interpretQuery: (query: string, options: { domain?: string }) => Promise<LlmStructuredResponse>
+  /** Compile search slots into a SPARQL query string */
+  compileSlots: (slots: SearchSlots) => Promise<string>
+  /** Compile count queries for all registered asset domains */
+  compileCountQueries: () => Promise<{ domain: string; query: string }[]>
+  /** Validate a SPARQL query against security policy */
+  enforcePolicy: (sparql: string) => PolicyResult & { query: string }
+}
+
+// ─── Result Types ────────────────────────────────────────────────────────────
 
 /** Flattened SPARQL binding row for API consumers */
 export type ResultRow = Record<string, string>
@@ -66,160 +83,241 @@ export interface RefineOptions {
   signal?: AbortSignal
 }
 
-/**
- * Flatten SPARQL bindings into plain string records.
- * Extracts only the `.value` field from each RDF term.
- */
-function flattenBindings(bindings: SparqlBinding[]): ResultRow[] {
-  return bindings.map((binding) => {
-    const row: ResultRow = {}
-    for (const [key, term] of Object.entries(binding)) {
-      row[key] = term.value
-    }
-    return row
-  })
-}
+// ─── Service Implementation ──────────────────────────────────────────────────
 
 /**
- * Execute a SPARQL query through the policy layer and store.
- * Returns results or a policy/execution error.
+ * SearchService encapsulates the search orchestration logic.
+ * All external dependencies are injected via the constructor — no global state.
+ *
+ * Usage:
+ *   const service = new SearchService(deps)
+ *   const result = await service.searchNl({ query: '...' })
+ *
+ * Testing:
+ *   const service = new SearchService({ getStore: async () => mockStore, ... })
  */
-async function executeSparql(sparql: string, logger: RequestLogger): Promise<ExecutionResult> {
-  const policy = enforceSparqlPolicy(sparql)
+export class SearchService {
+  constructor(private readonly deps: SearchDependencies) {}
 
-  if (!policy.allowed) {
-    logger.warn('SPARQL policy violation', { violations: policy.violations })
+  /**
+   * Full natural-language search pipeline:
+   * init → LLM interpretation → policy-check → execute → count
+   */
+  async searchNl(options: NlSearchOptions): Promise<SearchResult> {
+    const { query, domain, signal } = options
+    const requestId = generateRequestId()
+    const logger = new RequestLogger({ requestId, query })
+
+    // Ensure store is ready
+    const endStoreInit = logger.time('store-init')
+    await this.deps.getStore()
+    endStoreInit()
+
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+
+    // LLM interpretation (generates slots → compiles → returns SPARQL)
+    const endLlm = logger.time('llm-interpretation')
+    const structured = await this.deps.interpretQuery(query, { domain })
+    endLlm()
+
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+
+    // Execute the generated SPARQL
+    const execution = await this.executeSparql(structured.sparql, logger)
+
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+
+    // Count total datasets (non-critical)
+    const totalDatasets = await this.countTotalDatasets(logger)
+
+    const meta = this.buildMeta(requestId, execution.results.length, totalDatasets, logger)
+    logger.info('Search completed', { matchCount: meta.matchCount, totalDatasets })
+
     return {
-      results: [],
-      sparql,
-      error: `Query policy violation: ${policy.violations.join('; ')}`,
+      interpretation: structured.interpretation,
+      gaps: structured.gaps,
+      sparql: structured.sparql,
+      execution,
+      meta,
     }
   }
 
-  try {
-    const endQuery = logger.time('sparql-execution')
-    const store = await getInitializedStore()
-    const sparqlResults = await store.query(policy.query)
-    endQuery()
+  /**
+   * Refine search pipeline (no LLM):
+   * compile pre-filled slots → policy-check → execute
+   */
+  async searchRefine(options: RefineOptions): Promise<RefineResult> {
+    const { slots, signal } = options
+    const requestId = generateRequestId()
+    const logger = new RequestLogger({ requestId })
 
-    return {
-      results: flattenBindings(sparqlResults.results.bindings),
-      sparql: policy.query,
-    }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'SPARQL execution failed'
-    logger.error('SPARQL execution failed', err)
-    return { results: [], sparql: policy.query, error: message }
+    // Compile slots to SPARQL
+    const endCompile = logger.time('compile-slots')
+    const sparql = await this.deps.compileSlots(slots)
+    endCompile()
+
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+
+    // Execute
+    const execution = await this.executeSparql(sparql, logger)
+
+    const meta = this.buildMeta(requestId, execution.results.length, 0, logger)
+    logger.info('Refine completed', { matchCount: meta.matchCount })
+
+    return { sparql, execution, meta }
   }
-}
 
-/**
- * Count total datasets across all registered asset domains.
- * Non-critical: returns 0 on failure.
- */
-async function countTotalDatasets(logger: RequestLogger): Promise<number> {
-  try {
-    const store = await getInitializedStore()
-    const countQueries = await compileAllCountQueries()
-    let total = 0
+  // ─── Private Helpers ─────────────────────────────────────────────────────
 
-    for (const { query: countSparql } of countQueries) {
-      const countResult = await store.query(countSparql)
-      const countBinding = countResult.results.bindings[0]
-      if (countBinding?.count) {
-        total += parseInt(countBinding.count.value, 10)
+  /**
+   * Execute a SPARQL query through the policy layer and store.
+   * Returns results or a policy/execution error.
+   */
+  private async executeSparql(sparql: string, logger: RequestLogger): Promise<ExecutionResult> {
+    const policy = this.deps.enforcePolicy(sparql)
+
+    if (!policy.allowed) {
+      logger.warn('SPARQL policy violation', { violations: policy.violations })
+      return {
+        results: [],
+        sparql,
+        error: `Query policy violation: ${policy.violations.join('; ')}`,
       }
     }
 
-    return total
-  } catch (err) {
-    logger.warn('Failed to count total datasets', { error: String(err) })
-    return 0
+    try {
+      const endQuery = logger.time('sparql-execution')
+      const store = await this.deps.getStore()
+      const sparqlResults = await store.query(policy.query)
+      endQuery()
+
+      return {
+        results: this.flattenBindings(sparqlResults.results.bindings),
+        sparql: policy.query,
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'SPARQL execution failed'
+      logger.error('SPARQL execution failed', err)
+      return { results: [], sparql: policy.query, error: message }
+    }
+  }
+
+  /**
+   * Flatten SPARQL bindings into plain string records.
+   * Extracts only the `.value` field from each RDF term.
+   */
+  private flattenBindings(bindings: SparqlBinding[]): ResultRow[] {
+    return bindings.map((binding) => {
+      const row: ResultRow = {}
+      for (const [key, term] of Object.entries(binding)) {
+        row[key] = term.value
+      }
+      return row
+    })
+  }
+
+  /**
+   * Count total datasets across all registered asset domains.
+   * Non-critical: returns 0 on failure.
+   */
+  private async countTotalDatasets(logger: RequestLogger): Promise<number> {
+    try {
+      const store = await this.deps.getStore()
+      const countQueries = await this.deps.compileCountQueries()
+      let total = 0
+
+      for (const { query: countSparql } of countQueries) {
+        const countResult = await store.query(countSparql)
+        const countBinding = countResult.results.bindings[0]
+        if (countBinding?.count) {
+          total += parseInt(countBinding.count.value, 10)
+        }
+      }
+
+      return total
+    } catch (err) {
+      logger.warn('Failed to count total datasets', { error: String(err) })
+      return 0
+    }
+  }
+
+  private buildMeta(
+    requestId: string,
+    matchCount: number,
+    totalDatasets: number,
+    logger: RequestLogger
+  ): SearchMeta {
+    return {
+      requestId,
+      totalDatasets,
+      matchCount,
+      executionTimeMs: logger.getTotalMs(),
+      timings: logger.getTimings(),
+    }
   }
 }
 
+// ─── Module-level Factory (Production Wiring) ────────────────────────────────
+
+let instance: SearchService | null = null
+
 /**
- * Build meta information from logger state.
+ * Get the singleton SearchService instance with production dependencies.
+ * Routes call this; tests construct SearchService directly with mock deps.
  */
-function buildMeta(
-  requestId: string,
-  matchCount: number,
-  totalDatasets: number,
-  logger: RequestLogger
-): SearchMeta {
-  return {
-    requestId,
-    totalDatasets,
-    matchCount,
-    executionTimeMs: logger.getTotalMs(),
-    timings: logger.getTimings(),
+export function getSearchService(): SearchService {
+  if (instance) return instance
+
+  // Lazy import to avoid circular deps at module load time
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { generateStructuredSearch } = require('@/lib/llm') as {
+    generateStructuredSearch: SearchDependencies['interpretQuery']
   }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { compileSlots, compileAllCountQueries } = require('./compiler') as {
+    compileSlots: SearchDependencies['compileSlots']
+    compileCountQueries: SearchDependencies['compileCountQueries']
+    compileAllCountQueries: SearchDependencies['compileCountQueries']
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { getInitializedStore } = require('./init') as {
+    getInitializedStore: SearchDependencies['getStore']
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { enforceSparqlPolicy } = require('@/lib/sparql/policy') as {
+    enforceSparqlPolicy: SearchDependencies['enforcePolicy']
+  }
+
+  instance = new SearchService({
+    getStore: getInitializedStore,
+    interpretQuery: generateStructuredSearch,
+    compileSlots,
+    compileCountQueries: compileAllCountQueries,
+    enforcePolicy: enforceSparqlPolicy,
+  })
+
+  return instance
 }
 
+/** Reset singleton (for testing only) */
+export function resetSearchService(): void {
+  instance = null
+}
+
+// ─── Convenience Functions (backward-compatible API) ─────────────────────────
+
 /**
- * Full natural-language search pipeline:
- * init → LLM interpretation → compile → policy-check → execute → count
+ * Full natural-language search pipeline.
+ * Delegates to singleton SearchService.
  */
 export async function searchNl(options: NlSearchOptions): Promise<SearchResult> {
-  const { query, domain, signal } = options
-  const requestId = generateRequestId()
-  const logger = new RequestLogger({ requestId, query })
-
-  // Ensure store is ready
-  const endStoreInit = logger.time('store-init')
-  await getInitializedStore()
-  endStoreInit()
-
-  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-
-  // LLM interpretation (generates slots → compiles → returns SPARQL)
-  const endLlm = logger.time('llm-interpretation')
-  const structured = await generateStructuredSearch(query, { domain })
-  endLlm()
-
-  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-
-  // Execute the generated SPARQL
-  const execution = await executeSparql(structured.sparql, logger)
-
-  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-
-  // Count total datasets (non-critical)
-  const totalDatasets = await countTotalDatasets(logger)
-
-  const meta = buildMeta(requestId, execution.results.length, totalDatasets, logger)
-  logger.info('Search completed', { matchCount: meta.matchCount, totalDatasets })
-
-  return {
-    interpretation: structured.interpretation,
-    gaps: structured.gaps,
-    sparql: structured.sparql,
-    execution,
-    meta,
-  }
+  return getSearchService().searchNl(options)
 }
 
 /**
- * Refine search pipeline (no LLM):
- * compile pre-filled slots → policy-check → execute
+ * Refine search pipeline (no LLM).
+ * Delegates to singleton SearchService.
  */
 export async function searchRefine(options: RefineOptions): Promise<RefineResult> {
-  const { slots, signal } = options
-  const requestId = generateRequestId()
-  const logger = new RequestLogger({ requestId })
-
-  // Compile slots to SPARQL
-  const endCompile = logger.time('compile-slots')
-  const sparql = await compileSlots(slots)
-  endCompile()
-
-  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-
-  // Execute
-  const execution = await executeSparql(sparql, logger)
-
-  const meta = buildMeta(requestId, execution.results.length, 0, logger)
-  logger.info('Refine completed', { matchCount: meta.matchCount })
-
-  return { sparql, execution, meta }
+  return getSearchService().searchRefine(options)
 }
