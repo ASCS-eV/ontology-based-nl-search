@@ -12,9 +12,13 @@ export async function register() {
     const { getInitializedStore } = await import('@/lib/search/init')
     const { warmupOntologyIndexes } = await import('@/lib/ontology/warmup')
 
-    // Fire and forget — don't block server start
-    Promise.all([getInitializedStore(), warmupOntologyIndexes()]).then(() => {
-      console.info('[instrumentation] SPARQL store and ontology indexes warmed up')
-    })
+    // Fire and forget — don't block server start, but handle errors
+    Promise.all([getInitializedStore(), warmupOntologyIndexes()])
+      .then(() => {
+        console.info('[instrumentation] SPARQL store and ontology indexes warmed up')
+      })
+      .catch((err: unknown) => {
+        console.error('[instrumentation] Warmup failed:', err)
+      })
   }
 }

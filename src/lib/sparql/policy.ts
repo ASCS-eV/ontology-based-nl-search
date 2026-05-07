@@ -59,6 +59,7 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
   }
 
   // No SERVICE clauses (check recursively in where patterns)
+  // Note: sparqljs has no published TypeScript types; cast is necessary
   if ('where' in parsed && containsService(parsed.where as unknown as SparqlPattern[])) {
     violations.push('SERVICE clauses are not allowed (no federation)')
   }

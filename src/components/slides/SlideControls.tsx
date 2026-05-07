@@ -25,13 +25,12 @@ export function SlideControls() {
 
       {/* Progress indicator */}
       <div className="flex items-center gap-3">
-        <div className="flex gap-1.5" role="tablist" aria-label="Slides">
+        <div className="flex gap-1.5" aria-label="Slide navigation">
           {Array.from({ length: totalSlides }, (_, i) => (
             <button
               key={i}
-              role="tab"
-              aria-selected={i === currentSlide}
-              aria-label={`Slide ${i + 1}`}
+              aria-label={`Go to slide ${i + 1}`}
+              aria-current={i === currentSlide ? 'step' : undefined}
               onClick={() => goTo(i)}
               className={`h-2 rounded-full transition-all duration-300 ${
                 i === currentSlide ? 'w-6 bg-blue-600' : 'w-2 bg-gray-300 hover:bg-gray-400'

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface SparqlPreviewProps {
   sparql: string
@@ -9,12 +9,20 @@ interface SparqlPreviewProps {
 export function SparqlPreview({ sparql }: SparqlPreviewProps) {
   const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const handleCopy = async () => {
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
+
+  const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(sparql)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => setCopied(false), 2000)
+  }, [sparql])
 
   return (
     <div className="mt-4 w-full">

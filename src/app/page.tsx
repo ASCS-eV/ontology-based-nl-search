@@ -50,10 +50,18 @@ export default function Home() {
 
   useEffect(() => {
     setHistory(getSearchHistory())
-    fetch('/api/stats')
-      .then((r) => r.json())
-      .then((data) => setTotalAssets(data.totalAssets))
-      .catch(() => {})
+
+    async function loadStats() {
+      try {
+        const response = await fetch('/api/stats')
+        const data = await response.json()
+        setTotalAssets(data.totalAssets)
+      } catch {
+        // Stats are non-critical — silently ignore failures
+      }
+    }
+
+    loadStats()
   }, [])
 
   const handleSearch = useCallback(async (naturalLanguageQuery: string) => {

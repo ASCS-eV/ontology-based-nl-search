@@ -25,7 +25,7 @@ const VARIANT_STYLES: Record<NonNullable<SlideProps['variant']>, string> = {
  * Uses CSS scroll-snap for smooth navigation.
  */
 export function Slide({ index, children, className = '', variant = 'default' }: SlideProps) {
-  const { currentSlide } = useSlides()
+  const { currentSlide, totalSlides } = useSlides()
 
   // Only render content for nearby slides (performance)
   const isNearby = Math.abs(currentSlide - index) <= 1
@@ -34,6 +34,8 @@ export function Slide({ index, children, className = '', variant = 'default' }: 
     <section
       id={`slide-${index}`}
       aria-hidden={currentSlide !== index}
+      aria-roledescription="slide"
+      aria-label={`Slide ${index + 1} of ${totalSlides}`}
       className={`flex h-dvh w-full flex-shrink-0 snap-start snap-always flex-col overflow-hidden px-8 py-12 transition-opacity duration-300 sm:px-16 lg:px-24 ${VARIANT_STYLES[variant]} ${
         currentSlide === index ? 'opacity-100' : 'opacity-0'
       } ${className}`}

@@ -11,6 +11,9 @@ let storeInstance: SparqlStore | null = null
  * Get the SPARQL store instance based on validated application config.
  * Singleton pattern — returns the same instance across calls.
  * Wraps the underlying store with an LRU query cache.
+ *
+ * Note: No race condition in Node.js — JS is single-threaded and this
+ * function is synchronous. The if-check and assignment cannot interleave.
  */
 export function getSparqlStore(): SparqlStore {
   if (storeInstance) return storeInstance
@@ -19,8 +22,11 @@ export function getSparqlStore(): SparqlStore {
 
   let inner: SparqlStore
   if (config.SPARQL_MODE === 'remote') {
-    // Config validation guarantees SPARQL_ENDPOINT exists when mode is remote
-    inner = new RemoteSparqlStore(config.SPARQL_ENDPOINT!)
+    const endpoint = config.SPARQL_ENDPOINT
+    if (!endpoint) {
+      throw new Error('SPARQL_ENDPOINT is required when SPARQL_MODE is "remote"')
+    }
+    inner = new RemoteSparqlStore(endpoint)
   } else {
     inner = new OxigraphStore()
   }
