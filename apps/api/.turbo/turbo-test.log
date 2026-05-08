@@ -9,7 +9,7 @@ stdout | src/__tests__/routes.test.ts > GET /health > returns 200 with status ok
 <-- GET /health
 
 stdout | src/__tests__/routes.test.ts > GET /health > returns 200 with status ok
---> GET /health [32m200[0m 3ms
+--> GET /health [32m200[0m 6ms
 
 stdout | src/__tests__/routes.test.ts > GET /health > includes x-request-id header
 <-- GET /health
@@ -27,25 +27,25 @@ stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error 
 <-- POST /search/stream
 
 stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error for missing query
---> POST /search/stream [32m200[0m 0ms
+--> POST /search/stream [32m200[0m 1ms
 
 stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error for invalid JSON
 <-- POST /search/stream
 
 stdout | src/__tests__/routes.test.ts > POST /search/stream > returns SSE error for invalid JSON
---> POST /search/stream [32m200[0m 0ms
+--> POST /search/stream [32m200[0m 1ms
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 400 for missing slots field
 <-- POST /search/refine
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 400 for missing slots field
---> POST /search/refine [33m400[0m 1ms
+--> POST /search/refine [33m400[0m 0ms
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 200 with results for valid slots
 <-- POST /search/refine
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 200 with results for valid slots
---> POST /search/refine [32m200[0m 1ms
+--> POST /search/refine [32m200[0m 2ms
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 422 for invalid slot shape
 <-- POST /search/refine
@@ -59,10 +59,10 @@ stdout | src/__tests__/routes.test.ts > GET /stats > returns stats with domain c
 stdout | src/__tests__/routes.test.ts > GET /stats > returns stats with domain counts
 --> GET /stats [32m200[0m 0ms
 
- ✓ src/__tests__/routes.test.ts (9 tests) 29ms
+ ✓ src/__tests__/routes.test.ts (9 tests) 42ms
 
  Test Files  1 passed (1)
       Tests  9 passed (9)
-   Start at  07:50:06
-   Duration  1.37s (transform 246ms, setup 0ms, collect 288ms, tests 29ms, environment 0ms, prepare 360ms)
+   Start at  10:06:40
+   Duration  1.41s (transform 144ms, setup 0ms, collect 181ms, tests 42ms, environment 0ms, prepare 531ms)
 

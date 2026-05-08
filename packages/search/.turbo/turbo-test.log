@@ -5,12 +5,12 @@
 
  RUN  v3.2.4 /home/q413005/workspace/ontology-based-nl-search/packages/search
 
- ✓ src/__tests__/service.test.ts (8 tests) 19ms
- ✓ src/__tests__/init.test.ts (3 tests) 158ms
- ✓ src/__tests__/compiler.test.ts (16 tests) 96ms
+ ✓ src/__tests__/service.test.ts (8 tests) 13ms
+ ✓ src/__tests__/init.test.ts (3 tests) 99ms
+ ✓ src/__tests__/compiler.test.ts (16 tests) 68ms
 
  Test Files  3 passed (3)
       Tests  27 passed (27)
-   Start at  07:50:06
-   Duration  1.38s (transform 459ms, setup 0ms, collect 642ms, tests 274ms, environment 1ms, prepare 722ms)
+   Start at  10:06:40
+   Duration  1.40s (transform 611ms, setup 0ms, collect 555ms, tests 179ms, environment 1ms, prepare 1.94s)
 
