@@ -1,3 +1,4 @@
+import { Stopwatch } from '@ontology-search/core/logging'
 import {
   extractVocabulary,
   getInitializedStore,
@@ -9,7 +10,7 @@ import { generateText, stepCountIs } from 'ai'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
 import { getModel } from '../provider.js'
-import { correctFilters, validateSlots } from '../slot-validator.js'
+import { correctDomains, correctFilters, validateSlots } from '../slot-validator.js'
 import type { LlmStructuredResponse } from '../types.js'
 import { agentTools, type SlotSubmissionParams } from './tools.js'
 
@@ -55,10 +56,15 @@ export async function runSparqlAgent(
   naturalLanguageQuery: string,
   options?: AgentOptions
 ): Promise<LlmStructuredResponse> {
+  const sw = new Stopwatch()
   const targetDomain = options?.domain ?? 'hdmap'
+
+  const endPrompt = sw.time('prompt-build')
   const { prompt, vocabulary } = await getSystemPrompt()
   const model = getModel()
+  endPrompt()
 
+  const endLlmCall = sw.time('llm-round-trip')
   const result = await generateText({
     model,
     system: prompt,
@@ -67,6 +73,7 @@ export async function runSparqlAgent(
     toolChoice: 'required',
     stopWhen: stepCountIs(MAX_STEPS),
   })
+  endLlmCall()
 
   // Extract the submit_slots call from tool results
   const submitCall = result.steps
@@ -76,26 +83,37 @@ export async function runSparqlAgent(
   if (submitCall) {
     const answer = submitCall.output as SlotSubmissionParams
 
-    // Correct filter values against vocabulary before compiling
+    const endValidation = sw.time('post-llm-validation')
     const correctedFilters = correctFilters(answer.slots.filters ?? {}, vocabulary)
+    const ranges = answer.slots.ranges ?? {}
+    const correctedDomains = correctDomains(
+      answer.slots.domains ?? [targetDomain],
+      correctedFilters,
+      ranges,
+      vocabulary
+    )
+    endValidation()
 
     const slots: SearchSlots = {
-      domains: answer.slots.domains ?? [targetDomain],
+      domains: correctedDomains,
       filters: correctedFilters,
-      ranges: answer.slots.ranges ?? {},
+      ranges,
       location: answer.slots.location,
       license: answer.slots.license,
     }
-    const sparql = await compileSlots(slots)
 
-    // Build raw response, then validate interpretation + gaps
+    const endCompile = sw.time('sparql-compile')
+    const sparql = await compileSlots(slots)
+    endCompile()
+
     const rawResponse: LlmStructuredResponse = {
       interpretation: answer.interpretation,
       gaps: answer.gaps,
       sparql,
     }
 
-    return validateSlots(rawResponse, vocabulary)
+    const validated = validateSlots(rawResponse, vocabulary)
+    return { ...validated, timings: sw.getTimings() }
   }
 
   // Fallback: LLM didn't call the tool — return broad search
@@ -113,5 +131,6 @@ export async function runSparqlAgent(
       },
     ],
     sparql,
+    timings: sw.getTimings(),
   }
 }

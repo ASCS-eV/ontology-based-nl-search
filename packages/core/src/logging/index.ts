@@ -78,6 +78,43 @@ export function generateRequestId(): string {
   return `req_${crypto.randomUUID()}`
 }
 
+/**
+ * Lightweight stopwatch for collecting stage timings without a full logger context.
+ * Use in library code that doesn't own a RequestLogger but needs to report timings.
+ */
+export class Stopwatch {
+  private entries: TimingEntry[] = []
+  private readonly origin = performance.now()
+
+  /** Start timing a stage. Returns a stop function that records the duration. */
+  time(stage: string): () => void {
+    const start = performance.now()
+    return () => {
+      this.entries.push({ stage, durationMs: Math.round(performance.now() - start) })
+    }
+  }
+
+  /** Get all recorded timings */
+  getTimings(): TimingEntry[] {
+    return [...this.entries]
+  }
+
+  /** Get total elapsed time since stopwatch creation */
+  getTotalMs(): number {
+    return Math.round(performance.now() - this.origin)
+  }
+
+  /** Merge timings from another Stopwatch (prefixing stage names) */
+  merge(other: Stopwatch, prefix?: string): void {
+    for (const entry of other.getTimings()) {
+      this.entries.push({
+        stage: prefix ? `${prefix}/${entry.stage}` : entry.stage,
+        durationMs: entry.durationMs,
+      })
+    }
+  }
+}
+
 /** HTTP header name for request correlation */
 export const REQUEST_ID_HEADER = 'x-request-id'
 
@@ -131,6 +168,11 @@ export class RequestLogger {
       this.timings.push({ stage, durationMs })
       this.debug(`${stage} completed`, { durationMs })
     }
+  }
+
+  /** Append external timing entries (e.g., from sub-modules) */
+  addTimings(entries: TimingEntry[]): void {
+    this.timings.push(...entries)
   }
 
   /** Get all recorded timings */

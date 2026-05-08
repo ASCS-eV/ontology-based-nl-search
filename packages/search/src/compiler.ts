@@ -30,13 +30,17 @@ interface CompilerProperty {
   iri: string
 }
 
-/** Vocabulary lookup used internally by the compiler */
 interface CompilerVocab {
   properties: Map<string, CompilerProperty>
 }
 
+/** Cached compiler vocabulary (ontology doesn't change at runtime) */
+let cachedCompilerVocab: CompilerVocab | null = null
+
 /** Build the compiler vocabulary from the ontology schema graph */
 async function getCompilerVocab(): Promise<CompilerVocab> {
+  if (cachedCompilerVocab) return cachedCompilerVocab
+
   const store = await getInitializedStore()
   const vocabulary = await extractVocabulary(store)
   const properties = new Map<string, CompilerProperty>()
@@ -48,7 +52,8 @@ async function getCompilerVocab(): Promise<CompilerVocab> {
     properties.set(prop.localName, { domain: prop.domain, iri: prop.iri })
   }
 
-  return { properties }
+  cachedCompilerVocab = { properties }
+  return cachedCompilerVocab
 }
 
 /**
@@ -97,6 +102,9 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   // Partition filters by domain
   const filtersByDomain = partitionFiltersByDomain(slots.filters, detectedDomains, vocabIndex)
 
+  // Partition ranges by domain
+  const rangesByDomain = partitionRangesByDomain(slots.ranges, detectedDomains, vocabIndex)
+
   // Determine primary domain — the one that references others, or the single domain
   const primaryDomain = resolvePrimaryDomain(detectedDomains, filtersByDomain)
   const domain = registry.domains.get(primaryDomain)
@@ -112,6 +120,9 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   for (const d of Object.keys(filtersByDomain)) {
     prefixDomains.add(d)
   }
+  for (const d of Object.keys(rangesByDomain)) {
+    prefixDomains.add(d)
+  }
   const prefixes = buildPrefixes(registry, [...prefixDomains])
 
   const patterns: string[] = []
@@ -125,7 +136,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
 
   // Build patterns for the primary domain's own filters
   const primaryFilters = filtersByDomain[primaryDomain] || {}
-  const primaryRanges = slots.ranges // ranges always apply to primary for now
+  const primaryRanges = rangesByDomain[primaryDomain] || {}
   buildDomainPatterns(
     primaryDomain,
     domain,
@@ -142,13 +153,17 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   )
 
   // Build cross-domain joins for referenced domains
-  const referencedDomains = Object.keys(filtersByDomain).filter((d) => d !== primaryDomain)
-  for (const refDomainName of referencedDomains) {
+  const allReferencedDomains = new Set([
+    ...Object.keys(filtersByDomain).filter((d) => d !== primaryDomain),
+    ...Object.keys(rangesByDomain).filter((d) => d !== primaryDomain),
+  ])
+  for (const refDomainName of allReferencedDomains) {
     const refDomain = registry.domains.get(refDomainName)
     if (!refDomain) continue
 
-    const refFilters = filtersByDomain[refDomainName]
-    if (!refFilters || Object.keys(refFilters).length === 0) continue
+    const refFilters = filtersByDomain[refDomainName] || {}
+    const refRanges = rangesByDomain[refDomainName] || {}
+    if (Object.keys(refFilters).length === 0 && Object.keys(refRanges).length === 0) continue
 
     // Join via manifest → hasReferencedArtifacts
     const refVar = `?ref_${refDomainName.replace(/-/g, '_')}`
@@ -164,8 +179,8 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
       refDomainName,
       refDomain,
       refFilters,
-      {}, // no ranges for referenced domains
-      refDomainName === primaryDomain ? slots.location : undefined,
+      refRanges,
+      undefined,
       patterns,
       filters,
       optionals,
@@ -411,6 +426,40 @@ function partitionFiltersByDomain(
   // Ensure at least the default domain is represented
   if (Object.keys(result).length === 0) {
     result[defaultDomain] = {}
+  }
+
+  return result
+}
+
+/**
+ * Partition ranges into per-domain groups based on vocabulary index.
+ * Similar to partitionFiltersByDomain but for numeric range properties.
+ */
+function partitionRangesByDomain(
+  ranges: Record<string, { min?: number; max?: number }>,
+  detectedDomains: string[],
+  vocabIndex: { properties: Map<string, { domain: string }> }
+): Record<string, Record<string, { min?: number; max?: number }>> {
+  const result: Record<string, Record<string, { min?: number; max?: number }>> = {}
+  const defaultDomain = detectedDomains[0] || 'hdmap'
+
+  if (detectedDomains.length <= 1) {
+    result[defaultDomain] = { ...ranges }
+    return result
+  }
+
+  for (const [propName, range] of Object.entries(ranges)) {
+    const prop = vocabIndex.properties.get(propName)
+    let domain = defaultDomain
+
+    if (prop && detectedDomains.includes(prop.domain)) {
+      domain = prop.domain
+    } else if (prop && prop.domain !== 'georeference') {
+      domain = prop.domain
+    }
+
+    if (!result[domain]) result[domain] = {}
+    result[domain]![propName] = range
   }
 
   return result

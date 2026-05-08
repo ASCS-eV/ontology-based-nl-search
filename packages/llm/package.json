@@ -13,6 +13,11 @@
       "types": "./src/types.ts",
       "import": "./dist/types.js",
       "default": "./dist/types.js"
+    },
+    "./prompt-builder": {
+      "types": "./src/prompt-builder.ts",
+      "import": "./dist/prompt-builder.js",
+      "default": "./dist/prompt-builder.js"
     }
   },
   "scripts": {

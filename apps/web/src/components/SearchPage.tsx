@@ -22,6 +22,48 @@ function isLocationProperty(property: string): boolean {
   return ['country', 'state', 'region', 'city'].includes(property)
 }
 
+/** Detect if a mapped value represents a numeric range (e.g., "numberX >= 1") */
+function isNumericRange(mapped: string): boolean {
+  return /[><=]\s*\d/.test(mapped) || /\d+\s*[-–]\s*\d+/.test(mapped)
+}
+
+/** Parse a range string like ">= 1" or "5 - 10" into { min, max } */
+function parseRange(mapped: string): { min?: number; max?: number } {
+  const geMatch = mapped.match(/>=?\s*(\d+(?:\.\d+)?)/)
+  const leMatch = mapped.match(/<=?\s*(\d+(?:\.\d+)?)/)
+  const rangeMatch = mapped.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/)
+
+  if (rangeMatch) {
+    return { min: Number(rangeMatch[1]), max: Number(rangeMatch[2]) }
+  }
+  const result: { min?: number; max?: number } = {}
+  if (geMatch) result.min = Number(geMatch[1])
+  if (leMatch) result.max = Number(leMatch[1])
+  return result
+}
+
+/** Detect domains from mapped terms based on known domain-specific properties */
+function detectDomainsFromTerms(terms: MappedTerm[]): string[] {
+  const scenarioProps = new Set([
+    'scenarioCategory',
+    'weatherSummary',
+    'timeOfDay',
+    'trafficDensity',
+    'entityTypes',
+  ])
+  const domains = new Set<string>()
+  for (const term of terms) {
+    if (term.property) {
+      if (scenarioProps.has(term.property)) {
+        domains.add('scenario')
+      } else if (!isLocationProperty(term.property)) {
+        domains.add('hdmap')
+      }
+    }
+  }
+  return domains.size > 0 ? [...domains] : ['hdmap']
+}
+
 function getSearchHistory(): string[] {
   try {
     return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]')
@@ -163,21 +205,27 @@ export function SearchPage() {
     try {
       const filters: Record<string, string> = {}
       const location: Record<string, string> = {}
+      const ranges: Record<string, { min?: number; max?: number }> = {}
 
       for (const term of updatedTerms) {
         if (term.property && term.mapped) {
           if (isLocationProperty(term.property)) {
             location[term.property] = term.mapped
+          } else if (isNumericRange(term.mapped)) {
+            ranges[term.property] = parseRange(term.mapped)
           } else {
             filters[term.property] = term.mapped
           }
         }
       }
 
+      // Use domains from current interpretation, fallback to hdmap
+      const domains = interpretation?.mappedTerms ? detectDomainsFromTerms(updatedTerms) : ['hdmap']
+
       const slots = {
-        domains: ['hdmap'],
+        domains,
         filters,
-        ranges: {},
+        ranges,
         ...(Object.keys(location).length > 0 ? { location } : {}),
       }
 
@@ -259,10 +307,29 @@ export function SearchPage() {
           {results && <ResultsDisplay results={results} />}
 
           {meta && (
-            <div className="pt-2 text-xs text-gray-400 flex items-center gap-3 justify-center">
-              <span>{meta.matchCount} results</span>
-              <span className="text-gray-300">·</span>
-              <span>{meta.executionTimeMs}ms</span>
+            <div className="pt-2 text-xs text-gray-400 flex flex-col items-center gap-1">
+              <div className="flex items-center gap-3">
+                <span>{meta.matchCount} results</span>
+                <span className="text-gray-300">·</span>
+                <span>{meta.executionTimeMs}ms</span>
+              </div>
+              {meta.timings && meta.timings.length > 0 && (
+                <details className="w-full max-w-md">
+                  <summary className="cursor-pointer text-gray-400 hover:text-gray-600 text-center">
+                    Pipeline breakdown
+                  </summary>
+                  <div className="mt-1 grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 text-[11px] font-mono bg-gray-50 rounded p-2">
+                    {meta.timings.map((t, i) => (
+                      <span key={i} className="contents">
+                        <span className="text-gray-500 truncate">{t.stage}</span>
+                        <span className="text-right tabular-nums text-gray-700 font-medium">
+                          {t.durationMs}ms
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </details>
+              )}
             </div>
           )}
         </div>

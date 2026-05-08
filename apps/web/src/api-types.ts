@@ -25,6 +25,7 @@ export interface SearchMeta {
   totalDatasets: number
   matchCount: number
   executionTimeMs: number
+  timings?: { stage: string; durationMs: number }[]
 }
 
 export interface SearchResponse {

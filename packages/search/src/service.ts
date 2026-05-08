@@ -120,19 +120,26 @@ export class SearchService {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
     // LLM interpretation (generates slots → compiles → returns SPARQL)
-    const endLlm = logger.time('llm-interpretation')
+    const endLlm = logger.time('llm-total')
     const structured = await this.deps.interpretQuery(query, { domain })
     endLlm()
 
+    // Merge LLM sub-timings into the logger's timing list
+    if (structured.timings) {
+      logger.addTimings(
+        structured.timings.map((t) => ({ stage: `llm/${t.stage}`, durationMs: t.durationMs }))
+      )
+    }
+
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
-    // Execute the generated SPARQL
-    const execution = await this.executeSparql(structured.sparql, logger)
+    // Execute SPARQL and count total datasets in parallel (count is non-critical)
+    const [execution, totalDatasets] = await Promise.all([
+      this.executeSparql(structured.sparql, logger),
+      this.countTotalDatasets(logger),
+    ])
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-
-    // Count total datasets (non-critical)
-    const totalDatasets = await this.countTotalDatasets(logger)
 
     const meta = this.buildMeta(requestId, execution.results.length, totalDatasets, logger)
     logger.info('Search completed', { matchCount: meta.matchCount, totalDatasets })
@@ -225,6 +232,7 @@ export class SearchService {
    * Non-critical: returns 0 on failure.
    */
   private async countTotalDatasets(logger: RequestLogger): Promise<number> {
+    const endCount = logger.time('dataset-count')
     try {
       const store = await this.deps.getStore()
       const countQueries = await this.deps.compileCountQueries()
@@ -238,8 +246,10 @@ export class SearchService {
         }
       }
 
+      endCount()
       return total
     } catch (err) {
+      endCount()
       logger.warn('Failed to count total datasets', { error: String(err) })
       return 0
     }

@@ -1,5 +1,6 @@
 import { approveAll, CopilotClient, defineTool } from '@github/copilot-sdk'
 import { getConfig } from '@ontology-search/core/config'
+import { Stopwatch } from '@ontology-search/core/logging'
 import {
   extractVocabulary,
   getInitializedStore,
@@ -9,7 +10,7 @@ import { compileSlots } from '@ontology-search/search/compiler'
 import type { SearchSlots } from '@ontology-search/search/slots'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
-import { correctFilters, validateSlots } from '../slot-validator.js'
+import { correctDomains, correctFilters, validateSlots } from '../slot-validator.js'
 import type { LlmStructuredResponse } from '../types.js'
 import type { AgentOptions } from './index.js'
 
@@ -154,14 +155,19 @@ export async function runCopilotAgent(
   naturalLanguageQuery: string,
   options?: AgentOptions
 ): Promise<LlmStructuredResponse> {
+  const sw = new Stopwatch()
   const targetDomain = options?.domain ?? 'hdmap'
-  const { prompt, vocabulary } = await getSystemPrompt()
+
+  // Parallelize: build prompt & create session concurrently
+  const endSetup = sw.time('setup')
+  const [{ prompt, vocabulary }, c] = await Promise.all([getSystemPrompt(), getClient()])
   const config = getConfig()
   const modelId = config.AI_MODEL
-  const c = await getClient()
+  endSetup()
 
   const submissionRef: { value: SlotSubmission | null } = { value: null }
 
+  const endSession = sw.time('session-create')
   const session = await c.createSession({
     model: modelId,
     onPermissionRequest: approveAll,
@@ -172,33 +178,47 @@ export async function runCopilotAgent(
     tools: [buildSubmitSlotsTool(submissionRef)],
     availableTools: ['submit_slots'],
   })
+  endSession()
 
   try {
+    const endLlmCall = sw.time('llm-round-trip')
     await session.sendAndWait({ prompt: naturalLanguageQuery })
+    endLlmCall()
 
     if (submissionRef.value) {
       const result = submissionRef.value
 
-      // Correct filter values against vocabulary before compiling
+      const endValidation = sw.time('post-llm-validation')
       const correctedFilters = correctFilters(result.slots.filters ?? {}, vocabulary)
+      const ranges = result.slots.ranges ?? {}
+      const correctedDomains = correctDomains(
+        result.slots.domains ?? [targetDomain],
+        correctedFilters,
+        ranges,
+        vocabulary
+      )
+      endValidation()
 
       const slots: SearchSlots = {
-        domains: result.slots.domains ?? [targetDomain],
+        domains: correctedDomains,
         filters: correctedFilters,
-        ranges: result.slots.ranges ?? {},
+        ranges,
         location: result.slots.location,
         license: result.slots.license,
       }
-      const sparql = await compileSlots(slots)
 
-      // Build raw response, then validate interpretation + gaps
+      const endCompile = sw.time('sparql-compile')
+      const sparql = await compileSlots(slots)
+      endCompile()
+
       const rawResponse: LlmStructuredResponse = {
         interpretation: result.interpretation,
         gaps: result.gaps,
         sparql,
       }
 
-      return validateSlots(rawResponse, vocabulary)
+      const validated = validateSlots(rawResponse, vocabulary)
+      return { ...validated, timings: sw.getTimings() }
     }
 
     // Fallback: LLM didn't call the tool — return broad search
@@ -216,6 +236,7 @@ export async function runCopilotAgent(
         },
       ],
       sparql,
+      timings: sw.getTimings(),
     }
   } finally {
     await session.disconnect()

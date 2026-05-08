@@ -1,3 +1,5 @@
+import type { TimingEntry } from '@ontology-search/core/logging'
+
 /** A single term mapped from user input to an ontology concept */
 export interface MappedTerm {
   /** What the user typed or implied */
@@ -39,6 +41,8 @@ export interface LlmStructuredResponse {
   interpretation: QueryInterpretation
   gaps: OntologyGap[]
   sparql: string
+  /** Per-stage timings within the LLM pipeline */
+  timings?: TimingEntry[]
 }
 
 /** Complete search API response */
