@@ -54,13 +54,61 @@ export default withMermaid(
       outline: { level: [2, 3] },
     },
     mermaid: {
-      theme: 'neutral',
-      flowchart: {
-        padding: 20,
-        nodeSpacing: 50,
-        rankSpacing: 60,
-        useMaxWidth: false,
+      theme: 'base',
+      fontFamily:
+        'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      fontSize: 16,
+      securityLevel: 'loose',
+      themeVariables: {
+        primaryColor: '#dbeafe',
+        primaryTextColor: '#0f172a',
+        primaryBorderColor: '#2563eb',
+        secondaryColor: '#ccfbf1',
+        secondaryTextColor: '#0f172a',
+        secondaryBorderColor: '#0d9488',
+        tertiaryColor: '#f8fafc',
+        tertiaryTextColor: '#0f172a',
+        tertiaryBorderColor: '#cbd5e1',
+        mainBkg: '#ffffff',
+        nodeBorder: '#2563eb',
+        lineColor: '#475569',
+        clusterBkg: '#f8fafc',
+        clusterBorder: '#cbd5e1',
+        fontFamily:
+          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        fontSize: '16px',
       },
+      flowchart: {
+        padding: 28,
+        nodeSpacing: 72,
+        rankSpacing: 88,
+        htmlLabels: true,
+        useMaxWidth: true,
+        curve: 'basis',
+      },
+      sequence: {
+        useMaxWidth: true,
+        actorMargin: 72,
+        boxMargin: 16,
+        boxTextMargin: 10,
+        messageMargin: 42,
+        noteMargin: 14,
+      },
+      themeCSS: `
+        .label foreignObject div,
+        .nodeLabel p {
+          padding: 0.35rem 0.75rem;
+          line-height: 1.35;
+        }
+
+        .node rect,
+        .node polygon,
+        .node circle,
+        .node ellipse,
+        .node path {
+          stroke-width: 1.6px;
+        }
+      `,
     },
   })
 )
