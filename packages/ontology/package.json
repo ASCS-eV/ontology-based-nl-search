@@ -6,17 +6,17 @@
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "import": "./src/index.ts",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./domain-registry": {
       "types": "./src/domain-registry.ts",
-      "import": "./src/domain-registry.ts",
+      "import": "./dist/domain-registry.js",
       "default": "./dist/domain-registry.js"
     },
     "./vocabulary-index": {
       "types": "./src/vocabulary-index.ts",
-      "import": "./src/vocabulary-index.ts",
+      "import": "./dist/vocabulary-index.js",
       "default": "./dist/vocabulary-index.js"
     }
   },

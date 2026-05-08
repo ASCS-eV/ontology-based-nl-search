@@ -6,17 +6,17 @@
   "exports": {
     "./config": {
       "types": "./src/config/index.ts",
-      "import": "./src/config/index.ts",
+      "import": "./dist/config/index.js",
       "default": "./dist/config/index.js"
     },
     "./logging": {
       "types": "./src/logging/index.ts",
-      "import": "./src/logging/index.ts",
+      "import": "./dist/logging/index.js",
       "default": "./dist/logging/index.js"
     },
     "./errors": {
       "types": "./src/errors/index.ts",
-      "import": "./src/errors/index.ts",
+      "import": "./dist/errors/index.js",
       "default": "./dist/errors/index.js"
     }
   },

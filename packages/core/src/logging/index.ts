@@ -90,7 +90,10 @@ export class RequestLogger {
   private startTime: number
   readonly requestId: string
 
-  constructor(private context: LogContext) {
+  private context: LogContext
+
+  constructor(context: LogContext) {
+    this.context = context
     this.requestId = context.requestId
     this.startTime = performance.now()
   }

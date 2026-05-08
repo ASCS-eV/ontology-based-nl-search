@@ -9,13 +9,13 @@ stdout | src/__tests__/routes.test.ts > GET /health > returns 200 with status ok
 <-- GET /health
 
 stdout | src/__tests__/routes.test.ts > GET /health > returns 200 with status ok
---> GET /health [32m200[0m 6ms
+--> GET /health [32m200[0m 3ms
 
 stdout | src/__tests__/routes.test.ts > GET /health > includes x-request-id header
 <-- GET /health
 
 stdout | src/__tests__/routes.test.ts > GET /health > includes x-request-id header
---> GET /health [32m200[0m 1ms
+--> GET /health [32m200[0m 0ms
 
 stdout | src/__tests__/routes.test.ts > POST /search/stream > returns 200 for valid request
 <-- POST /search/stream
@@ -45,7 +45,7 @@ stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 200 with r
 <-- POST /search/refine
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 200 with results for valid slots
---> POST /search/refine [32m200[0m 2ms
+--> POST /search/refine [32m200[0m 1ms
 
 stdout | src/__tests__/routes.test.ts > POST /search/refine > returns 422 for invalid slot shape
 <-- POST /search/refine
@@ -57,12 +57,12 @@ stdout | src/__tests__/routes.test.ts > GET /stats > returns stats with domain c
 <-- GET /stats
 
 stdout | src/__tests__/routes.test.ts > GET /stats > returns stats with domain counts
---> GET /stats [32m200[0m 1ms
+--> GET /stats [32m200[0m 0ms
 
- ✓ src/__tests__/routes.test.ts (9 tests) 39ms
+ ✓ src/__tests__/routes.test.ts (9 tests) 29ms
 
  Test Files  1 passed (1)
       Tests  9 passed (9)
-   Start at  07:44:14
-   Duration  1.21s (transform 159ms, setup 0ms, collect 252ms, tests 39ms, environment 0ms, prepare 104ms)
+   Start at  07:50:06
+   Duration  1.37s (transform 246ms, setup 0ms, collect 288ms, tests 29ms, environment 0ms, prepare 360ms)
 

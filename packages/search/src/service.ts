@@ -97,7 +97,11 @@ export interface RefineOptions {
  *   const service = new SearchService({ getStore: async () => mockStore, ... })
  */
 export class SearchService {
-  constructor(private readonly deps: SearchDependencies) {}
+  private readonly deps: SearchDependencies
+
+  constructor(deps: SearchDependencies) {
+    this.deps = deps
+  }
 
   /**
    * Full natural-language search pipeline:

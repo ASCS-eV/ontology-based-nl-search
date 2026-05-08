@@ -6,17 +6,17 @@
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "import": "./src/index.ts",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./slots": {
       "types": "./src/slots.ts",
-      "import": "./src/slots.ts",
+      "import": "./dist/slots.js",
       "default": "./dist/slots.js"
     },
     "./compiler": {
       "types": "./src/compiler.ts",
-      "import": "./src/compiler.ts",
+      "import": "./dist/compiler.js",
       "default": "./dist/compiler.js"
     }
   },
