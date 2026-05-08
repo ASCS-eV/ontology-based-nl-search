@@ -84,16 +84,15 @@ graph LR
 
 ## Data Flow (Swim Lane)
 
+### Request Phase
+
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant R as Hono Route (SSE)
+    participant R as API (SSE)
     participant S as SearchService
     participant PB as Prompt Builder
     participant L as LLM Agent
-    participant V as Slot Validator
-    participant C as Compiler
-    participant DB as Oxigraph
 
     U->>R: POST /api/search/stream
     R->>S: searchNl(query)
@@ -104,6 +103,18 @@ sequenceDiagram
     S->>L: generateStructuredSearch(query, prompt)
     L->>L: LLM calls submit_slots tool
     L-->>S: { interpretation, gaps, slots }
+```
+
+### Execution Phase
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant R as API (SSE)
+    participant S as SearchService
+    participant V as Slot Validator
+    participant C as Compiler
+    participant DB as Oxigraph
 
     S->>V: correctFilters(filters, vocabulary)
     V-->>S: corrected filters
