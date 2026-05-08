@@ -204,17 +204,18 @@ body {
 
 .vp-doc div[class*='language-'] {
   margin: 1.8rem 0;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 24px;
-  background: linear-gradient(180deg, #1e293b 0%, #1e293b 100%);
-  box-shadow: 0 20px 50px -30px rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 16px;
+  background: #f8fafc;
+  box-shadow: 0 4px 16px -6px rgba(15, 23, 42, 0.08);
   overflow: hidden;
 }
 
 .vp-doc div[class*='language-'] pre,
 .vp-doc div[class*='language-'] code {
-  font-size: 0.92rem;
-  line-height: 1.7;
+  font-size: 0.9rem;
+  line-height: 1.75;
+  color: #1e293b;
 }
 
 .vp-doc div[class*='language-'] pre {
@@ -228,7 +229,7 @@ body {
 .vp-doc div[class*='language-'] .lang {
   top: 0.8rem;
   right: 1rem;
-  color: rgba(226, 232, 240, 0.72);
+  color: rgba(100, 116, 139, 0.7);
 }
 
 .vp-doc table {
