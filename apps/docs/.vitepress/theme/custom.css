@@ -206,8 +206,8 @@ body {
   margin: 1.8rem 0;
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 24px;
-  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
-  box-shadow: 0 30px 70px -44px rgba(2, 6, 23, 0.82);
+  background: linear-gradient(180deg, #1e293b 0%, #1e293b 100%);
+  box-shadow: 0 20px 50px -30px rgba(15, 23, 42, 0.4);
   overflow: hidden;
 }
 
