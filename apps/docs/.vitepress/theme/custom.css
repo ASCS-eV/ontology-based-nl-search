@@ -217,6 +217,14 @@ body {
   line-height: 1.7;
 }
 
+.vp-doc div[class*='language-'] pre {
+  scrollbar-width: none;
+}
+
+.vp-doc div[class*='language-'] pre::-webkit-scrollbar {
+  display: none;
+}
+
 .vp-doc div[class*='language-'] .lang {
   top: 0.8rem;
   right: 1rem;
