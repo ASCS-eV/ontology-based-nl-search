@@ -5,13 +5,13 @@ From "motorway maps in Germany" to SPARQL results — step by step.
 ## Pipeline Stages
 
 ```mermaid
-graph LR
-    A["1. Vocabulary<br/>Extraction"] --> B["2. Prompt<br/>Generation"]
-    B --> C["3. LLM<br/>Interpretation"]
-    C --> D["4. Post-LLM<br/>Validation"]
-    D --> E["5. SPARQL<br/>Compilation"]
+graph TD
+    A["1. Vocabulary Extraction"] --> B["2. Prompt Generation"]
+    B --> C["3. LLM Interpretation"]
+    C --> D["4. Post-LLM Validation"]
+    D --> E["5. SPARQL Compilation"]
     E --> F["6. Execution"]
-    F --> G["7. Streaming<br/>Response"]
+    F --> G["7. Streaming Response"]
 
     style A fill:#f0f9ff,stroke:#3b82f6
     style C fill:#848ab7,stroke:#5a6f9f,color:#fff
