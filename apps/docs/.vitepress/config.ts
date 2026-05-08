@@ -6,6 +6,7 @@ export default withMermaid(
     title: 'Ontology NL Search',
     description: 'Natural language search for ENVITED-X simulation assets',
     base: '/docs/',
+    appearance: false,
     themeConfig: {
       nav: [
         { text: 'Home', link: '/' },
