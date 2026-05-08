@@ -1,4 +1,5 @@
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { warmupLlmSession } from '@ontology-search/llm'
 import { buildSystemPrompt } from '@ontology-search/llm/prompt-builder'
 import { extractVocabulary, getInitializedStore } from '@ontology-search/search'
 
@@ -18,7 +19,12 @@ export async function warmup(): Promise<void> {
     buildSystemPrompt(vocabulary)
     const vocabMs = Date.now() - vocabStart
 
-    logger.info(`Warmup complete in ${Date.now() - start}ms`, { storeMs, vocabMs })
+    // Pre-create the Copilot SDK session (~6s) so first query is instant
+    const sessionStart = Date.now()
+    await warmupLlmSession()
+    const sessionMs = Date.now() - sessionStart
+
+    logger.info(`Warmup complete in ${Date.now() - start}ms`, { storeMs, vocabMs, sessionMs })
   } catch (error) {
     logger.error('Warmup failed — service may respond slowly to first request', error)
   }

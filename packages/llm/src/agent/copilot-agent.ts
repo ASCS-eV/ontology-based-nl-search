@@ -158,8 +158,11 @@ function buildPersistentSubmitSlotsTool() {
  * Get or create the persistent Copilot session.
  * The session is created once and reused — saves ~5.8s per request.
  * infiniteSessions handles context compaction automatically.
+ *
+ * Exported so it can be called during server warmup to pre-pay
+ * the session creation cost before any user request arrives.
  */
-async function getPersistentSession(): Promise<CopilotSession> {
+export async function getPersistentSession(): Promise<CopilotSession> {
   if (persistentSession) return persistentSession
 
   // Prevent parallel session creation races
