@@ -49,9 +49,7 @@ export default withMermaid(
           items: [{ text: 'Roadmap', link: '/roadmap' }],
         },
       ],
-      socialLinks: [
-        { icon: 'github', link: 'https://github.com/ASCS-eV/ontology-based-nl-search' },
-      ],
+      socialLinks: [],
       outline: { level: [2, 3] },
     },
     mermaid: {
