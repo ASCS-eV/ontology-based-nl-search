@@ -1,4 +1,4 @@
-import { approveAll, CopilotClient, defineTool } from '@github/copilot-sdk'
+import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
 import {
@@ -26,14 +26,24 @@ interface SlotSubmission {
   gaps: LlmStructuredResponse['gaps']
 }
 
+// ─── Persistent Session Pool ─────────────────────────────────────────────────
+
 let cachedSystemPrompt: string | null = null
 let cachedVocabulary: OntologyVocabulary | null = null
 let client: CopilotClient | null = null
 
 /**
- * Build system prompt from live ontology vocabulary.
- * Cached after first build — the ontology doesn't change at runtime.
+ * Active submission callback — set per-request before sendAndWait,
+ * invoked by the persistent tool handler to deliver results.
  */
+let activeSubmissionCallback: ((params: SlotSubmission) => void) | null = null
+
+/** The persistent session, reused across all search requests */
+let persistentSession: CopilotSession | null = null
+
+/** Promise that resolves when session creation finishes (prevents races) */
+let sessionCreatePromise: Promise<CopilotSession> | null = null
+
 async function getSystemPrompt(): Promise<{ prompt: string; vocabulary: OntologyVocabulary }> {
   if (cachedSystemPrompt && cachedVocabulary) {
     return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary }
@@ -54,10 +64,10 @@ async function getClient(): Promise<CopilotClient> {
 }
 
 /**
- * Build the submit_slots tool definition.
- * The handler captures submission into the provided ref object.
+ * Build the submit_slots tool with a persistent handler.
+ * The handler routes to whichever request is currently active via callback.
  */
-function buildSubmitSlotsTool(ref: { value: SlotSubmission | null }) {
+function buildPersistentSubmitSlotsTool() {
   return defineTool('submit_slots', {
     description:
       'Submit the structured search result with filled slots, interpretation, and gaps. Call exactly once.',
@@ -136,20 +146,69 @@ function buildSubmitSlotsTool(ref: { value: SlotSubmission | null }) {
       required: ['slots', 'interpretation', 'gaps'],
     },
     handler: async (params: unknown) => {
-      ref.value = params as SlotSubmission
+      if (activeSubmissionCallback) {
+        activeSubmissionCallback(params as SlotSubmission)
+      }
       return { accepted: true }
     },
   })
 }
 
 /**
+ * Get or create the persistent Copilot session.
+ * The session is created once and reused — saves ~5.8s per request.
+ * infiniteSessions handles context compaction automatically.
+ */
+async function getPersistentSession(): Promise<CopilotSession> {
+  if (persistentSession) return persistentSession
+
+  // Prevent parallel session creation races
+  if (sessionCreatePromise) return sessionCreatePromise
+
+  sessionCreatePromise = (async () => {
+    const [{ prompt }, c] = await Promise.all([getSystemPrompt(), getClient()])
+    const config = getConfig()
+
+    const session = await c.createSession({
+      model: config.AI_MODEL,
+      onPermissionRequest: approveAll,
+      systemMessage: { mode: 'replace', content: prompt },
+      tools: [buildPersistentSubmitSlotsTool()],
+      availableTools: ['submit_slots'],
+      infiniteSessions: { enabled: true },
+    })
+
+    persistentSession = session
+    sessionCreatePromise = null
+    return session
+  })()
+
+  return sessionCreatePromise
+}
+
+/**
+ * Invalidate the persistent session (e.g., on error) so the next call recreates it.
+ */
+async function invalidateSession(): Promise<void> {
+  const s = persistentSession
+  persistentSession = null
+  sessionCreatePromise = null
+  if (s) {
+    try {
+      await s.disconnect()
+    } catch {
+      // Best-effort cleanup
+    }
+  }
+}
+
+/**
  * Run the slot-filling agent via the Copilot SDK's native tool calling.
  *
- * The LLM receives the full ontology vocabulary in its system prompt
- * (auto-generated from SHACL shapes) and directly fills search slots.
- * No pre-processing or SKOS matching — the LLM IS the synonym resolver.
- *
- * Tools are registered at session creation time (required by the SDK).
+ * Uses a persistent session that is created once and reused across requests.
+ * This eliminates the ~5.8s session-create overhead on every search.
+ * The SDK's infiniteSessions feature handles context compaction automatically
+ * when conversation history grows too large.
  */
 export async function runCopilotAgent(
   naturalLanguageQuery: string,
@@ -158,87 +217,91 @@ export async function runCopilotAgent(
   const sw = new Stopwatch()
   const targetDomain = options?.domain ?? 'hdmap'
 
-  // Parallelize: build prompt & create session concurrently
   const endSetup = sw.time('setup')
-  const [{ prompt, vocabulary }, c] = await Promise.all([getSystemPrompt(), getClient()])
-  const config = getConfig()
-  const modelId = config.AI_MODEL
+  const { vocabulary } = await getSystemPrompt()
   endSetup()
 
-  const submissionRef: { value: SlotSubmission | null } = { value: null }
-
-  const endSession = sw.time('session-create')
-  const session = await c.createSession({
-    model: modelId,
-    onPermissionRequest: approveAll,
-    systemMessage: {
-      mode: 'replace',
-      content: prompt,
-    },
-    tools: [buildSubmitSlotsTool(submissionRef)],
-    availableTools: ['submit_slots'],
-  })
+  // Get or create persistent session (first call pays ~5.8s, subsequent ~0ms)
+  const endSession = sw.time('session-acquire')
+  let session: CopilotSession
+  try {
+    session = await getPersistentSession()
+  } catch (err) {
+    // Session creation failed — invalidate and propagate
+    await invalidateSession()
+    throw err
+  }
   endSession()
+
+  // Set up per-request submission capture via callback
+  const submissionRef: { value: SlotSubmission | null } = { value: null }
+  activeSubmissionCallback = (params) => {
+    submissionRef.value = params
+  }
 
   try {
     const endLlmCall = sw.time('llm-round-trip')
     await session.sendAndWait({ prompt: naturalLanguageQuery })
     endLlmCall()
-
-    if (submissionRef.value) {
-      const result = submissionRef.value
-
-      const endValidation = sw.time('post-llm-validation')
-      const correctedFilters = correctFilters(result.slots.filters ?? {}, vocabulary)
-      const ranges = result.slots.ranges ?? {}
-      const correctedDomains = correctDomains(
-        result.slots.domains ?? [targetDomain],
-        correctedFilters,
-        ranges,
-        vocabulary
-      )
-      endValidation()
-
-      const slots: SearchSlots = {
-        domains: correctedDomains,
-        filters: correctedFilters,
-        ranges,
-        location: result.slots.location,
-        license: result.slots.license,
-      }
-
-      const endCompile = sw.time('sparql-compile')
-      const sparql = await compileSlots(slots)
-      endCompile()
-
-      const rawResponse: LlmStructuredResponse = {
-        interpretation: result.interpretation,
-        gaps: result.gaps,
-        sparql,
-      }
-
-      const validated = validateSlots(rawResponse, vocabulary)
-      return { ...validated, timings: sw.getTimings() }
-    }
-
-    // Fallback: LLM didn't call the tool — return broad search
-    const fallbackSlots: SearchSlots = { domains: [targetDomain], filters: {}, ranges: {} }
-    const sparql = await compileSlots(fallbackSlots)
-    return {
-      interpretation: {
-        summary: `Searching all ${targetDomain} datasets (LLM did not extract specific filters)`,
-        mappedTerms: [],
-      },
-      gaps: [
-        {
-          term: naturalLanguageQuery,
-          reason: 'Could not extract structured filters from the query',
-        },
-      ],
-      sparql,
-      timings: sw.getTimings(),
-    }
+  } catch (err) {
+    // Session may have died — invalidate so next request recreates
+    await invalidateSession()
+    throw err
   } finally {
-    await session.disconnect()
+    activeSubmissionCallback = null
+  }
+
+  if (submissionRef.value) {
+    const result = submissionRef.value
+
+    const endValidation = sw.time('post-llm-validation')
+    const correctedFilters = correctFilters(result.slots.filters ?? {}, vocabulary)
+    const ranges = result.slots.ranges ?? {}
+    const correctedDomains = correctDomains(
+      result.slots.domains ?? [targetDomain],
+      correctedFilters,
+      ranges,
+      vocabulary
+    )
+    endValidation()
+
+    const slots: SearchSlots = {
+      domains: correctedDomains,
+      filters: correctedFilters,
+      ranges,
+      location: result.slots.location,
+      license: result.slots.license,
+    }
+
+    const endCompile = sw.time('sparql-compile')
+    const sparql = await compileSlots(slots)
+    endCompile()
+
+    const rawResponse: LlmStructuredResponse = {
+      interpretation: result.interpretation,
+      gaps: result.gaps,
+      sparql,
+    }
+
+    const validated = validateSlots(rawResponse, vocabulary)
+    return { ...validated, timings: sw.getTimings() }
+  }
+
+  // Fallback: LLM didn't call the tool — return broad search
+  const fallbackSlots: SearchSlots = { domains: [targetDomain], filters: {}, ranges: {} }
+  const sparql = await compileSlots(fallbackSlots)
+  return {
+    interpretation: {
+      summary: `Searching all ${targetDomain} datasets (LLM did not extract specific filters)`,
+      mappedTerms: [],
+    },
+    gaps: [
+      {
+        term: naturalLanguageQuery,
+        reason: 'Could not extract structured filters from the query',
+      },
+    ],
+    sparql,
+    timings: sw.getTimings(),
   }
 }
