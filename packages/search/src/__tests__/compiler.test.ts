@@ -1,7 +1,88 @@
 import { enforceSparqlPolicy } from '@ontology-search/sparql/policy'
+import { vi } from 'vitest'
 
 import { compileCountQuery, compileSlots } from '../compiler.js'
 import type { SearchSlots } from '../slots.js'
+
+// Mock the vocabulary extractor to provide property domain info
+vi.mock('../vocabulary-extractor.js', () => ({
+  extractVocabulary: vi.fn().mockResolvedValue({
+    enumProperties: [
+      {
+        localName: 'roadTypes',
+        domain: 'hdmap',
+        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/roadTypes',
+        label: 'road types',
+        description: '',
+        allowedValues: ['motorway'],
+      },
+      {
+        localName: 'laneTypes',
+        domain: 'hdmap',
+        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/laneTypes',
+        label: 'lane types',
+        description: '',
+        allowedValues: ['driving'],
+      },
+      {
+        localName: 'formatType',
+        domain: 'hdmap',
+        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/formatType',
+        label: 'format type',
+        description: '',
+        allowedValues: ['ASAM OpenDRIVE'],
+      },
+      {
+        localName: 'scenarioCategory',
+        domain: 'scenario',
+        iri: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/scenarioCategory',
+        label: 'scenario category',
+        description: '',
+        allowedValues: ['cut-in'],
+      },
+      {
+        localName: 'weatherSummary',
+        domain: 'scenario',
+        iri: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/weatherSummary',
+        label: 'weather summary',
+        description: '',
+        allowedValues: ['rain'],
+      },
+    ],
+    numericProperties: [
+      {
+        localName: 'length',
+        domain: 'hdmap',
+        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/length',
+        label: 'length',
+        description: '',
+        datatype: 'float',
+      },
+      {
+        localName: 'speedLimit',
+        domain: 'hdmap',
+        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/speedLimit',
+        label: 'speed limit',
+        description: '',
+        datatype: 'float',
+      },
+      {
+        localName: 'numberIntersections',
+        domain: 'hdmap',
+        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/numberIntersections',
+        label: 'intersections',
+        description: '',
+        datatype: 'integer',
+      },
+    ],
+    domains: ['hdmap', 'scenario'],
+  }),
+}))
+
+// Mock the store init (not needed since we mock extractVocabulary)
+vi.mock('../init.js', () => ({
+  getInitializedStore: vi.fn().mockResolvedValue({}),
+}))
 
 describe('compileSlots', () => {
   it('generates minimal query with empty slots', async () => {

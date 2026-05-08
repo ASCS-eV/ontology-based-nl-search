@@ -1,18 +1,12 @@
-import { matchConcepts } from '@ontology-search/ontology'
+import { extractVocabulary, getInitializedStore } from '@ontology-search/search'
 import { compileSlots } from '@ontology-search/search/compiler'
 import type { SearchSlots } from '@ontology-search/search/slots'
 import { generateText, stepCountIs } from 'ai'
-import { readFileSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
 
+import { buildSystemPrompt } from '../prompt-builder.js'
 import { getModel } from '../provider.js'
 import type { LlmStructuredResponse } from '../types.js'
 import { agentTools, type SlotSubmissionParams } from './tools.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const SKILL_PATH = join(__dirname, 'skill.md')
 
 /**
  * Maximum tool-calling steps. With slot-filling, the agent typically
@@ -20,17 +14,19 @@ const SKILL_PATH = join(__dirname, 'skill.md')
  */
 const MAX_STEPS = 3
 
-/** Cached system prompt (skill + ontology vocab are static) */
+/** Cached system prompt (built from ontology vocabulary at startup) */
 let cachedSystemPrompt: string | null = null
 
 /**
- * Load the skill definition which embeds the slot vocabulary.
- * Cached after first load since it doesn't change at runtime.
+ * Build system prompt from live ontology vocabulary.
+ * Cached after first build — the ontology doesn't change at runtime.
  */
 async function getSystemPrompt(): Promise<string> {
   if (cachedSystemPrompt) return cachedSystemPrompt
 
-  cachedSystemPrompt = readFileSync(SKILL_PATH, 'utf-8')
+  const store = await getInitializedStore()
+  const vocabulary = await extractVocabulary(store)
+  cachedSystemPrompt = buildSystemPrompt(vocabulary)
   return cachedSystemPrompt
 }
 
@@ -39,13 +35,11 @@ export interface AgentOptions {
 }
 
 /**
- * Run the slot-filling agent.
+ * Run the slot-filling agent via Vercel AI SDK.
  *
- * Pipeline:
- * 1. Pre-process query with deterministic synonym extraction
- * 2. LLM fills remaining slots (only needs to handle ambiguity)
- * 3. Merge pre-processed + LLM slots
- * 4. Compile slots to SPARQL deterministically
+ * The LLM receives the full ontology vocabulary in its system prompt
+ * (auto-generated from SHACL shapes) and directly fills search slots.
+ * No pre-processing or SKOS matching — the LLM IS the synonym resolver.
  */
 export async function runSparqlAgent(
   naturalLanguageQuery: string,
@@ -55,22 +49,10 @@ export async function runSparqlAgent(
   const systemPrompt = await getSystemPrompt()
   const model = getModel()
 
-  // Step 1: Ontology-driven concept matching (SKOS + SHACL vocabulary)
-  const matchResult = await matchConcepts(naturalLanguageQuery)
-
-  // Convert matched concepts to generic slots
-  const preSlots = matchResultToSlots(matchResult.matches, targetDomain)
-
-  // Step 2: LLM fills remaining slots from the remainder
-  const promptContext =
-    matchResult.matches.length > 0
-      ? `Pre-extracted slots (already determined, do not override unless wrong): ${JSON.stringify(preSlots)}\n\nRemaining query to classify: "${matchResult.remainder || naturalLanguageQuery}"\n\nOriginal full query: "${naturalLanguageQuery}"`
-      : naturalLanguageQuery
-
   const result = await generateText({
     model,
     system: systemPrompt,
-    prompt: promptContext,
+    prompt: naturalLanguageQuery,
     tools: agentTools,
     toolChoice: 'required',
     stopWhen: stepCountIs(MAX_STEPS),
@@ -84,131 +66,36 @@ export async function runSparqlAgent(
   if (submitCall) {
     const answer = submitCall.output as SlotSubmissionParams
 
-    // Step 3: LLM now emits SearchSlots directly — merge with pre-extracted
-    const llmSlots: SearchSlots = {
+    const slots: SearchSlots = {
       domains: answer.slots.domains ?? [targetDomain],
       filters: answer.slots.filters ?? {},
       ranges: answer.slots.ranges ?? {},
       location: answer.slots.location,
       license: answer.slots.license,
     }
-    const mergedSlots = mergeSlots(llmSlots, preSlots)
-
-    // Step 4: Compile to SPARQL
-    const sparql = await compileSlots(mergedSlots)
-
-    // Merge deterministic gaps with LLM-reported gaps (deduplicate by term)
-    const llmGapTerms = new Set(answer.gaps.map((g) => g.term.toLowerCase()))
-    const mergedGaps = [
-      ...answer.gaps,
-      ...matchResult.gaps.filter((g) => !llmGapTerms.has(g.term.toLowerCase())),
-    ]
+    const sparql = await compileSlots(slots)
 
     return {
       interpretation: answer.interpretation,
-      gaps: mergedGaps,
+      gaps: answer.gaps,
       sparql,
     }
   }
 
-  // Fallback: compile from pre-extracted slots or broad domain query
-  const fallbackSlots: SearchSlots =
-    matchResult.matches.length > 0
-      ? preSlots
-      : { domains: [options?.domain ?? 'hdmap'], filters: {}, ranges: {} }
+  // Fallback: LLM didn't call the tool — return broad search
+  const fallbackSlots: SearchSlots = { domains: [targetDomain], filters: {}, ranges: {} }
   const sparql = await compileSlots(fallbackSlots)
   return {
     interpretation: {
-      summary:
-        matchResult.matches.length > 0
-          ? 'Interpreted via ontology concept matching (SKOS)'
-          : `Broad ${options?.domain ?? 'hdmap'} search (no specific filters matched)`,
-      mappedTerms: matchResult.matches.map((m) => ({
-        input: m.input,
-        mapped: m.value,
-        confidence: m.confidence,
-        property: m.property,
-      })),
+      summary: `Searching all ${targetDomain} datasets (LLM did not extract specific filters)`,
+      mappedTerms: [],
     },
-    gaps: matchResult.gaps,
+    gaps: [
+      {
+        term: naturalLanguageQuery,
+        reason: 'Could not extract structured filters from the query',
+      },
+    ],
     sparql,
-  }
-}
-
-/**
- * Convert concept match results to generic SearchSlots.
- * Groups by domain based on the property's ontology prefix.
- */
-/** Supporting ontologies that should not override the primary asset domain */
-const SUPPORTING_DOMAINS = new Set([
-  'georeference',
-  'manifest',
-  'gx',
-  'envited-x',
-  'general',
-  'openlabel',
-  'unknown',
-])
-
-function matchResultToSlots(
-  matches: { property: string; value: string; domain?: string }[],
-  defaultDomain = 'hdmap'
-): SearchSlots {
-  const slots: SearchSlots = {
-    domains: [defaultDomain],
-    filters: {},
-    ranges: {},
-  }
-
-  const detectedAssetDomains = new Set<string>()
-
-  for (const match of matches) {
-    const domain = match.domain || defaultDomain
-
-    // Only track actual asset domains (not supporting ontologies)
-    if (!SUPPORTING_DOMAINS.has(domain)) {
-      detectedAssetDomains.add(domain)
-    }
-
-    // Location properties go to the location field
-    if (['country', 'state', 'region', 'city'].includes(match.property)) {
-      if (!slots.location) slots.location = {}
-      slots.location[match.property as keyof NonNullable<SearchSlots['location']>] = match.value
-    } else if (match.property === 'license') {
-      slots.license = match.value
-    } else if (match.value === 'range') {
-      // Quantity properties: signal "has any value" via min: 1
-      slots.ranges[match.property] = { min: 1 }
-    } else {
-      // All other properties go to filters
-      const existing = slots.filters[match.property]
-      if (existing) {
-        // Multiple values for same property → array
-        slots.filters[match.property] = Array.isArray(existing)
-          ? [...existing, match.value]
-          : [existing, match.value]
-      } else {
-        slots.filters[match.property] = match.value
-      }
-    }
-  }
-
-  if (detectedAssetDomains.size > 0) {
-    slots.domains = [...detectedAssetDomains]
-  }
-
-  return slots
-}
-
-/**
- * Merge two slot sets. Pre-extracted (deterministic) wins on conflicts.
- */
-function mergeSlots(base: SearchSlots, override: SearchSlots): SearchSlots {
-  return {
-    domains: override.domains.length > 0 ? override.domains : base.domains,
-    filters: { ...base.filters, ...override.filters },
-    ranges: { ...base.ranges, ...override.ranges },
-    location: { ...base.location, ...override.location },
-    license: override.license || base.license,
   }
 }

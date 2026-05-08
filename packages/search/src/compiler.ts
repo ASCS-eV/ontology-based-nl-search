@@ -19,9 +19,37 @@ import {
   buildDomainRegistry,
   type DomainDescriptor,
 } from '@ontology-search/ontology/domain-registry'
-import { buildVocabularyIndex } from '@ontology-search/ontology/vocabulary-index'
 
+import { getInitializedStore } from './init.js'
 import type { SearchSlots } from './slots.js'
+import { extractVocabulary } from './vocabulary-extractor.js'
+
+/** Minimal property info needed by the compiler */
+interface CompilerProperty {
+  domain: string
+  iri: string
+}
+
+/** Vocabulary lookup used internally by the compiler */
+interface CompilerVocab {
+  properties: Map<string, CompilerProperty>
+}
+
+/** Build the compiler vocabulary from the ontology schema graph */
+async function getCompilerVocab(): Promise<CompilerVocab> {
+  const store = await getInitializedStore()
+  const vocabulary = await extractVocabulary(store)
+  const properties = new Map<string, CompilerProperty>()
+
+  for (const prop of vocabulary.enumProperties) {
+    properties.set(prop.localName, { domain: prop.domain, iri: prop.iri })
+  }
+  for (const prop of vocabulary.numericProperties) {
+    properties.set(prop.localName, { domain: prop.domain, iri: prop.iri })
+  }
+
+  return { properties }
+}
 
 /**
  * Domains that represent actual searchable asset types.
@@ -62,7 +90,7 @@ const DOMAIN_REFERENCES: Record<string, string[]> = {
  */
 export async function compileSlots(slots: SearchSlots): Promise<string> {
   const registry = await buildDomainRegistry()
-  const vocabIndex = await buildVocabularyIndex()
+  const vocabIndex = await getCompilerVocab()
 
   const detectedDomains = slots.domains.length > 0 ? slots.domains : ['hdmap']
 

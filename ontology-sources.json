@@ -7,18 +7,5 @@
       "path": "submodules/hd-map-asset-example/submodules/sl-5-8-asset-tools/submodules/ontology-management-base/artifacts",
       "description": "ASCS ontology-management-base containing HD map, georeference, scenario, and other domain ontologies"
     }
-  ],
-  "skos": [
-    {
-      "name": "nl-search-concepts",
-      "path": "packages/ontology/data/skos-annotations.ttl",
-      "description": "Manual SKOS concept scheme with synonyms, definitions, and relationships for natural language matching"
-    },
-    {
-      "name": "generated-skos",
-      "path": "packages/ontology/data/generated",
-      "directory": true,
-      "description": "Auto-generated SKOS concepts from SHACL sh:in enumerations (one file per domain)"
-    }
   ]
 }

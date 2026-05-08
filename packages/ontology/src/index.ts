@@ -4,11 +4,7 @@ import path from 'path'
 
 import { getProjectRoot } from './paths.js'
 
-// Re-export new ontology-driven modules
-export type { ConceptGap, ConceptMatch, MatchResult } from './concept-matcher.js'
-export { jaroWinklerDistance, matchConcepts, resetConceptMatcher } from './concept-matcher.js'
-export type { SkosConcept, SkosIndex } from './skos-loader.js'
-export { loadSkosIndex, resetSkosIndex } from './skos-loader.js'
+// Re-export vocabulary index (still used by domain-registry)
 export type { VocabularyIndex, VocabularyProperty } from './vocabulary-index.js'
 export { buildVocabularyIndex, resetVocabularyIndex } from './vocabulary-index.js'
 

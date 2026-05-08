@@ -1,13 +1,9 @@
 /**
- * Eagerly warm up ontology indexes (SKOS store, vocabulary index, glossary).
- * Called from instrumentation.ts on server start.
+ * Eagerly warm up ontology indexes.
+ * Called from API warmup on server start.
+ * Now only needs to warm the vocabulary index (SKOS layer removed).
  */
 export async function warmupOntologyIndexes(): Promise<void> {
-  const { matchConcepts } = await import('./concept-matcher.js')
-  const { lookupGlossary } = await import('./glossary.js')
-
-  // Trigger a dummy match to force SKOS + vocabulary loading
-  await matchConcepts('warmup')
-  // Trigger glossary loading
-  await lookupGlossary('warmup')
+  const { buildVocabularyIndex } = await import('./vocabulary-index.js')
+  await buildVocabularyIndex()
 }

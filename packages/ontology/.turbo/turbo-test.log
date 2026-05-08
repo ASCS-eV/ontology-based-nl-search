@@ -5,28 +5,18 @@
 
  RUN  v3.2.4 /home/q413005/workspace/ontology-based-nl-search/packages/ontology
 
- ✓ src/__tests__/glossary.test.ts (8 tests) 103ms
- ✓ src/__tests__/domain-registry.test.ts (10 tests) 252ms
- ✓ src/__tests__/vocabulary-index.test.ts (7 tests) 16729ms
-   ✓ VocabularyIndex > discovers and parses SHACL files from artifacts directory  2740ms
-   ✓ VocabularyIndex > extracts roadTypes with allowed values from hdmap SHACL  2304ms
-   ✓ VocabularyIndex > extracts laneTypes with correct values including exit/onRamp  2417ms
-   ✓ VocabularyIndex > extracts formatType allowed values  2221ms
-   ✓ VocabularyIndex > extracts heightSystem from georeference SHACL  2427ms
-   ✓ VocabularyIndex > builds reverse index for value lookup  2412ms
-   ✓ VocabularyIndex > extracts numeric properties without sh:in  2205ms
- ✓ src/__tests__/concept-matcher.test.ts (13 tests) 19214ms
-   ✓ matchConcepts > matches "German" to country DE via SKOS altLabel  2594ms
-   ✓ matchConcepts > matches "highway" to roadTypes motorway via SKOS altLabel  2359ms
-   ✓ matchConcepts > matches "exit" directly to laneTypes exit via SKOS prefLabel  2308ms
-   ✓ matchConcepts > matches "OpenDRIVE" to formatType via SKOS altLabel  2476ms
-   ✓ matchConcepts > matches multi-word phrases like "United States"  2282ms
-   ✓ matchConcepts > ignores stopwords in query  2593ms
-   ✓ matchConcepts > reports gaps for completely unmapped terms  2304ms
-   ✓ matchConcepts > handles on-ramp as a valid lane type concept  2294ms
+ ✓ src/__tests__/domain-registry.test.ts (10 tests) 259ms
+ ✓ src/__tests__/vocabulary-index.test.ts (7 tests) 16757ms
+   ✓ VocabularyIndex > discovers and parses SHACL files from artifacts directory  2741ms
+   ✓ VocabularyIndex > extracts roadTypes with allowed values from hdmap SHACL  2271ms
+   ✓ VocabularyIndex > extracts laneTypes with correct values including exit/onRamp  2355ms
+   ✓ VocabularyIndex > extracts formatType allowed values  2307ms
+   ✓ VocabularyIndex > extracts heightSystem from georeference SHACL  2324ms
+   ✓ VocabularyIndex > builds reverse index for value lookup  2527ms
+   ✓ VocabularyIndex > extracts numeric properties without sh:in  2230ms
 
- Test Files  4 passed (4)
-      Tests  38 passed (38)
-   Start at  22:39:51
-   Duration  20.42s (transform 352ms, setup 0ms, collect 608ms, tests 36.30s, environment 1ms, prepare 723ms)
+ Test Files  2 passed (2)
+      Tests  17 passed (17)
+   Start at  07:44:14
+   Duration  17.95s (transform 334ms, setup 0ms, collect 497ms, tests 17.02s, environment 0ms, prepare 459ms)
 

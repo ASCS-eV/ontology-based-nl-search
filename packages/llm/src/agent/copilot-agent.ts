@@ -1,12 +1,10 @@
 import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { getConfig } from '@ontology-search/core/config'
-import { matchConcepts } from '@ontology-search/ontology'
+import { extractVocabulary, getInitializedStore } from '@ontology-search/search'
 import { compileSlots } from '@ontology-search/search/compiler'
 import type { SearchSlots } from '@ontology-search/search/slots'
-import { readFileSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
 
+import { buildSystemPrompt } from '../prompt-builder.js'
 import type { LlmStructuredResponse } from '../types.js'
 import type { AgentOptions } from './index.js'
 
@@ -22,17 +20,19 @@ interface SlotSubmission {
   gaps: LlmStructuredResponse['gaps']
 }
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const SKILL_PATH = join(__dirname, 'skill.md')
-
 let cachedSystemPrompt: string | null = null
 let client: CopilotClient | null = null
 
+/**
+ * Build system prompt from live ontology vocabulary.
+ * Cached after first build — the ontology doesn't change at runtime.
+ */
 async function getSystemPrompt(): Promise<string> {
   if (cachedSystemPrompt) return cachedSystemPrompt
 
-  cachedSystemPrompt = readFileSync(SKILL_PATH, 'utf-8')
+  const store = await getInitializedStore()
+  const vocabulary = await extractVocabulary(store)
+  cachedSystemPrompt = buildSystemPrompt(vocabulary)
 
   return cachedSystemPrompt
 }
@@ -46,7 +46,10 @@ async function getClient(): Promise<CopilotClient> {
 
 /**
  * Run the slot-filling agent via the Copilot SDK's native tool calling.
- * Pipeline: synonym pre-process → LLM fills slots → compile to SPARQL.
+ *
+ * The LLM receives the full ontology vocabulary in its system prompt
+ * (auto-generated from SHACL shapes) and directly fills search slots.
+ * No pre-processing or SKOS matching — the LLM IS the synonym resolver.
  */
 export async function runCopilotAgent(
   naturalLanguageQuery: string,
@@ -58,12 +61,6 @@ export async function runCopilotAgent(
   const modelId = config.AI_MODEL
   const c = await getClient()
 
-  // Step 1: Ontology-driven concept matching (SKOS + SHACL vocabulary)
-  const matchResult = await matchConcepts(naturalLanguageQuery)
-
-  const preSlots = matchResultToSlots(matchResult.matches, targetDomain)
-
-  // Track the submitted answer
   let submittedSlots: SlotSubmission | null = null
 
   const session: CopilotSession = await c.createSession({
@@ -76,7 +73,6 @@ export async function runCopilotAgent(
   })
 
   try {
-    // Register slot-filling tool with generic SearchSlots schema
     session.registerTools([
       defineTool('submit_slots', {
         description:
@@ -161,138 +157,43 @@ export async function runCopilotAgent(
       }),
     ])
 
-    // Build prompt with pre-extracted context
-    const promptContext =
-      matchResult.matches.length > 0
-        ? `Pre-extracted slots (already determined): ${JSON.stringify(preSlots)}\n\nRemaining query: "${matchResult.remainder || naturalLanguageQuery}"\n\nOriginal: "${naturalLanguageQuery}"`
-        : naturalLanguageQuery
-
-    await session.sendAndWait({ prompt: promptContext })
+    await session.sendAndWait({ prompt: naturalLanguageQuery })
 
     const result = submittedSlots as SlotSubmission | null
     if (result) {
-      // LLM now emits SearchSlots directly — merge with pre-extracted
-      const llmSlots: SearchSlots = {
+      const slots: SearchSlots = {
         domains: result.slots.domains ?? [targetDomain],
         filters: result.slots.filters ?? {},
         ranges: result.slots.ranges ?? {},
         location: result.slots.location,
         license: result.slots.license,
       }
-      const mergedSlots: SearchSlots = mergeSlots(llmSlots, preSlots)
-      const sparql = await compileSlots(mergedSlots)
-
-      // Merge deterministic gaps with LLM-reported gaps (deduplicate by term)
-      const llmGapTerms = new Set(result.gaps.map((g) => g.term.toLowerCase()))
-      const mergedGaps = [
-        ...result.gaps,
-        ...matchResult.gaps.filter((g) => !llmGapTerms.has(g.term.toLowerCase())),
-      ]
+      const sparql = await compileSlots(slots)
 
       return {
         interpretation: result.interpretation,
-        gaps: mergedGaps,
+        gaps: result.gaps,
         sparql,
       }
     }
 
-    // Fallback: compile from pre-extracted slots or broad domain query
-    const fallbackSlots: SearchSlots =
-      matchResult.matches.length > 0
-        ? preSlots
-        : { domains: [targetDomain], filters: {}, ranges: {} }
+    // Fallback: LLM didn't call the tool — return broad search
+    const fallbackSlots: SearchSlots = { domains: [targetDomain], filters: {}, ranges: {} }
     const sparql = await compileSlots(fallbackSlots)
     return {
       interpretation: {
-        summary:
-          matchResult.matches.length > 0
-            ? 'Interpreted via ontology concept matching (SKOS)'
-            : `Broad ${targetDomain} search (no specific filters matched)`,
-        mappedTerms: matchResult.matches.map((m) => ({
-          input: m.input,
-          mapped: m.value,
-          confidence: m.confidence,
-          property: m.property,
-        })),
+        summary: `Searching all ${targetDomain} datasets (LLM did not extract specific filters)`,
+        mappedTerms: [],
       },
-      gaps: matchResult.gaps,
+      gaps: [
+        {
+          term: naturalLanguageQuery,
+          reason: 'Could not extract structured filters from the query',
+        },
+      ],
       sparql,
     }
   } finally {
     await session.disconnect()
-  }
-}
-
-/**
- * Convert concept match results to generic SearchSlots.
- */
-/** Supporting ontologies that should not override the primary asset domain */
-const SUPPORTING_DOMAINS = new Set([
-  'georeference',
-  'manifest',
-  'gx',
-  'envited-x',
-  'general',
-  'openlabel',
-  'unknown',
-])
-
-function matchResultToSlots(
-  matches: { property: string; value: string; domain?: string }[],
-  defaultDomain = 'hdmap'
-): SearchSlots {
-  const slots: SearchSlots = {
-    domains: [defaultDomain],
-    filters: {},
-    ranges: {},
-  }
-
-  const detectedAssetDomains = new Set<string>()
-
-  for (const match of matches) {
-    const domain = match.domain || defaultDomain
-
-    // Only track actual asset domains (not supporting ontologies)
-    if (!SUPPORTING_DOMAINS.has(domain)) {
-      detectedAssetDomains.add(domain)
-    }
-
-    if (['country', 'state', 'region', 'city'].includes(match.property)) {
-      if (!slots.location) slots.location = {}
-      slots.location[match.property as keyof NonNullable<SearchSlots['location']>] = match.value
-    } else if (match.property === 'license') {
-      slots.license = match.value
-    } else if (match.value === 'range') {
-      // Quantity properties: signal "has any value" via min: 1
-      slots.ranges[match.property] = { min: 1 }
-    } else {
-      const existing = slots.filters[match.property]
-      if (existing) {
-        slots.filters[match.property] = Array.isArray(existing)
-          ? [...existing, match.value]
-          : [existing, match.value]
-      } else {
-        slots.filters[match.property] = match.value
-      }
-    }
-  }
-
-  if (detectedAssetDomains.size > 0) {
-    slots.domains = [...detectedAssetDomains]
-  }
-
-  return slots
-}
-
-/**
- * Merge two slot sets. Pre-extracted (deterministic) wins on conflicts.
- */
-function mergeSlots(base: SearchSlots, override: SearchSlots): SearchSlots {
-  return {
-    domains: override.domains.length > 0 ? override.domains : base.domains,
-    filters: { ...base.filters, ...override.filters },
-    ranges: { ...base.ranges, ...override.ranges },
-    location: { ...base.location, ...override.location },
-    license: override.license || base.license,
   }
 }

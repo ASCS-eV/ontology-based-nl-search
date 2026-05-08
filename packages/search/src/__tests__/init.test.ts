@@ -4,11 +4,16 @@ vi.mock('@ontology-search/sparql', () => ({
   getSparqlStore: vi.fn(() => ({
     load: vi.fn(),
     query: vi.fn(),
+    loadTurtle: vi.fn().mockResolvedValue(undefined),
   })),
 }))
 
 vi.mock('../data-loader.js', () => ({
   loadSampleData: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../schema-loader.js', () => ({
+  loadSchemaGraph: vi.fn().mockResolvedValue({ domains: [], fileCount: 0 }),
 }))
 
 describe('getInitializedStore', () => {
