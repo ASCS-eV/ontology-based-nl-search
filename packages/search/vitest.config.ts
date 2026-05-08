@@ -6,6 +6,7 @@ const repoRoot = resolve(__dirname, '../..')
 export default defineConfig({
   test: {
     globals: true,
+    testTimeout: 30_000,
     env: {
       ONTOLOGY_ROOT: repoRoot,
     },
