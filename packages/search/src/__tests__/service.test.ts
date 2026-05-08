@@ -2,12 +2,12 @@
  * Tests for the unified search service.
  * Uses direct dependency injection — no vi.mock() needed.
  */
-import type { LlmStructuredResponse } from '@ontology-search/llm/types'
 import type { SparqlResults, SparqlStore } from '@ontology-search/sparql/types'
 import { vi } from 'vitest'
 
 import type { SearchDependencies } from '../service.js'
 import { SearchService } from '../service.js'
+import type { LlmStructuredResponse } from '../types.js'
 
 const MOCK_SPARQL = 'SELECT ?s WHERE { ?s a <http://example.org/Asset> } LIMIT 10'
 

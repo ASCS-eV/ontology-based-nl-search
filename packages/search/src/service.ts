@@ -11,11 +11,11 @@
  * 2. Refine search: init → compile pre-filled slots → policy → execute
  */
 import { generateRequestId, RequestLogger } from '@ontology-search/core/logging'
-import type { LlmStructuredResponse } from '@ontology-search/llm/types'
 import type { PolicyResult } from '@ontology-search/sparql/policy'
 import type { SparqlBinding, SparqlStore } from '@ontology-search/sparql/types'
 
 import type { SearchSlots } from './slots.js'
+import type { LlmStructuredResponse } from './types.js'
 
 // ─── Dependency Interfaces ───────────────────────────────────────────────────
 
@@ -271,62 +271,5 @@ export class SearchService {
   }
 }
 
-// ─── Module-level Factory (Production Wiring) ────────────────────────────────
-
-let instance: SearchService | null = null
-
-/**
- * Get the singleton SearchService instance with production dependencies.
- * Routes call this; tests construct SearchService directly with mock deps.
- */
-export async function getSearchService(): Promise<SearchService> {
-  if (instance) return instance
-
-  // Lazy dynamic imports to avoid circular deps at module load time
-  const [
-    { generateStructuredSearch },
-    { compileSlots, compileAllCountQueries },
-    { getInitializedStore },
-    { enforceSparqlPolicy },
-  ] = await Promise.all([
-    import('@ontology-search/llm'),
-    import('./compiler.js'),
-    import('./init.js'),
-    import('@ontology-search/sparql/policy'),
-  ])
-
-  instance = new SearchService({
-    getStore: getInitializedStore,
-    interpretQuery: generateStructuredSearch,
-    compileSlots,
-    compileCountQueries: compileAllCountQueries,
-    enforcePolicy: enforceSparqlPolicy,
-  })
-
-  return instance
-}
-
-/** Reset singleton (for testing only) */
-export function resetSearchService(): void {
-  instance = null
-}
-
-// ─── Convenience Functions (backward-compatible API) ─────────────────────────
-
-/**
- * Full natural-language search pipeline.
- * Delegates to singleton SearchService.
- */
-export async function searchNl(options: NlSearchOptions): Promise<SearchResult> {
-  const service = await getSearchService()
-  return service.searchNl(options)
-}
-
-/**
- * Refine search pipeline (no LLM).
- * Delegates to singleton SearchService.
- */
-export async function searchRefine(options: RefineOptions): Promise<RefineResult> {
-  const service = await getSearchService()
-  return service.searchRefine(options)
-}
+// Factory functions (getSearchService, searchNl, searchRefine) are in factory.ts
+// to avoid import dependency on @ontology-search/llm in test contexts.

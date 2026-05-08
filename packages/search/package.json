@@ -18,6 +18,11 @@
       "types": "./src/compiler.ts",
       "import": "./dist/compiler.js",
       "default": "./dist/compiler.js"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "import": "./dist/types.js",
+      "default": "./dist/types.js"
     }
   },
   "scripts": {
