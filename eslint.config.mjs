@@ -15,6 +15,7 @@ export default tseslint.config(
       'public/',
       'dist/',
       '**/dist/**',
+      '**/.vitepress/cache/**',
       '*.config.js',
       '*.config.ts',
       '*.config.mjs',

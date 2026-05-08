@@ -55,8 +55,10 @@ Resolve city names to countries (e.g., "Munich" → country: "DE", city: "Munich
 
 ### \`domains\` — Target domain(s)
 
-Default: \`["hdmap"]\`. Use \`["scenario"]\` for scenario queries (categories, weather, entities, etc.).
-Use the domain that matches the property being filtered on.
+Default: \`["hdmap"]\`. Use \`["scenario"]\` for scenario-specific queries.
+**IMPORTANT: When a query involves properties from MULTIPLE domains, list ALL relevant domains.**
+For example, "scenarios on motorways" → \`["scenario", "hdmap"]\` because "scenarios" is the scenario domain and "motorways" (roadTypes) is the hdmap domain.
+When a term like "intersection" could mean a numeric property (numberIntersections in hdmap) OR a scenario concept, include BOTH domains and fill both filters/ranges accordingly.
 `
 
 /** Rules and confidence section */
@@ -225,23 +227,46 @@ User: "scenarios with emergency braking in rain with pedestrians"
 
 ## Example 3
 
+User: "French intersection with cut-in scenario"
+
+\`\`\`json
+{
+  "slots": {
+    "domains": ["scenario", "hdmap"],
+    "filters": { "scenarioCategory": "cut-in" },
+    "ranges": { "numberIntersections": { "min": 1 } },
+    "location": { "country": "FR" }
+  },
+  "interpretation": {
+    "summary": "Cut-in scenario referencing a French HD map that contains intersections",
+    "mappedTerms": [
+      { "input": "French", "mapped": "FR", "confidence": "high", "property": "country" },
+      { "input": "intersection", "mapped": "numberIntersections >= 1", "confidence": "high", "property": "numberIntersections" },
+      { "input": "cut-in", "mapped": "cut-in", "confidence": "high", "property": "scenarioCategory" }
+    ]
+  },
+  "gaps": []
+}
+\`\`\`
+
+## Example 4
+
 User: "takeover maneuver on highway"
 
 \`\`\`json
 {
   "slots": {
-    "domains": ["scenario"],
+    "domains": ["hdmap"],
     "filters": { "roadTypes": "motorway" }
   },
   "interpretation": {
-    "summary": "Scenario on motorway (takeover is not a specific filterable category)",
+    "summary": "HD map with motorway (takeover is not a specific filterable category)",
     "mappedTerms": [
       { "input": "highway", "mapped": "motorway", "confidence": "high", "property": "roadTypes" }
     ]
   },
   "gaps": [
-    { "term": "takeover", "reason": "Not a defined scenario category in the ontology. Closest categories: cut-in, lane-change, merging, overtaking" },
-    { "term": "maneuver", "reason": "Generic term — scenarioCategory covers specific maneuver types (cut-in, lane-change, overtaking, etc.)" }
+    { "term": "takeover maneuver", "reason": "Not a defined scenario category in the ontology. Closest categories: cut-in, lane-change, merging, overtaking" }
   ]
 }
 \`\`\`

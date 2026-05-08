@@ -1,7 +1,7 @@
 import type { OntologyVocabulary } from '@ontology-search/search'
 import { describe, expect, it } from 'vitest'
 
-import { correctFilters, validateSlots } from '../slot-validator.js'
+import { correctDomains, correctFilters, validateSlots } from '../slot-validator.js'
 import type { LlmStructuredResponse } from '../types.js'
 
 const testVocabulary: OntologyVocabulary = {
@@ -188,5 +188,39 @@ describe('validateSlots', () => {
 
     const result = validateSlots(response, testVocabulary)
     expect(result.interpretation.mappedTerms[0]!.confidence).toBe('high')
+  })
+})
+
+describe('correctDomains', () => {
+  it('keeps domains when filters match', () => {
+    const result = correctDomains(['hdmap'], { roadTypes: 'motorway' }, {}, testVocabulary)
+    expect(result).toEqual(['hdmap'])
+  })
+
+  it('corrects domain when filters belong to a different domain', () => {
+    // LLM chose "scenario" but roadTypes is an hdmap property
+    const result = correctDomains(['scenario'], { roadTypes: 'motorway' }, {}, testVocabulary)
+    expect(result).toEqual(['hdmap'])
+  })
+
+  it('handles numeric ranges for domain correction', () => {
+    const result = correctDomains(['scenario'], {}, { length: { min: 5 } }, testVocabulary)
+    expect(result).toEqual(['hdmap'])
+  })
+
+  it('keeps original domains when no filters are present', () => {
+    const result = correctDomains(['scenario'], {}, {}, testVocabulary)
+    expect(result).toEqual(['scenario'])
+  })
+
+  it('merges domains when filters span multiple domains', () => {
+    const result = correctDomains(
+      ['hdmap'],
+      { roadTypes: 'motorway', scenarioCategory: 'cut-in' },
+      {},
+      testVocabulary
+    )
+    expect(result).toContain('hdmap')
+    expect(result).toContain('scenario')
   })
 })

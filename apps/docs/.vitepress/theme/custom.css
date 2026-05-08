@@ -1,0 +1,37 @@
+/* Custom styles for the docs site */
+
+/* Mermaid diagram containers — ensure SVG scales to fit */
+.mermaid-container {
+  margin: 1.5rem 0;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+/* Make Mermaid SVGs inside slides responsive */
+.slide .mermaid svg,
+.slide [class*='language-mermaid'] svg {
+  max-width: 100%;
+  height: auto !important;
+  overflow: visible;
+}
+
+/* VitePress mermaid wrapper — let nodes size to their content */
+.slide svg[id^='mermaid'],
+svg[id^='mermaid'] {
+  max-width: 100%;
+  height: auto !important;
+  overflow: visible;
+}
+
+/* Override VitePress styles on slide pages */
+.slide-page .VPNav,
+.slide-page .VPSidebar,
+.slide-page .VPFooter,
+.slide-page .VPContent {
+  display: none !important;
+}

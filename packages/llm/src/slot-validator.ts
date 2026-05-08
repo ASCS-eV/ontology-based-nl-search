@@ -312,6 +312,56 @@ export function correctFilters(
   return corrected
 }
 
+/**
+ * Correct domain selection based on which properties are actually used.
+ *
+ * If the LLM selected domain "scenario" but all filters belong to "hdmap",
+ * the domain list should include "hdmap". This prevents empty results from
+ * querying the wrong asset type.
+ */
+export function correctDomains(
+  domains: string[],
+  filters: Record<string, string | string[]>,
+  ranges: Record<string, { min?: number; max?: number }>,
+  vocabulary: OntologyVocabulary
+): string[] {
+  // Build property → domain index
+  const propDomainIndex = new Map<string, string>()
+  for (const prop of vocabulary.enumProperties) {
+    propDomainIndex.set(prop.localName, prop.domain)
+  }
+  for (const prop of vocabulary.numericProperties) {
+    propDomainIndex.set(prop.localName, prop.domain)
+  }
+
+  // Collect domains required by filter/range properties
+  const requiredDomains = new Set<string>()
+  for (const propName of Object.keys(filters)) {
+    const domain = propDomainIndex.get(propName)
+    if (domain) requiredDomains.add(domain)
+  }
+  for (const propName of Object.keys(ranges)) {
+    const domain = propDomainIndex.get(propName)
+    if (domain) requiredDomains.add(domain)
+  }
+
+  if (requiredDomains.size === 0) return domains
+
+  // If all required domains are already in the list, keep as-is
+  const currentSet = new Set(domains)
+  const missing = [...requiredDomains].filter((d) => !currentSet.has(d))
+  if (missing.length === 0) return domains
+
+  // If there's exactly one required domain and it differs from the LLM's choice,
+  // use the required domain (LLM likely got the domain wrong)
+  if (requiredDomains.size === 1) {
+    return [...requiredDomains]
+  }
+
+  // Multiple required domains — merge with existing
+  return [...new Set([...domains, ...requiredDomains])]
+}
+
 /** Enrich a gap with suggestions from the most relevant vocabulary properties */
 function enrichGapWithSuggestions(
   gap: OntologyGap,

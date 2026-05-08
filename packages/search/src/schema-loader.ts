@@ -111,7 +111,7 @@ export async function loadSchemaGraph(
     }
   }
 
-  console.log(
+  console.info(
     `[schema-loader] Loaded ${fileCount} schema files from ${domains.size} domains into <${SCHEMA_GRAPH}>`
   )
 
