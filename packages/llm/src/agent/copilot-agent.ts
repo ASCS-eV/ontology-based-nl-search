@@ -7,6 +7,7 @@ import {
   type OntologyVocabulary,
 } from '@ontology-search/search'
 import { compileSlots } from '@ontology-search/search/compiler'
+import { getShaclContent } from '@ontology-search/search/shacl-reader'
 import type { SearchSlots } from '@ontology-search/search/slots'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
@@ -49,9 +50,13 @@ async function getSystemPrompt(): Promise<{ prompt: string; vocabulary: Ontology
     return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary }
   }
 
+  // Read raw SHACL files for the system prompt (LLM reads native Turtle)
+  const shaclContent = getShaclContent()
+  cachedSystemPrompt = buildSystemPrompt(shaclContent)
+
+  // Extract vocabulary separately — still needed for post-LLM slot validation
   const store = await getInitializedStore()
   cachedVocabulary = await extractVocabulary(store)
-  cachedSystemPrompt = buildSystemPrompt(cachedVocabulary)
 
   return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary }
 }

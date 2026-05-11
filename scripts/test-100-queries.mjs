@@ -231,9 +231,7 @@ async function main() {
 
   for (let i = 0; i < queries.length; i += BATCH_SIZE) {
     const batch = queries.slice(i, i + BATCH_SIZE)
-    const batchResults = await Promise.all(
-      batch.map((q, j) => runQuery(q, i + j + 1))
-    )
+    const batchResults = await Promise.all(batch.map((q, j) => runQuery(q, i + j + 1)))
     results.push(...batchResults)
 
     // Progress
@@ -284,7 +282,9 @@ async function main() {
   if (noResults.length) {
     console.log('\n--- NO RESULTS (query succeeded but 0 matches) ---')
     for (const r of noResults) {
-      console.log(`  #${r.index} "${r.query}" → domains=${JSON.stringify(r.domains)} filters=${JSON.stringify(r.filters)} gaps=${JSON.stringify(r.gaps)}`)
+      console.log(
+        `  #${r.index} "${r.query}" → domains=${JSON.stringify(r.domains)} filters=${JSON.stringify(r.filters)} gaps=${JSON.stringify(r.gaps)}`
+      )
     }
   }
 
@@ -300,7 +300,9 @@ async function main() {
   if (withGaps.length) {
     console.log('\n--- QUERIES WITH GAPS (unmatched terms) ---')
     for (const r of withGaps) {
-      console.log(`  #${r.index} "${r.query}" → gaps: ${JSON.stringify(r.gaps)} (${r.matchCount} results)`)
+      console.log(
+        `  #${r.index} "${r.query}" → gaps: ${JSON.stringify(r.gaps)} (${r.matchCount} results)`
+      )
     }
   }
 

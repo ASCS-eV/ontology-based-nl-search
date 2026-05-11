@@ -16,7 +16,7 @@ graph TD
     OWL["45 OWL + SHACL files"] -->|"loadSchemaGraph()"| SG
     TTL["Instance TTL files"] -->|"loadTurtle()"| DG
 
-    SG -->|"SPARQL extraction"| VOCAB["Vocabulary<br/>(for LLM prompt)"]
+    SG -->|"SPARQL extraction"| VOCAB["Vocabulary<br/>(for post-LLM validation)"]
     DG -->|"SPARQL SELECT"| RES["Query Results"]
 
     style SG fill:#fef3c7,stroke:#f59e0b
@@ -27,7 +27,7 @@ graph TD
 
 ### Schema Graph (`<urn:graph:schema>`)
 
-Contains the **ontology definitions** — OWL class hierarchies, SHACL shapes with `sh:in` value constraints, property definitions. Used at startup for vocabulary extraction. Never queried at search time.
+Contains the **ontology definitions** — OWL class hierarchies, SHACL shapes with `sh:in` value constraints, property definitions. Raw SHACL files are read directly for the LLM prompt (via SHACL reader), and vocabulary is extracted via SPARQL for post-LLM slot validation. Never queried at search time.
 
 ### Default Graph (instance data)
 

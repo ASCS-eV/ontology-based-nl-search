@@ -1,13 +1,14 @@
 /**
- * Prompt Builder — generates the LLM system prompt from the ontology vocabulary.
+ * Prompt Builder — generates the LLM system prompt from raw SHACL ontology shapes.
  *
- * Instead of a static skill.md with manually maintained property tables,
- * this module builds the prompt dynamically from the extracted ontology
- * vocabulary (SHACL sh:in enumerations + numeric properties).
+ * Instead of extracting vocabulary into flattened tables, this module injects
+ * the raw SHACL Turtle content directly into the system prompt. The LLM reads
+ * the native SHACL shapes and resolves synonyms, patterns, and constraints
+ * on its own — no manual vocabulary extraction or synonym tables needed.
  *
  * The ontology IS the vocabulary. The LLM IS the synonym resolver.
  */
-import type { OntologyVocabulary } from '@ontology-search/search'
+import type { ShaclDomainContent } from '@ontology-search/search/shacl-reader'
 
 /** Static preamble — instructions, workflow, slot structure */
 const PREAMBLE = `# Slot-Filling Agent — Skill Definition
@@ -22,7 +23,7 @@ You communicate ONLY through tool calls — never reply with plain text.
 
 ## Workflow (1 step)
 
-1. **Classify** the user's intent into structured slots using the vocabulary reference below
+1. **Classify** the user's intent into structured slots using the SHACL ontology reference below
 2. **Call \`submit_slots\`** with the filled slots, interpretation, and any gaps
 
 You do NOT need to call any other tool. Just fill the slots and submit.
@@ -31,9 +32,28 @@ You do NOT need to call any other tool. Just fill the slots and submit.
 
 Slots use a generic format with three categories:
 
-### \`filters\` — Enumerated property values (string or string[])
+### \`filters\` — Property values (string or string[])
 
-Use the property's ontology local name as the key. Valid values are defined by the ontology (see tables below).
+Use the property's ontology **local name** (the part after the last \`:\` or \`/\`) as the key.
+Read the SHACL shapes below to find valid values:
+- **\`sh:in (...)\`** → enumerated allowed values — use the EXACT listed values
+- **\`sh:pattern "..."\`** → regex constraint — generate values matching this pattern
+- **\`sh:datatype xsd:string\`** → free text filter value
+- **\`sh:datatype xsd:boolean\`** → "true" or "false"
+
+### \`ranges\` — Numeric comparisons: \`{ min?: number, max?: number }\`
+
+For properties with \`sh:datatype xsd:integer\` or \`xsd:float\` or \`xsd:decimal\`:
+- "more than", "at least", "above" → use \`min\`
+- "less than", "under", "below" → use \`max\`
+- "between X and Y" → use both
+
+**Implicit ranges:**
+- "large" / "big" map → ranges.length: { min: 10 }
+- "short" scenario → ranges.duration: { max: 10 }
+- "many intersections" → ranges.numberIntersections: { min: 5 }
+- "with traffic lights" → ranges.numberTrafficLights: { min: 1 }
+- "high speed" / "fast" → ranges.speedLimit: { min: 100 }
 `
 
 /** Location, license, domains sections (stable across ontology changes) */
@@ -67,16 +87,17 @@ const RULES = `
 
 1. ONLY fill slots where you have HIGH confidence the user's intent maps to a valid value
 2. For ambiguous terms, report them as gaps — do NOT guess a slot
-3. Use your language understanding to normalize user language to ontology values (e.g., "highway" → "motorway", "fog" → property weatherSummary value "fog")
+3. **YOU are the synonym resolver.** Use your language understanding to map user terms to ontology values by reading the SHACL shapes (e.g., "highway"/"freeway"/"Autobahn" → \`roadTypes\` value "motorway" from \`sh:in\`)
 4. If a concept is close but not exact, set confidence to "medium" and mention in interpretation, but still fill the slot with the nearest valid value
 5. If a concept has NO mapping at all, report it only as a gap
 6. ALWAYS extract numeric constraints into ranges — never ignore them
+7. For \`sh:pattern\` properties (like country codes), generate values matching the pattern (e.g., "Germany" → "DE" for a 2-letter alpha pattern)
 
 ## Tiered Confidence
 
-- **HIGH**: Term maps directly to an allowed value → fill the slot
+- **HIGH**: Term maps directly to an allowed value from \`sh:in\` or matches \`sh:pattern\` → fill the slot
 - **MEDIUM**: Term is semantically close to an allowed value → fill the slot, note approximation
-- **LOW**: No mapping exists → report as gap only, leave slot empty
+- **LOW**: No mapping exists in any SHACL shape → report as gap only, leave slot empty
 
 ## Response Requirements
 
@@ -88,52 +109,28 @@ Call \`submit_slots\` with:
 `
 
 /**
- * Build the complete LLM system prompt from the ontology vocabulary.
+ * Build the complete LLM system prompt from raw SHACL domain content.
+ *
+ * The prompt embeds the full Turtle content of each domain's SHACL file,
+ * letting the LLM read property definitions, sh:in enumerations, sh:pattern
+ * constraints, and sh:description annotations natively.
  */
-export function buildSystemPrompt(vocabulary: OntologyVocabulary): string {
+export function buildSystemPrompt(shaclContent: ShaclDomainContent[]): string {
   const sections: string[] = [PREAMBLE]
 
-  // Group enum properties by domain
-  const byDomain = groupByDomain(vocabulary.enumProperties)
-
-  for (const [domain, properties] of byDomain) {
-    sections.push(`#### ${formatDomainHeader(domain)} domain filters`)
-    sections.push('')
-    sections.push('| Property | Valid Values |')
-    sections.push('| -------- | ----------- |')
-
-    for (const prop of properties) {
-      const values = prop.allowedValues.map((v) => `"${v}"`).join(', ')
-      sections.push(`| \`${prop.localName}\` | ${values} |`)
-    }
-
-    sections.push('')
-  }
-
-  // Ranges section from numeric properties
-  sections.push('### `ranges` — Numeric comparisons: `{ min?: number, max?: number }`')
-  sections.push('')
+  // SHACL reference section
+  sections.push('## Ontology Reference — SHACL Shape Definitions\n')
+  sections.push('The following SHACL shapes define ALL filterable properties for each domain.')
   sections.push(
-    '**IMPORTANT:** When the user mentions quantities like "more than", "at least", "above" → use `min`. "less than", "under", "below" → use `max`. "between X and Y" → use both.'
+    'Read the Turtle carefully — look for `sh:in` (allowed values), `sh:pattern` (regex), `sh:datatype` (type), `sh:path` (property name), `sh:name` (label), and `sh:description` (meaning).\n'
   )
-  sections.push('')
-  sections.push('| Property | Datatype | Domain | Description |')
-  sections.push('| -------- | -------- | ------ | ----------- |')
 
-  for (const prop of vocabulary.numericProperties) {
-    const desc = prop.description || prop.label
-    sections.push(`| \`${prop.localName}\` | ${prop.datatype} | ${prop.domain} | ${desc} |`)
+  for (const { domain, content } of shaclContent) {
+    sections.push(`### ${formatDomainHeader(domain)} domain\n`)
+    sections.push('```turtle')
+    sections.push(content.trim())
+    sections.push('```\n')
   }
-
-  sections.push('')
-  sections.push('**Implicit ranges:**')
-  sections.push('')
-  sections.push('- "large" / "big" map → ranges.length: { min: 10 }')
-  sections.push('- "short" scenario → ranges.duration: { max: 10 }')
-  sections.push('- "many intersections" → ranges.numberIntersections: { min: 5 }')
-  sections.push('- "with traffic lights" → ranges.numberTrafficLights: { min: 1 }')
-  sections.push('- "high speed" / "fast" → ranges.speedLimit: { min: 100 }')
-  sections.push('')
 
   // Static sections (location, license, domains)
   sections.push(STATIC_SECTIONS)
@@ -147,19 +144,6 @@ export function buildSystemPrompt(vocabulary: OntologyVocabulary): string {
   return sections.join('\n')
 }
 
-/** Group enum properties by their domain */
-function groupByDomain(
-  properties: OntologyVocabulary['enumProperties']
-): Map<string, OntologyVocabulary['enumProperties']> {
-  const map = new Map<string, OntologyVocabulary['enumProperties']>()
-  for (const prop of properties) {
-    const existing = map.get(prop.domain) ?? []
-    existing.push(prop)
-    map.set(prop.domain, existing)
-  }
-  return map
-}
-
 /** Format domain name for display */
 function formatDomainHeader(domain: string): string {
   const names: Record<string, string> = {
@@ -168,6 +152,14 @@ function formatDomainHeader(domain: string): string {
     georeference: 'Georeference',
     'environment-model': 'Environment Model',
     'automotive-simulator': 'Automotive Simulator',
+    openlabel: 'OpenLABEL v1',
+    'openlabel-v2': 'OpenLABEL v2',
+    'simulated-sensor': 'Simulated Sensor',
+    'simulation-model': 'Simulation Model',
+    'surface-model': 'Surface Model',
+    'leakage-test': 'Leakage Test',
+    'vv-report': 'V&V Report',
+    'envited-x': 'ENVITED-X (Base Framework)',
   }
   return names[domain] ?? domain.charAt(0).toUpperCase() + domain.slice(1)
 }
