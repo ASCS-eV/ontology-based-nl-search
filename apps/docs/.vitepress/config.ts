@@ -22,7 +22,7 @@ export default withMermaid(
             { text: 'Roadmap', link: '/roadmap' },
           ],
         },
-        { text: 'Search App ↗', link: 'http://localhost:5174' },
+        { text: 'Search App', link: 'http://localhost:5174' },
       ],
       sidebar: [
         {

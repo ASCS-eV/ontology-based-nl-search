@@ -5,14 +5,14 @@ Thank you for contributing to `ontology-based-nl-search`! This guide covers our 
 ## Development Setup
 
 ```bash
-# Install dependencies
-npm install --legacy-peer-deps
+# Install dependencies (project uses pnpm workspaces)
+pnpm install
 
-# Start development server
-npm run dev
+# Start development server (API on :3003, web UI on :5174)
+pnpm dev
 
 # Run full validation (typecheck + lint + format + tests)
-npm run validate
+pnpm run validate
 ```
 
 ## Quality Standards
@@ -21,15 +21,15 @@ npm run validate
 
 - **TypeScript strict mode** — no `any` unless explicitly justified
 - **Prettier** for formatting (auto-applied on commit via Husky)
-- **ESLint** with Next.js + Prettier config
+- **ESLint** with Prettier config
 - **Conventional Commits** for all commit messages
 
 ### Testing Requirements
 
 | Type        | Tool       | Coverage Target    | When     |
 | ----------- | ---------- | ------------------ | -------- |
-| Unit        | Jest       | 70% branches/lines | Every PR |
-| Integration | Jest       | Key flows          | Every PR |
+| Unit        | Vitest     | 70% branches/lines | Every PR |
+| Integration | Vitest     | Key flows          | Every PR |
 | E2E         | Playwright | Critical paths     | Every PR |
 
 ### Commit Conventions
@@ -48,55 +48,95 @@ ci: add caching to CI workflow
 
 Always sign commits: `git commit -s -S`
 
-## Architecture
+## Monorepo Architecture
+
+The project is a **pnpm monorepo** with Turborepo orchestration. Each package has a single responsibility and clear dependency direction.
 
 ```
-src/
-├── app/                    # Next.js App Router
-│   ├── api/search/         # API routes
-│   ├── layout.tsx          # Root layout
-│   └── page.tsx            # Home page
-├── components/             # React UI components
-│   ├── SearchBar.tsx
-│   ├── ResultsDisplay.tsx
-│   └── SparqlPreview.tsx
-├── lib/                    # Core business logic
-│   ├── sparql/             # SPARQL store abstraction
-│   │   ├── types.ts        # Interfaces
-│   │   ├── oxigraph-store.ts  # In-memory (dev)
-│   │   ├── remote-store.ts    # Remote endpoint (prod)
-│   │   └── index.ts        # Factory
-│   ├── llm/                # LLM integration
-│   │   ├── provider.ts     # AI provider config
-│   │   ├── sparql-utils.ts # SPARQL extraction utils
-│   │   └── index.ts        # NL-to-SPARQL generation
-│   ├── ontology/           # Ontology fetch/cache
-│   │   └── index.ts
-│   └── data/               # Sample/test data
-│       └── loader.ts
-e2e/                        # Playwright E2E tests
-.github/workflows/          # CI/CD
+apps/
+├── api/                    # Hono SSE streaming API server (port 3003)
+│   ├── src/
+│   │   ├── routes/search.ts    # POST /search/stream, POST /search/refine
+│   │   ├── routes/stats.ts     # GET /stats
+│   │   ├── middleware/         # Error handler, request ID
+│   │   ├── warmup.ts           # Startup initialization
+│   │   └── app.ts              # Hono app setup
+├── web/                    # Vite + React 19 frontend
+│   ├── src/
+│   │   ├── routes/             # TanStack Router file-based routes
+│   │   ├── components/         # React UI components
+│   │   └── main.tsx
+├── docs/                   # VitePress documentation site
+│   └── *.md                    # Architecture, query flow, ontology, etc.
+├── e2e/                    # Playwright E2E tests
+│   └── tests/search.spec.ts
+packages/
+├── core/                   # Shared foundation (zero internal deps)
+│   ├── config/                 # Zod-validated environment config
+│   ├── logging/                # Structured JSON logger with correlation IDs
+│   └── errors/                 # Shared error types
+├── sparql/                 # SPARQL store abstraction
+│   ├── oxigraph-store.ts       # In-memory Oxigraph WASM (dev)
+│   ├── remote-store.ts         # HTTP client for remote endpoints (prod)
+│   ├── cached-store.ts         # LRU query cache decorator
+│   ├── cache.ts                # LRU cache implementation
+│   ├── policy.ts               # Query validation policies
+│   └── types.ts                # SparqlStore interface
+├── ontology/               # Ontology source management
+│   ├── paths.ts                # Project root resolution
+│   ├── warmup.ts               # Loads instance TTL data at startup
+│   ├── domain-registry.ts      # Domain lookups
+│   └── vocabulary-index.ts     # Vocabulary indexing
+├── search/                 # Search pipeline core
+│   ├── schema-loader.ts        # Loads OWL+SHACL files into schema graph
+│   ├── vocabulary-extractor.ts # SPARQL-based extraction of sh:in enums
+│   ├── compiler.ts             # SearchSlots → deterministic SPARQL
+│   ├── service.ts              # Orchestrates init → interpret → compile → execute
+│   ├── factory.ts              # Service factory and dependency wiring
+│   ├── slots.ts                # SearchSlots type definitions
+│   ├── data-loader.ts          # Instance data loading
+│   ├── init.ts                 # Initialization sequence
+│   └── types.ts                # Shared types
+├── llm/                    # LLM integration
+│   ├── prompt-builder.ts       # Auto-generates LLM system prompt from vocabulary
+│   ├── slot-validator.ts       # Post-LLM validation: fuzzy match, domain correction
+│   ├── provider.ts             # AI provider configuration
+│   ├── agent/index.ts          # Vercel AI SDK agent (OpenAI/Ollama)
+│   ├── agent/copilot-agent.ts  # GitHub Copilot SDK agent
+│   └── agent/tools.ts          # submit_slots tool definition
+├── testing/                # Shared test helpers and fixtures
+│   └── helpers/index.ts        # Mock logger, test utilities
+├── eslint-config/          # Shared ESLint configuration
+└── typescript-config/      # Shared TypeScript configuration
 ```
+
+### Dependency Rules
+
+- **`core`** has zero internal workspace dependencies — it is the foundation
+- **`sparql`** depends only on `core`
+- **`ontology`** depends only on `core`
+- **`search`** depends on `core`, `sparql`, and `ontology`
+- **`llm`** depends on `core`, `ontology`, and `search`
+- **Apps** (`api`, `web`) depend on packages — packages never depend on apps
+- **`testing`** provides shared test utilities — not used in production code
 
 ## Available Scripts
 
 | Script                  | Description                      |
 | ----------------------- | -------------------------------- |
-| `npm run dev`           | Start dev server                 |
-| `npm run build`         | Production build                 |
-| `npm run lint`          | Run ESLint                       |
-| `npm run lint:fix`      | Auto-fix lint issues             |
-| `npm run format`        | Format all files                 |
-| `npm run format:check`  | Check formatting                 |
-| `npm run typecheck`     | TypeScript type checking         |
-| `npm run test`          | Run unit tests                   |
-| `npm run test:coverage` | Tests with coverage report       |
-| `npm run test:e2e`      | Run E2E tests                    |
-| `npm run validate`      | Full quality gate (CI runs this) |
+| `pnpm dev`              | Start API + web dev servers      |
+| `pnpm run build`        | Production build (all packages)  |
+| `pnpm run lint`         | Run ESLint                       |
+| `pnpm run format`       | Format all files                 |
+| `pnpm run format:check` | Check formatting                 |
+| `pnpm run check-types`  | TypeScript type checking         |
+| `pnpm test`             | Run unit tests (Vitest)          |
+| `pnpm run test:e2e`     | Run E2E tests (Playwright)       |
+| `pnpm run validate`     | Full quality gate (CI runs this) |
 
 ## Pull Request Checklist
 
-- [ ] `npm run validate` passes locally
+- [ ] `pnpm run validate` passes locally
 - [ ] New code has tests (unit and/or E2E as appropriate)
 - [ ] Commit messages follow Conventional Commits
 - [ ] No `console.log` statements (use `console.warn`/`console.error` if needed)
@@ -108,6 +148,7 @@ e2e/                        # Playwright E2E tests
 Copy `.env.example` to `.env.local` and configure:
 
 - `SPARQL_MODE`: `memory` (dev) or `remote` (production)
-- `AI_PROVIDER`: `openai`, `ollama`
-- `AI_MODEL`: Model identifier (e.g., `gpt-4o`, `llama3`)
+- `AI_PROVIDER`: `ollama` (default, free), `openai`, or `copilot`
+- `AI_MODEL`: Model identifier (e.g., `qwen2.5-coder:7b`, `gpt-4o`)
 - `OPENAI_API_KEY`: Your API key (for OpenAI provider)
+- `OLLAMA_BASE_URL`: Ollama server URL (default: `http://localhost:11434/v1`)

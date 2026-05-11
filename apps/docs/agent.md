@@ -126,10 +126,10 @@ The validator removes LLM bias from confidence scores and recomputes objectively
 
 The agent logic works with multiple LLM providers — same validation pipeline, different backends:
 
-| Provider           | SDK                               | Use Case                           |
-| ------------------ | --------------------------------- | ---------------------------------- |
-| **GitHub Copilot** | Copilot SDK (`@anthropic-ai/sdk`) | Enterprise, integrated with GitHub |
-| **OpenAI**         | Vercel AI SDK                     | Cloud-hosted, highest quality      |
-| **Ollama**         | Vercel AI SDK                     | Local, privacy-first, no API costs |
+| Provider           | SDK                                 | Use Case                           |
+| ------------------ | ----------------------------------- | ---------------------------------- |
+| **GitHub Copilot** | Copilot SDK (`@github/copilot-sdk`) | Enterprise, integrated with GitHub |
+| **OpenAI**         | Vercel AI SDK                       | Cloud-hosted, highest quality      |
+| **Ollama**         | Vercel AI SDK                       | Local, privacy-first, no API costs |
 
 Configured via `AI_PROVIDER` environment variable. Both agent paths share the same post-LLM validation pipeline.

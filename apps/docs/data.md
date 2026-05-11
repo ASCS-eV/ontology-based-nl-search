@@ -78,12 +78,13 @@ Data is loaded from TTL files configured in `ontology-sources.json`:
 
 ```json
 {
-  "ontologies": {
-    "artifacts": "submodules/ontology-management-base/ontology"
-  },
-  "data": {
-    "instances": "submodules/ontology-management-base/data"
-  }
+  "sources": [
+    {
+      "name": "ontology-management-base",
+      "path": "submodules/hd-map-asset-example/submodules/sl-5-8-asset-tools/submodules/ontology-management-base/artifacts",
+      "description": "ASCS ontology-management-base containing HD map, georeference, scenario, and other domain ontologies"
+    }
+  ]
 }
 ```
 
@@ -94,7 +95,9 @@ The `SparqlStore` interface decouples the application from any specific triplest
 ```typescript
 interface SparqlStore {
   query(sparql: string): Promise<SparqlResults>
+  update(sparql: string): Promise<void>
   loadTurtle(data: string, graphUri?: string): Promise<void>
+  loadJsonLd(data: string, graphUri?: string): Promise<void>
   isReady(): Promise<boolean>
 }
 ```
