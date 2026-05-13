@@ -75,19 +75,31 @@ Resolve city names to countries (e.g., "Munich" → country: "DE", city: "Munich
 
 ### \`domains\` — Target domain(s)
 
-Default: \`["hdmap"]\`. Use \`["scenario"]\` for scenario-specific queries.
-**IMPORTANT: When a query involves properties from MULTIPLE domains, list ALL relevant domains.**
+**When properties appear in MULTIPLE domains** (like \`roadTypes\` which exists in both \`hdmap\` and \`ositrace\`):
+- If the query explicitly mentions the asset type ("HD map", "trace", "scenario") → use that domain
+- If the query does NOT explicitly mention an asset type → leave domains EMPTY \`[]\` to search all matching assets
+
+**Examples:**
+- "German **HD maps** with motorway" → \`["hdmap"]\` (explicitly mentions "HD maps")
+- "German motorway roads" → \`[]\` (ambiguous - could be hdmap or ositrace)
+- "**Scenarios** with rain" → \`["scenario"]\` (explicitly mentions "scenarios")
+- "rain simulations" → \`[]\` (ambiguous - search all types)
+
+**Default**: When uncertain about which domain, leave \`[]\` empty. The system will search across all asset types using the superclass.
+
+**Cross-domain queries**: When a query involves properties from MULTIPLE domains, list ALL relevant domains.
 For example, "scenarios on motorways" → \`["scenario", "hdmap"]\` because "scenarios" is the scenario domain and "motorways" (roadTypes) is the hdmap domain.
-When a term like "intersection" could mean a numeric property (numberIntersections in hdmap) OR a scenario concept, include BOTH domains and fill both filters/ranges accordingly.
 `
 
 /** Rules and confidence section */
 const RULES = `
 ## Rules
 
-1. ONLY fill slots where you have HIGH confidence the user's intent maps to a valid value
-2. For ambiguous terms, report them as gaps — do NOT guess a slot
-3. **YOU are the synonym resolver.** Use your language understanding to map user terms to ontology values by reading the SHACL shapes (e.g., "highway"/"freeway"/"Autobahn" → \`roadTypes\` value "motorway" from \`sh:in\`)
+1. **Read the SHACL shapes carefully** — properties may exist in MULTIPLE domains (e.g., \`roadTypes\` in both \`hdmap\` and \`ositrace\`)
+2. **When a property exists in multiple domains AND the query doesn't specify which asset type**, leave \`domains\` EMPTY \`[]\`
+3. ONLY fill slots where you have HIGH confidence the user's intent maps to a valid value
+4. For ambiguous terms, report them as gaps — do NOT guess a slot
+5. **YOU are the synonym resolver.** Use your language understanding to map user terms to ontology values by reading the SHACL shapes (e.g., "highway"/"freeway"/"Autobahn" → \`roadTypes\` value "motorway" from \`sh:in\`)
 4. If a concept is close but not exact, set confidence to "medium" and mention in interpretation, but still fill the slot with the nearest valid value
 5. If a concept has NO mapping at all, report it only as a gap
 6. ALWAYS extract numeric constraints into ranges — never ignore them

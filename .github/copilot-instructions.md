@@ -13,6 +13,58 @@
 - Follow the project's ESLint and Prettier configuration.
 - Use TypeScript strict mode — avoid `any` unless explicitly justified.
 
+## Project Startup
+
+### Complete Startup (All Services)
+
+```bash
+# This starts ALL services (API + web + docs) with automatic port cleanup
+pnpm dev
+```
+
+**Verification checklist:**
+
+1. Wait for all 3 services to show "ready" (~10-15 seconds)
+2. Check API health: `curl http://localhost:3003/health`
+3. Check stats: `curl http://localhost:3003/stats` (should show 167 assets)
+4. Open http://localhost:5174 in browser
+5. Type a query to enable search button
+
+### Individual Services (for debugging)
+
+```bash
+# API only (with port cleanup)
+pnpm run --filter @ontology-search/api dev:clean
+
+# Web only (with port cleanup)
+pnpm run --filter @ontology-search/web dev:clean
+
+# Docs only
+pnpm run --filter @ontology-search/docs dev
+```
+
+### Port Cleanup (if zombie processes)
+
+```bash
+pnpm run clean:ports
+```
+
+### Service URLs
+
+| Service | Port | URL                         |
+| ------- | ---- | --------------------------- |
+| API     | 3003 | http://localhost:3003       |
+| Web     | 5174 | http://localhost:5174       |
+| Docs    | 5173 | http://localhost:5173/docs/ |
+
+### Common Issues
+
+**"Search button is disabled"**: Type something in the search box first. It's disabled when empty.
+
+**"Docs show 404"**: Docs server not running. Run: `pnpm run --filter @ontology-search/docs dev`
+
+**"Port in use"**: Run `pnpm run clean:ports` before starting
+
 ## After Each Development Iteration
 
 After making changes, always perform these steps so the user can test:

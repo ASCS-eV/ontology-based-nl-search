@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc --build",
     "dev": "tsx watch --env-file=../../.env.local src/index.ts",
+    "dev:clean": "node ../../scripts/clean-ports.mjs 3003 && tsx watch --env-file=../../.env.local src/index.ts",
     "start": "node --env-file=.env.local dist/index.js",
     "test": "vitest run",
     "check-types": "tsc --noEmit",

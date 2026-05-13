@@ -8,9 +8,9 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
-    "dev:api": "pnpm run build && pnpm --filter @ontology-search/api dev",
-    "dev:web": "turbo run dev --filter=@ontology-search/web",
+    "dev": "node scripts/clean-ports.mjs && turbo run dev --parallel",
+    "dev:api": "node scripts/clean-ports.mjs 3003 && pnpm run build && pnpm --filter @ontology-search/api dev",
+    "dev:web": "node scripts/clean-ports.mjs 5174 && turbo run dev --filter=@ontology-search/web",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "check-types": "turbo run check-types",
@@ -19,6 +19,7 @@
     "format:check": "prettier --check .",
     "validate": "turbo run check-types test && pnpm run lint && pnpm run format:check",
     "clean": "turbo run clean",
+    "clean:ports": "node scripts/clean-ports.mjs",
     "prepare": "husky"
   },
   "lint-staged": {

@@ -133,16 +133,27 @@ function getSuggestions(
     .map((s) => s.value)
 }
 
-/** Build a lookup of property name → allowed values from vocabulary */
+/**
+ * Build a lookup of property name → allowed values from vocabulary.
+ * Merges allowed values from all domains when the same localName appears
+ * in multiple domains (e.g., hdmap:formatType and tzip21:formatType).
+ */
 function buildAllowedValuesIndex(
   vocabulary: OntologyVocabulary
 ): Map<string, { allowedValues: string[]; domain: string }> {
   const index = new Map<string, { allowedValues: string[]; domain: string }>()
   for (const prop of vocabulary.enumProperties) {
-    index.set(prop.localName, {
-      allowedValues: prop.allowedValues,
-      domain: prop.domain,
-    })
+    const existing = index.get(prop.localName)
+    if (existing) {
+      // Merge allowed values from multiple domains (deduplicated)
+      const merged = new Set([...existing.allowedValues, ...prop.allowedValues])
+      existing.allowedValues = [...merged]
+    } else {
+      index.set(prop.localName, {
+        allowedValues: [...prop.allowedValues],
+        domain: prop.domain,
+      })
+    }
   }
   return index
 }
@@ -318,6 +329,9 @@ export function correctFilters(
  * If the LLM selected domain "scenario" but all filters belong to "hdmap",
  * the domain list should include "hdmap". This prevents empty results from
  * querying the wrong asset type.
+ *
+ * CRITICAL: Properties can exist in multiple domains (e.g., roadTypes in both hdmap and ositrace).
+ * We must respect the LLM's domain choice when a property exists in that domain.
  */
 export function correctDomains(
   domains: string[],
@@ -325,40 +339,70 @@ export function correctDomains(
   ranges: Record<string, { min?: number; max?: number }>,
   vocabulary: OntologyVocabulary
 ): string[] {
-  // Build property → domain index
-  const propDomainIndex = new Map<string, string>()
+  // Build property → Set<domain> index (multi-domain aware)
+  const propDomainsIndex = new Map<string, Set<string>>()
   for (const prop of vocabulary.enumProperties) {
-    propDomainIndex.set(prop.localName, prop.domain)
+    const existing = propDomainsIndex.get(prop.localName)
+    if (existing) {
+      existing.add(prop.domain)
+    } else {
+      propDomainsIndex.set(prop.localName, new Set([prop.domain]))
+    }
   }
   for (const prop of vocabulary.numericProperties) {
-    propDomainIndex.set(prop.localName, prop.domain)
+    const existing = propDomainsIndex.get(prop.localName)
+    if (existing) {
+      existing.add(prop.domain)
+    } else {
+      propDomainsIndex.set(prop.localName, new Set([prop.domain]))
+    }
   }
 
   // Collect domains required by filter/range properties
+  // If a property exists in the LLM's chosen domain, use that
+  // Otherwise, use the property's actual domain(s)
   const requiredDomains = new Set<string>()
+  const currentSet = new Set(domains)
+
   for (const propName of Object.keys(filters)) {
-    const domain = propDomainIndex.get(propName)
-    if (domain) requiredDomains.add(domain)
+    const propDomains = propDomainsIndex.get(propName)
+    if (!propDomains) continue
+
+    // If property exists in any of the LLM's chosen domains, don't override
+    const matchesChosen = [...propDomains].some((d) => currentSet.has(d))
+    if (matchesChosen) {
+      // LLM chose correctly, keep their choice
+      continue
+    }
+
+    // Property doesn't exist in chosen domains, add its actual domains
+    for (const d of propDomains) {
+      requiredDomains.add(d)
+    }
   }
+
   for (const propName of Object.keys(ranges)) {
-    const domain = propDomainIndex.get(propName)
-    if (domain) requiredDomains.add(domain)
+    const propDomains = propDomainsIndex.get(propName)
+    if (!propDomains) continue
+
+    const matchesChosen = [...propDomains].some((d) => currentSet.has(d))
+    if (matchesChosen) {
+      continue
+    }
+
+    for (const d of propDomains) {
+      requiredDomains.add(d)
+    }
   }
 
   if (requiredDomains.size === 0) return domains
 
-  // If all required domains are already in the list, keep as-is
-  const currentSet = new Set(domains)
-  const missing = [...requiredDomains].filter((d) => !currentSet.has(d))
-  if (missing.length === 0) return domains
-
-  // If there's exactly one required domain and it differs from the LLM's choice,
-  // use the required domain (LLM likely got the domain wrong)
-  if (requiredDomains.size === 1) {
-    return [...requiredDomains]
+  // If LLM's domains already cover all properties, keep as-is
+  if ([...requiredDomains].every((d) => currentSet.has(d))) {
+    return domains
   }
 
-  // Multiple required domains — merge with existing
+  // Merge required domains with existing
   return [...new Set([...domains, ...requiredDomains])]
 }
 

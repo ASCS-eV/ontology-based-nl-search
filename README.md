@@ -20,20 +20,67 @@ A locally running TypeScript web application with a Google-style search bar that
 
 ## Quick Start
 
-```bash
-# Install dependencies
-pnpm install
+### 1. Install dependencies
 
-# Copy environment config
+```bash
+pnpm install
+```
+
+### 2. Configure environment
+
+```bash
+# Copy the example config
 cp .env.example .env.local
 
-# Start development server (uses in-memory Oxigraph, no external services needed)
+# Edit .env.local and set AI_PROVIDER to one of:
+# - "ollama" (default, free local) - requires: ollama pull qwen2.5-coder:7b
+# - "openai" (requires OPENAI_API_KEY)
+# - "copilot" (requires GitHub Copilot Enterprise)
+```
+
+### 3. Start development servers
+
+```bash
+# Start all services (API + web + docs)
 pnpm dev
 ```
 
-The API starts on [http://localhost:3003](http://localhost:3003) and the web UI on [http://localhost:5174](http://localhost:5174).
+This command automatically:
 
-> **Note:** The default configuration uses Ollama (free, local). Run `ollama pull qwen2.5-coder:7b` to get started without an API key. For OpenAI, set `AI_PROVIDER=openai` and `OPENAI_API_KEY` in `.env.local`.
+- ✅ **Cleans ports** (kills any zombie processes on 3003, 5173, 5174)
+- ✅ Starts the API server (port 3003)
+- ✅ Starts the web frontend (port 5174)
+- ✅ Starts the documentation (port 5173)
+
+**Services will be available at:**
+
+- **API:** http://localhost:3003
+- **Web UI:** http://localhost:5174
+- **Docs:** http://localhost:5173/docs/
+
+> **First launch?** The web page may show white initially. Press **Ctrl+Shift+R** (hard refresh) to clear the cache.
+
+### Alternative: Start services individually
+
+If you prefer to run services separately or troubleshoot issues:
+
+```bash
+# Terminal 1: Start API only (with port cleanup)
+pnpm run --filter @ontology-search/api dev:clean
+
+# Terminal 2: Start web frontend only (with port cleanup)
+pnpm run --filter @ontology-search/web dev:clean
+
+# Terminal 3 (optional): Start docs
+pnpm run --filter @ontology-search/docs dev
+```
+
+**Manual port cleanup** if ports are still blocked:
+
+```bash
+pnpm run clean:ports                    # Clean default ports
+node scripts/clean-ports.mjs 3003 5174  # Clean specific ports
+```
 
 ## Architecture
 
@@ -92,11 +139,31 @@ packages/
 ## Development
 
 ```bash
-pnpm dev              # Start API + web dev servers
+pnpm dev              # Start all dev servers (API + web + docs)
 pnpm run validate     # Full quality gate (typecheck + lint + format + test)
 pnpm test             # Unit tests (Vitest)
 pnpm run test:e2e     # E2E tests (Playwright)
 ```
+
+### Troubleshooting
+
+**White page in browser?**
+
+- Press **Ctrl+Shift+R** (hard refresh) to clear cache
+- Check browser console (F12) for errors
+- Verify API is running: `curl http://localhost:3003/health`
+
+**API not starting?**
+
+- Check `.env.local` exists in project root
+- For Ollama: ensure `ollama pull qwen2.5-coder:7b` completed
+- For OpenAI: verify `OPENAI_API_KEY` is set
+- Check logs for port conflicts (3003, 5174, 5173)
+
+**Search returns no results?**
+
+- Verify SPARQL store loaded: `curl http://localhost:3003/stats`
+- Check ontology submodules: `git submodule update --init --recursive`
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 

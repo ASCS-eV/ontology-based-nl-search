@@ -4,79 +4,84 @@ import { vi } from 'vitest'
 import { compileCountQuery, compileSlots } from '../compiler.js'
 import type { SearchSlots } from '../slots.js'
 
-// Mock the vocabulary extractor to provide property domain info
-vi.mock('../vocabulary-extractor.js', () => ({
-  extractVocabulary: vi.fn().mockResolvedValue({
-    enumProperties: [
-      {
-        localName: 'roadTypes',
-        domain: 'hdmap',
-        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/roadTypes',
-        label: 'road types',
-        description: '',
-        allowedValues: ['motorway'],
-      },
-      {
-        localName: 'laneTypes',
-        domain: 'hdmap',
-        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/laneTypes',
-        label: 'lane types',
-        description: '',
-        allowedValues: ['driving'],
-      },
-      {
-        localName: 'formatType',
-        domain: 'hdmap',
-        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/formatType',
-        label: 'format type',
-        description: '',
-        allowedValues: ['ASAM OpenDRIVE'],
-      },
-      {
-        localName: 'scenarioCategory',
-        domain: 'scenario',
-        iri: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/scenarioCategory',
-        label: 'scenario category',
-        description: '',
-        allowedValues: ['cut-in'],
-      },
-      {
-        localName: 'weatherSummary',
-        domain: 'scenario',
-        iri: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/weatherSummary',
-        label: 'weather summary',
-        description: '',
-        allowedValues: ['rain'],
-      },
-    ],
-    numericProperties: [
-      {
-        localName: 'length',
-        domain: 'hdmap',
-        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/length',
-        label: 'length',
-        description: '',
-        datatype: 'float',
-      },
-      {
-        localName: 'speedLimit',
-        domain: 'hdmap',
-        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/speedLimit',
-        label: 'speed limit',
-        description: '',
-        datatype: 'float',
-      },
-      {
-        localName: 'numberIntersections',
-        domain: 'hdmap',
-        iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/numberIntersections',
-        label: 'intersections',
-        description: '',
-        datatype: 'integer',
-      },
-    ],
-    domains: ['hdmap', 'scenario'],
-  }),
+// Mock the schema query functions to provide test data
+vi.mock('../schema-queries.js', () => ({
+  queryPropertyDomains: vi.fn().mockResolvedValue([
+    {
+      localName: 'roadTypes',
+      domain: 'hdmap',
+      iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/roadTypes',
+      targetClass: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/HDMap',
+    },
+    {
+      localName: 'roadTypes',
+      domain: 'ositrace',
+      iri: 'https://w3id.org/ascs-ev/envited-x/ositrace/v6/roadTypes',
+      targetClass: 'https://w3id.org/ascs-ev/envited-x/ositrace/v6/OSITrace',
+    },
+    {
+      localName: 'laneTypes',
+      domain: 'hdmap',
+      iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/laneTypes',
+      targetClass: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/HDMap',
+    },
+    {
+      localName: 'formatType',
+      domain: 'hdmap',
+      iri: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/formatType',
+      targetClass: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/HDMap',
+    },
+    {
+      localName: 'scenarioCategory',
+      domain: 'scenario',
+      iri: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/scenarioCategory',
+      targetClass: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/Scenario',
+    },
+    {
+      localName: 'weatherSummary',
+      domain: 'scenario',
+      iri: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/weatherSummary',
+      targetClass: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/Scenario',
+    },
+    {
+      localName: 'entityTypes',
+      domain: 'scenario',
+      iri: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/entityTypes',
+      targetClass: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/Scenario',
+    },
+  ]),
+  queryAssetDomains: vi.fn().mockResolvedValue([
+    { domainName: 'hdmap', assetClass: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/HDMap' },
+    {
+      domainName: 'scenario',
+      assetClass: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/Scenario',
+    },
+    {
+      domainName: 'ositrace',
+      assetClass: 'https://w3id.org/ascs-ev/envited-x/ositrace/v6/OSITrace',
+    },
+  ]),
+  queryDomainReferences: vi.fn().mockResolvedValue([
+    { parentDomain: 'scenario', childDomain: 'hdmap' },
+    { parentDomain: 'scenario', childDomain: 'environment-model' },
+  ]),
+  queryPropertyShapeGroups: vi.fn().mockResolvedValue([
+    { localName: 'roadTypes', domain: 'hdmap', shapeGroup: 'Content' },
+    { localName: 'laneTypes', domain: 'hdmap', shapeGroup: 'Content' },
+    { localName: 'levelOfDetail', domain: 'hdmap', shapeGroup: 'Content' },
+    { localName: 'trafficDirection', domain: 'hdmap', shapeGroup: 'Content' },
+    { localName: 'formatType', domain: 'hdmap', shapeGroup: 'Format' },
+    { localName: 'version', domain: 'hdmap', shapeGroup: 'Format' },
+    { localName: 'length', domain: 'hdmap', shapeGroup: 'Quantity' },
+    { localName: 'numberIntersections', domain: 'hdmap', shapeGroup: 'Quantity' },
+    { localName: 'numberTrafficLights', domain: 'hdmap', shapeGroup: 'Quantity' },
+    { localName: 'speedLimit', domain: 'hdmap', shapeGroup: 'Quantity' },
+    { localName: 'usedDataSources', domain: 'hdmap', shapeGroup: 'DataSource' },
+    { localName: 'scenarioCategory', domain: 'scenario', shapeGroup: 'Content' },
+    { localName: 'weatherSummary', domain: 'scenario', shapeGroup: 'Content' },
+    { localName: 'entityTypes', domain: 'scenario', shapeGroup: 'Content' },
+  ]),
+  queryRange2DProperties: vi.fn().mockResolvedValue([{ localName: 'speedLimit', domain: 'hdmap' }]),
 }))
 
 // Mock the store init (not needed since we mock extractVocabulary)
