@@ -31,6 +31,7 @@ export const searchRoutes = new Hono<AppEnv>()
  */
 searchRoutes.post('/stream', (c) => {
   const requestId = c.get('requestId') as string
+  const streamLogger = new RequestLogger({ requestId })
 
   return streamSSE(
     c,
@@ -80,7 +81,7 @@ searchRoutes.post('/stream', (c) => {
           event: 'results',
           data: JSON.stringify({
             results: result.execution.results,
-            error: result.execution.error,
+            error: result.execution.error ? 'Query execution failed' : undefined,
           }),
         })
         await stream.writeSSE({ event: 'meta', data: JSON.stringify(result.meta) })
@@ -92,12 +93,14 @@ searchRoutes.post('/stream', (c) => {
         })
       } catch (error) {
         logger.error('Stream search failed', error)
-        const message = error instanceof Error ? error.message : 'Internal server error'
-        await stream.writeSSE({ event: 'error', data: JSON.stringify({ message }) })
+        await stream.writeSSE({
+          event: 'error',
+          data: JSON.stringify({ message: 'Search failed' }),
+        })
       }
     },
     async (err, stream) => {
-      console.error(`[${requestId}] SSE stream error:`, err)
+      streamLogger.error('SSE stream error', err)
       await stream.writeSSE({ event: 'error', data: JSON.stringify({ message: 'Stream error' }) })
     }
   )
@@ -136,7 +139,7 @@ searchRoutes.post('/refine', async (c) => {
 
     if (result.execution.error) {
       logger.warn('Refine query failed', { error: result.execution.error })
-      const err = unprocessable(result.execution.error)
+      const err = unprocessable('Query could not be executed')
       return c.json(err.body, err.status)
     }
 

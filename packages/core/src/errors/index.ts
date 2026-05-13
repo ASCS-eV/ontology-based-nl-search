@@ -15,12 +15,6 @@ export interface ApiErrorResponse {
   details?: string[]
 }
 
-export type ErrorCode =
-  | 'BAD_REQUEST'
-  | 'UNPROCESSABLE_ENTITY'
-  | 'INTERNAL_ERROR'
-  | 'SERVICE_UNAVAILABLE'
-
 /** HTTP status codes used by error responses */
 export type HttpErrorStatus = 400 | 422 | 500 | 503
 

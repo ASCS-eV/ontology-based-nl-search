@@ -7,11 +7,17 @@ import type { SparqlResults, SparqlStore } from './types.js'
 export class RemoteSparqlStore implements SparqlStore {
   private endpoint: string
   private updateEndpoint: string
+  private timeoutMs: number
 
-  constructor(endpoint: string, updateEndpoint?: string) {
+  constructor(endpoint: string, updateEndpoint?: string, timeoutMs = 30_000) {
     this.endpoint = endpoint
     // Fuseki convention: /sparql for query, /update for updates
     this.updateEndpoint = updateEndpoint || endpoint.replace('/sparql', '/update')
+    this.timeoutMs = timeoutMs
+  }
+
+  private get signal(): AbortSignal {
+    return AbortSignal.timeout(this.timeoutMs)
   }
 
   async isReady(): Promise<boolean> {
@@ -23,6 +29,7 @@ export class RemoteSparqlStore implements SparqlStore {
           Accept: 'application/sparql-results+json',
         },
         body: 'ASK { ?s ?p ?o }',
+        signal: this.signal,
       })
       return response.ok
     } catch {
@@ -38,6 +45,7 @@ export class RemoteSparqlStore implements SparqlStore {
         Accept: 'application/sparql-results+json',
       },
       body: sparql,
+      signal: this.signal,
     })
 
     if (!response.ok) {
@@ -55,6 +63,7 @@ export class RemoteSparqlStore implements SparqlStore {
         'Content-Type': 'application/sparql-update',
       },
       body: sparql,
+      signal: this.signal,
     })
 
     if (!response.ok) {
@@ -72,6 +81,7 @@ export class RemoteSparqlStore implements SparqlStore {
       method: 'POST',
       headers: { 'Content-Type': 'text/turtle' },
       body: data,
+      signal: this.signal,
     })
 
     if (!response.ok) {
@@ -89,6 +99,7 @@ export class RemoteSparqlStore implements SparqlStore {
       method: 'POST',
       headers: { 'Content-Type': 'application/ld+json' },
       body: data,
+      signal: this.signal,
     })
 
     if (!response.ok) {

@@ -100,10 +100,10 @@ const RULES = `
 3. ONLY fill slots where you have HIGH confidence the user's intent maps to a valid value
 4. For ambiguous terms, report them as gaps — do NOT guess a slot
 5. **YOU are the synonym resolver.** Use your language understanding to map user terms to ontology values by reading the SHACL shapes (e.g., "highway"/"freeway"/"Autobahn" → \`roadTypes\` value "motorway" from \`sh:in\`)
-4. If a concept is close but not exact, set confidence to "medium" and mention in interpretation, but still fill the slot with the nearest valid value
-5. If a concept has NO mapping at all, report it only as a gap
-6. ALWAYS extract numeric constraints into ranges — never ignore them
-7. For \`sh:pattern\` properties (like country codes), generate values matching the pattern (e.g., "Germany" → "DE" for a 2-letter alpha pattern)
+6. If a concept is close but not exact, set confidence to "medium" and mention in interpretation, but still fill the slot with the nearest valid value
+7. If a concept has NO mapping at all, report it only as a gap
+8. ALWAYS extract numeric constraints into ranges — never ignore them
+9. For \`sh:pattern\` properties (like country codes), generate values matching the pattern (e.g., "Germany" → "DE" for a 2-letter alpha pattern)
 
 ## Tiered Confidence
 
