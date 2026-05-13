@@ -203,6 +203,7 @@ export async function getPersistentSession(): Promise<CopilotSession> {
 
     const session = await c.createSession({
       model: config.AI_MODEL,
+      reasoningEffort: 'low',
       onPermissionRequest: approveAll,
       systemMessage: { mode: 'replace', content: prompt },
       tools: [buildPersistentSubmitSlotsTool()],

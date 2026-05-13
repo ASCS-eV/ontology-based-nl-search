@@ -73,6 +73,7 @@ function findBestMatch(
   value: string,
   allowedValues: string[]
 ): { match: string; distance: number; similarity: number } | null {
+  if (!value) return null
   const normalizedValue = value.toLowerCase().trim()
 
   let bestMatch: string | null = null
@@ -123,6 +124,7 @@ function getSuggestions(
   allowedValues: string[],
   max: number = MAX_SUGGESTIONS
 ): string[] {
+  if (!value) return []
   const normalizedValue = value.toLowerCase().trim()
 
   return allowedValues
@@ -226,8 +228,12 @@ export function validateSlots(
         })
         correctedFilters.set(propertyName, result.match)
       } else {
-        // No match — demote to gap
+        // No match — keep as low-confidence mapped term so it stays in refine UI
         const suggestions = getSuggestions(term.mapped, allowedValues)
+        validatedTerms.push({
+          ...term,
+          confidence: 'low' as MappedTerm['confidence'],
+        })
         validatedGaps.push({
           term: term.input,
           reason: `"${term.mapped}" is not a valid value for ${propertyName}`,
@@ -419,7 +425,7 @@ function enrichGapWithSuggestions(
 
   for (const [propName, { allowedValues }] of allowedIndex) {
     for (const allowed of allowedValues) {
-      const score = similarity(gap.term.toLowerCase(), allowed.toLowerCase())
+      const score = similarity((gap.term ?? '').toLowerCase(), allowed.toLowerCase())
       if (score >= MIN_SUGGESTION_SIMILARITY) {
         allSuggestions.push({ value: allowed, score, property: propName })
       }
