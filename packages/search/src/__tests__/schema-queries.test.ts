@@ -121,35 +121,35 @@ describe('schema-queries', () => {
   })
 
   describe('queryDomainReferences', () => {
-    it('discovers domain reference relationships', async () => {
+    it('discovers domain reference relationships from SHACL shapes', async () => {
       const store = await getInitializedStore()
       const refs = await queryDomainReferences(store)
 
-      // May be empty if no cross-domain references exist in test data
-      // But structure should be correct
-      if (refs.length > 0) {
-        const ref = refs[0]
-        expect(ref).toHaveProperty('parentDomain')
-        expect(ref).toHaveProperty('childDomain')
-        expect(typeof ref.parentDomain).toBe('string')
-        expect(typeof ref.childDomain).toBe('string')
-      }
+      expect(refs.length).toBeGreaterThan(0)
+
+      const ref = refs[0]
+      expect(ref).toHaveProperty('parentDomain')
+      expect(ref).toHaveProperty('childDomain')
+      expect(typeof ref.parentDomain).toBe('string')
+      expect(typeof ref.childDomain).toBe('string')
     })
 
-    it('finds scenario → hdmap reference if it exists', async () => {
+    it('discovers scenario → hdmap reference', async () => {
       const store = await getInitializedStore()
       const refs = await queryDomainReferences(store)
 
-      // Scenario should reference hdmap and environment-model
-      const scenarioRefs = refs.filter((r) => r.parentDomain === 'scenario')
+      const hdmapRef = refs.find((r) => r.parentDomain === 'scenario' && r.childDomain === 'hdmap')
+      expect(hdmapRef).toBeDefined()
+    })
 
-      if (scenarioRefs.length > 0) {
-        const childDomains = scenarioRefs.map((r) => r.childDomain)
-        // At least one of these should be present
-        const hasExpected =
-          childDomains.includes('hdmap') || childDomains.includes('environment-model')
-        expect(hasExpected).toBe(true)
-      }
+    it('discovers scenario → environment-model reference', async () => {
+      const store = await getInitializedStore()
+      const refs = await queryDomainReferences(store)
+
+      const envRef = refs.find(
+        (r) => r.parentDomain === 'scenario' && r.childDomain === 'environment-model'
+      )
+      expect(envRef).toBeDefined()
     })
 
     it('returns distinct parent-child pairs', async () => {
