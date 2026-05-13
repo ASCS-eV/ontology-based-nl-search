@@ -1,8 +1,8 @@
 export {
-  ASSET_DOMAINS,
   compileAllCountQueries,
   compileCountQuery,
   compileSlots,
+  getAssetDomains,
 } from './compiler.js'
 export { getSearchService, resetSearchService, searchNl, searchRefine } from './factory.js'
 export { getInitializedStore } from './init.js'

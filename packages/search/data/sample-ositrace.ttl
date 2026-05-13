@@ -1,0 +1,2958 @@
+@prefix ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/> .
+@prefix envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/> .
+@prefix georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/> .
+@prefix manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/> .
+@prefix gx: <https://w3id.org/gaia-x/development#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# --- OSI Trace 1: San Francisco town OSI Trace ---
+
+<did:web:osidata.io:OSITrace:san-francisco-town-001> a ositrace:OSITrace ;
+  rdfs:label "San Francisco town OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "San Francisco town OSI Trace" ;
+    gx:description "SensorData trace of town road in San Francisco, California" ;
+    gx:version "1.2.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "town" ;
+      ositrace:laneTypes "median" , "entry" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "47862"^^xsd:integer ;
+      ositrace:numberOfChannels "5"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "camera" ;
+      ositrace:measurementSystem "CARLA Simulator"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-CA" ;
+        georeference:region "California" ;
+        georeference:city "San Francisco"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 2: Berlin town OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:berlin-town-002> a ositrace:OSITrace ;
+  rdfs:label "Berlin town OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Berlin town OSI Trace" ;
+    gx:description "SensorView trace of town road in Berlin, Berlin" ;
+    gx:version "1.3.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "town" ;
+      ositrace:laneTypes "biking" , "parking" ;
+      ositrace:levelOfDetail "motorbike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "20208"^^xsd:integer ;
+      ositrace:numberOfChannels "6"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BE" ;
+        georeference:region "Berlin" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 3: Stuttgart unknown OSI Trace ---
+
+<did:web:osidata.io:OSITrace:stuttgart-unknown-003> a ositrace:OSITrace ;
+  rdfs:label "Stuttgart unknown OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Stuttgart unknown OSI Trace" ;
+    gx:description "SensorView trace of unknown road in Stuttgart, Baden-Wuerttemberg" ;
+    gx:version "1.4.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "unknown" ;
+      ositrace:laneTypes "curb" , "driving" ;
+      ositrace:levelOfDetail "building" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "24189"^^xsd:integer ;
+      ositrace:numberOfChannels "1"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "real-world recording" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BW" ;
+        georeference:region "Baden-Wuerttemberg" ;
+        georeference:city "Stuttgart"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 4: Amsterdam pedestrian OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:amsterdam-pedestrian-004> a ositrace:OSITrace ;
+  rdfs:label "Amsterdam pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Amsterdam pedestrian OSI Trace" ;
+    gx:description "SensorData trace of pedestrian road in Amsterdam, North Holland" ;
+    gx:version "1.1.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "restricted" , "exit" ;
+      ositrace:levelOfDetail "bus" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "47016"^^xsd:integer ;
+      ositrace:numberOfChannels "4"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:state "NL-NH" ;
+        georeference:region "North Holland" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 5: Milan town Expressway OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:milan-townExpressway-005> a ositrace:OSITrace ;
+  rdfs:label "Milan town Expressway OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Milan town Expressway OSI Trace" ;
+    gx:description "SensorView trace of townExpressway road in Milan, Lombardy" ;
+    gx:version "2.3.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townExpressway" ;
+      ositrace:laneTypes "offRamp" , "curb" ;
+      ositrace:levelOfDetail "bus" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "32488"^^xsd:integer ;
+      ositrace:numberOfChannels "5"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "camera" ;
+      ositrace:measurementSystem "IPG CarMaker"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:state "IT-25" ;
+        georeference:region "Lombardy" ;
+        georeference:city "Milan"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 6: Hamburg unknown OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:hamburg-unknown-006> a ositrace:OSITrace ;
+  rdfs:label "Hamburg unknown OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Hamburg unknown OSI Trace" ;
+    gx:description "SensorView trace of unknown road in Hamburg, Hamburg" ;
+    gx:version "1.5.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "unknown" ;
+      ositrace:laneTypes "restricted" , "onRamp" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "3328"^^xsd:integer ;
+      ositrace:numberOfChannels "6"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "simulation" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HH" ;
+        georeference:region "Hamburg" ;
+        georeference:city "Hamburg"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 7: Gothenburg pedestrian OSI Trace ---
+
+<did:web:osidata.io:OSITrace:gothenburg-pedestrian-007> a ositrace:OSITrace ;
+  rdfs:label "Gothenburg pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg pedestrian OSI Trace" ;
+    gx:description "SensorData trace of pedestrian road in Gothenburg, Stockholm" ;
+    gx:version "1.3.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "restricted" , "border" ;
+      ositrace:levelOfDetail "bus" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "19467"^^xsd:integer ;
+      ositrace:numberOfChannels "1"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 8: Paris rural OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:paris-rural-008> a ositrace:OSITrace ;
+  rdfs:label "Paris rural OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Paris rural OSI Trace" ;
+    gx:description "SensorView trace of rural road in Paris, Ile-de-France" ;
+    gx:version "1.0.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "rural" ;
+      ositrace:laneTypes "driving" , "median" ;
+      ositrace:levelOfDetail "motorbike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "15452"^^xsd:integer ;
+      ositrace:numberOfChannels "4"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "radar" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:state "FR-IDF" ;
+        georeference:region "Ile-de-France" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 9: Berlin motorway OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:berlin-motorway-009> a ositrace:OSITrace ;
+  rdfs:label "Berlin motorway OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Berlin motorway OSI Trace" ;
+    gx:description "SensorView trace of motorway road in Berlin, Berlin" ;
+    gx:version "3.7.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "motorway" ;
+      ositrace:laneTypes "shoulder" , "exit" ;
+      ositrace:levelOfDetail "motorbike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "13035"^^xsd:integer ;
+      ositrace:numberOfChannels "2"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "real-world recording" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BE" ;
+        georeference:region "Berlin" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 10: San Francisco town Collector OSI Trace ---
+
+<did:web:osidata.io:OSITrace:san-francisco-townCollector-010> a ositrace:OSITrace ;
+  rdfs:label "San Francisco town Collector OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "San Francisco town Collector OSI Trace" ;
+    gx:description "SensorView trace of townCollector road in San Francisco, California" ;
+    gx:version "2.9.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townCollector" ;
+      ositrace:laneTypes "entry" , "biking" ;
+      ositrace:levelOfDetail "bus" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "8382"^^xsd:integer ;
+      ositrace:numberOfChannels "1"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "real-world recording" ;
+      ositrace:measurementSystem "CARLA Simulator"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-CA" ;
+        georeference:region "California" ;
+        georeference:city "San Francisco"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 11: Frankfurt unknown OSI Trace ---
+
+<did:web:avrecord.io:OSITrace:frankfurt-unknown-011> a ositrace:OSITrace ;
+  rdfs:label "Frankfurt unknown OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Frankfurt unknown OSI Trace" ;
+    gx:description "GroundTruth trace of unknown road in Frankfurt, Hesse" ;
+    gx:version "2.1.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "unknown" ;
+      ositrace:laneTypes "driving" , "entry" ;
+      ositrace:levelOfDetail "bus" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "44848"^^xsd:integer ;
+      ositrace:numberOfChannels "3"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.1"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "real-world recording" ;
+      ositrace:measurementSystem "IPG CarMaker"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HE" ;
+        georeference:region "Hesse" ;
+        georeference:city "Frankfurt"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 12: Munich town Expressway OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:munich-townExpressway-012> a ositrace:OSITrace ;
+  rdfs:label "Munich town Expressway OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Munich town Expressway OSI Trace" ;
+    gx:description "SensorView trace of townExpressway road in Munich, Bavaria" ;
+    gx:version "1.8.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townExpressway" ;
+      ositrace:laneTypes "onRamp" , "median" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "1666"^^xsd:integer ;
+      ositrace:numberOfChannels "7"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "synthetic generation" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BY" ;
+        georeference:region "Bavaria" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 13: Seoul town OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:seoul-town-013> a ositrace:OSITrace ;
+  rdfs:label "Seoul town OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Seoul town OSI Trace" ;
+    gx:description "SensorData trace of town road in Seoul, Seoul" ;
+    gx:version "2.2.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "town" ;
+      ositrace:laneTypes "median" , "offRamp" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "12691"^^xsd:integer ;
+      ositrace:numberOfChannels "4"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "radar" ;
+      ositrace:measurementSystem "IPG CarMaker"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "KR" ;
+        georeference:state "KR-11" ;
+        georeference:region "Seoul" ;
+        georeference:city "Seoul"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 14: Seoul unknown OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:seoul-unknown-014> a ositrace:OSITrace ;
+  rdfs:label "Seoul unknown OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Seoul unknown OSI Trace" ;
+    gx:description "GroundTruth trace of unknown road in Seoul, Seoul" ;
+    gx:version "2.0.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "unknown" ;
+      ositrace:laneTypes "exit" , "entry" ;
+      ositrace:levelOfDetail "bus" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "30474"^^xsd:integer ;
+      ositrace:numberOfChannels "7"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.1"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "simulation" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "KR" ;
+        georeference:state "KR-11" ;
+        georeference:region "Seoul" ;
+        georeference:city "Seoul"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 15: Shanghai town Arterial OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:shanghai-townArterial-015> a ositrace:OSITrace ;
+  rdfs:label "Shanghai town Arterial OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Shanghai town Arterial OSI Trace" ;
+    gx:description "SensorView trace of townArterial road in Shanghai, Shanghai" ;
+    gx:version "1.9.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townArterial" ;
+      ositrace:laneTypes "border" , "entry" ;
+      ositrace:levelOfDetail "motorbike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "16757"^^xsd:integer ;
+      ositrace:numberOfChannels "7"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "CARLA Simulator"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "CN" ;
+        georeference:state "CN-SH" ;
+        georeference:region "Shanghai" ;
+        georeference:city "Shanghai"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 16: Amsterdam rural OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:amsterdam-rural-016> a ositrace:OSITrace ;
+  rdfs:label "Amsterdam rural OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Amsterdam rural OSI Trace" ;
+    gx:description "GroundTruth trace of rural road in Amsterdam, North Holland" ;
+    gx:version "2.1.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "rural" ;
+      ositrace:laneTypes "median" , "offRamp" ;
+      ositrace:levelOfDetail "motorbike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "32606"^^xsd:integer ;
+      ositrace:numberOfChannels "6"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.1"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "synthetic generation" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:state "NL-NH" ;
+        georeference:region "North Holland" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 17: Detroit pedestrian OSI Trace ---
+
+<did:web:avrecord.io:OSITrace:detroit-pedestrian-017> a ositrace:OSITrace ;
+  rdfs:label "Detroit pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit pedestrian OSI Trace" ;
+    gx:description "SensorData trace of pedestrian road in Detroit, Michigan" ;
+    gx:version "3.2.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "driving" , "entry" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "19790"^^xsd:integer ;
+      ositrace:numberOfChannels "2"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.1"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "real-world recording" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 18: Gothenburg town OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:gothenburg-town-018> a ositrace:OSITrace ;
+  rdfs:label "Gothenburg town OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg town OSI Trace" ;
+    gx:description "SensorView trace of town road in Gothenburg, Stockholm" ;
+    gx:version "1.1.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "town" ;
+      ositrace:laneTypes "exit" , "median" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "4740"^^xsd:integer ;
+      ositrace:numberOfChannels "6"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "synthetic generation" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 19: Gothenburg pedestrian OSI Trace ---
+
+<did:web:osidata.io:OSITrace:gothenburg-pedestrian-019> a ositrace:OSITrace ;
+  rdfs:label "Gothenburg pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg pedestrian OSI Trace" ;
+    gx:description "SensorView trace of pedestrian road in Gothenburg, Stockholm" ;
+    gx:version "2.8.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "parking" , "median" ;
+      ositrace:levelOfDetail "motorbike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "38834"^^xsd:integer ;
+      ositrace:numberOfChannels "2"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.1"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "simulation" ;
+      ositrace:measurementSystem "CARLA Simulator"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 20: San Francisco town OSI Trace ---
+
+<did:web:avrecord.io:OSITrace:san-francisco-town-020> a ositrace:OSITrace ;
+  rdfs:label "San Francisco town OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "San Francisco town OSI Trace" ;
+    gx:description "SensorData trace of town road in San Francisco, California" ;
+    gx:version "2.6.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "town" ;
+      ositrace:laneTypes "parking" , "biking" ;
+      ositrace:levelOfDetail "building" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "45084"^^xsd:integer ;
+      ositrace:numberOfChannels "5"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.1"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "radar" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-CA" ;
+        georeference:region "California" ;
+        georeference:city "San Francisco"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 21: Tokyo motorway OSI Trace ---
+
+<did:web:osidata.io:OSITrace:tokyo-motorway-021> a ositrace:OSITrace ;
+  rdfs:label "Tokyo motorway OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Tokyo motorway OSI Trace" ;
+    gx:description "SensorData trace of motorway road in Tokyo, Tokyo" ;
+    gx:version "3.2.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "motorway" ;
+      ositrace:laneTypes "biking" , "median" ;
+      ositrace:levelOfDetail "bus" ;
+      ositrace:trafficDirection "left-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "42884"^^xsd:integer ;
+      ositrace:numberOfChannels "2"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "synthetic generation" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "JP" ;
+        georeference:state "JP-13" ;
+        georeference:region "Tokyo" ;
+        georeference:city "Tokyo"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 22: Milan pedestrian OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:milan-pedestrian-022> a ositrace:OSITrace ;
+  rdfs:label "Milan pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Milan pedestrian OSI Trace" ;
+    gx:description "GroundTruth trace of pedestrian road in Milan, Lombardy" ;
+    gx:version "3.5.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "curb" , "border" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "11888"^^xsd:integer ;
+      ositrace:numberOfChannels "5"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "simulation" ;
+      ositrace:measurementSystem "CARLA Simulator"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:state "IT-25" ;
+        georeference:region "Lombardy" ;
+        georeference:city "Milan"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 23: Hamburg pedestrian OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:hamburg-pedestrian-023> a ositrace:OSITrace ;
+  rdfs:label "Hamburg pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Hamburg pedestrian OSI Trace" ;
+    gx:description "GroundTruth trace of pedestrian road in Hamburg, Hamburg" ;
+    gx:version "3.1.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "restricted" , "parking" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "40645"^^xsd:integer ;
+      ositrace:numberOfChannels "3"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "camera" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HH" ;
+        georeference:region "Hamburg" ;
+        georeference:city "Hamburg"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 24: San Francisco pedestrian OSI Trace ---
+
+<did:web:avrecord.io:OSITrace:san-francisco-pedestrian-024> a ositrace:OSITrace ;
+  rdfs:label "San Francisco pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "San Francisco pedestrian OSI Trace" ;
+    gx:description "SensorView trace of pedestrian road in San Francisco, California" ;
+    gx:version "2.2.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "onRamp" , "parking" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "36741"^^xsd:integer ;
+      ositrace:numberOfChannels "5"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "radar" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-CA" ;
+        georeference:region "California" ;
+        georeference:city "San Francisco"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 25: Detroit pedestrian OSI Trace ---
+
+<did:web:osidata.io:OSITrace:detroit-pedestrian-025> a ositrace:OSITrace ;
+  rdfs:label "Detroit pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit pedestrian OSI Trace" ;
+    gx:description "GroundTruth trace of pedestrian road in Detroit, Michigan" ;
+    gx:version "3.2.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "driving" , "parking" ;
+      ositrace:levelOfDetail "building" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "6743"^^xsd:integer ;
+      ositrace:numberOfChannels "1"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "simulation" ;
+      ositrace:measurementSystem "IPG CarMaker"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 26: San Francisco unknown OSI Trace ---
+
+<did:web:avrecord.io:OSITrace:san-francisco-unknown-026> a ositrace:OSITrace ;
+  rdfs:label "San Francisco unknown OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "San Francisco unknown OSI Trace" ;
+    gx:description "GroundTruth trace of unknown road in San Francisco, California" ;
+    gx:version "3.1.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "unknown" ;
+      ositrace:laneTypes "median" , "parking" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "338"^^xsd:integer ;
+      ositrace:numberOfChannels "6"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "CARLA Simulator"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-CA" ;
+        georeference:region "California" ;
+        georeference:city "San Francisco"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 27: Shanghai unknown OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:shanghai-unknown-027> a ositrace:OSITrace ;
+  rdfs:label "Shanghai unknown OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Shanghai unknown OSI Trace" ;
+    gx:description "SensorData trace of unknown road in Shanghai, Shanghai" ;
+    gx:version "2.8.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "unknown" ;
+      ositrace:laneTypes "border" , "restricted" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "5835"^^xsd:integer ;
+      ositrace:numberOfChannels "8"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "radar" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "CN" ;
+        georeference:state "CN-SH" ;
+        georeference:region "Shanghai" ;
+        georeference:city "Shanghai"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 28: San Francisco town Arterial OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:san-francisco-townArterial-028> a ositrace:OSITrace ;
+  rdfs:label "San Francisco town Arterial OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "San Francisco town Arterial OSI Trace" ;
+    gx:description "SensorData trace of townArterial road in San Francisco, California" ;
+    gx:version "2.0.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townArterial" ;
+      ositrace:laneTypes "biking" , "median" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "33012"^^xsd:integer ;
+      ositrace:numberOfChannels "4"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "simulation" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-CA" ;
+        georeference:region "California" ;
+        georeference:city "San Francisco"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 29: Milan pedestrian OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:milan-pedestrian-029> a ositrace:OSITrace ;
+  rdfs:label "Milan pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Milan pedestrian OSI Trace" ;
+    gx:description "GroundTruth trace of pedestrian road in Milan, Lombardy" ;
+    gx:version "1.9.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "exit" , "onRamp" ;
+      ositrace:levelOfDetail "motorbike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "38219"^^xsd:integer ;
+      ositrace:numberOfChannels "7"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:state "IT-25" ;
+        georeference:region "Lombardy" ;
+        georeference:city "Milan"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 30: Frankfurt low Speed OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:frankfurt-lowSpeed-030> a ositrace:OSITrace ;
+  rdfs:label "Frankfurt low Speed OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Frankfurt low Speed OSI Trace" ;
+    gx:description "SensorView trace of lowSpeed road in Frankfurt, Hesse" ;
+    gx:version "2.5.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "lowSpeed" ;
+      ositrace:laneTypes "border" , "exit" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "22955"^^xsd:integer ;
+      ositrace:numberOfChannels "6"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "CARLA Simulator"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HE" ;
+        georeference:region "Hesse" ;
+        georeference:city "Frankfurt"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 31: Stuttgart rural OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:stuttgart-rural-031> a ositrace:OSITrace ;
+  rdfs:label "Stuttgart rural OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Stuttgart rural OSI Trace" ;
+    gx:description "GroundTruth trace of rural road in Stuttgart, Baden-Wuerttemberg" ;
+    gx:version "3.4.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "rural" ;
+      ositrace:laneTypes "onRamp" , "median" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "41236"^^xsd:integer ;
+      ositrace:numberOfChannels "4"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.1"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BW" ;
+        georeference:region "Baden-Wuerttemberg" ;
+        georeference:city "Stuttgart"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 32: Seoul town Collector OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:seoul-townCollector-032> a ositrace:OSITrace ;
+  rdfs:label "Seoul town Collector OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Seoul town Collector OSI Trace" ;
+    gx:description "SensorView trace of townCollector road in Seoul, Seoul" ;
+    gx:version "2.2.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townCollector" ;
+      ositrace:laneTypes "restricted" , "curb" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "19776"^^xsd:integer ;
+      ositrace:numberOfChannels "3"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.1"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "camera" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "KR" ;
+        georeference:state "KR-11" ;
+        georeference:region "Seoul" ;
+        georeference:city "Seoul"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 33: London town Expressway OSI Trace ---
+
+<did:web:osidata.io:OSITrace:london-townExpressway-033> a ositrace:OSITrace ;
+  rdfs:label "London town Expressway OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "London town Expressway OSI Trace" ;
+    gx:description "SensorView trace of townExpressway road in London, London" ;
+    gx:version "1.6.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townExpressway" ;
+      ositrace:laneTypes "exit" , "driving" ;
+      ositrace:levelOfDetail "building" ;
+      ositrace:trafficDirection "left-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "44131"^^xsd:integer ;
+      ositrace:numberOfChannels "7"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "real-world recording" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "GB" ;
+        georeference:state "GB-LND" ;
+        georeference:region "London" ;
+        georeference:city "London"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 34: Frankfurt rural OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:frankfurt-rural-034> a ositrace:OSITrace ;
+  rdfs:label "Frankfurt rural OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Frankfurt rural OSI Trace" ;
+    gx:description "SensorData trace of rural road in Frankfurt, Hesse" ;
+    gx:version "2.9.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "rural" ;
+      ositrace:laneTypes "shoulder" , "driving" ;
+      ositrace:levelOfDetail "bus" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "40274"^^xsd:integer ;
+      ositrace:numberOfChannels "8"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "camera" ;
+      ositrace:measurementSystem "IPG CarMaker"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HE" ;
+        georeference:region "Hesse" ;
+        georeference:city "Frankfurt"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 35: Berlin bicycle OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:berlin-bicycle-035> a ositrace:OSITrace ;
+  rdfs:label "Berlin bicycle OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Berlin bicycle OSI Trace" ;
+    gx:description "SensorData trace of bicycle road in Berlin, Berlin" ;
+    gx:version "1.1.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "bicycle" ;
+      ositrace:laneTypes "onRamp" , "exit" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "37397"^^xsd:integer ;
+      ositrace:numberOfChannels "8"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BE" ;
+        georeference:region "Berlin" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 36: Hamburg town Collector OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:hamburg-townCollector-036> a ositrace:OSITrace ;
+  rdfs:label "Hamburg town Collector OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Hamburg town Collector OSI Trace" ;
+    gx:description "GroundTruth trace of townCollector road in Hamburg, Hamburg" ;
+    gx:version "1.2.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townCollector" ;
+      ositrace:laneTypes "shoulder" , "entry" ;
+      ositrace:levelOfDetail "motorbike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "41309"^^xsd:integer ;
+      ositrace:numberOfChannels "4"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "camera" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HH" ;
+        georeference:region "Hamburg" ;
+        georeference:city "Hamburg"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 37: Hamburg rural OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:hamburg-rural-037> a ositrace:OSITrace ;
+  rdfs:label "Hamburg rural OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Hamburg rural OSI Trace" ;
+    gx:description "SensorData trace of rural road in Hamburg, Hamburg" ;
+    gx:version "1.6.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "rural" ;
+      ositrace:laneTypes "driving" , "exit" ;
+      ositrace:levelOfDetail "motorbike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "28315"^^xsd:integer ;
+      ositrace:numberOfChannels "5"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "real-world recording" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HH" ;
+        georeference:region "Hamburg" ;
+        georeference:city "Hamburg"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 38: Seoul rural OSI Trace ---
+
+<did:web:avrecord.io:OSITrace:seoul-rural-038> a ositrace:OSITrace ;
+  rdfs:label "Seoul rural OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Seoul rural OSI Trace" ;
+    gx:description "GroundTruth trace of rural road in Seoul, Seoul" ;
+    gx:version "2.9.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "rural" ;
+      ositrace:laneTypes "restricted" , "driving" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "38722"^^xsd:integer ;
+      ositrace:numberOfChannels "6"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "radar" ;
+      ositrace:measurementSystem "CARLA Simulator"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "KR" ;
+        georeference:state "KR-11" ;
+        georeference:region "Seoul" ;
+        georeference:city "Seoul"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 39: Berlin town Collector OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:berlin-townCollector-039> a ositrace:OSITrace ;
+  rdfs:label "Berlin town Collector OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Berlin town Collector OSI Trace" ;
+    gx:description "SensorData trace of townCollector road in Berlin, Berlin" ;
+    gx:version "3.7.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townCollector" ;
+      ositrace:laneTypes "driving" , "entry" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "18386"^^xsd:integer ;
+      ositrace:numberOfChannels "6"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "real-world recording" ;
+      ositrace:measurementSystem "CARLA Simulator"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BE" ;
+        georeference:region "Berlin" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 40: Hamburg pedestrian OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:hamburg-pedestrian-040> a ositrace:OSITrace ;
+  rdfs:label "Hamburg pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Hamburg pedestrian OSI Trace" ;
+    gx:description "SensorData trace of pedestrian road in Hamburg, Hamburg" ;
+    gx:version "2.1.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "parking" , "exit" ;
+      ositrace:levelOfDetail "building" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "14420"^^xsd:integer ;
+      ositrace:numberOfChannels "8"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.1"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HH" ;
+        georeference:region "Hamburg" ;
+        georeference:city "Hamburg"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 41: Berlin rural OSI Trace ---
+
+<did:web:avrecord.io:OSITrace:berlin-rural-041> a ositrace:OSITrace ;
+  rdfs:label "Berlin rural OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Berlin rural OSI Trace" ;
+    gx:description "GroundTruth trace of rural road in Berlin, Berlin" ;
+    gx:version "2.6.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "rural" ;
+      ositrace:laneTypes "exit" , "curb" ;
+      ositrace:levelOfDetail "building" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "103"^^xsd:integer ;
+      ositrace:numberOfChannels "5"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "CARLA Simulator"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BE" ;
+        georeference:region "Berlin" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 42: Munich town Expressway OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:munich-townExpressway-042> a ositrace:OSITrace ;
+  rdfs:label "Munich town Expressway OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Munich town Expressway OSI Trace" ;
+    gx:description "SensorData trace of townExpressway road in Munich, Bavaria" ;
+    gx:version "3.1.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townExpressway" ;
+      ositrace:laneTypes "median" , "driving" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "14730"^^xsd:integer ;
+      ositrace:numberOfChannels "4"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "simulation" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BY" ;
+        georeference:region "Bavaria" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 43: Frankfurt town Expressway OSI Trace ---
+
+<did:web:osidata.io:OSITrace:frankfurt-townExpressway-043> a ositrace:OSITrace ;
+  rdfs:label "Frankfurt town Expressway OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Frankfurt town Expressway OSI Trace" ;
+    gx:description "GroundTruth trace of townExpressway road in Frankfurt, Hesse" ;
+    gx:version "3.5.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townExpressway" ;
+      ositrace:laneTypes "restricted" , "border" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "33112"^^xsd:integer ;
+      ositrace:numberOfChannels "5"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "camera" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HE" ;
+        georeference:region "Hesse" ;
+        georeference:city "Frankfurt"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 44: Milan rural OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:milan-rural-044> a ositrace:OSITrace ;
+  rdfs:label "Milan rural OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Milan rural OSI Trace" ;
+    gx:description "SensorView trace of rural road in Milan, Lombardy" ;
+    gx:version "1.3.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "rural" ;
+      ositrace:laneTypes "offRamp" , "exit" ;
+      ositrace:levelOfDetail "bus" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "7293"^^xsd:integer ;
+      ositrace:numberOfChannels "3"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "radar" ;
+      ositrace:measurementSystem "IPG CarMaker"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:state "IT-25" ;
+        georeference:region "Lombardy" ;
+        georeference:city "Milan"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 45: Stuttgart rural OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:stuttgart-rural-045> a ositrace:OSITrace ;
+  rdfs:label "Stuttgart rural OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Stuttgart rural OSI Trace" ;
+    gx:description "SensorData trace of rural road in Stuttgart, Baden-Wuerttemberg" ;
+    gx:version "3.1.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "rural" ;
+      ositrace:laneTypes "median" , "parking" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "23154"^^xsd:integer ;
+      ositrace:numberOfChannels "3"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.1"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BW" ;
+        georeference:region "Baden-Wuerttemberg" ;
+        georeference:city "Stuttgart"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 46: Gothenburg town OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:gothenburg-town-046> a ositrace:OSITrace ;
+  rdfs:label "Gothenburg town OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg town OSI Trace" ;
+    gx:description "GroundTruth trace of town road in Gothenburg, Stockholm" ;
+    gx:version "2.5.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "town" ;
+      ositrace:laneTypes "exit" , "driving" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "24345"^^xsd:integer ;
+      ositrace:numberOfChannels "5"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "radar" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 47: London pedestrian OSI Trace ---
+
+<did:web:tracecorp.io:OSITrace:london-pedestrian-047> a ositrace:OSITrace ;
+  rdfs:label "London pedestrian OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "London pedestrian OSI Trace" ;
+    gx:description "SensorView trace of pedestrian road in London, London" ;
+    gx:version "1.5.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "pedestrian" ;
+      ositrace:laneTypes "exit" , "curb" ;
+      ositrace:levelOfDetail "building" ;
+      ositrace:trafficDirection "left-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "37302"^^xsd:integer ;
+      ositrace:numberOfChannels "2"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "GB" ;
+        georeference:state "GB-LND" ;
+        georeference:region "London" ;
+        georeference:city "London"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 48: Paris town Arterial OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:paris-townArterial-048> a ositrace:OSITrace ;
+  rdfs:label "Paris town Arterial OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Paris town Arterial OSI Trace" ;
+    gx:description "GroundTruth trace of townArterial road in Paris, Ile-de-France" ;
+    gx:version "2.9.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "townArterial" ;
+      ositrace:laneTypes "border" , "parking" ;
+      ositrace:levelOfDetail "motorbike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "34912"^^xsd:integer ;
+      ositrace:numberOfChannels "3"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:state "FR-IDF" ;
+        georeference:region "Ile-de-France" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 49: Gothenburg bicycle OSI Trace ---
+
+<did:web:avrecord.io:OSITrace:gothenburg-bicycle-049> a ositrace:OSITrace ;
+  rdfs:label "Gothenburg bicycle OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg bicycle OSI Trace" ;
+    gx:description "SensorData trace of bicycle road in Gothenburg, Stockholm" ;
+    gx:version "3.4.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "bicycle" ;
+      ositrace:laneTypes "shoulder" , "curb" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "5421"^^xsd:integer ;
+      ositrace:numberOfChannels "2"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "simulation" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 50: Milan bicycle OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:milan-bicycle-050> a ositrace:OSITrace ;
+  rdfs:label "Milan bicycle OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Milan bicycle OSI Trace" ;
+    gx:description "SensorData trace of bicycle road in Milan, Lombardy" ;
+    gx:version "3.6.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "bicycle" ;
+      ositrace:laneTypes "driving" , "entry" ;
+      ositrace:levelOfDetail "bike" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "48822"^^xsd:integer ;
+      ositrace:numberOfChannels "6"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.05"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "IPG CarMaker"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:state "IT-25" ;
+        georeference:region "Lombardy" ;
+        georeference:city "Milan"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+

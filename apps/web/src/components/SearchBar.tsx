@@ -43,7 +43,7 @@ export function SearchBar({ onSearch, loading, history = [] }: SearchBarProps) {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onFocus={() => history.length > 0 && !input && setShowHistory(true)}
+          onFocus={() => history.length > 0 && setShowHistory(true)}
           placeholder="e.g. Show me all German highways with 3 lanes..."
           className="w-full px-6 py-4 text-lg border border-gray-300 rounded-full shadow-sm hover:shadow-md focus:shadow-md focus:outline-none focus:border-blue-400 transition-shadow dark:bg-gray-900 dark:border-gray-700 dark:text-white"
           disabled={loading}

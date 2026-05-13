@@ -9,7 +9,8 @@ const DATA_DIR = join(__dirname, '..', 'data')
 
 /**
  * Load sample TTL data files for development/testing.
- * Loads HD map assets (100) and scenario assets (50).
+ * Loads 5 sample datasets spanning 267 assets across hdmap, scenario,
+ * ositrace, environment-model, and surface-model domains.
  */
 function loadDataFile(filename: string): string {
   try {
@@ -71,13 +72,28 @@ const FALLBACK_TURTLE = `
 
 /**
  * Load sample data into the SPARQL store for development/testing.
+ * Loads all 5 bundled TTL files and falls back to a single inline HD map if
+ * none of the sample files are present.
  */
 export async function loadSampleData(store: SparqlStore): Promise<void> {
-  const hdmapData = loadDataFile('sample-assets.ttl') || FALLBACK_TURTLE
-  await store.loadTurtle(hdmapData)
+  const dataFiles = [
+    'sample-assets.ttl',
+    'sample-scenarios.ttl',
+    'sample-ositrace.ttl',
+    'sample-environment-models.ttl',
+    'sample-surface-models.ttl',
+  ]
 
-  const scenarioData = loadDataFile('sample-scenarios.ttl')
-  if (scenarioData) {
-    await store.loadTurtle(scenarioData)
+  let loaded = 0
+  for (const file of dataFiles) {
+    const data = loadDataFile(file)
+    if (data) {
+      await store.loadTurtle(data)
+      loaded++
+    }
+  }
+
+  if (loaded === 0) {
+    await store.loadTurtle(FALLBACK_TURTLE)
   }
 }

@@ -11,7 +11,7 @@ import { z } from 'zod'
 const slotSubmissionSchema = z.object({
   slots: z
     .object({
-      domains: z.array(z.string()).default(['hdmap']).describe('Target domain(s)'),
+      domains: z.array(z.string()).default([]).describe('Target domain(s)'),
       filters: z
         .record(z.string(), z.union([z.string(), z.array(z.string())]))
         .default({})

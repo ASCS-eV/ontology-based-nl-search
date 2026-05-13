@@ -1,7 +1,7 @@
 import { internalError } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
-import { ASSET_DOMAINS, compileCountQuery, getInitializedStore } from '@ontology-search/search'
+import { compileCountQuery, getAssetDomains, getInitializedStore } from '@ontology-search/search'
 import { Hono } from 'hono'
 
 import type { AppEnv } from '../types.js'
@@ -16,12 +16,13 @@ statsRoutes.get('/', async (c) => {
     logger.info('Stats request started')
     const store = await getInitializedStore()
     const registry = await buildDomainRegistry()
+    const assetDomains = await getAssetDomains()
 
     const counts: Record<string, number> = {}
     let totalAssets = 0
 
     for (const domainName of registry.domainNames) {
-      if (!ASSET_DOMAINS.has(domainName)) continue
+      if (!assetDomains.has(domainName)) continue
       try {
         const query = await compileCountQuery(domainName)
         const result = await store.query(query)

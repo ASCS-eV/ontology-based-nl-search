@@ -15,6 +15,14 @@ const testVocabulary: OntologyVocabulary = {
       allowedValues: ['motorway', 'rural', 'urban', 'intersection'],
     },
     {
+      localName: 'roadTypes',
+      domain: 'ositrace',
+      iri: 'https://example.org/ositrace/v6/roadTypes',
+      label: 'road types',
+      description: '',
+      allowedValues: ['motorway', 'rural', 'urban', 'intersection'],
+    },
+    {
       localName: 'scenarioCategory',
       domain: 'scenario',
       iri: 'https://example.org/scenario/v6/scenarioCategory',
@@ -41,7 +49,7 @@ const testVocabulary: OntologyVocabulary = {
       datatype: 'float',
     },
   ],
-  domains: ['hdmap', 'scenario'],
+  domains: ['hdmap', 'scenario', 'ositrace'],
 }
 
 describe('correctFilters', () => {
@@ -198,14 +206,31 @@ describe('correctDomains', () => {
   })
 
   it('corrects domain when filters belong to a different domain', () => {
-    // LLM chose "scenario" but roadTypes is an hdmap property
+    // LLM chose "scenario" but roadTypes exists in hdmap+ositrace, not scenario
+    // Since roadTypes doesn't exist in scenario, we should keep scenario AND add the domains where roadTypes exists
     const result = correctDomains(['scenario'], { roadTypes: 'motorway' }, {}, testVocabulary)
+    expect(result).toContain('scenario') // Keep LLM's original choice
+    expect(result).toContain('hdmap') // Add domain where property exists
+    // Note: In reality, this would search scenarios that reference hdmaps/ositraces with motorways
+  })
+
+  it('keeps chosen domain when property exists there (multi-domain property)', () => {
+    // LLM chose "hdmap" and roadTypes exists in hdmap → keep hdmap only
+    const result = correctDomains(['hdmap'], { roadTypes: 'motorway' }, {}, testVocabulary)
     expect(result).toEqual(['hdmap'])
   })
 
+  it('keeps chosen domain when property exists there (ositrace)', () => {
+    // LLM chose "ositrace" and roadTypes exists in ositrace → keep ositrace only
+    const result = correctDomains(['ositrace'], { roadTypes: 'motorway' }, {}, testVocabulary)
+    expect(result).toEqual(['ositrace'])
+  })
+
   it('handles numeric ranges for domain correction', () => {
+    // length only exists in hdmap, so replace scenario with hdmap
     const result = correctDomains(['scenario'], {}, { length: { min: 5 } }, testVocabulary)
-    expect(result).toEqual(['hdmap'])
+    expect(result).toContain('scenario')
+    expect(result).toContain('hdmap')
   })
 
   it('keeps original domains when no filters are present', () => {

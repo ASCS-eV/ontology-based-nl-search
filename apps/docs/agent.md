@@ -12,7 +12,7 @@ sequenceDiagram
     participant L as LLM
     participant T as submit_slots
 
-    S->>L: System prompt (auto-generated vocabulary) + user query
+    S->>L: System prompt (raw SHACL shapes) + user query
     L->>T: submit_slots({ domains, filters, ranges, interpretation, gaps })
     T-->>S: Validated SearchSlots
     Note over S: Slot Validator (fuzzy match + domain fix)
@@ -51,32 +51,46 @@ submit_slots({
 
 ## Context Engineering
 
-The system prompt is **auto-generated from the ontology vocabulary** — it contains exactly what the LLM needs to make correct mappings:
+The system prompt is **auto-generated from raw SHACL ontology shapes** — the LLM reads the native Turtle/SHACL definitions directly, including `sh:in` enumerations, `sh:pattern` constraints, `sh:datatype` declarations, and `sh:description` annotations:
 
 ```mermaid
 graph TD
-    OV["OntologyVocabulary<br/>(extracted at startup)"] --> PB["Prompt Builder"]
+    TTL["22 SHACL files<br/>(298 KB from 21 domains)"] --> SR["SHACL Reader"]
+    SR --> PB["Prompt Builder"]
     PB --> SP["System Prompt"]
-    SP --> PT["Property Tables<br/>roadTypes: motorway, urban, rural, ..."]
-    SP --> NP["Numeric Properties<br/>laneCount (integer), length (float km)"]
+    SP --> RAW["Raw Turtle Shapes<br/>sh:in, sh:pattern, sh:datatype, sh:description"]
     SP --> LOC["Location Fields<br/>country (ISO 3166-1), state, city"]
     SP --> EX["Few-Shot Examples<br/>query → expected submit_slots call"]
 
-    style OV fill:#dcfce7,stroke:#22c55e
+    style TTL fill:#dcfce7,stroke:#22c55e
+    style SR fill:#dbeafe,stroke:#3b82f6
     style PB fill:#dbeafe,stroke:#3b82f6
     style SP fill:#f0f9ff,stroke:#798bb3
 ```
 
+Prompt input currently comes from **22 SHACL files** (about **298 KB** across **21 domains**, excluding `gx`). Those ontology shapes back a runtime sample dataset of **267 assets across 5 domains**: 117 HD maps, 50 scenarios, 50 OSI traces, 30 environment models, and 20 surface models.
+
 ### What the prompt includes
 
-| Section                       | Purpose                                               |
-| ----------------------------- | ----------------------------------------------------- |
-| Domain vocabulary tables      | All valid enum values per property, grouped by domain |
-| Numeric property descriptions | Data type, units, ranges                              |
-| Location field instructions   | ISO codes, free-text allowed                          |
-| Mapping rules                 | "Use exact values from the tables above"              |
-| Gap reporting rules           | "Report unmatched terms with reason and suggestions"  |
-| Few-shot examples             | 3 example queries with expected tool-call output      |
+| Section                     | Purpose                                                                           |
+| --------------------------- | --------------------------------------------------------------------------------- |
+| Raw SHACL shapes per domain | Full Turtle content — the LLM reads `sh:in`, `sh:pattern`, `sh:datatype` natively |
+| Location field instructions | ISO codes, free-text allowed                                                      |
+| Synonym resolution rules    | "YOU are the synonym resolver — map user terms to ontology values"                |
+| Gap reporting rules         | "Report unmatched terms with reason and suggestions"                              |
+| Few-shot examples           | 4 example queries with expected tool-call output                                  |
+
+### Why raw SHACL instead of extracted tables
+
+The LLM reads SHACL Turtle natively and understands the full constraint model:
+
+- **`sh:in (...)`** — enumerated allowed values (the LLM maps synonyms to exact values)
+- **`sh:pattern "..."`** — regex constraints (e.g., 2-letter country codes)
+- **`sh:datatype xsd:integer`** — numeric properties for range queries
+- **`sh:description`** — semantic meaning for better synonym resolution
+- **`sh:name`** — human-readable labels
+
+This eliminates vocabulary extraction as a bottleneck — no properties are missed because the LLM sees **everything** in the SHACL shapes. The `gx` domain is excluded (2.3 MB) because `envited-x` already re-declares the 7 `gx:` properties it uses.
 
 ## Post-LLM Validation Pipeline
 
@@ -106,9 +120,10 @@ graph LR
 
 When the LLM picks the wrong domain (e.g., `scenario` when filters are `roadTypes`, `country`), the validator:
 
-1. Looks up each filter property's domain from the vocabulary index
-2. If all filter properties belong to domain X but LLM chose domain Y → replaces with X
-3. If filters span multiple domains → merges all required domains
+1. Builds a `Map<string, Set<string>>` index so shared properties stay multi-domain aware
+2. Keeps the LLM's choice when a property already exists in one of the selected domains
+3. Adds every missing required domain when filters or ranges point elsewhere
+4. Merges cross-domain queries instead of collapsing them to a single hardcoded winner
 
 ### Confidence Recomputation
 
@@ -126,10 +141,10 @@ The validator removes LLM bias from confidence scores and recomputes objectively
 
 The agent logic works with multiple LLM providers — same validation pipeline, different backends:
 
-| Provider           | SDK                               | Use Case                           |
-| ------------------ | --------------------------------- | ---------------------------------- |
-| **GitHub Copilot** | Copilot SDK (`@anthropic-ai/sdk`) | Enterprise, integrated with GitHub |
-| **OpenAI**         | Vercel AI SDK                     | Cloud-hosted, highest quality      |
-| **Ollama**         | Vercel AI SDK                     | Local, privacy-first, no API costs |
+| Provider           | SDK                                 | Use Case                           |
+| ------------------ | ----------------------------------- | ---------------------------------- |
+| **GitHub Copilot** | Copilot SDK (`@github/copilot-sdk`) | Enterprise, integrated with GitHub |
+| **OpenAI**         | Vercel AI SDK                       | Cloud-hosted, highest quality      |
+| **Ollama**         | Vercel AI SDK                       | Local, privacy-first, no API costs |
 
 Configured via `AI_PROVIDER` environment variable. Both agent paths share the same post-LLM validation pipeline.

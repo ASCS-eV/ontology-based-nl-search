@@ -1,0 +1,1048 @@
+@prefix surface-model: <https://w3id.org/ascs-ev/envited-x/surface-model/v6/> .
+@prefix envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/> .
+@prefix georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/> .
+@prefix manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/> .
+@prefix gx: <https://w3id.org/gaia-x/development#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# --- Surface Model 1: Berlin ASAM OpenCRG Surface Model ---
+
+<did:web:surfacepro.io:SurfaceModel:berlin-surface-001> a surface-model:SurfaceModel ;
+  rdfs:label "Berlin ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Berlin ASAM OpenCRG Surface Model" ;
+    gx:description "roughness profile for Berlin, Berlin using ASAM OpenCRG format" ;
+    gx:version "2.2.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "1.1"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "roughness profile"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "32.01"^^xsd:float ;
+      surface-model:elevationRange "96.27"^^xsd:float ;
+      surface-model:mapDataField true
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.001"^^xsd:float ;
+      surface-model:resolutionLateral "0.001"^^xsd:float ;
+      surface-model:orientation "143.27"^^xsd:float ;
+      surface-model:platformExists false ;
+      surface-model:rampExists false
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BE" ;
+        georeference:region "Berlin" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 2: Detroit ASAM OpenCRG Surface Model ---
+
+<did:web:pavesim.io:SurfaceModel:detroit-surface-002> a surface-model:SurfaceModel ;
+  rdfs:label "Detroit ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit ASAM OpenCRG Surface Model" ;
+    gx:description "friction map for Detroit, Michigan using ASAM OpenCRG format" ;
+    gx:version "1.1.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "1.1"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "friction map"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "17.95"^^xsd:float ;
+      surface-model:elevationRange "96.42"^^xsd:float ;
+      surface-model:mapDataField true
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.001"^^xsd:float ;
+      surface-model:resolutionLateral "0.001"^^xsd:float ;
+      surface-model:orientation "244.85"^^xsd:float ;
+      surface-model:platformExists false ;
+      surface-model:rampExists true
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 3: Detroit ASAM OpenCRG Surface Model ---
+
+<did:web:crgdata.io:SurfaceModel:detroit-surface-003> a surface-model:SurfaceModel ;
+  rdfs:label "Detroit ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit ASAM OpenCRG Surface Model" ;
+    gx:description "friction map for Detroit, Michigan using ASAM OpenCRG format" ;
+    gx:version "1.2.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "1.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "friction map"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "40.86"^^xsd:float ;
+      surface-model:elevationRange "186.18"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.005"^^xsd:float ;
+      surface-model:resolutionLateral "0.01"^^xsd:float ;
+      surface-model:orientation "60.58"^^xsd:float ;
+      surface-model:platformExists false ;
+      surface-model:rampExists true
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 4: Gothenburg ASAM OpenCRG Surface Model ---
+
+<did:web:pavesim.io:SurfaceModel:gothenburg-surface-004> a surface-model:SurfaceModel ;
+  rdfs:label "Gothenburg ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg ASAM OpenCRG Surface Model" ;
+    gx:description "friction map for Gothenburg, Stockholm using ASAM OpenCRG format" ;
+    gx:version "1.8.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "2.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "friction map"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "26.13"^^xsd:float ;
+      surface-model:elevationRange "101.22"^^xsd:float ;
+      surface-model:mapDataField true
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.005"^^xsd:float ;
+      surface-model:resolutionLateral "0.01"^^xsd:float ;
+      surface-model:orientation "313.3"^^xsd:float ;
+      surface-model:platformExists false ;
+      surface-model:rampExists false
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 5: Gothenburg DLM Surface Model ---
+
+<did:web:surfacepro.io:SurfaceModel:gothenburg-surface-005> a surface-model:SurfaceModel ;
+  rdfs:label "Gothenburg DLM Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg DLM Surface Model" ;
+    gx:description "elevation model for Gothenburg, Stockholm using DLM format" ;
+    gx:version "1.6.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "DLM" ;
+      surface-model:version "2.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "elevation model"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "5.42"^^xsd:float ;
+      surface-model:elevationRange "14.95"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.001"^^xsd:float ;
+      surface-model:resolutionLateral "0.001"^^xsd:float ;
+      surface-model:orientation "135.74"^^xsd:float ;
+      surface-model:platformExists false ;
+      surface-model:rampExists true
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 6: Frankfurt ASAM OpenCRG Surface Model ---
+
+<did:web:surfacepro.io:SurfaceModel:frankfurt-surface-006> a surface-model:SurfaceModel ;
+  rdfs:label "Frankfurt ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Frankfurt ASAM OpenCRG Surface Model" ;
+    gx:description "friction map for Frankfurt, Hesse using ASAM OpenCRG format" ;
+    gx:version "2.4.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "2.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "friction map"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "32.47"^^xsd:float ;
+      surface-model:elevationRange "150.95"^^xsd:float ;
+      surface-model:mapDataField true
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.001"^^xsd:float ;
+      surface-model:resolutionLateral "0.001"^^xsd:float ;
+      surface-model:orientation "62.99"^^xsd:float ;
+      surface-model:platformExists true ;
+      surface-model:rampExists true
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HE" ;
+        georeference:region "Hesse" ;
+        georeference:city "Frankfurt"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 7: Munich DLM Surface Model ---
+
+<did:web:surfmodel.io:SurfaceModel:munich-surface-007> a surface-model:SurfaceModel ;
+  rdfs:label "Munich DLM Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Munich DLM Surface Model" ;
+    gx:description "elevation model for Munich, Bavaria using DLM format" ;
+    gx:version "2.5.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "DLM" ;
+      surface-model:version "2.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "elevation model"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "49"^^xsd:float ;
+      surface-model:elevationRange "195.5"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.005"^^xsd:float ;
+      surface-model:resolutionLateral "0.05"^^xsd:float ;
+      surface-model:orientation "345.06"^^xsd:float ;
+      surface-model:platformExists true ;
+      surface-model:rampExists false
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BY" ;
+        georeference:region "Bavaria" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 8: Berlin DLM Surface Model ---
+
+<did:web:surfacepro.io:SurfaceModel:berlin-surface-008> a surface-model:SurfaceModel ;
+  rdfs:label "Berlin DLM Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Berlin DLM Surface Model" ;
+    gx:description "drainage model for Berlin, Berlin using DLM format" ;
+    gx:version "2.0.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "DLM" ;
+      surface-model:version "2.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "drainage model"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "49.97"^^xsd:float ;
+      surface-model:elevationRange "110.08"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.005"^^xsd:float ;
+      surface-model:resolutionLateral "0.005"^^xsd:float ;
+      surface-model:orientation "339.3"^^xsd:float ;
+      surface-model:platformExists false ;
+      surface-model:rampExists true
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BE" ;
+        georeference:region "Berlin" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 9: Detroit ASAM OpenCRG Surface Model ---
+
+<did:web:crgdata.io:SurfaceModel:detroit-surface-009> a surface-model:SurfaceModel ;
+  rdfs:label "Detroit ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit ASAM OpenCRG Surface Model" ;
+    gx:description "roughness profile for Detroit, Michigan using ASAM OpenCRG format" ;
+    gx:version "2.8.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "1.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "roughness profile"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "49.32"^^xsd:float ;
+      surface-model:elevationRange "143.86"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.001"^^xsd:float ;
+      surface-model:resolutionLateral "0.05"^^xsd:float ;
+      surface-model:orientation "62.98"^^xsd:float ;
+      surface-model:platformExists true ;
+      surface-model:rampExists true
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 10: Paris DLM Surface Model ---
+
+<did:web:surfmodel.io:SurfaceModel:paris-surface-010> a surface-model:SurfaceModel ;
+  rdfs:label "Paris DLM Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Paris DLM Surface Model" ;
+    gx:description "roughness profile for Paris, Ile-de-France using DLM format" ;
+    gx:version "1.3.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "DLM" ;
+      surface-model:version "1.1"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "roughness profile"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "45.62"^^xsd:float ;
+      surface-model:elevationRange "46.22"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.05"^^xsd:float ;
+      surface-model:resolutionLateral "0.001"^^xsd:float ;
+      surface-model:orientation "305.72"^^xsd:float ;
+      surface-model:platformExists true ;
+      surface-model:rampExists false
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:state "FR-IDF" ;
+        georeference:region "Ile-de-France" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 11: Gothenburg ASAM OpenCRG Surface Model ---
+
+<did:web:surfmodel.io:SurfaceModel:gothenburg-surface-011> a surface-model:SurfaceModel ;
+  rdfs:label "Gothenburg ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg ASAM OpenCRG Surface Model" ;
+    gx:description "elevation model for Gothenburg, Stockholm using ASAM OpenCRG format" ;
+    gx:version "2.5.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "1.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "elevation model"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "37.7"^^xsd:float ;
+      surface-model:elevationRange "79.21"^^xsd:float ;
+      surface-model:mapDataField true
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.01"^^xsd:float ;
+      surface-model:resolutionLateral "0.001"^^xsd:float ;
+      surface-model:orientation "222.06"^^xsd:float ;
+      surface-model:platformExists true ;
+      surface-model:rampExists true
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 12: Detroit DLM Surface Model ---
+
+<did:web:crgdata.io:SurfaceModel:detroit-surface-012> a surface-model:SurfaceModel ;
+  rdfs:label "Detroit DLM Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit DLM Surface Model" ;
+    gx:description "tire-road contact for Detroit, Michigan using DLM format" ;
+    gx:version "2.5.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "DLM" ;
+      surface-model:version "1.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "tire-road contact"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "40.21"^^xsd:float ;
+      surface-model:elevationRange "30.09"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.005"^^xsd:float ;
+      surface-model:resolutionLateral "0.001"^^xsd:float ;
+      surface-model:orientation "323.89"^^xsd:float ;
+      surface-model:platformExists true ;
+      surface-model:rampExists true
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 13: Gothenburg ASAM OpenCRG Surface Model ---
+
+<did:web:surfmodel.io:SurfaceModel:gothenburg-surface-013> a surface-model:SurfaceModel ;
+  rdfs:label "Gothenburg ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg ASAM OpenCRG Surface Model" ;
+    gx:description "elevation model for Gothenburg, Stockholm using ASAM OpenCRG format" ;
+    gx:version "2.3.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "1.1"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "elevation model"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "49.35"^^xsd:float ;
+      surface-model:elevationRange "23.82"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.001"^^xsd:float ;
+      surface-model:resolutionLateral "0.01"^^xsd:float ;
+      surface-model:orientation "72.99"^^xsd:float ;
+      surface-model:platformExists false ;
+      surface-model:rampExists true
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 14: Paris DLM Surface Model ---
+
+<did:web:surfmodel.io:SurfaceModel:paris-surface-014> a surface-model:SurfaceModel ;
+  rdfs:label "Paris DLM Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Paris DLM Surface Model" ;
+    gx:description "friction map for Paris, Ile-de-France using DLM format" ;
+    gx:version "2.1.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "DLM" ;
+      surface-model:version "1.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "friction map"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "8.53"^^xsd:float ;
+      surface-model:elevationRange "135.55"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.001"^^xsd:float ;
+      surface-model:resolutionLateral "0.005"^^xsd:float ;
+      surface-model:orientation "153.54"^^xsd:float ;
+      surface-model:platformExists true ;
+      surface-model:rampExists false
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:state "FR-IDF" ;
+        georeference:region "Ile-de-France" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 15: Munich ASAM OpenCRG Surface Model ---
+
+<did:web:pavesim.io:SurfaceModel:munich-surface-015> a surface-model:SurfaceModel ;
+  rdfs:label "Munich ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Munich ASAM OpenCRG Surface Model" ;
+    gx:description "friction map for Munich, Bavaria using ASAM OpenCRG format" ;
+    gx:version "1.3.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "2.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "friction map"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "23.58"^^xsd:float ;
+      surface-model:elevationRange "3.13"^^xsd:float ;
+      surface-model:mapDataField true
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.05"^^xsd:float ;
+      surface-model:resolutionLateral "0.05"^^xsd:float ;
+      surface-model:orientation "64.59"^^xsd:float ;
+      surface-model:platformExists true ;
+      surface-model:rampExists true
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BY" ;
+        georeference:region "Bavaria" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 16: Detroit ASAM OpenCRG Surface Model ---
+
+<did:web:surfmodel.io:SurfaceModel:detroit-surface-016> a surface-model:SurfaceModel ;
+  rdfs:label "Detroit ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit ASAM OpenCRG Surface Model" ;
+    gx:description "tire-road contact for Detroit, Michigan using ASAM OpenCRG format" ;
+    gx:version "2.2.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "1.1"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "tire-road contact"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "29.06"^^xsd:float ;
+      surface-model:elevationRange "39.58"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.05"^^xsd:float ;
+      surface-model:resolutionLateral "0.005"^^xsd:float ;
+      surface-model:orientation "32.57"^^xsd:float ;
+      surface-model:platformExists false ;
+      surface-model:rampExists false
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 17: Detroit ASAM OpenCRG Surface Model ---
+
+<did:web:surfmodel.io:SurfaceModel:detroit-surface-017> a surface-model:SurfaceModel ;
+  rdfs:label "Detroit ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit ASAM OpenCRG Surface Model" ;
+    gx:description "elevation model for Detroit, Michigan using ASAM OpenCRG format" ;
+    gx:version "2.0.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "2.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "elevation model"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "3.41"^^xsd:float ;
+      surface-model:elevationRange "45.66"^^xsd:float ;
+      surface-model:mapDataField true
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.005"^^xsd:float ;
+      surface-model:resolutionLateral "0.005"^^xsd:float ;
+      surface-model:orientation "43.8"^^xsd:float ;
+      surface-model:platformExists false ;
+      surface-model:rampExists false
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 18: Frankfurt DLM Surface Model ---
+
+<did:web:crgdata.io:SurfaceModel:frankfurt-surface-018> a surface-model:SurfaceModel ;
+  rdfs:label "Frankfurt DLM Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Frankfurt DLM Surface Model" ;
+    gx:description "road surface profile for Frankfurt, Hesse using DLM format" ;
+    gx:version "1.3.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "DLM" ;
+      surface-model:version "2.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "road surface profile"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "34.49"^^xsd:float ;
+      surface-model:elevationRange "22.28"^^xsd:float ;
+      surface-model:mapDataField false
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.005"^^xsd:float ;
+      surface-model:resolutionLateral "0.001"^^xsd:float ;
+      surface-model:orientation "316.97"^^xsd:float ;
+      surface-model:platformExists true ;
+      surface-model:rampExists false
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-HE" ;
+        georeference:region "Hesse" ;
+        georeference:city "Frankfurt"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 19: Munich ASAM OpenCRG Surface Model ---
+
+<did:web:crgdata.io:SurfaceModel:munich-surface-019> a surface-model:SurfaceModel ;
+  rdfs:label "Munich ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Munich ASAM OpenCRG Surface Model" ;
+    gx:description "friction map for Munich, Bavaria using ASAM OpenCRG format" ;
+    gx:version "2.3.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "1.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "friction map"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "35.74"^^xsd:float ;
+      surface-model:elevationRange "183.08"^^xsd:float ;
+      surface-model:mapDataField true
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.005"^^xsd:float ;
+      surface-model:resolutionLateral "0.05"^^xsd:float ;
+      surface-model:orientation "335.67"^^xsd:float ;
+      surface-model:platformExists false ;
+      surface-model:rampExists false
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BY" ;
+        georeference:region "Bavaria" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Surface Model 20: Munich ASAM OpenCRG Surface Model ---
+
+<did:web:surfacepro.io:SurfaceModel:munich-surface-020> a surface-model:SurfaceModel ;
+  rdfs:label "Munich ASAM OpenCRG Surface Model"@en ;
+  surface-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Munich ASAM OpenCRG Surface Model" ;
+    gx:description "elevation model for Munich, Bavaria using ASAM OpenCRG format" ;
+    gx:version "1.3.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  surface-model:hasDomainSpecification [
+    a surface-model:DomainSpecification ;
+    surface-model:hasFormat [
+      a surface-model:Format ;
+      surface-model:formatType "ASAM OpenCRG" ;
+      surface-model:version "2.0"
+    ] ;
+    surface-model:hasContent [
+      a surface-model:Content ;
+      surface-model:contentType "elevation model"
+    ] ;
+    surface-model:hasQuantity [
+      a surface-model:Quantity ;
+      surface-model:length "11.3"^^xsd:float ;
+      surface-model:elevationRange "166.87"^^xsd:float ;
+      surface-model:mapDataField true
+    ] ;
+    surface-model:hasQuality [
+      a surface-model:Quality ;
+      surface-model:resolutionLongitudinal "0.001"^^xsd:float ;
+      surface-model:resolutionLateral "0.001"^^xsd:float ;
+      surface-model:orientation "40.86"^^xsd:float ;
+      surface-model:platformExists true ;
+      surface-model:rampExists false
+    ] ;
+    surface-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BY" ;
+        georeference:region "Bavaria" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] ;
+  surface-model:hasManifest [
+    a manifest:Manifest
+  ] .
+

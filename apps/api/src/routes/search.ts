@@ -8,7 +8,7 @@ import { z } from 'zod'
 import type { AppEnv } from '../types.js'
 
 const searchSlotsSchema = z.object({
-  domains: z.array(z.string().min(1)).min(1).default(['hdmap']),
+  domains: z.array(z.string()).default([]),
   filters: z.record(z.string(), z.union([z.string(), z.array(z.string())])).default({}),
   ranges: z
     .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))

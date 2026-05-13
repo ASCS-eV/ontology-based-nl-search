@@ -79,15 +79,15 @@ title: Presentation
 
 ```mermaid
 flowchart LR
-    Q([User query]) --> P[Prompt builder]
-    P --> A[[LLM agent]]
-    A --> V[Slot validator]
-    V --> C[SPARQL compiler]
-    C --> O[(Oxigraph)]
-    O --> R([Results + rationale])
+    Q(["🗣️ User query"]) --> P["Prompt\nbuilder"]
+    P --> A["🧠 LLM\nagent"]
+    A --> V["Slot\nvalidator"]
+    V --> C["SPARQL\ncompiler"]
+    C --> O[("Oxigraph\nstore")]
+    O --> R(["📊 Results +\nrationale"])
 
     classDef input fill:#dbeafe,stroke:#2563eb,color:#0f172a;
-    classDef llm fill:#1d4ed8,stroke:#1e40af,color:#eff6ff;
+    classDef llm fill:#6366f1,stroke:#4f46e5,color:#ffffff;
     classDef guard fill:#fef3c7,stroke:#f59e0b,color:#0f172a;
     classDef compiler fill:#dcfce7,stroke:#22c55e,color:#0f172a;
     classDef store fill:#ccfbf1,stroke:#0d9488,color:#0f172a;
@@ -233,7 +233,7 @@ flowchart LR
   <p class="lead">Ask about HD maps, scenarios, or simulation assets in plain language — then inspect the interpretation, gaps, and compiled SPARQL with the live application.</p>
   <div class="cta-buttons">
     <a href="http://localhost:5174" class="btn-primary">Launch live demo →</a>
-    <a href="/architecture" class="btn-secondary">Read the architecture →</a>
+    <a href="/docs/architecture" class="btn-secondary">Read the architecture →</a>
   </div>
   <p class="subtitle">Live demo: <a href="http://localhost:5174" class="demo-link">http://localhost:5174</a> · Example prompts: “motorway HD maps in Germany” · “OpenDRIVE with 3 lanes” · “Autobahnen mit Überholmanöver”</p>
 </Slide>

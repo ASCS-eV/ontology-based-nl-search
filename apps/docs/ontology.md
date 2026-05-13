@@ -94,16 +94,17 @@ An earlier design used manually maintained SKOS vocabularies as an intermediate 
 
 ## Supported Domains
 
-The system supports **22 ontology domains**. Currently, **HD Map** and **Scenario** have instance data:
+The system auto-discovers **22 ontology domains** from the ontology source. Currently, **5 domains** have sample instance data:
 
-| Domain            | Instance Assets | Key Properties                                                          |
-| ----------------- | :-------------: | ----------------------------------------------------------------------- |
-| **HD Map**        |       117       | roadTypes, laneCount, speedLimit, formatType, country, trafficDirection |
-| **Scenario**      |       50        | scenarioCategory, weather, timeOfDay, trafficDensity                    |
-| Environment Model |        —        | terrain, vegetation, buildings                                          |
-| Simulation Model  |        —        | physics engine, fidelity                                                |
-| Simulated Sensor  |        —        | sensor type, resolution                                                 |
-| + 17 more         |        —        | (ontology defined, awaiting data)                                       |
+| Domain                | Instance Assets | Key Properties                                                          |
+| --------------------- | :-------------: | ----------------------------------------------------------------------- |
+| **HD Map**            |       117       | roadTypes, laneCount, speedLimit, formatType, country, trafficDirection |
+| **Scenario**          |       50        | scenarioCategory, weather, timeOfDay, trafficDensity                    |
+| **OSI Trace**         |       50        | roadTypes, granularity, fileFormat, numberFrames                        |
+| **Environment Model** |       30        | terrainType, vegetationType, weatherCondition                           |
+| **Surface Model**     |       20        | materialType, frictionCoefficient, textureFormat                        |
+
+Additional ontology-only domains are still discovered at startup (for example automotive-simulator, simulation-model, openlabel, simulated-sensor, and vv-report).
 
 ## Cross-Domain Relationships
 
@@ -121,4 +122,4 @@ graph LR
     style GEO fill:#fef3c7,stroke:#f59e0b
 ```
 
-When a user searches for "scenarios on German motorways", the compiler generates a SPARQL query that joins scenario assets with their referenced HD map's georeference properties.
+When a user searches for "scenarios on German motorways", the compiler generates a SPARQL query that joins scenario assets with their referenced HD map's georeference properties. Broader queries can stay multi-domain as well: because `roadTypes` exists in both HD map and OSI trace ontologies, a search like "German motorway assets" can match both domains without hardcoded domain tables.

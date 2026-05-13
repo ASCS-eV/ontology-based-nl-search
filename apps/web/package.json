@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:clean": "node ../../scripts/clean-ports.mjs 5174 && vite",
     "build": "tsc --noEmit && vite build",
     "check-types": "tsc --noEmit",
     "test": "vitest run",

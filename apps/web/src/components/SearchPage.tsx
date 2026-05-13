@@ -42,23 +42,12 @@ function parseRange(mapped: string): { min?: number; max?: number } {
   return result
 }
 
-/** Detect domains from mapped terms based on known domain-specific properties */
+/** Detect domains from mapped terms — uses the LLM's domain mapping if available */
 function detectDomainsFromTerms(terms: MappedTerm[]): string[] {
-  const scenarioProps = new Set([
-    'scenarioCategory',
-    'weatherSummary',
-    'timeOfDay',
-    'trafficDensity',
-    'entityTypes',
-  ])
   const domains = new Set<string>()
   for (const term of terms) {
-    if (term.property) {
-      if (scenarioProps.has(term.property)) {
-        domains.add('scenario')
-      } else if (!isLocationProperty(term.property)) {
-        domains.add('hdmap')
-      }
+    if (term.property === 'domain' && term.mapped) {
+      domains.add(term.mapped)
     }
   }
   return domains.size > 0 ? [...domains] : ['hdmap']
@@ -219,8 +208,8 @@ export function SearchPage() {
         }
       }
 
-      // Use domains from current interpretation, fallback to hdmap
-      const domains = interpretation?.mappedTerms ? detectDomainsFromTerms(updatedTerms) : ['hdmap']
+      // Detect domains from the updated terms
+      const domains = detectDomainsFromTerms(updatedTerms)
 
       const slots = {
         domains,

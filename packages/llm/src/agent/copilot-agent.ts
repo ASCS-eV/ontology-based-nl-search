@@ -1,3 +1,27 @@
+/**
+ * Copilot Agent — LLM slot-filling via GitHub Copilot SDK with persistent sessions.
+ *
+ * **Architecture:**
+ * - Uses a single persistent CopilotSession reused across all requests
+ * - Eliminates ~5.8s session-create overhead on every search
+ * - Relies on SDK's infiniteSessions feature for automatic context compaction
+ * - System prompt cached in memory (generated once from 22 SHACL files, 298 KB)
+ * - Tool-based structured output: submit_slots is the only tool exposed to LLM
+ *
+ * **Why Persistent Sessions:**
+ * - Creating a new session on every search introduced unacceptable latency
+ * - Single persistent session + stateless requests = fast + simple
+ * - Active submission callbacks route tool calls to the correct in-flight request
+ *
+ * **Post-LLM Pipeline:**
+ * - LLM reads raw SHACL Turtle → fills slots
+ * - Validator fuzzy-matches invalid values → fixes mistakes
+ * - Compiler generates domain-agnostic SPARQL from corrected slots
+ *
+ * @see packages/llm/src/prompt-builder.ts — Generates system prompt from raw SHACL
+ * @see packages/llm/src/slot-validator.ts — Post-LLM validation and correction
+ */
+
 import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
@@ -7,6 +31,7 @@ import {
   type OntologyVocabulary,
 } from '@ontology-search/search'
 import { compileSlots } from '@ontology-search/search/compiler'
+import { getShaclContent } from '@ontology-search/search/shacl-reader'
 import type { SearchSlots } from '@ontology-search/search/slots'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
@@ -49,9 +74,13 @@ async function getSystemPrompt(): Promise<{ prompt: string; vocabulary: Ontology
     return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary }
   }
 
+  // Read raw SHACL files for the system prompt (LLM reads native Turtle)
+  const shaclContent = getShaclContent()
+  cachedSystemPrompt = buildSystemPrompt(shaclContent)
+
+  // Extract vocabulary separately — still needed for post-LLM slot validation
   const store = await getInitializedStore()
   cachedVocabulary = await extractVocabulary(store)
-  cachedSystemPrompt = buildSystemPrompt(cachedVocabulary)
 
   return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary }
 }

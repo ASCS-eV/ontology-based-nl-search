@@ -1,3 +1,31 @@
+/**
+ * Oxigraph Store — In-memory SPARQL store using Oxigraph WASM.
+ *
+ * **Purpose:**
+ * - Development/testing with small datasets (<1000 entries)
+ * - Eliminates need for external triple store during local development
+ * - Fast initialization (~100ms) vs. external SPARQL endpoints
+ *
+ * **Architecture:**
+ * - Wraps Oxigraph WASM (Rust-based RDF database compiled to WebAssembly)
+ * - Implements SparqlStore interface for drop-in compatibility with Blazegraph/Fuseki
+ * - Dynamic import prevents WASM bundling in client builds
+ * - In-memory only — data cleared on restart (suitable for dev/CI)
+ *
+ * **Limitations:**
+ * - Not suitable for production (no persistence, limited scalability)
+ * - Memory-bound (entire dataset loaded in RAM)
+ * - No federation or advanced SPARQL 1.1 features
+ *
+ * **When to Use:**
+ * - Local development with SPARQL_MODE=memory
+ * - Unit/integration tests
+ * - CI pipelines (no external services required)
+ *
+ * @see packages/sparql/src/types.ts — SparqlStore interface definition
+ * @see https://github.com/oxigraph/oxigraph — Oxigraph project
+ */
+
 import type { SparqlBinding, SparqlResults, SparqlStore } from './types.js'
 
 /** RDF/JS-compatible term from Oxigraph */

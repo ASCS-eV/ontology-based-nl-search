@@ -1,8 +1,12 @@
 /**
  * Generic SPARQL Compiler — compiles SearchSlots into SPARQL SELECT queries.
  *
- * Design: Domain-agnostic. Uses the DomainRegistry to resolve target classes
- * and namespace prefixes. Generates FILTER clauses from slot filters/ranges.
+ * Design: Domain-agnostic and graph-driven. Uses the DomainRegistry plus
+ * `schema-queries.ts` to derive compiler metadata from the SHACL schema graph
+ * instead of hardcoded domain constants.
+ *
+ * `CompilerVocab` caches three graph-derived indexes for compilation:
+ * properties, shapeGroups, and range2DProperties.
  *
  * Cross-domain support: When filters span multiple ontology domains (e.g.,
  * scenario + hdmap), the compiler identifies the primary domain (the one that
@@ -18,71 +22,120 @@
 import {
   buildDomainRegistry,
   type DomainDescriptor,
+  type DomainRegistry,
 } from '@ontology-search/ontology/domain-registry'
 
 import { getInitializedStore } from './init.js'
+import {
+  queryAssetDomains,
+  queryDomainReferences,
+  queryPropertyDomains,
+  queryPropertyShapeGroups,
+  queryRange2DProperties,
+} from './schema-queries.js'
 import type { SearchSlots } from './slots.js'
-import { extractVocabulary } from './vocabulary-extractor.js'
 
-/** Minimal property info needed by the compiler */
+/** Property info from ontology - supports properties existing in multiple domains */
 interface CompilerProperty {
-  domain: string
-  iri: string
+  /** All domains that define this property (e.g., roadTypes in both hdmap and ositrace) */
+  domains: Set<string>
+  /** Map from domain → IRI for this property in that domain */
+  iris: Map<string, string>
 }
 
 interface CompilerVocab {
   properties: Map<string, CompilerProperty>
+  /** Property shape group classification from SHACL nesting (Content, Format, Quantity, etc.) */
+  shapeGroups: Map<string, string>
+  /** Properties that use Range2D structure (min/max sub-properties) */
+  range2DProperties: Set<string>
 }
 
 /** Cached compiler vocabulary (ontology doesn't change at runtime) */
 let cachedCompilerVocab: CompilerVocab | null = null
 
-/** Build the compiler vocabulary from the ontology schema graph */
+/** Build the compiler vocabulary from the ontology schema graph using SPARQL queries */
 async function getCompilerVocab(): Promise<CompilerVocab> {
   if (cachedCompilerVocab) return cachedCompilerVocab
 
   const store = await getInitializedStore()
-  const vocabulary = await extractVocabulary(store)
+  const [propertyDomains, shapeGroupInfos, range2DInfos] = await Promise.all([
+    queryPropertyDomains(store),
+    queryPropertyShapeGroups(store),
+    queryRange2DProperties(store),
+  ])
+
   const properties = new Map<string, CompilerProperty>()
 
-  for (const prop of vocabulary.enumProperties) {
-    properties.set(prop.localName, { domain: prop.domain, iri: prop.iri })
-  }
-  for (const prop of vocabulary.numericProperties) {
-    properties.set(prop.localName, { domain: prop.domain, iri: prop.iri })
+  // Build multi-domain property index directly from SHACL shapes
+  for (const { localName, domain, iri } of propertyDomains) {
+    const existing = properties.get(localName)
+    if (existing) {
+      existing.domains.add(domain)
+      existing.iris.set(domain, iri)
+    } else {
+      properties.set(localName, {
+        domains: new Set([domain]),
+        iris: new Map([[domain, iri]]),
+      })
+    }
   }
 
-  cachedCompilerVocab = { properties }
+  // Build shape group index: "propName:domain" → shapeGroup
+  const shapeGroups = new Map<string, string>()
+  for (const { localName, domain, shapeGroup } of shapeGroupInfos) {
+    shapeGroups.set(`${localName}:${domain}`, shapeGroup)
+  }
+
+  // Build Range2D property set
+  const range2DProperties = new Set<string>()
+  for (const { localName } of range2DInfos) {
+    range2DProperties.add(localName)
+  }
+
+  cachedCompilerVocab = { properties, shapeGroups, range2DProperties }
   return cachedCompilerVocab
 }
 
-/**
- * Domains that represent actual searchable asset types.
- * Excludes supporting ontologies (georeference, manifest, gx, openlabel, envited-x, general).
- */
-export const ASSET_DOMAINS = new Set([
-  'automotive-simulator',
-  'environment-model',
-  'hdmap',
-  'leakage-test',
-  'ositrace',
-  'scenario',
-  'service',
-  'simulated-sensor',
-  'simulation-model',
-  'surface-model',
-  'survey',
-  'tzip21',
-  'vv-report',
-])
+/** Cached asset domains (queried from ontology graph at startup) */
+let cachedAssetDomains: Set<string> | null = null
 
-/**
- * Domain hierarchy: which domains can reference which others.
- * Derived from SHACL: scenario's manifest can reference hdmap and environment-model.
- * This relationship allows cross-domain queries (scenario that uses an hdmap with X).
- */
-const DOMAIN_REFERENCES: Record<string, string[]> = {
-  scenario: ['hdmap', 'environment-model'],
+/** Get all asset domains from the ontology graph */
+export async function getAssetDomains(): Promise<Set<string>> {
+  if (cachedAssetDomains) return cachedAssetDomains
+
+  const store = await getInitializedStore()
+  const domainInfos = await queryAssetDomains(store)
+  cachedAssetDomains = new Set(domainInfos.map((d) => d.domainName))
+
+  if (cachedAssetDomains.size === 0) {
+    console.warn('[compiler] No asset domains found via rdfs:subClassOf — check ontology loading')
+  }
+
+  return cachedAssetDomains
+}
+
+/** Cached domain references (queried from ontology graph at startup) */
+let cachedDomainReferences: Map<string, Set<string>> | null = null
+
+/** Get domain reference relationships from the ontology graph */
+async function getDomainReferences(): Promise<Map<string, Set<string>>> {
+  if (cachedDomainReferences) return cachedDomainReferences
+
+  const store = await getInitializedStore()
+  const refs = await queryDomainReferences(store)
+  cachedDomainReferences = new Map()
+
+  for (const { parentDomain, childDomain } of refs) {
+    const existing = cachedDomainReferences.get(parentDomain)
+    if (existing) {
+      existing.add(childDomain)
+    } else {
+      cachedDomainReferences.set(parentDomain, new Set([childDomain]))
+    }
+  }
+
+  return cachedDomainReferences
 }
 
 /**
@@ -92,12 +145,20 @@ const DOMAIN_REFERENCES: Record<string, string[]> = {
  *
  * When filters span multiple domains, identifies the primary (composite)
  * domain and generates a join via manifest:hasReferencedArtifacts.
+ *
+ * When no domain is specified and no filters exist, searches across ALL
+ * asset types using envited-x:SimulationAsset superclass.
  */
 export async function compileSlots(slots: SearchSlots): Promise<string> {
   const registry = await buildDomainRegistry()
   const vocabIndex = await getCompilerVocab()
 
-  const detectedDomains = slots.domains.length > 0 ? slots.domains : ['hdmap']
+  // When no domain is specified, use cross-domain search via SimulationAsset superclass
+  if (slots.domains.length === 0) {
+    return compileCrossDomainQuery(slots, registry)
+  }
+
+  const detectedDomains = slots.domains
 
   // Partition filters by domain
   const filtersByDomain = partitionFiltersByDomain(slots.filters, detectedDomains, vocabIndex)
@@ -106,7 +167,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   const rangesByDomain = partitionRangesByDomain(slots.ranges, detectedDomains, vocabIndex)
 
   // Determine primary domain — the one that references others, or the single domain
-  const primaryDomain = resolvePrimaryDomain(detectedDomains, filtersByDomain)
+  const primaryDomain = await resolvePrimaryDomain(detectedDomains, filtersByDomain)
   const domain = registry.domains.get(primaryDomain)
 
   if (!domain) {
@@ -169,9 +230,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     const refVar = `?ref_${refDomainName.replace(/-/g, '_')}`
     const refSpecVar = `?refSpec_${refDomainName.replace(/-/g, '_')}`
 
-    patterns.push(
-      `?asset ${primaryDomain === 'scenario' ? 'scenario' : domain.prefix}:hasManifest ?manifest .`
-    )
+    patterns.push(`?asset ${domain.prefix}:hasManifest ?manifest .`)
     patterns.push(`?manifest manifest:hasReferencedArtifacts ${refVar} .`)
     patterns.push(`${refVar} a ${refDomain.targetClass} .`)
 
@@ -213,6 +272,83 @@ LIMIT 100`
 }
 
 /**
+ * Compile a cross-domain query using envited-x:SimulationAsset superclass.
+ * Used when no specific domain is detected, or when domain ambiguity exists.
+ * Searches across ALL asset types (hdmap, scenario, ositrace, etc.).
+ * Filters are applied as OPTIONAL patterns since different domains have different properties.
+ */
+function compileCrossDomainQuery(slots: SearchSlots, registry: DomainRegistry): string {
+  // Use registry to look up envited-x and georeference namespaces (no hardcoding)
+  const envitedX = registry.domains.get('envited-x')
+  const georef = registry.domains.get('georeference')
+  const envitedXPrefix = envitedX ? `PREFIX envited-x: <${envitedX.namespace}>` : ''
+  const georefPrefix = georef ? `PREFIX georeference: <${georef.namespace}>` : ''
+
+  const prefixes = [
+    'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>',
+    'PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>',
+    'PREFIX gx: <https://w3id.org/gaia-x/development#>',
+    envitedXPrefix,
+    georefPrefix,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  const patterns: string[] = []
+  const filters: string[] = []
+  const optionals: string[] = []
+  const selectVars = ['?asset', '?name']
+
+  // Base pattern — search all SimulationAsset instances
+  patterns.push('?asset a envited-x:SimulationAsset ;')
+  patterns.push('  rdfs:label ?name .')
+
+  // Apply location filters if present
+  if (
+    slots.location &&
+    (slots.location.country || slots.location.state || slots.location.region || slots.location.city)
+  ) {
+    optionals.push(`OPTIONAL {
+    ?asset envited-x:hasDomainSpecification ?domSpec .
+    ?domSpec envited-x:hasGeoreference ?georef .
+    ?georef georeference:hasProjectLocation ?loc .`)
+
+    if (slots.location.country) {
+      optionals.push(`    ?loc georeference:country ?country .`)
+      filters.push(`  FILTER(CONTAINS(LCASE(?country), "${slots.location.country.toLowerCase()}"))`)
+      selectVars.push('?country')
+    }
+    if (slots.location.city) {
+      optionals.push(`    ?loc georeference:city ?city .`)
+      filters.push(`  FILTER(CONTAINS(LCASE(?city), "${slots.location.city.toLowerCase()}"))`)
+      selectVars.push('?city')
+    }
+
+    optionals.push(`  }`)
+  }
+
+  // License filter if specified
+  if (slots.license) {
+    optionals.push(`OPTIONAL {
+    ?asset envited-x:hasResourceDescription ?resDesc .
+    ?resDesc gx:license ?license .
+  }`)
+    filters.push(`FILTER(?license = "${slots.license}")`)
+    selectVars.push('?license')
+  }
+
+  // Build the query
+  const selectClause = `SELECT ${selectVars.join(' ')}`
+  const whereBody = [...patterns, ...optionals, ...filters].join('\n  ')
+
+  return `${prefixes}
+${selectClause} WHERE {
+  ${whereBody}
+}
+LIMIT 100`
+}
+
+/**
  * Build patterns for a single domain's filters within the DomainSpecification structure.
  */
 function buildDomainPatterns(
@@ -225,7 +361,7 @@ function buildDomainPatterns(
   filters: string[],
   optionals: string[],
   selectVars: Set<string>,
-  vocabIndex: { properties: Map<string, { domain: string; iri: string }> },
+  vocabIndex: CompilerVocab,
   assetVar: string,
   specVar: string
 ): void {
@@ -250,8 +386,7 @@ function buildDomainPatterns(
   const dataSourceProps: [string, string | string[]][] = []
 
   for (const [propName, value] of filterEntries) {
-    const vocabProp = vocabIndex.properties.get(propName)
-    const shape = classifyProperty(propName, vocabProp?.iri || '')
+    const shape = classifyProperty(propName, domainName, vocabIndex)
 
     switch (shape) {
       case 'Content':
@@ -298,8 +433,8 @@ function buildDomainPatterns(
   }
 
   // Quantity / range filters
-  // Some properties (e.g., speedLimit) use Range2D structure: prop → [a Range2D; hdmap:min; hdmap:max]
-  const range2DProperties = new Set(['speedLimit'])
+  // Range2D properties (detected from SHACL via sh:node → Range2DShape) use
+  // nested min/max structure: prop → [a Range2D; domain:min; domain:max]
 
   if (rangeEntries.length > 0) {
     const qtyVar = `?qty${suffix}`
@@ -307,7 +442,7 @@ function buildDomainPatterns(
     for (const [propName, range] of rangeEntries) {
       const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
 
-      if (range2DProperties.has(propName)) {
+      if (vocabIndex.range2DProperties.has(propName)) {
         // Range2D: property links to blank node with hdmap:min and hdmap:max
         const rangeNode = `?${propName}Range${suffix}`
         patterns.push(`${qtyVar} ${propDomain}:${propName} ${rangeNode} .`)
@@ -386,80 +521,79 @@ function buildDomainPatterns(
 }
 
 /**
- * Partition filters into per-domain groups based on vocabulary index.
- * Each filter property is assigned to the domain that defines it.
- *
- * Strategy: If only one domain is detected, all filters go to that domain
- * (properties like formatType exist in every domain). Cross-domain partition
- * only happens when multiple domains are explicitly detected.
+ * Partition filters into per-domain groups based on ontology graph.
+ * Uses the ontology's property definitions to determine which domain each filter belongs to.
+ * Handles properties that exist in multiple domains by checking against detected domains.
  */
 function partitionFiltersByDomain(
   filters: Record<string, string | string[]>,
   detectedDomains: string[],
-  vocabIndex: { properties: Map<string, { domain: string }> }
+  vocabIndex: { properties: Map<string, CompilerProperty> }
 ): Record<string, Record<string, string | string[]>> {
   const result: Record<string, Record<string, string | string[]>> = {}
-  const defaultDomain = detectedDomains[0] || 'hdmap'
 
-  // Single domain — all filters belong to it (no cross-domain partition)
-  if (detectedDomains.length <= 1) {
-    result[defaultDomain] = { ...filters }
+  // Single domain — all filters belong to it
+  if (detectedDomains.length === 1) {
+    result[detectedDomains[0]!] = { ...filters }
     return result
   }
 
-  // Multi-domain: assign each property to its owning domain
+  // Multi-domain: use ontology to find which detected domain owns each property
   for (const [propName, value] of Object.entries(filters)) {
-    const prop = vocabIndex.properties.get(propName)
-    let domain = defaultDomain
+    const propInfo = vocabIndex.properties.get(propName)
 
-    if (prop && detectedDomains.includes(prop.domain)) {
-      domain = prop.domain
-    } else if (prop && prop.domain !== 'georeference') {
-      // Property belongs to a domain not in detected list — use it anyway
-      domain = prop.domain
+    if (!propInfo) {
+      // Unknown property — skip (will be caught by validator)
+      continue
     }
 
-    if (!result[domain]) result[domain] = {}
-    result[domain]![propName] = value
-  }
+    // Find which detected domain defines this property
+    const matchingDomain = detectedDomains.find((d) => propInfo.domains.has(d))
 
-  // Ensure at least the default domain is represented
-  if (Object.keys(result).length === 0) {
-    result[defaultDomain] = {}
+    if (matchingDomain) {
+      if (!result[matchingDomain]) result[matchingDomain] = {}
+      result[matchingDomain]![propName] = value
+    }
+    // If property not in any detected domain, skip it (validator will handle)
   }
 
   return result
 }
 
 /**
- * Partition ranges into per-domain groups based on vocabulary index.
+ * Partition ranges into per-domain groups based on ontology graph.
  * Similar to partitionFiltersByDomain but for numeric range properties.
  */
 function partitionRangesByDomain(
   ranges: Record<string, { min?: number; max?: number }>,
   detectedDomains: string[],
-  vocabIndex: { properties: Map<string, { domain: string }> }
+  vocabIndex: { properties: Map<string, CompilerProperty> }
 ): Record<string, Record<string, { min?: number; max?: number }>> {
   const result: Record<string, Record<string, { min?: number; max?: number }>> = {}
-  const defaultDomain = detectedDomains[0] || 'hdmap'
 
-  if (detectedDomains.length <= 1) {
-    result[defaultDomain] = { ...ranges }
+  // Single domain — all ranges belong to it
+  if (detectedDomains.length === 1) {
+    result[detectedDomains[0]!] = { ...ranges }
     return result
   }
 
+  // Multi-domain: use ontology to find which detected domain owns each property
   for (const [propName, range] of Object.entries(ranges)) {
-    const prop = vocabIndex.properties.get(propName)
-    let domain = defaultDomain
+    const propInfo = vocabIndex.properties.get(propName)
 
-    if (prop && detectedDomains.includes(prop.domain)) {
-      domain = prop.domain
-    } else if (prop && prop.domain !== 'georeference') {
-      domain = prop.domain
+    if (!propInfo) {
+      // Unknown property — skip (will be caught by validator)
+      continue
     }
 
-    if (!result[domain]) result[domain] = {}
-    result[domain]![propName] = range
+    // Find which detected domain defines this property
+    const matchingDomain = detectedDomains.find((d) => propInfo.domains.has(d))
+
+    if (matchingDomain) {
+      if (!result[matchingDomain]) result[matchingDomain] = {}
+      result[matchingDomain]![propName] = range
+    }
+    // If property not in any detected domain, skip it (validator will handle)
   }
 
   return result
@@ -470,25 +604,34 @@ function partitionRangesByDomain(
  * E.g., if we have both 'scenario' and 'hdmap' filters, scenario is primary
  * because scenarios reference hdmaps.
  */
-function resolvePrimaryDomain(
+async function resolvePrimaryDomain(
   detectedDomains: string[],
   filtersByDomain: Record<string, Record<string, string | string[]>>
-): string {
+): Promise<string> {
   const allDomains = new Set([...detectedDomains, ...Object.keys(filtersByDomain)])
+  const domainRefs = await getDomainReferences()
 
   // Check if any domain references others that are present
-  for (const [parent, children] of Object.entries(DOMAIN_REFERENCES)) {
-    if (allDomains.has(parent) && children.some((c) => allDomains.has(c))) {
-      return parent
+  for (const [parent, children] of domainRefs.entries()) {
+    if (allDomains.has(parent)) {
+      for (const child of children) {
+        if (allDomains.has(child)) {
+          return parent
+        }
+      }
     }
   }
 
-  // Otherwise pick the first detected domain
-  return detectedDomains[0] || 'hdmap'
+  // Otherwise pick the first detected domain (LLM should have chosen correctly)
+  if (detectedDomains.length === 0) {
+    throw new Error('No domains detected - cannot compile query')
+  }
+  return detectedDomains[0]!
 }
 
 /**
  * Build the PREFIX block for a set of domains.
+ * Uses the registry to look up namespaces — no hardcoded domain-specific URIs.
  */
 function buildPrefixes(
   registry: Awaited<ReturnType<typeof buildDomainRegistry>>,
@@ -496,13 +639,18 @@ function buildPrefixes(
 ): string {
   const prefixSet = new Set<string>()
 
-  // Always include shared prefixes
+  // W3C standard prefixes (stable, specification-defined)
   prefixSet.add('PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>')
   prefixSet.add('PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>')
   prefixSet.add('PREFIX gx: <https://w3id.org/gaia-x/development#>')
-  prefixSet.add('PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>')
-  prefixSet.add('PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>')
 
+  // Shared domain prefixes via registry (version-independent)
+  for (const shared of ['manifest', 'georeference']) {
+    const d = registry.domains.get(shared)
+    if (d) prefixSet.add(`PREFIX ${d.prefix}: <${d.namespace}>`)
+  }
+
+  // Domain-specific prefixes
   for (const domainName of domains) {
     const domain = registry.domains.get(domainName)
     if (domain) {
@@ -515,59 +663,40 @@ function buildPrefixes(
 
 /**
  * Classify a property into its parent SHACL shape group.
- * Uses naming conventions from the ENVITED-X ontology structure.
+ *
+ * Uses graph-queried shape group data from rdfs:subClassOf hierarchy:
+ * Shape → sh:targetClass → C, C rdfs:subClassOf envited-x:Content → "Content"
+ *
+ * Falls back to "Content" if no shape group is found (conservative default).
  */
-function classifyProperty(propName: string, _iri: string): string {
-  // Format-related properties
-  const formatProps = new Set(['formatType', 'version', 'formatVersion'])
-  if (formatProps.has(propName)) return 'Format'
-
-  // DataSource-related properties
-  const dataSourceProps = new Set(['usedDataSources', 'sourceType', 'sourceDescription'])
-  if (dataSourceProps.has(propName)) return 'DataSource'
-
-  // Quantity-related (numeric properties)
-  const quantityProps = new Set([
-    'length',
-    'numberIntersections',
-    'numberTrafficLights',
-    'numberTrafficSigns',
-    'speedLimit',
-    'temporaryTrafficObjects',
-    'numberTrafficObjects',
-    'permanentTrafficObjects',
-    'numberOfEntities',
-    'duration',
-  ])
-  if (quantityProps.has(propName)) return 'Quantity'
-
-  // Default: Content shape (most enum properties live here)
-  return 'Content'
+function classifyProperty(propName: string, domainName: string, vocabIndex: CompilerVocab): string {
+  const shapeGroup = vocabIndex.shapeGroups.get(`${propName}:${domainName}`)
+  return shapeGroup ?? 'Content'
 }
 
 /**
  * Resolve which domain prefix owns a property.
  *
- * Strategy: Properties in ENVITED-X follow the convention that each domain
- * defines its own properties in its own namespace. Common properties like
- * "length" exist in multiple domains (hdmap, surface-model, etc.).
- * We use the target domain's prefix unless the vocabulary index says
- * this specific property only exists in a different domain.
+ * Strategy: Properties can exist in multiple domains (e.g., roadTypes in both hdmap and ositrace).
+ * We use the target domain's prefix if the property exists there, otherwise use the property's
+ * actual domain from the vocabulary index.
  */
 function resolvePropertyDomain(
   propName: string,
   targetDomain: string,
-  vocabIndex: { properties: Map<string, { domain: string }> }
+  vocabIndex: { properties: Map<string, CompilerProperty> }
 ): string {
-  const prop = vocabIndex.properties.get(propName)
+  const propInfo = vocabIndex.properties.get(propName)
+
   // If the property doesn't exist in vocabulary, use target domain
-  if (!prop) return targetDomain
-  // If the property belongs to the target domain, use it
-  if (prop.domain === targetDomain) return targetDomain
-  // For shared properties like georeference ones, use the actual domain
-  if (prop.domain === 'georeference') return prop.domain
-  // Default: use the target domain (each domain has its own copy of common properties)
-  return targetDomain
+  if (!propInfo) return targetDomain
+
+  // If the property exists in the target domain, use it
+  if (propInfo.domains.has(targetDomain)) return targetDomain
+
+  // Otherwise use the first domain where this property is defined
+  const firstDomain = propInfo.domains.values().next().value
+  return firstDomain || targetDomain
 }
 
 /**
@@ -609,10 +738,11 @@ SELECT (COUNT(DISTINCT ?asset) AS ?count) WHERE {
  */
 export async function compileAllCountQueries(): Promise<{ domain: string; query: string }[]> {
   const registry = await buildDomainRegistry()
+  const assetDomains = await getAssetDomains()
   const queries: { domain: string; query: string }[] = []
 
   for (const domainName of registry.domainNames) {
-    if (!ASSET_DOMAINS.has(domainName)) continue
+    if (!assetDomains.has(domainName)) continue
     const domain = registry.domains.get(domainName)!
     const prefixes = registry.prefixesFor(domainName)
     queries.push({

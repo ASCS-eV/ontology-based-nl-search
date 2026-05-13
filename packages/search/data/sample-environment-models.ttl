@@ -1,0 +1,1688 @@
+@prefix environment-model: <https://w3id.org/ascs-ev/envited-x/environment-model/v5/> .
+@prefix envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/> .
+@prefix georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/> .
+@prefix manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/> .
+@prefix gx: <https://w3id.org/gaia-x/development#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# --- Environment Model 1: San Francisco Low Detail Environment Model ---
+
+<did:web:envmodels.io:EnvironmentModel:san-francisco-envmodel-001> a environment-model:EnvironmentModel ;
+  rdfs:label "San Francisco Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "San Francisco Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of San Francisco for digital twin" ;
+    gx:version "1.3.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "digital twin"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "CARLA Scene Builder" ;
+      environment-model:creationToolVendor "CARLA" ;
+      environment-model:creationToolVersion "0.9.15"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "4588267"^^xsd:integer ;
+      environment-model:geometryCount "771"^^xsd:integer ;
+      environment-model:textureMaterialCount "83"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-CA" ;
+        georeference:region "California" ;
+        georeference:city "San Francisco"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 2: Amsterdam High Detail Environment Model ---
+
+<did:web:envmodels.io:EnvironmentModel:amsterdam-envmodel-002> a environment-model:EnvironmentModel ;
+  rdfs:label "Amsterdam High Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Amsterdam High Detail Environment Model" ;
+    gx:description "High detail 3D environment model of Amsterdam for lidar simulation" ;
+    gx:version "2.4.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "lidar simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "CARLA Scene Builder" ;
+      environment-model:creationToolVendor "CARLA" ;
+      environment-model:creationToolVersion "0.9.15"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "176526"^^xsd:integer ;
+      environment-model:geometryCount "1377"^^xsd:integer ;
+      environment-model:textureMaterialCount "416"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:state "NL-NH" ;
+        georeference:region "North Holland" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 3: Shanghai High Detail Environment Model ---
+
+<did:web:digitwin.io:EnvironmentModel:shanghai-envmodel-003> a environment-model:EnvironmentModel ;
+  rdfs:label "Shanghai High Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Shanghai High Detail Environment Model" ;
+    gx:description "High detail 3D environment model of Shanghai for digital twin" ;
+    gx:version "1.2.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "OpenSceneGraph" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "digital twin"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "RoadRunner" ;
+      environment-model:creationToolVendor "MathWorks" ;
+      environment-model:creationToolVersion "2023b"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "4674254"^^xsd:integer ;
+      environment-model:geometryCount "939"^^xsd:integer ;
+      environment-model:textureMaterialCount "143"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "CN" ;
+        georeference:state "CN-SH" ;
+        georeference:region "Shanghai" ;
+        georeference:city "Shanghai"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 4: San Francisco Low Detail Environment Model ---
+
+<did:web:envmodels.io:EnvironmentModel:san-francisco-envmodel-004> a environment-model:EnvironmentModel ;
+  rdfs:label "San Francisco Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "San Francisco Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of San Francisco for sensor simulation" ;
+    gx:version "3.4.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "sensor simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "2852935"^^xsd:integer ;
+      environment-model:geometryCount "582"^^xsd:integer ;
+      environment-model:textureMaterialCount "438"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-CA" ;
+        georeference:region "California" ;
+        georeference:city "San Francisco"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 5: London High Detail Environment Model ---
+
+<did:web:3dscene.io:EnvironmentModel:london-envmodel-005> a environment-model:EnvironmentModel ;
+  rdfs:label "London High Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "London High Detail Environment Model" ;
+    gx:description "High detail 3D environment model of London for scenario visualization" ;
+    gx:version "2.8.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "buildings, roads, vegetation" ;
+      environment-model:useCase "scenario visualization"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "4740073"^^xsd:integer ;
+      environment-model:geometryCount "1681"^^xsd:integer ;
+      environment-model:textureMaterialCount "461"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "GB" ;
+        georeference:state "GB-LND" ;
+        georeference:region "London" ;
+        georeference:city "London"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 6: Detroit High Detail Environment Model ---
+
+<did:web:scenecraft.io:EnvironmentModel:detroit-envmodel-006> a environment-model:EnvironmentModel ;
+  rdfs:label "Detroit High Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit High Detail Environment Model" ;
+    gx:description "High detail 3D environment model of Detroit for sensor simulation" ;
+    gx:version "1.2.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "buildings, roads, vegetation" ;
+      environment-model:useCase "sensor simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "2542354"^^xsd:integer ;
+      environment-model:geometryCount "1748"^^xsd:integer ;
+      environment-model:textureMaterialCount "332"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 7: Paris Low Detail Environment Model ---
+
+<did:web:digitwin.io:EnvironmentModel:paris-envmodel-007> a environment-model:EnvironmentModel ;
+  rdfs:label "Paris Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Paris Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of Paris for camera simulation" ;
+    gx:version "3.8.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "terrain, buildings, traffic signs" ;
+      environment-model:useCase "camera simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "CARLA Scene Builder" ;
+      environment-model:creationToolVendor "CARLA" ;
+      environment-model:creationToolVersion "0.9.15"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "667962"^^xsd:integer ;
+      environment-model:geometryCount "303"^^xsd:integer ;
+      environment-model:textureMaterialCount "93"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:state "FR-IDF" ;
+        georeference:region "Ile-de-France" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 8: Detroit Medium Detail Environment Model ---
+
+<did:web:scenecraft.io:EnvironmentModel:detroit-envmodel-008> a environment-model:EnvironmentModel ;
+  rdfs:label "Detroit Medium Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit Medium Detail Environment Model" ;
+    gx:description "Medium detail 3D environment model of Detroit for scenario visualization" ;
+    gx:version "1.1.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "scenario visualization"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "4481069"^^xsd:integer ;
+      environment-model:geometryCount "224"^^xsd:integer ;
+      environment-model:textureMaterialCount "243"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 9: Amsterdam Low Detail Environment Model ---
+
+<did:web:envmodels.io:EnvironmentModel:amsterdam-envmodel-009> a environment-model:EnvironmentModel ;
+  rdfs:label "Amsterdam Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Amsterdam Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of Amsterdam for sensor simulation" ;
+    gx:version "1.2.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "terrain, buildings, traffic signs" ;
+      environment-model:useCase "sensor simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "4731151"^^xsd:integer ;
+      environment-model:geometryCount "820"^^xsd:integer ;
+      environment-model:textureMaterialCount "468"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:state "NL-NH" ;
+        georeference:region "North Holland" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 10: Detroit Low Detail Environment Model ---
+
+<did:web:3dscene.io:EnvironmentModel:detroit-envmodel-010> a environment-model:EnvironmentModel ;
+  rdfs:label "Detroit Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of Detroit for digital twin" ;
+    gx:version "2.5.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "intersection, traffic lights, crosswalks" ;
+      environment-model:useCase "digital twin"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "3885818"^^xsd:integer ;
+      environment-model:geometryCount "1881"^^xsd:integer ;
+      environment-model:textureMaterialCount "496"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 11: Tokyo Medium Detail Environment Model ---
+
+<did:web:simworld.io:EnvironmentModel:tokyo-envmodel-011> a environment-model:EnvironmentModel ;
+  rdfs:label "Tokyo Medium Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Tokyo Medium Detail Environment Model" ;
+    gx:description "Medium detail 3D environment model of Tokyo for HiL testing" ;
+    gx:version "1.9.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "OpenSceneGraph" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "intersection, traffic lights, crosswalks" ;
+      environment-model:useCase "HiL testing"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "RoadRunner" ;
+      environment-model:creationToolVendor "MathWorks" ;
+      environment-model:creationToolVersion "2023b"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "3574513"^^xsd:integer ;
+      environment-model:geometryCount "953"^^xsd:integer ;
+      environment-model:textureMaterialCount "164"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "JP" ;
+        georeference:state "JP-13" ;
+        georeference:region "Tokyo" ;
+        georeference:city "Tokyo"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 12: London High Detail Environment Model ---
+
+<did:web:3dscene.io:EnvironmentModel:london-envmodel-012> a environment-model:EnvironmentModel ;
+  rdfs:label "London High Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "London High Detail Environment Model" ;
+    gx:description "High detail 3D environment model of London for scenario visualization" ;
+    gx:version "1.1.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "parking structure, markings" ;
+      environment-model:useCase "scenario visualization"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Blender" ;
+      environment-model:creationToolVendor "Blender Foundation" ;
+      environment-model:creationToolVersion "3.6"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "1717934"^^xsd:integer ;
+      environment-model:geometryCount "864"^^xsd:integer ;
+      environment-model:textureMaterialCount "189"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "GB" ;
+        georeference:state "GB-LND" ;
+        georeference:region "London" ;
+        georeference:city "London"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 13: Detroit Medium Detail Environment Model ---
+
+<did:web:simworld.io:EnvironmentModel:detroit-envmodel-013> a environment-model:EnvironmentModel ;
+  rdfs:label "Detroit Medium Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit Medium Detail Environment Model" ;
+    gx:description "Medium detail 3D environment model of Detroit for visual validation" ;
+    gx:version "1.1.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "intersection, traffic lights, crosswalks" ;
+      environment-model:useCase "visual validation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "1174548"^^xsd:integer ;
+      environment-model:geometryCount "56"^^xsd:integer ;
+      environment-model:textureMaterialCount "376"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 14: Munich Low Detail Environment Model ---
+
+<did:web:3dscene.io:EnvironmentModel:munich-envmodel-014> a environment-model:EnvironmentModel ;
+  rdfs:label "Munich Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Munich Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of Munich for visual validation" ;
+    gx:version "3.6.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "terrain, buildings, traffic signs" ;
+      environment-model:useCase "visual validation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "2754448"^^xsd:integer ;
+      environment-model:geometryCount "1411"^^xsd:integer ;
+      environment-model:textureMaterialCount "423"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BY" ;
+        georeference:region "Bavaria" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 15: Milan Low Detail Environment Model ---
+
+<did:web:scenecraft.io:EnvironmentModel:milan-envmodel-015> a environment-model:EnvironmentModel ;
+  rdfs:label "Milan Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Milan Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of Milan for camera simulation" ;
+    gx:version "3.1.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "camera simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "896081"^^xsd:integer ;
+      environment-model:geometryCount "666"^^xsd:integer ;
+      environment-model:textureMaterialCount "418"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:state "IT-25" ;
+        georeference:region "Lombardy" ;
+        georeference:city "Milan"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 16: Gothenburg Low Detail Environment Model ---
+
+<did:web:digitwin.io:EnvironmentModel:gothenburg-envmodel-016> a environment-model:EnvironmentModel ;
+  rdfs:label "Gothenburg Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of Gothenburg for scenario visualization" ;
+    gx:version "1.3.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "terrain, buildings, traffic signs" ;
+      environment-model:useCase "scenario visualization"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "1642635"^^xsd:integer ;
+      environment-model:geometryCount "1989"^^xsd:integer ;
+      environment-model:textureMaterialCount "84"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 17: Paris High Detail Environment Model ---
+
+<did:web:envmodels.io:EnvironmentModel:paris-envmodel-017> a environment-model:EnvironmentModel ;
+  rdfs:label "Paris High Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Paris High Detail Environment Model" ;
+    gx:description "High detail 3D environment model of Paris for camera simulation" ;
+    gx:version "2.0.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "parking structure, markings" ;
+      environment-model:useCase "camera simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "RoadRunner" ;
+      environment-model:creationToolVendor "MathWorks" ;
+      environment-model:creationToolVersion "2023b"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "2745041"^^xsd:integer ;
+      environment-model:geometryCount "1366"^^xsd:integer ;
+      environment-model:textureMaterialCount "415"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:state "FR-IDF" ;
+        georeference:region "Ile-de-France" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 18: Stuttgart Low Detail Environment Model ---
+
+<did:web:envmodels.io:EnvironmentModel:stuttgart-envmodel-018> a environment-model:EnvironmentModel ;
+  rdfs:label "Stuttgart Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Stuttgart Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of Stuttgart for visual validation" ;
+    gx:version "3.9.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "roads, bridges, tunnels" ;
+      environment-model:useCase "visual validation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "2169025"^^xsd:integer ;
+      environment-model:geometryCount "1549"^^xsd:integer ;
+      environment-model:textureMaterialCount "370"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BW" ;
+        georeference:region "Baden-Wuerttemberg" ;
+        georeference:city "Stuttgart"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 19: Gothenburg Low Detail Environment Model ---
+
+<did:web:envmodels.io:EnvironmentModel:gothenburg-envmodel-019> a environment-model:EnvironmentModel ;
+  rdfs:label "Gothenburg Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of Gothenburg for lidar simulation" ;
+    gx:version "3.7.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "OpenSceneGraph" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "lidar simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "2764226"^^xsd:integer ;
+      environment-model:geometryCount "591"^^xsd:integer ;
+      environment-model:textureMaterialCount "161"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 20: Amsterdam Medium Detail Environment Model ---
+
+<did:web:digitwin.io:EnvironmentModel:amsterdam-envmodel-020> a environment-model:EnvironmentModel ;
+  rdfs:label "Amsterdam Medium Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Amsterdam Medium Detail Environment Model" ;
+    gx:description "Medium detail 3D environment model of Amsterdam for sensor simulation" ;
+    gx:version "1.7.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "parking structure, markings" ;
+      environment-model:useCase "sensor simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unity" ;
+      environment-model:creationToolVendor "Unity Technologies" ;
+      environment-model:creationToolVersion "2023.2"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "1046913"^^xsd:integer ;
+      environment-model:geometryCount "1248"^^xsd:integer ;
+      environment-model:textureMaterialCount "172"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:state "NL-NH" ;
+        georeference:region "North Holland" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 21: London Low Detail Environment Model ---
+
+<did:web:scenecraft.io:EnvironmentModel:london-envmodel-021> a environment-model:EnvironmentModel ;
+  rdfs:label "London Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "London Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of London for visual validation" ;
+    gx:version "2.5.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "rural landscape, fields, trees" ;
+      environment-model:useCase "visual validation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "3199198"^^xsd:integer ;
+      environment-model:geometryCount "1693"^^xsd:integer ;
+      environment-model:textureMaterialCount "427"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "GB" ;
+        georeference:state "GB-LND" ;
+        georeference:region "London" ;
+        georeference:city "London"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 22: Paris Medium Detail Environment Model ---
+
+<did:web:3dscene.io:EnvironmentModel:paris-envmodel-022> a environment-model:EnvironmentModel ;
+  rdfs:label "Paris Medium Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Paris Medium Detail Environment Model" ;
+    gx:description "Medium detail 3D environment model of Paris for visual validation" ;
+    gx:version "1.6.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "terrain, buildings, traffic signs" ;
+      environment-model:useCase "visual validation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "3372368"^^xsd:integer ;
+      environment-model:geometryCount "1172"^^xsd:integer ;
+      environment-model:textureMaterialCount "155"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:state "FR-IDF" ;
+        georeference:region "Ile-de-France" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 23: Tokyo Low Detail Environment Model ---
+
+<did:web:simworld.io:EnvironmentModel:tokyo-envmodel-023> a environment-model:EnvironmentModel ;
+  rdfs:label "Tokyo Low Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Tokyo Low Detail Environment Model" ;
+    gx:description "Low detail 3D environment model of Tokyo for scenario visualization" ;
+    gx:version "3.3.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "OpenSceneGraph" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "rural landscape, fields, trees" ;
+      environment-model:useCase "scenario visualization"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "236047"^^xsd:integer ;
+      environment-model:geometryCount "868"^^xsd:integer ;
+      environment-model:textureMaterialCount "473"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "JP" ;
+        georeference:state "JP-13" ;
+        georeference:region "Tokyo" ;
+        georeference:city "Tokyo"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 24: Detroit Medium Detail Environment Model ---
+
+<did:web:3dscene.io:EnvironmentModel:detroit-envmodel-024> a environment-model:EnvironmentModel ;
+  rdfs:label "Detroit Medium Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Detroit Medium Detail Environment Model" ;
+    gx:description "Medium detail 3D environment model of Detroit for sensor simulation" ;
+    gx:version "1.8.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "terrain, buildings, traffic signs" ;
+      environment-model:useCase "sensor simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "CARLA Scene Builder" ;
+      environment-model:creationToolVendor "CARLA" ;
+      environment-model:creationToolVersion "0.9.15"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "126882"^^xsd:integer ;
+      environment-model:geometryCount "1668"^^xsd:integer ;
+      environment-model:textureMaterialCount "403"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-MI" ;
+        georeference:region "Michigan" ;
+        georeference:city "Detroit"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 25: Stuttgart Medium Detail Environment Model ---
+
+<did:web:scenecraft.io:EnvironmentModel:stuttgart-envmodel-025> a environment-model:EnvironmentModel ;
+  rdfs:label "Stuttgart Medium Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Stuttgart Medium Detail Environment Model" ;
+    gx:description "Medium detail 3D environment model of Stuttgart for camera simulation" ;
+    gx:version "2.5.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "camera simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "RoadRunner" ;
+      environment-model:creationToolVendor "MathWorks" ;
+      environment-model:creationToolVersion "2023b"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "3208766"^^xsd:integer ;
+      environment-model:geometryCount "830"^^xsd:integer ;
+      environment-model:textureMaterialCount "123"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BW" ;
+        georeference:region "Baden-Wuerttemberg" ;
+        georeference:city "Stuttgart"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 26: Munich High Detail Environment Model ---
+
+<did:web:simworld.io:EnvironmentModel:munich-envmodel-026> a environment-model:EnvironmentModel ;
+  rdfs:label "Munich High Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Munich High Detail Environment Model" ;
+    gx:description "High detail 3D environment model of Munich for scenario visualization" ;
+    gx:version "1.3.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "intersection, traffic lights, crosswalks" ;
+      environment-model:useCase "scenario visualization"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "RoadRunner" ;
+      environment-model:creationToolVendor "MathWorks" ;
+      environment-model:creationToolVersion "2023b"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "1629688"^^xsd:integer ;
+      environment-model:geometryCount "414"^^xsd:integer ;
+      environment-model:textureMaterialCount "183"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:state "DE-BY" ;
+        georeference:region "Bavaria" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 27: San Francisco Medium Detail Environment Model ---
+
+<did:web:scenecraft.io:EnvironmentModel:san-francisco-envmodel-027> a environment-model:EnvironmentModel ;
+  rdfs:label "San Francisco Medium Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "San Francisco Medium Detail Environment Model" ;
+    gx:description "Medium detail 3D environment model of San Francisco for visual validation" ;
+    gx:version "1.2.0" ;
+    gx:license "CC-BY-NC-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "buildings, roads, vegetation" ;
+      environment-model:useCase "visual validation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unity" ;
+      environment-model:creationToolVendor "Unity Technologies" ;
+      environment-model:creationToolVersion "2023.2"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "1213114"^^xsd:integer ;
+      environment-model:geometryCount "1576"^^xsd:integer ;
+      environment-model:textureMaterialCount "308"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-CA" ;
+        georeference:region "California" ;
+        georeference:city "San Francisco"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 28: San Francisco High Detail Environment Model ---
+
+<did:web:3dscene.io:EnvironmentModel:san-francisco-envmodel-028> a environment-model:EnvironmentModel ;
+  rdfs:label "San Francisco High Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "San Francisco High Detail Environment Model" ;
+    gx:description "High detail 3D environment model of San Francisco for camera simulation" ;
+    gx:version "2.9.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "OpenSceneGraph" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "roads, bridges, tunnels" ;
+      environment-model:useCase "camera simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "CARLA Scene Builder" ;
+      environment-model:creationToolVendor "CARLA" ;
+      environment-model:creationToolVersion "0.9.15"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "2593590"^^xsd:integer ;
+      environment-model:geometryCount "1550"^^xsd:integer ;
+      environment-model:textureMaterialCount "217"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:state "US-CA" ;
+        georeference:region "California" ;
+        georeference:city "San Francisco"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 29: Gothenburg Medium Detail Environment Model ---
+
+<did:web:envmodels.io:EnvironmentModel:gothenburg-envmodel-029> a environment-model:EnvironmentModel ;
+  rdfs:label "Gothenburg Medium Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Gothenburg Medium Detail Environment Model" ;
+    gx:description "Medium detail 3D environment model of Gothenburg for SiL testing" ;
+    gx:version "3.7.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "SiL testing"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "RoadRunner" ;
+      environment-model:creationToolVendor "MathWorks" ;
+      environment-model:creationToolVersion "2023b"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "1713141"^^xsd:integer ;
+      environment-model:geometryCount "1664"^^xsd:integer ;
+      environment-model:textureMaterialCount "157"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:state "SE-AB" ;
+        georeference:region "Stockholm" ;
+        georeference:city "Gothenburg"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- Environment Model 30: Milan Medium Detail Environment Model ---
+
+<did:web:scenecraft.io:EnvironmentModel:milan-envmodel-030> a environment-model:EnvironmentModel ;
+  rdfs:label "Milan Medium Detail Environment Model"@en ;
+  environment-model:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Milan Medium Detail Environment Model" ;
+    gx:description "Medium detail 3D environment model of Milan for sensor simulation" ;
+    gx:version "2.9.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "roads, bridges, tunnels" ;
+      environment-model:useCase "sensor simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Blender" ;
+      environment-model:creationToolVendor "Blender Foundation" ;
+      environment-model:creationToolVersion "3.6"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "1779392"^^xsd:integer ;
+      environment-model:geometryCount "263"^^xsd:integer ;
+      environment-model:textureMaterialCount "448"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:state "IT-25" ;
+        georeference:region "Lombardy" ;
+        georeference:city "Milan"
+      ]
+    ]
+  ] ;
+  environment-model:hasManifest [
+    a manifest:Manifest
+  ] .
+

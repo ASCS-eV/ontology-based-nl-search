@@ -6,7 +6,7 @@ From "motorway maps in Germany" to SPARQL results — step by step.
 
 ```mermaid
 graph TD
-    A["1. Vocabulary Extraction"] --> B["2. Prompt Generation"]
+    A["1. SHACL Loading"] --> B["2. Prompt Generation"]
     B --> C["3. LLM Interpretation"]
     C --> D["4. Post-LLM Validation"]
     D --> E["5. SPARQL Compilation"]
@@ -19,32 +19,30 @@ graph TD
     style E fill:#dcfce7,stroke:#22c55e
 ```
 
-## Stage 1: Vocabulary Extraction (startup)
+## Stage 1: SHACL Loading (startup)
 
-At startup, the **schema loader** reads 45 OWL + SHACL files from 22 domains into a named graph (`<urn:graph:schema>`). The **vocabulary extractor** then runs SPARQL queries to build a structured vocabulary:
+At startup, the **schema loader** reads 45 OWL + SHACL files from 22 domains into a named graph (`<urn:graph:schema>`). In parallel, the **SHACL reader** reads the raw `.shacl.ttl` file content (22 files, ~298 KB from 21 domains — `gx` excluded at 2.3 MB):
 
 ```mermaid
 graph TD
     TTL["45 OWL + SHACL files<br/>(22 domains)"] -->|"loadSchemaGraph()"| SG["Schema Graph<br/>‹urn:graph:schema›"]
-    SG -->|"SPARQL: sh:in values"| ENUM["Enum Properties<br/>(roadTypes, formatType, ...)"]
-    SG -->|"SPARQL: sh:datatype"| NUM["Numeric Properties<br/>(laneCount, length, ...)"]
-    SG -->|"property → domain"| IDX["Domain Index<br/>(roadTypes → hdmap, ...)"]
+    SHACL["22 SHACL files<br/>(298 KB, 21 domains)"] -->|"readShaclFiles()"| RAW["Raw SHACL Content<br/>(for LLM prompt)"]
+    SG -->|"SPARQL: sh:in values"| VOCAB["Vocabulary<br/>(for post-LLM validation)"]
 
     style SG fill:#dbeafe,stroke:#3b82f6
-    style ENUM fill:#dcfce7,stroke:#22c55e
-    style NUM fill:#dcfce7,stroke:#22c55e
-    style IDX fill:#fef3c7,stroke:#f59e0b
+    style RAW fill:#dcfce7,stroke:#22c55e
+    style VOCAB fill:#fef3c7,stroke:#f59e0b
 ```
 
-**Output:** `OntologyVocabulary` containing `enumProperties[]` and `numericProperties[]`, each with their domain association.
+**Output:** Raw SHACL Turtle content for prompt injection + `OntologyVocabulary` for post-LLM validation.
 
 ## Stage 2: Prompt Generation
 
-The **prompt builder** converts the extracted vocabulary into a structured LLM system prompt:
+The **prompt builder** embeds the raw SHACL Turtle content directly into the system prompt, organized by domain:
 
-- Markdown tables of allowed values per domain (e.g., `roadTypes: motorway, urban, rural, ...`)
-- Numeric property descriptions with ranges
+- Raw Turtle shapes per domain in fenced code blocks (the LLM reads `sh:in`, `sh:pattern`, `sh:datatype`, `sh:description` natively)
 - Location and license field instructions
+- Synonym resolution rules ("YOU are the synonym resolver")
 - Few-shot examples with expected `submit_slots` tool-call output
 
 The prompt is generated once at startup and cached. When the ontology changes, the prompt updates automatically.
@@ -65,7 +63,7 @@ The LLM agent receives the user query + generated prompt and calls the `submit_s
 }
 ```
 
-The LLM is the **natural-language synonym resolver** — "highway" → "motorway", "German" → "DE", "Autobahn" → "motorway" are all natural language inferences grounded by the vocabulary tables in the prompt.
+The LLM is the **natural-language synonym resolver** — "highway" → "motorway", "German" → "DE", "Autobahn" → "motorway" are all natural language inferences grounded by the raw SHACL shapes in the prompt. The LLM reads `sh:in` enumerations, `sh:pattern` constraints, and `sh:description` annotations directly from the Turtle content.
 
 ## Stage 4: Post-LLM Validation
 
@@ -83,34 +81,33 @@ graph LR
     style VS fill:#dbeafe,stroke:#3b82f6
 ```
 
-| Correction                   | What it does                                     | Example                                                             |
-| ---------------------------- | ------------------------------------------------ | ------------------------------------------------------------------- |
-| **Filter correction**        | Fuzzy-matches values against `sh:in` vocabulary  | `"Motorway"` → `"motorway"`, `"hihgway"` → `"highway"`              |
-| **Domain correction**        | Fixes wrong domain when filters belong elsewhere | LLM chose `scenario` but `roadTypes` is hdmap → corrects to `hdmap` |
-| **Confidence recomputation** | Removes LLM bias from confidence scores          | Exact `sh:in` match = high, edit-distance match = medium            |
-| **Gap enrichment**           | Adds suggestions from real vocabulary for gaps   | `"ADAS testing"` → suggests `"free-driving"`, `"following"`         |
+| Correction                   | What it does                                                                          | Example                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Filter correction**        | Fuzzy-matches values against `sh:in` vocabulary                                       | `"Motorway"` → `"motorway"`, `"hihgway"` → `"highway"`                    |
+| **Domain correction**        | Uses a property → `Set<domain>` map to preserve valid choices and add missing domains | LLM chose `["scenario"]` for "scenarios on motorways" → merges in `hdmap` |
+| **Confidence recomputation** | Removes LLM bias from confidence scores                                               | Exact `sh:in` match = high, edit-distance match = medium                  |
+| **Gap enrichment**           | Adds suggestions from real vocabulary for gaps                                        | `"ADAS testing"` → suggests `"free-driving"`, `"following"`               |
 
 ## Stage 5: SPARQL Compilation
 
-The compiler takes validated `SearchSlots` and produces deterministic SPARQL:
+The compiler first queries the schema graph via `schema-queries.ts` to build `CompilerVocab` (`properties`, `shapeGroups`, `range2DProperties`), discover asset domains, and resolve cross-domain references. It then turns validated `SearchSlots` into deterministic SPARQL:
 
 ```sparql
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v5/>
-PREFIX geo: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 
 SELECT ?asset ?name ?roadTypes ?country WHERE {
-  ?asset a manifest:HDMap ;
-    rdfs:label ?name .
-  ?asset manifest:hasDomainSpecification ?ds .
+  ?asset a hdmap:HdMap ;
+    rdfs:label ?name ;
+    hdmap:hasDomainSpecification ?ds .
   ?ds hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
-  ?ds hdmap:hasGeoreference ?geo .
-  ?geo geo:hasProjectLocation ?loc .
-  ?loc geo:country ?country .
+  ?ds hdmap:hasGeoreference ?georef .
+  ?georef georeference:hasProjectLocation ?loc .
+  ?loc georeference:country ?country .
   FILTER(?roadTypes = "motorway")
-  FILTER(CONTAINS(LCASE(?country), "de"))
+  FILTER(?country = "DE")
 }
 LIMIT 100
 ```
@@ -125,7 +122,7 @@ LIMIT 100
 
 SPARQL runs against the in-memory **Oxigraph** store:
 
-- Pre-loaded with 167 instance assets (117 HD maps + 50 scenarios)
+- Pre-loaded with 267 instance assets (117 HD maps + 50 scenarios + 50 OSI traces + 30 environment models + 20 surface models)
 - Schema graph separate from instance data (`<urn:graph:schema>` vs default graph)
 - Sub-millisecond query execution for most queries
 
