@@ -1,8 +1,12 @@
 /**
  * Generic SPARQL Compiler — compiles SearchSlots into SPARQL SELECT queries.
  *
- * Design: Domain-agnostic. Uses the DomainRegistry to resolve target classes
- * and namespace prefixes. Generates FILTER clauses from slot filters/ranges.
+ * Design: Domain-agnostic and graph-driven. Uses the DomainRegistry plus
+ * `schema-queries.ts` to derive compiler metadata from the SHACL schema graph
+ * instead of hardcoded domain constants.
+ *
+ * `CompilerVocab` caches three graph-derived indexes for compilation:
+ * properties, shapeGroups, and range2DProperties.
  *
  * Cross-domain support: When filters span multiple ontology domains (e.g.,
  * scenario + hdmap), the compiler identifies the primary domain (the one that
