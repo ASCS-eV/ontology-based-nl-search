@@ -13,6 +13,16 @@
 - Follow the project's ESLint and Prettier configuration.
 - Use TypeScript strict mode — avoid `any` unless explicitly justified.
 
+## Pre-Push / Pre-PR Validation
+
+**Always** run `pnpm run validate` before pushing commits or creating pull requests. The pre-commit hook only runs lint + format — it does **not** run tests or type-checking. CI will reject PRs that fail validation, so catch issues locally first:
+
+```bash
+pnpm run validate   # typecheck + lint + format + tests — must pass before push
+```
+
+If you change behavior (e.g., how slots, filters, or gaps work), update the corresponding tests to match. The rule: if a filter value appears in the SPARQL query, it must be visible and editable in the UI.
+
 ## Project Startup
 
 ### Complete Startup (All Services)

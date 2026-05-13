@@ -131,7 +131,7 @@ describe('validateSlots', () => {
     expect(result.interpretation.mappedTerms[0]!.confidence).toBe('medium')
   })
 
-  it('demotes unmatchable values to gaps', () => {
+  it('keeps unmatchable values as low-confidence and reports as gap', () => {
     const response: LlmStructuredResponse = {
       interpretation: {
         summary: 'test',
@@ -149,7 +149,11 @@ describe('validateSlots', () => {
     }
 
     const result = validateSlots(response, testVocabulary)
-    expect(result.interpretation.mappedTerms).toHaveLength(0)
+    // Unmatched terms stay visible (low confidence) so the user can edit them
+    expect(result.interpretation.mappedTerms).toHaveLength(1)
+    expect(result.interpretation.mappedTerms[0]!.confidence).toBe('low')
+    expect(result.interpretation.mappedTerms[0]!.mapped).toBe('vehicle-takeover')
+    // Also reported as gap with suggestions
     expect(result.gaps).toHaveLength(1)
     expect(result.gaps[0]!.term).toBe('takeover')
     expect(result.gaps[0]!.reason).toContain('not a valid value')
