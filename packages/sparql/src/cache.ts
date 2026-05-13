@@ -50,7 +50,7 @@ export class SparqlCache {
     this.cache.delete(key)
     this.cache.set(key, entry)
 
-    return entry.results
+    return structuredClone(entry.results)
   }
 
   /** Store a result in the cache */
@@ -68,7 +68,7 @@ export class SparqlCache {
       }
     }
 
-    this.cache.set(key, { results, timestamp: Date.now() })
+    this.cache.set(key, { results: structuredClone(results), timestamp: Date.now() })
   }
 
   /** Clear the entire cache */

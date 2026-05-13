@@ -2,6 +2,7 @@ export {
   compileAllCountQueries,
   compileCountQuery,
   compileSlots,
+  escapeSparqlLiteral,
   getAssetDomains,
 } from './compiler.js'
 export { getSearchService, resetSearchService, searchNl, searchRefine } from './factory.js'

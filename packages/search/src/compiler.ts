@@ -51,6 +51,21 @@ interface CompilerVocab {
   range2DProperties: Set<string>
 }
 
+/**
+ * Escape a string value for safe embedding in a SPARQL double-quoted literal.
+ * Prevents SPARQL injection by escaping characters that would break out of the literal.
+ *
+ * @see https://www.w3.org/TR/sparql11-query/#rString — SPARQL string escape rules
+ */
+export function escapeSparqlLiteral(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t')
+}
+
 /** Cached compiler vocabulary (ontology doesn't change at runtime) */
 let cachedCompilerVocab: CompilerVocab | null = null
 
@@ -256,7 +271,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     ?asset ${domain.prefix}:hasResourceDescription ?resDesc .
     ?resDesc gx:license ?license .
   }`)
-    filters.push(`FILTER(?license = "${slots.license}")`)
+    filters.push(`FILTER(?license = "${escapeSparqlLiteral(slots.license)}")`)
     selectVars.add('?license')
   }
 
@@ -315,12 +330,16 @@ function compileCrossDomainQuery(slots: SearchSlots, registry: DomainRegistry): 
 
     if (slots.location.country) {
       optionals.push(`    ?loc georeference:country ?country .`)
-      filters.push(`  FILTER(CONTAINS(LCASE(?country), "${slots.location.country.toLowerCase()}"))`)
+      filters.push(
+        `  FILTER(CONTAINS(LCASE(?country), "${escapeSparqlLiteral(slots.location.country.toLowerCase())}"))`
+      )
       selectVars.push('?country')
     }
     if (slots.location.city) {
       optionals.push(`    ?loc georeference:city ?city .`)
-      filters.push(`  FILTER(CONTAINS(LCASE(?city), "${slots.location.city.toLowerCase()}"))`)
+      filters.push(
+        `  FILTER(CONTAINS(LCASE(?city), "${escapeSparqlLiteral(slots.location.city.toLowerCase())}"))`
+      )
       selectVars.push('?city')
     }
 
@@ -333,7 +352,7 @@ function compileCrossDomainQuery(slots: SearchSlots, registry: DomainRegistry): 
     ?asset envited-x:hasResourceDescription ?resDesc .
     ?resDesc gx:license ?license .
   }`)
-    filters.push(`FILTER(?license = "${slots.license}")`)
+    filters.push(`FILTER(?license = "${escapeSparqlLiteral(slots.license)}")`)
     selectVars.push('?license')
   }
 
@@ -496,25 +515,31 @@ function buildDomainPatterns(
     if (location!.country) {
       const v = `?country${suffix}`
       patterns.push(`${locVar} georeference:country ${v} .`)
-      filters.push(`FILTER(CONTAINS(LCASE(${v}), "${location!.country.toLowerCase()}"))`)
+      filters.push(
+        `FILTER(CONTAINS(LCASE(${v}), "${escapeSparqlLiteral(location!.country.toLowerCase())}"))`
+      )
       selectVars.add(v)
     }
     if (location!.state) {
       const v = `?state${suffix}`
       patterns.push(`${locVar} georeference:state ${v} .`)
-      filters.push(`FILTER(${v} = "${location!.state}")`)
+      filters.push(`FILTER(${v} = "${escapeSparqlLiteral(location!.state)}")`)
       selectVars.add(v)
     }
     if (location!.region) {
       const v = `?region${suffix}`
       patterns.push(`${locVar} georeference:region ${v} .`)
-      filters.push(`FILTER(CONTAINS(LCASE(${v}), "${location!.region.toLowerCase()}"))`)
+      filters.push(
+        `FILTER(CONTAINS(LCASE(${v}), "${escapeSparqlLiteral(location!.region.toLowerCase())}"))`
+      )
       selectVars.add(v)
     }
     if (location!.city) {
       const v = `?city${suffix}`
       patterns.push(`${locVar} georeference:city ${v} .`)
-      filters.push(`FILTER(CONTAINS(LCASE(${v}), "${location!.city.toLowerCase()}"))`)
+      filters.push(
+        `FILTER(CONTAINS(LCASE(${v}), "${escapeSparqlLiteral(location!.city.toLowerCase())}"))`
+      )
       selectVars.add(v)
     }
   }
@@ -705,13 +730,13 @@ function resolvePropertyDomain(
 function addEnumFilter(filters: string[], varName: string, value: string | string[]): void {
   if (Array.isArray(value)) {
     if (value.length === 1) {
-      filters.push(`FILTER(${varName} = "${value[0]}")`)
+      filters.push(`FILTER(${varName} = "${escapeSparqlLiteral(value[0]!)}")`)
     } else {
-      const values = value.map((v) => `"${v}"`).join(', ')
+      const values = value.map((v) => `"${escapeSparqlLiteral(v)}"`).join(', ')
       filters.push(`FILTER(${varName} IN (${values}))`)
     }
   } else {
-    filters.push(`FILTER(${varName} = "${value}")`)
+    filters.push(`FILTER(${varName} = "${escapeSparqlLiteral(value)}")`)
   }
 }
 

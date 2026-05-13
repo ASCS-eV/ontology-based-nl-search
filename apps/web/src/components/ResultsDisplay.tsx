@@ -23,7 +23,7 @@ export function ResultsDisplay({ results }: ResultsDisplayProps) {
   const exportCsv = () => {
     const header = columns.join(',')
     const rows = results.map((row) =>
-      columns.map((col) => `"${(row[col] || '').replace(/"/g, '""')}"`).join(',')
+      columns.map((col) => `"${sanitizeCsvCell(row[col] || '').replace(/"/g, '""')}"`).join(',')
     )
     const csv = [header, ...rows].join('\n')
     downloadFile(csv, 'search-results.csv', 'text/csv')
@@ -115,6 +115,14 @@ function formatValue(value: unknown): string {
     return value
   }
   return String(value)
+}
+
+/** Prevent CSV formula injection by prefixing dangerous leading characters with a single quote */
+function sanitizeCsvCell(value: string): string {
+  if (/^[=+\-@\t\r]/.test(value)) {
+    return `'${value}`
+  }
+  return value
 }
 
 function downloadFile(content: string, filename: string, mimeType: string) {

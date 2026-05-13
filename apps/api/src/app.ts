@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 
@@ -13,6 +14,13 @@ const app = new Hono<AppEnv>()
 app.use('*', logger())
 app.use('*', cors())
 app.use('*', requestId())
+app.use(
+  '/search/*',
+  bodyLimit({
+    maxSize: 64 * 1024, // 64 KB
+    onError: (c) => c.json({ error: 'Request body too large', code: 'BAD_REQUEST' }, 413),
+  })
+)
 app.onError(errorHandler)
 
 app.get('/health', (c) => c.json({ status: 'ok' }))

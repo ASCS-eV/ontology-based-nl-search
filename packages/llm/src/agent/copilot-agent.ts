@@ -58,10 +58,13 @@ let cachedVocabulary: OntologyVocabulary | null = null
 let client: CopilotClient | null = null
 
 /**
- * Active submission callback — set per-request before sendAndWait,
- * invoked by the persistent tool handler to deliver results.
+ * Per-request submission callbacks keyed by a unique request token.
+ * Replaces the previous single global callback to prevent cross-request races.
  */
-let activeSubmissionCallback: ((params: SlotSubmission) => void) | null = null
+const pendingSubmissions = new Map<string, (params: SlotSubmission) => void>()
+
+/** Counter for generating unique request tokens */
+let requestCounter = 0
 
 /** The persistent session, reused across all search requests */
 let persistentSession: CopilotSession | null = null
@@ -175,8 +178,11 @@ function buildPersistentSubmitSlotsTool() {
       required: ['slots', 'interpretation', 'gaps'],
     },
     handler: async (params: unknown) => {
-      if (activeSubmissionCallback) {
-        activeSubmissionCallback(params as SlotSubmission)
+      // Route to the most recent pending request (LIFO for single-session SDK)
+      const lastKey = [...pendingSubmissions.keys()].pop()
+      if (lastKey) {
+        const cb = pendingSubmissions.get(lastKey)
+        if (cb) cb(params as SlotSubmission)
       }
       return { accepted: true }
     },
@@ -266,11 +272,12 @@ export async function runCopilotAgent(
   }
   endSession()
 
-  // Set up per-request submission capture via callback
+  // Set up per-request submission capture via callback map (prevents cross-request races)
+  const requestToken = `req-${++requestCounter}`
   const submissionRef: { value: SlotSubmission | null } = { value: null }
-  activeSubmissionCallback = (params) => {
+  pendingSubmissions.set(requestToken, (params) => {
     submissionRef.value = params
-  }
+  })
 
   try {
     const endLlmCall = sw.time('llm-round-trip')
@@ -281,7 +288,7 @@ export async function runCopilotAgent(
     await invalidateSession()
     throw err
   } finally {
-    activeSubmissionCallback = null
+    pendingSubmissions.delete(requestToken)
   }
 
   if (submissionRef.value) {

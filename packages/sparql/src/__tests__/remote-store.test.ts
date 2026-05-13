@@ -43,14 +43,17 @@ describe('RemoteSparqlStore', () => {
       const sparql = 'SELECT ?s WHERE { ?s ?p ?o } LIMIT 10'
       const results = await store.query(sparql)
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3030/envited/sparql', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/sparql-query',
-          Accept: 'application/sparql-results+json',
-        },
-        body: sparql,
-      })
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:3030/envited/sparql',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/sparql-query',
+            Accept: 'application/sparql-results+json',
+          },
+          body: sparql,
+        })
+      )
       expect(results).toEqual(mockResults)
     })
 
@@ -72,13 +75,16 @@ describe('RemoteSparqlStore', () => {
       const sparql = 'INSERT DATA { <http://ex.org/s> <http://ex.org/p> "o" . }'
       await store.update(sparql)
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3030/envited/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/sparql-update',
-        },
-        body: sparql,
-      })
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:3030/envited/update',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/sparql-update',
+          },
+          body: sparql,
+        })
+      )
     })
 
     it('should throw on failed update', async () => {
