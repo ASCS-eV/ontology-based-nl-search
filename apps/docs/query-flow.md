@@ -81,34 +81,33 @@ graph LR
     style VS fill:#dbeafe,stroke:#3b82f6
 ```
 
-| Correction                   | What it does                                     | Example                                                             |
-| ---------------------------- | ------------------------------------------------ | ------------------------------------------------------------------- |
-| **Filter correction**        | Fuzzy-matches values against `sh:in` vocabulary  | `"Motorway"` → `"motorway"`, `"hihgway"` → `"highway"`              |
-| **Domain correction**        | Fixes wrong domain when filters belong elsewhere | LLM chose `scenario` but `roadTypes` is hdmap → corrects to `hdmap` |
-| **Confidence recomputation** | Removes LLM bias from confidence scores          | Exact `sh:in` match = high, edit-distance match = medium            |
-| **Gap enrichment**           | Adds suggestions from real vocabulary for gaps   | `"ADAS testing"` → suggests `"free-driving"`, `"following"`         |
+| Correction                   | What it does                                                                          | Example                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Filter correction**        | Fuzzy-matches values against `sh:in` vocabulary                                       | `"Motorway"` → `"motorway"`, `"hihgway"` → `"highway"`                    |
+| **Domain correction**        | Uses a property → `Set<domain>` map to preserve valid choices and add missing domains | LLM chose `["scenario"]` for "scenarios on motorways" → merges in `hdmap` |
+| **Confidence recomputation** | Removes LLM bias from confidence scores                                               | Exact `sh:in` match = high, edit-distance match = medium                  |
+| **Gap enrichment**           | Adds suggestions from real vocabulary for gaps                                        | `"ADAS testing"` → suggests `"free-driving"`, `"following"`               |
 
 ## Stage 5: SPARQL Compilation
 
-The compiler takes validated `SearchSlots` and produces deterministic SPARQL:
+The compiler first queries the schema graph via `schema-queries.ts` to build `CompilerVocab` (`properties`, `shapeGroups`, `range2DProperties`), discover asset domains, and resolve cross-domain references. It then turns validated `SearchSlots` into deterministic SPARQL:
 
 ```sparql
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v5/>
-PREFIX geo: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 
 SELECT ?asset ?name ?roadTypes ?country WHERE {
-  ?asset a manifest:HDMap ;
-    rdfs:label ?name .
-  ?asset manifest:hasDomainSpecification ?ds .
+  ?asset a hdmap:HdMap ;
+    rdfs:label ?name ;
+    hdmap:hasDomainSpecification ?ds .
   ?ds hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
-  ?ds hdmap:hasGeoreference ?geo .
-  ?geo geo:hasProjectLocation ?loc .
-  ?loc geo:country ?country .
+  ?ds hdmap:hasGeoreference ?georef .
+  ?georef georeference:hasProjectLocation ?loc .
+  ?loc georeference:country ?country .
   FILTER(?roadTypes = "motorway")
-  FILTER(CONTAINS(LCASE(?country), "de"))
+  FILTER(?country = "DE")
 }
 LIMIT 100
 ```
@@ -123,7 +122,7 @@ LIMIT 100
 
 SPARQL runs against the in-memory **Oxigraph** store:
 
-- Pre-loaded with 167 instance assets (117 HD maps + 50 scenarios)
+- Pre-loaded with 267 instance assets (117 HD maps + 50 scenarios + 50 OSI traces + 30 environment models + 20 surface models)
 - Schema graph separate from instance data (`<urn:graph:schema>` vs default graph)
 - Sub-millisecond query execution for most queries
 

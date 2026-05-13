@@ -126,6 +126,10 @@ curl http://localhost:3003/stats
 # Should return JSON with asset counts
 ```
 
+During warmup, the API loads 5 sample TTL files: `sample-assets.ttl`, `sample-scenarios.ttl`, `sample-ositrace.ttl`, `sample-environment-models.ttl`, and `sample-surface-models.ttl`.
+
+A healthy `/stats` response should report **267 assets** total: 117 HD maps, 50 scenarios, 50 OSI traces, 30 environment models, and 20 surface models.
+
 **Wait time**: API warmup takes ~8-12 seconds (loading ontologies + creating LLM session)
 
 ## Stopping Services

@@ -87,19 +87,20 @@ packages/
 │   ├── warmup.ts               # Loads instance TTL data at startup
 │   ├── domain-registry.ts      # Domain lookups
 │   └── vocabulary-index.ts     # Vocabulary indexing
-├── search/                 # Search pipeline core
+├── search/                 # Search pipeline core (graph-driven compiler)
 │   ├── schema-loader.ts        # Loads OWL+SHACL files into schema graph
+│   ├── schema-queries.ts       # SPARQL helpers for asset domains, references, shape groups
 │   ├── vocabulary-extractor.ts # SPARQL-based extraction of sh:in enums
-│   ├── compiler.ts             # SearchSlots → deterministic SPARQL
+│   ├── compiler.ts             # SearchSlots → deterministic SPARQL via CompilerVocab
 │   ├── service.ts              # Orchestrates init → interpret → compile → execute
 │   ├── factory.ts              # Service factory and dependency wiring
 │   ├── slots.ts                # SearchSlots type definitions
-│   ├── data-loader.ts          # Instance data loading
+│   ├── data-loader.ts          # Loads 5 sample TTL files (267 dev/test assets)
 │   ├── init.ts                 # Initialization sequence
 │   └── types.ts                # Shared types
 ├── llm/                    # LLM integration
-│   ├── prompt-builder.ts       # Auto-generates LLM system prompt from vocabulary
-│   ├── slot-validator.ts       # Post-LLM validation: fuzzy match, domain correction
+│   ├── prompt-builder.ts       # Auto-generates LLM system prompt from raw SHACL
+│   ├── slot-validator.ts       # Post-LLM validation: fuzzy match, multi-domain set-based correction
 │   ├── provider.ts             # AI provider configuration
 │   ├── agent/index.ts          # Vercel AI SDK agent (OpenAI/Ollama)
 │   ├── agent/copilot-agent.ts  # GitHub Copilot SDK agent

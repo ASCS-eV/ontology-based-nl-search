@@ -26,9 +26,11 @@ pnpm dev
 
 1. Wait for all 3 services to show "ready" (~10-15 seconds)
 2. Check API health: `curl http://localhost:3003/health`
-3. Check stats: `curl http://localhost:3003/stats` (should show 167 assets)
+3. Check stats: `curl http://localhost:3003/stats` (should show 267 assets)
 4. Open http://localhost:5174 in browser
 5. Type a query to enable search button
+
+The search/compiler path is graph-driven: `packages/search/src/schema-queries.ts` derives asset domains, domain references, and compiler metadata from the schema graph instead of hardcoded constants.
 
 ### Individual Services (for debugging)
 

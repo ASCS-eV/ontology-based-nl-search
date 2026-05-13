@@ -68,6 +68,8 @@ graph TD
     style SP fill:#f0f9ff,stroke:#798bb3
 ```
 
+Prompt input currently comes from **22 SHACL files** (about **298 KB** across **21 domains**, excluding `gx`). Those ontology shapes back a runtime sample dataset of **267 assets across 5 domains**: 117 HD maps, 50 scenarios, 50 OSI traces, 30 environment models, and 20 surface models.
+
 ### What the prompt includes
 
 | Section                     | Purpose                                                                           |
@@ -118,9 +120,10 @@ graph LR
 
 When the LLM picks the wrong domain (e.g., `scenario` when filters are `roadTypes`, `country`), the validator:
 
-1. Looks up each filter property's domain from the vocabulary index
-2. If all filter properties belong to domain X but LLM chose domain Y → replaces with X
-3. If filters span multiple domains → merges all required domains
+1. Builds a `Map<string, Set<string>>` index so shared properties stay multi-domain aware
+2. Keeps the LLM's choice when a property already exists in one of the selected domains
+3. Adds every missing required domain when filters or ranges point elsewhere
+4. Merges cross-domain queries instead of collapsing them to a single hardcoded winner
 
 ### Confidence Recomputation
 

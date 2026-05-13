@@ -2,7 +2,7 @@
 
 Natural language search interface for ontology-management-base knowledge graphs, built with TypeScript.
 
-A locally running TypeScript web application with a Google-style search bar that allows for natural language search of [EVES-003](https://github.com/ASCS-eV/EVES/) Simulation Assets zip files according to their ENVITED-X:SimulationAsset metadata from the [Ontology Management Base](https://github.com/ASCS-eV/ontology-management-base) repository which are created with the help of the [sl-5-8-asset-tools](https://github.com/openMSL/sl-5-8-asset-tools). The ontologies are used as a language translation reference for a LLM which translates natural language queries (e.g. "show me all German highways with 3 lanes") into structured search slots that are validated and compiled into SPARQL queries, then executed against a graph containing simulation asset metadata. The LLM never writes SPARQL directly — a deterministic compiler generates verified queries from validated slots.
+A locally running TypeScript web application with a Google-style search bar that allows for natural language search of [EVES-003](https://github.com/ASCS-eV/EVES/) Simulation Assets zip files according to their ENVITED-X:SimulationAsset metadata from the [Ontology Management Base](https://github.com/ASCS-eV/ontology-management-base) repository which are created with the help of the [sl-5-8-asset-tools](https://github.com/openMSL/sl-5-8-asset-tools). The ontologies are used as a language translation reference for a LLM which translates natural language queries (e.g. "show me all German highways with 3 lanes") into structured search slots that are validated and compiled into graph-driven SPARQL queries, then executed against a graph containing simulation asset metadata. The LLM never writes SPARQL directly — a deterministic compiler queries the SHACL schema graph to generate verified queries from validated slots.
 
 ## Tech Stack
 
@@ -94,7 +94,7 @@ User Query ("German highways with 3 lanes")
 └─────────────┬───────────────┘
               │
     ┌─────────▼─────────┐
-    │  Prompt Builder    │◄── Auto-generated from OWL + SHACL vocabulary
+    │  Prompt Builder    │◄── Auto-generated from raw OWL + SHACL shapes
     └─────────┬─────────┘
               │
     ┌─────────▼─────────┐
@@ -107,7 +107,7 @@ User Query ("German highways with 3 lanes")
     └─────────┬─────────┘
               │
     ┌─────────▼─────────┐
-    │  SPARQL Compiler   │◄── Deterministic: same slots → same query
+    │  SPARQL Compiler   │◄── Graph-driven via schema-queries.ts
     └─────────┬─────────┘
               │
     ┌─────────▼─────────┐
@@ -118,6 +118,10 @@ User Query ("German highways with 3 lanes")
               ▼
      SSE Stream → React UI
 ```
+
+Schema metadata is discovered from the ontology graph at runtime. `packages/search/src/schema-queries.ts` replaces hardcoded domain metadata by deriving asset domains, cross-domain references, property shape groups, and `CompilerVocab` entries directly from SHACL.
+
+The default sample dataset loads **267 assets** across **5 domains**: **117 HD maps**, **50 scenarios**, **50 OSI traces**, **30 environment models**, and **20 surface models**. The ontology registry currently exposes **22 domains** overall.
 
 ## Monorepo Structure
 
@@ -131,7 +135,7 @@ packages/
 ├── core/       # Config (Zod-validated), Logging, Errors
 ├── sparql/     # Oxigraph WASM, Remote, Cached store implementations
 ├── ontology/   # Ontology source resolution, vocabulary indexing
-├── search/     # Schema loader, vocabulary extractor, compiler, service
+├── search/     # Schema loader, schema queries, compiler, service
 ├── llm/        # Prompt builder, slot validator, LLM agents
 └── testing/    # Shared test helpers and fixtures
 ```
@@ -162,7 +166,7 @@ pnpm run test:e2e     # E2E tests (Playwright)
 
 **Search returns no results?**
 
-- Verify SPARQL store loaded: `curl http://localhost:3003/stats`
+- Verify SPARQL store loaded: `curl http://localhost:3003/stats` (should show 267 assets across 5 domains)
 - Check ontology submodules: `git submodule update --init --recursive`
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
