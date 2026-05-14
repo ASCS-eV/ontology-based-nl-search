@@ -1,18 +1,24 @@
 /**
- * Vocabulary Extractor — queries the ontology schema graph for the complete vocabulary.
+ * Vocabulary Extractor — queries the store for the complete vocabulary.
  *
- * Extracts all filterable properties (sh:in enumerations), numeric properties,
- * and their metadata (labels, descriptions) directly from the SHACL shapes
- * loaded into the schema named graph.
- *
- * This replaces both vocabulary-index.ts and the manual SKOS annotations.
- * The ontology IS the vocabulary — no manual synonym files needed.
+ * Extracts filterable properties (sh:in enumerations), numeric properties,
+ * SKOS concept schemes, RDFS class hierarchies, and per-property distinct
+ * instance value distributions. All discovered generically — nothing about
+ * any specific domain is encoded in code.
  *
  * @see https://www.w3.org/TR/shacl/#InConstraintComponent
+ * @see https://www.w3.org/TR/skos-reference/
  */
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
+import {
+  queryInstanceValueDistribution,
+  querySkosConcepts,
+  querySubClassEdges,
+  type SkosConceptInfo,
+  type SubClassEdge,
+} from './schema-queries.js'
 
 /** A property with enumerated allowed values (from sh:in) */
 export interface EnumProperty {
@@ -48,28 +54,80 @@ export interface OntologyVocabulary {
   numericProperties: NumericProperty[]
   /** All domains found in the schema */
   domains: string[]
+  /**
+   * SKOS concepts grouped by scheme — discovered generically from
+   * any loaded graph. Empty if no SKOS schemes are loaded.
+   */
+  conceptSchemes: Map<string, SkosConceptInfo[]>
+  /**
+   * rdfs:subClassOf edges, used by the compiler to expand class-typed
+   * filter values to all subclasses generically.
+   */
+  classHierarchy: SubClassEdge[]
+  /**
+   * Map from property IRI to distinct literal values observed in instance
+   * data. Powers data-driven gap suggestions for any property — no
+   * per-domain code paths.
+   */
+  instanceValues: Map<string, string[]>
 }
 
 /** Cached singleton */
 let cachedVocabulary: OntologyVocabulary | null = null
 
 /**
- * Extract the full ontology vocabulary from the schema graph.
- * Queries SHACL shapes for sh:in enumerations and numeric properties.
+ * Extract the full ontology vocabulary from the store.
+ *
+ * In parallel:
+ *  - sh:in enumerations and numeric properties (from the schema graph),
+ *  - SKOS concept schemes (from any loaded graph — generic),
+ *  - rdfs:subClassOf edges (for compiler hierarchy expansion),
+ *  - distinct instance literal values per property (for gap suggestions).
+ *
+ * No part of this code knows what any specific property means; every
+ * discovery is a SPARQL query over standard RDF/SHACL/SKOS vocabulary.
  */
 export async function extractVocabulary(store: SparqlStore): Promise<OntologyVocabulary> {
   if (cachedVocabulary) return cachedVocabulary
 
-  const [enumProperties, numericProperties] = await Promise.all([
+  const [enumProperties, numericProperties, skosConcepts, subClassEdges] = await Promise.all([
     extractEnumProperties(store),
     extractNumericProperties(store),
+    querySkosConcepts(store),
+    querySubClassEdges(store),
   ])
 
   const domains = [
     ...new Set([...enumProperties.map((p) => p.domain), ...numericProperties.map((p) => p.domain)]),
   ]
 
-  cachedVocabulary = { enumProperties, numericProperties, domains }
+  // Group SKOS concepts by scheme for O(1) lookup at compile time.
+  const conceptSchemes = new Map<string, SkosConceptInfo[]>()
+  for (const c of skosConcepts) {
+    const existing = conceptSchemes.get(c.scheme) ?? []
+    existing.push(c)
+    conceptSchemes.set(c.scheme, existing)
+  }
+
+  // Eager instance-value distribution for every known property IRI — this
+  // is the data source for Phase 4 gap suggestions. Restricted to known
+  // properties so the query stays bounded on large stores.
+  const knownPropertyIris = [
+    ...enumProperties.map((p) => p.iri),
+    ...numericProperties.map((p) => p.iri),
+  ]
+  const distributions = await queryInstanceValueDistribution(store, knownPropertyIris)
+  const instanceValues = new Map<string, string[]>()
+  for (const d of distributions) instanceValues.set(d.property, d.values)
+
+  cachedVocabulary = {
+    enumProperties,
+    numericProperties,
+    domains,
+    conceptSchemes,
+    classHierarchy: subClassEdges,
+    instanceValues,
+  }
   return cachedVocabulary
 }
 

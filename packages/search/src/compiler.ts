@@ -433,7 +433,7 @@ function buildDomainPatterns(
       const varName = `?${propName}${suffix}`
       const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
       patterns.push(`${contentVar} ${propDomain}:${propName} ${varName} .`)
-      addEnumFilter(filters, varName, value)
+      addEnumFilter(patterns, filters, varName, value)
       selectVars.add(varName)
     }
   }
@@ -446,7 +446,7 @@ function buildDomainPatterns(
       const varName = `?${propName}${suffix}`
       const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
       patterns.push(`${fmtVar} ${propDomain}:${propName} ${varName} .`)
-      addEnumFilter(filters, varName, value)
+      addEnumFilter(patterns, filters, varName, value)
       selectVars.add(varName)
     }
   }
@@ -500,7 +500,7 @@ function buildDomainPatterns(
       const varName = `?${propName}${suffix}`
       const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
       patterns.push(`${dsVar} ${propDomain}:${propName} ${varName} .`)
-      addEnumFilter(filters, varName, value)
+      addEnumFilter(patterns, filters, varName, value)
       selectVars.add(varName)
     }
   }
@@ -725,18 +725,70 @@ function resolvePropertyDomain(
 }
 
 /**
- * Add a FILTER clause for enum values (string equality or IN for arrays).
+ * Detect whether a filter value is an absolute IRI (http(s)://… or urn:…).
+ * Used to decide between literal equality and hierarchy expansion.
  */
-function addEnumFilter(filters: string[], varName: string, value: string | string[]): void {
-  if (Array.isArray(value)) {
-    if (value.length === 1) {
-      filters.push(`FILTER(${varName} = "${escapeSparqlLiteral(value[0]!)}")`)
-    } else {
-      const values = value.map((v) => `"${escapeSparqlLiteral(v)}"`).join(', ')
-      filters.push(`FILTER(${varName} IN (${values}))`)
-    }
-  } else {
-    filters.push(`FILTER(${varName} = "${escapeSparqlLiteral(value)}")`)
+function isIri(value: string): boolean {
+  return /^https?:\/\//.test(value) || /^urn:/.test(value)
+}
+
+/**
+ * SPARQL property path that walks reflexive-transitively up SKOS and RDFS
+ * hierarchies. Used to expand an IRI-valued filter to include all narrower
+ * concepts / subclasses generically — the hierarchies must be declared in
+ * the loaded graphs; this code does not name any specific concept scheme.
+ *
+ *   - `skos:broaderTransitive*` — covers SKOS concept narrower-than chains
+ *   - `rdfs:subClassOf*`        — covers OWL/RDFS class subClassOf chains
+ *
+ * Both predicates are W3C-standard and reflexive in their `*` form, so the
+ * expanded set always includes the filter value itself.
+ *
+ * @see https://www.w3.org/TR/skos-reference/#semantic-relations
+ * @see https://www.w3.org/TR/rdf-schema/#ch_subclassof
+ */
+const HIERARCHY_EXPANSION_PATH =
+  '(<http://www.w3.org/2004/02/skos/core#broaderTransitive>|<http://www.w3.org/2000/01/rdf-schema#subClassOf>)*'
+
+/**
+ * Add a FILTER (or graph pattern) for an enum value.
+ *
+ * - **Literal value(s)**: emits the existing `FILTER(?v = "lit")` form.
+ * - **IRI value(s)**: emits a reflexive-transitive SPARQL property path,
+ *   so the filter matches any concept narrower than the IRI in any
+ *   `skos:broaderTransitive` or `rdfs:subClassOf` chain loaded into the
+ *   store. This is the generic IRI-expansion gate: no specific hierarchy
+ *   is hardcoded; the engine walks whatever is declared.
+ *
+ *   Example: with `<.../region/europe>` declared as the broader concept of
+ *   {`<.../country/DE>`, `<.../country/FR>`, …}, a filter for `europe`
+ *   expands to the full country set automatically.
+ *
+ *   When no hierarchy edges are present in the data, the path matches only
+ *   the IRI itself (reflexive case) — same semantics as plain equality.
+ */
+function addEnumFilter(
+  patterns: string[],
+  filters: string[],
+  varName: string,
+  value: string | string[]
+): void {
+  const arr = Array.isArray(value) ? value : [value]
+  const iriValues = arr.filter(isIri)
+  const literalValues = arr.filter((v) => !isIri(v))
+
+  if (literalValues.length === 1) {
+    filters.push(`FILTER(${varName} = "${escapeSparqlLiteral(literalValues[0]!)}")`)
+  } else if (literalValues.length > 1) {
+    const values = literalValues.map((v) => `"${escapeSparqlLiteral(v)}"`).join(', ')
+    filters.push(`FILTER(${varName} IN (${values}))`)
+  }
+
+  for (const iri of iriValues) {
+    // The hierarchy walk is emitted as an additional graph pattern, not a
+    // FILTER, so the property path is evaluated by the SPARQL engine against
+    // every loaded named graph (schema, codelists, instances, …) generically.
+    patterns.push(`${varName} ${HIERARCHY_EXPANSION_PATH} <${iri}> .`)
   }
 }
 

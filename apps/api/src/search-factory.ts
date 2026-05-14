@@ -8,15 +8,19 @@
  * Tests construct SearchService directly with mock dependencies.
  */
 import { generateStructuredSearch } from '@ontology-search/llm'
+import { validateSlotsAgainstShacl } from '@ontology-search/llm'
+import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type {
   NlSearchOptions,
   RefineOptions,
   RefineResult,
   SearchResult,
+  SearchSlots,
 } from '@ontology-search/search'
 import {
   compileAllCountQueries,
   compileSlots,
+  extractVocabulary,
   getInitializedStore,
   type SearchDependencies,
   SearchService,
@@ -37,6 +41,27 @@ export async function getSearchService(): Promise<SearchService> {
     compileSlots,
     compileCountQueries: compileAllCountQueries,
     enforcePolicy: enforceSparqlPolicy,
+    validateSlots: async (slots: SearchSlots): Promise<SearchSlots> => {
+      // Defense-in-depth gate for /refine: run the same SHACL validator the
+      // LLM agent uses, then re-emit the slots with any violating values
+      // dropped. The compiler will see only ontology-valid filters/location.
+      const shacl = await ShaclValidator.fromWorkspace()
+      const store = await getInitializedStore()
+      const vocabulary = await extractVocabulary(store)
+      const result = await validateSlotsAgainstShacl(
+        slots.filters ?? {},
+        slots.location,
+        slots.license,
+        shacl,
+        vocabulary
+      )
+      return {
+        ...slots,
+        filters: result.filters,
+        location: result.location,
+        license: result.license,
+      }
+    },
   }
 
   instance = new SearchService(deps)

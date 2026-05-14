@@ -50,6 +50,9 @@ const testVocabulary: OntologyVocabulary = {
     },
   ],
   domains: ['hdmap', 'scenario', 'ositrace'],
+  conceptSchemes: new Map(),
+  classHierarchy: [],
+  instanceValues: new Map(),
 }
 
 describe('correctFilters', () => {

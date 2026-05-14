@@ -25,6 +25,7 @@
 import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
+import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import {
   extractVocabulary,
   getInitializedStore,
@@ -35,7 +36,12 @@ import { getShaclContent } from '@ontology-search/search/shacl-reader'
 import type { SearchSlots } from '@ontology-search/search/slots'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
-import { correctDomains, correctFilters, validateSlots } from '../slot-validator.js'
+import {
+  correctDomains,
+  correctFilters,
+  validateSlots,
+  validateSlotsAgainstShacl,
+} from '../slot-validator.js'
 import type { LlmStructuredResponse } from '../types.js'
 import type { AgentOptions } from './index.js'
 
@@ -295,11 +301,19 @@ export async function runCopilotAgent(
     const result = submissionRef.value
 
     const endValidation = sw.time('post-llm-validation')
-    const correctedFilters = correctFilters(result.slots.filters ?? {}, vocabulary)
+    const fuzzedFilters = correctFilters(result.slots.filters ?? {}, vocabulary)
+    const shacl = await ShaclValidator.fromWorkspace()
+    const shaclResult = await validateSlotsAgainstShacl(
+      fuzzedFilters,
+      result.slots.location,
+      result.slots.license,
+      shacl,
+      vocabulary
+    )
     const ranges = result.slots.ranges ?? {}
     const correctedDomains = correctDomains(
       result.slots.domains ?? [targetDomain],
-      correctedFilters,
+      shaclResult.filters,
       ranges,
       vocabulary
     )
@@ -307,10 +321,10 @@ export async function runCopilotAgent(
 
     const slots: SearchSlots = {
       domains: correctedDomains,
-      filters: correctedFilters,
+      filters: shaclResult.filters,
       ranges,
-      location: result.slots.location,
-      license: result.slots.license,
+      location: shaclResult.location,
+      license: shaclResult.license,
     }
 
     const endCompile = sw.time('sparql-compile')
@@ -319,7 +333,7 @@ export async function runCopilotAgent(
 
     const rawResponse: LlmStructuredResponse = {
       interpretation: result.interpretation,
-      gaps: result.gaps,
+      gaps: [...result.gaps, ...shaclResult.gaps],
       sparql,
     }
 

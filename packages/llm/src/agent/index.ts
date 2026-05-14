@@ -1,4 +1,5 @@
 import { Stopwatch } from '@ontology-search/core/logging'
+import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import {
   extractVocabulary,
   getInitializedStore,
@@ -11,7 +12,12 @@ import { generateText, stepCountIs } from 'ai'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
 import { getModel } from '../provider.js'
-import { correctDomains, correctFilters, validateSlots } from '../slot-validator.js'
+import {
+  correctDomains,
+  correctFilters,
+  validateSlots,
+  validateSlotsAgainstShacl,
+} from '../slot-validator.js'
 import type { LlmStructuredResponse } from '../types.js'
 import { agentTools, type SlotSubmissionParams } from './tools.js'
 
@@ -89,11 +95,23 @@ export async function runSparqlAgent(
     const answer = submitCall.output as SlotSubmissionParams
 
     const endValidation = sw.time('post-llm-validation')
-    const correctedFilters = correctFilters(answer.slots.filters ?? {}, vocabulary)
+    // 1. Fuzzy match: case / typo correction against sh:in enums.
+    const fuzzedFilters = correctFilters(answer.slots.filters ?? {}, vocabulary)
+    // 2. SHACL gate: enforces every Core constraint declared in the shapes
+    // graph (sh:pattern, sh:datatype, …) on filters, location, and license.
+    // Values that fail are dropped from slots and emitted as gaps.
+    const shacl = await ShaclValidator.fromWorkspace()
+    const shaclResult = await validateSlotsAgainstShacl(
+      fuzzedFilters,
+      answer.slots.location,
+      answer.slots.license,
+      shacl,
+      vocabulary
+    )
     const ranges = answer.slots.ranges ?? {}
     const correctedDomains = correctDomains(
       answer.slots.domains ?? [targetDomain],
-      correctedFilters,
+      shaclResult.filters,
       ranges,
       vocabulary
     )
@@ -101,10 +119,10 @@ export async function runSparqlAgent(
 
     const slots: SearchSlots = {
       domains: correctedDomains,
-      filters: correctedFilters,
+      filters: shaclResult.filters,
       ranges,
-      location: answer.slots.location,
-      license: answer.slots.license,
+      location: shaclResult.location,
+      license: shaclResult.license,
     }
 
     const endCompile = sw.time('sparql-compile')
@@ -113,7 +131,7 @@ export async function runSparqlAgent(
 
     const rawResponse: LlmStructuredResponse = {
       interpretation: answer.interpretation,
-      gaps: answer.gaps,
+      gaps: [...answer.gaps, ...shaclResult.gaps],
       sparql,
     }
 

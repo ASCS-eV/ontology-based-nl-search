@@ -31,6 +31,14 @@ export interface SearchDependencies {
   compileCountQueries: () => Promise<{ domain: string; query: string }[]>
   /** Validate a SPARQL query against security policy */
   enforcePolicy: (sparql: string) => PolicyResult & { query: string }
+  /**
+   * Apply ontology-level SHACL validation to refine-path slots, dropping
+   * any value that violates a declared constraint. The LLM agent path runs
+   * SHACL validation itself; this dependency closes the same gap for any
+   * caller that supplies pre-filled slots directly. Optional — when omitted,
+   * slots flow through unchanged (matches the pre-Phase-1 behaviour).
+   */
+  validateSlots?: (slots: SearchSlots) => Promise<SearchSlots>
 }
 
 // ─── Result Types ────────────────────────────────────────────────────────────
@@ -162,9 +170,16 @@ export class SearchService {
     const requestId = generateRequestId()
     const logger = new RequestLogger({ requestId })
 
+    // SHACL validation — defense-in-depth gate for callers that bypass the
+    // LLM agent (e.g. the /refine API). Drops any value that violates a
+    // declared SHACL constraint so it never reaches SPARQL compilation.
+    const endValidate = logger.time('shacl-validation')
+    const validatedSlots = this.deps.validateSlots ? await this.deps.validateSlots(slots) : slots
+    endValidate()
+
     // Compile slots to SPARQL
     const endCompile = logger.time('compile-slots')
-    const sparql = await this.deps.compileSlots(slots)
+    const sparql = await this.deps.compileSlots(validatedSlots)
     endCompile()
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
