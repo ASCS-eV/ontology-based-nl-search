@@ -1,42 +1,45 @@
 /**
- * Production wiring for SearchService.
+ * Production wiring for SearchService (composition root).
  *
- * Separated from service.ts to avoid import dependency on @ontology-search/llm
- * in test contexts. The API layer imports this; tests construct SearchService directly.
+ * This is the API app's responsibility: wiring @ontology-search/llm into
+ * @ontology-search/search. The search package defines the interfaces;
+ * this module provides the concrete implementations.
+ *
+ * Tests construct SearchService directly with mock dependencies.
  */
-import type { NlSearchOptions, RefineOptions, RefineResult, SearchResult } from './service.js'
-import { SearchService } from './service.js'
+import { generateStructuredSearch } from '@ontology-search/llm'
+import type {
+  NlSearchOptions,
+  RefineOptions,
+  RefineResult,
+  SearchResult,
+} from '@ontology-search/search'
+import {
+  compileAllCountQueries,
+  compileSlots,
+  getInitializedStore,
+  type SearchDependencies,
+  SearchService,
+} from '@ontology-search/search'
+import { enforceSparqlPolicy } from '@ontology-search/sparql/policy'
 
 let instance: SearchService | null = null
 
 /**
  * Get the singleton SearchService instance with production dependencies.
- * Routes call this; tests construct SearchService directly with mock deps.
  */
 export async function getSearchService(): Promise<SearchService> {
   if (instance) return instance
 
-  // Lazy dynamic imports to avoid circular deps at module load time
-  const [
-    { generateStructuredSearch },
-    { compileSlots, compileAllCountQueries },
-    { getInitializedStore },
-    { enforceSparqlPolicy },
-  ] = await Promise.all([
-    import('@ontology-search/llm'),
-    import('./compiler.js'),
-    import('./init.js'),
-    import('@ontology-search/sparql/policy'),
-  ])
-
-  instance = new SearchService({
+  const deps: SearchDependencies = {
     getStore: getInitializedStore,
     interpretQuery: generateStructuredSearch,
     compileSlots,
     compileCountQueries: compileAllCountQueries,
     enforcePolicy: enforceSparqlPolicy,
-  })
+  }
 
+  instance = new SearchService(deps)
   return instance
 }
 
@@ -44,8 +47,6 @@ export async function getSearchService(): Promise<SearchService> {
 export function resetSearchService(): void {
   instance = null
 }
-
-// ─── Convenience Functions (backward-compatible API) ─────────────────────────
 
 /**
  * Full natural-language search pipeline.

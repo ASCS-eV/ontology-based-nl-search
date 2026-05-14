@@ -28,6 +28,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.79",
     "@ai-sdk/openai": "^2.0.106",
     "@github/copilot-sdk": "^0.3.0",
     "@ontology-search/core": "workspace:*",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",
+    "@types/node": "^25.7.0",
     "rimraf": "^6.0.0",
     "typescript": "~5.9.3",
     "vitest": "^3.2.0"

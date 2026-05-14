@@ -1,10 +1,10 @@
 import { badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
-import { searchNl, searchRefine } from '@ontology-search/search'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { z } from 'zod'
 
+import { searchNl, searchRefine } from '../search-factory.js'
 import type { AppEnv } from '../types.js'
 
 const searchSlotsSchema = z.object({
