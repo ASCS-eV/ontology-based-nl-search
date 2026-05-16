@@ -198,6 +198,34 @@ describe('SearchService.searchNl', () => {
       signal: undefined,
     })
   })
+
+  /**
+   * Regression for task 03: when the caller supplies a requestId (the API
+   * middleware does, per /search/stream and /search/refine), the service
+   * MUST adopt it for both the logger and the meta payload. Before this
+   * fix the service unconditionally generated its own id, breaking
+   * cross-layer correlation: the requestId in the response header did
+   * not match the one in server logs or SSE meta.
+   */
+  it('adopts the upstream requestId for the meta payload', async () => {
+    const deps = createMockDeps()
+    const service = new SearchService(deps)
+    const upstreamId = 'req_from_middleware_abc123'
+
+    const result = await service.searchNl({ query: 'test', requestId: upstreamId })
+
+    expect(result.meta.requestId).toBe(upstreamId)
+  })
+
+  it('generates a fresh requestId when none is supplied (CLI / library use)', async () => {
+    const deps = createMockDeps()
+    const service = new SearchService(deps)
+
+    const result = await service.searchNl({ query: 'test' })
+
+    expect(result.meta.requestId).toMatch(/^req_/)
+    expect(result.meta.requestId).not.toBe('')
+  })
 })
 
 describe('SearchService.searchRefine', () => {
@@ -273,6 +301,21 @@ describe('SearchService.searchRefine', () => {
       'Aborted'
     )
     expect(mockStore.query).not.toHaveBeenCalled()
+  })
+
+  /**
+   * Refine flow mirrors the NL flow: an upstream requestId from the API
+   * middleware must reach result.meta unchanged so the response header
+   * and the server logs use the same value.
+   */
+  it('adopts the upstream requestId on refine', async () => {
+    const deps = createMockDeps()
+    const service = new SearchService(deps)
+    const upstreamId = 'req_refine_xyz789'
+
+    const result = await service.searchRefine({ slots, requestId: upstreamId })
+
+    expect(result.meta.requestId).toBe(upstreamId)
   })
 
   /**
