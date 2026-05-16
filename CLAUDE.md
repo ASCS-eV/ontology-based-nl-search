@@ -76,7 +76,7 @@ The LLM never writes SPARQL. It fills `SearchSlots` via a single tool call. The 
 
 ## Conventions
 
-- **Commits**: Conventional Commits format, signed (`git commit -s -S`). Enforced by commitlint hook.
+- **Commits**: Conventional Commits format, signed (`git commit -s -S`). Enforced by commitlint hook. Never add AI co-author attribution.
 - **Pre-commit hook**: runs `lint-staged` (ESLint fix + Prettier on staged files). Does NOT run tests or type-checking — run `pnpm run validate` before pushing.
 - **TypeScript**: strict mode, `noUncheckedIndexedAccess` enabled, target ES2022, module NodeNext.
 - **Imports**: sorted by `eslint-plugin-simple-import-sort` (auto-fixed on commit).
@@ -84,3 +84,31 @@ The LLM never writes SPARQL. It fills `SearchSlots` via a single tool call. The 
 - **No `any`**: `@typescript-eslint/no-explicit-any` is a warning.
 - **Environment**: Node >= 22. Config via `.env.local` (copied from `.env.example`). Validated by Zod at startup.
 - **Schema metadata is graph-driven**: `schema-queries.ts` discovers domains, properties, and shape groups from SHACL at runtime — do not hardcode domain metadata.
+
+## Code Quality Criteria
+
+This repository has 30 reviewable quality criteria (constants, architecture,
+code health, concurrency, testing, security, process). They live in
+**[`CONTRIBUTING.md` § Code Quality Criteria](./CONTRIBUTING.md#code-quality-criteria)**
+and are the canonical contract for any code change.
+
+When generating or modifying code, read those criteria first and uphold them
+strictly. Several have grep- or `madge`-based CI gates; the rest are
+review-checklist rules.
+
+- **Never introduce a new violation** of a criterion in unrelated code. If
+  you spot one and cannot fix it within the current task's scope, surface it
+  rather than bundling.
+- **Every fix carries a regression test** that would have failed before the
+  fix (criterion #30). No test = no fix.
+
+## Working with local scratch
+
+`.playground/` (gitignored) is a per-developer scratch area for transient
+working state — audits, refactor plans, exploration notes. The user may
+maintain a refactor plan there and ask you to "continue the refactor" or
+"pick up the next task." If a `.playground/` directory exists in the working
+tree, follow its conventions (typically: one task per file, lowest-numbered
+unblocked task next, one task per branch/PR, do not auto-chain). The plan is
+intentionally not tracked: it shrinks as tasks land in main, and only the
+resulting code change is part of repo history.

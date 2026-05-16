@@ -18,6 +18,10 @@ tsconfig.tsbuildinfo
 .vscode/
 .idea/
 
+# Local working scratchpad — audits, refactor plans, etc.
+# Tracks transitional state we do not want in repo history.
+.playground/
+
 # OS
 .DS_Store
 Thumbs.db
