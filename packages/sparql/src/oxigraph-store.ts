@@ -26,7 +26,19 @@
  * @see https://github.com/oxigraph/oxigraph — Oxigraph project
  */
 
-import type { SparqlBinding, SparqlResults, SparqlStore } from './types.js'
+import type { SparqlBinding, SparqlQueryOptions, SparqlResults, SparqlStore } from './types.js'
+
+/**
+ * Oxigraph runs queries synchronously inside WebAssembly, which cannot be
+ * interrupted mid-call. We honour `AbortSignal` at entry and exit only —
+ * a pre-aborted signal short-circuits before the WASM call, and a signal
+ * that fires during the call surfaces as `AbortError` once control returns.
+ */
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) {
+    throw new DOMException('Aborted', 'AbortError')
+  }
+}
 
 /** RDF/JS-compatible term from Oxigraph */
 interface OxigraphTerm {
@@ -69,10 +81,13 @@ export class OxigraphStore implements SparqlStore {
     return this.store !== null
   }
 
-  async query(sparql: string): Promise<SparqlResults> {
+  async query(sparql: string, options?: SparqlQueryOptions): Promise<SparqlResults> {
+    throwIfAborted(options?.signal)
     await this.initialize()
+    throwIfAborted(options?.signal)
 
     const rawResults = this.store!.query(sparql)
+    throwIfAborted(options?.signal)
 
     // SELECT query - results are an array of Maps
     if (Array.isArray(rawResults)) {

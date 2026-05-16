@@ -1,4 +1,4 @@
-import type { SparqlResults, SparqlStore } from './types.js'
+import type { SparqlQueryOptions, SparqlResults, SparqlStore } from './types.js'
 
 /**
  * Remote SPARQL store that sends queries to an external endpoint.
@@ -16,8 +16,20 @@ export class RemoteSparqlStore implements SparqlStore {
     this.timeoutMs = timeoutMs
   }
 
+  /**
+   * Compose the per-store timeout with an optional caller-supplied signal.
+   * The fetch is aborted by whichever fires first — request timeout or
+   * client disconnect.
+   */
+  private buildSignal(external?: AbortSignal): AbortSignal {
+    const timeout = AbortSignal.timeout(this.timeoutMs)
+    if (!external) return timeout
+    return AbortSignal.any([timeout, external])
+  }
+
+  /** Backwards-compatible getter used by non-query fetches. */
   private get signal(): AbortSignal {
-    return AbortSignal.timeout(this.timeoutMs)
+    return this.buildSignal()
   }
 
   async isReady(): Promise<boolean> {
@@ -37,7 +49,7 @@ export class RemoteSparqlStore implements SparqlStore {
     }
   }
 
-  async query(sparql: string): Promise<SparqlResults> {
+  async query(sparql: string, options?: SparqlQueryOptions): Promise<SparqlResults> {
     const response = await fetch(this.endpoint, {
       method: 'POST',
       headers: {
@@ -45,7 +57,7 @@ export class RemoteSparqlStore implements SparqlStore {
         Accept: 'application/sparql-results+json',
       },
       body: sparql,
-      signal: this.signal,
+      signal: this.buildSignal(options?.signal),
     })
 
     if (!response.ok) {

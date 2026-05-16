@@ -201,6 +201,36 @@ function buildPersistentSubmitSlotsTool() {
 }
 
 /**
+ * Resolve when `promise` settles or reject with `AbortError` when `signal`
+ * fires — whichever happens first. The original promise is not cancelled
+ * (the Copilot SDK has no abort surface for sendAndWait); we just stop
+ * awaiting it, and any late tool-call reply is dropped by the router.
+ */
+function raceWithSignal<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => {
+      signal.removeEventListener('abort', onAbort)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }
+    if (signal.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'))
+      return
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    promise.then(
+      (v) => {
+        signal.removeEventListener('abort', onAbort)
+        resolve(v)
+      },
+      (e) => {
+        signal.removeEventListener('abort', onAbort)
+        reject(e)
+      }
+    )
+  })
+}
+
+/**
  * Get or create the persistent Copilot session.
  * The session is created once and reused — saves ~5.8s per request.
  * infiniteSessions handles context compaction automatically.
@@ -294,11 +324,27 @@ export async function runCopilotAgent(
 
   const promptWithToken = `${naturalLanguageQuery}\n\n${renderTokenDirective(requestToken)}`
 
+  // The Copilot SDK does not accept an AbortSignal on sendAndWait, and the
+  // session is shared across requests, so we cannot call session.abort()
+  // without harming other in-flight callers. Best effort: race the call
+  // against the signal and stop awaiting on abort. The router rejects any
+  // late tool call for this request because unregister() runs in finally.
+  const signal = options?.signal
+
   try {
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+
     const endLlmCall = sw.time('llm-round-trip')
-    await session.sendAndWait({ prompt: promptWithToken })
+    if (signal) {
+      await raceWithSignal(session.sendAndWait({ prompt: promptWithToken }), signal)
+    } else {
+      await session.sendAndWait({ prompt: promptWithToken })
+    }
     endLlmCall()
   } catch (err) {
+    // Aborts propagate cleanly without invalidating the session — other
+    // in-flight requests still need it.
+    if (err instanceof DOMException && err.name === 'AbortError') throw err
     // Session may have died — invalidate so next request recreates
     await invalidateSession()
     throw err

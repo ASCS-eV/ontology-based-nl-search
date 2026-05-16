@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '../app.js'
 
@@ -6,6 +6,12 @@ vi.mock('../search-factory.js', () => ({
   searchNl: vi.fn(),
   searchRefine: vi.fn(),
 }))
+
+beforeEach(() => {
+  // SSE handlers keep running asynchronously after `app.request` returns its
+  // headers, so without this, later tests see mock calls from earlier ones.
+  vi.clearAllMocks()
+})
 
 vi.mock('@ontology-search/search', () => ({
   getInitializedStore: vi.fn(),
@@ -73,6 +79,47 @@ describe('POST /search/stream', () => {
     expect(text).toContain('event: error')
     expect(text).toContain('Invalid JSON')
   })
+
+  /**
+   * Regression for task 02: a client AbortSignal on the incoming HTTP request
+   * must reach `searchNl({ signal })` so the LLM call, SPARQL execution, and
+   * count-loop downstream are cancelled. Without this wiring the server
+   * keeps spending compute on a request whose results no one will read.
+   */
+  it('forwards the request AbortSignal into searchNl', async () => {
+    const { searchNl } = await import('../search-factory.js')
+    vi.mocked(searchNl).mockResolvedValue({
+      interpretation: { query: 'test', intent: 'search', domains: ['hdmap'] },
+      gaps: [],
+      sparql: 'SELECT * WHERE { ?s ?p ?o }',
+      execution: { results: [], error: undefined },
+      meta: { matchCount: 0, executionTimeMs: 100 },
+    } as never)
+
+    const controller = new AbortController()
+    const res = await app.request('/search/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'test' }),
+      signal: controller.signal,
+    })
+    // Drain the SSE body so the handler runs through to completion before
+    // we assert on the mock — app.request returns when headers flush, not
+    // when the streaming handler finishes.
+    await res.text()
+
+    expect(searchNl).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        query: 'test',
+        signal: expect.any(AbortSignal),
+      })
+    )
+    const passedSignal = vi.mocked(searchNl).mock.lastCall?.[0].signal as AbortSignal
+    expect(passedSignal).toBeDefined()
+    // The signal handed to the service must abort when the request signal aborts.
+    controller.abort()
+    expect(passedSignal.aborted).toBe(true)
+  })
 })
 
 describe('POST /search/refine', () => {
@@ -116,6 +163,32 @@ describe('POST /search/refine', () => {
     expect(res.status).toBe(422)
     const json = await res.json()
     expect(json.code).toBe('UNPROCESSABLE_ENTITY')
+  })
+
+  /**
+   * Regression for task 02: the /refine endpoint must also propagate the
+   * client AbortSignal so a slow SPARQL query is cancelled when the caller
+   * disconnects, not just /stream.
+   */
+  it('forwards the request AbortSignal into searchRefine', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(searchRefine).mockResolvedValue({
+      sparql: 'SELECT * WHERE { ?s ?p ?o }',
+      execution: { results: [], error: undefined },
+      meta: { matchCount: 0, executionTimeMs: 10 },
+    } as never)
+
+    await app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slots: { domains: ['hdmap'] } }),
+    })
+
+    expect(searchRefine).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      })
+    )
   })
 })
 

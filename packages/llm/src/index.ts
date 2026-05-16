@@ -12,6 +12,13 @@ export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-va
 
 export interface SearchOptions {
   domain?: string
+  /**
+   * Cancel the in-flight LLM call when the caller aborts (SSE close, request
+   * cancel, etc.). Honoured natively by the Vercel-SDK provider; the Copilot
+   * provider races `sendAndWait` against the signal and bails on abort but
+   * cannot interrupt SDK work already in flight on the shared session.
+   */
+  signal?: AbortSignal
 }
 
 /**
@@ -39,10 +46,11 @@ export async function generateStructuredSearch(
 ): Promise<LlmStructuredResponse> {
   const config = getConfig()
   const domain = options?.domain ?? 'hdmap'
+  const signal = options?.signal
 
   if (config.AI_PROVIDER === 'copilot') {
-    return runCopilotAgent(naturalLanguageQuery, { domain })
+    return runCopilotAgent(naturalLanguageQuery, { domain, signal })
   }
 
-  return runSparqlAgent(naturalLanguageQuery, { domain })
+  return runSparqlAgent(naturalLanguageQuery, { domain, signal })
 }

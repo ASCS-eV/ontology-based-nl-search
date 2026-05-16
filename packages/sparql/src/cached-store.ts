@@ -5,7 +5,7 @@
  * invalidate the cache since they modify the underlying data.
  */
 import { SparqlCache } from './cache.js'
-import type { SparqlResults, SparqlStore } from './types.js'
+import type { SparqlQueryOptions, SparqlResults, SparqlStore } from './types.js'
 
 export class CachedSparqlStore implements SparqlStore {
   private readonly inner: SparqlStore
@@ -16,11 +16,14 @@ export class CachedSparqlStore implements SparqlStore {
     this.cache = new SparqlCache(cacheOptions)
   }
 
-  async query(sparql: string): Promise<SparqlResults> {
+  async query(sparql: string, options?: SparqlQueryOptions): Promise<SparqlResults> {
+    if (options?.signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError')
+    }
     const cached = this.cache.get(sparql)
     if (cached) return cached
 
-    const results = await this.inner.query(sparql)
+    const results = await this.inner.query(sparql, options)
     this.cache.set(sparql, results)
     return results
   }
