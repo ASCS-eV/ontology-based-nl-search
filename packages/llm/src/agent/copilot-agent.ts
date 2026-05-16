@@ -22,6 +22,8 @@
  * @see packages/llm/src/slot-validator.ts — Post-LLM validation and correction
  */
 
+import { randomUUID } from 'node:crypto'
+
 import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
@@ -45,23 +47,7 @@ import {
 } from '../slot-validator.js'
 import type { LlmStructuredResponse } from '../types.js'
 import type { AgentOptions } from './index.js'
-
-interface SlotSubmission {
-  slots: {
-    domains?: string[]
-    filters?: Record<string, string | string[]>
-    ranges?: Record<string, { min?: number; max?: number }>
-    location?: {
-      country?: string | string[]
-      state?: string | string[]
-      region?: string | string[]
-      city?: string | string[]
-    }
-    license?: string
-  }
-  interpretation: LlmStructuredResponse['interpretation']
-  gaps: LlmStructuredResponse['gaps']
-}
+import { renderTokenDirective, type Submission, SubmissionRouter } from './submission-router.js'
 
 // ─── Persistent Session Pool ─────────────────────────────────────────────────
 
@@ -70,13 +56,12 @@ let cachedVocabulary: OntologyVocabulary | null = null
 let client: CopilotClient | null = null
 
 /**
- * Per-request submission callbacks keyed by a unique request token.
- * Replaces the previous single global callback to prevent cross-request races.
+ * Routes each `submit_slots` tool call to its in-flight request callback by
+ * exact `requestToken` — never by recency. The Copilot SDK exposes a single
+ * global tool handler per session, so without the token a concurrent search
+ * would silently resolve another request's promise.
  */
-const pendingSubmissions = new Map<string, (params: SlotSubmission) => void>()
-
-/** Counter for generating unique request tokens */
-let requestCounter = 0
+const submissionRouter = new SubmissionRouter()
 
 /** The persistent session, reused across all search requests */
 let persistentSession: CopilotSession | null = null
@@ -114,11 +99,18 @@ async function getClient(): Promise<CopilotClient> {
 function buildPersistentSubmitSlotsTool() {
   return defineTool('submit_slots', {
     description:
-      'Submit the structured search result with filled slots, interpretation, and gaps. Call exactly once.',
+      'Submit the structured search result with filled slots, interpretation, and gaps. ' +
+      'Call exactly once. You MUST echo the request_token from the user message verbatim ' +
+      'as the requestToken property — it is required for routing your reply to the caller.',
     skipPermission: true,
     parameters: {
       type: 'object',
       properties: {
+        requestToken: {
+          type: 'string',
+          description:
+            'Echo the [request_token: …] value from the user message verbatim. Required.',
+        },
         slots: {
           type: 'object',
           properties: {
@@ -198,16 +190,12 @@ function buildPersistentSubmitSlotsTool() {
           },
         },
       },
-      required: ['slots', 'interpretation', 'gaps'],
+      required: ['requestToken', 'slots', 'interpretation', 'gaps'],
     },
     handler: async (params: unknown) => {
-      // Route to the most recent pending request (LIFO for single-session SDK)
-      const lastKey = [...pendingSubmissions.keys()].pop()
-      if (lastKey) {
-        const cb = pendingSubmissions.get(lastKey)
-        if (cb) cb(params as SlotSubmission)
-      }
-      return { accepted: true }
+      const result = submissionRouter.route(params)
+      if (result.ok) return { accepted: true }
+      return { accepted: false, error: result.reason }
     },
   })
 }
@@ -295,23 +283,27 @@ export async function runCopilotAgent(
   }
   endSession()
 
-  // Set up per-request submission capture via callback map (prevents cross-request races)
-  const requestToken = `req-${++requestCounter}`
-  const submissionRef: { value: SlotSubmission | null } = { value: null }
-  pendingSubmissions.set(requestToken, (params) => {
-    submissionRef.value = params
+  // Per-request callback registration: the router pairs the tool-call reply
+  // to this exact request by token, so concurrent searches cannot resolve each
+  // other's promises (the old LIFO lookup did exactly that).
+  const requestToken = randomUUID()
+  const submissionRef: { value: Submission | null } = { value: null }
+  const unregister = submissionRouter.register(requestToken, (submission) => {
+    submissionRef.value = submission
   })
+
+  const promptWithToken = `${naturalLanguageQuery}\n\n${renderTokenDirective(requestToken)}`
 
   try {
     const endLlmCall = sw.time('llm-round-trip')
-    await session.sendAndWait({ prompt: naturalLanguageQuery })
+    await session.sendAndWait({ prompt: promptWithToken })
     endLlmCall()
   } catch (err) {
     // Session may have died — invalidate so next request recreates
     await invalidateSession()
     throw err
   } finally {
-    pendingSubmissions.delete(requestToken)
+    unregister()
   }
 
   if (submissionRef.value) {
