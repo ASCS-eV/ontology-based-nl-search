@@ -53,6 +53,8 @@ async function getSystemPrompt(): Promise<{ prompt: string; vocabulary: Ontology
 
 export interface AgentOptions {
   domain?: string
+  /** Cancel the LLM round-trip when the caller aborts. */
+  signal?: AbortSignal
 }
 
 /**
@@ -84,6 +86,7 @@ export async function runSparqlAgent(
     tools: agentTools,
     toolChoice: 'required',
     stopWhen: stepCountIs(MAX_STEPS),
+    abortSignal: options?.signal,
   })
   endLlmCall()
 

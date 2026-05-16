@@ -76,9 +76,10 @@ describe('SearchService.searchNl', () => {
     expect(deps.getStore).toHaveBeenCalled()
     expect(deps.interpretQuery).toHaveBeenCalledWith('HD maps in Germany', {
       domain: undefined,
+      signal: undefined,
     })
     expect(deps.enforcePolicy).toHaveBeenCalledWith(MOCK_SPARQL)
-    expect(mockStore.query).toHaveBeenCalledWith(MOCK_SPARQL)
+    expect(mockStore.query).toHaveBeenCalledWith(MOCK_SPARQL, { signal: undefined })
 
     expect(result.interpretation).toEqual(mockLlmResponse.interpretation)
     expect(result.gaps).toEqual([])
@@ -132,13 +133,70 @@ describe('SearchService.searchNl', () => {
     )
   })
 
+  /**
+   * Regression for task 02: the SSE route's per-request AbortSignal must be
+   * threaded into the LLM interpret call so a client disconnect cancels the
+   * in-flight LLM work instead of leaking compute.
+   */
+  it('forwards the abort signal into interpretQuery', async () => {
+    const deps = createMockDeps()
+    const service = new SearchService(deps)
+    const controller = new AbortController()
+
+    await service.searchNl({ query: 'test', signal: controller.signal })
+
+    expect(deps.interpretQuery).toHaveBeenCalledWith('test', {
+      domain: undefined,
+      signal: controller.signal,
+    })
+  })
+
+  /**
+   * Regression for task 02: the same signal must reach the store so a long-
+   * running SPARQL query is cancelled when the caller disconnects.
+   */
+  it('forwards the abort signal into store.query', async () => {
+    const deps = createMockDeps()
+    const service = new SearchService(deps)
+    const controller = new AbortController()
+
+    await service.searchNl({ query: 'test', signal: controller.signal })
+
+    expect(mockStore.query).toHaveBeenCalledWith(MOCK_SPARQL, { signal: controller.signal })
+  })
+
+  /**
+   * If the signal fires mid-pipeline (between the LLM call returning and the
+   * SPARQL execution starting), the service must surface AbortError rather
+   * than continuing to spend compute on a request the client abandoned.
+   */
+  it('halts the pipeline if signal fires during the LLM call', async () => {
+    const controller = new AbortController()
+    const deps = createMockDeps({
+      interpretQuery: vi.fn(async (_q: string, _o: unknown) => {
+        controller.abort()
+        return mockLlmResponse
+      }),
+    })
+    const service = new SearchService(deps)
+
+    await expect(service.searchNl({ query: 'test', signal: controller.signal })).rejects.toThrow(
+      'Aborted'
+    )
+    // Store must not be queried after the abort fires.
+    expect(mockStore.query).not.toHaveBeenCalled()
+  })
+
   it('passes domain option to LLM', async () => {
     const deps = createMockDeps()
     const service = new SearchService(deps)
 
     await service.searchNl({ query: 'scenarios', domain: 'scenario' })
 
-    expect(deps.interpretQuery).toHaveBeenCalledWith('scenarios', { domain: 'scenario' })
+    expect(deps.interpretQuery).toHaveBeenCalledWith('scenarios', {
+      domain: 'scenario',
+      signal: undefined,
+    })
   })
 })
 
@@ -157,7 +215,7 @@ describe('SearchService.searchRefine', () => {
 
     expect(deps.compileSlots).toHaveBeenCalledWith(slots)
     expect(deps.enforcePolicy).toHaveBeenCalledWith(MOCK_SPARQL)
-    expect(mockStore.query).toHaveBeenCalledWith(MOCK_SPARQL)
+    expect(mockStore.query).toHaveBeenCalledWith(MOCK_SPARQL, { signal: undefined })
     expect(deps.interpretQuery).not.toHaveBeenCalled()
 
     expect(result.sparql).toBe(MOCK_SPARQL)
@@ -188,6 +246,33 @@ describe('SearchService.searchRefine', () => {
     const service = new SearchService(deps)
 
     await expect(service.searchRefine({ slots })).rejects.toThrow('Unknown domain: foobar')
+  })
+
+  /**
+   * Regression for task 02: refine flow must also propagate the caller's
+   * signal into store.query so a slow query is cancelled when the client
+   * disconnects from the /refine endpoint.
+   */
+  it('forwards the abort signal into store.query on refine', async () => {
+    const deps = createMockDeps()
+    const service = new SearchService(deps)
+    const controller = new AbortController()
+
+    await service.searchRefine({ slots, signal: controller.signal })
+
+    expect(mockStore.query).toHaveBeenCalledWith(MOCK_SPARQL, { signal: controller.signal })
+  })
+
+  it('throws AbortError when signal fires before refine execution', async () => {
+    const deps = createMockDeps()
+    const service = new SearchService(deps)
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(service.searchRefine({ slots, signal: controller.signal })).rejects.toThrow(
+      'Aborted'
+    )
+    expect(mockStore.query).not.toHaveBeenCalled()
   })
 
   /**

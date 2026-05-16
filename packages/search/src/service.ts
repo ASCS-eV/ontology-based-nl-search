@@ -24,7 +24,10 @@ export interface SearchDependencies {
   /** Resolve the initialized SPARQL store (handles lazy init + data loading) */
   getStore: () => Promise<SparqlStore>
   /** Translate natural language → structured interpretation + SPARQL */
-  interpretQuery: (query: string, options: { domain?: string }) => Promise<LlmStructuredResponse>
+  interpretQuery: (
+    query: string,
+    options: { domain?: string; signal?: AbortSignal }
+  ) => Promise<LlmStructuredResponse>
   /** Compile search slots into a SPARQL query string */
   compileSlots: (slots: SearchSlots) => Promise<string>
   /** Compile count queries for all registered asset domains */
@@ -129,7 +132,7 @@ export class SearchService {
 
     // LLM interpretation (generates slots → compiles → returns SPARQL)
     const endLlm = logger.time('llm-total')
-    const structured = await this.deps.interpretQuery(query, { domain })
+    const structured = await this.deps.interpretQuery(query, { domain, signal })
     endLlm()
 
     // Merge LLM sub-timings into the logger's timing list
@@ -143,8 +146,8 @@ export class SearchService {
 
     // Execute SPARQL and count total datasets in parallel (count is non-critical)
     const [execution, totalDatasets] = await Promise.all([
-      this.executeSparql(structured.sparql, logger),
-      this.countTotalDatasets(logger),
+      this.executeSparql(structured.sparql, logger, signal),
+      this.countTotalDatasets(logger, signal),
     ])
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
@@ -185,7 +188,7 @@ export class SearchService {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
     // Execute
-    const execution = await this.executeSparql(sparql, logger)
+    const execution = await this.executeSparql(sparql, logger, signal)
 
     const meta = this.buildMeta(requestId, execution.results.length, 0, logger)
     logger.info('Refine completed', { matchCount: meta.matchCount })
@@ -199,7 +202,11 @@ export class SearchService {
    * Execute a SPARQL query through the policy layer and store.
    * Returns results or a policy/execution error.
    */
-  private async executeSparql(sparql: string, logger: RequestLogger): Promise<ExecutionResult> {
+  private async executeSparql(
+    sparql: string,
+    logger: RequestLogger,
+    signal?: AbortSignal
+  ): Promise<ExecutionResult> {
     const policy = this.deps.enforcePolicy(sparql)
 
     if (!policy.allowed) {
@@ -214,7 +221,7 @@ export class SearchService {
     try {
       const endQuery = logger.time('sparql-execution')
       const store = await this.deps.getStore()
-      const sparqlResults = await store.query(policy.query)
+      const sparqlResults = await store.query(policy.query, { signal })
       endQuery()
 
       return {
@@ -246,7 +253,7 @@ export class SearchService {
    * Count total datasets across all registered asset domains.
    * Non-critical: returns 0 on failure.
    */
-  private async countTotalDatasets(logger: RequestLogger): Promise<number> {
+  private async countTotalDatasets(logger: RequestLogger, signal?: AbortSignal): Promise<number> {
     const endCount = logger.time('dataset-count')
     try {
       const store = await this.deps.getStore()
@@ -254,7 +261,8 @@ export class SearchService {
       let total = 0
 
       for (const { query: countSparql } of countQueries) {
-        const countResult = await store.query(countSparql)
+        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+        const countResult = await store.query(countSparql, { signal })
         const countBinding = countResult.results.bindings[0]
         if (countBinding?.count) {
           total += parseInt(countBinding.count.value, 10)
@@ -265,6 +273,9 @@ export class SearchService {
       return total
     } catch (err) {
       endCount()
+      // Propagate aborts so the caller stops the pipeline; swallow other
+      // errors (count is best-effort metadata, not on the critical path).
+      if (err instanceof DOMException && err.name === 'AbortError') throw err
       logger.warn('Failed to count total datasets', { error: String(err) })
       return 0
     }

@@ -66,6 +66,47 @@ describe('RemoteSparqlStore', () => {
 
       await expect(store.query('INVALID SPARQL')).rejects.toThrow('SPARQL query failed (400)')
     })
+
+    /**
+     * Regression for task 02 — the caller's AbortSignal (e.g. the SSE-route
+     * controller for a disconnected client) must compose with the per-store
+     * timeout signal so fetch is aborted by whichever fires first.
+     */
+    it('aborts the underlying fetch when the caller signal fires', async () => {
+      const controller = new AbortController()
+      // Resolve fetch only when its `signal` aborts — mimicking a real server
+      // hang. The promise rejects with AbortError, which the store surfaces.
+      mockFetch.mockImplementationOnce((_url: string, init: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          init.signal!.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'))
+          })
+        })
+      })
+
+      const queryPromise = store.query('SELECT * WHERE { ?s ?p ?o }', {
+        signal: controller.signal,
+      })
+      controller.abort()
+
+      await expect(queryPromise).rejects.toThrow(/Abort/i)
+      // The composed signal passed to fetch must be aborted.
+      const init = mockFetch.mock.calls[0]?.[1] as RequestInit
+      expect((init.signal as AbortSignal).aborted).toBe(true)
+    })
+
+    it('still aborts via timeout when no caller signal is supplied', async () => {
+      const fastStore = new RemoteSparqlStore('http://localhost:3030/envited/sparql', undefined, 1)
+      mockFetch.mockImplementationOnce((_url: string, init: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          init.signal!.addEventListener('abort', () => {
+            reject(new DOMException('TimeoutError', 'TimeoutError'))
+          })
+        })
+      })
+
+      await expect(fastStore.query('SELECT * WHERE { ?s ?p ?o }')).rejects.toThrow(/Timeout/i)
+    })
   })
 
   describe('update', () => {

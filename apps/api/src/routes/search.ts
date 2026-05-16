@@ -36,9 +36,24 @@ searchRoutes.post('/stream', (c) => {
   const requestId = c.get('requestId') as string
   const streamLogger = new RequestLogger({ requestId })
 
+  // Compose two abort sources into a single signal that propagates to the
+  // service: the underlying HTTP request signal (client closes the connection
+  // mid-flight) and the SSE write-side abort (Hono detects the writer is gone).
+  // Either source cancels the LLM call, store query, and count loop downstream
+  // so we don't burn compute on a request whose results no one is reading.
+  const controller = new AbortController()
+  const requestSignal = c.req.raw.signal
+  if (requestSignal.aborted) {
+    controller.abort()
+  } else {
+    requestSignal.addEventListener('abort', () => controller.abort(), { once: true })
+  }
+
   return streamSSE(
     c,
     async (stream) => {
+      stream.onAbort(() => controller.abort())
+
       let body: { query?: unknown }
       try {
         body = await c.req.json()
@@ -68,7 +83,9 @@ searchRoutes.post('/stream', (c) => {
           data: JSON.stringify({ phase: 'interpreting', message: 'Interpreting query…' }),
         })
 
-        const result = await searchNl({ query })
+        const result = await searchNl({ query, signal: controller.signal })
+
+        if (controller.signal.aborted) return
 
         await stream.writeSSE({
           event: 'interpretation',
@@ -95,6 +112,11 @@ searchRoutes.post('/stream', (c) => {
           totalMs: result.meta.executionTimeMs,
         })
       } catch (error) {
+        // Client-side abort isn't a server error — log at info and exit quietly.
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          logger.info('Stream search aborted by client')
+          return
+        }
         logger.error('Stream search failed', error)
         await stream.writeSSE({
           event: 'error',
@@ -138,7 +160,7 @@ searchRoutes.post('/refine', async (c) => {
 
   try {
     logger.info('Refine search started', { slots: parseResult.data })
-    const result = await searchRefine({ slots: parseResult.data })
+    const result = await searchRefine({ slots: parseResult.data, signal: c.req.raw.signal })
 
     if (result.execution.error) {
       logger.warn('Refine query failed', { error: result.execution.error })
@@ -154,6 +176,13 @@ searchRoutes.post('/refine', async (c) => {
       { [REQUEST_ID_HEADER]: requestId }
     )
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      // The client closed the connection mid-flight. The response body is
+      // typically discarded, but we surface 408 Request Timeout for the rare
+      // case a proxy buffered the response before the abort propagated.
+      logger.info('Refine search aborted by client')
+      return c.body(null, 408)
+    }
     logger.error('Refine search failed', error)
     const err = internalError()
     return c.json(err.body, err.status)
