@@ -6,17 +6,17 @@ A locally running TypeScript web application with a Google-style search bar that
 
 ## Tech Stack
 
-| Layer                   | Technology                                              |
-| ----------------------- | ------------------------------------------------------- |
-| **Frontend**            | Vite, React 19, TanStack Router, Tailwind 4             |
-| **API**                 | Hono (SSE streaming)                                    |
-| **LLM Integration**     | Vercel AI SDK (OpenAI, Ollama), GitHub Copilot SDK      |
-| **SPARQL Store (dev)**  | Oxigraph WASM (in-memory, zero setup)                   |
-| **SPARQL Store (prod)** | Apache Jena Fuseki (remote endpoint)                    |
-| **Ontology Source**     | Fetched & cached from ontology-management-base          |
-| **Testing**             | Vitest (unit/integration), Playwright (E2E)             |
-| **Monorepo**            | pnpm workspaces, Turborepo                              |
-| **Quality**             | ESLint, Prettier, Husky, lint-staged, GitHub Actions CI |
+| Layer                   | Technology                                                                |
+| ----------------------- | ------------------------------------------------------------------------- |
+| **Frontend**            | Vite, React 19, TanStack Router, Tailwind 4                               |
+| **API**                 | Hono (SSE streaming)                                                      |
+| **LLM Integration**     | Vercel AI SDK (OpenAI, Ollama, Anthropic, Claude CLI), GitHub Copilot SDK |
+| **SPARQL Store (dev)**  | Oxigraph WASM (in-memory, zero setup)                                     |
+| **SPARQL Store (prod)** | Apache Jena Fuseki (remote endpoint)                                      |
+| **Ontology Source**     | Fetched & cached from ontology-management-base                            |
+| **Testing**             | Vitest (unit/integration), Playwright (E2E)                               |
+| **Monorepo**            | pnpm workspaces, Turborepo                                                |
+| **Quality**             | ESLint, Prettier, Husky, lint-staged, GitHub Actions CI                   |
 
 ## Quick Start
 
@@ -33,9 +33,11 @@ pnpm install
 cp .env.example .env.local
 
 # Edit .env.local and set AI_PROVIDER to one of:
-# - "ollama" (default, free local) - requires: ollama pull qwen2.5-coder:7b
-# - "openai" (requires OPENAI_API_KEY)
-# - "copilot" (requires GitHub Copilot Enterprise)
+# - "ollama"     (default, free local) - requires: ollama pull qwen2.5-coder:7b
+# - "openai"     (requires OPENAI_API_KEY)
+# - "anthropic"  (requires ANTHROPIC_API_KEY)
+# - "claude-cli" (uses ~/.claude/.credentials.json; run `claude` once to log in)
+# - "copilot"    (requires GitHub Copilot Enterprise)
 ```
 
 ### 3. Start development servers
@@ -98,7 +100,7 @@ User Query ("German highways with 3 lanes")
     └─────────┬─────────┘
               │
     ┌─────────▼─────────┐
-    │  LLM Agent         │◄── Configurable provider (OpenAI, Ollama, Copilot)
+    │  LLM Agent         │◄── Configurable provider (OpenAI, Ollama, Anthropic, Claude CLI, Copilot)
     │  NL → SearchSlots  │    Fills structured slots, never writes SPARQL
     └─────────┬─────────┘
               │
@@ -162,6 +164,8 @@ pnpm run test:e2e     # E2E tests (Playwright)
 - Check `.env.local` exists in project root
 - For Ollama: ensure `ollama pull qwen2.5-coder:7b` completed
 - For OpenAI: verify `OPENAI_API_KEY` is set
+- For Anthropic: verify `ANTHROPIC_API_KEY` is set
+- For Claude CLI: run `claude` once to authenticate (token written to `~/.claude/.credentials.json`)
 - Check logs for port conflicts (3003, 5174, 5173)
 
 **Search returns no results?**
@@ -173,16 +177,17 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 ## Configuration
 
-| Variable          | Description                                   | Default                            |
-| ----------------- | --------------------------------------------- | ---------------------------------- |
-| `SPARQL_MODE`     | `memory` (Oxigraph WASM) or `remote` (Fuseki) | `memory`                           |
-| `SPARQL_ENDPOINT` | Remote SPARQL endpoint URL                    | —                                  |
-| `AI_PROVIDER`     | LLM provider: `openai`, `ollama`, `copilot`   | `ollama`                           |
-| `AI_MODEL`        | Model identifier                              | `qwen2.5-coder:7b`                 |
-| `OPENAI_API_KEY`  | OpenAI API key (when `AI_PROVIDER=openai`)    | —                                  |
-| `OLLAMA_BASE_URL` | Ollama server URL                             | `http://localhost:11434/v1`        |
-| `ONTOLOGY_REPO`   | GitHub repo for ontologies (fallback)         | `ASCS-eV/ontology-management-base` |
-| `ONTOLOGY_BRANCH` | Branch to fetch ontologies from (fallback)    | `main`                             |
+| Variable            | Description                                                                       | Default                            |
+| ------------------- | --------------------------------------------------------------------------------- | ---------------------------------- |
+| `SPARQL_MODE`       | `memory` (Oxigraph WASM) or `remote` (Fuseki)                                     | `memory`                           |
+| `SPARQL_ENDPOINT`   | Remote SPARQL endpoint URL                                                        | —                                  |
+| `AI_PROVIDER`       | LLM provider: `openai`, `ollama`, `anthropic`, `claude-cli`, `copilot`            | `ollama`                           |
+| `AI_MODEL`          | Model identifier (see `.env.example` for per-provider model lists)                | `qwen2.5-coder:7b`                 |
+| `OPENAI_API_KEY`    | OpenAI API key (when `AI_PROVIDER=openai`)                                        | —                                  |
+| `ANTHROPIC_API_KEY` | Anthropic API key (when `AI_PROVIDER=anthropic`; `claude-cli` uses OAuth instead) | —                                  |
+| `OLLAMA_BASE_URL`   | Ollama server URL                                                                 | `http://localhost:11434/v1`        |
+| `ONTOLOGY_REPO`     | GitHub repo for ontologies (fallback)                                             | `ASCS-eV/ontology-management-base` |
+| `ONTOLOGY_BRANCH`   | Branch to fetch ontologies from (fallback)                                        | `main`                             |
 
 ## License
 
