@@ -9,5 +9,8 @@
       "types": "./helpers/index.ts",
       "default": "./helpers/index.ts"
     }
+  },
+  "devDependencies": {
+    "@types/node": "^25.7.0"
   }
 }

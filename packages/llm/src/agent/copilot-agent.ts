@@ -25,6 +25,7 @@
 import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
+import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import {
   extractVocabulary,
   getInitializedStore,
@@ -35,7 +36,13 @@ import { getShaclContent } from '@ontology-search/search/shacl-reader'
 import type { SearchSlots } from '@ontology-search/search/slots'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
-import { correctDomains, correctFilters, validateSlots } from '../slot-validator.js'
+import {
+  correctDomains,
+  correctFilters,
+  validateRangesAgainstShacl,
+  validateSlots,
+  validateSlotsAgainstShacl,
+} from '../slot-validator.js'
 import type { LlmStructuredResponse } from '../types.js'
 import type { AgentOptions } from './index.js'
 
@@ -44,7 +51,12 @@ interface SlotSubmission {
     domains?: string[]
     filters?: Record<string, string | string[]>
     ranges?: Record<string, { min?: number; max?: number }>
-    location?: { country?: string; state?: string; region?: string; city?: string }
+    location?: {
+      country?: string | string[]
+      state?: string | string[]
+      region?: string | string[]
+      city?: string | string[]
+    }
     license?: string
   }
   interpretation: LlmStructuredResponse['interpretation']
@@ -130,10 +142,21 @@ function buildPersistentSubmitSlotsTool() {
             location: {
               type: 'object',
               properties: {
-                country: { type: 'string' },
-                state: { type: 'string' },
-                region: { type: 'string' },
-                city: { type: 'string' },
+                // Each field accepts string or array — use an array to express
+                // a region/continent as the explicit list of country codes it
+                // covers. Never silently substitute one country for a region.
+                country: {
+                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+                },
+                state: {
+                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+                },
+                region: {
+                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+                },
+                city: {
+                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+                },
               },
             },
             license: { type: 'string' },
@@ -295,22 +318,31 @@ export async function runCopilotAgent(
     const result = submissionRef.value
 
     const endValidation = sw.time('post-llm-validation')
-    const correctedFilters = correctFilters(result.slots.filters ?? {}, vocabulary)
-    const ranges = result.slots.ranges ?? {}
+    const fuzzedFilters = correctFilters(result.slots.filters ?? {}, vocabulary)
+    const shacl = await ShaclValidator.fromWorkspace()
+    const shaclResult = await validateSlotsAgainstShacl(
+      fuzzedFilters,
+      result.slots.location,
+      result.slots.license,
+      shacl,
+      vocabulary
+    )
+    // Drop ranges whose key is not in the ontology (e.g. invented `numberLanes`).
+    const rangeResult = validateRangesAgainstShacl(result.slots.ranges ?? {}, shacl)
     const correctedDomains = correctDomains(
       result.slots.domains ?? [targetDomain],
-      correctedFilters,
-      ranges,
+      shaclResult.filters,
+      rangeResult.ranges,
       vocabulary
     )
     endValidation()
 
     const slots: SearchSlots = {
       domains: correctedDomains,
-      filters: correctedFilters,
-      ranges,
-      location: result.slots.location,
-      license: result.slots.license,
+      filters: shaclResult.filters,
+      ranges: rangeResult.ranges,
+      location: shaclResult.location,
+      license: shaclResult.license,
     }
 
     const endCompile = sw.time('sparql-compile')
@@ -319,7 +351,7 @@ export async function runCopilotAgent(
 
     const rawResponse: LlmStructuredResponse = {
       interpretation: result.interpretation,
-      gaps: result.gaps,
+      gaps: [...result.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
       sparql,
     }
 

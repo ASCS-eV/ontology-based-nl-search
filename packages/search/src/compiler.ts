@@ -318,28 +318,27 @@ function compileCrossDomainQuery(slots: SearchSlots, registry: DomainRegistry): 
   patterns.push('?asset a envited-x:SimulationAsset ;')
   patterns.push('  rdfs:label ?name .')
 
-  // Apply location filters if present
+  // Apply location filters if present (and non-empty — see isNonEmpty)
   if (
     slots.location &&
-    (slots.location.country || slots.location.state || slots.location.region || slots.location.city)
+    (isNonEmpty(slots.location.country) ||
+      isNonEmpty(slots.location.state) ||
+      isNonEmpty(slots.location.region) ||
+      isNonEmpty(slots.location.city))
   ) {
     optionals.push(`OPTIONAL {
     ?asset envited-x:hasDomainSpecification ?domSpec .
     ?domSpec envited-x:hasGeoreference ?georef .
     ?georef georeference:hasProjectLocation ?loc .`)
 
-    if (slots.location.country) {
+    if (isNonEmpty(slots.location.country)) {
       optionals.push(`    ?loc georeference:country ?country .`)
-      filters.push(
-        `  FILTER(CONTAINS(LCASE(?country), "${escapeSparqlLiteral(slots.location.country.toLowerCase())}"))`
-      )
+      addLocationFilter(filters, '?country', slots.location.country)
       selectVars.push('?country')
     }
-    if (slots.location.city) {
+    if (isNonEmpty(slots.location.city)) {
       optionals.push(`    ?loc georeference:city ?city .`)
-      filters.push(
-        `  FILTER(CONTAINS(LCASE(?city), "${escapeSparqlLiteral(slots.location.city.toLowerCase())}"))`
-      )
+      addLocationFilter(filters, '?city', slots.location.city)
       selectVars.push('?city')
     }
 
@@ -386,12 +385,11 @@ function buildDomainPatterns(
 ): void {
   const filterEntries = Object.entries(domainFilters)
   const rangeEntries = Object.entries(ranges)
-  const hasLocationFilters = !!(
-    location?.country ||
-    location?.state ||
-    location?.region ||
-    location?.city
-  )
+  const hasLocationFilters =
+    isNonEmpty(location?.country) ||
+    isNonEmpty(location?.state) ||
+    isNonEmpty(location?.region) ||
+    isNonEmpty(location?.city)
   const needsDomSpec = filterEntries.length > 0 || rangeEntries.length > 0 || hasLocationFilters
 
   if (!needsDomSpec) return
@@ -433,7 +431,7 @@ function buildDomainPatterns(
       const varName = `?${propName}${suffix}`
       const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
       patterns.push(`${contentVar} ${propDomain}:${propName} ${varName} .`)
-      addEnumFilter(filters, varName, value)
+      addEnumFilter(patterns, filters, varName, value)
       selectVars.add(varName)
     }
   }
@@ -446,7 +444,7 @@ function buildDomainPatterns(
       const varName = `?${propName}${suffix}`
       const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
       patterns.push(`${fmtVar} ${propDomain}:${propName} ${varName} .`)
-      addEnumFilter(filters, varName, value)
+      addEnumFilter(patterns, filters, varName, value)
       selectVars.add(varName)
     }
   }
@@ -500,7 +498,7 @@ function buildDomainPatterns(
       const varName = `?${propName}${suffix}`
       const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
       patterns.push(`${dsVar} ${propDomain}:${propName} ${varName} .`)
-      addEnumFilter(filters, varName, value)
+      addEnumFilter(patterns, filters, varName, value)
       selectVars.add(varName)
     }
   }
@@ -512,34 +510,28 @@ function buildDomainPatterns(
     patterns.push(`${specVar} ${domain.prefix}:hasGeoreference ${georefVar} .`)
     patterns.push(`${georefVar} georeference:hasProjectLocation ${locVar} .`)
 
-    if (location!.country) {
+    if (isNonEmpty(location!.country)) {
       const v = `?country${suffix}`
       patterns.push(`${locVar} georeference:country ${v} .`)
-      filters.push(
-        `FILTER(CONTAINS(LCASE(${v}), "${escapeSparqlLiteral(location!.country.toLowerCase())}"))`
-      )
+      addLocationFilter(filters, v, location!.country)
       selectVars.add(v)
     }
-    if (location!.state) {
+    if (isNonEmpty(location!.state)) {
       const v = `?state${suffix}`
       patterns.push(`${locVar} georeference:state ${v} .`)
-      filters.push(`FILTER(${v} = "${escapeSparqlLiteral(location!.state)}")`)
+      addLocationFilter(filters, v, location!.state)
       selectVars.add(v)
     }
-    if (location!.region) {
+    if (isNonEmpty(location!.region)) {
       const v = `?region${suffix}`
       patterns.push(`${locVar} georeference:region ${v} .`)
-      filters.push(
-        `FILTER(CONTAINS(LCASE(${v}), "${escapeSparqlLiteral(location!.region.toLowerCase())}"))`
-      )
+      addLocationFilter(filters, v, location!.region)
       selectVars.add(v)
     }
-    if (location!.city) {
+    if (isNonEmpty(location!.city)) {
       const v = `?city${suffix}`
       patterns.push(`${locVar} georeference:city ${v} .`)
-      filters.push(
-        `FILTER(CONTAINS(LCASE(${v}), "${escapeSparqlLiteral(location!.city.toLowerCase())}"))`
-      )
+      addLocationFilter(filters, v, location!.city)
       selectVars.add(v)
     }
   }
@@ -553,24 +545,30 @@ function buildDomainPatterns(
 function partitionFiltersByDomain(
   filters: Record<string, string | string[]>,
   detectedDomains: string[],
-  vocabIndex: { properties: Map<string, CompilerProperty> }
+  vocabIndex: CompilerVocab
 ): Record<string, Record<string, string | string[]>> {
   const result: Record<string, Record<string, string | string[]>> = {}
 
-  // Single domain — all filters belong to it
+  // Defense-in-depth: drop any filter key the schema doesn't know about.
+  // The slot validator should already have caught these and emitted a gap;
+  // the compiler is the last gate before SPARQL so a non-existent property
+  // never produces a `?asset domain:fakeProp ?x` triple that would match
+  // zero results without explanation.
+  const known: Record<string, string | string[]> = {}
+  for (const [propName, value] of Object.entries(filters)) {
+    if (isKnownProperty(propName, vocabIndex)) known[propName] = value
+  }
+
+  // Single domain — all known filters belong to it
   if (detectedDomains.length === 1) {
-    result[detectedDomains[0]!] = { ...filters }
+    result[detectedDomains[0]!] = { ...known }
     return result
   }
 
   // Multi-domain: use ontology to find which detected domain owns each property
-  for (const [propName, value] of Object.entries(filters)) {
+  for (const [propName, value] of Object.entries(known)) {
     const propInfo = vocabIndex.properties.get(propName)
-
-    if (!propInfo) {
-      // Unknown property — skip (will be caught by validator)
-      continue
-    }
+    if (!propInfo) continue
 
     // Find which detected domain defines this property
     const matchingDomain = detectedDomains.find((d) => propInfo.domains.has(d))
@@ -592,18 +590,27 @@ function partitionFiltersByDomain(
 function partitionRangesByDomain(
   ranges: Record<string, { min?: number; max?: number }>,
   detectedDomains: string[],
-  vocabIndex: { properties: Map<string, CompilerProperty> }
+  vocabIndex: CompilerVocab
 ): Record<string, Record<string, { min?: number; max?: number }>> {
   const result: Record<string, Record<string, { min?: number; max?: number }>> = {}
 
-  // Single domain — all ranges belong to it
+  // Defense-in-depth: drop any range key the schema doesn't know about.
+  // Same reasoning as partitionFiltersByDomain — without this gate the LLM
+  // can invent numeric properties (e.g. `numberLanes`) that compile into
+  // a dead `?qty domain:invented ?x` triple and return 0 results silently.
+  const known: Record<string, { min?: number; max?: number }> = {}
+  for (const [propName, range] of Object.entries(ranges)) {
+    if (isKnownProperty(propName, vocabIndex)) known[propName] = range
+  }
+
+  // Single domain — all known ranges belong to it
   if (detectedDomains.length === 1) {
-    result[detectedDomains[0]!] = { ...ranges }
+    result[detectedDomains[0]!] = { ...known }
     return result
   }
 
   // Multi-domain: use ontology to find which detected domain owns each property
-  for (const [propName, range] of Object.entries(ranges)) {
+  for (const [propName, range] of Object.entries(known)) {
     const propInfo = vocabIndex.properties.get(propName)
 
     if (!propInfo) {
@@ -725,18 +732,127 @@ function resolvePropertyDomain(
 }
 
 /**
- * Add a FILTER clause for enum values (string equality or IN for arrays).
+ * Detect whether a filter value is an absolute IRI (http(s)://… or urn:…).
+ * Used to decide between literal equality and hierarchy expansion.
  */
-function addEnumFilter(filters: string[], varName: string, value: string | string[]): void {
+function isIri(value: string): boolean {
+  return /^https?:\/\//.test(value) || /^urn:/.test(value)
+}
+
+/**
+ * A slot value carries information iff it's a non-empty string or a
+ * non-empty array. Used by the compiler to decide whether to emit the
+ * graph pattern + filter for a given slot — empty values must produce
+ * no triple at all, never a dangling pattern or `IN ()` clause.
+ */
+function isNonEmpty(value: string | string[] | undefined): value is string | string[] {
+  if (value === undefined) return false
+  if (typeof value === 'string') return value.length > 0
+  return Array.isArray(value) && value.length > 0
+}
+
+/**
+ * A property name is "known to the schema" if any of the graph-derived
+ * indexes references it. The indexes are populated from disjoint SPARQL
+ * patterns (sh:property paths, shape-group nesting, Range2D detection)
+ * so checking only one would under-recognise valid properties.
+ *
+ * Used as the defense-in-depth filter in `partitionFiltersByDomain` —
+ * unknown keys never reach SPARQL compilation.
+ */
+function isKnownProperty(propName: string, vocabIndex: CompilerVocab): boolean {
+  if (vocabIndex.properties.has(propName)) return true
+  if (vocabIndex.range2DProperties.has(propName)) return true
+  // shapeGroups is keyed by `${localName}:${domain}` — any domain matches.
+  for (const key of vocabIndex.shapeGroups.keys()) {
+    if (key.startsWith(`${propName}:`)) return true
+  }
+  return false
+}
+
+/**
+ * Emit a FILTER clause for a location field that may be a single string or
+ * an array. Generic — used for every georeference:* literal slot.
+ *
+ *  - **Array**: `FILTER(?v IN ("DE","FR","IT"))` — exact equality over a set,
+ *    so a region expressed as a list of ISO codes filters precisely.
+ *  - **Single string**: `FILTER(CONTAINS(LCASE(?v), "<value>"))` — preserves
+ *    the existing case-insensitive UX for free-form single values
+ *    (city/state names). Note: this is lossy for short codes — flagged for
+ *    follow-up; the array path uses strict equality.
+ */
+function addLocationFilter(filters: string[], varName: string, value: string | string[]): void {
   if (Array.isArray(value)) {
     if (value.length === 1) {
       filters.push(`FILTER(${varName} = "${escapeSparqlLiteral(value[0]!)}")`)
     } else {
-      const values = value.map((v) => `"${escapeSparqlLiteral(v)}"`).join(', ')
-      filters.push(`FILTER(${varName} IN (${values}))`)
+      const lits = value.map((v) => `"${escapeSparqlLiteral(v)}"`).join(', ')
+      filters.push(`FILTER(${varName} IN (${lits}))`)
     }
   } else {
-    filters.push(`FILTER(${varName} = "${escapeSparqlLiteral(value)}")`)
+    filters.push(
+      `FILTER(CONTAINS(LCASE(${varName}), "${escapeSparqlLiteral(value.toLowerCase())}"))`
+    )
+  }
+}
+
+/**
+ * SPARQL property path that walks reflexive-transitively up SKOS and RDFS
+ * hierarchies. Used to expand an IRI-valued filter to include all narrower
+ * concepts / subclasses generically — the hierarchies must be declared in
+ * the loaded graphs; this code does not name any specific concept scheme.
+ *
+ *   - `skos:broaderTransitive*` — covers SKOS concept narrower-than chains
+ *   - `rdfs:subClassOf*`        — covers OWL/RDFS class subClassOf chains
+ *
+ * Both predicates are W3C-standard and reflexive in their `*` form, so the
+ * expanded set always includes the filter value itself.
+ *
+ * @see https://www.w3.org/TR/skos-reference/#semantic-relations
+ * @see https://www.w3.org/TR/rdf-schema/#ch_subclassof
+ */
+const HIERARCHY_EXPANSION_PATH =
+  '(<http://www.w3.org/2004/02/skos/core#broaderTransitive>|<http://www.w3.org/2000/01/rdf-schema#subClassOf>)*'
+
+/**
+ * Add a FILTER (or graph pattern) for an enum value.
+ *
+ * - **Literal value(s)**: emits the existing `FILTER(?v = "lit")` form.
+ * - **IRI value(s)**: emits a reflexive-transitive SPARQL property path,
+ *   so the filter matches any concept narrower than the IRI in any
+ *   `skos:broaderTransitive` or `rdfs:subClassOf` chain loaded into the
+ *   store. This is the generic IRI-expansion gate: no specific hierarchy
+ *   is hardcoded; the engine walks whatever is declared.
+ *
+ *   Example: with `<.../region/europe>` declared as the broader concept of
+ *   {`<.../country/DE>`, `<.../country/FR>`, …}, a filter for `europe`
+ *   expands to the full country set automatically.
+ *
+ *   When no hierarchy edges are present in the data, the path matches only
+ *   the IRI itself (reflexive case) — same semantics as plain equality.
+ */
+function addEnumFilter(
+  patterns: string[],
+  filters: string[],
+  varName: string,
+  value: string | string[]
+): void {
+  const arr = Array.isArray(value) ? value : [value]
+  const iriValues = arr.filter(isIri)
+  const literalValues = arr.filter((v) => !isIri(v))
+
+  if (literalValues.length === 1) {
+    filters.push(`FILTER(${varName} = "${escapeSparqlLiteral(literalValues[0]!)}")`)
+  } else if (literalValues.length > 1) {
+    const values = literalValues.map((v) => `"${escapeSparqlLiteral(v)}"`).join(', ')
+    filters.push(`FILTER(${varName} IN (${values}))`)
+  }
+
+  for (const iri of iriValues) {
+    // The hierarchy walk is emitted as an additional graph pattern, not a
+    // FILTER, so the property path is evaluated by the SPARQL engine against
+    // every loaded named graph (schema, codelists, instances, …) generically.
+    patterns.push(`${varName} ${HIERARCHY_EXPANSION_PATH} <${iri}> .`)
   }
 }
 

@@ -3,6 +3,7 @@
 @prefix georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/> .
 @prefix manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/> .
 @prefix hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/> .
+@prefix environment-model: <https://w3id.org/ascs-ev/envited-x/environment-model/v5/> .
 @prefix gx: <https://w3id.org/gaia-x/development#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -25,12 +26,18 @@
       scenario:weatherSummary "clear" ;
       scenario:entityTypes "car" ;
       scenario:entityTypes "pedestrian" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "occlusion"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "2"^^xsd:integer ;
-      scenario:duration "5.0"^^xsd:float
+      scenario:numberTrafficObjects "2"^^xsd:integer ;
+      scenario:permanentTrafficObjects "1"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Accident Database"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -43,17 +50,96 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov1.net:HdMap:ref-001>
+    manifest:hasReferencedArtifacts <did:web:mapprov1.net:HdMap:ref-munich-001> ,
+      <did:web:envprov1.net:EnvironmentModel:ref-munich-001>
   ] .
 
-<did:web:prov1.net:HdMap:ref-001> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Cut In in Munich"@en ;
+<did:web:mapprov1.net:HdMap:ref-munich-001> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Cut In in Munich"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.7"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
       hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:laneTypes "driving" ;
+      hdmap:levelOfDetail "lane" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "13.0"^^xsd:float ;
+      hdmap:numberIntersections "1"^^xsd:integer ;
+      hdmap:numberTrafficLights "5"^^xsd:integer ;
+      hdmap:numberTrafficSigns "17"^^xsd:integer ;
+      hdmap:numberObjects "61"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "20.0"^^xsd:float ;
+        hdmap:max "50.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "lidar" ;
+      hdmap:measurementSystem "3DMS system"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] .
+
+<did:web:envprov1.net:EnvironmentModel:ref-munich-001> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Cut In in Munich"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "buildings, roads, vegetation" ;
+      environment-model:useCase "sensor simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Blender" ;
+      environment-model:creationToolVendor "Blender Foundation" ;
+      environment-model:creationToolVersion "3.6"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "10013"^^xsd:integer ;
+      environment-model:geometryCount "57"^^xsd:integer ;
+      environment-model:textureMaterialCount "13"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Munich"
+      ]
     ]
   ] .
 
@@ -75,12 +161,18 @@
       scenario:weatherSummary "rain" ;
       scenario:entityTypes "truck" ;
       scenario:entityTypes "bicycle" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "high_relative_speed"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "3"^^xsd:integer ;
-      scenario:duration "8.7"^^xsd:float
+      scenario:numberTrafficObjects "3"^^xsd:integer ;
+      scenario:permanentTrafficObjects "2"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Real World Data"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -92,7 +184,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov2.net:HdMap:ref-berlin-002> ,
+      <did:web:envprov2.net:EnvironmentModel:ref-berlin-002>
+  ] .
+
+<did:web:mapprov2.net:HdMap:ref-berlin-002> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Lane Change in Berlin"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.8"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "town" ;
+      hdmap:laneTypes "driving" , "shoulder" ;
+      hdmap:levelOfDetail "pole" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "20.0"^^xsd:float ;
+      hdmap:numberIntersections "4"^^xsd:integer ;
+      hdmap:numberTrafficLights "7"^^xsd:integer ;
+      hdmap:numberTrafficSigns "30"^^xsd:integer ;
+      hdmap:numberObjects "98"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "31.0"^^xsd:float ;
+        hdmap:max "68.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "camera" ;
+      hdmap:measurementSystem "Mobile Mapping System"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] .
+
+<did:web:envprov2.net:EnvironmentModel:ref-berlin-002> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Lane Change in Berlin"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "terrain, buildings, traffic signs" ;
+      environment-model:useCase "camera simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "10110"^^xsd:integer ;
+      environment-model:geometryCount "100"^^xsd:integer ;
+      environment-model:textureMaterialCount "36"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Berlin"
+      ]
+    ]
   ] .
 
 # --- Scenario 3: Intersection Crossing in Stuttgart ---
@@ -113,12 +296,18 @@
       scenario:weatherSummary "snow" ;
       scenario:entityTypes "pedestrian" ;
       scenario:entityTypes "bus" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "VRU_interaction"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "4"^^xsd:integer ;
-      scenario:duration "12.4"^^xsd:float
+      scenario:numberTrafficObjects "4"^^xsd:integer ;
+      scenario:permanentTrafficObjects "3"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Analytical Hazard Based Approach"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -130,7 +319,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov3.net:HdMap:ref-stuttgart-003>
+  ] .
+
+<did:web:mapprov3.net:HdMap:ref-stuttgart-003> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Intersection Crossing in Stuttgart"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "rural" ;
+      hdmap:laneTypes "driving" , "biking" ;
+      hdmap:levelOfDetail "crosswalk" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "27.0"^^xsd:float ;
+      hdmap:numberIntersections "7"^^xsd:integer ;
+      hdmap:numberTrafficLights "9"^^xsd:integer ;
+      hdmap:numberTrafficSigns "43"^^xsd:integer ;
+      hdmap:numberObjects "135"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "42.0"^^xsd:float ;
+        hdmap:max "86.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "scanner" ;
+      hdmap:measurementSystem "RTK-GPS"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Stuttgart"
+      ]
+    ]
   ] .
 
 # --- Scenario 4: Following in San Francisco ---
@@ -151,12 +389,18 @@
       scenario:weatherSummary "fog" ;
       scenario:entityTypes "bicycle" ;
       scenario:entityTypes "motorbike" ;
-      scenario:country "us"
+      scenario:country "us" ;
+      scenario:criticalityFactors "adverse_weather"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "5"^^xsd:integer ;
-      scenario:duration "16.1"^^xsd:float
+      scenario:numberTrafficObjects "5"^^xsd:integer ;
+      scenario:permanentTrafficObjects "4"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Synthetic Generation"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -169,17 +413,54 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov4.net:HdMap:ref-004>
+    manifest:hasReferencedArtifacts <did:web:mapprov4.net:HdMap:ref-san-francisco-004>
   ] .
 
-<did:web:prov4.net:HdMap:ref-004> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Following in San Francisco"@en ;
+<did:web:mapprov4.net:HdMap:ref-san-francisco-004> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Following in San Francisco"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.1"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "motorway_entry" ;
+      hdmap:laneTypes "driving" , "walking" , "biking" ;
+      hdmap:levelOfDetail "flat-marking" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "34.0"^^xsd:float ;
+      hdmap:numberIntersections "10"^^xsd:integer ;
+      hdmap:numberTrafficLights "11"^^xsd:integer ;
+      hdmap:numberTrafficSigns "56"^^xsd:integer ;
+      hdmap:numberObjects "172"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "53.0"^^xsd:float ;
+        hdmap:max "104.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "aerial" ;
+      hdmap:measurementSystem "aerial scanner"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:city "San Francisco"
+      ]
     ]
   ] .
 
@@ -201,12 +482,18 @@
       scenario:weatherSummary "night" ;
       scenario:entityTypes "bus" ;
       scenario:entityTypes "van" ;
-      scenario:country "us"
+      scenario:country "us" ;
+      scenario:criticalityFactors "infrastructure_violation"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "6"^^xsd:integer ;
-      scenario:duration "19.8"^^xsd:float
+      scenario:numberTrafficObjects "6"^^xsd:integer ;
+      scenario:permanentTrafficObjects "5"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Simulation Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -218,7 +505,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov5.net:HdMap:ref-detroit-005>
+  ] .
+
+<did:web:mapprov5.net:HdMap:ref-detroit-005> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Overtaking in Detroit"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "NDS.Live" ;
+      hdmap:version "2.5"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "custom" ;
+      hdmap:laneTypes "driving" , "bus" ;
+      hdmap:levelOfDetail "wall" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "41.0"^^xsd:float ;
+      hdmap:numberIntersections "13"^^xsd:integer ;
+      hdmap:numberTrafficLights "13"^^xsd:integer ;
+      hdmap:numberTrafficSigns "69"^^xsd:integer ;
+      hdmap:numberObjects "209"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "64.0"^^xsd:float ;
+        hdmap:max "122.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "satellite" ;
+      hdmap:measurementSystem "photogrammetry"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:city "Detroit"
+      ]
+    ]
   ] .
 
 # --- Scenario 6: Pedestrian Crossing in Tokyo ---
@@ -239,12 +575,18 @@
       scenario:weatherSummary "windy" ;
       scenario:entityTypes "motorbike" ;
       scenario:entityTypes "car" ;
-      scenario:country "jp"
+      scenario:country "jp" ;
+      scenario:criticalityFactors "near_miss"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "2"^^xsd:integer ;
-      scenario:duration "23.5"^^xsd:float
+      scenario:numberTrafficObjects "7"^^xsd:integer ;
+      scenario:permanentTrafficObjects "1"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Manual Authoring"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -256,7 +598,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov1.net:HdMap:ref-tokyo-006> ,
+      <did:web:envprov2.net:EnvironmentModel:ref-tokyo-006>
+  ] .
+
+<did:web:mapprov1.net:HdMap:ref-tokyo-006> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Pedestrian Crossing in Tokyo"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Shape" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway" ;
+      hdmap:laneTypes "driving" , "parking" ;
+      hdmap:levelOfDetail "curb" ;
+      hdmap:trafficDirection "left-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "48.0"^^xsd:float ;
+      hdmap:numberIntersections "16"^^xsd:integer ;
+      hdmap:numberTrafficLights "15"^^xsd:integer ;
+      hdmap:numberTrafficSigns "82"^^xsd:integer ;
+      hdmap:numberObjects "246"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "75.0"^^xsd:float ;
+        hdmap:max "140.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "procedural generation" ;
+      hdmap:measurementSystem "3DMS system"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "JP" ;
+        georeference:city "Tokyo"
+      ]
+    ]
+  ] .
+
+<did:web:envprov2.net:EnvironmentModel:ref-tokyo-006> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Pedestrian Crossing in Tokyo"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "rural landscape, fields, trees" ;
+      environment-model:useCase "digital twin"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "10498"^^xsd:integer ;
+      environment-model:geometryCount "272"^^xsd:integer ;
+      environment-model:textureMaterialCount "128"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "JP" ;
+        georeference:city "Tokyo"
+      ]
+    ]
   ] .
 
 # --- Scenario 7: Emergency Braking in Paris ---
@@ -277,12 +710,18 @@
       scenario:weatherSummary "mixed" ;
       scenario:entityTypes "van" ;
       scenario:entityTypes "truck" ;
-      scenario:country "fr"
+      scenario:country "fr" ;
+      scenario:criticalityFactors "occlusion"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "3"^^xsd:integer ;
-      scenario:duration "27.2"^^xsd:float
+      scenario:numberTrafficObjects "8"^^xsd:integer ;
+      scenario:permanentTrafficObjects "2"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Drone Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -295,17 +734,96 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov2.net:HdMap:ref-007>
+    manifest:hasReferencedArtifacts <did:web:mapprov2.net:HdMap:ref-paris-007> ,
+      <did:web:envprov3.net:EnvironmentModel:ref-paris-007>
   ] .
 
-<did:web:prov2.net:HdMap:ref-007> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Emergency Braking in Paris"@en ;
+<did:web:mapprov2.net:HdMap:ref-paris-007> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Emergency Braking in Paris"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.7"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "town" ;
+      hdmap:laneTypes "driving" , "emergency" ;
+      hdmap:levelOfDetail "lane" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "55.0"^^xsd:float ;
+      hdmap:numberIntersections "19"^^xsd:integer ;
+      hdmap:numberTrafficLights "1"^^xsd:integer ;
+      hdmap:numberTrafficSigns "95"^^xsd:integer ;
+      hdmap:numberObjects "283"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "86.0"^^xsd:float ;
+        hdmap:max "158.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "survey" ;
+      hdmap:measurementSystem "Mobile Mapping System"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] .
+
+<did:web:envprov3.net:EnvironmentModel:ref-paris-007> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Emergency Braking in Paris"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "OpenSceneGraph" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "parking structure, markings" ;
+      environment-model:useCase "sensor simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "10595"^^xsd:integer ;
+      environment-model:geometryCount "315"^^xsd:integer ;
+      environment-model:textureMaterialCount "151"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:city "Paris"
+      ]
     ]
   ] .
 
@@ -327,12 +845,18 @@
       scenario:weatherSummary "clear" ;
       scenario:entityTypes "car" ;
       scenario:entityTypes "pedestrian" ;
-      scenario:country "gb"
+      scenario:country "gb" ;
+      scenario:criticalityFactors "high_relative_speed"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "4"^^xsd:integer ;
-      scenario:duration "30.9"^^xsd:float
+      scenario:numberTrafficObjects "9"^^xsd:integer ;
+      scenario:permanentTrafficObjects "3"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Accident Database"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -344,7 +868,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov3.net:HdMap:ref-london-008>
+  ] .
+
+<did:web:mapprov3.net:HdMap:ref-london-008> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Free Driving in London"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.8"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "rural" ;
+      hdmap:laneTypes "driving" ;
+      hdmap:levelOfDetail "pole" ;
+      hdmap:trafficDirection "left-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "62.0"^^xsd:float ;
+      hdmap:numberIntersections "1"^^xsd:integer ;
+      hdmap:numberTrafficLights "3"^^xsd:integer ;
+      hdmap:numberTrafficSigns "108"^^xsd:integer ;
+      hdmap:numberObjects "320"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "97.0"^^xsd:float ;
+        hdmap:max "176.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "mobile mapping" ;
+      hdmap:measurementSystem "RTK-GPS"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "GB" ;
+        georeference:city "London"
+      ]
+    ]
   ] .
 
 # --- Scenario 9: Turning in Shanghai ---
@@ -365,12 +938,18 @@
       scenario:weatherSummary "rain" ;
       scenario:entityTypes "truck" ;
       scenario:entityTypes "bicycle" ;
-      scenario:country "cn"
+      scenario:country "cn" ;
+      scenario:criticalityFactors "VRU_interaction"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "5"^^xsd:integer ;
-      scenario:duration "34.6"^^xsd:float
+      scenario:numberTrafficObjects "2"^^xsd:integer ;
+      scenario:permanentTrafficObjects "4"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Real World Data"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -382,7 +961,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov4.net:HdMap:ref-shanghai-009>
+  ] .
+
+<did:web:mapprov4.net:HdMap:ref-shanghai-009> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Turning in Shanghai"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway_entry" ;
+      hdmap:laneTypes "driving" , "shoulder" ;
+      hdmap:levelOfDetail "crosswalk" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "69.0"^^xsd:float ;
+      hdmap:numberIntersections "4"^^xsd:integer ;
+      hdmap:numberTrafficLights "5"^^xsd:integer ;
+      hdmap:numberTrafficSigns "121"^^xsd:integer ;
+      hdmap:numberObjects "357"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "27.0"^^xsd:float ;
+        hdmap:max "113.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "lidar" ;
+      hdmap:measurementSystem "aerial scanner"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "CN" ;
+        georeference:city "Shanghai"
+      ]
+    ]
   ] .
 
 # --- Scenario 10: Parking in Seoul ---
@@ -403,12 +1031,18 @@
       scenario:weatherSummary "snow" ;
       scenario:entityTypes "pedestrian" ;
       scenario:entityTypes "bus" ;
-      scenario:country "kr"
+      scenario:country "kr" ;
+      scenario:criticalityFactors "adverse_weather"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "6"^^xsd:integer ;
-      scenario:duration "38.3"^^xsd:float
+      scenario:numberTrafficObjects "3"^^xsd:integer ;
+      scenario:permanentTrafficObjects "5"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Analytical Hazard Based Approach"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -421,17 +1055,54 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov5.net:HdMap:ref-010>
+    manifest:hasReferencedArtifacts <did:web:mapprov5.net:HdMap:ref-seoul-010>
   ] .
 
-<did:web:prov5.net:HdMap:ref-010> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Parking in Seoul"@en ;
+<did:web:mapprov5.net:HdMap:ref-seoul-010> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Parking in Seoul"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.1"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "custom" ;
+      hdmap:laneTypes "driving" , "biking" ;
+      hdmap:levelOfDetail "flat-marking" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "76.0"^^xsd:float ;
+      hdmap:numberIntersections "7"^^xsd:integer ;
+      hdmap:numberTrafficLights "7"^^xsd:integer ;
+      hdmap:numberTrafficSigns "134"^^xsd:integer ;
+      hdmap:numberObjects "394"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "38.0"^^xsd:float ;
+        hdmap:max "131.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "camera" ;
+      hdmap:measurementSystem "photogrammetry"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "KR" ;
+        georeference:city "Seoul"
+      ]
     ]
   ] .
 
@@ -453,12 +1124,18 @@
       scenario:weatherSummary "fog" ;
       scenario:entityTypes "bicycle" ;
       scenario:entityTypes "motorbike" ;
-      scenario:country "it"
+      scenario:country "it" ;
+      scenario:criticalityFactors "infrastructure_violation"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "2"^^xsd:integer ;
-      scenario:duration "42.0"^^xsd:float
+      scenario:numberTrafficObjects "4"^^xsd:integer ;
+      scenario:permanentTrafficObjects "1"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Synthetic Generation"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -470,7 +1147,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov1.net:HdMap:ref-milan-011> ,
+      <did:web:envprov3.net:EnvironmentModel:ref-milan-011>
+  ] .
+
+<did:web:mapprov1.net:HdMap:ref-milan-011> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Merging in Milan"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "NDS.Live" ;
+      hdmap:version "2.5"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway" ;
+      hdmap:laneTypes "driving" , "walking" , "biking" ;
+      hdmap:levelOfDetail "wall" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "83.0"^^xsd:float ;
+      hdmap:numberIntersections "10"^^xsd:integer ;
+      hdmap:numberTrafficLights "9"^^xsd:integer ;
+      hdmap:numberTrafficSigns "147"^^xsd:integer ;
+      hdmap:numberObjects "431"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "49.0"^^xsd:float ;
+        hdmap:max "149.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "scanner" ;
+      hdmap:measurementSystem "3DMS system"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:city "Milan"
+      ]
+    ]
+  ] .
+
+<did:web:envprov3.net:EnvironmentModel:ref-milan-011> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Merging in Milan"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "OpenSceneGraph" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "roads, bridges, tunnels" ;
+      environment-model:useCase "scenario visualization"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "10983"^^xsd:integer ;
+      environment-model:geometryCount "487"^^xsd:integer ;
+      environment-model:textureMaterialCount "243"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:city "Milan"
+      ]
+    ]
   ] .
 
 # --- Scenario 12: Cut In in Amsterdam ---
@@ -491,12 +1259,18 @@
       scenario:weatherSummary "night" ;
       scenario:entityTypes "bus" ;
       scenario:entityTypes "van" ;
-      scenario:country "nl"
+      scenario:country "nl" ;
+      scenario:criticalityFactors "near_miss"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "3"^^xsd:integer ;
-      scenario:duration "45.7"^^xsd:float
+      scenario:numberTrafficObjects "5"^^xsd:integer ;
+      scenario:permanentTrafficObjects "2"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Simulation Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -508,7 +1282,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov2.net:HdMap:ref-amsterdam-012> ,
+      <did:web:envprov4.net:EnvironmentModel:ref-amsterdam-012>
+  ] .
+
+<did:web:mapprov2.net:HdMap:ref-amsterdam-012> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Cut In in Amsterdam"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Shape" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "town" ;
+      hdmap:laneTypes "driving" , "bus" ;
+      hdmap:levelOfDetail "curb" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "90.0"^^xsd:float ;
+      hdmap:numberIntersections "13"^^xsd:integer ;
+      hdmap:numberTrafficLights "11"^^xsd:integer ;
+      hdmap:numberTrafficSigns "160"^^xsd:integer ;
+      hdmap:numberObjects "468"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "60.0"^^xsd:float ;
+        hdmap:max "167.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "aerial" ;
+      hdmap:measurementSystem "Mobile Mapping System"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
+  ] .
+
+<did:web:envprov4.net:EnvironmentModel:ref-amsterdam-012> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Cut In in Amsterdam"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "digital twin"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "RoadRunner" ;
+      environment-model:creationToolVendor "MathWorks" ;
+      environment-model:creationToolVersion "2023b"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "11080"^^xsd:integer ;
+      environment-model:geometryCount "530"^^xsd:integer ;
+      environment-model:textureMaterialCount "266"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
   ] .
 
 # --- Scenario 13: Lane Change in Gothenburg ---
@@ -529,12 +1394,18 @@
       scenario:weatherSummary "windy" ;
       scenario:entityTypes "motorbike" ;
       scenario:entityTypes "car" ;
-      scenario:country "se"
+      scenario:country "se" ;
+      scenario:criticalityFactors "occlusion"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "4"^^xsd:integer ;
-      scenario:duration "49.4"^^xsd:float
+      scenario:numberTrafficObjects "6"^^xsd:integer ;
+      scenario:permanentTrafficObjects "3"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Manual Authoring"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -547,17 +1418,54 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov3.net:HdMap:ref-013>
+    manifest:hasReferencedArtifacts <did:web:mapprov3.net:HdMap:ref-gothenburg-013>
   ] .
 
-<did:web:prov3.net:HdMap:ref-013> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Lane Change in Gothenburg"@en ;
+<did:web:mapprov3.net:HdMap:ref-gothenburg-013> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Lane Change in Gothenburg"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.7"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "rural" ;
+      hdmap:laneTypes "driving" , "parking" ;
+      hdmap:levelOfDetail "lane" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "97.0"^^xsd:float ;
+      hdmap:numberIntersections "16"^^xsd:integer ;
+      hdmap:numberTrafficLights "13"^^xsd:integer ;
+      hdmap:numberTrafficSigns "173"^^xsd:integer ;
+      hdmap:numberObjects "505"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "71.0"^^xsd:float ;
+        hdmap:max "185.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "satellite" ;
+      hdmap:measurementSystem "RTK-GPS"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:city "Gothenburg"
+      ]
     ]
   ] .
 
@@ -579,12 +1487,18 @@
       scenario:weatherSummary "mixed" ;
       scenario:entityTypes "van" ;
       scenario:entityTypes "truck" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "high_relative_speed"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "5"^^xsd:integer ;
-      scenario:duration "53.1"^^xsd:float
+      scenario:numberTrafficObjects "7"^^xsd:integer ;
+      scenario:permanentTrafficObjects "4"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Drone Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -596,7 +1510,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov4.net:HdMap:ref-hamburg-014>
+  ] .
+
+<did:web:mapprov4.net:HdMap:ref-hamburg-014> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Intersection Crossing in Hamburg"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.8"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway_entry" ;
+      hdmap:laneTypes "driving" , "emergency" ;
+      hdmap:levelOfDetail "pole" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "104.0"^^xsd:float ;
+      hdmap:numberIntersections "19"^^xsd:integer ;
+      hdmap:numberTrafficLights "15"^^xsd:integer ;
+      hdmap:numberTrafficSigns "186"^^xsd:integer ;
+      hdmap:numberObjects "542"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "82.0"^^xsd:float ;
+        hdmap:max "203.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "procedural generation" ;
+      hdmap:measurementSystem "aerial scanner"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Hamburg"
+      ]
+    ]
   ] .
 
 # --- Scenario 15: Following in Frankfurt ---
@@ -617,12 +1580,18 @@
       scenario:weatherSummary "clear" ;
       scenario:entityTypes "car" ;
       scenario:entityTypes "pedestrian" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "VRU_interaction"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "6"^^xsd:integer ;
-      scenario:duration "56.8"^^xsd:float
+      scenario:numberTrafficObjects "8"^^xsd:integer ;
+      scenario:permanentTrafficObjects "5"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Accident Database"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -634,7 +1603,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov5.net:HdMap:ref-frankfurt-015>
+  ] .
+
+<did:web:mapprov5.net:HdMap:ref-frankfurt-015> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Following in Frankfurt"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "custom" ;
+      hdmap:laneTypes "driving" ;
+      hdmap:levelOfDetail "crosswalk" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "111.0"^^xsd:float ;
+      hdmap:numberIntersections "1"^^xsd:integer ;
+      hdmap:numberTrafficLights "1"^^xsd:integer ;
+      hdmap:numberTrafficSigns "199"^^xsd:integer ;
+      hdmap:numberObjects "579"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "93.0"^^xsd:float ;
+        hdmap:max "221.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "survey" ;
+      hdmap:measurementSystem "photogrammetry"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Frankfurt"
+      ]
+    ]
   ] .
 
 # --- Scenario 16: Overtaking in Munich ---
@@ -655,12 +1673,18 @@
       scenario:weatherSummary "rain" ;
       scenario:entityTypes "truck" ;
       scenario:entityTypes "bicycle" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "adverse_weather"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "2"^^xsd:integer ;
-      scenario:duration "60.5"^^xsd:float
+      scenario:numberTrafficObjects "9"^^xsd:integer ;
+      scenario:permanentTrafficObjects "1"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Real World Data"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -673,17 +1697,96 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov1.net:HdMap:ref-016>
+    manifest:hasReferencedArtifacts <did:web:mapprov1.net:HdMap:ref-munich-016> ,
+      <did:web:envprov4.net:EnvironmentModel:ref-munich-016>
   ] .
 
-<did:web:prov1.net:HdMap:ref-016> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Overtaking in Munich"@en ;
+<did:web:mapprov1.net:HdMap:ref-munich-016> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Overtaking in Munich"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.1"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
       hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:laneTypes "driving" , "shoulder" ;
+      hdmap:levelOfDetail "flat-marking" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "118.0"^^xsd:float ;
+      hdmap:numberIntersections "4"^^xsd:integer ;
+      hdmap:numberTrafficLights "3"^^xsd:integer ;
+      hdmap:numberTrafficSigns "212"^^xsd:integer ;
+      hdmap:numberObjects "616"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "23.0"^^xsd:float ;
+        hdmap:max "158.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "mobile mapping" ;
+      hdmap:measurementSystem "3DMS system"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] .
+
+<did:web:envprov4.net:EnvironmentModel:ref-munich-016> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Overtaking in Munich"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "intersection, traffic lights, crosswalks" ;
+      environment-model:useCase "visual validation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "RoadRunner" ;
+      environment-model:creationToolVendor "MathWorks" ;
+      environment-model:creationToolVersion "2023b"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "11468"^^xsd:integer ;
+      environment-model:geometryCount "702"^^xsd:integer ;
+      environment-model:textureMaterialCount "358"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Munich"
+      ]
     ]
   ] .
 
@@ -705,12 +1808,18 @@
       scenario:weatherSummary "snow" ;
       scenario:entityTypes "pedestrian" ;
       scenario:entityTypes "bus" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "infrastructure_violation"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "3"^^xsd:integer ;
-      scenario:duration "64.2"^^xsd:float
+      scenario:numberTrafficObjects "2"^^xsd:integer ;
+      scenario:permanentTrafficObjects "2"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Analytical Hazard Based Approach"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -722,7 +1831,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov2.net:HdMap:ref-berlin-017> ,
+      <did:web:envprov1.net:EnvironmentModel:ref-berlin-017>
+  ] .
+
+<did:web:mapprov2.net:HdMap:ref-berlin-017> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Pedestrian Crossing in Berlin"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "NDS.Live" ;
+      hdmap:version "2.5"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "town" ;
+      hdmap:laneTypes "driving" , "biking" ;
+      hdmap:levelOfDetail "wall" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "12.0"^^xsd:float ;
+      hdmap:numberIntersections "7"^^xsd:integer ;
+      hdmap:numberTrafficLights "5"^^xsd:integer ;
+      hdmap:numberTrafficSigns "225"^^xsd:integer ;
+      hdmap:numberObjects "653"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "34.0"^^xsd:float ;
+        hdmap:max "176.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "lidar" ;
+      hdmap:measurementSystem "Mobile Mapping System"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] .
+
+<did:web:envprov1.net:EnvironmentModel:ref-berlin-017> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Pedestrian Crossing in Berlin"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "buildings, roads, vegetation" ;
+      environment-model:useCase "scenario visualization"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Blender" ;
+      environment-model:creationToolVendor "Blender Foundation" ;
+      environment-model:creationToolVersion "3.6"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "11565"^^xsd:integer ;
+      environment-model:geometryCount "745"^^xsd:integer ;
+      environment-model:textureMaterialCount "381"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Berlin"
+      ]
+    ]
   ] .
 
 # --- Scenario 18: Emergency Braking in Stuttgart ---
@@ -743,12 +1943,18 @@
       scenario:weatherSummary "fog" ;
       scenario:entityTypes "bicycle" ;
       scenario:entityTypes "motorbike" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "near_miss"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "4"^^xsd:integer ;
-      scenario:duration "67.9"^^xsd:float
+      scenario:numberTrafficObjects "3"^^xsd:integer ;
+      scenario:permanentTrafficObjects "3"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Synthetic Generation"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -760,7 +1966,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov3.net:HdMap:ref-stuttgart-018>
+  ] .
+
+<did:web:mapprov3.net:HdMap:ref-stuttgart-018> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Emergency Braking in Stuttgart"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Shape" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "rural" ;
+      hdmap:laneTypes "driving" , "walking" , "biking" ;
+      hdmap:levelOfDetail "curb" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "19.0"^^xsd:float ;
+      hdmap:numberIntersections "10"^^xsd:integer ;
+      hdmap:numberTrafficLights "7"^^xsd:integer ;
+      hdmap:numberTrafficSigns "238"^^xsd:integer ;
+      hdmap:numberObjects "690"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "45.0"^^xsd:float ;
+        hdmap:max "194.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "camera" ;
+      hdmap:measurementSystem "RTK-GPS"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Stuttgart"
+      ]
+    ]
   ] .
 
 # --- Scenario 19: Free Driving in San Francisco ---
@@ -781,12 +2036,18 @@
       scenario:weatherSummary "night" ;
       scenario:entityTypes "bus" ;
       scenario:entityTypes "van" ;
-      scenario:country "us"
+      scenario:country "us" ;
+      scenario:criticalityFactors "occlusion"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "5"^^xsd:integer ;
-      scenario:duration "71.6"^^xsd:float
+      scenario:numberTrafficObjects "4"^^xsd:integer ;
+      scenario:permanentTrafficObjects "4"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Simulation Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -799,17 +2060,54 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov4.net:HdMap:ref-019>
+    manifest:hasReferencedArtifacts <did:web:mapprov4.net:HdMap:ref-san-francisco-019>
   ] .
 
-<did:web:prov4.net:HdMap:ref-019> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Free Driving in San Francisco"@en ;
+<did:web:mapprov4.net:HdMap:ref-san-francisco-019> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Free Driving in San Francisco"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.7"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "motorway_entry" ;
+      hdmap:laneTypes "driving" , "bus" ;
+      hdmap:levelOfDetail "lane" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "26.0"^^xsd:float ;
+      hdmap:numberIntersections "13"^^xsd:integer ;
+      hdmap:numberTrafficLights "9"^^xsd:integer ;
+      hdmap:numberTrafficSigns "251"^^xsd:integer ;
+      hdmap:numberObjects "727"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "56.0"^^xsd:float ;
+        hdmap:max "91.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "scanner" ;
+      hdmap:measurementSystem "aerial scanner"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:city "San Francisco"
+      ]
     ]
   ] .
 
@@ -831,12 +2129,18 @@
       scenario:weatherSummary "windy" ;
       scenario:entityTypes "motorbike" ;
       scenario:entityTypes "car" ;
-      scenario:country "us"
+      scenario:country "us" ;
+      scenario:criticalityFactors "high_relative_speed"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "6"^^xsd:integer ;
-      scenario:duration "75.3"^^xsd:float
+      scenario:numberTrafficObjects "5"^^xsd:integer ;
+      scenario:permanentTrafficObjects "5"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Manual Authoring"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -848,7 +2152,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov5.net:HdMap:ref-detroit-020>
+  ] .
+
+<did:web:mapprov5.net:HdMap:ref-detroit-020> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Turning in Detroit"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.8"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "custom" ;
+      hdmap:laneTypes "driving" , "parking" ;
+      hdmap:levelOfDetail "pole" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "33.0"^^xsd:float ;
+      hdmap:numberIntersections "16"^^xsd:integer ;
+      hdmap:numberTrafficLights "11"^^xsd:integer ;
+      hdmap:numberTrafficSigns "264"^^xsd:integer ;
+      hdmap:numberObjects "764"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "67.0"^^xsd:float ;
+        hdmap:max "109.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "aerial" ;
+      hdmap:measurementSystem "photogrammetry"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:city "Detroit"
+      ]
+    ]
   ] .
 
 # --- Scenario 21: Parking in Tokyo ---
@@ -869,12 +2222,18 @@
       scenario:weatherSummary "mixed" ;
       scenario:entityTypes "van" ;
       scenario:entityTypes "truck" ;
-      scenario:country "jp"
+      scenario:country "jp" ;
+      scenario:criticalityFactors "VRU_interaction"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "2"^^xsd:integer ;
-      scenario:duration "79.0"^^xsd:float
+      scenario:numberTrafficObjects "6"^^xsd:integer ;
+      scenario:permanentTrafficObjects "1"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Drone Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -886,7 +2245,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov1.net:HdMap:ref-tokyo-021> ,
+      <did:web:envprov1.net:EnvironmentModel:ref-tokyo-021>
+  ] .
+
+<did:web:mapprov1.net:HdMap:ref-tokyo-021> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Parking in Tokyo"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway" ;
+      hdmap:laneTypes "driving" , "emergency" ;
+      hdmap:levelOfDetail "crosswalk" ;
+      hdmap:trafficDirection "left-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "40.0"^^xsd:float ;
+      hdmap:numberIntersections "19"^^xsd:integer ;
+      hdmap:numberTrafficLights "13"^^xsd:integer ;
+      hdmap:numberTrafficSigns "277"^^xsd:integer ;
+      hdmap:numberObjects "801"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "78.0"^^xsd:float ;
+        hdmap:max "127.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "satellite" ;
+      hdmap:measurementSystem "3DMS system"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "JP" ;
+        georeference:city "Tokyo"
+      ]
+    ]
+  ] .
+
+<did:web:envprov1.net:EnvironmentModel:ref-tokyo-021> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Parking in Tokyo"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "highway, guardrails, barriers" ;
+      environment-model:useCase "lidar simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Blender" ;
+      environment-model:creationToolVendor "Blender Foundation" ;
+      environment-model:creationToolVersion "3.6"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "11953"^^xsd:integer ;
+      environment-model:geometryCount "917"^^xsd:integer ;
+      environment-model:textureMaterialCount "473"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "JP" ;
+        georeference:city "Tokyo"
+      ]
+    ]
   ] .
 
 # --- Scenario 22: Merging in Paris ---
@@ -907,12 +2357,18 @@
       scenario:weatherSummary "clear" ;
       scenario:entityTypes "car" ;
       scenario:entityTypes "pedestrian" ;
-      scenario:country "fr"
+      scenario:country "fr" ;
+      scenario:criticalityFactors "adverse_weather"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "3"^^xsd:integer ;
-      scenario:duration "82.7"^^xsd:float
+      scenario:numberTrafficObjects "7"^^xsd:integer ;
+      scenario:permanentTrafficObjects "2"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Accident Database"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -925,17 +2381,96 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov2.net:HdMap:ref-022>
+    manifest:hasReferencedArtifacts <did:web:mapprov2.net:HdMap:ref-paris-022> ,
+      <did:web:envprov2.net:EnvironmentModel:ref-paris-022>
   ] .
 
-<did:web:prov2.net:HdMap:ref-022> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Merging in Paris"@en ;
+<did:web:mapprov2.net:HdMap:ref-paris-022> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Merging in Paris"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.1"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "town" ;
+      hdmap:laneTypes "driving" ;
+      hdmap:levelOfDetail "flat-marking" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "47.0"^^xsd:float ;
+      hdmap:numberIntersections "1"^^xsd:integer ;
+      hdmap:numberTrafficLights "15"^^xsd:integer ;
+      hdmap:numberTrafficSigns "290"^^xsd:integer ;
+      hdmap:numberObjects "838"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "89.0"^^xsd:float ;
+        hdmap:max "145.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "procedural generation" ;
+      hdmap:measurementSystem "Mobile Mapping System"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] .
+
+<did:web:envprov2.net:EnvironmentModel:ref-paris-022> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Merging in Paris"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "rural landscape, fields, trees" ;
+      environment-model:useCase "visual validation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "12050"^^xsd:integer ;
+      environment-model:geometryCount "960"^^xsd:integer ;
+      environment-model:textureMaterialCount "496"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:city "Paris"
+      ]
     ]
   ] .
 
@@ -957,12 +2492,18 @@
       scenario:weatherSummary "rain" ;
       scenario:entityTypes "truck" ;
       scenario:entityTypes "bicycle" ;
-      scenario:country "gb"
+      scenario:country "gb" ;
+      scenario:criticalityFactors "infrastructure_violation"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "4"^^xsd:integer ;
-      scenario:duration "86.4"^^xsd:float
+      scenario:numberTrafficObjects "8"^^xsd:integer ;
+      scenario:permanentTrafficObjects "3"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Real World Data"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -974,7 +2515,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov3.net:HdMap:ref-london-023>
+  ] .
+
+<did:web:mapprov3.net:HdMap:ref-london-023> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Cut In in London"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "NDS.Live" ;
+      hdmap:version "2.5"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "rural" ;
+      hdmap:laneTypes "driving" , "shoulder" ;
+      hdmap:levelOfDetail "wall" ;
+      hdmap:trafficDirection "left-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "54.0"^^xsd:float ;
+      hdmap:numberIntersections "4"^^xsd:integer ;
+      hdmap:numberTrafficLights "1"^^xsd:integer ;
+      hdmap:numberTrafficSigns "303"^^xsd:integer ;
+      hdmap:numberObjects "875"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "100.0"^^xsd:float ;
+        hdmap:max "163.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "survey" ;
+      hdmap:measurementSystem "RTK-GPS"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "GB" ;
+        georeference:city "London"
+      ]
+    ]
   ] .
 
 # --- Scenario 24: Lane Change in Shanghai ---
@@ -995,12 +2585,18 @@
       scenario:weatherSummary "snow" ;
       scenario:entityTypes "pedestrian" ;
       scenario:entityTypes "bus" ;
-      scenario:country "cn"
+      scenario:country "cn" ;
+      scenario:criticalityFactors "near_miss"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "5"^^xsd:integer ;
-      scenario:duration "90.1"^^xsd:float
+      scenario:numberTrafficObjects "9"^^xsd:integer ;
+      scenario:permanentTrafficObjects "4"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Analytical Hazard Based Approach"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1012,7 +2608,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov4.net:HdMap:ref-shanghai-024>
+  ] .
+
+<did:web:mapprov4.net:HdMap:ref-shanghai-024> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Lane Change in Shanghai"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Shape" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway_entry" ;
+      hdmap:laneTypes "driving" , "biking" ;
+      hdmap:levelOfDetail "curb" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "61.0"^^xsd:float ;
+      hdmap:numberIntersections "7"^^xsd:integer ;
+      hdmap:numberTrafficLights "3"^^xsd:integer ;
+      hdmap:numberTrafficSigns "316"^^xsd:integer ;
+      hdmap:numberObjects "912"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "30.0"^^xsd:float ;
+        hdmap:max "100.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "mobile mapping" ;
+      hdmap:measurementSystem "aerial scanner"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "CN" ;
+        georeference:city "Shanghai"
+      ]
+    ]
   ] .
 
 # --- Scenario 25: Intersection Crossing in Seoul ---
@@ -1033,12 +2678,18 @@
       scenario:weatherSummary "fog" ;
       scenario:entityTypes "bicycle" ;
       scenario:entityTypes "motorbike" ;
-      scenario:country "kr"
+      scenario:country "kr" ;
+      scenario:criticalityFactors "occlusion"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "6"^^xsd:integer ;
-      scenario:duration "93.8"^^xsd:float
+      scenario:numberTrafficObjects "2"^^xsd:integer ;
+      scenario:permanentTrafficObjects "5"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Synthetic Generation"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1051,17 +2702,54 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov5.net:HdMap:ref-025>
+    manifest:hasReferencedArtifacts <did:web:mapprov5.net:HdMap:ref-seoul-025>
   ] .
 
-<did:web:prov5.net:HdMap:ref-025> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Intersection Crossing in Seoul"@en ;
+<did:web:mapprov5.net:HdMap:ref-seoul-025> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Intersection Crossing in Seoul"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.7"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "town" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "custom" ;
+      hdmap:laneTypes "driving" , "walking" , "biking" ;
+      hdmap:levelOfDetail "lane" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "68.0"^^xsd:float ;
+      hdmap:numberIntersections "10"^^xsd:integer ;
+      hdmap:numberTrafficLights "5"^^xsd:integer ;
+      hdmap:numberTrafficSigns "329"^^xsd:integer ;
+      hdmap:numberObjects "949"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "41.0"^^xsd:float ;
+        hdmap:max "118.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "lidar" ;
+      hdmap:measurementSystem "photogrammetry"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "KR" ;
+        georeference:city "Seoul"
+      ]
     ]
   ] .
 
@@ -1083,12 +2771,18 @@
       scenario:weatherSummary "night" ;
       scenario:entityTypes "bus" ;
       scenario:entityTypes "van" ;
-      scenario:country "it"
+      scenario:country "it" ;
+      scenario:criticalityFactors "high_relative_speed"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "2"^^xsd:integer ;
-      scenario:duration "97.5"^^xsd:float
+      scenario:numberTrafficObjects "3"^^xsd:integer ;
+      scenario:permanentTrafficObjects "1"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Simulation Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1100,7 +2794,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov1.net:HdMap:ref-milan-026> ,
+      <did:web:envprov2.net:EnvironmentModel:ref-milan-026>
+  ] .
+
+<did:web:mapprov1.net:HdMap:ref-milan-026> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Following in Milan"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.8"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway" ;
+      hdmap:laneTypes "driving" , "bus" ;
+      hdmap:levelOfDetail "pole" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "75.0"^^xsd:float ;
+      hdmap:numberIntersections "13"^^xsd:integer ;
+      hdmap:numberTrafficLights "7"^^xsd:integer ;
+      hdmap:numberTrafficSigns "342"^^xsd:integer ;
+      hdmap:numberObjects "986"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "52.0"^^xsd:float ;
+        hdmap:max "136.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "camera" ;
+      hdmap:measurementSystem "3DMS system"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:city "Milan"
+      ]
+    ]
+  ] .
+
+<did:web:envprov2.net:EnvironmentModel:ref-milan-026> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Following in Milan"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "terrain, buildings, traffic signs" ;
+      environment-model:useCase "camera simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "12438"^^xsd:integer ;
+      environment-model:geometryCount "1132"^^xsd:integer ;
+      environment-model:textureMaterialCount "97"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:city "Milan"
+      ]
+    ]
   ] .
 
 # --- Scenario 27: Overtaking in Amsterdam ---
@@ -1121,12 +2906,18 @@
       scenario:weatherSummary "windy" ;
       scenario:entityTypes "motorbike" ;
       scenario:entityTypes "car" ;
-      scenario:country "nl"
+      scenario:country "nl" ;
+      scenario:criticalityFactors "VRU_interaction"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "3"^^xsd:integer ;
-      scenario:duration "101.2"^^xsd:float
+      scenario:numberTrafficObjects "4"^^xsd:integer ;
+      scenario:permanentTrafficObjects "2"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Manual Authoring"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1138,7 +2929,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov2.net:HdMap:ref-amsterdam-027> ,
+      <did:web:envprov3.net:EnvironmentModel:ref-amsterdam-027>
+  ] .
+
+<did:web:mapprov2.net:HdMap:ref-amsterdam-027> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Overtaking in Amsterdam"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "town" ;
+      hdmap:laneTypes "driving" , "parking" ;
+      hdmap:levelOfDetail "crosswalk" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "82.0"^^xsd:float ;
+      hdmap:numberIntersections "16"^^xsd:integer ;
+      hdmap:numberTrafficLights "9"^^xsd:integer ;
+      hdmap:numberTrafficSigns "355"^^xsd:integer ;
+      hdmap:numberObjects "1023"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "63.0"^^xsd:float ;
+        hdmap:max "154.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "scanner" ;
+      hdmap:measurementSystem "Mobile Mapping System"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
+  ] .
+
+<did:web:envprov3.net:EnvironmentModel:ref-amsterdam-027> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Overtaking in Amsterdam"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "OpenSceneGraph" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "roads, bridges, tunnels" ;
+      environment-model:useCase "lidar simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "12535"^^xsd:integer ;
+      environment-model:geometryCount "1175"^^xsd:integer ;
+      environment-model:textureMaterialCount "120"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
   ] .
 
 # --- Scenario 28: Pedestrian Crossing in Gothenburg ---
@@ -1159,12 +3041,18 @@
       scenario:weatherSummary "mixed" ;
       scenario:entityTypes "van" ;
       scenario:entityTypes "truck" ;
-      scenario:country "se"
+      scenario:country "se" ;
+      scenario:criticalityFactors "adverse_weather"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "4"^^xsd:integer ;
-      scenario:duration "104.9"^^xsd:float
+      scenario:numberTrafficObjects "5"^^xsd:integer ;
+      scenario:permanentTrafficObjects "3"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Drone Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1177,17 +3065,54 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov3.net:HdMap:ref-028>
+    manifest:hasReferencedArtifacts <did:web:mapprov3.net:HdMap:ref-gothenburg-028>
   ] .
 
-<did:web:prov3.net:HdMap:ref-028> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Pedestrian Crossing in Gothenburg"@en ;
+<did:web:mapprov3.net:HdMap:ref-gothenburg-028> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Pedestrian Crossing in Gothenburg"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.1"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "rural" ;
+      hdmap:laneTypes "driving" , "emergency" ;
+      hdmap:levelOfDetail "flat-marking" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "89.0"^^xsd:float ;
+      hdmap:numberIntersections "19"^^xsd:integer ;
+      hdmap:numberTrafficLights "11"^^xsd:integer ;
+      hdmap:numberTrafficSigns "368"^^xsd:integer ;
+      hdmap:numberObjects "1060"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "74.0"^^xsd:float ;
+        hdmap:max "172.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "aerial" ;
+      hdmap:measurementSystem "RTK-GPS"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:city "Gothenburg"
+      ]
     ]
   ] .
 
@@ -1209,12 +3134,18 @@
       scenario:weatherSummary "clear" ;
       scenario:entityTypes "car" ;
       scenario:entityTypes "pedestrian" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "infrastructure_violation"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "5"^^xsd:integer ;
-      scenario:duration "108.6"^^xsd:float
+      scenario:numberTrafficObjects "6"^^xsd:integer ;
+      scenario:permanentTrafficObjects "4"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Accident Database"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1226,7 +3157,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov4.net:HdMap:ref-hamburg-029>
+  ] .
+
+<did:web:mapprov4.net:HdMap:ref-hamburg-029> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Emergency Braking in Hamburg"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "NDS.Live" ;
+      hdmap:version "2.5"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway_entry" ;
+      hdmap:laneTypes "driving" ;
+      hdmap:levelOfDetail "wall" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "96.0"^^xsd:float ;
+      hdmap:numberIntersections "1"^^xsd:integer ;
+      hdmap:numberTrafficLights "13"^^xsd:integer ;
+      hdmap:numberTrafficSigns "381"^^xsd:integer ;
+      hdmap:numberObjects "1097"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "85.0"^^xsd:float ;
+        hdmap:max "190.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "satellite" ;
+      hdmap:measurementSystem "aerial scanner"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Hamburg"
+      ]
+    ]
   ] .
 
 # --- Scenario 30: Free Driving in Frankfurt ---
@@ -1247,12 +3227,18 @@
       scenario:weatherSummary "rain" ;
       scenario:entityTypes "truck" ;
       scenario:entityTypes "bicycle" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "near_miss"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "6"^^xsd:integer ;
-      scenario:duration "112.3"^^xsd:float
+      scenario:numberTrafficObjects "7"^^xsd:integer ;
+      scenario:permanentTrafficObjects "5"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Real World Data"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1264,7 +3250,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov5.net:HdMap:ref-frankfurt-030>
+  ] .
+
+<did:web:mapprov5.net:HdMap:ref-frankfurt-030> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Free Driving in Frankfurt"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Shape" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "custom" ;
+      hdmap:laneTypes "driving" , "shoulder" ;
+      hdmap:levelOfDetail "curb" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "103.0"^^xsd:float ;
+      hdmap:numberIntersections "4"^^xsd:integer ;
+      hdmap:numberTrafficLights "15"^^xsd:integer ;
+      hdmap:numberTrafficSigns "394"^^xsd:integer ;
+      hdmap:numberObjects "1134"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "96.0"^^xsd:float ;
+        hdmap:max "208.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "procedural generation" ;
+      hdmap:measurementSystem "photogrammetry"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Frankfurt"
+      ]
+    ]
   ] .
 
 # --- Scenario 31: Turning in Munich ---
@@ -1285,12 +3320,18 @@
       scenario:weatherSummary "snow" ;
       scenario:entityTypes "pedestrian" ;
       scenario:entityTypes "bus" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "occlusion"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "2"^^xsd:integer ;
-      scenario:duration "116.0"^^xsd:float
+      scenario:numberTrafficObjects "8"^^xsd:integer ;
+      scenario:permanentTrafficObjects "1"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Analytical Hazard Based Approach"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1303,17 +3344,96 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov1.net:HdMap:ref-031>
+    manifest:hasReferencedArtifacts <did:web:mapprov1.net:HdMap:ref-munich-031> ,
+      <did:web:envprov3.net:EnvironmentModel:ref-munich-031>
   ] .
 
-<did:web:prov1.net:HdMap:ref-031> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Turning in Munich"@en ;
+<did:web:mapprov1.net:HdMap:ref-munich-031> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Turning in Munich"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.7"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
       hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:laneTypes "driving" , "biking" ;
+      hdmap:levelOfDetail "lane" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "110.0"^^xsd:float ;
+      hdmap:numberIntersections "7"^^xsd:integer ;
+      hdmap:numberTrafficLights "1"^^xsd:integer ;
+      hdmap:numberTrafficSigns "407"^^xsd:integer ;
+      hdmap:numberObjects "1171"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "26.0"^^xsd:float ;
+        hdmap:max "145.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "survey" ;
+      hdmap:measurementSystem "3DMS system"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] .
+
+<did:web:envprov3.net:EnvironmentModel:ref-munich-031> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Turning in Munich"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "OpenSceneGraph" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "parking structure, markings" ;
+      environment-model:useCase "sensor simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "12923"^^xsd:integer ;
+      environment-model:geometryCount "1347"^^xsd:integer ;
+      environment-model:textureMaterialCount "212"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Munich"
+      ]
     ]
   ] .
 
@@ -1335,12 +3455,18 @@
       scenario:weatherSummary "fog" ;
       scenario:entityTypes "bicycle" ;
       scenario:entityTypes "motorbike" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "high_relative_speed"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "3"^^xsd:integer ;
-      scenario:duration "119.7"^^xsd:float
+      scenario:numberTrafficObjects "9"^^xsd:integer ;
+      scenario:permanentTrafficObjects "2"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Synthetic Generation"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1352,7 +3478,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov2.net:HdMap:ref-berlin-032> ,
+      <did:web:envprov4.net:EnvironmentModel:ref-berlin-032>
+  ] .
+
+<did:web:mapprov2.net:HdMap:ref-berlin-032> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Parking in Berlin"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.8"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "town" ;
+      hdmap:laneTypes "driving" , "walking" , "biking" ;
+      hdmap:levelOfDetail "pole" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "117.0"^^xsd:float ;
+      hdmap:numberIntersections "10"^^xsd:integer ;
+      hdmap:numberTrafficLights "3"^^xsd:integer ;
+      hdmap:numberTrafficSigns "420"^^xsd:integer ;
+      hdmap:numberObjects "1208"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "37.0"^^xsd:float ;
+        hdmap:max "163.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "mobile mapping" ;
+      hdmap:measurementSystem "Mobile Mapping System"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] .
+
+<did:web:envprov4.net:EnvironmentModel:ref-berlin-032> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Parking in Berlin"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "intersection, traffic lights, crosswalks" ;
+      environment-model:useCase "camera simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "RoadRunner" ;
+      environment-model:creationToolVendor "MathWorks" ;
+      environment-model:creationToolVersion "2023b"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "13020"^^xsd:integer ;
+      environment-model:geometryCount "1390"^^xsd:integer ;
+      environment-model:textureMaterialCount "235"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Berlin"
+      ]
+    ]
   ] .
 
 # --- Scenario 33: Merging in Stuttgart ---
@@ -1373,12 +3590,18 @@
       scenario:weatherSummary "night" ;
       scenario:entityTypes "bus" ;
       scenario:entityTypes "van" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "VRU_interaction"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "4"^^xsd:integer ;
-      scenario:duration "123.4"^^xsd:float
+      scenario:numberTrafficObjects "2"^^xsd:integer ;
+      scenario:permanentTrafficObjects "3"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Simulation Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1390,7 +3613,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov3.net:HdMap:ref-stuttgart-033>
+  ] .
+
+<did:web:mapprov3.net:HdMap:ref-stuttgart-033> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Merging in Stuttgart"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "rural" ;
+      hdmap:laneTypes "driving" , "bus" ;
+      hdmap:levelOfDetail "crosswalk" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "11.0"^^xsd:float ;
+      hdmap:numberIntersections "13"^^xsd:integer ;
+      hdmap:numberTrafficLights "5"^^xsd:integer ;
+      hdmap:numberTrafficSigns "433"^^xsd:integer ;
+      hdmap:numberObjects "1245"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "48.0"^^xsd:float ;
+        hdmap:max "181.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "lidar" ;
+      hdmap:measurementSystem "RTK-GPS"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Stuttgart"
+      ]
+    ]
   ] .
 
 # --- Scenario 34: Cut In in San Francisco ---
@@ -1411,12 +3683,18 @@
       scenario:weatherSummary "windy" ;
       scenario:entityTypes "motorbike" ;
       scenario:entityTypes "car" ;
-      scenario:country "us"
+      scenario:country "us" ;
+      scenario:criticalityFactors "adverse_weather"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "5"^^xsd:integer ;
-      scenario:duration "127.1"^^xsd:float
+      scenario:numberTrafficObjects "3"^^xsd:integer ;
+      scenario:permanentTrafficObjects "4"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Manual Authoring"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1429,17 +3707,54 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov4.net:HdMap:ref-034>
+    manifest:hasReferencedArtifacts <did:web:mapprov4.net:HdMap:ref-san-francisco-034>
   ] .
 
-<did:web:prov4.net:HdMap:ref-034> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Cut In in San Francisco"@en ;
+<did:web:mapprov4.net:HdMap:ref-san-francisco-034> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Cut In in San Francisco"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.1"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "motorway_entry" ;
+      hdmap:laneTypes "driving" , "parking" ;
+      hdmap:levelOfDetail "flat-marking" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "18.0"^^xsd:float ;
+      hdmap:numberIntersections "16"^^xsd:integer ;
+      hdmap:numberTrafficLights "7"^^xsd:integer ;
+      hdmap:numberTrafficSigns "446"^^xsd:integer ;
+      hdmap:numberObjects "1282"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "59.0"^^xsd:float ;
+        hdmap:max "199.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "camera" ;
+      hdmap:measurementSystem "aerial scanner"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:city "San Francisco"
+      ]
     ]
   ] .
 
@@ -1461,12 +3776,18 @@
       scenario:weatherSummary "mixed" ;
       scenario:entityTypes "van" ;
       scenario:entityTypes "truck" ;
-      scenario:country "us"
+      scenario:country "us" ;
+      scenario:criticalityFactors "infrastructure_violation"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "6"^^xsd:integer ;
-      scenario:duration "130.8"^^xsd:float
+      scenario:numberTrafficObjects "4"^^xsd:integer ;
+      scenario:permanentTrafficObjects "5"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Drone Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1478,7 +3799,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov5.net:HdMap:ref-detroit-035>
+  ] .
+
+<did:web:mapprov5.net:HdMap:ref-detroit-035> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Lane Change in Detroit"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "NDS.Live" ;
+      hdmap:version "2.5"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "custom" ;
+      hdmap:laneTypes "driving" , "emergency" ;
+      hdmap:levelOfDetail "wall" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "25.0"^^xsd:float ;
+      hdmap:numberIntersections "19"^^xsd:integer ;
+      hdmap:numberTrafficLights "9"^^xsd:integer ;
+      hdmap:numberTrafficSigns "459"^^xsd:integer ;
+      hdmap:numberObjects "1319"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "70.0"^^xsd:float ;
+        hdmap:max "217.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "scanner" ;
+      hdmap:measurementSystem "photogrammetry"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:city "Detroit"
+      ]
+    ]
   ] .
 
 # --- Scenario 36: Intersection Crossing in Tokyo ---
@@ -1499,12 +3869,18 @@
       scenario:weatherSummary "clear" ;
       scenario:entityTypes "car" ;
       scenario:entityTypes "pedestrian" ;
-      scenario:country "jp"
+      scenario:country "jp" ;
+      scenario:criticalityFactors "near_miss"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "2"^^xsd:integer ;
-      scenario:duration "134.5"^^xsd:float
+      scenario:numberTrafficObjects "5"^^xsd:integer ;
+      scenario:permanentTrafficObjects "1"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Accident Database"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1516,7 +3892,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov1.net:HdMap:ref-tokyo-036> ,
+      <did:web:envprov4.net:EnvironmentModel:ref-tokyo-036>
+  ] .
+
+<did:web:mapprov1.net:HdMap:ref-tokyo-036> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Intersection Crossing in Tokyo"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Shape" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway" ;
+      hdmap:laneTypes "driving" ;
+      hdmap:levelOfDetail "curb" ;
+      hdmap:trafficDirection "left-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "32.0"^^xsd:float ;
+      hdmap:numberIntersections "1"^^xsd:integer ;
+      hdmap:numberTrafficLights "11"^^xsd:integer ;
+      hdmap:numberTrafficSigns "472"^^xsd:integer ;
+      hdmap:numberObjects "1356"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "81.0"^^xsd:float ;
+        hdmap:max "114.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "aerial" ;
+      hdmap:measurementSystem "3DMS system"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "JP" ;
+        georeference:city "Tokyo"
+      ]
+    ]
+  ] .
+
+<did:web:envprov4.net:EnvironmentModel:ref-tokyo-036> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Intersection Crossing in Tokyo"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Unreal Datasmith" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "urban environment, street furniture" ;
+      environment-model:useCase "digital twin"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "RoadRunner" ;
+      environment-model:creationToolVendor "MathWorks" ;
+      environment-model:creationToolVersion "2023b"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "13408"^^xsd:integer ;
+      environment-model:geometryCount "1562"^^xsd:integer ;
+      environment-model:textureMaterialCount "327"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "4096"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "JP" ;
+        georeference:city "Tokyo"
+      ]
+    ]
   ] .
 
 # --- Scenario 37: Following in Paris ---
@@ -1537,12 +4004,18 @@
       scenario:weatherSummary "rain" ;
       scenario:entityTypes "truck" ;
       scenario:entityTypes "bicycle" ;
-      scenario:country "fr"
+      scenario:country "fr" ;
+      scenario:criticalityFactors "occlusion"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "3"^^xsd:integer ;
-      scenario:duration "138.2"^^xsd:float
+      scenario:numberTrafficObjects "6"^^xsd:integer ;
+      scenario:permanentTrafficObjects "2"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Real World Data"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1555,17 +4028,96 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov2.net:HdMap:ref-037>
+    manifest:hasReferencedArtifacts <did:web:mapprov2.net:HdMap:ref-paris-037> ,
+      <did:web:envprov1.net:EnvironmentModel:ref-paris-037>
   ] .
 
-<did:web:prov2.net:HdMap:ref-037> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Following in Paris"@en ;
+<did:web:mapprov2.net:HdMap:ref-paris-037> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Following in Paris"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.7"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "town" ;
+      hdmap:laneTypes "driving" , "shoulder" ;
+      hdmap:levelOfDetail "lane" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "39.0"^^xsd:float ;
+      hdmap:numberIntersections "4"^^xsd:integer ;
+      hdmap:numberTrafficLights "13"^^xsd:integer ;
+      hdmap:numberTrafficSigns "485"^^xsd:integer ;
+      hdmap:numberObjects "1393"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "92.0"^^xsd:float ;
+        hdmap:max "132.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "satellite" ;
+      hdmap:measurementSystem "Mobile Mapping System"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] .
+
+<did:web:envprov1.net:EnvironmentModel:ref-paris-037> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Following in Paris"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "highway, guardrails, barriers" ;
+      environment-model:useCase "sensor simulation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Blender" ;
+      environment-model:creationToolVendor "Blender Foundation" ;
+      environment-model:creationToolVersion "3.6"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "13505"^^xsd:integer ;
+      environment-model:geometryCount "1605"^^xsd:integer ;
+      environment-model:textureMaterialCount "350"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:city "Paris"
+      ]
     ]
   ] .
 
@@ -1587,12 +4139,18 @@
       scenario:weatherSummary "snow" ;
       scenario:entityTypes "pedestrian" ;
       scenario:entityTypes "bus" ;
-      scenario:country "gb"
+      scenario:country "gb" ;
+      scenario:criticalityFactors "high_relative_speed"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "4"^^xsd:integer ;
-      scenario:duration "141.9"^^xsd:float
+      scenario:numberTrafficObjects "7"^^xsd:integer ;
+      scenario:permanentTrafficObjects "3"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Analytical Hazard Based Approach"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1604,7 +4162,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov3.net:HdMap:ref-london-038>
+  ] .
+
+<did:web:mapprov3.net:HdMap:ref-london-038> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Overtaking in London"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.8"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "rural" ;
+      hdmap:laneTypes "driving" , "biking" ;
+      hdmap:levelOfDetail "pole" ;
+      hdmap:trafficDirection "left-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "46.0"^^xsd:float ;
+      hdmap:numberIntersections "7"^^xsd:integer ;
+      hdmap:numberTrafficLights "15"^^xsd:integer ;
+      hdmap:numberTrafficSigns "498"^^xsd:integer ;
+      hdmap:numberObjects "1430"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "22.0"^^xsd:float ;
+        hdmap:max "69.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "procedural generation" ;
+      hdmap:measurementSystem "RTK-GPS"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "GB" ;
+        georeference:city "London"
+      ]
+    ]
   ] .
 
 # --- Scenario 39: Pedestrian Crossing in Shanghai ---
@@ -1625,12 +4232,18 @@
       scenario:weatherSummary "fog" ;
       scenario:entityTypes "bicycle" ;
       scenario:entityTypes "motorbike" ;
-      scenario:country "cn"
+      scenario:country "cn" ;
+      scenario:criticalityFactors "VRU_interaction"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "5"^^xsd:integer ;
-      scenario:duration "145.6"^^xsd:float
+      scenario:numberTrafficObjects "8"^^xsd:integer ;
+      scenario:permanentTrafficObjects "4"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Synthetic Generation"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1642,7 +4255,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov4.net:HdMap:ref-shanghai-039>
+  ] .
+
+<did:web:mapprov4.net:HdMap:ref-shanghai-039> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Pedestrian Crossing in Shanghai"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway_entry" ;
+      hdmap:laneTypes "driving" , "walking" , "biking" ;
+      hdmap:levelOfDetail "crosswalk" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "53.0"^^xsd:float ;
+      hdmap:numberIntersections "10"^^xsd:integer ;
+      hdmap:numberTrafficLights "1"^^xsd:integer ;
+      hdmap:numberTrafficSigns "20"^^xsd:integer ;
+      hdmap:numberObjects "1467"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "33.0"^^xsd:float ;
+        hdmap:max "87.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "survey" ;
+      hdmap:measurementSystem "aerial scanner"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "CN" ;
+        georeference:city "Shanghai"
+      ]
+    ]
   ] .
 
 # --- Scenario 40: Emergency Braking in Seoul ---
@@ -1663,12 +4325,18 @@
       scenario:weatherSummary "night" ;
       scenario:entityTypes "bus" ;
       scenario:entityTypes "van" ;
-      scenario:country "kr"
+      scenario:country "kr" ;
+      scenario:criticalityFactors "adverse_weather"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "6"^^xsd:integer ;
-      scenario:duration "149.3"^^xsd:float
+      scenario:numberTrafficObjects "9"^^xsd:integer ;
+      scenario:permanentTrafficObjects "5"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Simulation Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1681,17 +4349,54 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov5.net:HdMap:ref-040>
+    manifest:hasReferencedArtifacts <did:web:mapprov5.net:HdMap:ref-seoul-040>
   ] .
 
-<did:web:prov5.net:HdMap:ref-040> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Emergency Braking in Seoul"@en ;
+<did:web:mapprov5.net:HdMap:ref-seoul-040> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Emergency Braking in Seoul"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.1"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "custom" ;
+      hdmap:laneTypes "driving" , "bus" ;
+      hdmap:levelOfDetail "flat-marking" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "60.0"^^xsd:float ;
+      hdmap:numberIntersections "13"^^xsd:integer ;
+      hdmap:numberTrafficLights "3"^^xsd:integer ;
+      hdmap:numberTrafficSigns "33"^^xsd:integer ;
+      hdmap:numberObjects "1504"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "44.0"^^xsd:float ;
+        hdmap:max "105.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "mobile mapping" ;
+      hdmap:measurementSystem "photogrammetry"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "KR" ;
+        georeference:city "Seoul"
+      ]
     ]
   ] .
 
@@ -1713,12 +4418,18 @@
       scenario:weatherSummary "windy" ;
       scenario:entityTypes "motorbike" ;
       scenario:entityTypes "car" ;
-      scenario:country "it"
+      scenario:country "it" ;
+      scenario:criticalityFactors "infrastructure_violation"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "2"^^xsd:integer ;
-      scenario:duration "153.0"^^xsd:float
+      scenario:numberTrafficObjects "2"^^xsd:integer ;
+      scenario:permanentTrafficObjects "1"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Manual Authoring"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1730,7 +4441,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov1.net:HdMap:ref-milan-041> ,
+      <did:web:envprov1.net:EnvironmentModel:ref-milan-041>
+  ] .
+
+<did:web:mapprov1.net:HdMap:ref-milan-041> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Free Driving in Milan"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "NDS.Live" ;
+      hdmap:version "2.5"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway" ;
+      hdmap:laneTypes "driving" , "parking" ;
+      hdmap:levelOfDetail "wall" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "67.0"^^xsd:float ;
+      hdmap:numberIntersections "16"^^xsd:integer ;
+      hdmap:numberTrafficLights "5"^^xsd:integer ;
+      hdmap:numberTrafficSigns "46"^^xsd:integer ;
+      hdmap:numberObjects "1541"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "55.0"^^xsd:float ;
+        hdmap:max "123.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "lidar" ;
+      hdmap:measurementSystem "3DMS system"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:city "Milan"
+      ]
+    ]
+  ] .
+
+<did:web:envprov1.net:EnvironmentModel:ref-milan-041> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Free Driving in Milan"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "Autodesk FBX" ;
+      environment-model:version "1.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "buildings, roads, vegetation" ;
+      environment-model:useCase "scenario visualization"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Blender" ;
+      environment-model:creationToolVendor "Blender Foundation" ;
+      environment-model:creationToolVersion "3.6"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "13893"^^xsd:integer ;
+      environment-model:geometryCount "1777"^^xsd:integer ;
+      environment-model:textureMaterialCount "442"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "512"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "IT" ;
+        georeference:city "Milan"
+      ]
+    ]
   ] .
 
 # --- Scenario 42: Turning in Amsterdam ---
@@ -1751,12 +4553,18 @@
       scenario:weatherSummary "mixed" ;
       scenario:entityTypes "van" ;
       scenario:entityTypes "truck" ;
-      scenario:country "nl"
+      scenario:country "nl" ;
+      scenario:criticalityFactors "near_miss"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "3"^^xsd:integer ;
-      scenario:duration "156.7"^^xsd:float
+      scenario:numberTrafficObjects "3"^^xsd:integer ;
+      scenario:permanentTrafficObjects "2"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Drone Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1768,7 +4576,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov2.net:HdMap:ref-amsterdam-042> ,
+      <did:web:envprov2.net:EnvironmentModel:ref-amsterdam-042>
+  ] .
+
+<did:web:mapprov2.net:HdMap:ref-amsterdam-042> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Turning in Amsterdam"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Shape" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "town" ;
+      hdmap:laneTypes "driving" , "emergency" ;
+      hdmap:levelOfDetail "curb" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "74.0"^^xsd:float ;
+      hdmap:numberIntersections "19"^^xsd:integer ;
+      hdmap:numberTrafficLights "7"^^xsd:integer ;
+      hdmap:numberTrafficSigns "59"^^xsd:integer ;
+      hdmap:numberObjects "1578"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "66.0"^^xsd:float ;
+        hdmap:max "141.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "camera" ;
+      hdmap:measurementSystem "Mobile Mapping System"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
+  ] .
+
+<did:web:envprov2.net:EnvironmentModel:ref-amsterdam-042> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Turning in Amsterdam"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "terrain, buildings, traffic signs" ;
+      environment-model:useCase "digital twin"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "13990"^^xsd:integer ;
+      environment-model:geometryCount "1820"^^xsd:integer ;
+      environment-model:textureMaterialCount "465"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Low" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "NL" ;
+        georeference:city "Amsterdam"
+      ]
+    ]
   ] .
 
 # --- Scenario 43: Parking in Gothenburg ---
@@ -1789,12 +4688,18 @@
       scenario:weatherSummary "clear" ;
       scenario:entityTypes "car" ;
       scenario:entityTypes "pedestrian" ;
-      scenario:country "se"
+      scenario:country "se" ;
+      scenario:criticalityFactors "occlusion"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "4"^^xsd:integer ;
-      scenario:duration "160.4"^^xsd:float
+      scenario:numberTrafficObjects "4"^^xsd:integer ;
+      scenario:permanentTrafficObjects "3"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Accident Database"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1807,17 +4712,54 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov3.net:HdMap:ref-043>
+    manifest:hasReferencedArtifacts <did:web:mapprov3.net:HdMap:ref-gothenburg-043>
   ] .
 
-<did:web:prov3.net:HdMap:ref-043> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Parking in Gothenburg"@en ;
+<did:web:mapprov3.net:HdMap:ref-gothenburg-043> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Parking in Gothenburg"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.7"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "rural" ;
+      hdmap:laneTypes "driving" ;
+      hdmap:levelOfDetail "lane" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "81.0"^^xsd:float ;
+      hdmap:numberIntersections "1"^^xsd:integer ;
+      hdmap:numberTrafficLights "9"^^xsd:integer ;
+      hdmap:numberTrafficSigns "72"^^xsd:integer ;
+      hdmap:numberObjects "1615"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "77.0"^^xsd:float ;
+        hdmap:max "159.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "scanner" ;
+      hdmap:measurementSystem "RTK-GPS"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "SE" ;
+        georeference:city "Gothenburg"
+      ]
     ]
   ] .
 
@@ -1839,12 +4781,18 @@
       scenario:weatherSummary "rain" ;
       scenario:entityTypes "truck" ;
       scenario:entityTypes "bicycle" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "high_relative_speed"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "5"^^xsd:integer ;
-      scenario:duration "164.1"^^xsd:float
+      scenario:numberTrafficObjects "5"^^xsd:integer ;
+      scenario:permanentTrafficObjects "4"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Real World Data"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1856,7 +4804,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov4.net:HdMap:ref-hamburg-044>
+  ] .
+
+<did:web:mapprov4.net:HdMap:ref-hamburg-044> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Merging in Hamburg"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.8"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "motorway_entry" ;
+      hdmap:laneTypes "driving" , "shoulder" ;
+      hdmap:levelOfDetail "pole" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "88.0"^^xsd:float ;
+      hdmap:numberIntersections "4"^^xsd:integer ;
+      hdmap:numberTrafficLights "11"^^xsd:integer ;
+      hdmap:numberTrafficSigns "85"^^xsd:integer ;
+      hdmap:numberObjects "1652"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "88.0"^^xsd:float ;
+        hdmap:max "177.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "aerial" ;
+      hdmap:measurementSystem "aerial scanner"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Hamburg"
+      ]
+    ]
   ] .
 
 # --- Scenario 45: Cut In in Frankfurt ---
@@ -1877,12 +4874,18 @@
       scenario:weatherSummary "snow" ;
       scenario:entityTypes "pedestrian" ;
       scenario:entityTypes "bus" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "VRU_interaction"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "6"^^xsd:integer ;
-      scenario:duration "167.8"^^xsd:float
+      scenario:numberTrafficObjects "6"^^xsd:integer ;
+      scenario:permanentTrafficObjects "5"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Analytical Hazard Based Approach"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1894,7 +4897,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov5.net:HdMap:ref-frankfurt-045>
+  ] .
+
+<did:web:mapprov5.net:HdMap:ref-frankfurt-045> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Cut In in Frankfurt"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "custom" ;
+      hdmap:laneTypes "driving" , "biking" ;
+      hdmap:levelOfDetail "crosswalk" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "95.0"^^xsd:float ;
+      hdmap:numberIntersections "7"^^xsd:integer ;
+      hdmap:numberTrafficLights "13"^^xsd:integer ;
+      hdmap:numberTrafficSigns "98"^^xsd:integer ;
+      hdmap:numberObjects "1689"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "99.0"^^xsd:float ;
+        hdmap:max "195.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "satellite" ;
+      hdmap:measurementSystem "photogrammetry"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Frankfurt"
+      ]
+    ]
   ] .
 
 # --- Scenario 46: Lane Change in Munich ---
@@ -1915,12 +4967,18 @@
       scenario:weatherSummary "fog" ;
       scenario:entityTypes "bicycle" ;
       scenario:entityTypes "motorbike" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "adverse_weather"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "2"^^xsd:integer ;
-      scenario:duration "171.5"^^xsd:float
+      scenario:numberTrafficObjects "7"^^xsd:integer ;
+      scenario:permanentTrafficObjects "1"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Synthetic Generation"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1933,17 +4991,96 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov1.net:HdMap:ref-046>
+    manifest:hasReferencedArtifacts <did:web:mapprov1.net:HdMap:ref-munich-046> ,
+      <did:web:envprov2.net:EnvironmentModel:ref-munich-046>
   ] .
 
-<did:web:prov1.net:HdMap:ref-046> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Lane Change in Munich"@en ;
+<did:web:mapprov1.net:HdMap:ref-munich-046> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Lane Change in Munich"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Lanelet2" ;
+      hdmap:version "1.1"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
       hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:laneTypes "driving" , "walking" , "biking" ;
+      hdmap:levelOfDetail "flat-marking" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "102.0"^^xsd:float ;
+      hdmap:numberIntersections "10"^^xsd:integer ;
+      hdmap:numberTrafficLights "15"^^xsd:integer ;
+      hdmap:numberTrafficSigns "111"^^xsd:integer ;
+      hdmap:numberObjects "1726"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "29.0"^^xsd:float ;
+        hdmap:max "132.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "procedural generation" ;
+      hdmap:measurementSystem "3DMS system"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Munich"
+      ]
+    ]
+  ] .
+
+<did:web:envprov2.net:EnvironmentModel:ref-munich-046> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Lane Change in Munich"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "glTF" ;
+      environment-model:version "2.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "rural landscape, fields, trees" ;
+      environment-model:useCase "visual validation"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "3ds Max" ;
+      environment-model:creationToolVendor "Autodesk" ;
+      environment-model:creationToolVersion "2024"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "14378"^^xsd:integer ;
+      environment-model:geometryCount "1992"^^xsd:integer ;
+      environment-model:textureMaterialCount "66"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "High" ;
+      environment-model:textureResolution "1024"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Munich"
+      ]
     ]
   ] .
 
@@ -1965,12 +5102,18 @@
       scenario:weatherSummary "night" ;
       scenario:entityTypes "bus" ;
       scenario:entityTypes "van" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "infrastructure_violation"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "3"^^xsd:integer ;
-      scenario:duration "175.2"^^xsd:float
+      scenario:numberTrafficObjects "8"^^xsd:integer ;
+      scenario:permanentTrafficObjects "2"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "2"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Simulation Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -1982,7 +5125,98 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov2.net:HdMap:ref-berlin-047> ,
+      <did:web:envprov3.net:EnvironmentModel:ref-berlin-047>
+  ] .
+
+<did:web:mapprov2.net:HdMap:ref-berlin-047> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Intersection Crossing in Berlin"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "NDS.Live" ;
+      hdmap:version "2.5"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "town" ;
+      hdmap:laneTypes "driving" , "bus" ;
+      hdmap:levelOfDetail "wall" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "109.0"^^xsd:float ;
+      hdmap:numberIntersections "13"^^xsd:integer ;
+      hdmap:numberTrafficLights "1"^^xsd:integer ;
+      hdmap:numberTrafficSigns "124"^^xsd:integer ;
+      hdmap:numberObjects "1763"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "40.0"^^xsd:float ;
+        hdmap:max "150.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.02"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "survey" ;
+      hdmap:measurementSystem "Mobile Mapping System"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Berlin"
+      ]
+    ]
+  ] .
+
+<did:web:envprov3.net:EnvironmentModel:ref-berlin-047> a environment-model:EnvironmentModel ;
+  rdfs:label "Referenced Environment Model for Intersection Crossing in Berlin"@en ;
+  environment-model:hasDomainSpecification [
+    a environment-model:DomainSpecification ;
+    environment-model:hasFormat [
+      a environment-model:Format ;
+      environment-model:formatType "OpenSceneGraph" ;
+      environment-model:version "3.0"
+    ] ;
+    environment-model:hasContent [
+      a environment-model:Content ;
+      environment-model:elements "parking structure, markings" ;
+      environment-model:useCase "scenario visualization"
+    ] ;
+    environment-model:hasProject [
+      a environment-model:Project ;
+      environment-model:creationToolName "Unreal Engine" ;
+      environment-model:creationToolVendor "Epic Games" ;
+      environment-model:creationToolVersion "5.3"
+    ] ;
+    environment-model:hasQuantity [
+      a environment-model:Quantity ;
+      environment-model:triangleCount "14475"^^xsd:integer ;
+      environment-model:geometryCount "84"^^xsd:integer ;
+      environment-model:textureMaterialCount "89"^^xsd:integer
+    ] ;
+    environment-model:hasQuality [
+      a environment-model:Quality ;
+      environment-model:detailLevel "Medium" ;
+      environment-model:textureResolution "2048"^^xsd:float
+    ] ;
+    environment-model:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Berlin"
+      ]
+    ]
   ] .
 
 # --- Scenario 48: Following in Stuttgart ---
@@ -2003,12 +5237,18 @@
       scenario:weatherSummary "windy" ;
       scenario:entityTypes "motorbike" ;
       scenario:entityTypes "car" ;
-      scenario:country "de"
+      scenario:country "de" ;
+      scenario:criticalityFactors "near_miss"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "4"^^xsd:integer ;
-      scenario:duration "178.9"^^xsd:float
+      scenario:numberTrafficObjects "9"^^xsd:integer ;
+      scenario:permanentTrafficObjects "3"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "3"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Manual Authoring"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -2020,7 +5260,56 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov3.net:HdMap:ref-stuttgart-048>
+  ] .
+
+<did:web:mapprov3.net:HdMap:ref-stuttgart-048> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Following in Stuttgart"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "Shape" ;
+      hdmap:version "1.0"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "rural" ;
+      hdmap:laneTypes "driving" , "parking" ;
+      hdmap:levelOfDetail "curb" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "116.0"^^xsd:float ;
+      hdmap:numberIntersections "16"^^xsd:integer ;
+      hdmap:numberTrafficLights "3"^^xsd:integer ;
+      hdmap:numberTrafficSigns "137"^^xsd:integer ;
+      hdmap:numberObjects "1800"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "51.0"^^xsd:float ;
+        hdmap:max "168.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.05"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "mobile mapping" ;
+      hdmap:measurementSystem "RTK-GPS"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "DE" ;
+        georeference:city "Stuttgart"
+      ]
+    ]
   ] .
 
 # --- Scenario 49: Overtaking in San Francisco ---
@@ -2041,12 +5330,18 @@
       scenario:weatherSummary "mixed" ;
       scenario:entityTypes "van" ;
       scenario:entityTypes "truck" ;
-      scenario:country "us"
+      scenario:country "us" ;
+      scenario:criticalityFactors "occlusion"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "5"^^xsd:integer ;
-      scenario:duration "182.6"^^xsd:float
+      scenario:numberTrafficObjects "2"^^xsd:integer ;
+      scenario:permanentTrafficObjects "4"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "0"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Drone Recording"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -2059,17 +5354,54 @@
   ] ;
   scenario:hasManifest [
     a manifest:Manifest ;
-    manifest:hasReferencedArtifacts <did:web:prov4.net:HdMap:ref-049>
+    manifest:hasReferencedArtifacts <did:web:mapprov4.net:HdMap:ref-san-francisco-049>
   ] .
 
-<did:web:prov4.net:HdMap:ref-049> a hdmap:HdMap ;
-  rdfs:label "Ref HD Map for Overtaking in San Francisco"@en ;
+<did:web:mapprov4.net:HdMap:ref-san-francisco-049> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Overtaking in San Francisco"@en ;
   hdmap:hasDomainSpecification [
     a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.7"
+    ] ;
     hdmap:hasContent [
       a hdmap:Content ;
-      hdmap:roadTypes "motorway" ;
-      hdmap:laneTypes "driving"
+      hdmap:roadTypes "motorway_entry" ;
+      hdmap:laneTypes "driving" , "emergency" ;
+      hdmap:levelOfDetail "lane" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "10.0"^^xsd:float ;
+      hdmap:numberIntersections "19"^^xsd:integer ;
+      hdmap:numberTrafficLights "5"^^xsd:integer ;
+      hdmap:numberTrafficSigns "150"^^xsd:integer ;
+      hdmap:numberObjects "1837"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "62.0"^^xsd:float ;
+        hdmap:max "186.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.005"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "lidar" ;
+      hdmap:measurementSystem "aerial scanner"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:city "San Francisco"
+      ]
     ]
   ] .
 
@@ -2091,12 +5423,18 @@
       scenario:weatherSummary "clear" ;
       scenario:entityTypes "car" ;
       scenario:entityTypes "pedestrian" ;
-      scenario:country "us"
+      scenario:country "us" ;
+      scenario:criticalityFactors "high_relative_speed"
     ] ;
     scenario:hasQuantity [
       a scenario:Quantity ;
-      scenario:numberOfEntities "6"^^xsd:integer ;
-      scenario:duration "186.3"^^xsd:float
+      scenario:numberTrafficObjects "3"^^xsd:integer ;
+      scenario:permanentTrafficObjects "5"^^xsd:integer ;
+      scenario:temporaryTrafficObjects "1"^^xsd:integer
+    ] ;
+    scenario:hasDataSource [
+      a scenario:DataSource ;
+      scenario:sourceType "Accident Database"
     ] ;
     scenario:hasGeoreference [
       a georeference:Georeference ;
@@ -2108,6 +5446,55 @@
     ]
   ] ;
   scenario:hasManifest [
-    a manifest:Manifest
+    a manifest:Manifest ;
+    manifest:hasReferencedArtifacts <did:web:mapprov5.net:HdMap:ref-detroit-050>
+  ] .
+
+<did:web:mapprov5.net:HdMap:ref-detroit-050> a hdmap:HdMap ;
+  rdfs:label "Referenced HD Map for Pedestrian Crossing in Detroit"@en ;
+  hdmap:hasDomainSpecification [
+    a hdmap:DomainSpecification ;
+    hdmap:hasFormat [
+      a hdmap:Format ;
+      hdmap:formatType "ASAM OpenDRIVE" ;
+      hdmap:version "1.8"
+    ] ;
+    hdmap:hasContent [
+      a hdmap:Content ;
+      hdmap:roadTypes "custom" ;
+      hdmap:laneTypes "driving" ;
+      hdmap:levelOfDetail "pole" ;
+      hdmap:trafficDirection "right-hand"
+    ] ;
+    hdmap:hasQuantity [
+      a hdmap:Quantity ;
+      hdmap:length "17.0"^^xsd:float ;
+      hdmap:numberIntersections "1"^^xsd:integer ;
+      hdmap:numberTrafficLights "7"^^xsd:integer ;
+      hdmap:numberTrafficSigns "163"^^xsd:integer ;
+      hdmap:numberObjects "1874"^^xsd:integer ;
+      hdmap:speedLimit [
+        a hdmap:Range2D ;
+        hdmap:min "73.0"^^xsd:float ;
+        hdmap:max "204.0"^^xsd:float
+      ]
+    ] ;
+    hdmap:hasQuality [
+      a hdmap:Quality ;
+      hdmap:precision "0.01"^^xsd:float
+    ] ;
+    hdmap:hasDataSource [
+      a hdmap:DataSource ;
+      hdmap:usedDataSources "camera" ;
+      hdmap:measurementSystem "photogrammetry"
+    ] ;
+    hdmap:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "US" ;
+        georeference:city "Detroit"
+      ]
+    ]
   ] .
 

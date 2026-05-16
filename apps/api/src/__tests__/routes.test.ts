@@ -2,9 +2,12 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { app } from '../app.js'
 
-vi.mock('@ontology-search/search', () => ({
+vi.mock('../search-factory.js', () => ({
   searchNl: vi.fn(),
   searchRefine: vi.fn(),
+}))
+
+vi.mock('@ontology-search/search', () => ({
   getInitializedStore: vi.fn(),
   compileCountQuery: vi.fn(),
   getAssetDomains: vi.fn().mockResolvedValue(new Set(['hdmap', 'scenario'])),
@@ -29,7 +32,7 @@ describe('GET /health', () => {
 
 describe('POST /search/stream', () => {
   it('returns 200 for valid request', async () => {
-    const { searchNl } = await import('@ontology-search/search')
+    const { searchNl } = await import('../search-factory.js')
     vi.mocked(searchNl).mockResolvedValue({
       interpretation: { query: 'test', intent: 'search', domains: ['hdmap'] },
       gaps: [],
@@ -85,7 +88,7 @@ describe('POST /search/refine', () => {
   })
 
   it('returns 200 with results for valid slots', async () => {
-    const { searchRefine } = await import('@ontology-search/search')
+    const { searchRefine } = await import('../search-factory.js')
     vi.mocked(searchRefine).mockResolvedValue({
       sparql: 'SELECT * WHERE { ?s ?p ?o }',
       execution: { results: [{ id: '1' }], error: undefined },

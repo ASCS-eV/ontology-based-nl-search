@@ -32,12 +32,18 @@ export interface SearchSlots {
   filters: Record<string, string | string[]>
   /** Numeric range filters: localName → { min?, max? } */
   ranges: Record<string, { min?: number; max?: number }>
-  /** Free-text location filters (fallback for geo concepts) */
+  /**
+   * Location filters. Each field accepts a single value or an array — arrays
+   * compile to `FILTER(?v IN (...))` so the LLM can express a region as the
+   * explicit list of country/state/city codes it covers, instead of silently
+   * collapsing to a single representative. SHACL validates each element; bad
+   * elements drop and emit gaps, survivors stay.
+   */
   location?: {
-    country?: string
-    state?: string
-    region?: string
-    city?: string
+    country?: string | string[]
+    state?: string | string[]
+    region?: string | string[]
+    city?: string | string[]
   }
   /** License filter */
   license?: string

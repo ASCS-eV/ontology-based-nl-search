@@ -9,7 +9,7 @@ import { z } from 'zod'
  */
 
 const sparqlModeSchema = z.enum(['memory', 'remote'])
-const aiProviderSchema = z.enum(['openai', 'ollama', 'copilot'])
+const aiProviderSchema = z.enum(['openai', 'ollama', 'copilot', 'anthropic', 'claude-cli'])
 
 const envSchema = z.object({
   // SPARQL Store
@@ -22,6 +22,7 @@ const envSchema = z.object({
   AI_PROVIDER: aiProviderSchema.default('openai'),
   AI_MODEL: z.string().min(1).default('gpt-4o'),
   OPENAI_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
   OLLAMA_BASE_URL: z.string().url().default('http://localhost:11434/v1'),
 
   // Ontology
@@ -68,6 +69,9 @@ export function getConfig(): AppConfig {
   if (result.data.NODE_ENV !== 'test') {
     if (result.data.AI_PROVIDER === 'openai' && !result.data.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY is required when AI_PROVIDER is "openai"')
+    }
+    if (result.data.AI_PROVIDER === 'anthropic' && !result.data.ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY is required when AI_PROVIDER is "anthropic"')
     }
   }
 

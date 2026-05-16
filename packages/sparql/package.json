@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",
+    "@types/node": "^25.7.0",
     "@types/sparqljs": "^3.1.12",
     "rimraf": "^6.0.0",
     "typescript": "~5.9.3",

@@ -177,14 +177,59 @@ export async function queryAssetDomains(store: SparqlStore): Promise<AssetDomain
 }
 
 /**
+ * SPARQL filter fragment: restricts a class to known ENVITED-X asset types
+ * (SimulationAsset, SoftwareAsset, CodeAsset, ServiceAsset).
+ * The variable `?cls` and `?super` must be substituted by the caller.
+ */
+const ASSET_DOMAIN_FILTER = (cls: string, sup: string) => `
+  ?${cls} rdfs:subClassOf ?${sup} .
+  FILTER(
+    CONTAINS(STR(?${sup}), "/envited-x/envited-x/") &&
+    (STRENDS(STR(?${sup}), "SimulationAsset") ||
+     STRENDS(STR(?${sup}), "SoftwareAsset") ||
+     STRENDS(STR(?${sup}), "CodeAsset") ||
+     STRENDS(STR(?${sup}), "ServiceAsset"))
+  )
+`
+
+/**
  * Query for domain reference relationships.
  *
  * Finds which domains reference other domains via manifest:hasReferencedArtifacts.
- * Discovers cross-domain relationships without hardcoding.
+ * Uses a multi-strategy approach to handle different SHACL nesting patterns:
+ *
+ * 1. **Direct sh:class** — simple `sh:class` on the property shape (original pattern)
+ * 2. **Nested SHACL walk** — `sh:node → sh:or → rdf:list → sh:node → sh:targetClass`
+ *    (handles the actual scenario SHACL structure where referenced artifact types
+ *     are declared in an sh:or disjunction list)
+ *
+ * Parent discovery uses fallback strategies because the constraint shape owning
+ * `hasReferencedArtifacts` may not have `sh:targetClass` itself:
+ *   A. Direct targetClass on the constraint shape
+ *   B. Walk up through `sh:and` conjunction list to the domain shape
+ *   C. Walk up through `sh:or` disjunction list to the domain shape
+ *
+ * Separate queries avoid Oxigraph WASM crashes from UNION + property path `*`.
  */
 export async function queryDomainReferences(store: SparqlStore): Promise<DomainReferenceInfo[]> {
-  const sparql = `
+  const references: DomainReferenceInfo[] = []
+  const seen = new Set<string>()
+
+  const addReference = (parentClass: string, childClass: string): void => {
+    const parentDomain = extractDomain(parentClass)
+    const childDomain = extractDomain(childClass)
+    const key = `${parentDomain}:${childDomain}`
+    if (parentDomain && childDomain && parentDomain !== childDomain && !seen.has(key)) {
+      seen.add(key)
+      references.push({ parentDomain, childDomain })
+    }
+  }
+
+  // Strategy 1: Direct sh:class on hasReferencedArtifacts property shape.
+  // Handles simple SHACL patterns where the child class is declared directly.
+  const directSparql = `
     PREFIX sh: <http://www.w3.org/ns/shacl#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
     PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
 
     SELECT DISTINCT ?parentClass ?childClass WHERE {
@@ -193,28 +238,142 @@ export async function queryDomainReferences(store: SparqlStore): Promise<DomainR
         ?shape sh:property ?propShape .
         ?propShape sh:path manifest:hasReferencedArtifacts .
         ?propShape sh:class ?childClass .
+        ${ASSET_DOMAIN_FILTER('parentClass', 'parentSuper')}
+        ${ASSET_DOMAIN_FILTER('childClass', 'childSuper')}
       }
     }
-    ORDER BY ?parentClass ?childClass
   `
-
-  const result = await store.query(sparql)
-  const references: DomainReferenceInfo[] = []
-
-  for (const row of result.results.bindings) {
+  const directResult = await store.query(directSparql)
+  for (const row of directResult.results.bindings) {
     const parentClass = row['parentClass']?.value
     const childClass = row['childClass']?.value
-    if (!parentClass || !childClass) continue
+    if (parentClass && childClass) addReference(parentClass, childClass)
+  }
 
-    const parentDomain = extractDomain(parentClass)
-    const childDomain = extractDomain(childClass)
+  // Strategy 2: Nested SHACL — walk sh:node → sh:or → rdf:list → sh:node → targetClass.
+  // Phase A: Find (constraintShape, childClass) pairs from the nested structure.
+  const nestedChildSparql = `
+    PREFIX sh: <http://www.w3.org/ns/shacl#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
 
-    if (parentDomain && childDomain) {
-      references.push({ parentDomain, childDomain })
+    SELECT DISTINCT ?constraintShape ?childClass WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        ?constraintShape sh:property ?propShape .
+        ?propShape sh:path manifest:hasReferencedArtifacts .
+        ?propShape sh:node ?wrapper .
+        ?wrapper sh:or ?orList .
+        ?orList rdf:rest*/rdf:first ?item .
+        ?item sh:node ?childShape .
+        ?childShape sh:targetClass ?childClass .
+        ${ASSET_DOMAIN_FILTER('childClass', 'childSuper')}
+      }
+    }
+  `
+  const nestedResult = await store.query(nestedChildSparql)
+  const constraintToChildren = new Map<string, string[]>()
+  for (const row of nestedResult.results.bindings) {
+    const cs = row['constraintShape']?.value
+    const cc = row['childClass']?.value
+    if (!cs || !cc) continue
+    if (!constraintToChildren.has(cs)) constraintToChildren.set(cs, [])
+    constraintToChildren.get(cs)!.push(cc)
+  }
+
+  // Phase B: For each constraint shape, discover its parent domain.
+  for (const [constraintIri, childClasses] of constraintToChildren) {
+    const parentClass = await resolveParentDomain(store, constraintIri)
+    if (parentClass) {
+      for (const childClass of childClasses) {
+        addReference(parentClass, childClass)
+      }
     }
   }
 
   return references
+}
+
+/**
+ * Resolve the parent asset domain for a SHACL constraint shape.
+ *
+ * Tries multiple strategies in order:
+ *   A. Constraint itself has sh:targetClass that is an asset domain
+ *   B. Constraint is nested in an sh:and conjunction list of a domain shape
+ *   C. Constraint is nested in an sh:or disjunction list of a domain shape
+ */
+async function resolveParentDomain(
+  store: SparqlStore,
+  constraintIri: string
+): Promise<string | null> {
+  // Strategy A: Constraint shape directly has sh:targetClass
+  const directSparql = `
+    PREFIX sh: <http://www.w3.org/ns/shacl#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    SELECT ?parentClass WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        <${constraintIri}> sh:targetClass ?parentClass .
+        ${ASSET_DOMAIN_FILTER('parentClass', 'parentSuper')}
+      }
+    } LIMIT 1
+  `
+  const directResult = await store.query(directSparql)
+  const directBinding = directResult.results.bindings[0]
+  if (directBinding) {
+    return directBinding['parentClass']?.value ?? null
+  }
+
+  // Strategy B: Walk up through sh:and conjunction list.
+  // Pattern: domainShape → sh:property → prop → sh:or → list → item →
+  //          sh:and → list → member → sh:node → constraintShape
+  const andListSparql = `
+    PREFIX sh: <http://www.w3.org/ns/shacl#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    SELECT DISTINCT ?parentClass WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        ?nodeRef sh:node <${constraintIri}> .
+        ?andList rdf:rest*/rdf:first ?nodeRef .
+        ?andItem sh:and ?andList .
+        ?orList rdf:rest*/rdf:first ?andItem .
+        ?propParent sh:or ?orList .
+        ?topShape sh:property ?propParent .
+        ?topShape sh:targetClass ?parentClass .
+        ${ASSET_DOMAIN_FILTER('parentClass', 'parentSuper')}
+      }
+    } LIMIT 1
+  `
+  const andResult = await store.query(andListSparql)
+  const andBinding = andResult.results.bindings[0]
+  if (andBinding) {
+    return andBinding['parentClass']?.value ?? null
+  }
+
+  // Strategy C: Walk up through sh:or disjunction list directly.
+  // Pattern: domainShape → sh:property → prop → sh:or → list →
+  //          member → sh:node → constraintShape
+  const orListSparql = `
+    PREFIX sh: <http://www.w3.org/ns/shacl#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    SELECT DISTINCT ?parentClass WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        ?nodeRef sh:node <${constraintIri}> .
+        ?orList rdf:rest*/rdf:first ?nodeRef .
+        ?propParent sh:or ?orList .
+        ?topShape sh:property ?propParent .
+        ?topShape sh:targetClass ?parentClass .
+        ${ASSET_DOMAIN_FILTER('parentClass', 'parentSuper')}
+      }
+    } LIMIT 1
+  `
+  const orResult = await store.query(orListSparql)
+  const orBinding = orResult.results.bindings[0]
+  if (orBinding) {
+    return orBinding['parentClass']?.value ?? null
+  }
+
+  return null
 }
 
 /**
@@ -312,4 +471,162 @@ export async function queryRange2DProperties(store: SparqlStore): Promise<Range2
   }
 
   return properties
+}
+
+// ─── Phase 2: Generic hierarchical-vocabulary discovery ──────────────────────
+
+/**
+ * SKOS concept scheme membership: a concept IRI together with the scheme it
+ * belongs to. Discovered generically — we don't assume any particular scheme
+ * exists, we just find whatever is declared via skos:inScheme in any graph.
+ */
+export interface SkosConceptInfo {
+  /** Full IRI of the concept (e.g. an ISO country code IRI) */
+  iri: string
+  /** IRI of the skos:ConceptScheme this concept is a member of */
+  scheme: string
+  /** Preferred label (skos:prefLabel) if any, language-agnostic first match */
+  prefLabel?: string
+}
+
+/**
+ * Class hierarchy edge discovered via rdfs:subClassOf.
+ * Used by the compiler to expand a class-typed filter value to all its
+ * subclasses (e.g. {SedanCar} → {SedanCar, CompactSedan, …}).
+ */
+export interface SubClassEdge {
+  /** Subclass IRI */
+  sub: string
+  /** Superclass IRI */
+  super: string
+}
+
+/**
+ * Distribution of distinct literal values actually used for a property in
+ * the instance data. Powers data-driven gap suggestions.
+ */
+export interface PropertyValueDistribution {
+  /** Property IRI */
+  property: string
+  /** Distinct literal values observed for the property */
+  values: string[]
+}
+
+/**
+ * Discover all SKOS concepts and their containing scheme(s) across the entire
+ * store (default graph + named graphs). Generic — no scheme IRIs are hardcoded.
+ *
+ * @returns one row per (concept, scheme) — concepts in multiple schemes appear
+ * multiple times.
+ */
+export async function querySkosConcepts(store: SparqlStore): Promise<SkosConceptInfo[]> {
+  const sparql = `
+    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+    SELECT DISTINCT ?iri ?scheme ?prefLabel WHERE {
+      {
+        ?iri a skos:Concept ;
+             skos:inScheme ?scheme .
+        OPTIONAL { ?iri skos:prefLabel ?prefLabel }
+      }
+      UNION
+      {
+        GRAPH ?g {
+          ?iri a skos:Concept ;
+               skos:inScheme ?scheme .
+          OPTIONAL { ?iri skos:prefLabel ?prefLabel }
+        }
+      }
+    }
+    ORDER BY ?scheme ?iri
+  `
+
+  const result = await store.query(sparql)
+  const out: SkosConceptInfo[] = []
+  const seen = new Set<string>()
+
+  for (const row of result.results.bindings) {
+    const iri = row['iri']?.value
+    const scheme = row['scheme']?.value
+    if (!iri || !scheme) continue
+    const key = `${iri}|${scheme}`
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    const prefLabel = row['prefLabel']?.value
+    out.push(prefLabel ? { iri, scheme, prefLabel } : { iri, scheme })
+  }
+
+  return out
+}
+
+/**
+ * Discover the rdfs:subClassOf edges declared anywhere in the store.
+ * The compiler walks this transitively via SPARQL property paths; we
+ * pre-extract the edges so callers can introspect available hierarchies.
+ */
+export async function querySubClassEdges(store: SparqlStore): Promise<SubClassEdge[]> {
+  const sparql = `
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+    SELECT DISTINCT ?sub ?super WHERE {
+      { ?sub rdfs:subClassOf ?super . FILTER(isIRI(?super)) }
+      UNION
+      { GRAPH ?g { ?sub rdfs:subClassOf ?super . FILTER(isIRI(?super)) } }
+    }
+  `
+
+  const result = await store.query(sparql)
+  const edges: SubClassEdge[] = []
+  for (const row of result.results.bindings) {
+    const sub = row['sub']?.value
+    const sup = row['super']?.value
+    if (!sub || !sup) continue
+    edges.push({ sub, super: sup })
+  }
+  return edges
+}
+
+/**
+ * For every distinct property used in the *instance* data (NOT the schema),
+ * collect the distinct literal values observed. Generic — works regardless of
+ * which domains exist or what the property names are.
+ *
+ * `propertyIris`, if provided, restricts the query to a known property set
+ * to keep result size manageable on large stores. Pass undefined to scan
+ * everything (only practical for small/medium datasets).
+ */
+export async function queryInstanceValueDistribution(
+  store: SparqlStore,
+  propertyIris?: string[]
+): Promise<PropertyValueDistribution[]> {
+  // Restrict by VALUES if a property list is supplied so the query stays cheap.
+  const valuesClause =
+    propertyIris && propertyIris.length > 0
+      ? `VALUES ?p { ${propertyIris.map((iri) => `<${iri}>`).join(' ')} }`
+      : ''
+
+  const sparql = `
+    SELECT DISTINCT ?p ?v WHERE {
+      ${valuesClause}
+      ?s ?p ?v .
+      FILTER(isLiteral(?v))
+    }
+  `
+
+  const result = await store.query(sparql)
+  const map = new Map<string, Set<string>>()
+  for (const row of result.results.bindings) {
+    const p = row['p']?.value
+    const v = row['v']?.value
+    if (!p || v === undefined) continue
+    const set = map.get(p) ?? new Set<string>()
+    set.add(v)
+    map.set(p, set)
+  }
+
+  return [...map.entries()].map(([property, values]) => ({
+    property,
+    values: [...values],
+  }))
 }
