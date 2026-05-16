@@ -22,13 +22,17 @@ const slotSubmissionSchema = z.object({
         .describe('Numeric ranges: localName → { min?, max? }'),
       location: z
         .object({
-          country: z.string().optional(),
-          state: z.string().optional(),
-          region: z.string().optional(),
-          city: z.string().optional(),
+          // Each field accepts a string or array of strings. Use an array
+          // when the user expresses a region, continent, or any multi-country
+          // intent — emit the explicit list of ISO codes the region covers.
+          // Never silently substitute one country for a region.
+          country: z.union([z.string(), z.array(z.string())]).optional(),
+          state: z.union([z.string(), z.array(z.string())]).optional(),
+          region: z.union([z.string(), z.array(z.string())]).optional(),
+          city: z.union([z.string(), z.array(z.string())]).optional(),
         })
         .optional()
-        .describe('Geographic location filters'),
+        .describe('Geographic location filters (single value or array per field)'),
       license: z.string().optional().describe('License identifier'),
     })
     .describe('Search slots: fill only properties where the user expressed intent'),

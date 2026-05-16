@@ -15,10 +15,13 @@ const searchSlotsSchema = z.object({
     .default({}),
   location: z
     .object({
-      country: z.string().optional(),
-      state: z.string().optional(),
-      region: z.string().optional(),
-      city: z.string().optional(),
+      // Each field accepts a single value or an array of values. Arrays let
+      // a refine caller express a region (e.g. country: ["DE","FR","IT"])
+      // and have the compiler emit `FILTER(?country IN (...))`.
+      country: z.union([z.string(), z.array(z.string())]).optional(),
+      state: z.union([z.string(), z.array(z.string())]).optional(),
+      region: z.union([z.string(), z.array(z.string())]).optional(),
+      city: z.union([z.string(), z.array(z.string())]).optional(),
     })
     .optional(),
   license: z.string().optional(),

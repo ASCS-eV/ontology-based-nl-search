@@ -4,10 +4,11 @@ import { getPersistentSession, runCopilotAgent } from './agent/copilot-agent.js'
 import { runSparqlAgent } from './agent/index.js'
 import type { LlmStructuredResponse } from './types.js'
 
-// Re-export the SHACL slot-validation helper so the api app can use the same
-// gate in its /refine composition root without depending on internal modules.
+// Re-export the SHACL slot-validation helpers so the api app can use the
+// same gate in its /refine composition root without depending on internal
+// modules.
 export type { ShaclSlotValidationResult } from './slot-validator.js'
-export { validateSlotsAgainstShacl } from './slot-validator.js'
+export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-validator.js'
 
 export interface SearchOptions {
   domain?: string

@@ -15,6 +15,7 @@ import { getModel } from '../provider.js'
 import {
   correctDomains,
   correctFilters,
+  validateRangesAgainstShacl,
   validateSlots,
   validateSlotsAgainstShacl,
 } from '../slot-validator.js'
@@ -108,11 +109,14 @@ export async function runSparqlAgent(
       shacl,
       vocabulary
     )
-    const ranges = answer.slots.ranges ?? {}
+    // Ranges go through their own check: numeric values always pass SHACL
+    // datatype constraints, so we only need to confirm the property name
+    // is known. Hallucinated keys (e.g. `numberLanes`) are dropped here.
+    const rangeResult = validateRangesAgainstShacl(answer.slots.ranges ?? {}, shacl)
     const correctedDomains = correctDomains(
       answer.slots.domains ?? [targetDomain],
       shaclResult.filters,
-      ranges,
+      rangeResult.ranges,
       vocabulary
     )
     endValidation()
@@ -120,7 +124,7 @@ export async function runSparqlAgent(
     const slots: SearchSlots = {
       domains: correctedDomains,
       filters: shaclResult.filters,
-      ranges,
+      ranges: rangeResult.ranges,
       location: shaclResult.location,
       license: shaclResult.license,
     }
@@ -131,7 +135,7 @@ export async function runSparqlAgent(
 
     const rawResponse: LlmStructuredResponse = {
       interpretation: answer.interpretation,
-      gaps: [...answer.gaps, ...shaclResult.gaps],
+      gaps: [...answer.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
       sparql,
     }
 

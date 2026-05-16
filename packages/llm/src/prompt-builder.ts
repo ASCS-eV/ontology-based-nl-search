@@ -67,6 +67,22 @@ const STATIC_SECTIONS = `
 | \`region\`  | Free text: "Upper Bavaria", etc.           |
 | \`city\`    | City name: "Munich", "Berlin", etc.        |
 
+Each field accepts a single string OR an array of strings.
+
+**Always emit an array when the user expresses a region, continent, group of
+countries, or any multi-country intent.** Use your world knowledge to expand
+the region to the explicit list of values it covers — do NOT silently
+substitute one country for a region. The SHACL gate validates every element;
+invalid entries are dropped, valid ones stay.
+
+Examples:
+- "in europe" → \`country: ["DE","FR","IT","ES","NL","BE","AT","CH","PL","SE","NO","DK","FI","PT","IE","GR","CZ","HU","RO","BG","HR","SK","SI","EE","LV","LT","LU"]\`
+- "in scandinavia" → \`country: ["SE","NO","DK","FI","IS"]\`
+- "in the EU" → list the current EU member ISO codes
+- "in DACH" → \`country: ["DE","AT","CH"]\`
+- "in Germany or France" → \`country: ["DE","FR"]\`
+- "in Germany" → \`country: "DE"\` (single value is fine when intent is one country)
+
 Resolve city names to countries (e.g., "Munich" → country: "DE", city: "Munich").
 
 ### \`license\` — License identifier

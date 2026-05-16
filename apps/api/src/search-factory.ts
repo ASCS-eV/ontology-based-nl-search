@@ -8,7 +8,7 @@
  * Tests construct SearchService directly with mock dependencies.
  */
 import { generateStructuredSearch } from '@ontology-search/llm'
-import { validateSlotsAgainstShacl } from '@ontology-search/llm'
+import { validateRangesAgainstShacl, validateSlotsAgainstShacl } from '@ontology-search/llm'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type {
   NlSearchOptions,
@@ -55,9 +55,12 @@ export async function getSearchService(): Promise<SearchService> {
         shacl,
         vocabulary
       )
+      // Drop ranges with property names not in the schema (e.g. `numberLanes`).
+      const rangeResult = validateRangesAgainstShacl(slots.ranges ?? {}, shacl)
       return {
         ...slots,
         filters: result.filters,
+        ranges: rangeResult.ranges,
         location: result.location,
         license: result.license,
       }

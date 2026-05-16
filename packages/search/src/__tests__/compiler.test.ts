@@ -115,6 +115,93 @@ describe('compileSlots', () => {
     expect(policy.allowed).toBe(true)
   })
 
+  it('filters by multi-country location with IN clause (region expansion)', async () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: {},
+      ranges: {},
+      // Express "europe" as the explicit list of ISO codes — the principle is
+      // that the LLM (or any caller) supplies a multi-country array and the
+      // compiler emits a strict-equality IN clause, NOT CONTAINS.
+      location: { country: ['DE', 'FR', 'IT'] },
+    }
+    const sparql = await compileSlots(slots)
+    expect(sparql).toContain('FILTER(?country IN ("DE", "FR", "IT"))')
+    // Must NOT fall back to CONTAINS/LCASE for arrays.
+    expect(sparql).not.toContain('CONTAINS(LCASE(?country)')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+
+  it('collapses a single-element location array to equality', async () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: {},
+      ranges: {},
+      location: { country: ['DE'] },
+    }
+    const sparql = await compileSlots(slots)
+    expect(sparql).toContain('FILTER(?country = "DE")')
+  })
+
+  /**
+   * R11: The compiler MUST drop range keys unknown to the ontology — same
+   * defense as for filters. The original observation: the LLM emitted
+   * `numberLanes` as a range, the compiler emitted `?qty hdmap:numberLanes ?n`,
+   * the query returned 0 results without any diagnostic.
+   */
+  it('drops range keys unknown to the ontology (R11 ranges)', async () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: {},
+      ranges: { numberLanes: { min: 4 } }, // hallucinated property
+    }
+    const sparql = await compileSlots(slots)
+    expect(sparql).not.toContain('numberLanes')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+
+  /**
+   * R11: The compiler MUST drop filter keys that are not present in the
+   * schema-derived property index. Defense-in-depth — the slot validator
+   * should already have caught these, but a bypass shouldn't let a
+   * non-existent property reach SPARQL (where it produces 0 results with no
+   * diagnostic).
+   */
+  it('drops filter keys unknown to the ontology (R11)', async () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: { numberLanes: '4' }, // not a real hdmap property
+      ranges: {},
+    }
+    const sparql = await compileSlots(slots)
+    // The unknown property MUST NOT appear in the WHERE clause.
+    expect(sparql).not.toContain('numberLanes')
+    // And the query MUST still be well-formed (no dangling clauses).
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+
+  /**
+   * R9: Empty location arrays MUST NOT produce a filter clause in the
+   * compiled SPARQL. An empty array carries no information; emitting a
+   * dangling pattern would either match nothing or produce a syntax error.
+   */
+  it('drops empty location arrays from compiled SPARQL (R9)', async () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: {},
+      ranges: {},
+      location: { country: [] },
+    }
+    const sparql = await compileSlots(slots)
+    expect(sparql).not.toContain('georeference:country')
+    expect(sparql).not.toContain('FILTER(?country')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+
   it('filters by enum property', async () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],

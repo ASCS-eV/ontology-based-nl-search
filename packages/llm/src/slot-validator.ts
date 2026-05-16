@@ -313,11 +313,15 @@ export function validateSlots(
  */
 export interface ShaclSlotValidationResult {
   filters: Record<string, string | string[]>
+  /**
+   * Each location field carries the surviving elements. Arrays compile to
+   * `FILTER(?v IN (...))`, single values to `FILTER(?v = "...")`.
+   */
   location: {
-    country?: string
-    state?: string
-    region?: string
-    city?: string
+    country?: string | string[]
+    state?: string | string[]
+    region?: string | string[]
+    city?: string | string[]
   }
   license?: string
   gaps: OntologyGap[]
@@ -342,10 +346,10 @@ export async function validateSlotsAgainstShacl(
   filters: Record<string, string | string[]>,
   location:
     | {
-        country?: string
-        state?: string
-        region?: string
-        city?: string
+        country?: string | string[]
+        state?: string | string[]
+        region?: string | string[]
+        city?: string | string[]
       }
     | undefined,
   license: string | undefined,
@@ -357,14 +361,27 @@ export async function validateSlotsAgainstShacl(
   let cleanLicense: string | undefined
   const gaps: OntologyGap[] = []
 
-  // Filters — every key/value pair gets a SHACL check.
+  // Filters — every key/value pair gets a SHACL check. Arrays use the batch
+  // validator: one SHACL engine call per (slot, target-class) pair regardless
+  // of array length. This collapses what would otherwise be N sequential
+  // engine walks (N × ~3s) into a single one.
+  //
+  // BEFORE checking values, we verify the slot KEY itself exists in the
+  // ontology. The LLM occasionally invents property names (e.g. `numberLanes`
+  // when only `numberObjects` exists). Such keys would otherwise pass through
+  // the compiler silently and produce 0 results with no diagnostic. Dropping
+  // them here with a gap surfaces the mismatch to the caller.
   for (const [slotKey, value] of Object.entries(filters)) {
+    if (!shaclValidator.isKnownSlotKey(slotKey)) {
+      const sample = Array.isArray(value) ? value.join(', ') : value
+      gaps.push({
+        term: slotKey,
+        reason: `"${slotKey}" is not a known property in the ontology — value(s) "${sample}" cannot be filtered.`,
+      })
+      continue
+    }
     if (Array.isArray(value)) {
-      const kept: string[] = []
-      for (const v of value) {
-        const ok = await checkAndAccumulate(slotKey, v, shaclValidator, gaps, vocabulary)
-        if (ok) kept.push(v)
-      }
+      const kept = await checkArrayAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
       if (kept.length > 0) cleanFilters[slotKey] = kept
     } else {
       const ok = await checkAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
@@ -372,14 +389,17 @@ export async function validateSlotsAgainstShacl(
     }
   }
 
-  // Location — every populated field gets a SHACL check.
-  // This closes the gap that previously let "country: europe" through unchanged.
+  // Location — every populated field gets a SHACL check. Same batch path for
+  // arrays so a 27-country "europe" array validates in one engine call.
   if (location) {
+    const cleanLocationRec = cleanLocation as Record<string, string | string[]>
     for (const [slotKey, value] of Object.entries(location)) {
-      if (typeof value !== 'string' || value.length === 0) continue
-      const ok = await checkAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
-      if (ok) {
-        ;(cleanLocation as Record<string, string>)[slotKey] = value
+      if (Array.isArray(value)) {
+        const kept = await checkArrayAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
+        if (kept.length > 0) cleanLocationRec[slotKey] = kept
+      } else if (typeof value === 'string' && value.length > 0) {
+        const ok = await checkAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
+        if (ok) cleanLocationRec[slotKey] = value
       }
     }
   }
@@ -391,6 +411,41 @@ export async function validateSlotsAgainstShacl(
   }
 
   return { filters: cleanFilters, location: cleanLocation, license: cleanLicense, gaps }
+}
+
+/**
+ * Drop range entries whose slot key is unknown to the ontology, and emit a
+ * gap for each. SHACL doesn't help here directly — ranges always carry
+ * numeric values that pass `sh:datatype xsd:integer/float`, so the only
+ * way to catch hallucinated property names (e.g. `numberLanes`) is the
+ * same `isKnownSlotKey` check we apply to filters.
+ *
+ * Returns the cleansed ranges record and the per-key gaps.
+ */
+export function validateRangesAgainstShacl(
+  ranges: Record<string, { min?: number; max?: number }>,
+  shaclValidator: ShaclValidator
+): {
+  ranges: Record<string, { min?: number; max?: number }>
+  gaps: OntologyGap[]
+} {
+  const clean: Record<string, { min?: number; max?: number }> = {}
+  const gaps: OntologyGap[] = []
+  for (const [slotKey, range] of Object.entries(ranges)) {
+    if (!shaclValidator.isKnownSlotKey(slotKey)) {
+      const bound =
+        range.min !== undefined && range.max !== undefined
+          ? `${range.min}..${range.max}`
+          : (range.min ?? range.max ?? '?')
+      gaps.push({
+        term: slotKey,
+        reason: `"${slotKey}" is not a known property in the ontology — range ${bound} cannot be filtered.`,
+      })
+      continue
+    }
+    clean[slotKey] = range
+  }
+  return { ranges: clean, gaps }
 }
 
 /**
@@ -432,6 +487,60 @@ async function checkAndAccumulate(
     suggestions: suggestions && suggestions.length > 0 ? suggestions : undefined,
   })
   return false
+}
+
+/**
+ * Batch counterpart of `checkAndAccumulate`. Validates every non-empty string
+ * in `values` against the slot's SHACL constraints in a single engine call
+ * per resolved property IRI, returning the surviving values and pushing a
+ * gap for every rejected element.
+ */
+async function checkArrayAndAccumulate(
+  slotKey: string,
+  values: ReadonlyArray<unknown>,
+  shaclValidator: ShaclValidator,
+  gaps: OntologyGap[],
+  vocabulary?: OntologyVocabulary
+): Promise<string[]> {
+  // Preserve input order; SHACL outcomes are looked up by stringified value.
+  const candidates = values.filter((v): v is string => typeof v === 'string' && v.length > 0)
+  if (candidates.length === 0) return []
+
+  const batch = await shaclValidator.validateBySlotNameBatch(slotKey, candidates)
+  const kept: string[] = []
+  for (const value of candidates) {
+    const result = batch.get(value)
+    if (!result) continue
+
+    // No SHACL shape for this slot → can't refute, accept.
+    if (result.resolvedIris.length === 0) {
+      kept.push(value)
+      continue
+    }
+
+    if (result.conforms) {
+      kept.push(value)
+      continue
+    }
+
+    const reasons = result.violations
+      .map((v) => {
+        const constraint = v.sourceConstraintComponent.split(/[#/]/).pop() ?? 'constraint'
+        return `${constraint}${v.message ? `: ${v.message}` : ''}`
+      })
+      .join('; ')
+
+    const suggestions = vocabulary
+      ? dataDrivenSuggestions(value, result.resolvedIris, vocabulary)
+      : undefined
+
+    gaps.push({
+      term: value,
+      reason: `"${value}" failed SHACL validation for ${slotKey} (${reasons})`,
+      suggestions: suggestions && suggestions.length > 0 ? suggestions : undefined,
+    })
+  }
+  return kept
 }
 
 /**

@@ -71,10 +71,34 @@ export class ShaclValidator {
   private readonly validator: SHACLValidator
   /** Cached pairings of (property IRI → target class IRI) derived from shapes. */
   private readonly propertyToTargetClass: Map<string, string[]>
+  /**
+   * Memoized per-(propertyIri, value, targetClass) validation outcomes.
+   * Shapes are immutable for the process lifetime, so cached entries are
+   * never invalidated. The cache is populated by both single-value and
+   * batch validation paths.
+   */
+  private readonly resultCache = new Map<string, ShaclValidationResult>()
+  /**
+   * @internal Counter of underlying engine `validate()` invocations. Exists
+   * so tests can assert the batch path makes exactly one engine call per
+   * (property, target-class) and the cache prevents repeats. Increments
+   * once per dataset submitted to the engine — agnostic of focus-node count.
+   */
+  private engineCallCount = 0
 
   private constructor(validator: SHACLValidator, propertyToTargetClass: Map<string, string[]>) {
     this.validator = validator
     this.propertyToTargetClass = propertyToTargetClass
+  }
+
+  /** @internal Test-only accessor — see engineCallCount JSDoc. */
+  get __engineCallCount__(): number {
+    return this.engineCallCount
+  }
+
+  /** @internal Test-only reset for engine-call counter (separate from cache reset). */
+  __resetEngineCallCount__(): void {
+    this.engineCallCount = 0
   }
 
   /**
@@ -95,7 +119,11 @@ export class ShaclValidator {
     return cachedInstance
   }
 
-  /** Reset the cached singleton — test-only hook. */
+  /**
+   * Reset the cached singleton — test-only hook. Drops the entire instance
+   * including its result cache and engine-call counter. Subsequent
+   * `fromWorkspace()` will rebuild from disk.
+   */
   static reset(): void {
     cachedInstance = null
   }
@@ -114,6 +142,10 @@ export class ShaclValidator {
     value: string | number | boolean,
     targetClass?: string
   ): Promise<ShaclValidationResult> {
+    const cacheKey = makeCacheKey(propertyIri, value, targetClass)
+    const cached = this.resultCache.get(cacheKey)
+    if (cached) return cached
+
     const candidates = targetClass
       ? [targetClass]
       : (this.propertyToTargetClass.get(propertyIri) ?? [])
@@ -122,7 +154,9 @@ export class ShaclValidator {
     // This is informational (not a failure) — caller decides whether unknown
     // properties should fall back to looser handling.
     if (candidates.length === 0) {
-      return { conforms: true, violations: [] }
+      const empty: ShaclValidationResult = { conforms: true, violations: [] }
+      this.resultCache.set(cacheKey, empty)
+      return empty
     }
 
     const allViolations: ShaclViolation[] = []
@@ -137,6 +171,7 @@ export class ShaclValidator {
     // sh:resultPath matches the property under test.
     for (const cls of candidates) {
       const candidate = buildCandidateDataset(propertyIri, value, cls)
+      this.engineCallCount++
       const report = await this.validator.validate(candidate)
       const relevant = report.results
         .map((r) => toViolation(r))
@@ -150,14 +185,124 @@ export class ShaclValidator {
       allViolations.push(...relevant)
     }
 
-    return anyConforms
+    const result: ShaclValidationResult = anyConforms
       ? { conforms: true, violations: [] }
       : { conforms: false, violations: allViolations }
+    this.resultCache.set(cacheKey, result)
+    return result
+  }
+
+  /**
+   * Batch-validate many candidate values for one property in a single SHACL
+   * engine call. Generic — used for any array-valued slot.
+   *
+   * The performance win: rdf-validate-shacl's `validate()` walks the entire
+   * shapes graph each call. A 27-element array under sequential validation
+   * pays that cost 27 times (~80s on the ENVITED-X ontology). Batching pays
+   * it once (~3s).
+   *
+   * Semantics match `validateValue`: a value conforms iff it conforms under
+   * at least one target class. Already-cached values are returned directly
+   * and excluded from the SHACL call.
+   *
+   * @returns Map keyed by the stringified value.
+   */
+  async validateValues(
+    propertyIri: string,
+    values: ReadonlyArray<string | number | boolean>,
+    targetClass?: string
+  ): Promise<Map<string, ShaclValidationResult>> {
+    const out = new Map<string, ShaclValidationResult>()
+    // De-dup early so identical entries never hit the engine twice.
+    const uniq = [...new Set(values.map(String))]
+
+    // Cache lookup.
+    const stillNeeded: string[] = []
+    for (const v of uniq) {
+      const cacheKey = makeCacheKey(propertyIri, v, targetClass)
+      const cached = this.resultCache.get(cacheKey)
+      if (cached) out.set(v, cached)
+      else stillNeeded.push(v)
+    }
+    if (stillNeeded.length === 0) return out
+
+    const candidates = targetClass
+      ? [targetClass]
+      : (this.propertyToTargetClass.get(propertyIri) ?? [])
+
+    // No shape applies — every uncached value passes vacuously.
+    if (candidates.length === 0) {
+      for (const v of stillNeeded) {
+        const ok: ShaclValidationResult = { conforms: true, violations: [] }
+        out.set(v, ok)
+        this.resultCache.set(makeCacheKey(propertyIri, v, targetClass), ok)
+      }
+      return out
+    }
+
+    // Per-target-class iteration: a value conforms iff it conforms under at
+    // least one. We collect accumulated violations as we cross-check classes.
+    const accumulatedViolations = new Map<string, ShaclViolation[]>()
+    const conformed = new Set<string>()
+
+    for (const cls of candidates) {
+      const unresolved = stillNeeded.filter((v) => !conformed.has(v))
+      if (unresolved.length === 0) break
+
+      const { dataset, valueToFocusIri } = buildBatchCandidateDataset(propertyIri, unresolved, cls)
+      this.engineCallCount++
+      const report = await this.validator.validate(dataset)
+
+      // Partition violations by focus node IRI, filtering to the path of
+      // interest (sibling shapes on the node shape are noise here).
+      const violationsByFocus = new Map<string, ShaclViolation[]>()
+      for (const r of report.results) {
+        const v = toViolation(r)
+        if (v.path !== propertyIri) continue
+        const focusIri = r.focusNode?.value
+        if (!focusIri) continue
+        const bucket = violationsByFocus.get(focusIri) ?? []
+        bucket.push(v)
+        violationsByFocus.set(focusIri, bucket)
+      }
+
+      for (const value of unresolved) {
+        const focusIri = valueToFocusIri.get(value)
+        if (!focusIri) continue
+        const vs = violationsByFocus.get(focusIri)
+        if (!vs || vs.length === 0) {
+          conformed.add(value)
+        } else {
+          const prev = accumulatedViolations.get(value) ?? []
+          accumulatedViolations.set(value, [...prev, ...vs])
+        }
+      }
+    }
+
+    // Finalize: write outcomes to both the result map and the cache.
+    for (const value of stillNeeded) {
+      const result: ShaclValidationResult = conformed.has(value)
+        ? { conforms: true, violations: [] }
+        : { conforms: false, violations: accumulatedViolations.get(value) ?? [] }
+      out.set(value, result)
+      this.resultCache.set(makeCacheKey(propertyIri, value, targetClass), result)
+    }
+    return out
   }
 
   /** Property IRIs covered by at least one SHACL property shape. */
   knownProperties(): string[] {
     return [...this.propertyToTargetClass.keys()]
+  }
+
+  /**
+   * Whether `slotKey` (a property *local name*) matches at least one SHACL
+   * property shape in the loaded ontology. Used by the slot validator to
+   * drop filter keys the LLM invented (e.g. `numberLanes` when the ontology
+   * has no such property) before they reach the SPARQL compiler.
+   */
+  isKnownSlotKey(slotKey: string): boolean {
+    return this.resolveSlotIris(slotKey).length > 0
   }
 
   /**
@@ -212,6 +357,48 @@ export class ShaclValidator {
       }
     }
     return { conforms: allConform, violations: allViolations, resolvedIris: iris }
+  }
+
+  /**
+   * Batch counterpart of `validateBySlotName`. Validates an array of values
+   * against every property IRI that the slot key resolves to, in a single
+   * SHACL pass per IRI. Returns one entry per input value.
+   *
+   * Semantics: a value conforms iff it conforms under every resolved IRI
+   * (same rule as the single-value method, applied element-wise).
+   */
+  async validateBySlotNameBatch(
+    slotKey: string,
+    values: ReadonlyArray<string | number | boolean>
+  ): Promise<Map<string, ShaclValidationResult & { resolvedIris: string[] }>> {
+    const iris = this.resolveSlotIris(slotKey)
+    const out = new Map<string, ShaclValidationResult & { resolvedIris: string[] }>()
+
+    if (iris.length === 0) {
+      for (const v of values) {
+        out.set(String(v), { conforms: true, violations: [], resolvedIris: [] })
+      }
+      return out
+    }
+
+    // One batch validation per IRI; intersect outcomes per value.
+    const perIri = await Promise.all(iris.map((iri) => this.validateValues(iri, values)))
+
+    for (const v of values) {
+      const key = String(v)
+      let conforms = true
+      const violations: ShaclViolation[] = []
+      for (const m of perIri) {
+        const r = m.get(key)
+        if (!r) continue
+        if (!r.conforms) {
+          conforms = false
+          violations.push(...r.violations)
+        }
+      }
+      out.set(key, { conforms, violations, resolvedIris: iris })
+    }
+    return out
   }
 }
 
@@ -385,6 +572,52 @@ function buildCandidateDataset(
   ds.add(quad(subject, rdfType, namedNode(targetClass)))
   ds.add(quad(subject, namedNode(propertyIri), toLiteralOrIri(value)))
   return ds
+}
+
+/**
+ * Build a single dataset containing one named focus node per candidate value.
+ * Named (rather than blank) so the resulting `ValidationReport.results[].focusNode`
+ * carries a stable IRI we can map back to the original value.
+ *
+ *   <urn:shacl-validator:candidate:0> a <Class> ; <prop> "DE" .
+ *   <urn:shacl-validator:candidate:1> a <Class> ; <prop> "europe" .
+ *   ...
+ *
+ * The `urn:shacl-validator:` prefix is internal — user-supplied values are
+ * never named nodes themselves (we only validate literal slot values), so
+ * there is no collision risk.
+ */
+const FOCUS_IRI_PREFIX = 'urn:shacl-validator:candidate:'
+
+function buildBatchCandidateDataset(
+  propertyIri: string,
+  values: ReadonlyArray<string | number | boolean>,
+  targetClass: string
+): { dataset: DatasetCore; valueToFocusIri: Map<string, string> } {
+  const ds = datasetFactory.dataset()
+  const rdfType = namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+  const cls = namedNode(targetClass)
+  const propNode = namedNode(propertyIri)
+  const valueToFocusIri = new Map<string, string>()
+
+  values.forEach((value, idx) => {
+    const focusIri = `${FOCUS_IRI_PREFIX}${idx}`
+    const focus = namedNode(focusIri)
+    ds.add(quad(focus, rdfType, cls))
+    ds.add(quad(focus, propNode, toLiteralOrIri(value)))
+    valueToFocusIri.set(String(value), focusIri)
+  })
+
+  return { dataset: ds, valueToFocusIri }
+}
+
+/** Stable cache key for a (propertyIri, value, targetClass) triple. */
+function makeCacheKey(
+  propertyIri: string,
+  value: string | number | boolean,
+  targetClass?: string
+): string {
+  return `${propertyIri} ${typeof value}:${String(value)} ${targetClass ?? ''}`
 }
 
 function toLiteralOrIri(value: string | number | boolean): NamedNode | ReturnType<typeof literal> {

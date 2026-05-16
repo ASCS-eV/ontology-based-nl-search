@@ -119,3 +119,38 @@ describe('buildSystemPrompt (SHACL-based)', () => {
     expect(prompt).toContain('roadTypes')
   })
 })
+
+describe('buildSystemPrompt — region-expansion guidance (R5)', () => {
+  /**
+   * R5: The prompt MUST tell the LLM to expand a region / continent /
+   * multi-country expression into an explicit array of values, with at
+   * least one concrete example. Without this guidance the LLM silently
+   * shimmed "europe" to a single country (the original regression).
+   *
+   * Assertions are on STABLE substrings only — never the full prompt — so
+   * future copy-edits don't break unrelated tests.
+   */
+  it('contains the multi-country region guidance heading', () => {
+    const prompt = buildSystemPrompt(mockShaclContent)
+    expect(prompt).toMatch(/Always emit an array when the user expresses a region/i)
+  })
+
+  it('shows an ISO-3166 array example with at least two countries', () => {
+    const prompt = buildSystemPrompt(mockShaclContent)
+    // The example must demonstrate the array-syntax shape with multiple ISO
+    // codes; the specific set is allowed to evolve.
+    expect(prompt).toMatch(/country:\s*\[/)
+    expect(prompt).toMatch(/\[\s*"DE"\s*,\s*"FR"/)
+  })
+
+  it('explicitly forbids silent single-country substitution', () => {
+    const prompt = buildSystemPrompt(mockShaclContent)
+    // The prompt may wrap the sentence across lines — match through whitespace.
+    expect(prompt).toMatch(/do NOT silently\s+substitute one country for a region/i)
+  })
+
+  it('mentions the SHACL gate as the validator of choice for elements', () => {
+    const prompt = buildSystemPrompt(mockShaclContent)
+    expect(prompt).toMatch(/SHACL gate validates every element/i)
+  })
+})

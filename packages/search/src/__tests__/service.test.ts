@@ -189,4 +189,47 @@ describe('SearchService.searchRefine', () => {
 
     await expect(service.searchRefine({ slots })).rejects.toThrow('Unknown domain: foobar')
   })
+
+  /**
+   * R4: When a `validateSlots` dependency is configured, `searchRefine` MUST
+   * run it BEFORE compileSlots, and compileSlots MUST receive the validator's
+   * output (not the raw caller input). This is the defense-in-depth gate
+   * that prevents a refine caller from bypassing SHACL validation.
+   */
+  it('applies validateSlots before compileSlots (R4)', async () => {
+    const validateSlots = vi.fn(async (s: typeof slots) => ({
+      ...s,
+      // Pretend the validator dropped a previously-present unknown property
+      // and stripped a bad location value.
+      filters: { ...s.filters }, // unchanged
+      location: undefined,
+    }))
+    const deps = createMockDeps({ validateSlots })
+    const service = new SearchService(deps)
+
+    // Call with a "tainted" location field the validator should strip.
+    const tainted = { ...slots, location: { country: 'europe' } }
+    await service.searchRefine({ slots: tainted })
+
+    expect(validateSlots).toHaveBeenCalledTimes(1)
+    expect(validateSlots).toHaveBeenCalledWith(tainted)
+
+    // compileSlots must receive the validator's RESULT, not the raw input.
+    const compiled = (deps.compileSlots as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
+    expect(compiled.location).toBeUndefined()
+  })
+
+  /**
+   * R4 (negative path): when no `validateSlots` is configured, `searchRefine`
+   * MUST forward the slots to compileSlots unchanged — the dep is optional
+   * and tests / library consumers may inject their own gates.
+   */
+  it('forwards slots unchanged when validateSlots is not configured (R4)', async () => {
+    const deps = createMockDeps() // no validateSlots
+    const service = new SearchService(deps)
+
+    await service.searchRefine({ slots })
+
+    expect(deps.compileSlots).toHaveBeenCalledWith(slots)
+  })
 })

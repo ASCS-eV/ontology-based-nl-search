@@ -39,6 +39,7 @@ import { buildSystemPrompt } from '../prompt-builder.js'
 import {
   correctDomains,
   correctFilters,
+  validateRangesAgainstShacl,
   validateSlots,
   validateSlotsAgainstShacl,
 } from '../slot-validator.js'
@@ -50,7 +51,12 @@ interface SlotSubmission {
     domains?: string[]
     filters?: Record<string, string | string[]>
     ranges?: Record<string, { min?: number; max?: number }>
-    location?: { country?: string; state?: string; region?: string; city?: string }
+    location?: {
+      country?: string | string[]
+      state?: string | string[]
+      region?: string | string[]
+      city?: string | string[]
+    }
     license?: string
   }
   interpretation: LlmStructuredResponse['interpretation']
@@ -136,10 +142,21 @@ function buildPersistentSubmitSlotsTool() {
             location: {
               type: 'object',
               properties: {
-                country: { type: 'string' },
-                state: { type: 'string' },
-                region: { type: 'string' },
-                city: { type: 'string' },
+                // Each field accepts string or array — use an array to express
+                // a region/continent as the explicit list of country codes it
+                // covers. Never silently substitute one country for a region.
+                country: {
+                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+                },
+                state: {
+                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+                },
+                region: {
+                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+                },
+                city: {
+                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+                },
               },
             },
             license: { type: 'string' },
@@ -310,11 +327,12 @@ export async function runCopilotAgent(
       shacl,
       vocabulary
     )
-    const ranges = result.slots.ranges ?? {}
+    // Drop ranges whose key is not in the ontology (e.g. invented `numberLanes`).
+    const rangeResult = validateRangesAgainstShacl(result.slots.ranges ?? {}, shacl)
     const correctedDomains = correctDomains(
       result.slots.domains ?? [targetDomain],
       shaclResult.filters,
-      ranges,
+      rangeResult.ranges,
       vocabulary
     )
     endValidation()
@@ -322,7 +340,7 @@ export async function runCopilotAgent(
     const slots: SearchSlots = {
       domains: correctedDomains,
       filters: shaclResult.filters,
-      ranges,
+      ranges: rangeResult.ranges,
       location: shaclResult.location,
       license: shaclResult.license,
     }
@@ -333,7 +351,7 @@ export async function runCopilotAgent(
 
     const rawResponse: LlmStructuredResponse = {
       interpretation: result.interpretation,
-      gaps: [...result.gaps, ...shaclResult.gaps],
+      gaps: [...result.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
       sparql,
     }
 
