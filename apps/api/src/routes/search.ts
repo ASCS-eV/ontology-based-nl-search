@@ -33,7 +33,7 @@ export const searchRoutes = new Hono<AppEnv>()
  * Streaming search: SSE endpoint that progressively sends results.
  */
 searchRoutes.post('/stream', (c) => {
-  const requestId = c.get('requestId') as string
+  const requestId = c.get('requestId')
   const streamLogger = new RequestLogger({ requestId })
 
   // Compose two abort sources into a single signal that propagates to the
@@ -83,7 +83,7 @@ searchRoutes.post('/stream', (c) => {
           data: JSON.stringify({ phase: 'interpreting', message: 'Interpreting query…' }),
         })
 
-        const result = await searchNl({ query, signal: controller.signal })
+        const result = await searchNl({ query, signal: controller.signal, requestId })
 
         if (controller.signal.aborted) return
 
@@ -135,7 +135,7 @@ searchRoutes.post('/stream', (c) => {
  * Refine endpoint: takes pre-filled slots, compiles SPARQL, executes.
  */
 searchRoutes.post('/refine', async (c) => {
-  const requestId = c.get('requestId') as string
+  const requestId = c.get('requestId')
   const logger = new RequestLogger({ requestId })
 
   let body: unknown
@@ -160,7 +160,11 @@ searchRoutes.post('/refine', async (c) => {
 
   try {
     logger.info('Refine search started', { slots: parseResult.data })
-    const result = await searchRefine({ slots: parseResult.data, signal: c.req.raw.signal })
+    const result = await searchRefine({
+      slots: parseResult.data,
+      signal: c.req.raw.signal,
+      requestId,
+    })
 
     if (result.execution.error) {
       logger.warn('Refine query failed', { error: result.execution.error })

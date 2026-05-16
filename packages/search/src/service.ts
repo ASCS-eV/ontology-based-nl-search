@@ -86,12 +86,21 @@ export interface NlSearchOptions {
   query: string
   domain?: string
   signal?: AbortSignal
+  /**
+   * Correlation id from the upstream HTTP middleware. When supplied, the
+   * service adopts it so the requestId in response headers, SSE meta
+   * events, and server-side logs all match. When omitted (CLI / library
+   * use), a fresh id is generated.
+   */
+  requestId?: string
 }
 
 /** Options for a refine (slot-based) search */
 export interface RefineOptions {
   slots: SearchSlots
   signal?: AbortSignal
+  /** See {@link NlSearchOptions.requestId}. */
+  requestId?: string
 }
 
 // ─── Service Implementation ──────────────────────────────────────────────────
@@ -120,7 +129,7 @@ export class SearchService {
    */
   async searchNl(options: NlSearchOptions): Promise<SearchResult> {
     const { query, domain, signal } = options
-    const requestId = generateRequestId()
+    const requestId = options.requestId ?? generateRequestId()
     const logger = new RequestLogger({ requestId, query })
 
     // Ensure store is ready
@@ -170,7 +179,7 @@ export class SearchService {
    */
   async searchRefine(options: RefineOptions): Promise<RefineResult> {
     const { slots, signal } = options
-    const requestId = generateRequestId()
+    const requestId = options.requestId ?? generateRequestId()
     const logger = new RequestLogger({ requestId })
 
     // SHACL validation — defense-in-depth gate for callers that bypass the

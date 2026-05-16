@@ -120,6 +120,41 @@ describe('POST /search/stream', () => {
     controller.abort()
     expect(passedSignal.aborted).toBe(true)
   })
+
+  /**
+   * Regression for task 03: the middleware generates a requestId, sets it
+   * on the context, AND returns it in the x-request-id response header.
+   * The service used to ignore that and regenerate its own id, so the
+   * header value and the SSE meta value were different. The fix threads
+   * the middleware id through searchNl({ requestId }); this test asserts
+   * both ends of that wire match the same id.
+   */
+  it('returns a response x-request-id that matches the requestId passed to searchNl', async () => {
+    const { searchNl } = await import('../search-factory.js')
+    vi.mocked(searchNl).mockImplementation(
+      async (opts) =>
+        ({
+          // Echo the requestId the route passed in so the test can compare it
+          // against the response header.
+          interpretation: { query: 'test', intent: 'search', domains: ['hdmap'] },
+          gaps: [],
+          sparql: 'SELECT * WHERE { ?s ?p ?o }',
+          execution: { results: [], error: undefined },
+          meta: { matchCount: 0, executionTimeMs: 10, requestId: opts.requestId },
+        }) as never
+    )
+
+    const res = await app.request('/search/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'test' }),
+    })
+    await res.text()
+
+    const headerId = res.headers.get('x-request-id')
+    expect(headerId).toBeTruthy()
+    expect(vi.mocked(searchNl).mock.lastCall?.[0].requestId).toBe(headerId)
+  })
 })
 
 describe('POST /search/refine', () => {
@@ -189,6 +224,32 @@ describe('POST /search/refine', () => {
         signal: expect.any(AbortSignal),
       })
     )
+  })
+
+  /**
+   * Same correlation invariant as /stream — the response header and the
+   * requestId the route passed to searchRefine must be the same value.
+   */
+  it('returns a response x-request-id that matches the requestId passed to searchRefine', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(searchRefine).mockImplementation(
+      async (opts) =>
+        ({
+          sparql: 'SELECT * WHERE { ?s ?p ?o }',
+          execution: { results: [], error: undefined },
+          meta: { matchCount: 0, executionTimeMs: 10, requestId: opts.requestId },
+        }) as never
+    )
+
+    const res = await app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slots: { domains: ['hdmap'] } }),
+    })
+
+    const headerId = res.headers.get('x-request-id')
+    expect(headerId).toBeTruthy()
+    expect(vi.mocked(searchRefine).mock.lastCall?.[0].requestId).toBe(headerId)
   })
 })
 
