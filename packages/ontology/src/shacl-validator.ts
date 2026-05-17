@@ -20,19 +20,16 @@
  * @see https://www.w3.org/TR/shacl/
  * @see https://github.com/zazuko/rdf-validate-shacl
  */
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
 
 import datasetFactory from '@rdfjs/dataset'
 import type { DatasetCore, NamedNode, Quad, Term } from '@rdfjs/types'
 import { DataFactory, Parser } from 'n3'
 import SHACLValidator from 'rdf-validate-shacl'
 
-const { namedNode, blankNode, literal, quad } = DataFactory
+import { discoverShapeFiles } from './sources.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const { namedNode, blankNode, literal, quad } = DataFactory
 
 /** SHACL constraint component IRIs we surface in violation messages. */
 const SH_NS = 'http://www.w3.org/ns/shacl#'
@@ -423,7 +420,7 @@ function loadShapesFromDisk(): DatasetCore {
   const ds = datasetFactory.dataset()
   const parser = new Parser()
 
-  for (const filePath of discoverShapeFiles()) {
+  for (const { path: filePath } of discoverShapeFiles({ includeOwl: true })) {
     const turtle = readFileSync(filePath, 'utf-8')
     try {
       const quads = parser.parse(turtle)
@@ -434,67 +431,6 @@ function loadShapesFromDisk(): DatasetCore {
   }
 
   return ds
-}
-
-/**
- * Resolve workspace root by walking up from this file. Honours ONTOLOGY_ROOT
- * (the same env var used by schema-loader) so test fixtures can override it.
- */
-function findWorkspaceRoot(): string {
-  if (process.env['ONTOLOGY_ROOT']) return process.env['ONTOLOGY_ROOT']
-
-  let dir = join(__dirname, '..', '..', '..')
-  while (dir !== dirname(dir)) {
-    if (existsSync(join(dir, 'pnpm-workspace.yaml'))) return dir
-    dir = dirname(dir)
-  }
-  return process.cwd()
-}
-
-/** Read ontology-sources.json for the artefact roots. */
-function getArtifactRoots(): string[] {
-  const root = findWorkspaceRoot()
-  const configPath = join(root, 'ontology-sources.json')
-
-  if (existsSync(configPath)) {
-    try {
-      const config = JSON.parse(readFileSync(configPath, 'utf-8'))
-      const sources = config.sources || []
-      return sources.map((s: { path: string }) => join(root, s.path))
-    } catch {
-      // fall through
-    }
-  }
-
-  return [
-    join(
-      root,
-      'submodules',
-      'hd-map-asset-example',
-      'submodules',
-      'sl-5-8-asset-tools',
-      'submodules',
-      'ontology-management-base',
-      'artifacts'
-    ),
-  ]
-}
-
-function discoverShapeFiles(): string[] {
-  const results: string[] = []
-  for (const root of getArtifactRoots()) {
-    if (!existsSync(root)) continue
-    for (const entry of readdirSync(root)) {
-      const domainDir = join(root, entry)
-      if (!statSync(domainDir).isDirectory()) continue
-      for (const file of readdirSync(domainDir)) {
-        if (file.endsWith('.shacl.ttl') || file.endsWith('.owl.ttl')) {
-          results.push(join(domainDir, file))
-        }
-      }
-    }
-  }
-  return results
 }
 
 // ─── Internal: property → target class index ─────────────────────────────────
