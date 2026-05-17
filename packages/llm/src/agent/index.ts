@@ -1,5 +1,4 @@
 import { Stopwatch } from '@ontology-search/core/logging'
-import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import {
   extractVocabulary,
   getInitializedStore,
@@ -12,14 +11,8 @@ import { generateText, stepCountIs } from 'ai'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
 import { getModel } from '../provider.js'
-import {
-  correctDomains,
-  correctFilters,
-  validateRangesAgainstShacl,
-  validateSlots,
-  validateSlotsAgainstShacl,
-} from '../slot-validator.js'
 import type { LlmStructuredResponse } from '../types.js'
+import { runSlotPipeline } from './run-slot-pipeline.js'
 import { agentTools, type SlotSubmissionParams } from './tools.js'
 
 /**
@@ -97,53 +90,13 @@ export async function runSparqlAgent(
 
   if (submitCall) {
     const answer = submitCall.output as SlotSubmissionParams
-
-    const endValidation = sw.time('post-llm-validation')
-    // 1. Fuzzy match: case / typo correction against sh:in enums.
-    const fuzzedFilters = correctFilters(answer.slots.filters ?? {}, vocabulary)
-    // 2. SHACL gate: enforces every Core constraint declared in the shapes
-    // graph (sh:pattern, sh:datatype, …) on filters, location, and license.
-    // Values that fail are dropped from slots and emitted as gaps.
-    const shacl = await ShaclValidator.fromWorkspace()
-    const shaclResult = await validateSlotsAgainstShacl(
-      fuzzedFilters,
-      answer.slots.location,
-      answer.slots.license,
-      shacl,
-      vocabulary
-    )
-    // Ranges go through their own check: numeric values always pass SHACL
-    // datatype constraints, so we only need to confirm the property name
-    // is known. Hallucinated keys (e.g. `numberLanes`) are dropped here.
-    const rangeResult = validateRangesAgainstShacl(answer.slots.ranges ?? {}, shacl)
-    const correctedDomains = correctDomains(
-      answer.slots.domains ?? [targetDomain],
-      shaclResult.filters,
-      rangeResult.ranges,
-      vocabulary
-    )
-    endValidation()
-
-    const slots: SearchSlots = {
-      domains: correctedDomains,
-      filters: shaclResult.filters,
-      ranges: rangeResult.ranges,
-      location: shaclResult.location,
-      license: shaclResult.license,
-    }
-
-    const endCompile = sw.time('sparql-compile')
-    const sparql = await compileSlots(slots)
-    endCompile()
-
-    const rawResponse: LlmStructuredResponse = {
-      interpretation: answer.interpretation,
-      gaps: [...answer.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
-      sparql,
-    }
-
-    const validated = validateSlots(rawResponse, vocabulary)
-    return { ...validated, timings: sw.getTimings() }
+    const response = await runSlotPipeline({
+      submission: answer,
+      vocabulary,
+      targetDomain,
+      sw,
+    })
+    return { ...response, timings: sw.getTimings() }
   }
 
   // Fallback: LLM didn't call the tool — return broad search

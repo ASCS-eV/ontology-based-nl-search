@@ -27,7 +27,6 @@ import { randomUUID } from 'node:crypto'
 import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
-import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import {
   extractVocabulary,
   getInitializedStore,
@@ -38,15 +37,9 @@ import { getShaclContent } from '@ontology-search/search/shacl-reader'
 import type { SearchSlots } from '@ontology-search/search/slots'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
-import {
-  correctDomains,
-  correctFilters,
-  validateRangesAgainstShacl,
-  validateSlots,
-  validateSlotsAgainstShacl,
-} from '../slot-validator.js'
 import type { LlmStructuredResponse } from '../types.js'
 import type { AgentOptions } from './index.js'
+import { runSlotPipeline } from './run-slot-pipeline.js'
 import { renderTokenDirective, type Submission, SubmissionRouter } from './submission-router.js'
 
 // ─── Persistent Session Pool ─────────────────────────────────────────────────
@@ -353,48 +346,13 @@ export async function runCopilotAgent(
   }
 
   if (submissionRef.value) {
-    const result = submissionRef.value
-
-    const endValidation = sw.time('post-llm-validation')
-    const fuzzedFilters = correctFilters(result.slots.filters ?? {}, vocabulary)
-    const shacl = await ShaclValidator.fromWorkspace()
-    const shaclResult = await validateSlotsAgainstShacl(
-      fuzzedFilters,
-      result.slots.location,
-      result.slots.license,
-      shacl,
-      vocabulary
-    )
-    // Drop ranges whose key is not in the ontology (e.g. invented `numberLanes`).
-    const rangeResult = validateRangesAgainstShacl(result.slots.ranges ?? {}, shacl)
-    const correctedDomains = correctDomains(
-      result.slots.domains ?? [targetDomain],
-      shaclResult.filters,
-      rangeResult.ranges,
-      vocabulary
-    )
-    endValidation()
-
-    const slots: SearchSlots = {
-      domains: correctedDomains,
-      filters: shaclResult.filters,
-      ranges: rangeResult.ranges,
-      location: shaclResult.location,
-      license: shaclResult.license,
-    }
-
-    const endCompile = sw.time('sparql-compile')
-    const sparql = await compileSlots(slots)
-    endCompile()
-
-    const rawResponse: LlmStructuredResponse = {
-      interpretation: result.interpretation,
-      gaps: [...result.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
-      sparql,
-    }
-
-    const validated = validateSlots(rawResponse, vocabulary)
-    return { ...validated, timings: sw.getTimings() }
+    const response = await runSlotPipeline({
+      submission: submissionRef.value,
+      vocabulary,
+      targetDomain,
+      sw,
+    })
+    return { ...response, timings: sw.getTimings() }
   }
 
   // Fallback: LLM didn't call the tool — return broad search
