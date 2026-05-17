@@ -23,6 +23,11 @@
       "types": "./src/shacl-validator.ts",
       "import": "./dist/shacl-validator.js",
       "default": "./dist/shacl-validator.js"
+    },
+    "./sources": {
+      "types": "./src/sources.ts",
+      "import": "./dist/sources.js",
+      "default": "./dist/sources.js"
     }
   },
   "scripts": {

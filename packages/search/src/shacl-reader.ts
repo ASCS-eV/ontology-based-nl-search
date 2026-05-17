@@ -9,12 +9,9 @@
  * Domains excluded:
  * - gx: 2.3 MB file, only 7 properties used by envited-x (which re-declares them)
  */
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
-import { basename, dirname, join } from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+import { discoverShapeFiles } from '@ontology-search/ontology/sources'
+import { readFileSync } from 'fs'
+import { basename } from 'path'
 
 /** A single SHACL file's content with its domain metadata */
 export interface ShaclDomainContent {
@@ -39,85 +36,26 @@ export interface ShaclDomainContent {
 const EXCLUDED_DOMAINS = new Set(['gx'])
 
 /**
- * Resolve workspace root by walking up from this package.
- */
-function findWorkspaceRoot(): string {
-  if (process.env['ONTOLOGY_ROOT']) return process.env['ONTOLOGY_ROOT']
-
-  let dir = join(__dirname, '..', '..', '..')
-  while (dir !== dirname(dir)) {
-    if (existsSync(join(dir, 'pnpm-workspace.yaml'))) return dir
-    dir = dirname(dir)
-  }
-  return process.cwd()
-}
-
-/**
- * Get ontology artifact root directories from ontology-sources.json.
- */
-function getArtifactRoots(): string[] {
-  const root = findWorkspaceRoot()
-  const configPath = join(root, 'ontology-sources.json')
-
-  if (existsSync(configPath)) {
-    try {
-      const config = JSON.parse(readFileSync(configPath, 'utf-8'))
-      const sources = config.sources || []
-      return sources.map((s: { path: string }) => join(root, s.path))
-    } catch {
-      // Fall through to default
-    }
-  }
-
-  return [
-    join(
-      root,
-      'submodules',
-      'hd-map-asset-example',
-      'submodules',
-      'sl-5-8-asset-tools',
-      'submodules',
-      'ontology-management-base',
-      'artifacts'
-    ),
-  ]
-}
-
-/**
  * Read all SHACL files from ontology sources, excluding oversized domains.
  *
  * Returns an array of domain content objects sorted by domain name.
  * Each entry contains the raw Turtle content of the .shacl.ttl file.
  */
 export function readShaclFiles(): ShaclDomainContent[] {
-  const roots = getArtifactRoots()
+  const files = discoverShapeFiles({ exclude: EXCLUDED_DOMAINS })
   const results: ShaclDomainContent[] = []
 
-  for (const root of roots) {
-    if (!existsSync(root)) continue
-
-    for (const entry of readdirSync(root)) {
-      if (EXCLUDED_DOMAINS.has(entry)) continue
-
-      const domainDir = join(root, entry)
-      if (!statSync(domainDir).isDirectory()) continue
-
-      for (const file of readdirSync(domainDir)) {
-        if (!file.endsWith('.shacl.ttl')) continue
-
-        const filePath = join(domainDir, file)
-        try {
-          const content = readFileSync(filePath, 'utf-8')
-          results.push({
-            domain: entry,
-            content,
-            fileName: file,
-            sizeBytes: Buffer.byteLength(content, 'utf-8'),
-          })
-        } catch (err) {
-          console.warn(`[shacl-reader] Failed to read ${basename(filePath)}: ${err}`)
-        }
-      }
+  for (const { path: filePath, domain } of files) {
+    try {
+      const content = readFileSync(filePath, 'utf-8')
+      results.push({
+        domain,
+        content,
+        fileName: basename(filePath),
+        sizeBytes: Buffer.byteLength(content, 'utf-8'),
+      })
+    } catch (err) {
+      console.warn(`[shacl-reader] Failed to read ${basename(filePath)}: ${err}`)
     }
   }
 

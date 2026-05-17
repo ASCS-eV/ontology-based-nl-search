@@ -14,7 +14,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 
-import { getProjectRoot } from './paths.js'
+import { getArtifactRoots } from './sources.js'
 
 /** Metadata for a single ontology domain (e.g., hdmap, scenario) */
 export interface DomainDescriptor {
@@ -66,36 +66,6 @@ const SHARED_PREFIXES: Record<string, string> = {
 
 /** Cached singleton */
 let cachedRegistry: DomainRegistry | null = null
-
-/**
- * Get artifact roots from ontology-sources.json configuration.
- */
-function getArtifactRoots(): string[] {
-  const configPath = join(getProjectRoot(), 'ontology-sources.json')
-
-  if (existsSync(configPath)) {
-    try {
-      const config = JSON.parse(readFileSync(configPath, 'utf-8'))
-      const sources = config.sources || []
-      return sources.map((s: { path: string }) => join(getProjectRoot(), s.path))
-    } catch {
-      // Fall through to default
-    }
-  }
-
-  return [
-    join(
-      getProjectRoot(),
-      'submodules',
-      'hd-map-asset-example',
-      'submodules',
-      'sl-5-8-asset-tools',
-      'submodules',
-      'ontology-management-base',
-      'artifacts'
-    ),
-  ]
-}
 
 /**
  * Extract namespace IRI from an OWL or SHACL TTL file by finding the ontology declaration

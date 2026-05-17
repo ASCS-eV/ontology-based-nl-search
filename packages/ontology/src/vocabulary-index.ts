@@ -12,11 +12,10 @@
  *
  * @see https://www.w3.org/TR/shacl/#InConstraintComponent
  */
-import { getConfig } from '@ontology-search/core/config'
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
-import { basename, join } from 'path'
+import { readFileSync } from 'fs'
+import { basename } from 'path'
 
-import { getProjectRoot } from './paths.js'
+import { discoverShapeFiles } from './sources.js'
 
 /** Oxigraph RDF term (subset of RDF/JS Term) */
 interface RdfTerm {
@@ -53,72 +52,8 @@ export interface VocabularyIndex {
   domains: string[]
 }
 
-/**
- * Root paths for ontology artifacts.
- * Reads from `ontology-sources.json` config at project root.
- * Each source directory contains domain subdirectories with *.shacl.ttl files.
- */
-function getArtifactRoots(): string[] {
-  const configPath = join(getProjectRoot(), 'ontology-sources.json')
-
-  if (existsSync(configPath)) {
-    try {
-      const config = JSON.parse(readFileSync(configPath, 'utf-8'))
-      const sources = config.sources || []
-      return sources.map((s: { path: string }) => join(getProjectRoot(), s.path))
-    } catch {
-      // Fall through to default
-    }
-  }
-
-  // Fallback: env var or default path
-  const config = getConfig()
-  if (config.ONTOLOGY_ARTIFACTS_PATH) {
-    return [config.ONTOLOGY_ARTIFACTS_PATH]
-  }
-
-  return [
-    join(
-      getProjectRoot(),
-      'submodules',
-      'hd-map-asset-example',
-      'submodules',
-      'sl-5-8-asset-tools',
-      'submodules',
-      'ontology-management-base',
-      'artifacts'
-    ),
-  ]
-}
-
 /** Cached singleton */
 let cachedIndex: VocabularyIndex | null = null
-
-/**
- * Auto-discover all *.shacl.ttl files across all configured ontology source directories.
- * Each subdirectory represents a domain (hdmap, georeference, scenario, etc.)
- */
-function discoverShaclFiles(): { path: string; domain: string }[] {
-  const roots = getArtifactRoots()
-  const results: { path: string; domain: string }[] = []
-
-  for (const root of roots) {
-    if (!existsSync(root)) continue
-
-    for (const entry of readdirSync(root)) {
-      const domainDir = join(root, entry)
-      if (!statSync(domainDir).isDirectory()) continue
-
-      for (const file of readdirSync(domainDir)) {
-        if (file.endsWith('.shacl.ttl')) {
-          results.push({ path: join(domainDir, file), domain: entry })
-        }
-      }
-    }
-  }
-
-  return results
-}
 
 /**
  * Build the vocabulary index by parsing all SHACL shapes found in artifacts.
@@ -133,7 +68,7 @@ export async function buildVocabularyIndex(): Promise<VocabularyIndex> {
   const oxigraph = await import('oxigraph')
   const store = new oxigraph.Store()
 
-  const shaclFiles = discoverShaclFiles()
+  const shaclFiles = discoverShapeFiles()
   const domains: string[] = []
 
   for (const { path: shaclPath, domain } of shaclFiles) {
