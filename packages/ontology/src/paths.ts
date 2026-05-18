@@ -1,3 +1,4 @@
+import { getConfig } from '@ontology-search/core/config'
 import { existsSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
@@ -7,13 +8,13 @@ const __dirname = dirname(__filename)
 
 /**
  * Get the workspace root directory.
- * Strategy: walk up from this package's source to find pnpm-workspace.yaml.
- * Fallback: ONTOLOGY_ROOT env var, then process.cwd().
+ * Strategy: read ONTOLOGY_ROOT from the validated config, then walk up
+ * from this package's source to find pnpm-workspace.yaml, then walk up
+ * from cwd as a last resort.
  */
 export function getProjectRoot(): string {
-  if (process.env['ONTOLOGY_ROOT']) {
-    return process.env['ONTOLOGY_ROOT']
-  }
+  const override = getConfig().ONTOLOGY_ROOT
+  if (override) return override
 
   // From packages/ontology/src/ → workspace root is ../../..
   const fromPackage = join(__dirname, '..', '..', '..')

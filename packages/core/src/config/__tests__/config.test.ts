@@ -95,4 +95,63 @@ describe('config', () => {
 
     expect(() => getConfig()).not.toThrow()
   })
+
+  /**
+   * Regression for task 10: each key the audit identified as "should be
+   * env-driven but is hardcoded" now has a default in the Zod schema and
+   * an env override path. The defaults match the values the constants
+   * carried before the refactor so behaviour is unchanged when no env
+   * override is set.
+   */
+  describe('task-10 config keys', () => {
+    beforeEach(() => {
+      delete process.env.ONTOLOGY_ROOT
+      delete process.env.API_PORT
+      delete process.env.API_MAX_BODY_BYTES
+      delete process.env.SPARQL_MAX_LIMIT
+      delete process.env.SPARQL_REMOTE_TIMEOUT_MS
+      delete process.env.LLM_MAX_AGENT_STEPS
+      process.env.AI_PROVIDER = 'ollama'
+      resetConfig()
+    })
+
+    it('exposes the expected defaults when no env override is set', () => {
+      const config = getConfig()
+      expect(config.ONTOLOGY_ROOT).toBeUndefined()
+      expect(config.API_PORT).toBe(3003)
+      expect(config.API_MAX_BODY_BYTES).toBe(64 * 1024)
+      expect(config.SPARQL_MAX_LIMIT).toBe(500)
+      expect(config.SPARQL_REMOTE_TIMEOUT_MS).toBe(30_000)
+      expect(config.LLM_MAX_AGENT_STEPS).toBe(3)
+    })
+
+    it('coerces and adopts overrides from string env values', () => {
+      process.env.ONTOLOGY_ROOT = '/tmp/custom-workspace'
+      process.env.API_PORT = '4000'
+      process.env.API_MAX_BODY_BYTES = '131072'
+      process.env.SPARQL_MAX_LIMIT = '1000'
+      process.env.SPARQL_REMOTE_TIMEOUT_MS = '5000'
+      process.env.LLM_MAX_AGENT_STEPS = '5'
+      resetConfig()
+
+      const config = getConfig()
+      expect(config.ONTOLOGY_ROOT).toBe('/tmp/custom-workspace')
+      expect(config.API_PORT).toBe(4000)
+      expect(config.API_MAX_BODY_BYTES).toBe(131072)
+      expect(config.SPARQL_MAX_LIMIT).toBe(1000)
+      expect(config.SPARQL_REMOTE_TIMEOUT_MS).toBe(5000)
+      expect(config.LLM_MAX_AGENT_STEPS).toBe(5)
+    })
+
+    it('rejects non-positive integers for the numeric keys', () => {
+      process.env.API_PORT = '0'
+      resetConfig()
+      expect(() => getConfig()).toThrow('Invalid environment configuration')
+
+      process.env.API_PORT = '3003'
+      process.env.SPARQL_MAX_LIMIT = '-1'
+      resetConfig()
+      expect(() => getConfig()).toThrow('Invalid environment configuration')
+    })
+  })
 })

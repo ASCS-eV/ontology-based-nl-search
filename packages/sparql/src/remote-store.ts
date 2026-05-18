@@ -1,3 +1,5 @@
+import { getConfig } from '@ontology-search/core/config'
+
 import type { SparqlQueryOptions, SparqlResults, SparqlStore } from './types.js'
 
 /**
@@ -9,11 +11,17 @@ export class RemoteSparqlStore implements SparqlStore {
   private updateEndpoint: string
   private timeoutMs: number
 
-  constructor(endpoint: string, updateEndpoint?: string, timeoutMs = 30_000) {
+  /**
+   * @param timeoutMs Per-call HTTP timeout. Defaults to `SPARQL_REMOTE_TIMEOUT_MS`
+   *                  from the Zod-validated config so deployments can tune it
+   *                  via env without touching code. Pass an explicit value to
+   *                  override (e.g. tests with `timeoutMs: 1`).
+   */
+  constructor(endpoint: string, updateEndpoint?: string, timeoutMs?: number) {
     this.endpoint = endpoint
     // Fuseki convention: /sparql for query, /update for updates
     this.updateEndpoint = updateEndpoint || endpoint.replace('/sparql', '/update')
-    this.timeoutMs = timeoutMs
+    this.timeoutMs = timeoutMs ?? getConfig().SPARQL_REMOTE_TIMEOUT_MS
   }
 
   /**

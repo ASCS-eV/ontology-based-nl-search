@@ -17,6 +17,10 @@ const envSchema = z.object({
   SPARQL_ENDPOINT: z.string().url().optional(),
   SPARQL_CACHE_SIZE: z.coerce.number().int().positive().default(256),
   SPARQL_CACHE_TTL_MS: z.coerce.number().int().nonnegative().default(300_000),
+  /** Maximum LIMIT the SPARQL policy will accept; queries above are rejected. */
+  SPARQL_MAX_LIMIT: z.coerce.number().int().positive().default(500),
+  /** Remote SPARQL HTTP timeout. Composed with caller signals via AbortSignal.any. */
+  SPARQL_REMOTE_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
 
   // AI / LLM
   AI_PROVIDER: aiProviderSchema.default('openai'),
@@ -24,11 +28,29 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   OLLAMA_BASE_URL: z.string().url().default('http://localhost:11434/v1'),
+  /** Maximum tool-calling steps the Vercel-SDK agent will perform. */
+  LLM_MAX_AGENT_STEPS: z.coerce.number().int().positive().default(3),
 
   // Ontology
   ONTOLOGY_REPO: z.string().default('ASCS-eV/ontology-management-base'),
   ONTOLOGY_BRANCH: z.string().default('main'),
   ONTOLOGY_ARTIFACTS_PATH: z.string().optional(),
+  /**
+   * Override the workspace root for ontology source discovery. Used by tests
+   * that seed a temp workspace, and by deployments that mount the artifacts
+   * at a non-default path.
+   */
+  ONTOLOGY_ROOT: z.string().optional(),
+
+  // API
+  /** Port the API HTTP server listens on. */
+  API_PORT: z.coerce.number().int().positive().default(3003),
+  /** Maximum incoming request body size in bytes; larger payloads are rejected. */
+  API_MAX_BODY_BYTES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(64 * 1024),
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).optional(),

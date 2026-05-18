@@ -57,10 +57,34 @@ export default tseslint.config(
       'no-var': 'error',
       eqeqeq: ['error', 'always'],
       curly: ['error', 'multi-line'],
+
+      // Criterion #1: no `process.env` outside the config loader. All env
+      // vars are declared in the Zod schema and consumed via getConfig().
+      // The logger bootstrap (packages/core/src/logging) reads two env vars
+      // directly to break the chicken-and-egg with config parse failures
+      // and disables this rule inline.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='process'][property.name='env']",
+          message:
+            'Use getConfig() from @ontology-search/core/config instead of process.env. Declare new env vars in the Zod schema.',
+        },
+      ],
     },
   },
 
-  // Test files — relaxed rules
+  // The config loader itself reads process.env — that IS its job.
+  {
+    files: ['packages/core/src/config/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+
+  // Test files — relaxed rules. Tests legitimately set up env-var
+  // fixtures (e.g. `process.env.ONTOLOGY_ROOT = tmpDir`); criterion #23
+  // governs cleanup discipline, not whether the access is allowed.
   {
     files: ['**/__tests__/**/*', '**/*.test.*', 'e2e/**/*'],
     rules: {
@@ -68,6 +92,7 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-require-imports': 'off',
+      'no-restricted-syntax': 'off',
     },
   },
 
