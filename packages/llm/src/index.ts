@@ -1,4 +1,5 @@
 import { getConfig } from '@ontology-search/core/config'
+import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
 
 import { getPersistentSession, runCopilotAgent } from './agent/copilot-agent.js'
 import { runSparqlAgent } from './agent/index.js'
@@ -45,7 +46,7 @@ export async function generateStructuredSearch(
   options?: SearchOptions
 ): Promise<LlmStructuredResponse> {
   const config = getConfig()
-  const domain = options?.domain ?? 'hdmap'
+  const domain = options?.domain ?? (await getPrimaryDomain())
   const signal = options?.signal
 
   if (config.AI_PROVIDER === 'copilot') {
