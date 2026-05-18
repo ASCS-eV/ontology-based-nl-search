@@ -1,3 +1,4 @@
+import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -142,29 +143,29 @@ export function SearchPage() {
           } else if (line.startsWith('data: ') && currentEvent) {
             const data = JSON.parse(line.slice(6))
             switch (currentEvent) {
-              case 'status':
+              case SSE_EVENT.STATUS:
                 setPhase(data.phase as SearchPhase)
                 break
-              case 'interpretation':
+              case SSE_EVENT.INTERPRETATION:
                 setInterpretation(data)
                 break
-              case 'gaps':
+              case SSE_EVENT.GAPS:
                 setGaps(data)
                 break
-              case 'sparql':
+              case SSE_EVENT.SPARQL:
                 setSparql(data)
                 break
-              case 'results':
+              case SSE_EVENT.RESULTS:
                 setResults(data.results)
                 if (data.error) setError(data.error)
                 break
-              case 'meta':
+              case SSE_EVENT.META:
                 setMeta(data)
                 break
-              case 'done':
+              case SSE_EVENT.DONE:
                 setPhase('done')
                 break
-              case 'error':
+              case SSE_EVENT.ERROR:
                 setError(data.message)
                 break
             }

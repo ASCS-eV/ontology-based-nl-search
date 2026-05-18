@@ -1,5 +1,6 @@
 import { badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
+import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { z } from 'zod'
@@ -59,7 +60,7 @@ searchRoutes.post('/stream', (c) => {
         body = await c.req.json()
       } catch {
         await stream.writeSSE({
-          event: 'error',
+          event: SSE_EVENT.ERROR,
           data: JSON.stringify(badRequest('Invalid JSON body').body),
         })
         return
@@ -68,7 +69,7 @@ searchRoutes.post('/stream', (c) => {
       const { query } = body
       if (!query || typeof query !== 'string') {
         await stream.writeSSE({
-          event: 'error',
+          event: SSE_EVENT.ERROR,
           data: JSON.stringify(badRequest('Missing or invalid "query" field').body),
         })
         return
@@ -79,7 +80,7 @@ searchRoutes.post('/stream', (c) => {
 
       try {
         await stream.writeSSE({
-          event: 'status',
+          event: SSE_EVENT.STATUS,
           data: JSON.stringify({ phase: 'interpreting', message: 'Interpreting query…' }),
         })
 
@@ -88,24 +89,24 @@ searchRoutes.post('/stream', (c) => {
         if (controller.signal.aborted) return
 
         await stream.writeSSE({
-          event: 'interpretation',
+          event: SSE_EVENT.INTERPRETATION,
           data: JSON.stringify(result.interpretation),
         })
-        await stream.writeSSE({ event: 'gaps', data: JSON.stringify(result.gaps) })
-        await stream.writeSSE({ event: 'sparql', data: JSON.stringify(result.sparql) })
+        await stream.writeSSE({ event: SSE_EVENT.GAPS, data: JSON.stringify(result.gaps) })
+        await stream.writeSSE({ event: SSE_EVENT.SPARQL, data: JSON.stringify(result.sparql) })
         await stream.writeSSE({
-          event: 'status',
+          event: SSE_EVENT.STATUS,
           data: JSON.stringify({ phase: 'executing', message: 'Executing SPARQL query…' }),
         })
         await stream.writeSSE({
-          event: 'results',
+          event: SSE_EVENT.RESULTS,
           data: JSON.stringify({
             results: result.execution.results,
             error: result.execution.error ? 'Query execution failed' : undefined,
           }),
         })
-        await stream.writeSSE({ event: 'meta', data: JSON.stringify(result.meta) })
-        await stream.writeSSE({ event: 'done', data: '{}' })
+        await stream.writeSSE({ event: SSE_EVENT.META, data: JSON.stringify(result.meta) })
+        await stream.writeSSE({ event: SSE_EVENT.DONE, data: '{}' })
 
         logger.info('Stream search completed', {
           matchCount: result.meta.matchCount,
@@ -119,14 +120,17 @@ searchRoutes.post('/stream', (c) => {
         }
         logger.error('Stream search failed', error)
         await stream.writeSSE({
-          event: 'error',
+          event: SSE_EVENT.ERROR,
           data: JSON.stringify({ message: 'Search failed' }),
         })
       }
     },
     async (err, stream) => {
       streamLogger.error('SSE stream error', err)
-      await stream.writeSSE({ event: 'error', data: JSON.stringify({ message: 'Stream error' }) })
+      await stream.writeSSE({
+        event: SSE_EVENT.ERROR,
+        data: JSON.stringify({ message: 'Stream error' }),
+      })
     }
   )
 })

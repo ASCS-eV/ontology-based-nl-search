@@ -14,6 +14,7 @@
  * @see https://www.w3.org/TR/sparql11-query/
  * @see https://www.w3.org/TR/shacl/
  */
+import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
@@ -92,7 +93,7 @@ function extractLocalName(iri: string): string {
  */
 export async function queryPropertyDomains(store: SparqlStore): Promise<PropertyDomainInfo[]> {
   const sparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
+    ${sparqlPrefixes('sh')}
 
     SELECT DISTINCT ?iri ?targetClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
@@ -139,7 +140,7 @@ export async function queryAssetDomains(store: SparqlStore): Promise<AssetDomain
   // Version-independent: match any class that is rdfs:subClassOf
   // something in the envited-x base ontology namespace
   const sparql = `
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    ${sparqlPrefixes('rdfs')}
 
     SELECT DISTINCT ?assetClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
@@ -228,8 +229,7 @@ export async function queryDomainReferences(store: SparqlStore): Promise<DomainR
   // Strategy 1: Direct sh:class on hasReferencedArtifacts property shape.
   // Handles simple SHACL patterns where the child class is declared directly.
   const directSparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    ${sparqlPrefixes('sh', 'rdfs')}
     PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
 
     SELECT DISTINCT ?parentClass ?childClass WHERE {
@@ -253,9 +253,7 @@ export async function queryDomainReferences(store: SparqlStore): Promise<DomainR
   // Strategy 2: Nested SHACL — walk sh:node → sh:or → rdf:list → sh:node → targetClass.
   // Phase A: Find (constraintShape, childClass) pairs from the nested structure.
   const nestedChildSparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    ${sparqlPrefixes('sh', 'rdfs', 'rdf')}
     PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
 
     SELECT DISTINCT ?constraintShape ?childClass WHERE {
@@ -308,8 +306,7 @@ async function resolveParentDomain(
 ): Promise<string | null> {
   // Strategy A: Constraint shape directly has sh:targetClass
   const directSparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    ${sparqlPrefixes('sh', 'rdfs')}
     SELECT ?parentClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
         <${constraintIri}> sh:targetClass ?parentClass .
@@ -327,9 +324,7 @@ async function resolveParentDomain(
   // Pattern: domainShape → sh:property → prop → sh:or → list → item →
   //          sh:and → list → member → sh:node → constraintShape
   const andListSparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    ${sparqlPrefixes('sh', 'rdf', 'rdfs')}
     SELECT DISTINCT ?parentClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
         ?nodeRef sh:node <${constraintIri}> .
@@ -353,9 +348,7 @@ async function resolveParentDomain(
   // Pattern: domainShape → sh:property → prop → sh:or → list →
   //          member → sh:node → constraintShape
   const orListSparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    ${sparqlPrefixes('sh', 'rdf', 'rdfs')}
     SELECT DISTINCT ?parentClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
         ?nodeRef sh:node <${constraintIri}> .
@@ -390,8 +383,7 @@ export async function queryPropertyShapeGroups(
   store: SparqlStore
 ): Promise<PropertyShapeGroupInfo[]> {
   const sparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    ${sparqlPrefixes('sh', 'rdfs')}
 
     SELECT DISTINCT ?propIri ?targetClass ?superclass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
@@ -440,7 +432,7 @@ export async function queryPropertyShapeGroups(
  */
 export async function queryRange2DProperties(store: SparqlStore): Promise<Range2DPropertyInfo[]> {
   const sparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
+    ${sparqlPrefixes('sh')}
 
     SELECT DISTINCT ?propIri ?rangeClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
@@ -521,7 +513,7 @@ export interface PropertyValueDistribution {
  */
 export async function querySkosConcepts(store: SparqlStore): Promise<SkosConceptInfo[]> {
   const sparql = `
-    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    ${sparqlPrefixes('skos')}
 
     SELECT DISTINCT ?iri ?scheme ?prefLabel WHERE {
       {
@@ -567,7 +559,7 @@ export async function querySkosConcepts(store: SparqlStore): Promise<SkosConcept
  */
 export async function querySubClassEdges(store: SparqlStore): Promise<SubClassEdge[]> {
   const sparql = `
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    ${sparqlPrefixes('rdfs')}
 
     SELECT DISTINCT ?sub ?super WHERE {
       { ?sub rdfs:subClassOf ?super . FILTER(isIRI(?super)) }

@@ -1,0 +1,31 @@
+/**
+ * Server-Sent Events emitted by `/search/stream`.
+ *
+ * Single source of truth for the event names that the API route emits
+ * and the web client parses. Inline `event: 'status'` / `'interpretation'`
+ * / … literals on either side of the wire are forbidden by criterion #2
+ * — the contract must drift from one place.
+ *
+ * The names are wire-format constants, not ontology-specific terms.
+ */
+
+export const SSE_EVENT = {
+  /** Progress signal: phase name + human-readable message. */
+  STATUS: 'status',
+  /** LLM interpretation: summary + mapped terms. */
+  INTERPRETATION: 'interpretation',
+  /** Ontology gaps: terms the LLM could not map. */
+  GAPS: 'gaps',
+  /** The compiled SPARQL query string (echoed for transparency). */
+  SPARQL: 'sparql',
+  /** Result rows from the SPARQL store. */
+  RESULTS: 'results',
+  /** Final metadata: match count, request id, timings. */
+  META: 'meta',
+  /** Terminator: the stream is complete; no more events follow. */
+  DONE: 'done',
+  /** Error: a recoverable or fatal failure; the stream ends. */
+  ERROR: 'error',
+} as const
+
+export type SseEventName = (typeof SSE_EVENT)[keyof typeof SSE_EVENT]

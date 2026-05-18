@@ -9,6 +9,7 @@
  * @see https://www.w3.org/TR/shacl/#InConstraintComponent
  * @see https://www.w3.org/TR/skos-reference/
  */
+import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
@@ -141,8 +142,7 @@ export function resetVocabulary(): void {
  */
 async function extractEnumProperties(store: SparqlStore): Promise<EnumProperty[]> {
   const sparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    ${sparqlPrefixes('sh', 'rdf')}
 
     SELECT ?path ?name ?description ?value
     FROM <${SCHEMA_GRAPH}>
@@ -193,8 +193,7 @@ async function extractEnumProperties(store: SparqlStore): Promise<EnumProperty[]
  */
 async function extractNumericProperties(store: SparqlStore): Promise<NumericProperty[]> {
   const sparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    ${sparqlPrefixes('sh', 'xsd')}
 
     SELECT ?path ?name ?description ?datatype
     FROM <${SCHEMA_GRAPH}>

@@ -1,4 +1,5 @@
 import { getConfig } from '@ontology-search/core/config'
+import { MIME } from '@ontology-search/core/http/mime'
 
 import type { SparqlQueryOptions, SparqlResults, SparqlStore } from './types.js'
 
@@ -45,8 +46,8 @@ export class RemoteSparqlStore implements SparqlStore {
       const response = await fetch(this.endpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/sparql-query',
-          Accept: 'application/sparql-results+json',
+          'Content-Type': MIME.SPARQL_QUERY,
+          Accept: MIME.SPARQL_RESULTS_JSON,
         },
         body: 'ASK { ?s ?p ?o }',
         signal: this.signal,
@@ -61,8 +62,8 @@ export class RemoteSparqlStore implements SparqlStore {
     const response = await fetch(this.endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/sparql-query',
-        Accept: 'application/sparql-results+json',
+        'Content-Type': MIME.SPARQL_QUERY,
+        Accept: MIME.SPARQL_RESULTS_JSON,
       },
       body: sparql,
       signal: this.buildSignal(options?.signal),
@@ -80,7 +81,7 @@ export class RemoteSparqlStore implements SparqlStore {
     const response = await fetch(this.updateEndpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/sparql-update',
+        'Content-Type': MIME.SPARQL_UPDATE,
       },
       body: sparql,
       signal: this.signal,
@@ -99,7 +100,7 @@ export class RemoteSparqlStore implements SparqlStore {
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/turtle' },
+      headers: { 'Content-Type': MIME.TURTLE },
       body: data,
       signal: this.signal,
     })
@@ -117,7 +118,7 @@ export class RemoteSparqlStore implements SparqlStore {
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/ld+json' },
+      headers: { 'Content-Type': MIME.JSONLD },
       body: data,
       signal: this.signal,
     })

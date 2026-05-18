@@ -26,7 +26,17 @@
  * @see https://github.com/oxigraph/oxigraph — Oxigraph project
  */
 
+import { MIME } from '@ontology-search/core/http/mime'
+import { iri } from '@ontology-search/core/rdf/prefixes'
+
 import type { SparqlBinding, SparqlQueryOptions, SparqlResults, SparqlStore } from './types.js'
+
+/**
+ * Datatype IRI for plain strings; literals carrying this datatype are
+ * treated as plain by the SPARQL JSON binding format and the explicit
+ * datatype field is omitted.
+ */
+const XSD_STRING_IRI = iri('xsd', 'string')
 
 /**
  * Oxigraph runs queries synchronously inside WebAssembly, which cannot be
@@ -124,9 +134,9 @@ export class OxigraphStore implements SparqlStore {
 
     if (graphUri) {
       const graph = this.oxigraph!.namedNode(graphUri)
-      this.store!.load(data, { format: 'text/turtle', to_graph_name: graph })
+      this.store!.load(data, { format: MIME.TURTLE, to_graph_name: graph })
     } else {
-      this.store!.load(data, { format: 'text/turtle' })
+      this.store!.load(data, { format: MIME.TURTLE })
     }
   }
 
@@ -135,9 +145,9 @@ export class OxigraphStore implements SparqlStore {
 
     if (graphUri) {
       const graph = this.oxigraph!.namedNode(graphUri)
-      this.store!.load(data, { format: 'application/ld+json', to_graph_name: graph })
+      this.store!.load(data, { format: MIME.JSONLD, to_graph_name: graph })
     } else {
-      this.store!.load(data, { format: 'application/ld+json' })
+      this.store!.load(data, { format: MIME.JSONLD })
     }
   }
 }
@@ -149,7 +159,7 @@ function termToBinding(term: OxigraphTerm): SparqlBinding[string] {
   }
   if (term.termType === 'Literal') {
     const result: SparqlBinding[string] = { type: 'literal', value: term.value }
-    if (term.datatype && term.datatype.value !== 'http://www.w3.org/2001/XMLSchema#string') {
+    if (term.datatype && term.datatype.value !== XSD_STRING_IRI) {
       result.datatype = term.datatype.value
     }
     if (term.language) {

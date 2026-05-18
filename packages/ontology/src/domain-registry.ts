@@ -11,6 +11,7 @@
  *
  * @see https://www.w3.org/TR/shacl/#targetClass
  */
+import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 
@@ -48,13 +49,17 @@ export interface DomainRegistry {
   allPrefixes(): string
 }
 
-/** Standard prefixes always included */
+/**
+ * Standard prefixes always included in every emitted SPARQL PREFIX
+ * block. Sourced from the canonical RDF_PREFIXES so the compiler, the
+ * policy, and the registry all see the same IRIs.
+ */
 const STANDARD_PREFIXES: Record<string, string> = {
-  rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
-  xsd: 'http://www.w3.org/2001/XMLSchema#',
-  owl: 'http://www.w3.org/2002/07/owl#',
-  sh: 'http://www.w3.org/ns/shacl#',
-  gx: 'https://w3id.org/gaia-x/development#',
+  rdfs: RDF_PREFIXES.rdfs,
+  xsd: RDF_PREFIXES.xsd,
+  owl: RDF_PREFIXES.owl,
+  sh: RDF_PREFIXES.sh,
+  gx: RDF_PREFIXES.gx,
 }
 
 /** Shared dependencies commonly imported */
