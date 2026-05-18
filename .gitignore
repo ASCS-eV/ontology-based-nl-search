@@ -22,6 +22,9 @@ tsconfig.tsbuildinfo
 # Tracks transitional state we do not want in repo history.
 .playground/
 
+# Claude Code working directory (scheduled-task lockfile, etc.)
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db
