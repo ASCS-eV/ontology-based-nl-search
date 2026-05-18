@@ -94,8 +94,8 @@ SELECT ?asset ?name ?formatType WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
   ?asset hdmap:hasDomainSpecification ?domSpec .
-  ?domSpec hdmap:hasFormat ?fmt .
-  ?fmt hdmap:formatType ?formatType .
+  ?domSpec hdmap:hasFormat ?format .
+  ?format hdmap:formatType ?formatType .
   FILTER(?formatType = "ASAM OpenDRIVE")
 }
 LIMIT 100"
@@ -130,8 +130,8 @@ SELECT ?asset ?name ?numberIntersections WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
   ?asset hdmap:hasDomainSpecification ?domSpec .
-  ?domSpec hdmap:hasQuantity ?qty .
-  ?qty hdmap:numberIntersections ?numberIntersections .
+  ?domSpec hdmap:hasQuantity ?quantity .
+  ?quantity hdmap:numberIntersections ?numberIntersections .
   FILTER(xsd:float(?numberIntersections) >= 5)
   FILTER(xsd:float(?numberIntersections) <= 50)
 }
@@ -149,8 +149,8 @@ SELECT ?asset ?name ?numberIntersections WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
   ?asset hdmap:hasDomainSpecification ?domSpec .
-  ?domSpec hdmap:hasQuantity ?qty .
-  ?qty hdmap:numberIntersections ?numberIntersections .
+  ?domSpec hdmap:hasQuantity ?quantity .
+  ?quantity hdmap:numberIntersections ?numberIntersections .
   FILTER(xsd:float(?numberIntersections) >= 5)
 }
 LIMIT 100"
@@ -167,8 +167,8 @@ SELECT ?asset ?name ?numberIntersections WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
   ?asset hdmap:hasDomainSpecification ?domSpec .
-  ?domSpec hdmap:hasQuantity ?qty .
-  ?qty hdmap:numberIntersections ?numberIntersections .
+  ?domSpec hdmap:hasQuantity ?quantity .
+  ?quantity hdmap:numberIntersections ?numberIntersections .
   FILTER(xsd:float(?numberIntersections) <= 50)
 }
 LIMIT 100"
@@ -203,9 +203,9 @@ SELECT ?asset ?name ?numberIntersections ?numberTrafficLights WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
   ?asset hdmap:hasDomainSpecification ?domSpec .
-  ?domSpec hdmap:hasQuantity ?qty .
-  ?qty hdmap:numberIntersections ?numberIntersections .
-  ?qty hdmap:numberTrafficLights ?numberTrafficLights .
+  ?domSpec hdmap:hasQuantity ?quantity .
+  ?quantity hdmap:numberIntersections ?numberIntersections .
+  ?quantity hdmap:numberTrafficLights ?numberTrafficLights .
   FILTER(xsd:float(?numberIntersections) >= 5)
   FILTER(xsd:float(?numberTrafficLights) <= 100)
 }
@@ -245,8 +245,8 @@ SELECT ?asset ?name ?roadTypes ?numberIntersections ?country ?license WHERE {
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
-  ?domSpec hdmap:hasQuantity ?qty .
-  ?qty hdmap:numberIntersections ?numberIntersections .
+  ?domSpec hdmap:hasQuantity ?quantity .
+  ?quantity hdmap:numberIntersections ?numberIntersections .
   ?domSpec hdmap:hasGeoreference ?georef .
   ?georef georeference:hasProjectLocation ?loc .
   ?loc georeference:country ?country .
@@ -387,6 +387,24 @@ SELECT ?asset ?name ?country WHERE {
 LIMIT 100"
 `;
 
+exports[`compileSlots — determinism + snapshot suite > routes a non-legacy shape group through the discovered link predicate 1`] = `
+"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX gx: <https://w3id.org/gaia-x/development#>
+PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
+PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+SELECT ?asset ?name ?accuracySignals WHERE {
+  ?asset a hdmap:HdMap ;
+    rdfs:label ?name .
+  ?asset hdmap:hasDomainSpecification ?domSpec .
+  ?domSpec hdmap:hasQuality ?quality .
+  ?quality hdmap:accuracySignals ?accuracySignals .
+  FILTER(?accuracySignals = "0.1")
+}
+LIMIT 100"
+`;
+
 exports[`compileSlots — determinism + snapshot suite > scenario + hdmap cross-domain (primary scenario references hdmap) 1`] = `
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -431,8 +449,8 @@ SELECT ?asset ?name ?scenarioCategory ?numberIntersections_hdmap WHERE {
   ?manifest manifest:hasReferencedArtifacts ?ref_hdmap .
   ?ref_hdmap a hdmap:HdMap .
   ?ref_hdmap hdmap:hasDomainSpecification ?refSpec_hdmap .
-  ?refSpec_hdmap hdmap:hasQuantity ?qty_hdmap .
-  ?qty_hdmap hdmap:numberIntersections ?numberIntersections_hdmap .
+  ?refSpec_hdmap hdmap:hasQuantity ?quantity_hdmap .
+  ?quantity_hdmap hdmap:numberIntersections ?numberIntersections_hdmap .
   FILTER(?scenarioCategory = "urban")
   FILTER(xsd:float(?numberIntersections_hdmap) >= 3)
 }

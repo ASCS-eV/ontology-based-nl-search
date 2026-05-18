@@ -266,6 +266,32 @@ describe('compileSlots — determinism + snapshot suite', () => {
     expect(sparql).toMatchSnapshot()
   })
 
+  // ─── Shape-group genericity (task 07) ─────────────────────────────────
+
+  /**
+   * Regression for task 07. Pre-refactor the compiler used a switch over
+   * four hardcoded group names (Content/Format/Quantity/DataSource) and
+   * silently dropped any property classified into a different group. The
+   * snapshot here exercises a property whose SHACL shape group is NOT one
+   * of those four — and proves a `has${Group}` link predicate is emitted
+   * (with the new generic variable-naming convention). If the refactor
+   * regresses to a hardcoded set, this snapshot's content shifts in a way
+   * that's visible at review.
+   *
+   * The property/group used is whatever the workspace ontology declares
+   * outside the four legacy names. Today that's `accuracySignals` in the
+   * `Quality` group, but the assertion is structural — the snapshot diff
+   * is what matters, not the literal SPARQL substring.
+   */
+  it('routes a non-legacy shape group through the discovered link predicate', async () => {
+    const sparql = await assertDeterministic({
+      domains: ['hdmap'],
+      filters: { accuracySignals: '0.1' },
+      ranges: {},
+    })
+    expect(sparql).toMatchSnapshot()
+  })
+
   // ─── Unknown / hallucinated property names are dropped ─────────────────
 
   it('drops an unknown filter key and still emits a deterministic query', async () => {
