@@ -1,5 +1,6 @@
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
+import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
 import {
   extractVocabulary,
   getInitializedStore,
@@ -59,7 +60,7 @@ export async function runSparqlAgent(
   options?: AgentOptions
 ): Promise<LlmStructuredResponse> {
   const sw = new Stopwatch()
-  const targetDomain = options?.domain ?? 'hdmap'
+  const targetDomain = options?.domain ?? (await getPrimaryDomain())
 
   const endPrompt = sw.time('prompt-build')
   const { prompt, vocabulary } = await getSystemPrompt()

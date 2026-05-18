@@ -11,6 +11,7 @@
  *
  * @see https://www.w3.org/TR/shacl/#targetClass
  */
+import { OntologySourcesError } from '@ontology-search/core/errors'
 import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
@@ -276,4 +277,29 @@ export async function getDomain(name: string): Promise<DomainDescriptor | undefi
 export async function listDomains(): Promise<string[]> {
   const registry = await buildDomainRegistry()
   return registry.domainNames
+}
+
+/**
+ * Resolve the primary domain to use when a caller has not specified one.
+ *
+ * The registry's `domainNames` is sorted lexicographically at build time,
+ * so the choice is deterministic and ontology-agnostic — it never names
+ * a specific domain in source. This deliberately replaces the legacy
+ * `?? 'hdmap'` literal fallbacks that pinned the project to a single
+ * ontology in production code paths.
+ *
+ * Throws `OntologySourcesError` when the registry exposes zero domains:
+ * that condition is always a misconfiguration (missing artifacts, broken
+ * manifest, empty submodule), and silently guessing a domain name would
+ * mask the underlying problem.
+ */
+export async function getPrimaryDomain(): Promise<string> {
+  const registry = await buildDomainRegistry()
+  const first = registry.domainNames[0]
+  if (!first) {
+    throw new OntologySourcesError(
+      'No ontology domains discovered — check ontology-sources.json or that the workspace artifacts directory contains at least one *.shacl.ttl file.'
+    )
+  }
+  return first
 }

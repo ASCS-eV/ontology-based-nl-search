@@ -43,15 +43,24 @@ function parseRange(mapped: string): { min?: number; max?: number } {
   return result
 }
 
-/** Detect domains from mapped terms — uses the LLM's domain mapping if available */
-function detectDomainsFromTerms(terms: MappedTerm[]): string[] {
+/**
+ * Detect domains from mapped terms — uses the LLM's domain mapping if
+ * available, otherwise falls back to the discovered ontology domains
+ * surfaced via /stats. We deliberately do not hard-code a default domain
+ * here: that pinned the project to a single ontology and disagreed with
+ * what the server actually had registered. Returns an empty array when
+ * neither source yields a domain — the server then rejects the refine
+ * with a typed CompileError that the UI already surfaces.
+ */
+function detectDomainsFromTerms(terms: MappedTerm[], availableDomains: string[]): string[] {
   const domains = new Set<string>()
   for (const term of terms) {
     if (term.property === 'domain' && term.mapped) {
       domains.add(term.mapped)
     }
   }
-  return domains.size > 0 ? [...domains] : ['hdmap']
+  if (domains.size > 0) return [...domains]
+  return availableDomains
 }
 
 function getSearchHistory(): string[] {
@@ -185,63 +194,68 @@ export function SearchPage() {
     }
   }, [])
 
-  const handleRefine = useCallback(async (updatedTerms: MappedTerm[]) => {
-    setLoading(true)
-    setError(null)
-    setResults(null)
-    setMeta(null)
-    setPhase('executing')
+  const handleRefine = useCallback(
+    async (updatedTerms: MappedTerm[]) => {
+      setLoading(true)
+      setError(null)
+      setResults(null)
+      setMeta(null)
+      setPhase('executing')
 
-    try {
-      const filters: Record<string, string> = {}
-      const location: Record<string, string> = {}
-      const ranges: Record<string, { min?: number; max?: number }> = {}
+      try {
+        const filters: Record<string, string> = {}
+        const location: Record<string, string> = {}
+        const ranges: Record<string, { min?: number; max?: number }> = {}
 
-      for (const term of updatedTerms) {
-        if (term.property && term.mapped) {
-          if (isLocationProperty(term.property)) {
-            location[term.property] = term.mapped
-          } else if (isNumericRange(term.mapped)) {
-            ranges[term.property] = parseRange(term.mapped)
-          } else {
-            filters[term.property] = term.mapped
+        for (const term of updatedTerms) {
+          if (term.property && term.mapped) {
+            if (isLocationProperty(term.property)) {
+              location[term.property] = term.mapped
+            } else if (isNumericRange(term.mapped)) {
+              ranges[term.property] = parseRange(term.mapped)
+            } else {
+              filters[term.property] = term.mapped
+            }
           }
         }
+
+        // Detect domains from the updated terms; fall back to the
+        // ontology-discovered list surfaced by /stats so the refine path is
+        // never pinned to a hand-picked domain name.
+        const domains = detectDomainsFromTerms(updatedTerms, stats?.availableDomains ?? [])
+
+        const slots = {
+          domains,
+          filters,
+          ranges,
+          ...(Object.keys(location).length > 0 ? { location } : {}),
+        }
+
+        const res = await fetch('/api/search/refine', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slots }),
+        })
+
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || 'Refine failed')
+        }
+
+        const data = await res.json()
+        setSparql(data.sparql)
+        setResults(data.results)
+        setMeta(data.meta)
+        setPhase('done')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Refine failed')
+      } finally {
+        setLoading(false)
+        setPhase('done')
       }
-
-      // Detect domains from the updated terms
-      const domains = detectDomainsFromTerms(updatedTerms)
-
-      const slots = {
-        domains,
-        filters,
-        ranges,
-        ...(Object.keys(location).length > 0 ? { location } : {}),
-      }
-
-      const res = await fetch('/api/search/refine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slots }),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Refine failed')
-      }
-
-      const data = await res.json()
-      setSparql(data.sparql)
-      setResults(data.results)
-      setMeta(data.meta)
-      setPhase('done')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Refine failed')
-    } finally {
-      setLoading(false)
-      setPhase('done')
-    }
-  }, [])
+    },
+    [stats?.availableDomains]
+  )
 
   const hasResponse = interpretation || gaps || sparql || results
 

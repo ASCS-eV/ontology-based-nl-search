@@ -27,6 +27,7 @@ import { randomUUID } from 'node:crypto'
 import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
+import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
 import {
   extractVocabulary,
   getInitializedStore,
@@ -288,7 +289,7 @@ export async function runCopilotAgent(
   options?: AgentOptions
 ): Promise<LlmStructuredResponse> {
   const sw = new Stopwatch()
-  const targetDomain = options?.domain ?? 'hdmap'
+  const targetDomain = options?.domain ?? (await getPrimaryDomain())
 
   const endSetup = sw.time('setup')
   const { vocabulary } = await getSystemPrompt()

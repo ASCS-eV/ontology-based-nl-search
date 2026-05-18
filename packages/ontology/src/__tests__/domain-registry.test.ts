@@ -1,6 +1,14 @@
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { resetConfig } from '@ontology-search/core/config'
+import { OntologySourcesError } from '@ontology-search/core/errors'
+
 import {
   buildDomainRegistry,
   getDomain,
+  getPrimaryDomain,
   listDomains,
   resetDomainRegistry,
 } from '../domain-registry.js'
@@ -87,5 +95,41 @@ describe('DomainRegistry', () => {
     const r1 = await buildDomainRegistry()
     const r2 = await buildDomainRegistry()
     expect(r1).toBe(r2) // Same reference = cached
+  })
+
+  /**
+   * Regression: production callers must never hard-code a specific
+   * domain literal as a fallback. The primary domain MUST come from
+   * SHACL discovery and MUST be the lexicographically first registered
+   * name (i.e. equal to `listDomains()[0]`).
+   */
+  describe('getPrimaryDomain', () => {
+    it('returns the lexicographically first discovered domain', async () => {
+      const primary = await getPrimaryDomain()
+      const names = await listDomains()
+      expect(primary).toBe(names[0])
+    })
+
+    /**
+     * When the registry is empty, callers must fail loudly with a typed
+     * error rather than silently substitute a guess. Point `ONTOLOGY_ROOT`
+     * at an empty temp directory so the artifact scan finds nothing.
+     */
+    it('throws OntologySourcesError when the registry has no domains', async () => {
+      const prevRoot = process.env['ONTOLOGY_ROOT']
+      const emptyRoot = mkdtempSync(join(tmpdir(), 'empty-ontology-'))
+      process.env['ONTOLOGY_ROOT'] = emptyRoot
+      resetConfig()
+      resetDomainRegistry()
+      try {
+        await expect(getPrimaryDomain()).rejects.toBeInstanceOf(OntologySourcesError)
+      } finally {
+        if (prevRoot === undefined) delete process.env['ONTOLOGY_ROOT']
+        else process.env['ONTOLOGY_ROOT'] = prevRoot
+        resetConfig()
+        resetDomainRegistry()
+        rmSync(emptyRoot, { recursive: true, force: true })
+      }
+    })
   })
 })
