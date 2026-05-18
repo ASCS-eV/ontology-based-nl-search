@@ -11,7 +11,7 @@ export class CachedSparqlStore implements SparqlStore {
   private readonly inner: SparqlStore
   private readonly cache: SparqlCache
 
-  constructor(inner: SparqlStore, cacheOptions?: { maxSize?: number; ttlMs?: number }) {
+  constructor(inner: SparqlStore, cacheOptions: { maxSize: number; ttlMs: number }) {
     this.inner = inner
     this.cache = new SparqlCache(cacheOptions)
   }
