@@ -1,3 +1,4 @@
+import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
 import {
   extractVocabulary,
@@ -14,12 +15,6 @@ import { getModel } from '../provider.js'
 import type { LlmStructuredResponse } from '../types.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
 import { agentTools, type SlotSubmissionParams } from './tools.js'
-
-/**
- * Maximum tool-calling steps. With slot-filling, the agent typically
- * needs only 1 step: submit_slots. Allow 3 for retries.
- */
-const MAX_STEPS = 3
 
 /** Cached system prompt and vocabulary */
 let cachedSystemPrompt: string | null = null
@@ -72,13 +67,15 @@ export async function runSparqlAgent(
   endPrompt()
 
   const endLlmCall = sw.time('llm-round-trip')
+  // With slot-filling, the agent typically needs only 1 step: submit_slots.
+  // LLM_MAX_AGENT_STEPS (default 3) leaves headroom for retries.
   const result = await generateText({
     model,
     system: prompt,
     prompt: naturalLanguageQuery,
     tools: agentTools,
     toolChoice: 'required',
-    stopWhen: stepCountIs(MAX_STEPS),
+    stopWhen: stepCountIs(getConfig().LLM_MAX_AGENT_STEPS),
     abortSignal: options?.signal,
   })
   endLlmCall()

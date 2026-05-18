@@ -38,14 +38,24 @@ interface LogEntry {
   data?: Record<string, unknown>
 }
 
+/**
+ * Bootstrap exception to criterion #1 (no `process.env` outside the config
+ * loader): the logger needs to function while `getConfig()` itself is
+ * parsing — and to report `getConfig()`'s own validation failures. Reading
+ * the two log-relevant variables directly here breaks the bootstrap cycle.
+ * Both keys are still declared in the Zod schema for documentation
+ * (`LOG_LEVEL`, `NODE_ENV`); every other caller uses `getConfig()`.
+ */
 function resolveLogLevel(): LogLevel {
+  // eslint-disable-next-line no-restricted-syntax
   const explicit = process.env.LOG_LEVEL as LogLevel | undefined
   if (explicit && explicit in LOG_LEVEL_PRIORITY) return explicit
 
+  // eslint-disable-next-line no-restricted-syntax
+  const nodeEnv = process.env.NODE_ENV
   // Silent in test unless explicitly enabled
-  if (process.env.NODE_ENV === 'test') return 'silent'
-
-  return process.env.NODE_ENV === 'production' ? 'info' : 'debug'
+  if (nodeEnv === 'test') return 'silent'
+  return nodeEnv === 'production' ? 'info' : 'debug'
 }
 
 let activeLogLevel: LogLevel | null = null

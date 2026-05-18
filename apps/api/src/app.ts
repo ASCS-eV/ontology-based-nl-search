@@ -1,3 +1,4 @@
+import { getConfig } from '@ontology-search/core/config'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
@@ -17,7 +18,7 @@ app.use('*', requestId())
 app.use(
   '/search/*',
   bodyLimit({
-    maxSize: 64 * 1024, // 64 KB
+    maxSize: getConfig().API_MAX_BODY_BYTES,
     onError: (c) => c.json({ error: 'Request body too large', code: 'BAD_REQUEST' }, 413),
   })
 )

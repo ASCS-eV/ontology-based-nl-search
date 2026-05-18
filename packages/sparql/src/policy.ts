@@ -1,3 +1,4 @@
+import { getConfig } from '@ontology-search/core/config'
 import { Parser } from 'sparqljs'
 
 export interface PolicyResult {
@@ -20,8 +21,6 @@ const BASE_ALLOWED_PREFIXES = new Set([
  * Matches: https://w3id.org/ascs-ev/envited-x/{domain}/{version}/
  */
 const ENVITED_X_PATTERN = /^https:\/\/w3id\.org\/ascs-ev\/envited-x\//
-
-const MAX_LIMIT = 500
 
 const parser = new Parser()
 
@@ -74,14 +73,15 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
     }
   }
 
-  // Check LIMIT
+  // Check LIMIT against the configured maximum.
+  const maxLimit = getConfig().SPARQL_MAX_LIMIT
   let resultQuery = query
   if (parsed.type === 'query' && parsed.queryType === 'SELECT') {
     if (parsed.limit === undefined) {
       // Append a default LIMIT
-      resultQuery = query.trimEnd() + `\nLIMIT ${MAX_LIMIT}`
-    } else if (parsed.limit > MAX_LIMIT) {
-      violations.push(`LIMIT ${parsed.limit} exceeds maximum ${MAX_LIMIT}`)
+      resultQuery = query.trimEnd() + `\nLIMIT ${maxLimit}`
+    } else if (parsed.limit > maxLimit) {
+      violations.push(`LIMIT ${parsed.limit} exceeds maximum ${maxLimit}`)
     }
   }
 

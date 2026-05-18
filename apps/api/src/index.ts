@@ -1,10 +1,10 @@
 import { serve } from '@hono/node-server'
+import { getConfig } from '@ontology-search/core/config'
 
 import { app } from './app.js'
 import { warmup } from './warmup.js'
 
-const parsed = parseInt(process.env['PORT'] ?? '3003', 10)
-const port = Number.isNaN(parsed) ? 3003 : parsed
+const port = getConfig().API_PORT
 
 console.info(`Ontology Search API starting on port ${port}`)
 
