@@ -74,10 +74,9 @@ exports[`compileSlots — determinism + snapshot suite > empty slots with no dom
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 SELECT ?asset ?name WHERE {
-  ?asset a envited-x:SimulationAsset ;
+  VALUES ?assetClass { <https://w3id.org/gaia-x4plcaad/ontologies/automotive-simulator/v2/AutomotiveSimulator> <https://w3id.org/ascs-ev/envited-x/environment-model/v5/EnvironmentModel> <https://w3id.org/ascs-ev/envited-x/hdmap/v6/HdMap> <https://w3id.org/gaia-x4plcaad/ontologies/leakage-test/v3/LeakageTest> <https://w3id.org/ascs-ev/envited-x/ositrace/v6/OSITrace> <https://w3id.org/ascs-ev/envited-x/scenario/v6/Scenario> <https://w3id.org/gaia-x4plcaad/ontologies/service/v2/Service> <https://w3id.org/gaia-x4plcaad/ontologies/simulation-model/v3/SimulationModel> <https://w3id.org/ascs-ev/envited-x/surface-model/v6/SurfaceModel> <https://w3id.org/gaia-x4plcaad/ontologies/survey/v6/SurveyResultDataOffering> <https://w3id.org/gaia-x4plcaad/ontologies/vv-report/v2/VvReport> }
+  ?asset a ?assetClass ;
     rdfs:label ?name .
 }
 LIMIT 100"

@@ -170,7 +170,8 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
 
   // When no domain is specified, use cross-domain search via SimulationAsset superclass
   if (slots.domains.length === 0) {
-    return compileCrossDomainQuery(slots, registry)
+    const assetDomains = await getAssetDomains()
+    return compileCrossDomainQuery(slots, registry, assetDomains)
   }
 
   const detectedDomains = slots.domains
@@ -287,36 +288,84 @@ LIMIT 100`
 }
 
 /**
- * Compile a cross-domain query using envited-x:SimulationAsset superclass.
- * Used when no specific domain is detected, or when domain ambiguity exists.
- * Searches across ALL asset types (hdmap, scenario, ositrace, etc.).
- * Filters are applied as OPTIONAL patterns since different domains have different properties.
+ * Compile a cross-domain query across every discovered asset type.
+ *
+ * Used when no specific domain is detected, or when domain ambiguity
+ * exists. Filters are applied as OPTIONAL patterns since different
+ * domains have different properties.
+ *
+ * The query enumerates concrete asset target classes via a SPARQL
+ * `VALUES` clause derived from the discovered asset-domain set and
+ * the registry, rather than relying on a superclass match with
+ * implicit `rdfs:subClassOf*` inference. The store may not perform
+ * inference and the sample data tags each asset only with its
+ * concrete class, so a superclass-only form returned zero rows even
+ * when assets were present. Enumerating the discovered target
+ * classes makes the query work against any SPARQL store regardless
+ * of inference support.
+ *
+ * Target classes are emitted as full `<IRI>` literals in the VALUES
+ * clause so no per-domain `PREFIX` declarations are needed for them,
+ * keeping the policy allowlist independent of which domains the
+ * registry happens to discover.
  */
-function compileCrossDomainQuery(slots: SearchSlots, registry: DomainRegistry): string {
-  // Use registry to look up envited-x and georeference namespaces (no hardcoding)
-  const envitedX = registry.domains.get('envited-x')
-  const georef = registry.domains.get('georeference')
-  const envitedXPrefix = envitedX ? `PREFIX envited-x: <${envitedX.namespace}>` : ''
-  const georefPrefix = georef ? `PREFIX georeference: <${georef.namespace}>` : ''
-
-  const prefixes = [
+function compileCrossDomainQuery(
+  slots: SearchSlots,
+  registry: DomainRegistry,
+  assetDomains: Set<string>
+): string {
+  // The asset-class VALUES uses full IRIs so the cross-domain mode
+  // doesn't pin the policy allowlist to specific ontology namespaces.
+  // The OPTIONAL location and license blocks still walk the asset's
+  // DomainSpecification path (which is a meta-model assumption tracked
+  // by task 21); their prefixes are added on demand below.
+  const prefixLines: string[] = [
     'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>',
     'PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>',
     'PREFIX gx: <https://w3id.org/gaia-x/development#>',
-    envitedXPrefix,
-    georefPrefix,
   ]
-    .filter(Boolean)
-    .join('\n')
+  const hasLocationFilter =
+    !!slots.location &&
+    (isNonEmpty(slots.location.country) ||
+      isNonEmpty(slots.location.state) ||
+      isNonEmpty(slots.location.region) ||
+      isNonEmpty(slots.location.city))
+  const needsMetaModelPrefixes = hasLocationFilter || !!slots.license
+  if (needsMetaModelPrefixes) {
+    const envitedX = registry.domains.get('envited-x')
+    const georef = registry.domains.get('georeference')
+    if (envitedX) prefixLines.push(`PREFIX envited-x: <${envitedX.namespace}>`)
+    if (georef) prefixLines.push(`PREFIX georeference: <${georef.namespace}>`)
+  }
+  const prefixes = prefixLines.join('\n')
 
   const patterns: string[] = []
   const filters: string[] = []
   const optionals: string[] = []
   const selectVars = ['?asset', '?name']
 
-  // Base pattern — search all SimulationAsset instances
-  patterns.push('?asset a envited-x:SimulationAsset ;')
-  patterns.push('  rdfs:label ?name .')
+  // Build the VALUES list of every discovered asset target class as
+  // full IRI literals. Sort for deterministic SPARQL output — the
+  // compiler-determinism snapshot suite (task 04) relies on this.
+  const targetClassIris: string[] = []
+  for (const domainName of [...assetDomains].sort()) {
+    const desc = registry.domains.get(domainName)
+    if (desc?.targetClassIri) targetClassIris.push(`<${desc.targetClassIri}>`)
+  }
+
+  // Base pattern — match any instance of a known asset target class.
+  if (targetClassIris.length > 0) {
+    patterns.push(`VALUES ?assetClass { ${targetClassIris.join(' ')} }`)
+    patterns.push('?asset a ?assetClass ;')
+    patterns.push('  rdfs:label ?name .')
+  } else {
+    // Fallback: no asset domains discovered — emit a single-binding
+    // VALUES that matches nothing rather than a superclass-only
+    // query that quietly relies on RDFS inference.
+    patterns.push('VALUES ?assetClass {}')
+    patterns.push('?asset a ?assetClass ;')
+    patterns.push('  rdfs:label ?name .')
+  }
 
   // Apply location filters if present (and non-empty — see isNonEmpty)
   if (

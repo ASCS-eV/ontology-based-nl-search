@@ -84,6 +84,7 @@ The LLM never writes SPARQL. It fills `SearchSlots` via a single tool call. The 
 - **No `any`**: `@typescript-eslint/no-explicit-any` is a warning.
 - **Environment**: Node >= 22. Config via `.env.local` (copied from `.env.example`). Validated by Zod at startup.
 - **Schema metadata is graph-driven**: `schema-queries.ts` discovers domains, properties, and shape groups from SHACL at runtime — do not hardcode domain metadata.
+- **Ontology-name budget is monotonically decreasing**: every change between now and the meta-model rework (tracked in `.playground/refactor-plan/21-discover-asset-path-from-shacl.md`) must **reduce, not increase**, the number of ontology-specific identifiers (domain names, prefixes, predicate names, class names, full IRIs of any specific ontology) in source files. Tests may name real properties to assert behavior, but production code paths and policy gates must not. When a fix tempts you to add a new literal like `'envited-x:hasFoo'` or `'gaia-x4plcaad'`, prefer the discovery / VALUES / full-IRI alternative even if it takes more lines.
 
 ## Code Quality Criteria
 
