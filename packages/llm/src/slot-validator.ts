@@ -611,12 +611,14 @@ export function correctFilters(
 /**
  * Correct domain selection based on which properties are actually used.
  *
- * If the LLM selected domain "scenario" but all filters belong to "hdmap",
- * the domain list should include "hdmap". This prevents empty results from
- * querying the wrong asset type.
+ * If the LLM selected one domain but the filters describe properties that
+ * only exist in a different domain, the corrected list should include the
+ * actual property domain — this prevents empty result sets caused by a
+ * domain/property mismatch.
  *
- * CRITICAL: Properties can exist in multiple domains (e.g., roadTypes in both hdmap and ositrace).
- * We must respect the LLM's domain choice when a property exists in that domain.
+ * CRITICAL: a property may exist in multiple domains. When the LLM's
+ * domain choice already covers the property, we respect that choice
+ * rather than rewriting it.
  */
 export function correctDomains(
   domains: string[],
