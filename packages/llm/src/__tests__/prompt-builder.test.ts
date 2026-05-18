@@ -58,10 +58,36 @@ describe('buildSystemPrompt (SHACL-based)', () => {
     expect(prompt).toContain('```')
   })
 
-  it('includes domain headers', () => {
+  it('includes domain headers (mechanically title-cased from domain id)', () => {
     const prompt = buildSystemPrompt(mockShaclContent)
-    expect(prompt).toContain('HD Map domain')
+    // Mechanical kebab→Title conversion — no hand-curated label map.
+    // 'hdmap' → 'Hdmap', 'scenario' → 'Scenario'. The exact phrasing is
+    // determined by the transformation, not a per-domain override.
+    expect(prompt).toContain('Hdmap domain')
     expect(prompt).toContain('Scenario domain')
+  })
+
+  /**
+   * Regression: adding a new domain to the SHACL fixture MUST surface in the
+   * prompt without any code change to prompt-builder.ts. The previous
+   * implementation embedded a 13-entry domain→label map that had to be
+   * updated for every new domain — a long-standing genericity violation.
+   */
+  it('renders an arbitrary new kebab-case domain id with title-cased words', () => {
+    const fresh: ShaclDomainContent[] = [
+      {
+        domain: 'foo-bar-baz',
+        fileName: 'foo-bar-baz.shacl.ttl',
+        sizeBytes: 100,
+        content: `@prefix fb: <https://example.org/foo-bar-baz/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+fb:Shape a sh:NodeShape ;
+    sh:property [ sh:path fb:hello ] .`,
+      },
+    ]
+    const prompt = buildSystemPrompt(fresh)
+    expect(prompt).toContain('Foo Bar Baz domain')
   })
 
   it('includes SHACL reading instructions', () => {

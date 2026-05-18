@@ -172,24 +172,25 @@ export function buildSystemPrompt(shaclContent: ShaclDomainContent[]): string {
   return sections.join('\n')
 }
 
-/** Format domain name for display */
+/**
+ * Format a domain id (kebab-case, e.g. `environment-model`) into a
+ * human-readable section header (`Environment Model`).
+ *
+ * Mechanical transformation only — we deliberately do NOT consult a
+ * hand-maintained domain-to-label map. The previous implementation
+ * embedded ~13 ontology-specific label overrides which had to be edited
+ * every time the SHACL added a new domain. Deriving labels from SHACL
+ * `rdfs:label` was also considered and rejected: the ontologies we ship
+ * with use `"Ontology definition for X"@en` as the label, which is not a
+ * display string. Mechanical kebab→Title conversion gives sensible
+ * results for any well-named domain and stays ontology-agnostic.
+ */
 function formatDomainHeader(domain: string): string {
-  const names: Record<string, string> = {
-    hdmap: 'HD Map',
-    scenario: 'Scenario',
-    georeference: 'Georeference',
-    'environment-model': 'Environment Model',
-    'automotive-simulator': 'Automotive Simulator',
-    openlabel: 'OpenLABEL v1',
-    'openlabel-v2': 'OpenLABEL v2',
-    'simulated-sensor': 'Simulated Sensor',
-    'simulation-model': 'Simulation Model',
-    'surface-model': 'Surface Model',
-    'leakage-test': 'Leakage Test',
-    'vv-report': 'V&V Report',
-    'envited-x': 'ENVITED-X (Base Framework)',
-  }
-  return names[domain] ?? domain.charAt(0).toUpperCase() + domain.slice(1)
+  return domain
+    .split(/[-_]/)
+    .filter((part) => part.length > 0)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }
 
 /** Example interactions showing expected slot filling */
