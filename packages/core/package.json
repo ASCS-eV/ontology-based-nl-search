@@ -33,6 +33,11 @@
       "types": "./src/sse/events.ts",
       "import": "./dist/sse/events.js",
       "default": "./dist/sse/events.js"
+    },
+    "./cache/lru": {
+      "types": "./src/cache/lru.ts",
+      "import": "./dist/cache/lru.js",
+      "default": "./dist/cache/lru.js"
     }
   },
   "scripts": {

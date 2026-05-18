@@ -22,6 +22,8 @@
  */
 import { readFileSync } from 'node:fs'
 
+import { LruCache } from '@ontology-search/core/cache/lru'
+import { getConfig } from '@ontology-search/core/config'
 import datasetFactory from '@rdfjs/dataset'
 import type { DatasetCore, NamedNode, Quad, Term } from '@rdfjs/types'
 import { DataFactory, Parser } from 'n3'
@@ -70,11 +72,15 @@ export class ShaclValidator {
   private readonly propertyToTargetClass: Map<string, string[]>
   /**
    * Memoized per-(propertyIri, value, targetClass) validation outcomes.
-   * Shapes are immutable for the process lifetime, so cached entries are
-   * never invalidated. The cache is populated by both single-value and
-   * batch validation paths.
+   * Shapes are immutable for the process lifetime, but the value space
+   * is unbounded — a long-running server validating user-supplied filter
+   * values would otherwise grow the cache without limit. The LRU bound
+   * (`SHACL_CACHE_SIZE`, default 1024) caps memory while still capturing
+   * hot lookup patterns. Populated by both single-value and batch paths.
    */
-  private readonly resultCache = new Map<string, ShaclValidationResult>()
+  private readonly resultCache: LruCache<string, ShaclValidationResult> = new LruCache({
+    maxSize: getConfig().SHACL_CACHE_SIZE,
+  })
   /**
    * @internal Counter of underlying engine `validate()` invocations. Exists
    * so tests can assert the batch path makes exactly one engine call per
@@ -96,6 +102,16 @@ export class ShaclValidator {
   /** @internal Test-only reset for engine-call counter (separate from cache reset). */
   __resetEngineCallCount__(): void {
     this.engineCallCount = 0
+  }
+
+  /** @internal Test-only accessor exposing the LRU cache's current size. */
+  get __resultCacheSize__(): number {
+    return this.resultCache.size
+  }
+
+  /** @internal Test-only accessor exposing the LRU cache's hard capacity. */
+  get __resultCacheCapacity__(): number {
+    return this.resultCache.capacity
   }
 
   /**

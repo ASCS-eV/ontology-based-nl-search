@@ -21,6 +21,12 @@ const envSchema = z.object({
   SPARQL_MAX_LIMIT: z.coerce.number().int().positive().default(500),
   /** Remote SPARQL HTTP timeout. Composed with caller signals via AbortSignal.any. */
   SPARQL_REMOTE_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  /**
+   * Maximum number of SHACL per-value validation results retained in the
+   * in-memory LRU cache. Shapes are immutable for the process lifetime
+   * but the value space is unbounded — so we bound the cache instead.
+   */
+  SHACL_CACHE_SIZE: z.coerce.number().int().positive().default(1024),
 
   // AI / LLM
   AI_PROVIDER: aiProviderSchema.default('openai'),
