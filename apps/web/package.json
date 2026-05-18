@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ontology-search/api-types": "workspace:*",
     "@ontology-search/core": "workspace:*",
     "@tanstack/react-query": "^5.75.5",
     "@tanstack/react-router": "^1.120.3",

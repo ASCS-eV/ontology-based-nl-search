@@ -319,7 +319,7 @@ function compileCrossDomainQuery(
   // doesn't pin the policy allowlist to specific ontology namespaces.
   // The OPTIONAL location and license blocks still walk the asset's
   // DomainSpecification path (which is a meta-model assumption tracked
-  // by task 21); their prefixes are added on demand below.
+  // path (a meta-model assumption); their prefixes are added on demand below.
   const prefixLines: string[] = [sparqlPrefix('rdfs'), sparqlPrefix('xsd'), sparqlPrefix('gx')]
   const hasLocationFilter =
     !!slots.location &&
@@ -343,7 +343,7 @@ function compileCrossDomainQuery(
 
   // Build the VALUES list of every discovered asset target class as
   // full IRI literals. Sort for deterministic SPARQL output — the
-  // compiler-determinism snapshot suite (task 04) relies on this.
+  // compiler-determinism snapshot suite relies on this.
   const targetClassIris: string[] = []
   for (const domainName of [...assetDomains].sort()) {
     const desc = registry.domains.get(domainName)
@@ -479,7 +479,7 @@ function buildDomainPatterns(
 
   // Emit every shape group that has at least one filter or range. Sort for
   // deterministic SPARQL output — the compiler-determinism snapshot suite
-  // (task 04) relies on this ordering.
+  // relies on this ordering.
   const groupsToEmit = new Set<string>([...filterPropsByGroup.keys(), ...rangePropsByGroup.keys()])
 
   for (const group of [...groupsToEmit].sort()) {
@@ -740,7 +740,7 @@ function classifyProperty(propName: string, domainName: string, vocabIndex: Comp
  * lower-camelCase of the localName: `Content → content`, `DataSource →
  * dataSource`, `Quantity → quantity`. Both `?fmt` (old `?fmt` for Format)
  * and `?ds` (old `?ds` for DataSource) used hand-picked abbreviations the
- * audit flagged as unclear; the unified rule reads as well or better and
+ * are intentionally unabbreviated; the unified rule reads as well or better and
  * works for any future group.
  */
 function groupVariableName(group: string): string {

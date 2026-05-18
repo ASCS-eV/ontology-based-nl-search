@@ -2,9 +2,8 @@
  * Server-Sent Events emitted by `/search/stream`.
  *
  * Single source of truth for the event names that the API route emits
- * and the web client parses. Inline `event: 'status'` / `'interpretation'`
- * / … literals on either side of the wire are forbidden by criterion #2
- * — the contract must drift from one place.
+ * and the web client parses. Producers and consumers both import from
+ * this map so the wire contract cannot drift between sides.
  *
  * The names are wire-format constants, not ontology-specific terms.
  */

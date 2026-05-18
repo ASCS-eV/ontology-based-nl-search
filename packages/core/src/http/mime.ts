@@ -1,10 +1,10 @@
 /**
  * HTTP MIME types used by the SPARQL transport and ontology I/O.
  *
- * Single source of truth for the media types that previously appeared
- * inline in remote-store.ts, oxigraph-store.ts, and vocabulary-index.ts.
- * Inline `'application/sparql-*'` / `'text/turtle'` / `'application/ld+json'`
- * literals in source are forbidden by criterion #2.
+ * Single source of truth for the media types used by the SPARQL
+ * transport and RDF I/O. Inline `'application/sparql-*'` / `'text/turtle'`
+ * / `'application/ld+json'` literals belong in this module and nowhere
+ * else.
  *
  * These are IETF / W3C protocol identifiers, not ontology-specific names.
  */
