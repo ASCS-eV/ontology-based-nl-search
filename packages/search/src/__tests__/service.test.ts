@@ -110,7 +110,11 @@ describe('SearchService.searchNl', () => {
     expect(mockStore.query).not.toHaveBeenCalledWith(MOCK_SPARQL)
   })
 
-  it('handles SPARQL execution errors gracefully', async () => {
+  it('handles SPARQL execution errors with a stable, opaque error signal', async () => {
+    // The underlying message ("Connection refused") MUST NOT leak through
+    // execution.error — the route layer treats the field as a boolean
+    // signal and using the raw library message would couple the wire
+    // contract to the underlying store implementation's wording.
     mockStore.query.mockRejectedValueOnce(new Error('Connection refused'))
 
     const deps = createMockDeps()
@@ -119,7 +123,8 @@ describe('SearchService.searchNl', () => {
     const result = await service.searchNl({ query: 'test' })
 
     expect(result.execution.results).toEqual([])
-    expect(result.execution.error).toBe('Connection refused')
+    expect(result.execution.error).toBe('SPARQL execution failed')
+    expect(result.execution.error).not.toContain('Connection refused')
   })
 
   it('throws AbortError when signal is already aborted', async () => {

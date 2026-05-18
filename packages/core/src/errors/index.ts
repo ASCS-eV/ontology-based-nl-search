@@ -6,6 +6,11 @@
  * - Proper HTTP status codes (never 200 for errors)
  * - Internal details are logged but not exposed to clients
  * - Non-critical endpoints may return degraded responses (partial data) with 200
+ *
+ * Library packages throw typed `AppError` subclasses (declared below). The
+ * API's error handler maps them to HTTP status by `instanceof`, so renaming
+ * an error message in a library cannot accidentally change the wire
+ * contract. Plain `Error` instances escape to a generic 500.
  */
 
 /**
@@ -36,6 +41,72 @@ export type HttpErrorStatus = 400 | 422 | 500 | 503
 export interface HttpError {
   status: HttpErrorStatus
   body: ApiErrorResponse
+}
+
+// ─── Typed error hierarchy ───────────────────────────────────────────────────
+//
+// Library packages throw these instead of bare `Error`s. Each subclass owns a
+// stable `code` (machine-readable) and `httpStatus` (consumed by the API
+// error handler), so the wire contract is anchored to the class — not to the
+// error message string. A library can reword a message freely without
+// changing the HTTP status the caller sees.
+
+/**
+ * Abstract base for every library-thrown error that the HTTP layer maps to
+ * a known status. Concrete subclasses override `code` and `httpStatus`
+ * with stable identifiers. Callers in the API tier use `instanceof
+ * AppError` (or a specific subclass) to drive status mapping.
+ */
+export abstract class AppError extends Error {
+  abstract readonly code: ErrorCode
+  abstract readonly httpStatus: HttpErrorStatus
+
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options)
+    this.name = this.constructor.name
+  }
+}
+
+/**
+ * Search compiler failed to produce a SPARQL query — e.g. the requested
+ * domain doesn't exist in the registry, or the slot set is empty.
+ * Surfaces as 422 because the slots parsed but are semantically invalid.
+ */
+export class CompileError extends AppError {
+  readonly code = ERROR_CODE.UNPROCESSABLE_ENTITY
+  readonly httpStatus = 422
+}
+
+/**
+ * SPARQL store rejected a request or is otherwise unreachable. Includes
+ * remote endpoint HTTP failures, load failures, and connection errors.
+ * Always 503 — the API itself is up, but the backing store isn't.
+ */
+export class StoreUnavailableError extends AppError {
+  readonly code = ERROR_CODE.SERVICE_UNAVAILABLE
+  readonly httpStatus = 503
+}
+
+/**
+ * LLM session unusable — missing credentials, expired token, unsupported
+ * provider. Surfaces as 503 so clients can retry once the operator has
+ * fixed the configuration; the API process itself is still running.
+ */
+export class AgentError extends AppError {
+  readonly code = ERROR_CODE.SERVICE_UNAVAILABLE
+  readonly httpStatus = 503
+}
+
+/**
+ * `ontology-sources.json` manifest is present but unreadable or malformed.
+ * The five duplicate source-discovery implementations previously consumed
+ * these errors via silent `catch {}` blocks and fell back to the default
+ * submodule path — making misconfigurations invisible. Surfacing as 503
+ * because the API can't serve meaningful results without a valid manifest.
+ */
+export class OntologySourcesError extends AppError {
+  readonly code = ERROR_CODE.SERVICE_UNAVAILABLE
+  readonly httpStatus = 503
 }
 
 /** Create a 400 Bad Request error */

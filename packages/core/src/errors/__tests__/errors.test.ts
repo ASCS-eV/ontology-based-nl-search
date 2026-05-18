@@ -1,8 +1,14 @@
 import {
+  AgentError,
+  AppError,
   badRequest,
+  CompileError,
+  ERROR_CODE,
   extractErrorMessage,
   internalError,
+  OntologySourcesError,
   serviceUnavailable,
+  StoreUnavailableError,
   unprocessable,
 } from '../index.js'
 
@@ -36,6 +42,45 @@ describe('API error utilities', () => {
     expect(result.status).toBe(503)
     expect(result.body.error).toBe('LLM provider is down')
     expect(result.body.code).toBe('SERVICE_UNAVAILABLE')
+  })
+
+  describe('AppError hierarchy', () => {
+    /**
+     * Regression: status MUST be derived from the class, never the message.
+     * If a library reworded the message in CompileError, the HTTP status
+     * the API exposes to clients must stay 422. This test reworards and
+     * re-instantiates to pin the contract.
+     */
+    it('derives httpStatus from class, not message content', () => {
+      const original = new CompileError('No domains detected')
+      const reworded = new CompileError('Some entirely different phrasing')
+      expect(original.httpStatus).toBe(422)
+      expect(reworded.httpStatus).toBe(422)
+      expect(original.httpStatus).toBe(reworded.httpStatus)
+    })
+
+    it.each([
+      [() => new CompileError('boom'), 422, ERROR_CODE.UNPROCESSABLE_ENTITY],
+      [() => new StoreUnavailableError('boom'), 503, ERROR_CODE.SERVICE_UNAVAILABLE],
+      [() => new AgentError('boom'), 503, ERROR_CODE.SERVICE_UNAVAILABLE],
+      [() => new OntologySourcesError('boom'), 503, ERROR_CODE.SERVICE_UNAVAILABLE],
+    ] as const)('subclass exposes a stable code and httpStatus', (make, status, code) => {
+      const err = make()
+      expect(err).toBeInstanceOf(AppError)
+      expect(err).toBeInstanceOf(Error)
+      expect(err.httpStatus).toBe(status)
+      expect(err.code).toBe(code)
+      // The constructor.name surfaces in stack traces and log lines, so it
+      // must reflect the actual subclass rather than 'Error' or 'AppError'.
+      expect(err.name).toBe(err.constructor.name)
+    })
+
+    it('preserves the underlying cause when constructed with one', () => {
+      const root = new Error('original failure')
+      const wrapped = new StoreUnavailableError('endpoint returned 500', { cause: root })
+      expect(wrapped.cause).toBe(root)
+      expect(wrapped.message).toBe('endpoint returned 500')
+    })
   })
 
   describe('extractErrorMessage', () => {

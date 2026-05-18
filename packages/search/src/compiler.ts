@@ -19,6 +19,7 @@
  *
  * @see https://www.w3.org/TR/sparql11-query/
  */
+import { CompileError } from '@ontology-search/core/errors'
 import { iri, sparqlPrefix } from '@ontology-search/core/rdf/prefixes'
 import {
   buildDomainRegistry,
@@ -188,7 +189,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   const domain = registry.domains.get(primaryDomain)
 
   if (!domain) {
-    throw new Error(
+    throw new CompileError(
       `Unknown domain: ${primaryDomain}. Available: ${registry.domainNames.join(', ')}`
     )
   }
@@ -684,7 +685,7 @@ async function resolvePrimaryDomain(
 
   // Otherwise pick the first detected domain (LLM should have chosen correctly)
   if (detectedDomains.length === 0) {
-    throw new Error('No domains detected - cannot compile query')
+    throw new CompileError('No domains detected - cannot compile query')
   }
   return detectedDomains[0]!
 }
@@ -916,7 +917,7 @@ export async function compileCountQuery(domainName: string): Promise<string> {
   const domain = registry.domains.get(domainName)
 
   if (!domain) {
-    throw new Error(`Unknown domain: ${domainName}`)
+    throw new CompileError(`Unknown domain: ${domainName}`)
   }
 
   const prefixes = registry.prefixesFor(domainName)

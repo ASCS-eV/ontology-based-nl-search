@@ -238,9 +238,16 @@ export class SearchService {
         sparql: policy.query,
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'SPARQL execution failed'
+      // Aborts must propagate so the SSE handler can shut the stream
+      // cleanly instead of surfacing a generic execution failure.
+      if (err instanceof DOMException && err.name === 'AbortError') throw err
+      // The execution failed for non-abort reasons (store unreachable,
+      // malformed query). We surface a stable, opaque error string here —
+      // the route layer treats this as a boolean signal and never echoes
+      // the raw message to the client, so leaking `err.message` would only
+      // create a coupling between library wording and the response shape.
       logger.error('SPARQL execution failed', err)
-      return { results: [], sparql: policy.query, error: message }
+      return { results: [], sparql: policy.query, error: 'SPARQL execution failed' }
     }
   }
 
