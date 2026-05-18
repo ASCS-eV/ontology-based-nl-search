@@ -12,6 +12,8 @@
  *
  * @see https://www.w3.org/TR/shacl/#InConstraintComponent
  */
+import { MIME } from '@ontology-search/core/http/mime'
+import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import { readFileSync } from 'fs'
 import { basename } from 'path'
 
@@ -74,7 +76,7 @@ export async function buildVocabularyIndex(): Promise<VocabularyIndex> {
   for (const { path: shaclPath, domain } of shaclFiles) {
     try {
       const ttl = readFileSync(shaclPath, 'utf-8')
-      store.load(ttl, { format: 'text/turtle' })
+      store.load(ttl, { format: MIME.TURTLE })
       if (!domains.includes(domain)) domains.push(domain)
     } catch (err) {
       console.warn(`[vocabulary-index] Failed to load ${basename(shaclPath)}: ${err}`)
@@ -83,8 +85,7 @@ export async function buildVocabularyIndex(): Promise<VocabularyIndex> {
 
   // SPARQL query to extract properties with sh:in enumerated values
   const sparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    ${sparqlPrefixes('sh', 'rdf')}
 
     SELECT ?path ?name ?description ?value WHERE {
       ?shape sh:property ?propShape .
@@ -133,8 +134,7 @@ export async function buildVocabularyIndex(): Promise<VocabularyIndex> {
 
   // Also extract numeric/string properties without sh:in (for quantity slots)
   const numericSparql = `
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    ${sparqlPrefixes('sh', 'xsd')}
 
     SELECT ?path ?name ?description ?datatype WHERE {
       ?shape sh:property ?propShape .

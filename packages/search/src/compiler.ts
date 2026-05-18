@@ -19,6 +19,7 @@
  *
  * @see https://www.w3.org/TR/sparql11-query/
  */
+import { iri, sparqlPrefix } from '@ontology-search/core/rdf/prefixes'
 import {
   buildDomainRegistry,
   type DomainDescriptor,
@@ -319,11 +320,7 @@ function compileCrossDomainQuery(
   // The OPTIONAL location and license blocks still walk the asset's
   // DomainSpecification path (which is a meta-model assumption tracked
   // by task 21); their prefixes are added on demand below.
-  const prefixLines: string[] = [
-    'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>',
-    'PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>',
-    'PREFIX gx: <https://w3id.org/gaia-x/development#>',
-  ]
+  const prefixLines: string[] = [sparqlPrefix('rdfs'), sparqlPrefix('xsd'), sparqlPrefix('gx')]
   const hasLocationFilter =
     !!slots.location &&
     (isNonEmpty(slots.location.country) ||
@@ -703,9 +700,9 @@ function buildPrefixes(
   const prefixSet = new Set<string>()
 
   // W3C standard prefixes (stable, specification-defined)
-  prefixSet.add('PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>')
-  prefixSet.add('PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>')
-  prefixSet.add('PREFIX gx: <https://w3id.org/gaia-x/development#>')
+  prefixSet.add(sparqlPrefix('rdfs'))
+  prefixSet.add(sparqlPrefix('xsd'))
+  prefixSet.add(sparqlPrefix('gx'))
 
   // Shared domain prefixes via registry (version-independent)
   for (const shared of ['manifest', 'georeference']) {
@@ -867,8 +864,7 @@ function addLocationFilter(filters: string[], varName: string, value: string | s
  * @see https://www.w3.org/TR/skos-reference/#semantic-relations
  * @see https://www.w3.org/TR/rdf-schema/#ch_subclassof
  */
-const HIERARCHY_EXPANSION_PATH =
-  '(<http://www.w3.org/2004/02/skos/core#broaderTransitive>|<http://www.w3.org/2000/01/rdf-schema#subClassOf>)*'
+const HIERARCHY_EXPANSION_PATH = `(<${iri('skos', 'broaderTransitive')}>|<${iri('rdfs', 'subClassOf')}>)*`
 
 /**
  * Add a FILTER (or graph pattern) for an enum value.

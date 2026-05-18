@@ -1,4 +1,5 @@
 import { getConfig } from '@ontology-search/core/config'
+import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
 import { Parser } from 'sparqljs'
 
 export interface PolicyResult {
@@ -6,15 +7,12 @@ export interface PolicyResult {
   violations: string[]
 }
 
-/** Base prefixes that are always allowed (W3C standards + GAIA-X) */
-const BASE_ALLOWED_PREFIXES = new Set([
-  'http://www.w3.org/2000/01/rdf-schema#',
-  'http://www.w3.org/2001/XMLSchema#',
-  'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-  'http://www.w3.org/2002/07/owl#',
-  'http://www.w3.org/ns/shacl#',
-  'https://w3id.org/gaia-x/development#',
-])
+/**
+ * Base prefixes that are always allowed: every W3C / GAIA-X namespace
+ * the project knows about. Sourced from the canonical RDF_PREFIXES map
+ * so the allowlist cannot drift from the IRIs the compiler emits.
+ */
+const BASE_ALLOWED_PREFIXES = new Set<string>(Object.values(RDF_PREFIXES))
 
 /**
  * Pattern for ASCS/ENVITED-X ontology IRIs.

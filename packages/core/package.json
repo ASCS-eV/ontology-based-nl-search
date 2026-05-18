@@ -18,6 +18,21 @@
       "types": "./src/errors/index.ts",
       "import": "./dist/errors/index.js",
       "default": "./dist/errors/index.js"
+    },
+    "./rdf/prefixes": {
+      "types": "./src/rdf/prefixes.ts",
+      "import": "./dist/rdf/prefixes.js",
+      "default": "./dist/rdf/prefixes.js"
+    },
+    "./http/mime": {
+      "types": "./src/http/mime.ts",
+      "import": "./dist/http/mime.js",
+      "default": "./dist/http/mime.js"
+    },
+    "./sse/events": {
+      "types": "./src/sse/events.ts",
+      "import": "./dist/sse/events.js",
+      "default": "./dist/sse/events.js"
     }
   },
   "scripts": {
@@ -28,6 +43,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@zazuko/prefixes": "^2.6.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
