@@ -34,10 +34,15 @@
  * - Any UI behaviour (task 18).
  */
 
-import { compileAllCountQueries, compileSlots, getInitializedStore } from '@ontology-search/search'
 import { enforceSparqlPolicy } from '@ontology-search/sparql/policy'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+// Intra-package imports use relative paths because the package's exports
+// resolve to ./dist/index.js, which isn't built when CI runs tests
+// directly via vitest. The same pattern is used by every other test file
+// in this package (compiler.test.ts, schema-queries.test.ts, etc.).
+import { compileAllCountQueries, compileSlots } from '../compiler.js'
+import { getInitializedStore } from '../init.js'
 import { type SearchDependencies, SearchService } from '../service.js'
 import type { SearchSlots } from '../slots.js'
 import type { LlmStructuredResponse } from '../types.js'
@@ -204,30 +209,19 @@ describe('SearchService — real pipeline integration', () => {
   }, 60_000)
 
   /**
-   * Cross-domain search (no `domains` supplied) takes the
-   * SimulationAsset superclass code path in the compiler.
+   * Cross-domain search (no `domains` supplied) enumerates every
+   * discovered asset target class via a SPARQL `VALUES` clause and
+   * matches `?asset a ?assetClass`. The list is sourced from the
+   * domain registry's discovered asset domains, so the query works
+   * against any SPARQL store regardless of whether it performs
+   * `rdfs:subClassOf` inference.
    *
-   * Known wiring issue surfaced by this test: the compiler emits
-   * `?asset a envited-x:SimulationAsset`, expecting RDFS
-   * subclass-of inference to match concrete classes (`hdmap:HdMap`,
-   * `scenario:Scenario`, …) against the superclass. Oxigraph does
-   * not perform that inference by default and the sample data does
-   * not redundantly tag every asset with the superclass either.
-   * Result: the query parses, passes the policy, executes
-   * cleanly — and returns zero rows.
-   *
-   * The test asserts the OBSERVED current behaviour (no error,
-   * empty result) and links to the follow-up task. A previous
-   * compile-or-policy regression would still surface as an
-   * `execution.error`.
-   *
-   * Follow-up: task 21 (`discover-asset-path-from-shacl`) would
-   * fix this by walking subclasses explicitly via a SPARQL property
-   * path (`?asset a/rdfs:subClassOf* envited-x:SimulationAsset`)
-   * OR by detecting at load time that the store has no inference
-   * and rewriting the query accordingly.
+   * Previous attempt (`?asset a envited-x:SimulationAsset`) silently
+   * returned zero rows because Oxigraph does no RDFS inference and
+   * the sample data tags each asset only with its concrete class.
+   * This test was the regression that surfaced the bug.
    */
-  it('cross-domain query executes without error (subclass-inference gap acknowledged)', async () => {
+  it('runs the cross-domain query and matches every loaded asset type', async () => {
     const result = await realServiceWithMockedLlm({
       domains: [],
       filters: {},
@@ -235,11 +229,12 @@ describe('SearchService — real pipeline integration', () => {
     }).searchNl({ query: 'everything' })
 
     expect(result.execution.error).toBeUndefined()
-    // Today: 0 rows because of the inference gap above. If a future
-    // change makes the cross-domain query actually return assets,
-    // this assertion's lower bound should be raised — that change
-    // is welcome and should update this expectation deliberately.
-    expect(result.meta.matchCount).toBeGreaterThanOrEqual(0)
+    // The sample dataset declares 267 assets across all 5 sample
+    // domains. The compiler enumerates EVERY discovered asset
+    // class (including the 6 declared-but-empty domains) so the
+    // match count is the actual instance count in the data.
+    // Asserting a lower bound to allow legitimate dataset evolution.
+    expect(result.meta.matchCount).toBeGreaterThan(50)
   }, 60_000)
 
   /**

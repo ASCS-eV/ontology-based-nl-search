@@ -70,6 +70,17 @@ fix or surface it within the PR's scope, do not bundle.
 9. **Schema metadata is graph-driven.** No hardcoded list of domains, shape
    groups, asset superclasses, or display labels. If you find yourself
    writing `switch(group)`, you owe a runtime discovery.
+   9b. **Ontology-name budget is monotonically decreasing** (active rule until
+   the meta-model rework described in
+   [`task 21`](./.playground/refactor-plan/21-discover-asset-path-from-shacl.md)
+   lands). Every change must reduce, not increase, the number of
+   ontology-specific identifiers (domain names, prefixes, predicate names,
+   class names, full IRIs of any specific ontology) in production code
+   paths. Tests may name real properties to assert behavior, but the
+   compiler, policy, and other production layers must not. When a fix
+   tempts you to add a new literal like `'envited-x:hasFoo'` or
+   `'gaia-x4plcaad'`, prefer the discovery / VALUES / full-IRI alternative
+   even if it takes more lines.
 10. **One discovery path for ontology sources.** `findWorkspaceRoot` /
     `getArtifactRoots` / shape-file discovery lives in
     `@ontology-search/ontology/sources` and nowhere else.
