@@ -1,4 +1,5 @@
 import { getConfig } from '@ontology-search/core/config'
+import { StoreUnavailableError } from '@ontology-search/core/errors'
 import { MIME } from '@ontology-search/core/http/mime'
 
 import type { SparqlQueryOptions, SparqlResults, SparqlStore } from './types.js'
@@ -71,7 +72,7 @@ export class RemoteSparqlStore implements SparqlStore {
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`SPARQL query failed (${response.status}): ${errorText}`)
+      throw new StoreUnavailableError(`SPARQL query failed (${response.status}): ${errorText}`)
     }
 
     return response.json() as Promise<SparqlResults>
@@ -89,7 +90,7 @@ export class RemoteSparqlStore implements SparqlStore {
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`SPARQL update failed (${response.status}): ${errorText}`)
+      throw new StoreUnavailableError(`SPARQL update failed (${response.status}): ${errorText}`)
     }
   }
 
@@ -107,7 +108,9 @@ export class RemoteSparqlStore implements SparqlStore {
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`Failed to load Turtle data (${response.status}): ${errorText}`)
+      throw new StoreUnavailableError(
+        `Failed to load Turtle data (${response.status}): ${errorText}`
+      )
     }
   }
 
@@ -125,7 +128,9 @@ export class RemoteSparqlStore implements SparqlStore {
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`Failed to load JSON-LD data (${response.status}): ${errorText}`)
+      throw new StoreUnavailableError(
+        `Failed to load JSON-LD data (${response.status}): ${errorText}`
+      )
     }
   }
 }

@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createOpenAI } from '@ai-sdk/openai'
 import { getConfig } from '@ontology-search/core/config'
+import { AgentError } from '@ontology-search/core/errors'
 import type { LanguageModel } from 'ai'
 
 /**
@@ -17,20 +18,21 @@ function getClaudeCliToken(): string {
   let raw: string
   try {
     raw = readFileSync(credPath, 'utf-8')
-  } catch {
-    throw new Error(
-      `Claude CLI credentials not found at ${credPath}. Run "claude" to authenticate first.`
+  } catch (cause) {
+    throw new AgentError(
+      `Claude CLI credentials not found at ${credPath}. Run "claude" to authenticate first.`,
+      { cause }
     )
   }
 
   const creds = JSON.parse(raw)
   const oauth = creds.claudeAiOauth
   if (!oauth?.accessToken) {
-    throw new Error(`No access token in ${credPath}. Run "claude" to re-authenticate.`)
+    throw new AgentError(`No access token in ${credPath}. Run "claude" to re-authenticate.`)
   }
 
   if (oauth.expiresAt && Date.now() > oauth.expiresAt) {
-    throw new Error(
+    throw new AgentError(
       `Claude CLI token expired. Run "claude" to refresh your session, then restart the API.`
     )
   }
@@ -77,7 +79,7 @@ export function getModel(): LanguageModel {
     }
 
     default:
-      throw new Error(
+      throw new AgentError(
         `Unsupported AI_PROVIDER: "${provider}". Supported: openai, anthropic, claude-cli, copilot, ollama.`
       )
   }

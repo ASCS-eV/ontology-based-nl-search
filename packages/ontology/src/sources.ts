@@ -13,20 +13,19 @@
  */
 
 import { getConfig } from '@ontology-search/core/config'
+import { OntologySourcesError } from '@ontology-search/core/errors'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 
 import { getProjectRoot } from './paths.js'
 
 /**
- * Thrown when `ontology-sources.json` is present but unreadable or
- * malformed. The five duplicate implementations previously consumed
- * these errors via `catch {}` and silently used the default submodule
- * path — making misconfigurations invisible.
+ * Re-exported from `@ontology-search/core/errors` so legacy callers that
+ * imported it from this module continue to compile. The canonical
+ * declaration lives in core so the API tier can map it to HTTP status by
+ * `instanceof` without depending on the ontology package.
  */
-export class OntologySourcesError extends Error {
-  override readonly name = 'OntologySourcesError'
-}
+export { OntologySourcesError }
 
 /**
  * Path segments of the nested git-submodule chain that holds the
