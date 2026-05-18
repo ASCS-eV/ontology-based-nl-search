@@ -19,6 +19,7 @@
  *
  * @see https://www.w3.org/TR/sparql11-query/
  */
+import { getConfig } from '@ontology-search/core/config'
 import { CompileError } from '@ontology-search/core/errors'
 import { iri, sparqlPrefix } from '@ontology-search/core/rdf/prefixes'
 import {
@@ -36,9 +37,6 @@ import {
   queryRange2DProperties,
 } from './schema-queries.js'
 import type { SearchSlots } from './slots.js'
-
-/** Maximum number of result rows returned by a compiled SPARQL query */
-const MAX_RESULTS_LIMIT = 100
 
 /** Property info from ontology - supports properties existing in multiple domains */
 interface CompilerProperty {
@@ -289,7 +287,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
 ${selectClause} WHERE {
   ${whereBody}
 }
-LIMIT ${MAX_RESULTS_LIMIT}`
+LIMIT ${getConfig().SPARQL_DEFAULT_LIMIT}`
 }
 
 /**
@@ -413,7 +411,7 @@ function compileCrossDomainQuery(
 ${selectClause} WHERE {
   ${whereBody}
 }
-LIMIT ${MAX_RESULTS_LIMIT}`
+LIMIT ${getConfig().SPARQL_DEFAULT_LIMIT}`
 }
 
 /**

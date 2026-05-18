@@ -10,27 +10,33 @@ const mockResults: SparqlResults = {
   },
 }
 
+// Test-local defaults — chosen for headroom in the size/TTL tests below.
+// Production sources these from `getConfig().SPARQL_CACHE_SIZE` /
+// `SPARQL_CACHE_TTL_MS` via the `getSparqlStore()` wrapper.
+const TEST_MAX_SIZE = 16
+const TEST_TTL_MS = 60_000
+
 describe('SparqlCache', () => {
   it('returns null for uncached queries', () => {
-    const cache = new SparqlCache()
+    const cache = new SparqlCache({ maxSize: TEST_MAX_SIZE, ttlMs: TEST_TTL_MS })
     expect(cache.get('SELECT * WHERE { ?s ?p ?o }')).toBeNull()
   })
 
   it('caches and retrieves query results', () => {
-    const cache = new SparqlCache()
+    const cache = new SparqlCache({ maxSize: TEST_MAX_SIZE, ttlMs: TEST_TTL_MS })
     const sparql = 'SELECT ?s WHERE { ?s a <Type> }'
     cache.set(sparql, mockResults)
     expect(cache.get(sparql)).toEqual(mockResults)
   })
 
   it('normalizes whitespace for cache keys', () => {
-    const cache = new SparqlCache()
+    const cache = new SparqlCache({ maxSize: TEST_MAX_SIZE, ttlMs: TEST_TTL_MS })
     cache.set('SELECT ?s  WHERE  { ?s a <Type> }', mockResults)
     expect(cache.get('SELECT ?s WHERE { ?s a <Type> }')).toEqual(mockResults)
   })
 
   it('evicts oldest entries when max size is reached', () => {
-    const cache = new SparqlCache({ maxSize: 2 })
+    const cache = new SparqlCache({ maxSize: 2, ttlMs: TEST_TTL_MS })
     cache.set('query1', mockResults)
     cache.set('query2', mockResults)
     cache.set('query3', mockResults)
@@ -41,7 +47,7 @@ describe('SparqlCache', () => {
   })
 
   it('expires entries after TTL', () => {
-    const cache = new SparqlCache({ ttlMs: 50 })
+    const cache = new SparqlCache({ maxSize: TEST_MAX_SIZE, ttlMs: 50 })
     cache.set('query', mockResults)
     expect(cache.get('query')).toEqual(mockResults)
 
@@ -53,7 +59,7 @@ describe('SparqlCache', () => {
   })
 
   it('moves accessed entries to most-recent position (LRU)', () => {
-    const cache = new SparqlCache({ maxSize: 2 })
+    const cache = new SparqlCache({ maxSize: 2, ttlMs: TEST_TTL_MS })
     cache.set('query1', mockResults)
     cache.set('query2', mockResults)
     // Access query1 to move it to most-recent
@@ -65,7 +71,7 @@ describe('SparqlCache', () => {
   })
 
   it('clears all entries', () => {
-    const cache = new SparqlCache()
+    const cache = new SparqlCache({ maxSize: TEST_MAX_SIZE, ttlMs: TEST_TTL_MS })
     cache.set('q1', mockResults)
     cache.set('q2', mockResults)
     cache.clear()

@@ -6,7 +6,13 @@
  * and we move accessed entries to the end).
  *
  * Cache key: normalized SPARQL string (whitespace-collapsed).
- * Cache invalidation: TTL-based (default 5 minutes) + manual clear.
+ * Cache invalidation: TTL-based + manual clear.
+ *
+ * Both `maxSize` and `ttlMs` are required at construction. Production
+ * callers source them from `getConfig().SPARQL_CACHE_SIZE` and
+ * `SPARQL_CACHE_TTL_MS` via the `getSparqlStore()` wrapper — this class
+ * is intentionally agnostic of the env layer so its values are not
+ * silently duplicated.
  *
  * @see Cormen et al., "Introduction to Algorithms" — LRU Cache
  */
@@ -17,20 +23,14 @@ interface CacheEntry {
   timestamp: number
 }
 
-/** Default maximum number of entries before LRU eviction kicks in */
-const DEFAULT_CACHE_SIZE = 256
-
-/** Default time-to-live for cache entries (5 minutes) */
-const DEFAULT_CACHE_TTL_MS = 300_000
-
 export class SparqlCache {
   private cache: Map<string, CacheEntry>
   private readonly maxSize: number
   private readonly ttlMs: number
 
-  constructor(options?: { maxSize?: number; ttlMs?: number }) {
-    this.maxSize = options?.maxSize ?? DEFAULT_CACHE_SIZE
-    this.ttlMs = options?.ttlMs ?? DEFAULT_CACHE_TTL_MS
+  constructor(options: { maxSize: number; ttlMs: number }) {
+    this.maxSize = options.maxSize
+    this.ttlMs = options.ttlMs
     this.cache = new Map()
   }
 
