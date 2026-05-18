@@ -32,7 +32,9 @@ statsRoutes.get('/', async (c) => {
           totalAssets += count
         }
       } catch {
-        // Skip domains that fail — degraded response is acceptable
+        // intentional: degraded response — one failing domain count should
+        // not block the entire /stats response; the domain is simply omitted
+        logger.warn('Skipped domain count', { domain: domainName })
       }
     }
 

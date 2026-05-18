@@ -271,7 +271,8 @@ async function invalidateSession(): Promise<void> {
     try {
       await s.disconnect()
     } catch {
-      // Best-effort cleanup
+      // intentional: best-effort cleanup — the session may already be
+      // closed by the server or the network may be unavailable
     }
   }
 }

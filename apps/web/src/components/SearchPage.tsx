@@ -67,6 +67,9 @@ function getSearchHistory(): string[] {
   try {
     return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]')
   } catch {
+    // intentional: corrupted localStorage — clear it and return empty
+    console.warn('Search history corrupted in localStorage, clearing')
+    localStorage.removeItem(HISTORY_KEY)
     return []
   }
 }

@@ -37,10 +37,20 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
     return { allowed: false, violations: ['Query is empty'], query }
   }
 
-  let parsed
+  // sparqljs does not ship TypeScript declarations; this interface covers
+  // the subset of the parse tree we inspect for policy enforcement.
+  interface ParsedQuery {
+    type: string
+    queryType?: string
+    where?: SparqlPattern[]
+    prefixes?: Record<string, string>
+    limit?: number
+  }
+
+  let parsed: ParsedQuery
   try {
-    parsed = parser.parse(query)
-  } catch (err) {
+    parsed = parser.parse(query) as unknown as ParsedQuery
+  } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     return { allowed: false, violations: [`Parse error: ${msg}`], query }
   }
@@ -56,15 +66,13 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
   }
 
   // No SERVICE clauses (check recursively in where patterns)
-  // Note: sparqljs has no published TypeScript types; cast is necessary
-  if ('where' in parsed && containsService(parsed.where as unknown as SparqlPattern[])) {
+  if (parsed.where && containsService(parsed.where)) {
     violations.push('SERVICE clauses are not allowed (no federation)')
   }
 
   // Check prefixes — allow W3C standards, GAIA-X, and any ENVITED-X ontology
   if (parsed.prefixes) {
-    for (const [, iri] of Object.entries(parsed.prefixes)) {
-      const iriStr = iri as string
+    for (const [, iriStr] of Object.entries(parsed.prefixes)) {
       if (!BASE_ALLOWED_PREFIXES.has(iriStr) && !ENVITED_X_PATTERN.test(iriStr)) {
         violations.push(`Prefix IRI not in allowlist: ${iriStr}`)
       }
