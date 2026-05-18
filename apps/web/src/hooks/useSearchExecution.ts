@@ -109,16 +109,18 @@ export function useSearchExecution(availableDomains: string[]) {
 
       const decoder = new TextDecoder()
       let buffer = ''
+      let pendingEvent = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
         buffer += decoder.decode(value, { stream: true })
-        const { events, remainder } = parseSSEBuffer(buffer)
-        buffer = remainder
+        const result = parseSSEBuffer(buffer, pendingEvent)
+        buffer = result.remainder
+        pendingEvent = result.pendingEvent
 
-        for (const { event, data } of events) {
+        for (const { event, data } of result.events) {
           switch (event) {
             case SSE_EVENT.STATUS:
               setState((s) => ({ ...s, phase: (data as { phase: SearchPhase }).phase }))

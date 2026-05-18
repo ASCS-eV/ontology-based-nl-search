@@ -11,10 +11,10 @@
 
 /**
  * Prevent CSV formula injection by prefixing dangerous leading characters.
- * Characters that spreadsheet apps interpret as formulas: = + - @ TAB CR
+ * Characters that spreadsheet apps interpret as formulas: = + - @ TAB CR LF
  */
 export function sanitizeCsvCell(value: string): string {
-  if (/^[=+\-@\t\r]/.test(value)) {
+  if (/^[=+\-@\t\r\n]/.test(value)) {
     return `'${value}`
   }
   return value
@@ -41,6 +41,8 @@ export function resultsToCsv(results: Record<string, string>[], columns: string[
 export function resultsToJsonLd(results: Record<string, string>[]): object {
   // Discover namespace prefixes from URI values in the results
   const namespaces = new Map<string, string>()
+  const usedPrefixes = new Set<string>()
+
   for (const row of results) {
     for (const value of Object.values(row)) {
       if (value.startsWith('https://') || value.startsWith('http://')) {
@@ -52,8 +54,19 @@ export function resultsToJsonLd(results: Record<string, string>[]): object {
           if (!namespaces.has(ns)) {
             // Derive a short prefix from the namespace path
             const pathSegments = new URL(ns).pathname.split('/').filter(Boolean)
-            const prefix = pathSegments[pathSegments.length - 1] ?? 'ns'
-            namespaces.set(ns, prefix.replace(/[^a-zA-Z0-9]/g, ''))
+            let prefix = (pathSegments[pathSegments.length - 1] ?? 'ns').replace(
+              /[^a-zA-Z0-9]/g,
+              ''
+            )
+            // Resolve collisions by appending numeric suffix
+            const basePrefix = prefix
+            let counter = 2
+            while (usedPrefixes.has(prefix)) {
+              prefix = `${basePrefix}${counter}`
+              counter++
+            }
+            usedPrefixes.add(prefix)
+            namespaces.set(ns, prefix)
           }
         }
       }
@@ -69,9 +82,12 @@ export function resultsToJsonLd(results: Record<string, string>[]): object {
     '@context': context,
     '@graph': results.map((row) => {
       const entry: Record<string, string> = {}
+      let idAssigned = false
       for (const [key, value] of Object.entries(row)) {
-        if (value.startsWith('http://') || value.startsWith('https://')) {
+        if (!idAssigned && (value.startsWith('http://') || value.startsWith('https://'))) {
+          // Use the first URI column as @id; subsequent URIs stay as properties
           entry['@id'] = value
+          idAssigned = true
         } else {
           entry[key] = value
         }

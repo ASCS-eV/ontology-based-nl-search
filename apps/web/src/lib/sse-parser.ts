@@ -20,6 +20,8 @@ export interface SSEParseResult<T = unknown> {
   events: ParsedSSEEvent<T>[]
   /** Remaining incomplete buffer (carry forward to next chunk) */
   remainder: string
+  /** Pending event name awaiting its data line (carry forward to next chunk) */
+  pendingEvent: string
 }
 
 /**
@@ -33,14 +35,15 @@ export interface SSEParseResult<T = unknown> {
  * ```
  *
  * @param buffer - Accumulated text from the stream (may contain partial lines)
- * @returns Parsed events and any remaining incomplete text
+ * @param pendingEvent - Event name carried from a previous chunk (optional)
+ * @returns Parsed events, remaining incomplete text, and any pending event name
  */
-export function parseSSEBuffer<T = unknown>(buffer: string): SSEParseResult<T> {
+export function parseSSEBuffer<T = unknown>(buffer: string, pendingEvent = ''): SSEParseResult<T> {
   const events: ParsedSSEEvent<T>[] = []
   const lines = buffer.split('\n')
   const remainder = lines.pop() ?? ''
 
-  let currentEvent = ''
+  let currentEvent = pendingEvent
   for (const line of lines) {
     if (line.startsWith('event: ')) {
       currentEvent = line.slice(7)
@@ -51,5 +54,5 @@ export function parseSSEBuffer<T = unknown>(buffer: string): SSEParseResult<T> {
     }
   }
 
-  return { events, remainder }
+  return { events, remainder, pendingEvent: currentEvent }
 }

@@ -10,6 +10,7 @@ describe('sanitizeCsvCell', () => {
     expect(sanitizeCsvCell('@import')).toBe("'@import")
     expect(sanitizeCsvCell('\tcmd')).toBe("'\tcmd")
     expect(sanitizeCsvCell('\rcmd')).toBe("'\rcmd")
+    expect(sanitizeCsvCell('\ncmd')).toBe("'\ncmd")
   })
 
   it('leaves normal values unchanged', () => {
@@ -67,5 +68,35 @@ describe('resultsToJsonLd', () => {
     const jsonLd = resultsToJsonLd(results) as { '@context': object; '@graph': object[] }
     expect(jsonLd['@context']).toEqual({})
     expect(jsonLd['@graph']).toHaveLength(1)
+  })
+
+  it('resolves prefix collisions with numeric suffixes', () => {
+    const results = [
+      {
+        a: 'https://example.org/v1/Thing1',
+        b: 'https://other.org/v1/Thing2',
+      },
+    ]
+    const jsonLd = resultsToJsonLd(results) as { '@context': Record<string, string> }
+    const prefixes = Object.keys(jsonLd['@context'])
+    // Both namespaces end in "v1" but should get distinct prefixes
+    expect(new Set(prefixes).size).toBe(prefixes.length)
+    expect(prefixes).toContain('v1')
+    expect(prefixes).toContain('v12')
+  })
+
+  it('uses first URI column as @id and preserves subsequent URIs as properties', () => {
+    const results = [
+      {
+        subject: 'https://example.org/ns/Asset1',
+        related: 'https://example.org/ns/Asset2',
+        label: 'Test',
+      },
+    ]
+    const jsonLd = resultsToJsonLd(results) as { '@graph': Record<string, string>[] }
+    const entry = jsonLd['@graph'][0]!
+    expect(entry['@id']).toBe('https://example.org/ns/Asset1')
+    expect(entry['related']).toBe('https://example.org/ns/Asset2')
+    expect(entry['label']).toBe('Test')
   })
 })

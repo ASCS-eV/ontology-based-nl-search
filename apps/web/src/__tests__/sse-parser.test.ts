@@ -61,4 +61,22 @@ describe('parseSSEBuffer', () => {
     const { events } = parseSSEBuffer(buffer)
     expect(events).toHaveLength(0)
   })
+
+  it('preserves pending event across buffer boundaries', () => {
+    // First chunk has event line but no data yet
+    const chunk1 = 'event: status\n'
+    const result1 = parseSSEBuffer(chunk1)
+    expect(result1.events).toHaveLength(0)
+    expect(result1.pendingEvent).toBe('status')
+
+    // Second chunk provides the data line, using pendingEvent from first
+    const chunk2 = result1.remainder + 'data: {"phase":"done"}\n'
+    const result2 = parseSSEBuffer(chunk2, result1.pendingEvent)
+    expect(result2.events).toHaveLength(1)
+    expect(result2.events[0]).toEqual({
+      event: 'status',
+      data: { phase: 'done' },
+    })
+    expect(result2.pendingEvent).toBe('')
+  })
 })
