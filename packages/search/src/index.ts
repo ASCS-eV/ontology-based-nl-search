@@ -4,6 +4,7 @@ export {
   compileSlots,
   escapeSparqlLiteral,
   getAssetDomains,
+  MAX_RESULTS_LIMIT,
 } from './compiler.js'
 export { getInitializedStore } from './init.js'
 export { SCHEMA_GRAPH } from './schema-loader.js'

@@ -37,6 +37,9 @@ import {
 } from './schema-queries.js'
 import type { SearchSlots } from './slots.js'
 
+/** Maximum number of results returned by compiled queries */
+export const MAX_RESULTS_LIMIT = 100
+
 /** Property info from ontology - supports properties existing in multiple domains */
 interface CompilerProperty {
   /** All domains that define this property (e.g., roadTypes in both hdmap and ositrace) */
@@ -66,6 +69,29 @@ export function escapeSparqlLiteral(value: string): string {
     .replace(/\n/g, '\\n')
     .replace(/\r/g, '\\r')
     .replace(/\t/g, '\\t')
+}
+
+/**
+ * Assemble a complete SPARQL SELECT query from its constituent parts.
+ * Centralizes the query-tail pattern used by both single-domain and cross-domain compilation.
+ */
+function assembleQuery(
+  prefixes: string,
+  selectVars: string[] | Set<string>,
+  patterns: string[],
+  optionals: string[],
+  filters: string[],
+  limit: number = MAX_RESULTS_LIMIT
+): string {
+  const vars = selectVars instanceof Set ? [...selectVars] : selectVars
+  const selectClause = `SELECT ${vars.join(' ')}`
+  const whereBody = [...patterns, ...optionals, ...filters].join('\n  ')
+
+  return `${prefixes}
+${selectClause} WHERE {
+  ${whereBody}
+}
+LIMIT ${limit}`
 }
 
 /** Cached compiler vocabulary (ontology doesn't change at runtime) */
@@ -279,14 +305,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   }
 
   // Build the query
-  const selectClause = `SELECT ${[...selectVars].join(' ')}`
-  const whereBody = [...patterns, ...optionals, ...filters].join('\n  ')
-
-  return `${prefixes}
-${selectClause} WHERE {
-  ${whereBody}
-}
-LIMIT 100`
+  return assembleQuery(prefixes, selectVars, patterns, optionals, filters)
 }
 
 /**
@@ -403,14 +422,7 @@ function compileCrossDomainQuery(
   }
 
   // Build the query
-  const selectClause = `SELECT ${selectVars.join(' ')}`
-  const whereBody = [...patterns, ...optionals, ...filters].join('\n  ')
-
-  return `${prefixes}
-${selectClause} WHERE {
-  ${whereBody}
-}
-LIMIT 100`
+  return assembleQuery(prefixes, selectVars, patterns, optionals, filters)
 }
 
 /**
