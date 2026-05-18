@@ -38,6 +38,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@ontology-search/api-types": "workspace:*",
     "@ontology-search/core": "workspace:*",
     "@ontology-search/ontology": "workspace:*",
     "@ontology-search/sparql": "workspace:*",

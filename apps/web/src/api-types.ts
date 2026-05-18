@@ -1,43 +1,23 @@
-/** API response types matching the backend contract */
-
-export interface MappedTerm {
-  input: string
-  mapped: string
-  confidence: 'high' | 'medium' | 'low'
-  property?: string
-}
-
-export interface OntologyGap {
-  term: string
-  reason: string
-  suggestions?: string[]
-  definition?: string
-  scopeNote?: string
-  isDomainConcept?: boolean
-}
-
-export interface QueryInterpretation {
-  summary: string
-  mappedTerms: MappedTerm[]
-}
-
-export interface SearchMeta {
-  totalDatasets: number
-  matchCount: number
-  executionTimeMs: number
-  timings?: { stage: string; durationMs: number }[]
-}
-
-export interface SearchResponse {
-  interpretation: QueryInterpretation
-  gaps: OntologyGap[]
-  sparql: string
-  results: Record<string, string>[]
-  meta: SearchMeta
-}
-
-export interface StatsResponse {
-  totalAssets: number
-  domains: Record<string, number>
-  availableDomains: string[]
-}
+/**
+ * HTTP-boundary wire types re-exported from `@ontology-search/api-types`.
+ *
+ * The web client must not import from `@ontology-search/search` directly
+ * (that package transitively pulls in Oxigraph WASM, Node `fs`, and the
+ * SHACL validator). Going through the browser-safe `api-types` package
+ * keeps the server and client on identical type declarations without
+ * dragging server runtimes into the bundle.
+ *
+ * This file is intentionally a thin shim. New wire fields belong in
+ * `packages/api-types/src/index.ts` — adding them here would
+ * re-introduce drift between the server and client type declarations.
+ */
+export type {
+  MappedTerm,
+  OntologyGap,
+  QueryInterpretation,
+  ResultRow,
+  SearchMeta,
+  SearchResponse,
+  StatsResponse,
+  TimingEntry,
+} from '@ontology-search/api-types'

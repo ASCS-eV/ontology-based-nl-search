@@ -39,12 +39,11 @@ interface LogEntry {
 }
 
 /**
- * Bootstrap exception to criterion #1 (no `process.env` outside the config
- * loader): the logger needs to function while `getConfig()` itself is
- * parsing — and to report `getConfig()`'s own validation failures. Reading
- * the two log-relevant variables directly here breaks the bootstrap cycle.
- * Both keys are still declared in the Zod schema for documentation
- * (`LOG_LEVEL`, `NODE_ENV`); every other caller uses `getConfig()`.
+ * The logger reads `LOG_LEVEL` and `NODE_ENV` directly because it must
+ * function while `getConfig()` itself is parsing — and to report
+ * `getConfig()`'s own validation failures. Every other caller in the
+ * codebase routes env access through the validated config; both keys
+ * here are still declared in the Zod schema for documentation.
  */
 function resolveLogLevel(): LogLevel {
   // eslint-disable-next-line no-restricted-syntax

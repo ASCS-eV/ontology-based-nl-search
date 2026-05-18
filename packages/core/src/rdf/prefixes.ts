@@ -12,12 +12,11 @@
  * Single source of truth for the prefixes that appear across the
  * codebase: SPARQL query strings, the SPARQL policy allowlist, the
  * domain registry's standard-prefix map, and tests. Inline
- * `'http://www.w3.org/...'` literals in source are forbidden by
- * criterion #3 — every caller imports from here.
+ * `'http://www.w3.org/...'` literals belong in this module and nowhere
+ * else.
  *
  * These IRIs are protocol identifiers (W3C / GAIA-X / community
- * vocabularies), not ontology-specific names. Criterion 9b
- * (ontology-name budget) does not apply to them.
+ * vocabularies), not ontology-specific names.
  */
 
 import zazukoPrefixes from '@zazuko/prefixes/prefixes.js'
