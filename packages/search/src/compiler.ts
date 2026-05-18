@@ -396,73 +396,69 @@ function buildDomainPatterns(
 
   patterns.push(`${assetVar} ${domain.prefix}:hasDomainSpecification ${specVar} .`)
 
-  // Group by shape
-  const contentProps: [string, string | string[]][] = []
-  const formatProps: [string, string | string[]][] = []
-  const quantityProps: [string, string | string[]][] = []
-  const dataSourceProps: [string, string | string[]][] = []
+  // Group both filter entries AND range entries by their classified shape
+  // group, discovered from the SHACL graph at runtime (see
+  // `queryPropertyShapeGroups`). There is no enumerated allow-list and no
+  // privileged group — any shape group declared in the ontology is
+  // handled uniformly, and each property's range is routed to the group
+  // the SHACL graph actually puts it in. Pre-refactor the compiler had a
+  // four-case switch over Content/Format/Quantity/DataSource that
+  // silently dropped properties in other groups, and ranges were
+  // unconditionally linked under `hasQuantity` regardless of where the
+  // property actually lives.
+  const filterPropsByGroup = new Map<string, [string, string | string[]][]>()
+  const rangePropsByGroup = new Map<string, [string, { min?: number; max?: number }][]>()
 
   for (const [propName, value] of filterEntries) {
     const shape = classifyProperty(propName, domainName, vocabIndex)
-
-    switch (shape) {
-      case 'Content':
-        contentProps.push([propName, value])
-        break
-      case 'Format':
-        formatProps.push([propName, value])
-        break
-      case 'Quantity':
-        quantityProps.push([propName, value])
-        break
-      case 'DataSource':
-        dataSourceProps.push([propName, value])
-        break
+    let bucket = filterPropsByGroup.get(shape)
+    if (!bucket) {
+      bucket = []
+      filterPropsByGroup.set(shape, bucket)
     }
+    bucket.push([propName, value])
+  }
+
+  for (const [propName, range] of rangeEntries) {
+    const shape = classifyProperty(propName, domainName, vocabIndex)
+    let bucket = rangePropsByGroup.get(shape)
+    if (!bucket) {
+      bucket = []
+      rangePropsByGroup.set(shape, bucket)
+    }
+    bucket.push([propName, range])
   }
 
   const suffix = assetVar === '?asset' ? '' : `_${domainName.replace(/-/g, '_')}`
 
-  // Content shape
-  if (contentProps.length > 0) {
-    const contentVar = `?content${suffix}`
-    patterns.push(`${specVar} ${domain.prefix}:hasContent ${contentVar} .`)
-    for (const [propName, value] of contentProps) {
+  // Emit every shape group that has at least one filter or range. Sort for
+  // deterministic SPARQL output — the compiler-determinism snapshot suite
+  // (task 04) relies on this ordering.
+  const groupsToEmit = new Set<string>([...filterPropsByGroup.keys(), ...rangePropsByGroup.keys()])
+
+  for (const group of [...groupsToEmit].sort()) {
+    const groupVar = `?${groupVariableName(group)}${suffix}`
+    patterns.push(`${specVar} ${domain.prefix}:${groupPredicate(group)} ${groupVar} .`)
+
+    // Filter properties classified under this group.
+    for (const [propName, value] of filterPropsByGroup.get(group) ?? []) {
       const varName = `?${propName}${suffix}`
       const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
-      patterns.push(`${contentVar} ${propDomain}:${propName} ${varName} .`)
+      patterns.push(`${groupVar} ${propDomain}:${propName} ${varName} .`)
       addEnumFilter(patterns, filters, varName, value)
       selectVars.add(varName)
     }
-  }
 
-  // Format shape
-  if (formatProps.length > 0) {
-    const fmtVar = `?fmt${suffix}`
-    patterns.push(`${specVar} ${domain.prefix}:hasFormat ${fmtVar} .`)
-    for (const [propName, value] of formatProps) {
-      const varName = `?${propName}${suffix}`
-      const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
-      patterns.push(`${fmtVar} ${propDomain}:${propName} ${varName} .`)
-      addEnumFilter(patterns, filters, varName, value)
-      selectVars.add(varName)
-    }
-  }
-
-  // Quantity / range filters
-  // Range2D properties (detected from SHACL via sh:node → Range2DShape) use
-  // nested min/max structure: prop → [a Range2D; domain:min; domain:max]
-
-  if (rangeEntries.length > 0) {
-    const qtyVar = `?qty${suffix}`
-    patterns.push(`${specVar} ${domain.prefix}:hasQuantity ${qtyVar} .`)
-    for (const [propName, range] of rangeEntries) {
+    // Range properties classified under this group. Range2D properties
+    // (detected from SHACL via `sh:node → Range2DShape`) use the nested
+    // `min`/`max` structure; simple numeric properties are filtered directly.
+    for (const [propName, range] of rangePropsByGroup.get(group) ?? []) {
       const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
 
       if (vocabIndex.range2DProperties.has(propName)) {
-        // Range2D: property links to blank node with hdmap:min and hdmap:max
+        // Range2D: property links to a blank node with min and max children.
         const rangeNode = `?${propName}Range${suffix}`
-        patterns.push(`${qtyVar} ${propDomain}:${propName} ${rangeNode} .`)
+        patterns.push(`${groupVar} ${propDomain}:${propName} ${rangeNode} .`)
         if (range.min !== undefined) {
           const maxVar = `?${propName}Max${suffix}`
           patterns.push(`${rangeNode} ${propDomain}:max ${maxVar} .`)
@@ -476,9 +472,8 @@ function buildDomainPatterns(
           selectVars.add(minVar)
         }
       } else {
-        // Simple literal property
         const varName = `?${propName}${suffix}`
-        patterns.push(`${qtyVar} ${propDomain}:${propName} ${varName} .`)
+        patterns.push(`${groupVar} ${propDomain}:${propName} ${varName} .`)
         selectVars.add(varName)
         if (range.min !== undefined) {
           filters.push(`FILTER(xsd:float(${varName}) >= ${range.min})`)
@@ -487,19 +482,6 @@ function buildDomainPatterns(
           filters.push(`FILTER(xsd:float(${varName}) <= ${range.max})`)
         }
       }
-    }
-  }
-
-  // DataSource shape
-  if (dataSourceProps.length > 0) {
-    const dsVar = `?ds${suffix}`
-    patterns.push(`${specVar} ${domain.prefix}:hasDataSource ${dsVar} .`)
-    for (const [propName, value] of dataSourceProps) {
-      const varName = `?${propName}${suffix}`
-      const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
-      patterns.push(`${dsVar} ${propDomain}:${propName} ${varName} .`)
-      addEnumFilter(patterns, filters, varName, value)
-      selectVars.add(varName)
     }
   }
 
@@ -704,6 +686,31 @@ function buildPrefixes(
 function classifyProperty(propName: string, domainName: string, vocabIndex: CompilerVocab): string {
   const shapeGroup = vocabIndex.shapeGroups.get(`${propName}:${domainName}`)
   return shapeGroup ?? 'Content'
+}
+
+/**
+ * Convert a SHACL shape-group localName into the SPARQL variable name that
+ * holds the linked DomainSpecification sub-resource. The convention is
+ * lower-camelCase of the localName: `Content → content`, `DataSource →
+ * dataSource`, `Quantity → quantity`. Both `?fmt` (old `?fmt` for Format)
+ * and `?ds` (old `?ds` for DataSource) used hand-picked abbreviations the
+ * audit flagged as unclear; the unified rule reads as well or better and
+ * works for any future group.
+ */
+function groupVariableName(group: string): string {
+  if (group.length === 0) return 'group'
+  return group[0]!.toLowerCase() + group.slice(1)
+}
+
+/**
+ * The `hasGroup` predicate linking the DomainSpecification to a shape's
+ * sub-resource: `Content → hasContent`, `Quantity → hasQuantity`, …
+ *
+ * The ENVITED-X SHACL convention is consistent across every domain, so the
+ * predicate is derivable from the group localName — no hand-maintained map.
+ */
+function groupPredicate(group: string): string {
+  return `has${group}`
 }
 
 /**
