@@ -37,6 +37,9 @@ import {
 } from './schema-queries.js'
 import type { SearchSlots } from './slots.js'
 
+/** Maximum number of result rows returned by a compiled SPARQL query */
+const MAX_RESULTS_LIMIT = 100
+
 /** Property info from ontology - supports properties existing in multiple domains */
 interface CompilerProperty {
   /** All domains that define this property (e.g., roadTypes in both hdmap and ositrace) */
@@ -286,7 +289,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
 ${selectClause} WHERE {
   ${whereBody}
 }
-LIMIT 100`
+LIMIT ${MAX_RESULTS_LIMIT}`
 }
 
 /**
@@ -410,7 +413,7 @@ function compileCrossDomainQuery(
 ${selectClause} WHERE {
   ${whereBody}
 }
-LIMIT 100`
+LIMIT ${MAX_RESULTS_LIMIT}`
 }
 
 /**

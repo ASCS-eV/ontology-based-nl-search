@@ -17,14 +17,20 @@ interface CacheEntry {
   timestamp: number
 }
 
+/** Default maximum number of entries before LRU eviction kicks in */
+const DEFAULT_CACHE_SIZE = 256
+
+/** Default time-to-live for cache entries (5 minutes) */
+const DEFAULT_CACHE_TTL_MS = 300_000
+
 export class SparqlCache {
   private cache: Map<string, CacheEntry>
   private readonly maxSize: number
   private readonly ttlMs: number
 
   constructor(options?: { maxSize?: number; ttlMs?: number }) {
-    this.maxSize = options?.maxSize ?? 256
-    this.ttlMs = options?.ttlMs ?? 5 * 60 * 1000 // 5 minutes
+    this.maxSize = options?.maxSize ?? DEFAULT_CACHE_SIZE
+    this.ttlMs = options?.ttlMs ?? DEFAULT_CACHE_TTL_MS
     this.cache = new Map()
   }
 

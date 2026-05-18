@@ -30,6 +30,13 @@ import type { LlmStructuredResponse, MappedTerm, OntologyGap } from './types.js'
 /** Maximum edit distance for a fuzzy match to be accepted */
 const FUZZY_THRESHOLD = 4
 
+/**
+ * Maximum edit distance for a property-name correction to be accepted.
+ * Tighter than FUZZY_THRESHOLD because property names are short identifiers
+ * where larger distances risk false matches (e.g., "city" → "country").
+ */
+const MAX_PROPERTY_MATCH_DISTANCE = 2
+
 /** Maximum suggestions to generate per gap */
 const MAX_SUGGESTIONS = 5
 
@@ -258,7 +265,7 @@ export function validateSlots(
       const knownProps = [...allowedIndex.keys(), ...numericProps]
       const propMatch = findBestMatch(propertyName, knownProps)
 
-      if (propMatch && propMatch.distance <= 2) {
+      if (propMatch && propMatch.distance <= MAX_PROPERTY_MATCH_DISTANCE) {
         // Property name was close enough — try matching the value
         const correctedPropName = propMatch.match
         const propInfo = allowedIndex.get(correctedPropName)
