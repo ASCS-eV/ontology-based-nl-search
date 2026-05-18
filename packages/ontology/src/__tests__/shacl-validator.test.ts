@@ -11,7 +11,8 @@
  * If new constraint types appear in the ontology, no test changes are needed
  * for the validator itself — it forwards every Core constraint to SHACL.
  */
-import { describe, expect, it } from 'vitest'
+import { resetConfig } from '@ontology-search/core/config'
+import { afterAll, describe, expect, it } from 'vitest'
 
 import { ShaclValidator } from '../shacl-validator.js'
 
@@ -137,6 +138,48 @@ describe('ShaclValidator — engine-call accounting (R2, R3, R8)', () => {
     // duplicates collapse via the validator's internal Set).
     expect(validator.__engineCallCount__).toBe(1)
   }, 60_000)
+})
+
+describe('ShaclValidator — bounded result cache', () => {
+  const prevSize = process.env['SHACL_CACHE_SIZE']
+
+  afterAll(() => {
+    if (prevSize === undefined) delete process.env['SHACL_CACHE_SIZE']
+    else process.env['SHACL_CACHE_SIZE'] = prevSize
+    resetConfig()
+    ShaclValidator.reset()
+  })
+
+  /**
+   * Regression: before the LRU bound, the result cache was an unbounded Map.
+   * A long-running server validating user-supplied filter values would grow
+   * memory without limit. This test pins the contract: the cache never
+   * retains more than SHACL_CACHE_SIZE entries, regardless of how many
+   * distinct values are validated.
+   *
+   * We use an "unknown property" IRI to drive the cache. That path writes a
+   * vacuous-pass entry into the same cache without invoking the SHACL engine,
+   * so the test is cache-mechanics-only and runs in milliseconds — exactly
+   * what we need to assert the bound without paying engine warmup cost per
+   * iteration.
+   */
+  it('never retains more entries than SHACL_CACHE_SIZE', async () => {
+    process.env['SHACL_CACHE_SIZE'] = '4'
+    resetConfig()
+    ShaclValidator.reset()
+    const validator = await ShaclValidator.fromWorkspace()
+
+    expect(validator.__resultCacheCapacity__).toBe(4)
+
+    const unknown = 'https://example.org/unbounded-cache-probe'
+    // Pump 5x the capacity through the cache; the LRU bound must hold the
+    // whole way through, not just at the end.
+    for (let i = 0; i < 20; i++) {
+      await validator.validateValue(unknown, `value-${i}`)
+      expect(validator.__resultCacheSize__).toBeLessThanOrEqual(4)
+    }
+    expect(validator.__resultCacheSize__).toBe(4)
+  }, 30_000)
 })
 
 /**
