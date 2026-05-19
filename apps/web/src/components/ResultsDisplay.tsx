@@ -1,3 +1,5 @@
+import { downloadFile, resultsToCsv, resultsToJsonLd } from '../lib/export-utils'
+
 interface ResultsDisplayProps {
   results: Record<string, string>[]
 }
@@ -21,32 +23,12 @@ export function ResultsDisplay({ results }: ResultsDisplayProps) {
   const columns = Object.keys(results[0] ?? {})
 
   const exportCsv = () => {
-    const header = columns.join(',')
-    const rows = results.map((row) =>
-      columns.map((col) => `"${sanitizeCsvCell(row[col] || '').replace(/"/g, '""')}"`).join(',')
-    )
-    const csv = [header, ...rows].join('\n')
+    const csv = resultsToCsv(results, columns)
     downloadFile(csv, 'search-results.csv', 'text/csv')
   }
 
   const exportJsonLd = () => {
-    const jsonLd = {
-      '@context': {
-        hdmap: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/',
-        georeference: 'https://w3id.org/ascs-ev/envited-x/georeference/v5/',
-      },
-      '@graph': results.map((row) => {
-        const entry: Record<string, string> = {}
-        for (const [key, value] of Object.entries(row)) {
-          if (value.startsWith('http://') || value.startsWith('https://')) {
-            entry['@id'] = value
-          } else {
-            entry[key] = value
-          }
-        }
-        return entry
-      }),
-    }
+    const jsonLd = resultsToJsonLd(results)
     downloadFile(JSON.stringify(jsonLd, null, 2), 'search-results.jsonld', 'application/ld+json')
   }
 
@@ -115,22 +97,4 @@ function formatValue(value: unknown): string {
     return value
   }
   return String(value)
-}
-
-/** Prevent CSV formula injection by prefixing dangerous leading characters with a single quote */
-function sanitizeCsvCell(value: string): string {
-  if (/^[=+\-@\t\r]/.test(value)) {
-    return `'${value}`
-  }
-  return value
-}
-
-function downloadFile(content: string, filename: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }

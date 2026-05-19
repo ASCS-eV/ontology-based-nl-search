@@ -1,14 +1,8 @@
-import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type {
-  MappedTerm,
-  OntologyGap,
-  QueryInterpretation,
-  SearchMeta,
-  StatsResponse,
-} from '../api-types'
+import type { StatsResponse } from '../api-types'
+import { useSearchExecution } from '../hooks/useSearchExecution'
+import { useSearchHistory } from '../hooks/useSearchHistory'
 import { InterpretationDisplay } from './InterpretationDisplay'
 import { OntologyGapsDisplay } from './OntologyGapsDisplay'
 import { QueryRefinement } from './QueryRefinement'
@@ -16,84 +10,7 @@ import { ResultsDisplay } from './ResultsDisplay'
 import { SearchBar } from './SearchBar'
 import { SparqlPreview } from './SparqlPreview'
 
-const HISTORY_KEY = 'nl-search-history'
-const MAX_HISTORY = 10
-
-function isLocationProperty(property: string): boolean {
-  return ['country', 'state', 'region', 'city'].includes(property)
-}
-
-/** Detect if a mapped value represents a numeric range (e.g., "numberX >= 1") */
-function isNumericRange(mapped: string): boolean {
-  return /[><=]\s*\d/.test(mapped) || /\d+\s*[-–]\s*\d+/.test(mapped)
-}
-
-/** Parse a range string like ">= 1" or "5 - 10" into { min, max } */
-function parseRange(mapped: string): { min?: number; max?: number } {
-  const geMatch = mapped.match(/>=?\s*(\d+(?:\.\d+)?)/)
-  const leMatch = mapped.match(/<=?\s*(\d+(?:\.\d+)?)/)
-  const rangeMatch = mapped.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/)
-
-  if (rangeMatch) {
-    return { min: Number(rangeMatch[1]), max: Number(rangeMatch[2]) }
-  }
-  const result: { min?: number; max?: number } = {}
-  if (geMatch) result.min = Number(geMatch[1])
-  if (leMatch) result.max = Number(leMatch[1])
-  return result
-}
-
-/**
- * Detect domains from mapped terms — uses the LLM's domain mapping if
- * available, otherwise falls back to the discovered ontology domains
- * surfaced via /stats. We deliberately do not hard-code a default domain
- * here: that pinned the project to a single ontology and disagreed with
- * what the server actually had registered. Returns an empty array when
- * neither source yields a domain — the server then rejects the refine
- * with a typed CompileError that the UI already surfaces.
- */
-function detectDomainsFromTerms(terms: MappedTerm[], availableDomains: string[]): string[] {
-  const domains = new Set<string>()
-  for (const term of terms) {
-    if (term.property === 'domain' && term.mapped) {
-      domains.add(term.mapped)
-    }
-  }
-  if (domains.size > 0) return [...domains]
-  return availableDomains
-}
-
-function getSearchHistory(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]')
-  } catch {
-    // intentional: corrupted localStorage — clear it and return empty
-    console.warn('Search history corrupted in localStorage, clearing')
-    localStorage.removeItem(HISTORY_KEY)
-    return []
-  }
-}
-
-function saveToHistory(query: string) {
-  const history = getSearchHistory().filter((h) => h !== query)
-  history.unshift(query)
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)))
-}
-
-type SearchPhase = 'idle' | 'interpreting' | 'executing' | 'done'
-
 export function SearchPage() {
-  const [interpretation, setInterpretation] = useState<QueryInterpretation | null>(null)
-  const [gaps, setGaps] = useState<OntologyGap[] | null>(null)
-  const [sparql, setSparql] = useState<string | null>(null)
-  const [results, setResults] = useState<Record<string, string>[] | null>(null)
-  const [meta, setMeta] = useState<SearchMeta | null>(null)
-  const [phase, setPhase] = useState<SearchPhase>('idle')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [history, setHistory] = useState<string[]>([])
-  const abortControllerRef = useRef<AbortController | null>(null)
-
   const { data: stats } = useQuery<StatsResponse>({
     queryKey: ['stats'],
     queryFn: async () => {
@@ -103,162 +20,25 @@ export function SearchPage() {
     },
   })
 
-  useEffect(() => {
-    setHistory(getSearchHistory())
-  }, [])
+  const { history, addToHistory } = useSearchHistory()
 
-  const handleSearch = useCallback(async (naturalLanguageQuery: string) => {
-    abortControllerRef.current?.abort()
-    const controller = new AbortController()
-    abortControllerRef.current = controller
+  const {
+    interpretation,
+    gaps,
+    sparql,
+    results,
+    meta,
+    phase,
+    loading,
+    error,
+    handleSearch: executeSearch,
+    handleRefine,
+  } = useSearchExecution(stats?.availableDomains ?? [])
 
-    setLoading(true)
-    setError(null)
-    setInterpretation(null)
-    setGaps(null)
-    setSparql(null)
-    setResults(null)
-    setMeta(null)
-    setPhase('interpreting')
-
-    try {
-      const res = await fetch('/api/search/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: naturalLanguageQuery }),
-        signal: controller.signal,
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Search failed')
-      }
-
-      const reader = res.body?.getReader()
-      if (!reader) throw new Error('No response stream')
-
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() ?? ''
-
-        let currentEvent = ''
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            currentEvent = line.slice(7)
-          } else if (line.startsWith('data: ') && currentEvent) {
-            const data = JSON.parse(line.slice(6))
-            switch (currentEvent) {
-              case SSE_EVENT.STATUS:
-                setPhase(data.phase as SearchPhase)
-                break
-              case SSE_EVENT.INTERPRETATION:
-                setInterpretation(data)
-                break
-              case SSE_EVENT.GAPS:
-                setGaps(data)
-                break
-              case SSE_EVENT.SPARQL:
-                setSparql(data)
-                break
-              case SSE_EVENT.RESULTS:
-                setResults(data.results)
-                if (data.error) setError(data.error)
-                break
-              case SSE_EVENT.META:
-                setMeta(data)
-                break
-              case SSE_EVENT.DONE:
-                setPhase('done')
-                break
-              case SSE_EVENT.ERROR:
-                setError(data.message)
-                break
-            }
-            currentEvent = ''
-          }
-        }
-      }
-
-      saveToHistory(naturalLanguageQuery)
-      setHistory(getSearchHistory())
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') return
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
-    } finally {
-      setLoading(false)
-      setPhase('done')
-    }
-  }, [])
-
-  const handleRefine = useCallback(
-    async (updatedTerms: MappedTerm[]) => {
-      setLoading(true)
-      setError(null)
-      setResults(null)
-      setMeta(null)
-      setPhase('executing')
-
-      try {
-        const filters: Record<string, string> = {}
-        const location: Record<string, string> = {}
-        const ranges: Record<string, { min?: number; max?: number }> = {}
-
-        for (const term of updatedTerms) {
-          if (term.property && term.mapped) {
-            if (isLocationProperty(term.property)) {
-              location[term.property] = term.mapped
-            } else if (isNumericRange(term.mapped)) {
-              ranges[term.property] = parseRange(term.mapped)
-            } else {
-              filters[term.property] = term.mapped
-            }
-          }
-        }
-
-        // Detect domains from the updated terms; fall back to the
-        // ontology-discovered list surfaced by /stats so the refine path is
-        // never pinned to a hand-picked domain name.
-        const domains = detectDomainsFromTerms(updatedTerms, stats?.availableDomains ?? [])
-
-        const slots = {
-          domains,
-          filters,
-          ranges,
-          ...(Object.keys(location).length > 0 ? { location } : {}),
-        }
-
-        const res = await fetch('/api/search/refine', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slots }),
-        })
-
-        if (!res.ok) {
-          const errorData = await res.json()
-          throw new Error(errorData.error || 'Refine failed')
-        }
-
-        const data = await res.json()
-        setSparql(data.sparql)
-        setResults(data.results)
-        setMeta(data.meta)
-        setPhase('done')
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Refine failed')
-      } finally {
-        setLoading(false)
-        setPhase('done')
-      }
-    },
-    [stats?.availableDomains]
-  )
+  const handleSearch = async (query: string) => {
+    await executeSearch(query)
+    addToHistory(query)
+  }
 
   const hasResponse = interpretation || gaps || sparql || results
 
