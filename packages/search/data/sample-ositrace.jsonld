@@ -158,7 +158,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-003"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-023"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-043"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-063"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-083"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -304,7 +351,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-004"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-024"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-044"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-064"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-084"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -446,7 +540,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-005"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-025"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-045"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-065"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-085"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -569,7 +710,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-006"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-026"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-046"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-066"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-086"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -697,7 +885,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-007"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-027"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-047"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-067"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-087"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -822,7 +1057,90 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-008"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-028"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-048"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-068"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-088"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-bus-lanes-151"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:munich-restricted-159"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-parking-164"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:a8-mwyexit-165"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -944,7 +1262,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-009"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-029"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-049"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-069"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-089"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -1054,7 +1419,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-010"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-030"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-050"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-070"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-090"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -1176,7 +1588,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-031"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-051"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-071"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-091"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -1281,7 +1740,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-012"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-032"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-052"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-072"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-092"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -1406,7 +1912,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:london-urban-corridor-013"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:london-urban-corridor-033"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:london-urban-corridor-053"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:london-urban-corridor-073"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:london-urban-corridor-093"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -1528,7 +2081,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:stuttgart-highway-interchange-014"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:stuttgart-highway-interchange-034"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:stuttgart-highway-interchange-054"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:stuttgart-highway-interchange-074"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:stuttgart-highway-interchange-094"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -1656,7 +2256,72 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:berlin-rural-route-015"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:berlin-rural-route-035"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:berlin-rural-route-055"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:berlin-rural-route-075"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:berlin-rural-route-095"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:berlin-bus-lanes-152"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:berlin-tram-158"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -1774,7 +2439,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:cologne-motorway-016"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:cologne-motorway-036"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:cologne-motorway-056"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:cologne-motorway-076"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:cologne-motorway-096"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -1893,7 +2605,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:san-francisco-parking-garage-017"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:san-francisco-parking-garage-037"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:san-francisco-parking-garage-057"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:san-francisco-parking-garage-077"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:san-francisco-parking-garage-097"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -2011,7 +2770,63 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:tokyo-urban-corridor-018"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:tokyo-urban-corridor-038"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:tokyo-urban-corridor-058"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:tokyo-urban-corridor-078"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:tokyo-urban-corridor-098"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:jpmap.co.jp:HdMap:tokyo-highway-163"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -2136,7 +2951,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:stockholm-highway-interchange-019"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:stockholm-highway-interchange-039"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:stockholm-highway-interchange-059"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:stockholm-highway-interchange-079"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:stockholm-highway-interchange-099"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -2247,7 +3109,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:milan-rural-route-020"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:milan-rural-route-040"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:milan-rural-route-060"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:milan-rural-route-080"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:milan-rural-route-100"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -2363,7 +3272,63 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:karlsruhe-motorway-001"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:karlsruhe-motorway-021"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:karlsruhe-motorway-041"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:karlsruhe-motorway-061"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:karlsruhe-motorway-081"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:a5-onramp-156"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -2467,7 +3432,72 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-parking-garage-002"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-parking-garage-022"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-parking-garage-042"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-parking-garage-062"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-parking-garage-082"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-bus-lanes-153"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-urban-160"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -2618,7 +3648,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-003"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-023"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-043"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-063"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-083"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -2764,7 +3841,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-004"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-024"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-044"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-064"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-084"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -2906,7 +4030,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-005"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-025"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-045"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-065"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-085"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -3029,7 +4200,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-006"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-026"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-046"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-066"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-086"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -3157,7 +4375,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-007"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-027"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-047"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-067"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-087"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -3282,7 +4547,90 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-008"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-028"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-048"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-068"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-088"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-bus-lanes-151"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:munich-restricted-159"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-parking-164"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:a8-mwyexit-165"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -3404,7 +4752,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-009"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-029"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-049"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-069"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-089"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -3514,7 +4909,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-010"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-030"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-050"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-070"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-090"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -3636,7 +5078,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-031"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-051"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-071"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-091"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -3741,7 +5230,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-012"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-032"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-052"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-072"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-092"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -3866,7 +5402,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:london-urban-corridor-013"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:london-urban-corridor-033"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:london-urban-corridor-053"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:london-urban-corridor-073"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:london-urban-corridor-093"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -3988,7 +5571,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:stuttgart-highway-interchange-014"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:stuttgart-highway-interchange-034"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:stuttgart-highway-interchange-054"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:stuttgart-highway-interchange-074"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:stuttgart-highway-interchange-094"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -4116,7 +5746,72 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:berlin-rural-route-015"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:berlin-rural-route-035"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:berlin-rural-route-055"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:berlin-rural-route-075"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:berlin-rural-route-095"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:berlin-bus-lanes-152"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:berlin-tram-158"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -4234,7 +5929,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:cologne-motorway-016"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:cologne-motorway-036"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:cologne-motorway-056"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:cologne-motorway-076"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:cologne-motorway-096"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -4353,7 +6095,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:san-francisco-parking-garage-017"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:san-francisco-parking-garage-037"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:san-francisco-parking-garage-057"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:san-francisco-parking-garage-077"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:san-francisco-parking-garage-097"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -4471,7 +6260,63 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:tokyo-urban-corridor-018"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:tokyo-urban-corridor-038"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:tokyo-urban-corridor-058"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:tokyo-urban-corridor-078"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:tokyo-urban-corridor-098"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:jpmap.co.jp:HdMap:tokyo-highway-163"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -4596,7 +6441,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:stockholm-highway-interchange-019"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:stockholm-highway-interchange-039"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:stockholm-highway-interchange-059"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:stockholm-highway-interchange-079"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:stockholm-highway-interchange-099"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -4707,7 +6599,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:milan-rural-route-020"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:milan-rural-route-040"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:milan-rural-route-060"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:milan-rural-route-080"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:milan-rural-route-100"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -4823,7 +6762,63 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:karlsruhe-motorway-001"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:karlsruhe-motorway-021"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:karlsruhe-motorway-041"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:karlsruhe-motorway-061"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:karlsruhe-motorway-081"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:a5-onramp-156"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -4927,7 +6922,72 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-parking-garage-002"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-parking-garage-022"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-parking-garage-042"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-parking-garage-062"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-parking-garage-082"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-bus-lanes-153"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hamburg-urban-160"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -5078,7 +7138,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-003"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-023"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-043"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-063"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:dresden-urban-corridor-083"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -5224,7 +7331,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-004"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-024"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-044"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-064"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:detroit-highway-interchange-084"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -5366,7 +7520,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-005"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-025"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-045"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-065"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:shanghai-rural-route-085"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -5489,7 +7690,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-006"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-026"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-046"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-066"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:paris-motorway-086"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -5617,7 +7865,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-007"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-027"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-047"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-067"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:seoul-parking-garage-087"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -5742,7 +8037,90 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-008"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-028"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-048"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-068"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-urban-corridor-088"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-bus-lanes-151"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:munich-restricted-159"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:munich-parking-164"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:a8-mwyexit-165"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -5864,7 +8242,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-009"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-029"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-049"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-069"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:frankfurt-highway-interchange-089"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -5974,7 +8399,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-010"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-030"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-050"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-070"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:hanover-rural-route-090"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -6096,7 +8568,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-031"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-051"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-071"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:provider35.net:HdMap:austin-motorway-091"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     },
     {
@@ -6201,7 +8720,54 @@
         }
       },
       "ositrace:hasManifest": {
-        "@type": "manifest:Manifest"
+        "@type": "manifest:Manifest",
+        "manifest:hasReferencedArtifacts": [
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-012"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-032"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-052"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-072"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:mapcorp.de:HdMap:vienna-parking-garage-092"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          }
+        ]
       }
     }
   ]

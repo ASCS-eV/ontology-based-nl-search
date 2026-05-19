@@ -14809,6 +14809,1086 @@
         "gx:license": "proprietary",
         "gx:containsPII": false
       }
+    },
+    {
+      "@id": "did:web:mapcorp.de:HdMap:munich-bus-lanes-151",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Munich Urban Bus Lane Map",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "town",
+            "hdmap:laneTypes": "bus",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "photogrammetry"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BY",
+            "georeference:city": "Munich"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Munich Urban Bus Lane Map",
+        "gx:description": "Munich Urban Bus Lane Map for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:mapcorp.de:HdMap:berlin-bus-lanes-152",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Berlin City Bus Lane Map",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "Lanelet2",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "town",
+            "hdmap:laneTypes": "bus",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "MMS"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BE",
+            "georeference:city": "Berlin"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Berlin City Bus Lane Map",
+        "gx:description": "Berlin City Bus Lane Map for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:mapcorp.de:HdMap:hamburg-bus-lanes-153",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Hamburg Bus Lane Urban Map",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "town",
+            "hdmap:laneTypes": "bus",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "photogrammetry"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-HH",
+            "georeference:city": "Hamburg"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Hamburg Bus Lane Urban Map",
+        "gx:description": "Hamburg Bus Lane Urban Map for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:provider35.net:HdMap:rural-bidirectional-154",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Bavaria Rural Bidirectional Road",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "rural",
+            "hdmap:laneTypes": "bidirectional",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "photogrammetry"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BY",
+            "georeference:city": "Ingolstadt"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Bavaria Rural Bidirectional Road",
+        "gx:description": "Bavaria Rural Bidirectional Road for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:provider35.net:HdMap:france-bidirectional-155",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Alsace Bidirectional Rural Road",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "rural",
+            "hdmap:laneTypes": "bidirectional",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "satellite imagery",
+          "hdmap:measurementSystem": "photogrammetry"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "FR",
+            "georeference:state": "FR-GES",
+            "georeference:city": "Strasbourg"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Alsace Bidirectional Rural Road",
+        "gx:description": "Alsace Bidirectional Rural Road for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:mapcorp.de:HdMap:a5-onramp-156",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "A5 Motorway On-Ramp Section",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "motorway",
+            "hdmap:laneTypes": "onRamp",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "photogrammetry"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BW",
+            "georeference:city": "Karlsruhe"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "A5 Motorway On-Ramp Section",
+        "gx:description": "A5 Motorway On-Ramp Section for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:mapcorp.de:HdMap:a5-offramp-157",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "A5 Motorway Off-Ramp Section",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "motorway",
+            "hdmap:laneTypes": "offRamp",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "photogrammetry"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BW",
+            "georeference:city": "Freiburg"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "A5 Motorway Off-Ramp Section",
+        "gx:description": "A5 Motorway Off-Ramp Section for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:mapcorp.de:HdMap:berlin-tram-158",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Berlin Alexanderplatz Tram Lane Map",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "Lanelet2",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "town",
+            "hdmap:laneTypes": "tram",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "MMS"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BE",
+            "georeference:city": "Berlin"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Berlin Alexanderplatz Tram Lane Map",
+        "gx:description": "Berlin Alexanderplatz Tram Lane Map for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:provider35.net:HdMap:munich-restricted-159",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Munich Restricted Zone Map",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "town",
+            "hdmap:laneTypes": "restricted",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "photogrammetry"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BY",
+            "georeference:city": "Munich"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Munich Restricted Zone Map",
+        "gx:description": "Munich Restricted Zone Map for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:mapcorp.de:HdMap:hamburg-urban-160",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Hamburg Harbour Urban HD Map",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "HERE HD Live Map",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "town",
+            "hdmap:laneTypes": "driving",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "photogrammetry"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-HH",
+            "georeference:city": "Hamburg"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Hamburg Harbour Urban HD Map",
+        "gx:description": "Hamburg Harbour Urban HD Map for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:provider35.net:HdMap:bavaria-a9-161",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "A9 Bavaria Motorway HD Map",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "motorway",
+            "hdmap:laneTypes": "driving",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "MMS"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BY",
+            "georeference:city": "Nuremberg"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "A9 Bavaria Motorway HD Map",
+        "gx:description": "A9 Bavaria Motorway HD Map for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:mapfrance.fr:HdMap:normandy-rural-162",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Normandy Rural Road Map",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "rural",
+            "hdmap:laneTypes": "driving",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "satellite imagery",
+          "hdmap:measurementSystem": "photogrammetry"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "FR",
+            "georeference:state": "FR-NOR",
+            "georeference:city": "Rouen"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Normandy Rural Road Map",
+        "gx:description": "Normandy Rural Road Map for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:jpmap.co.jp:HdMap:tokyo-highway-163",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Tokyo Metropolitan Expressway Map",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "motorway",
+            "hdmap:laneTypes": "driving",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "MMS"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "JP",
+            "georeference:state": "JP-13",
+            "georeference:city": "Tokyo"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Tokyo Metropolitan Expressway Map",
+        "gx:description": "Tokyo Metropolitan Expressway Map for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:mapcorp.de:HdMap:munich-parking-164",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "Munich Airport Parking Garage Map",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "custom",
+            "hdmap:laneTypes": "parking",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "photogrammetry"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BY",
+            "georeference:city": "Munich"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Munich Airport Parking Garage Map",
+        "gx:description": "Munich Airport Parking Garage Map for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
+    },
+    {
+      "@id": "did:web:mapcorp.de:HdMap:a8-mwyexit-165",
+      "@type": "hdmap:HdMap",
+      "rdfs:label": {
+        "@value": "A8 Motorway Exit Section Munich",
+        "@language": "en"
+      },
+      "hdmap:hasDomainSpecification": {
+        "@type": "hdmap:DomainSpecification",
+        "hdmap:hasFormat": {
+          "@type": "hdmap:Format",
+          "hdmap:formatType": "ASAM OpenDRIVE",
+          "hdmap:version": "1.6"
+        },
+        "hdmap:hasContent": [
+          {
+            "@type": "hdmap:Content",
+            "hdmap:roadTypes": "motorway",
+            "hdmap:laneTypes": "mwyExit",
+            "hdmap:trafficDirection": "right-hand"
+          }
+        ],
+        "hdmap:hasQuantity": {
+          "@type": "hdmap:Quantity",
+          "hdmap:length": {
+            "@value": "5.0",
+            "@type": "xsd:float"
+          },
+          "hdmap:numberIntersections": {
+            "@value": "3",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficLights": {
+            "@value": "8",
+            "@type": "xsd:integer"
+          },
+          "hdmap:numberTrafficSigns": {
+            "@value": "15",
+            "@type": "xsd:integer"
+          }
+        },
+        "hdmap:hasQuality": {
+          "@type": "hdmap:Quality",
+          "hdmap:precision": {
+            "@value": "0.003",
+            "@type": "xsd:float"
+          }
+        },
+        "hdmap:hasDataSource": {
+          "@type": "hdmap:DataSource",
+          "hdmap:usedDataSources": "lidar",
+          "hdmap:measurementSystem": "MMS"
+        },
+        "hdmap:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BY",
+            "georeference:city": "Munich"
+          }
+        }
+      },
+      "hdmap:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "A8 Motorway Exit Section Munich",
+        "gx:description": "A8 Motorway Exit Section Munich for ADAS testing.",
+        "gx:version": "1.0.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      }
     }
   ]
 }
