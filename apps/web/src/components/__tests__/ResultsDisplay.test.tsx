@@ -74,4 +74,64 @@ describe('ResultsDisplay', () => {
       'application/ld+json'
     )
   })
+
+  it('renders grouped card layout when results contain references', () => {
+    const results = [
+      {
+        asset: 'did:web:example.com:Trace:1',
+        name: 'Munich Trace',
+        refAsset: 'did:web:example.com:HdMap:1',
+        refName: 'Munich HD Map',
+      },
+      {
+        asset: 'did:web:example.com:Trace:1',
+        name: 'Munich Trace',
+        refAsset: 'did:web:example.com:HdMap:2',
+        refName: 'Munich Urban Map',
+      },
+      {
+        asset: 'did:web:example.com:Trace:2',
+        name: 'Berlin Trace',
+        refAsset: 'did:web:example.com:HdMap:3',
+        refName: 'Berlin HD Map',
+      },
+    ]
+    render(<ResultsDisplay results={results} />)
+
+    // Should show 2 grouped matches (not 3 flat rows)
+    expect(screen.getByText('2 matches')).toBeInTheDocument()
+    // Card titles
+    expect(screen.getByText('Munich Trace')).toBeInTheDocument()
+    expect(screen.getByText('Berlin Trace')).toBeInTheDocument()
+    // Reference chips
+    expect(screen.getByText('Munich HD Map')).toBeInTheDocument()
+    expect(screen.getByText('Munich Urban Map')).toBeInTheDocument()
+    expect(screen.getByText('Berlin HD Map')).toBeInTheDocument()
+    // Reference count labels
+    expect(screen.getByText('References (2)')).toBeInTheDocument()
+    expect(screen.getByText('References (1)')).toBeInTheDocument()
+  })
+
+  it('deduplicates references within the same asset group', () => {
+    const results = [
+      {
+        asset: 'did:web:x:Trace:1',
+        name: 'Trace A',
+        refAsset: 'did:web:x:Map:1',
+        refName: 'Map One',
+      },
+      {
+        asset: 'did:web:x:Trace:1',
+        name: 'Trace A',
+        refAsset: 'did:web:x:Map:1',
+        refName: 'Map One',
+      },
+    ]
+    render(<ResultsDisplay results={results} />)
+
+    // Only 1 unique match
+    expect(screen.getByText('1 match')).toBeInTheDocument()
+    // Only 1 reference chip (deduplicated)
+    expect(screen.getByText('References (1)')).toBeInTheDocument()
+  })
 })
