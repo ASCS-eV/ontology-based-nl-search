@@ -4,6 +4,9 @@ interface SparqlPreviewProps {
   sparql: string
 }
 
+/** Duration to show "Copied" feedback before reverting to "Copy" */
+const COPY_FEEDBACK_MS = 2000
+
 export function SparqlPreview({ sparql }: SparqlPreviewProps) {
   const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -19,7 +22,7 @@ export function SparqlPreview({ sparql }: SparqlPreviewProps) {
     await navigator.clipboard.writeText(sparql)
     setCopied(true)
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    timeoutRef.current = setTimeout(() => setCopied(false), 2000)
+    timeoutRef.current = setTimeout(() => setCopied(false), COPY_FEEDBACK_MS)
   }, [sparql])
 
   return (

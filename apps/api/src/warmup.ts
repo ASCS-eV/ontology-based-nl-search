@@ -7,38 +7,76 @@ import { getShaclContent } from '@ontology-search/search/shacl-reader'
 
 const logger = createComponentLogger('warmup')
 
-export async function warmup(): Promise<void> {
+/** Result of the warmup process — surfaces degraded state for health checks */
+export interface WarmupResult {
+  ready: boolean
+  errors: string[]
+  timings: { storeMs: number; vocabMs: number; shaclMs: number; sessionMs: number }
+}
+
+export async function warmup(): Promise<WarmupResult> {
   logger.info('Warming up SPARQL store and ontology indexes...')
   const start = Date.now()
+  const errors: string[] = []
 
   try {
     await getInitializedStore()
-    const storeMs = Date.now() - start
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    errors.push(`Store initialization failed: ${msg}`)
+    logger.error('Store warmup failed', error)
+  }
+  const storeMs = Date.now() - start
 
-    // Pre-build the LLM system prompt from raw SHACL content
-    const vocabStart = Date.now()
+  // Pre-build the LLM system prompt from raw SHACL content
+  const vocabStart = Date.now()
+  try {
     const shaclContent = getShaclContent()
     buildSystemPrompt(shaclContent)
-    const vocabMs = Date.now() - vocabStart
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    errors.push(`Prompt build failed: ${msg}`)
+    logger.error('Vocab warmup failed', error)
+  }
+  const vocabMs = Date.now() - vocabStart
 
-    // Pre-construct the SHACL validator so the first search doesn't pay
-    // the shape-parse cost (~7s on the full ENVITED-X ontology).
-    const shaclStart = Date.now()
+  // Pre-construct the SHACL validator so the first search doesn't pay
+  // the shape-parse cost (~7s on the full ontology).
+  const shaclStart = Date.now()
+  try {
     await ShaclValidator.fromWorkspace()
-    const shaclMs = Date.now() - shaclStart
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    errors.push(`SHACL validator init failed: ${msg}`)
+    logger.error('SHACL warmup failed', error)
+  }
+  const shaclMs = Date.now() - shaclStart
 
-    // Pre-create the Copilot SDK session (~6s) so first query is instant
-    const sessionStart = Date.now()
+  // Pre-create the LLM session so first query is instant
+  const sessionStart = Date.now()
+  try {
     await warmupLlmSession()
-    const sessionMs = Date.now() - sessionStart
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    errors.push(`LLM session warmup failed: ${msg}`)
+    logger.error('LLM session warmup failed', error)
+  }
+  const sessionMs = Date.now() - sessionStart
 
+  const ready = errors.length === 0
+  if (ready) {
     logger.info(`Warmup complete in ${Date.now() - start}ms`, {
       storeMs,
       vocabMs,
       shaclMs,
       sessionMs,
     })
-  } catch (error) {
-    logger.error('Warmup failed — service may respond slowly to first request', error)
+  } else {
+    logger.warn(`Warmup completed with ${errors.length} error(s) — service degraded`, {
+      errors,
+      totalMs: Date.now() - start,
+    })
   }
+
+  return { ready, errors, timings: { storeMs, vocabMs, shaclMs, sessionMs } }
 }

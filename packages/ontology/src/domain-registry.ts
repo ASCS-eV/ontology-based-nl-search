@@ -36,6 +36,8 @@ export interface DomainDescriptor {
   shapes: string[]
   /** Whether this domain has georeference support */
   hasGeoreference: boolean
+  /** All @prefix declarations found in this domain's TTL files (prefix → namespace) */
+  declaredPrefixes: Record<string, string>
 }
 
 /** Complete registry of all discovered domains */
@@ -63,15 +65,24 @@ const STANDARD_PREFIXES: Record<string, string> = {
   gx: RDF_PREFIXES.gx,
 }
 
-/** Shared dependencies commonly imported */
-const SHARED_PREFIXES: Record<string, string> = {
-  georeference: 'https://w3id.org/ascs-ev/envited-x/georeference/v5/',
-  'envited-x': 'https://w3id.org/ascs-ev/envited-x/envited-x/v3/',
-  manifest: 'https://w3id.org/ascs-ev/envited-x/manifest/v5/',
-}
-
 /** Cached singleton */
 let cachedRegistry: DomainRegistry | null = null
+
+/**
+ * Extract all @prefix declarations from a TTL file.
+ * Returns a map of prefix → namespace IRI.
+ */
+function extractPrefixes(ttlContent: string): Record<string, string> {
+  const result: Record<string, string> = {}
+  const regex = /@prefix\s+([\w-]+):\s*<([^>]+)>/g
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(ttlContent)) !== null) {
+    if (match[1] && match[2]) {
+      result[match[1]] = match[2]
+    }
+  }
+  return result
+}
 
 /**
  * Extract namespace IRI from an OWL or SHACL TTL file by finding the ontology declaration
@@ -177,8 +188,23 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
   for (const root of roots) {
     if (!existsSync(root)) continue
 
-    for (const entry of readdirSync(root)) {
+    let entries: string[]
+    try {
+      entries = readdirSync(root)
+    } catch {
+      // intentional: root directory unreadable — skip silently, other roots may work
+      continue
+    }
+
+    for (const entry of entries) {
       const domainDir = join(root, entry)
+      // statSync and the inner readdirSync/readFileSync here are NOT wrapped
+      // in try/catch on purpose: every call sits inside an artifact-root walk
+      // we just listed, so a failure indicates a real environment problem
+      // (broken submodule, permission corruption mid-startup). Letting it
+      // throw surfaces the underlying issue via the warmup layer rather than
+      // silently producing a half-built registry. CLAUDE.md §"Don't add error
+      // handling for scenarios that can't happen" applies.
       if (!statSync(domainDir).isDirectory()) continue
 
       // Find SHACL and OWL files
@@ -190,6 +216,12 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
 
       const shaclContent = readFileSync(join(domainDir, shaclFile), 'utf-8')
       const owlContent = owlFile ? readFileSync(join(domainDir, owlFile), 'utf-8') : ''
+
+      // Collect all @prefix declarations from this domain's files
+      const filePrefixes = {
+        ...extractPrefixes(shaclContent),
+        ...extractPrefixes(owlContent),
+      }
 
       // Extract namespace
       const namespace = extractNamespace(shaclContent, entry) || extractNamespace(owlContent, entry)
@@ -215,6 +247,7 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
         version,
         shapes,
         hasGeoreference: hasGeoreferenceImport(owlContent || shaclContent),
+        declaredPrefixes: filePrefixes,
       })
     }
   }
@@ -228,14 +261,12 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
       const desc = domains.get(domain)
       if (!desc) return ''
 
+      // Combine standard prefixes with all prefixes declared in this domain's files.
+      // This naturally includes cross-domain imports (e.g., georeference in hdmap)
+      // without hard-coding any specific prefix names.
       const prefixes: Record<string, string> = {
         ...STANDARD_PREFIXES,
-        [desc.prefix]: desc.namespace,
-      }
-
-      // Add georeference if domain uses it
-      if (desc.hasGeoreference && SHARED_PREFIXES.georeference) {
-        prefixes.georeference = SHARED_PREFIXES.georeference
+        ...desc.declaredPrefixes,
       }
 
       return Object.entries(prefixes)
@@ -243,9 +274,11 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
         .join('\n')
     },
     allPrefixes(): string {
-      const prefixes: Record<string, string> = { ...STANDARD_PREFIXES, ...SHARED_PREFIXES }
+      const prefixes: Record<string, string> = {
+        ...STANDARD_PREFIXES,
+      }
       for (const desc of domains.values()) {
-        prefixes[desc.prefix] = desc.namespace
+        Object.assign(prefixes, desc.declaredPrefixes)
       }
       return Object.entries(prefixes)
         .map(([key, uri]) => `PREFIX ${key}: <${uri}>`)

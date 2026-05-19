@@ -16,6 +16,8 @@ function loadDataFile(filename: string): string {
   try {
     return readFileSync(join(DATA_DIR, filename), 'utf-8')
   } catch {
+    // intentional: graceful degradation — sample files are optional and
+    // the caller falls back to FALLBACK_TURTLE when none load successfully
     return ''
   }
 }

@@ -8,8 +8,14 @@ const port = getConfig().API_PORT
 
 console.info(`Ontology Search API starting on port ${port}`)
 
-await warmup()
+const warmupResult = await warmup()
 
 serve({ fetch: app.fetch, port })
 
-console.info(`Ontology Search API ready on http://localhost:${port}`)
+if (warmupResult.ready) {
+  console.info(`Ontology Search API ready on http://localhost:${port}`)
+} else {
+  console.warn(
+    `Ontology Search API started DEGRADED on http://localhost:${port} — ${warmupResult.errors.length} warmup error(s)`
+  )
+}
