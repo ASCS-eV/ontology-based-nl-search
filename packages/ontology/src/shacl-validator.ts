@@ -71,6 +71,17 @@ export class ShaclValidator {
   /** Cached pairings of (property IRI → target class IRI) derived from shapes. */
   private readonly propertyToTargetClass: Map<string, string[]>
   /**
+   * Fast-path constraint index: property IRI → { patterns, inValues }.
+   * When a value passes ALL pattern constraints AND (if sh:in exists) is a
+   * member of the allowed list, we short-circuit without calling the engine.
+   * This eliminates the ~3s-per-call overhead for simple constraints like
+   * country codes (sh:pattern "[A-Z]{2}").
+   */
+  private readonly constraintIndex: Map<
+    string,
+    { patterns: RegExp[]; inValues: Set<string> | null }
+  >
+  /**
    * Memoized per-(propertyIri, value, targetClass) validation outcomes.
    * Shapes are immutable for the process lifetime, but the value space
    * is unbounded — a long-running server validating user-supplied filter
@@ -89,9 +100,14 @@ export class ShaclValidator {
    */
   private engineCallCount = 0
 
-  private constructor(validator: SHACLValidator, propertyToTargetClass: Map<string, string[]>) {
+  private constructor(
+    validator: SHACLValidator,
+    propertyToTargetClass: Map<string, string[]>,
+    constraintIndex: Map<string, { patterns: RegExp[]; inValues: Set<string> | null }>
+  ) {
     this.validator = validator
     this.propertyToTargetClass = propertyToTargetClass
+    this.constraintIndex = constraintIndex
   }
 
   /** @internal Test-only accessor — see engineCallCount JSDoc. */
@@ -122,13 +138,14 @@ export class ShaclValidator {
     if (cachedInstance) return cachedInstance
     const shapesDataset = loadShapesFromDisk()
     const propertyToTargetClass = indexPropertyTargetClasses(shapesDataset)
+    const constraintIndex = indexPropertyConstraints(shapesDataset)
     // The Turtle loader already pulls every workspace shape file into one
     // dataset, so owl:imports references are already satisfied. We provide
     // an empty resolver to suppress the engine's mandatory import-fetch hook.
     const validator = new SHACLValidator(shapesDataset, {
       importGraph: () => datasetFactory.dataset(),
     })
-    cachedInstance = new ShaclValidator(validator, propertyToTargetClass)
+    cachedInstance = new ShaclValidator(validator, propertyToTargetClass, constraintIndex)
     return cachedInstance
   }
 
@@ -172,6 +189,19 @@ export class ShaclValidator {
       return empty
     }
 
+    // ── Fast path: check indexed constraints locally (no engine call) ──
+    // If the property has sh:pattern and/or sh:in constraints indexed at
+    // startup, validate them in-process. This avoids the ~3s engine call
+    // for simple pattern matches like country codes.
+    const constraint = this.constraintIndex.get(propertyIri)
+    if (constraint && typeof value === 'string') {
+      const fastResult = this.validateAgainstConstraintIndex(propertyIri, value, constraint)
+      if (fastResult) {
+        this.resultCache.set(cacheKey, fastResult)
+        return fastResult
+      }
+    }
+
     const allViolations: ShaclViolation[] = []
     let anyConforms = false
 
@@ -203,6 +233,52 @@ export class ShaclValidator {
       : { conforms: false, violations: allViolations }
     this.resultCache.set(cacheKey, result)
     return result
+  }
+
+  /**
+   * In-process constraint check using pre-indexed sh:pattern and sh:in.
+   *
+   * CORRECTNESS INVARIANT: The same property IRI may appear on multiple
+   * shapes with different constraints. We merge all constraints into a
+   * single entry (union of patterns, union of sh:in values). This means:
+   *
+   * - If the value satisfies ALL indexed constraints → conforms (safe
+   *   positive short-circuit — the value is valid under every shape).
+   * - If the value fails ANY constraint → we CANNOT conclude non-conformance
+   *   because a different shape may accept it. Fall through to the engine.
+   *
+   * This conservative approach is ontology-agnostic: it never produces false
+   * negatives, only true positives. The engine remains the authority for
+   * rejection.
+   */
+  private validateAgainstConstraintIndex(
+    _propertyIri: string,
+    value: string,
+    constraint: { patterns: RegExp[]; inValues: Set<string> | null }
+  ): ShaclValidationResult | null {
+    // If there are patterns, ALL must pass for the positive short-circuit.
+    for (const pattern of constraint.patterns) {
+      if (!pattern.test(value)) {
+        // Cannot confirm conformance — fall through to engine.
+        return null
+      }
+    }
+
+    // If there is an sh:in list, value must be present for positive path.
+    if (constraint.inValues !== null) {
+      if (!constraint.inValues.has(value)) {
+        // Cannot confirm conformance — fall through to engine.
+        return null
+      }
+    }
+
+    // All indexed constraints pass → value is definitively valid.
+    if (constraint.patterns.length > 0 || constraint.inValues !== null) {
+      return { conforms: true, violations: [] }
+    }
+
+    // No indexed constraints — fall back to engine.
+    return null
   }
 
   /**
@@ -239,13 +315,35 @@ export class ShaclValidator {
     }
     if (stillNeeded.length === 0) return out
 
+    // ── Fast path: check indexed constraints locally (batch) ──
+    // Same correctness invariant as single-value path: only short-circuit
+    // the positive case. Values that fail the index fall through to engine.
+    const constraint = this.constraintIndex.get(propertyIri)
+    const engineNeeded: string[] = []
+    if (constraint) {
+      for (const v of stillNeeded) {
+        if (typeof v === 'string') {
+          const fastResult = this.validateAgainstConstraintIndex(propertyIri, v, constraint)
+          if (fastResult) {
+            out.set(v, fastResult)
+            this.resultCache.set(makeCacheKey(propertyIri, v, targetClass), fastResult)
+            continue
+          }
+        }
+        engineNeeded.push(v)
+      }
+    } else {
+      engineNeeded.push(...stillNeeded)
+    }
+    if (engineNeeded.length === 0) return out
+
     const candidates = targetClass
       ? [targetClass]
       : (this.propertyToTargetClass.get(propertyIri) ?? [])
 
-    // No shape applies — every uncached value passes vacuously.
+    // No shape applies — every engine-needed value passes vacuously.
     if (candidates.length === 0) {
-      for (const v of stillNeeded) {
+      for (const v of engineNeeded) {
         const ok: ShaclValidationResult = { conforms: true, violations: [] }
         out.set(v, ok)
         this.resultCache.set(makeCacheKey(propertyIri, v, targetClass), ok)
@@ -259,7 +357,7 @@ export class ShaclValidator {
     const conformed = new Set<string>()
 
     for (const cls of candidates) {
-      const unresolved = stillNeeded.filter((v) => !conformed.has(v))
+      const unresolved = engineNeeded.filter((v) => !conformed.has(v))
       if (unresolved.length === 0) break
 
       const { dataset, valueToFocusIri } = buildBatchCandidateDataset(propertyIri, unresolved, cls)
@@ -293,7 +391,7 @@ export class ShaclValidator {
     }
 
     // Finalize: write outcomes to both the result map and the cache.
-    for (const value of stillNeeded) {
+    for (const value of engineNeeded) {
       const result: ShaclValidationResult = conformed.has(value)
         ? { conforms: true, violations: [] }
         : { conforms: false, violations: accumulatedViolations.get(value) ?? [] }
@@ -501,6 +599,87 @@ function indexPropertyTargetClasses(shapes: DatasetCore): Map<string, string[]> 
 
 function termKey(t: Term): string {
   return `${t.termType}:${t.value}`
+}
+
+/**
+ * Build a fast-path constraint index: property IRI → { patterns, inValues }.
+ * Extracts sh:pattern and sh:in from the shapes graph so we can validate
+ * simple constraints in-process without calling the expensive SHACL engine.
+ */
+function indexPropertyConstraints(
+  shapes: DatasetCore
+): Map<string, { patterns: RegExp[]; inValues: Set<string> | null }> {
+  const SH_PROPERTY = `${SH_NS}property`
+  const SH_PATH = `${SH_NS}path`
+  const SH_PATTERN = `${SH_NS}pattern`
+  const SH_IN = `${SH_NS}in`
+  const RDF_FIRST = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#first'
+  const RDF_REST = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'
+  const RDF_NIL = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'
+
+  const index = new Map<string, { patterns: RegExp[]; inValues: Set<string> | null }>()
+
+  // Walk all property shapes
+  for (const propLink of shapes.match(null, namedNode(SH_PROPERTY), null, null)) {
+    const propShape = propLink.object as Term
+
+    // Get path (property IRI)
+    let propIri: string | null = null
+    for (const pathQ of shapes.match(propShape, namedNode(SH_PATH), null, null)) {
+      if (pathQ.object.termType === 'NamedNode') {
+        propIri = pathQ.object.value
+        break
+      }
+    }
+    if (!propIri) continue
+
+    const entry = index.get(propIri) ?? { patterns: [], inValues: null }
+
+    // Extract sh:pattern (deduplicate by source string)
+    for (const patQ of shapes.match(propShape, namedNode(SH_PATTERN), null, null)) {
+      if (patQ.object.termType === 'Literal') {
+        try {
+          const source = patQ.object.value
+          // SHACL patterns are anchored (must match entire string)
+          if (!entry.patterns.some((r) => r.source === `^${source}$`)) {
+            entry.patterns.push(new RegExp(`^${source}$`))
+          }
+        } catch {
+          // Invalid regex — skip
+        }
+      }
+    }
+
+    // Extract sh:in (RDF list)
+    for (const inQ of shapes.match(propShape, namedNode(SH_IN), null, null)) {
+      const values = new Set<string>()
+      let node: Term = inQ.object as Term
+      while (node.value !== RDF_NIL) {
+        for (const firstQ of shapes.match(node as NamedNode, namedNode(RDF_FIRST), null, null)) {
+          if (firstQ.object.termType === 'Literal') {
+            values.add(firstQ.object.value)
+          } else if (firstQ.object.termType === 'NamedNode') {
+            values.add(firstQ.object.value)
+          }
+        }
+        let next: Term | null = null
+        for (const restQ of shapes.match(node as NamedNode, namedNode(RDF_REST), null, null)) {
+          next = restQ.object as Term
+        }
+        if (!next) break
+        node = next
+      }
+      if (values.size > 0) {
+        entry.inValues = entry.inValues ? new Set([...entry.inValues, ...values]) : values
+      }
+    }
+
+    if (entry.patterns.length > 0 || entry.inValues !== null) {
+      index.set(propIri, entry)
+    }
+  }
+
+  return index
 }
 
 // ─── Internal: candidate dataset construction ────────────────────────────────

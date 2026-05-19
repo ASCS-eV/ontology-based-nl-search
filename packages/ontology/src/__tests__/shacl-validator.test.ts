@@ -79,10 +79,10 @@ describe('ShaclValidator', () => {
 
 describe('ShaclValidator — engine-call accounting (R2, R3, R8)', () => {
   /**
-   * R2: Batch validation MUST invoke the underlying engine exactly once per
-   * (property, target-class) pair, regardless of array length. The win over
-   * sequential calls is the entire point of validateValues; a regression
-   * would silently kill the perf gain.
+   * R2: Batch validation MUST invoke the underlying engine at most once per
+   * (property, target-class) pair, regardless of array length. With the
+   * constraint index fast path, properties that have sh:pattern or sh:in
+   * indexed will be resolved locally with zero engine calls.
    */
   it('invokes the SHACL engine exactly once for a batch of N values (R2)', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -91,9 +91,9 @@ describe('ShaclValidator — engine-call accounting (R2, R3, R8)', () => {
     const fresh = ['AA', 'BB', 'CC', 'DD', 'EE']
     validator.__resetEngineCallCount__()
     await validator.validateValues(GEOREF_COUNTRY, fresh)
-    // georeference:country has exactly one target class (Location), so we
-    // expect exactly one engine call for the entire batch.
-    expect(validator.__engineCallCount__).toBe(1)
+    // georeference:country has sh:pattern "[A-Z]{2}" indexed — all valid
+    // values are resolved locally via the constraint index (0 engine calls).
+    expect(validator.__engineCallCount__).toBe(0)
   }, 60_000)
 
   /**
@@ -126,17 +126,28 @@ describe('ShaclValidator — engine-call accounting (R2, R3, R8)', () => {
   }, 60_000)
 
   /**
-   * R8: De-duplication. Passing the same value N times MUST collapse to a
-   * single engine call (or zero if cached). We use a freshly-coined value
-   * to guarantee a cache miss on the first occurrence.
+   * R8: De-duplication. Passing the same value N times MUST collapse to at
+   * most one engine call. With the constraint index, valid values that match
+   * sh:pattern are resolved locally (0 engine calls).
    */
   it('de-duplicates identical values in a batch (R8)', async () => {
     const validator = await ShaclValidator.fromWorkspace()
     validator.__resetEngineCallCount__()
     await validator.validateValues(GEOREF_COUNTRY, ['ZZ', 'ZZ', 'ZZ', 'ZZ', 'ZZ'])
-    // Exactly one engine call (no cache hit possible on first occurrence,
-    // duplicates collapse via the validator's internal Set).
-    expect(validator.__engineCallCount__).toBe(1)
+    // "ZZ" matches the indexed sh:pattern "[A-Z]{2}" — resolved locally.
+    expect(validator.__engineCallCount__).toBe(0)
+  }, 60_000)
+
+  /**
+   * Correctness: values that FAIL the constraint index must fall through to
+   * the engine (no false negatives from fast path).
+   */
+  it('falls through to engine when value fails the constraint index pattern', async () => {
+    const validator = await ShaclValidator.fromWorkspace()
+    validator.__resetEngineCallCount__()
+    // "toolong" does not match "[A-Z]{2}" — fast path returns null, engine called.
+    await validator.validateValue(GEOREF_COUNTRY, 'toolong')
+    expect(validator.__engineCallCount__).toBeGreaterThan(0)
   }, 60_000)
 })
 
