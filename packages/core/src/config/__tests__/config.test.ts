@@ -80,11 +80,16 @@ describe('config', () => {
     Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true })
     process.env.AI_PROVIDER = 'openai'
     delete process.env.OPENAI_API_KEY
+    // Set an explicit origin so the production CORS cross-field check
+    // doesn't fire first and mask the OPENAI_API_KEY error this test
+    // is pinning.
+    process.env.CORS_ALLOWED_ORIGINS = 'https://app.example.com'
     resetConfig()
 
     expect(() => getConfig()).toThrow('OPENAI_API_KEY is required when AI_PROVIDER is "openai"')
 
     Object.defineProperty(process.env, 'NODE_ENV', { value: 'test', writable: true })
+    delete process.env.CORS_ALLOWED_ORIGINS
   })
 
   it('does not require OPENAI_API_KEY in test mode', () => {
@@ -150,6 +155,65 @@ describe('config', () => {
 
       process.env.API_PORT = '3003'
       process.env.SPARQL_MAX_LIMIT = '-1'
+      resetConfig()
+      expect(() => getConfig()).toThrow('Invalid environment configuration')
+    })
+  })
+
+  describe('CORS allowlist', () => {
+    /**
+     * The unsafe combination is `NODE_ENV=production` + the wildcard
+     * `*` origin — startup must fail fast so an operator never ships
+     * an API that accepts requests from any browser origin.
+     */
+    it('rejects CORS_ALLOWED_ORIGINS="*" in production', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      process.env.NODE_ENV = 'production'
+      process.env.CORS_ALLOWED_ORIGINS = '*'
+      resetConfig()
+      expect(() => getConfig()).toThrow(/CORS_ALLOWED_ORIGINS="\*" is unsafe in production/)
+    })
+
+    it('accepts an explicit origin list in production', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      process.env.NODE_ENV = 'production'
+      process.env.CORS_ALLOWED_ORIGINS = 'https://app.example.com,https://staging.example.com'
+      resetConfig()
+      expect(getConfig().CORS_ALLOWED_ORIGINS).toContain('https://app.example.com')
+    })
+
+    it('defaults to "*" in development and test', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      delete process.env.CORS_ALLOWED_ORIGINS
+      resetConfig()
+      expect(getConfig().CORS_ALLOWED_ORIGINS).toBe('*')
+    })
+  })
+
+  describe('rate-limit knobs', () => {
+    it('defaults RATE_LIMIT_RPS to 0 (disabled)', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      delete process.env.RATE_LIMIT_RPS
+      delete process.env.RATE_LIMIT_BURST
+      resetConfig()
+      const config = getConfig()
+      expect(config.RATE_LIMIT_RPS).toBe(0)
+      expect(config.RATE_LIMIT_BURST).toBe(10)
+    })
+
+    it('parses positive RATE_LIMIT_RPS', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      process.env.RATE_LIMIT_RPS = '5'
+      process.env.RATE_LIMIT_BURST = '20'
+      resetConfig()
+      const config = getConfig()
+      expect(config.RATE_LIMIT_RPS).toBe(5)
+      expect(config.RATE_LIMIT_BURST).toBe(20)
+    })
+
+    it('rejects negative RATE_LIMIT_RPS', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      process.env.RATE_LIMIT_RPS = '-1'
       resetConfig()
       expect(() => getConfig()).toThrow('Invalid environment configuration')
     })

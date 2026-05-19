@@ -64,6 +64,28 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(64 * 1024),
+  /**
+   * Comma-separated list of allowed CORS origins. The literal `*` means
+   * "any origin" (development default). For production, set to the
+   * scheme+host(:port) of every browser frontend that may call the API;
+   * any other origin is rejected at the CORS preflight.
+   *
+   * Cross-validated below: NODE_ENV=production + `*` fails fast.
+   */
+  CORS_ALLOWED_ORIGINS: z.string().default('*'),
+  /**
+   * Token-bucket rate limit, average requests per second. `0` disables
+   * rate limiting entirely (development default). Per-client buckets
+   * are keyed by `x-forwarded-for` (or `x-real-ip`, or a shared key
+   * when no forwarded header is set).
+   */
+  RATE_LIMIT_RPS: z.coerce.number().nonnegative().default(0),
+  /**
+   * Token-bucket burst capacity. Allows short spikes above the RPS
+   * average before requests start getting throttled. Only consulted
+   * when `RATE_LIMIT_RPS > 0`.
+   */
+  RATE_LIMIT_BURST: z.coerce.number().int().positive().default(10),
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).optional(),
@@ -102,6 +124,11 @@ export function getConfig(): AppConfig {
   if (result.data.SPARQL_DEFAULT_LIMIT > result.data.SPARQL_MAX_LIMIT) {
     throw new Error(
       `SPARQL_DEFAULT_LIMIT (${result.data.SPARQL_DEFAULT_LIMIT}) must be ≤ SPARQL_MAX_LIMIT (${result.data.SPARQL_MAX_LIMIT}); the compiler default would be rejected by the policy gate.`
+    )
+  }
+  if (result.data.NODE_ENV === 'production' && result.data.CORS_ALLOWED_ORIGINS.trim() === '*') {
+    throw new Error(
+      'CORS_ALLOWED_ORIGINS="*" is unsafe in production. Set it to a comma-separated list of exact frontend origins (e.g. "https://app.example.com").'
     )
   }
 
