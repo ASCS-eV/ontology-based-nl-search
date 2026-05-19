@@ -44,11 +44,10 @@ export function SearchBar({ onSearch, loading, history = [] }: SearchBarProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onFocus={() => history.length > 0 && setShowHistory(true)}
-          placeholder="e.g. Show me all German highways with 3 lanes..."
+          placeholder="Describe what you're looking for in plain language…"
           className="w-full px-6 py-4 text-lg border border-gray-300 rounded-full shadow-sm hover:shadow-md focus:shadow-md focus:outline-none focus:border-blue-400 transition-shadow dark:bg-gray-900 dark:border-gray-700 dark:text-white"
           disabled={loading}
           aria-label="Natural language search query"
-          aria-describedby="search-hint"
           autoComplete="off"
         />
         <button
@@ -104,10 +103,6 @@ export function SearchBar({ onSearch, loading, history = [] }: SearchBarProps) {
           </ul>
         )}
       </div>
-      <p id="search-hint" className="mt-2 text-xs text-gray-400 dark:text-gray-500 text-center">
-        Describe what you&apos;re looking for in plain language. The AI will interpret your query
-        against the ENVITED-X ontology domains.
-      </p>
     </form>
   )
 }
