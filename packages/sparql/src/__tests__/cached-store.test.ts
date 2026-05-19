@@ -8,6 +8,12 @@ const mockResults: SparqlResults = {
   },
 }
 
+// Test-local cache settings — the invalidation tests don't depend on size
+// or TTL, so generous values keep the cache from evicting / expiring during
+// the test. Production sources both from `getConfig().SPARQL_CACHE_SIZE` /
+// `SPARQL_CACHE_TTL_MS` via the `getSparqlStore()` wrapper.
+const TEST_CACHE_OPTIONS = { maxSize: 16, ttlMs: 60_000 } as const
+
 /** Minimal in-memory store for testing cache invalidation behavior */
 function createMockStore(): SparqlStore & { queryCalls: number } {
   const store = {
@@ -30,7 +36,7 @@ describe('CachedSparqlStore', () => {
   describe('cache invalidation on data mutation', () => {
     it('invalidates cache when loadTurtle is called', async () => {
       const inner = createMockStore()
-      const cached = new CachedSparqlStore(inner)
+      const cached = new CachedSparqlStore(inner, TEST_CACHE_OPTIONS)
 
       // Populate cache
       await cached.query('SELECT ?s WHERE { ?s ?p ?o }')
@@ -50,7 +56,7 @@ describe('CachedSparqlStore', () => {
 
     it('invalidates cache when loadJsonLd is called', async () => {
       const inner = createMockStore()
-      const cached = new CachedSparqlStore(inner)
+      const cached = new CachedSparqlStore(inner, TEST_CACHE_OPTIONS)
 
       // Populate cache
       await cached.query('SELECT ?s WHERE { ?s ?p ?o }')
@@ -66,7 +72,7 @@ describe('CachedSparqlStore', () => {
 
     it('invalidates cache when update is called', async () => {
       const inner = createMockStore()
-      const cached = new CachedSparqlStore(inner)
+      const cached = new CachedSparqlStore(inner, TEST_CACHE_OPTIONS)
 
       // Populate cache
       await cached.query('SELECT ?s WHERE { ?s ?p ?o }')
@@ -84,13 +90,13 @@ describe('CachedSparqlStore', () => {
   describe('delegation', () => {
     it('delegates isReady to inner store', async () => {
       const inner = createMockStore()
-      const cached = new CachedSparqlStore(inner)
+      const cached = new CachedSparqlStore(inner, TEST_CACHE_OPTIONS)
       expect(await cached.isReady()).toBe(true)
     })
 
     it('throws AbortError when signal is already aborted', async () => {
       const inner = createMockStore()
-      const cached = new CachedSparqlStore(inner)
+      const cached = new CachedSparqlStore(inner, TEST_CACHE_OPTIONS)
       const controller = new AbortController()
       controller.abort()
 
