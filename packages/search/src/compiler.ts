@@ -69,6 +69,33 @@ export function escapeSparqlLiteral(value: string): string {
     .replace(/\t/g, '\\t')
 }
 
+/**
+ * Assemble a complete SPARQL SELECT query from its constituent parts.
+ * Centralizes the query-tail pattern used by both single-domain and
+ * cross-domain compilation. The LIMIT defaults to the operator-tunable
+ * `SPARQL_DEFAULT_LIMIT` config field; the policy gate enforces the
+ * separate `SPARQL_MAX_LIMIT` ceiling (the Zod schema rejects configs
+ * where the default would exceed the ceiling).
+ */
+function assembleQuery(
+  prefixes: string,
+  selectVars: string[] | Set<string>,
+  patterns: string[],
+  optionals: string[],
+  filters: string[],
+  limit: number = getConfig().SPARQL_DEFAULT_LIMIT
+): string {
+  const vars = selectVars instanceof Set ? [...selectVars] : selectVars
+  const selectClause = `SELECT ${vars.join(' ')}`
+  const whereBody = [...patterns, ...optionals, ...filters].join('\n  ')
+
+  return `${prefixes}
+${selectClause} WHERE {
+  ${whereBody}
+}
+LIMIT ${limit}`
+}
+
 /** Cached compiler vocabulary (ontology doesn't change at runtime) */
 let cachedCompilerVocab: CompilerVocab | null = null
 
@@ -280,14 +307,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   }
 
   // Build the query
-  const selectClause = `SELECT ${[...selectVars].join(' ')}`
-  const whereBody = [...patterns, ...optionals, ...filters].join('\n  ')
-
-  return `${prefixes}
-${selectClause} WHERE {
-  ${whereBody}
-}
-LIMIT ${getConfig().SPARQL_DEFAULT_LIMIT}`
+  return assembleQuery(prefixes, selectVars, patterns, optionals, filters)
 }
 
 /**
@@ -404,14 +424,7 @@ function compileCrossDomainQuery(
   }
 
   // Build the query
-  const selectClause = `SELECT ${selectVars.join(' ')}`
-  const whereBody = [...patterns, ...optionals, ...filters].join('\n  ')
-
-  return `${prefixes}
-${selectClause} WHERE {
-  ${whereBody}
-}
-LIMIT ${getConfig().SPARQL_DEFAULT_LIMIT}`
+  return assembleQuery(prefixes, selectVars, patterns, optionals, filters)
 }
 
 /**
