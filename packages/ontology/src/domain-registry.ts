@@ -198,35 +198,24 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
 
     for (const entry of entries) {
       const domainDir = join(root, entry)
-      try {
-        if (!statSync(domainDir).isDirectory()) continue
-      } catch {
-        // intentional: stat failure on single entry — skip, don't crash all discovery
-        continue
-      }
+      // statSync and the inner readdirSync/readFileSync here are NOT wrapped
+      // in try/catch on purpose: every call sits inside an artifact-root walk
+      // we just listed, so a failure indicates a real environment problem
+      // (broken submodule, permission corruption mid-startup). Letting it
+      // throw surfaces the underlying issue via the warmup layer rather than
+      // silently producing a half-built registry. CLAUDE.md §"Don't add error
+      // handling for scenarios that can't happen" applies.
+      if (!statSync(domainDir).isDirectory()) continue
 
       // Find SHACL and OWL files
-      let files: string[]
-      try {
-        files = readdirSync(domainDir)
-      } catch {
-        // intentional: unreadable domain directory — skip
-        continue
-      }
+      const files = readdirSync(domainDir)
       const shaclFile = files.find((f) => f.endsWith('.shacl.ttl'))
       const owlFile = files.find((f) => f.endsWith('.owl.ttl'))
 
       if (!shaclFile) continue // Skip domains without SHACL shapes
 
-      let shaclContent: string
-      let owlContent: string
-      try {
-        shaclContent = readFileSync(join(domainDir, shaclFile), 'utf-8')
-        owlContent = owlFile ? readFileSync(join(domainDir, owlFile), 'utf-8') : ''
-      } catch {
-        // intentional: unreadable SHACL/OWL file — skip this domain
-        continue
-      }
+      const shaclContent = readFileSync(join(domainDir, shaclFile), 'utf-8')
+      const owlContent = owlFile ? readFileSync(join(domainDir, owlFile), 'utf-8') : ''
 
       // Collect all @prefix declarations from this domain's files
       const filePrefixes = {

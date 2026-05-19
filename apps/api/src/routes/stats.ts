@@ -1,4 +1,4 @@
-import { internalError } from '@ontology-search/core/errors'
+import { extractErrorMessage, internalError } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { compileCountQuery, getAssetDomains, getInitializedStore } from '@ontology-search/search'
@@ -31,10 +31,15 @@ statsRoutes.get('/', async (c) => {
           counts[domainName] = count
           totalAssets += count
         }
-      } catch {
+      } catch (error) {
         // intentional: degraded response — one failing domain count should
-        // not block the entire /stats response; the domain is simply omitted
-        logger.warn('Skipped domain count', { domain: domainName })
+        // not block the entire /stats response; the domain is simply omitted.
+        // Surface WHY in the log so operators can investigate (was the SPARQL
+        // malformed, the store unreachable, a timeout, …).
+        logger.warn('Skipped domain count', {
+          domain: domainName,
+          error: extractErrorMessage(error),
+        })
       }
     }
 

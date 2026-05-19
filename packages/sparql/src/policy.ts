@@ -23,6 +23,26 @@ const ENVITED_X_PATTERN = /^https:\/\/w3id\.org\/ascs-ev\/envited-x\//
 const parser = new Parser()
 
 /**
+ * Shape of the sparqljs parse tree we care about — the library ships no
+ * TypeScript declarations, so we describe only the subset the policy
+ * inspects. Lives at module scope so the cast and the consumers share the
+ * same definitions.
+ */
+interface ParsedQuery {
+  type: string
+  queryType?: string
+  where?: SparqlPattern[]
+  prefixes?: Record<string, string>
+  limit?: number
+}
+
+interface SparqlPattern {
+  type?: string
+  patterns?: SparqlPattern[]
+  triples?: SparqlPattern[]
+}
+
+/**
  * Enforce security policy on a SPARQL query before execution.
  * Rules:
  * - Must be a SELECT query (no INSERT, DELETE, CONSTRUCT, DESCRIBE, LOAD, etc.)
@@ -35,16 +55,6 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
 
   if (!query || !query.trim()) {
     return { allowed: false, violations: ['Query is empty'], query }
-  }
-
-  // sparqljs does not ship TypeScript declarations; this interface covers
-  // the subset of the parse tree we inspect for policy enforcement.
-  interface ParsedQuery {
-    type: string
-    queryType?: string
-    where?: SparqlPattern[]
-    prefixes?: Record<string, string>
-    limit?: number
   }
 
   let parsed: ParsedQuery
@@ -96,12 +106,6 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
     violations,
     query: violations.length === 0 ? resultQuery : query,
   }
-}
-
-interface SparqlPattern {
-  type?: string
-  patterns?: SparqlPattern[]
-  triples?: SparqlPattern[]
 }
 
 function containsService(patterns: SparqlPattern[] | undefined): boolean {
