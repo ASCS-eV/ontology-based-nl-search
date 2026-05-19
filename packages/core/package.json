@@ -34,6 +34,11 @@
       "import": "./dist/sse/events.js",
       "default": "./dist/sse/events.js"
     },
+    "./sse/parser": {
+      "types": "./src/sse/parser.ts",
+      "import": "./dist/sse/parser.js",
+      "default": "./dist/sse/parser.js"
+    },
     "./cache/lru": {
       "types": "./src/cache/lru.ts",
       "import": "./dist/cache/lru.js",

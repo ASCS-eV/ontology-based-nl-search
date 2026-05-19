@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { parseSSEBuffer } from '../lib/sse-parser'
+import { parseSSEBuffer } from '../parser.js'
 
 describe('parseSSEBuffer', () => {
   it('parses a complete event', () => {
