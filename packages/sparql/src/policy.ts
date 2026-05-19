@@ -23,6 +23,26 @@ const ENVITED_X_PATTERN = /^https:\/\/w3id\.org\/ascs-ev\/envited-x\//
 const parser = new Parser()
 
 /**
+ * Shape of the sparqljs parse tree we care about — the library ships no
+ * TypeScript declarations, so we describe only the subset the policy
+ * inspects. Lives at module scope so the cast and the consumers share the
+ * same definitions.
+ */
+interface ParsedQuery {
+  type: string
+  queryType?: string
+  where?: SparqlPattern[]
+  prefixes?: Record<string, string>
+  limit?: number
+}
+
+interface SparqlPattern {
+  type?: string
+  patterns?: SparqlPattern[]
+  triples?: SparqlPattern[]
+}
+
+/**
  * Enforce security policy on a SPARQL query before execution.
  * Rules:
  * - Must be a SELECT query (no INSERT, DELETE, CONSTRUCT, DESCRIBE, LOAD, etc.)
@@ -37,10 +57,10 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
     return { allowed: false, violations: ['Query is empty'], query }
   }
 
-  let parsed
+  let parsed: ParsedQuery
   try {
-    parsed = parser.parse(query)
-  } catch (err) {
+    parsed = parser.parse(query) as unknown as ParsedQuery
+  } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     return { allowed: false, violations: [`Parse error: ${msg}`], query }
   }
@@ -56,15 +76,13 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
   }
 
   // No SERVICE clauses (check recursively in where patterns)
-  // Note: sparqljs has no published TypeScript types; cast is necessary
-  if ('where' in parsed && containsService(parsed.where as unknown as SparqlPattern[])) {
+  if (parsed.where && containsService(parsed.where)) {
     violations.push('SERVICE clauses are not allowed (no federation)')
   }
 
   // Check prefixes — allow W3C standards, GAIA-X, and any ENVITED-X ontology
   if (parsed.prefixes) {
-    for (const [, iri] of Object.entries(parsed.prefixes)) {
-      const iriStr = iri as string
+    for (const [, iriStr] of Object.entries(parsed.prefixes)) {
       if (!BASE_ALLOWED_PREFIXES.has(iriStr) && !ENVITED_X_PATTERN.test(iriStr)) {
         violations.push(`Prefix IRI not in allowlist: ${iriStr}`)
       }
@@ -88,12 +106,6 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
     violations,
     query: violations.length === 0 ? resultQuery : query,
   }
-}
-
-interface SparqlPattern {
-  type?: string
-  patterns?: SparqlPattern[]
-  triples?: SparqlPattern[]
 }
 
 function containsService(patterns: SparqlPattern[] | undefined): boolean {

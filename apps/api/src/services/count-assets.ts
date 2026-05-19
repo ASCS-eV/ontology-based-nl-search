@@ -4,6 +4,8 @@
  * Extracted from the /stats route to keep route handlers as pure
  * request/response plumbing (SRP) and enable independent unit testing.
  */
+import { extractErrorMessage } from '@ontology-search/core/errors'
+import type { RequestLogger } from '@ontology-search/core/logging'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { compileCountQuery, getAssetDomains, getInitializedStore } from '@ontology-search/search'
 
@@ -15,9 +17,15 @@ export interface AssetCounts {
 
 /**
  * Count assets per domain by compiling and executing a COUNT query for each.
- * Tolerates per-domain failures (degraded response).
+ *
+ * Tolerates per-domain failures (degraded response) so a single broken
+ * domain cannot block the whole /stats response. The logger receives a
+ * structured `warn` for each skipped domain that names the failing
+ * domain AND surfaces the underlying error message — operators need
+ * both to diagnose whether the SPARQL was malformed, the store was
+ * unreachable, a timeout fired, etc.
  */
-export async function countAssets(): Promise<AssetCounts> {
+export async function countAssets(logger: RequestLogger): Promise<AssetCounts> {
   const store = await getInitializedStore()
   const registry = await buildDomainRegistry()
   const assetDomains = await getAssetDomains()
@@ -35,8 +43,11 @@ export async function countAssets(): Promise<AssetCounts> {
         counts[domainName] = count
         totalAssets += count
       }
-    } catch {
-      // intentional: degraded response — one failing domain doesn't block others
+    } catch (error) {
+      logger.warn('Skipped domain count', {
+        domain: domainName,
+        error: extractErrorMessage(error),
+      })
     }
   }
 

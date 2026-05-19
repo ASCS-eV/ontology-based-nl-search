@@ -13,7 +13,7 @@ statsRoutes.get('/', async (c) => {
 
   try {
     logger.info('Stats request started')
-    const { counts, totalAssets, availableDomains } = await countAssets()
+    const { counts, totalAssets, availableDomains } = await countAssets(logger)
 
     logger.info('Stats request completed', { totalAssets, domainCount: Object.keys(counts).length })
 

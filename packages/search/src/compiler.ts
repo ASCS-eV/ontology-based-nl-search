@@ -19,6 +19,7 @@
  *
  * @see https://www.w3.org/TR/sparql11-query/
  */
+import { getConfig } from '@ontology-search/core/config'
 import { CompileError } from '@ontology-search/core/errors'
 import { iri, sparqlPrefix } from '@ontology-search/core/rdf/prefixes'
 import {
@@ -36,9 +37,6 @@ import {
   queryRange2DProperties,
 } from './schema-queries.js'
 import type { SearchSlots } from './slots.js'
-
-/** Maximum number of results returned by compiled queries */
-export const MAX_RESULTS_LIMIT = 100
 
 /** Property info from ontology - supports properties existing in multiple domains */
 interface CompilerProperty {
@@ -73,7 +71,11 @@ export function escapeSparqlLiteral(value: string): string {
 
 /**
  * Assemble a complete SPARQL SELECT query from its constituent parts.
- * Centralizes the query-tail pattern used by both single-domain and cross-domain compilation.
+ * Centralizes the query-tail pattern used by both single-domain and
+ * cross-domain compilation. The LIMIT defaults to the operator-tunable
+ * `SPARQL_DEFAULT_LIMIT` config field; the policy gate enforces the
+ * separate `SPARQL_MAX_LIMIT` ceiling (the Zod schema rejects configs
+ * where the default would exceed the ceiling).
  */
 function assembleQuery(
   prefixes: string,
@@ -81,7 +83,7 @@ function assembleQuery(
   patterns: string[],
   optionals: string[],
   filters: string[],
-  limit: number = MAX_RESULTS_LIMIT
+  limit: number = getConfig().SPARQL_DEFAULT_LIMIT
 ): string {
   const vars = selectVars instanceof Set ? [...selectVars] : selectVars
   const selectClause = `SELECT ${vars.join(' ')}`

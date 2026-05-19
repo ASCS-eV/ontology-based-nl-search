@@ -55,6 +55,7 @@ export class RemoteSparqlStore implements SparqlStore {
       })
       return response.ok
     } catch {
+      // intentional: connectivity probe — false means the endpoint is unreachable
       return false
     }
   }
@@ -95,42 +96,36 @@ export class RemoteSparqlStore implements SparqlStore {
   }
 
   async loadTurtle(data: string, graphUri?: string): Promise<void> {
-    const url = graphUri
-      ? `${this.endpoint.replace('/sparql', '/data')}?graph=${encodeURIComponent(graphUri)}`
-      : `${this.endpoint.replace('/sparql', '/data')}?default`
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': MIME.TURTLE },
-      body: data,
-      signal: this.signal,
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new StoreUnavailableError(
-        `Failed to load Turtle data (${response.status}): ${errorText}`
-      )
-    }
+    await this.loadData(data, MIME.TURTLE, graphUri)
   }
 
   async loadJsonLd(data: string, graphUri?: string): Promise<void> {
+    await this.loadData(data, MIME.JSONLD, graphUri)
+  }
+
+  /**
+   * Generic data-load helper: POST serialized RDF to the Graph Store endpoint.
+   * Both loadTurtle and loadJsonLd delegate here — the only difference is the
+   * Content-Type header, which the SPARQL Graph Store HTTP Protocol spec
+   * uses to select the parser.
+   *
+   * @see https://www.w3.org/TR/sparql11-http-rdf-update/
+   */
+  private async loadData(data: string, contentType: string, graphUri?: string): Promise<void> {
     const url = graphUri
       ? `${this.endpoint.replace('/sparql', '/data')}?graph=${encodeURIComponent(graphUri)}`
       : `${this.endpoint.replace('/sparql', '/data')}?default`
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': MIME.JSONLD },
+      headers: { 'Content-Type': contentType },
       body: data,
       signal: this.signal,
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new StoreUnavailableError(
-        `Failed to load JSON-LD data (${response.status}): ${errorText}`
-      )
+      throw new StoreUnavailableError(`Failed to load RDF data (${response.status}): ${errorText}`)
     }
   }
 }

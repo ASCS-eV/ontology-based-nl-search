@@ -1,6 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type { MappedTerm } from '../api-types'
+
+/** Structural equality check for MappedTerm arrays (avoids JSON.stringify) */
+function termsEqual(a: MappedTerm[], b: MappedTerm[]): boolean {
+  if (a.length !== b.length) return false
+  return a.every(
+    (term, i) =>
+      term.property === b[i]?.property &&
+      term.mapped === b[i]?.mapped &&
+      term.input === b[i]?.input &&
+      term.confidence === b[i]?.confidence
+  )
+}
 
 interface QueryRefinementProps {
   mappedTerms: MappedTerm[]
@@ -17,7 +29,12 @@ export function QueryRefinement({ mappedTerms, onRerun, loading }: QueryRefineme
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [editValue, setEditValue] = useState('')
 
-  const hasChanges = JSON.stringify(terms) !== JSON.stringify(mappedTerms)
+  // Sync internal terms when parent provides new mappedTerms (e.g., new search)
+  useEffect(() => {
+    setTerms(mappedTerms)
+  }, [mappedTerms])
+
+  const hasChanges = !termsEqual(terms, mappedTerms)
 
   const removeTerm = (idx: number) => {
     setTerms(terms.filter((_, i) => i !== idx))
