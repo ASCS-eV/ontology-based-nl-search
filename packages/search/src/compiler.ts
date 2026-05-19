@@ -235,7 +235,9 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     )
   }
 
-  // Collect all needed prefixes
+  // Collect initial prefix domains (will be augmented with foreign domains
+  // discovered during pattern generation, e.g., openlabel-v2 properties
+  // used inside an hdmap query).
   const prefixDomains = new Set([primaryDomain])
   for (const d of Object.keys(filtersByDomain)) {
     prefixDomains.add(d)
@@ -243,7 +245,6 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   for (const d of Object.keys(rangesByDomain)) {
     prefixDomains.add(d)
   }
-  const prefixes = buildPrefixes(registry, [...prefixDomains])
 
   const patterns: string[] = []
   const filters: string[] = []
@@ -257,7 +258,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   // Build patterns for the primary domain's own filters
   const primaryFilters = filtersByDomain[primaryDomain] || {}
   const primaryRanges = rangesByDomain[primaryDomain] || {}
-  buildDomainPatterns(
+  const primaryForeign = buildDomainPatterns(
     primaryDomain,
     domain,
     primaryFilters,
@@ -268,9 +269,11 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     optionals,
     selectVars,
     vocabIndex,
+    registry,
     '?asset',
     '?domSpec'
   )
+  for (const fd of primaryForeign) prefixDomains.add(fd)
 
   // Build cross-domain joins for referenced domains
   const allReferencedDomains = new Set([
@@ -293,7 +296,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     patterns.push(`?manifest manifest:hasReferencedArtifacts ${refVar} .`)
     patterns.push(`${refVar} a ${refDomain.targetClass} .`)
 
-    buildDomainPatterns(
+    const refForeign = buildDomainPatterns(
       refDomainName,
       refDomain,
       refFilters,
@@ -304,10 +307,15 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
       optionals,
       selectVars,
       vocabIndex,
+      registry,
       refVar,
       refSpecVar
     )
+    for (const fd of refForeign) prefixDomains.add(fd)
   }
+
+  // Generate prefixes after pattern generation so foreign domains are included
+  const prefixes = buildPrefixes(registry, [...prefixDomains])
 
   // License (via resource description — shared across all domains)
   if (slots.license) {
@@ -484,6 +492,8 @@ function lookupStepPredicate(
 
 /**
  * Build patterns for a single domain's filters within the DomainSpecification structure.
+ * Returns the set of foreign domain names whose prefixes were used in patterns
+ * (i.e., properties that belong to a different domain than domainName).
  */
 function buildDomainPatterns(
   domainName: string,
@@ -496,9 +506,11 @@ function buildDomainPatterns(
   optionals: string[],
   selectVars: Set<string>,
   vocabIndex: CompilerVocab,
+  registry: Awaited<ReturnType<typeof buildDomainRegistry>>,
   assetVar: string,
   specVar: string
-): void {
+): Set<string> {
+  const foreignDomains = new Set<string>()
   const filterEntries = Object.entries(domainFilters)
   const rangeEntries = Object.entries(ranges)
   const hasLocationFilters =
@@ -508,7 +520,7 @@ function buildDomainPatterns(
     isNonEmpty(location?.city)
   const needsDomSpec = filterEntries.length > 0 || rangeEntries.length > 0 || hasLocationFilters
 
-  if (!needsDomSpec) return
+  if (!needsDomSpec) return foreignDomains
 
   // First hop: asset → DomainSpecification. The predicate is discovered
   // from any property's path (they all share step 0), falling back to
@@ -580,8 +592,14 @@ function buildDomainPatterns(
     // Filter properties classified under this group.
     for (const [propName, value] of filterPropsByGroup.get(group) ?? []) {
       const varName = `?${propName}${suffix}`
-      const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
-      patterns.push(`${groupVar} ${propDomain}:${propName} ${varName} .`)
+      const { prefix: propPrefix, foreignDomain } = resolvePropertyPrefix(
+        propName,
+        domainName,
+        vocabIndex,
+        registry
+      )
+      if (foreignDomain) foreignDomains.add(foreignDomain)
+      patterns.push(`${groupVar} ${propPrefix}:${propName} ${varName} .`)
       addEnumFilter(patterns, filters, varName, value)
       selectVars.add(varName)
     }
@@ -590,27 +608,33 @@ function buildDomainPatterns(
     // (detected from SHACL via `sh:node → Range2DShape`) use the nested
     // `min`/`max` structure; simple numeric properties are filtered directly.
     for (const [propName, range] of rangePropsByGroup.get(group) ?? []) {
-      const propDomain = resolvePropertyDomain(propName, domainName, vocabIndex)
+      const { prefix: propPrefix, foreignDomain } = resolvePropertyPrefix(
+        propName,
+        domainName,
+        vocabIndex,
+        registry
+      )
+      if (foreignDomain) foreignDomains.add(foreignDomain)
 
       if (vocabIndex.range2DProperties.has(propName)) {
         // Range2D: property links to a blank node with min and max children.
         const rangeNode = `?${propName}Range${suffix}`
-        patterns.push(`${groupVar} ${propDomain}:${propName} ${rangeNode} .`)
+        patterns.push(`${groupVar} ${propPrefix}:${propName} ${rangeNode} .`)
         if (range.min !== undefined) {
           const maxVar = `?${propName}Max${suffix}`
-          patterns.push(`${rangeNode} ${propDomain}:max ${maxVar} .`)
+          patterns.push(`${rangeNode} ${propPrefix}:max ${maxVar} .`)
           filters.push(`FILTER(xsd:float(${maxVar}) >= ${range.min})`)
           selectVars.add(maxVar)
         }
         if (range.max !== undefined) {
           const minVar = `?${propName}Min${suffix}`
-          patterns.push(`${rangeNode} ${propDomain}:min ${minVar} .`)
+          patterns.push(`${rangeNode} ${propPrefix}:min ${minVar} .`)
           filters.push(`FILTER(xsd:float(${minVar}) <= ${range.max})`)
           selectVars.add(minVar)
         }
       } else {
         const varName = `?${propName}${suffix}`
-        patterns.push(`${groupVar} ${propDomain}:${propName} ${varName} .`)
+        patterns.push(`${groupVar} ${propPrefix}:${propName} ${varName} .`)
         selectVars.add(varName)
         if (range.min !== undefined) {
           filters.push(`FILTER(xsd:float(${varName}) >= ${range.min})`)
@@ -654,6 +678,8 @@ function buildDomainPatterns(
       selectVars.add(v)
     }
   }
+
+  return foreignDomains
 }
 
 /**
@@ -801,9 +827,10 @@ function buildPrefixes(
     if (d) prefixSet.add(`PREFIX ${d.prefix}: <${d.namespace}>`)
   }
 
-  // Domain-specific prefixes
+  // Domain-specific prefixes (handles IRI-derived names like "openlabel"
+  // that may differ from registry keys like "openlabel-v2")
   for (const domainName of domains) {
-    const domain = registry.domains.get(domainName)
+    const domain = registry.domains.get(domainName) ?? registry.resolveByIriDomain(domainName)
     if (domain) {
       prefixSet.add(`PREFIX ${domain.prefix}: <${domain.namespace}>`)
     }
@@ -851,28 +878,65 @@ function groupPredicate(group: string): string {
 }
 
 /**
- * Resolve which domain prefix owns a property.
+ * Resolve which SPARQL prefix should be used for a property.
  *
  * Strategy: Properties can exist in multiple domains (e.g., roadTypes in both hdmap and ositrace).
- * We use the target domain's prefix if the property exists there, otherwise use the property's
- * actual domain from the vocabulary index.
+ * We use the target domain's prefix if the property exists there, otherwise find the correct
+ * registry entry by matching the property's full IRI namespace against registered domains.
+ *
+ * Returns the SPARQL prefix alias (e.g., "hdmap", "openlabel_v2") that correctly
+ * expands to the property's namespace. This may differ from the domain name used
+ * in the vocabulary index (e.g., IRI-derived "openlabel" maps to prefix "openlabel_v2").
  */
-function resolvePropertyDomain(
+function resolvePropertyPrefix(
   propName: string,
   targetDomain: string,
-  vocabIndex: { properties: Map<string, CompilerProperty> }
-): string {
+  vocabIndex: { properties: Map<string, CompilerProperty> },
+  registry: Awaited<ReturnType<typeof buildDomainRegistry>>
+): { prefix: string; foreignDomain: string | null } {
   const propInfo = vocabIndex.properties.get(propName)
 
   // If the property doesn't exist in vocabulary, use target domain
-  if (!propInfo) return targetDomain
+  if (!propInfo) {
+    const d = registry.domains.get(targetDomain)
+    return { prefix: d?.prefix ?? targetDomain, foreignDomain: null }
+  }
 
-  // If the property exists in the target domain, use it
-  if (propInfo.domains.has(targetDomain)) return targetDomain
+  // If the property exists in the target domain, use its prefix
+  if (propInfo.domains.has(targetDomain)) {
+    const d = registry.domains.get(targetDomain)
+    return { prefix: d?.prefix ?? targetDomain, foreignDomain: null }
+  }
 
-  // Otherwise use the first domain where this property is defined
-  const firstDomain = propInfo.domains.values().next().value
-  return firstDomain || targetDomain
+  // Property belongs to a foreign domain. Use its IRI to find the correct
+  // registry entry (handles cases where IRI-derived name ≠ registry key,
+  // e.g., "openlabel" from IRI vs "openlabel-v2" registry key).
+  const firstDomain = propInfo.domains.values().next().value as string | undefined
+  const propIri = firstDomain ? propInfo.iris.get(firstDomain) : undefined
+
+  if (propIri) {
+    // Extract namespace from property IRI (everything up to the local name)
+    const lastSlash = propIri.lastIndexOf('/')
+    const namespace = lastSlash >= 0 ? propIri.substring(0, lastSlash + 1) : propIri
+
+    // Find registry entry with matching namespace
+    for (const desc of registry.domains.values()) {
+      if (desc.namespace === namespace) {
+        return { prefix: desc.prefix, foreignDomain: desc.name }
+      }
+    }
+  }
+
+  // Fallback: try IRI-derived domain name against registry
+  if (firstDomain) {
+    const resolved = registry.domains.get(firstDomain) ?? registry.resolveByIriDomain(firstDomain)
+    if (resolved) {
+      return { prefix: resolved.prefix, foreignDomain: resolved.name }
+    }
+  }
+
+  // Last resort: use the IRI-derived domain name directly
+  return { prefix: firstDomain ?? targetDomain, foreignDomain: firstDomain ?? null }
 }
 
 // `isIri` is imported from `@ontology-search/sparql/escape` (see the
