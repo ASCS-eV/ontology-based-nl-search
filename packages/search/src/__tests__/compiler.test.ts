@@ -89,6 +89,80 @@ vi.mock('../init.js', () => ({
   getInitializedStore: vi.fn().mockResolvedValue({}),
 }))
 
+/**
+ * Synthesize property paths consistent with the mocked shape-group
+ * classification above. The compiler vocabulary now reads triple
+ * predicates (asset→DS, DS→group) from these paths instead of
+ * hard-coding `hasDomainSpecification` / `has${Group}`.
+ *
+ * Built mechanically from `(domain, group)` so future test additions
+ * to `queryPropertyShapeGroups` are automatically reflected here.
+ */
+vi.mock('../property-paths.js', () => {
+  const properties: { domain: string; propertyName: string; group: string; assetClass: string }[] =
+    [
+      { domain: 'hdmap', propertyName: 'roadTypes', group: 'Content', assetClass: 'HDMap' },
+      { domain: 'hdmap', propertyName: 'laneTypes', group: 'Content', assetClass: 'HDMap' },
+      { domain: 'hdmap', propertyName: 'levelOfDetail', group: 'Content', assetClass: 'HDMap' },
+      { domain: 'hdmap', propertyName: 'trafficDirection', group: 'Content', assetClass: 'HDMap' },
+      { domain: 'hdmap', propertyName: 'formatType', group: 'Format', assetClass: 'HDMap' },
+      { domain: 'hdmap', propertyName: 'version', group: 'Format', assetClass: 'HDMap' },
+      { domain: 'hdmap', propertyName: 'length', group: 'Quantity', assetClass: 'HDMap' },
+      {
+        domain: 'hdmap',
+        propertyName: 'numberIntersections',
+        group: 'Quantity',
+        assetClass: 'HDMap',
+      },
+      {
+        domain: 'hdmap',
+        propertyName: 'numberTrafficLights',
+        group: 'Quantity',
+        assetClass: 'HDMap',
+      },
+      { domain: 'hdmap', propertyName: 'speedLimit', group: 'Quantity', assetClass: 'HDMap' },
+      {
+        domain: 'hdmap',
+        propertyName: 'usedDataSources',
+        group: 'DataSource',
+        assetClass: 'HDMap',
+      },
+      {
+        domain: 'scenario',
+        propertyName: 'scenarioCategory',
+        group: 'Content',
+        assetClass: 'Scenario',
+      },
+      {
+        domain: 'scenario',
+        propertyName: 'weatherSummary',
+        group: 'Content',
+        assetClass: 'Scenario',
+      },
+      { domain: 'scenario', propertyName: 'entityTypes', group: 'Content', assetClass: 'Scenario' },
+      { domain: 'ositrace', propertyName: 'roadTypes', group: 'Content', assetClass: 'OSITrace' },
+    ]
+  const ns = (domain: string) => `https://w3id.org/ascs-ev/envited-x/${domain}/v6/`
+  return {
+    buildPropertyPaths: vi.fn().mockResolvedValue(
+      properties.map(({ domain, propertyName, group, assetClass }) => ({
+        domain,
+        propertyName,
+        propertyIri: ns(domain) + propertyName,
+        assetClass: ns(domain) + assetClass,
+        steps: [
+          {
+            predicate: ns(domain) + 'hasDomainSpecification',
+            intermediate: ns(domain) + 'DomainSpecification',
+          },
+          { predicate: ns(domain) + `has${group}`, intermediate: ns(domain) + group },
+          { predicate: ns(domain) + propertyName },
+        ],
+      }))
+    ),
+  }
+})
+
 describe('compileSlots', () => {
   it('generates minimal query with empty slots', async () => {
     const slots: SearchSlots = { domains: ['hdmap'], filters: {}, ranges: {} }

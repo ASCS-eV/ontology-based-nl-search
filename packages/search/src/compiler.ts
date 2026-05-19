@@ -30,6 +30,7 @@ import {
 import { escapeSparqlLiteral, isIri } from '@ontology-search/sparql/escape'
 
 import { getInitializedStore } from './init.js'
+import { buildPropertyPaths, type PropertyPath } from './property-paths.js'
 import {
   queryAssetDomains,
   queryDomainReferences,
@@ -53,6 +54,16 @@ interface CompilerVocab {
   shapeGroups: Map<string, string>
   /** Properties that use Range2D structure (min/max sub-properties) */
   range2DProperties: Set<string>
+  /**
+   * Discovered property paths keyed by `${domain}:${propertyLocalName}`.
+   * Each path lists the predicate hops from an asset class to the leaf
+   * value — the compiler reads predicates from these instead of
+   * hard-coding `hasDomainSpecification` and `has${Group}` literals.
+   *
+   * Sourced from `buildPropertyPaths` (task 21a) so the ENVITED-X
+   * meta-model is no longer a compile-time assumption.
+   */
+  paths: Map<string, PropertyPath>
 }
 
 // `escapeSparqlLiteral` + `isIri` are sourced from
@@ -96,10 +107,11 @@ async function getCompilerVocab(): Promise<CompilerVocab> {
   if (cachedCompilerVocab) return cachedCompilerVocab
 
   const store = await getInitializedStore()
-  const [propertyDomains, shapeGroupInfos, range2DInfos] = await Promise.all([
+  const [propertyDomains, shapeGroupInfos, range2DInfos, propertyPaths] = await Promise.all([
     queryPropertyDomains(store),
     queryPropertyShapeGroups(store),
     queryRange2DProperties(store),
+    buildPropertyPaths(store),
   ])
 
   const properties = new Map<string, CompilerProperty>()
@@ -130,7 +142,16 @@ async function getCompilerVocab(): Promise<CompilerVocab> {
     range2DProperties.add(localName)
   }
 
-  cachedCompilerVocab = { properties, shapeGroups, range2DProperties }
+  // Index property paths by (domain, propertyLocalName) for O(1) lookup
+  // when emitting triples. A property may legitimately appear in multiple
+  // asset domains (e.g., roadTypes in both hdmap and ositrace); each
+  // domain gets its own path.
+  const paths = new Map<string, PropertyPath>()
+  for (const path of propertyPaths) {
+    paths.set(`${path.domain}:${path.propertyName}`, path)
+  }
+
+  cachedCompilerVocab = { properties, shapeGroups, range2DProperties, paths }
   return cachedCompilerVocab
 }
 
@@ -420,6 +441,48 @@ function compileCrossDomainQuery(
 }
 
 /**
+ * Compress a full predicate IRI to a `prefix:localName` form when the
+ * predicate lives in the given domain's namespace. Falls back to an
+ * angle-bracketed full IRI so cross-namespace predicates (e.g. the
+ * `georeference:` chain) still parse.
+ *
+ * Used by 21b's path-driven emission to keep the wire output stable
+ * with the previous literal-string emission (`hdmap:hasContent` etc.).
+ */
+function prefixedPredicate(predicateIri: string, domain: DomainDescriptor): string {
+  if (predicateIri.startsWith(domain.namespace)) {
+    return `${domain.prefix}:${predicateIri.slice(domain.namespace.length)}`
+  }
+  return `<${predicateIri}>`
+}
+
+/**
+ * Pick the step-N predicate to emit for the path of ANY property in the
+ * given (domain, group) — used to discover the asset→spec and spec→group
+ * predicates without hard-coding `hasDomainSpecification` / `has${Group}`.
+ *
+ * All filter/range properties classified into the same shape group share
+ * the same step-N predicate (they live behind the same intermediate
+ * shape in SHACL), so any of them is a valid representative. We pick
+ * deterministically by sorting property names so the choice doesn't
+ * shift across compiler invocations.
+ */
+function lookupStepPredicate(
+  vocabIndex: CompilerVocab,
+  domain: DomainDescriptor,
+  candidatePropNames: string[],
+  stepIdx: number
+): string | null {
+  for (const propName of [...candidatePropNames].sort()) {
+    const path = vocabIndex.paths.get(`${domain.name}:${propName}`)
+    if (!path) continue
+    const step = path.steps[stepIdx]
+    if (step) return prefixedPredicate(step.predicate, domain)
+  }
+  return null
+}
+
+/**
  * Build patterns for a single domain's filters within the DomainSpecification structure.
  */
 function buildDomainPatterns(
@@ -447,7 +510,16 @@ function buildDomainPatterns(
 
   if (!needsDomSpec) return
 
-  patterns.push(`${assetVar} ${domain.prefix}:hasDomainSpecification ${specVar} .`)
+  // First hop: asset → DomainSpecification. The predicate is discovered
+  // from any property's path (they all share step 0), falling back to
+  // the conventional `${prefix}:hasDomainSpecification` only when no
+  // path was found — keeps the location-only branch (no filter/range
+  // properties to consult) working until task 21d rewires location too.
+  const candidatePropertyNames = [...filterEntries.map(([n]) => n), ...rangeEntries.map(([n]) => n)]
+  const assetToSpecPredicate =
+    lookupStepPredicate(vocabIndex, domain, candidatePropertyNames, 0) ??
+    `${domain.prefix}:hasDomainSpecification`
+  patterns.push(`${assetVar} ${assetToSpecPredicate} ${specVar} .`)
 
   // Group both filter entries AND range entries by their classified shape
   // group, discovered from the SHACL graph at runtime (see
@@ -491,7 +563,19 @@ function buildDomainPatterns(
 
   for (const group of [...groupsToEmit].sort()) {
     const groupVar = `?${groupVariableName(group)}${suffix}`
-    patterns.push(`${specVar} ${domain.prefix}:${groupPredicate(group)} ${groupVar} .`)
+    // Second hop: DomainSpecification → group sub-resource. The predicate
+    // is the step-1 predicate of any property classified into this group
+    // — they all share that hop. Fall back to the conventional
+    // `${prefix}:has${Group}` if no path is found, preserving the
+    // pre-21b behavior for any ontology where discovery hasn't been run.
+    const groupPropertyNames = [
+      ...(filterPropsByGroup.get(group) ?? []).map(([n]) => n),
+      ...(rangePropsByGroup.get(group) ?? []).map(([n]) => n),
+    ]
+    const specToGroupPredicate =
+      lookupStepPredicate(vocabIndex, domain, groupPropertyNames, 1) ??
+      `${domain.prefix}:${groupPredicate(group)}`
+    patterns.push(`${specVar} ${specToGroupPredicate} ${groupVar} .`)
 
     // Filter properties classified under this group.
     for (const [propName, value] of filterPropsByGroup.get(group) ?? []) {
