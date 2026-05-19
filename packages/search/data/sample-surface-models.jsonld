@@ -1,0 +1,2436 @@
+{
+  "@context": {
+    "surface-model": "https://w3id.org/ascs-ev/envited-x/surface-model/v6/",
+    "envited-x": "https://w3id.org/ascs-ev/envited-x/envited-x/v3/",
+    "georeference": "https://w3id.org/ascs-ev/envited-x/georeference/v5/",
+    "manifest": "https://w3id.org/ascs-ev/envited-x/manifest/v5/",
+    "gx": "https://w3id.org/gaia-x/development#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "openlabel_v2": "https://w3id.org/ascs-ev/envited-x/openlabel/v2/"
+  },
+  "@graph": [
+    {
+      "@id": "did:web:surfacepro.io:SurfaceModel:san-francisco-surface-001",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "San Francisco ASAM OpenCRG Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "San Francisco ASAM OpenCRG Surface Model",
+        "gx:description": "roughness profile surface model for San Francisco, California.",
+        "gx:version": "4.3.3",
+        "gx:license": "proprietary",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "ASAM OpenCRG",
+          "surface-model:version": "1.1"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "roughness profile"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeDistributor"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionLeft"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "1",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeBus"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            },
+            "openlabel_v2:DrivableAreaEdge": {
+              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            },
+            "openlabel_v2:WeatherRain": true,
+            "openlabel_v2:RainType": {
+              "@id": "openlabel_v2:RainTypeConvective"
+            },
+            "openlabel_v2:DaySunPosition": {
+              "@id": "openlabel_v2:SunPositionBehind"
+            },
+            "openlabel_v2:SceneryFixedStructure": {
+              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            },
+            "openlabel_v2:SceneryZone": {
+              "@id": "openlabel_v2:ZoneRegion"
+            },
+            "openlabel_v2:JunctionIntersection": {
+              "@id": "openlabel_v2:IntersectionCrossroad"
+            },
+            "openlabel_v2:ConnectivityCommunication": {
+              "@id": "openlabel_v2:CommunicationV2i"
+            },
+            "openlabel_v2:ConnectivityPositioning": {
+              "@id": "openlabel_v2:PositioningGlonass"
+            },
+            "openlabel_v2:GeometryTransverse": {
+              "@id": "openlabel_v2:TransverseDivided"
+            },
+            "openlabel_v2:SubjectVehicleSpeed": true,
+            "openlabel_v2:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "2.00",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "5.00",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": true
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.001",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.005",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "0.0",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": false,
+          "surface-model:rampExists": true
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "US",
+            "georeference:state": "US-CA",
+            "georeference:region": "California",
+            "georeference:city": "San Francisco",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "-122.4254",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "37.7699",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "-122.4134",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "37.7799",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:pointcloud.eu:SurfaceModel:tokyo-surface-002",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Tokyo HDF5 Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Tokyo HDF5 Surface Model",
+        "gx:description": "texture map surface model for Tokyo, Kanto.",
+        "gx:version": "5.6.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "HDF5",
+          "surface-model:version": "2.0"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "texture map"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:MotorwayManaged"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionRight"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "2",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeSpecial"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeLoose"
+            },
+            "openlabel_v2:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel_v2:SurfaceConditionContamination"
+            },
+            "openlabel_v2:DrivableAreaEdge": {
+              "@id": "openlabel_v2:EdgeNone"
+            },
+            "openlabel_v2:WeatherWind": true,
+            "openlabel_v2:IlluminationLowLight": {
+              "@id": "openlabel_v2:LowLightNight"
+            },
+            "openlabel_v2:IlluminationArtificial": {
+              "@id": "openlabel_v2:ArtificialVehicleLighting"
+            },
+            "openlabel_v2:SceneryFixedStructure": {
+              "@id": "openlabel_v2:FixedStructureVegetation"
+            },
+            "openlabel_v2:SceneryZone": {
+              "@id": "openlabel_v2:ZoneGeoFenced"
+            },
+            "openlabel_v2:JunctionIntersection": {
+              "@id": "openlabel_v2:IntersectionTJunction"
+            },
+            "openlabel_v2:ConnectivityCommunication": {
+              "@id": "openlabel_v2:V2iWifi"
+            },
+            "openlabel_v2:ConnectivityPositioning": {
+              "@id": "openlabel_v2:PositioningGalileo"
+            },
+            "openlabel_v2:HorizontalStraights": true,
+            "openlabel_v2:SubjectVehicleSpeed": true,
+            "openlabel_v2:subjectVehicleSpeedValue": {
+              "@value": "41",
+              "@type": "xsd:integer"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "3.70",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "8.40",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": false
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.005",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.010",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "18.5",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "JP",
+            "georeference:state": "JP-13",
+            "georeference:region": "Kanto",
+            "georeference:city": "Tokyo",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "139.6423",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "35.6697",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "139.6583",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "35.6827",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:surfacepro.io:SurfaceModel:stockholm-surface-003",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Stockholm Custom Binary Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Stockholm Custom Binary Surface Model",
+        "gx:description": "friction map surface model for Stockholm, Stockholm.",
+        "gx:version": "1.9.7",
+        "gx:license": "proprietary",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "Custom Binary",
+          "surface-model:version": "1.2"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "friction map"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeSlip"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionLeft"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "3",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeBus"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeUniform"
+            },
+            "openlabel_v2:DaySunPosition": {
+              "@id": "openlabel_v2:SunPositionBehind"
+            },
+            "openlabel_v2:SceneryZone": {
+              "@id": "openlabel_v2:ZoneSchool"
+            },
+            "openlabel_v2:ScenerySpecialStructure": {
+              "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
+            },
+            "openlabel_v2:JunctionIntersection": {
+              "@id": "openlabel_v2:IntersectionGradeSeperated"
+            },
+            "openlabel_v2:ConnectivityCommunication": {
+              "@id": "openlabel_v2:V2vSatellite"
+            },
+            "openlabel_v2:ConnectivityPositioning": {
+              "@id": "openlabel_v2:PositioningGps"
+            },
+            "openlabel_v2:HorizontalCurves": true,
+            "openlabel_v2:SubjectVehicleSpeed": true,
+            "openlabel_v2:subjectVehicleSpeedValue": {
+              "@value": "52",
+              "@type": "xsd:integer"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "5.40",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "11.80",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": true
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.010",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.050",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "37.0",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "SE",
+            "georeference:state": "SE-AB",
+            "georeference:region": "Stockholm",
+            "georeference:city": "Stockholm",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "18.0586",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "59.3213",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "18.0786",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "59.3373",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:pointcloud.eu:SurfaceModel:milan-surface-004",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Milan ASAM OpenCRG Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Milan ASAM OpenCRG Surface Model",
+        "gx:description": "Height surface model for Milan, Lombardy.",
+        "gx:version": "2.2.4",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "ASAM OpenCRG",
+          "surface-model:version": "1.1"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "Height"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeRadial"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionRight"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "1",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeSpecial"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            },
+            "openlabel_v2:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel_v2:SurfaceConditionMirage"
+            },
+            "openlabel_v2:IlluminationLowLight": {
+              "@id": "openlabel_v2:LowLightNight"
+            },
+            "openlabel_v2:IlluminationArtificial": {
+              "@id": "openlabel_v2:ArtificialVehicleLighting"
+            },
+            "openlabel_v2:TrafficAgentDensity": true,
+            "openlabel_v2:trafficAgentDensityValue": {
+              "@value": "31",
+              "@type": "xsd:integer"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "7.10",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "15.20",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": false
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.050",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.001",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "55.5",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": false,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "IT",
+            "georeference:state": "IT-MI",
+            "georeference:region": "Lombardy",
+            "georeference:city": "Milan",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "9.1780",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "45.4547",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "9.2020",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "45.4737",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:surfacepro.io:SurfaceModel:karlsruhe-surface-005",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Karlsruhe HDF5 Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Karlsruhe HDF5 Surface Model",
+        "gx:description": "roughness profile surface model for Karlsruhe, Baden-Wuerttemberg.",
+        "gx:version": "3.5.1",
+        "gx:license": "proprietary",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "HDF5",
+          "surface-model:version": "2.0"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "roughness profile"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeMinor"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionLeft"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "2",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeBus"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeLoose"
+            },
+            "openlabel_v2:WeatherRain": true,
+            "openlabel_v2:RainType": {
+              "@id": "openlabel_v2:RainTypeConvective"
+            },
+            "openlabel_v2:DaySunPosition": {
+              "@id": "openlabel_v2:SunPositionBehind"
+            },
+            "openlabel_v2:SceneryTemporaryStructure": {
+              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
+            },
+            "openlabel_v2:GeometryTransverse": {
+              "@id": "openlabel_v2:TransverseDivided"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "8.80",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "18.60",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": true
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.001",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.005",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "74.0",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": true
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BW",
+            "georeference:region": "Baden-Wuerttemberg",
+            "georeference:city": "Karlsruhe",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "8.3897",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "49.0019",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "8.4177",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "49.0119",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:pointcloud.eu:SurfaceModel:hamburg-surface-006",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Hamburg Custom Binary Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Hamburg Custom Binary Surface Model",
+        "gx:description": "texture map surface model for Hamburg, Hamburg.",
+        "gx:version": "4.8.8",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "Custom Binary",
+          "surface-model:version": "1.2"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "texture map"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:MotorwayUnmanaged"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionRight"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "3",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeSpecial"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeUniform"
+            },
+            "openlabel_v2:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel_v2:SurfaceConditionWet"
+            },
+            "openlabel_v2:DrivableAreaEdge": {
+              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            },
+            "openlabel_v2:IlluminationLowLight": {
+              "@id": "openlabel_v2:LowLightNight"
+            },
+            "openlabel_v2:IlluminationArtificial": {
+              "@id": "openlabel_v2:ArtificialVehicleLighting"
+            },
+            "openlabel_v2:SceneryFixedStructure": {
+              "@id": "openlabel_v2:FixedStructureVegetation"
+            },
+            "openlabel_v2:HorizontalStraights": true
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "10.50",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "22.00",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": false
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.005",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.010",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "92.5",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-HH",
+            "georeference:region": "Hamburg",
+            "georeference:city": "Hamburg",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "9.9877",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "53.5446",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "9.9997",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "53.5576",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:surfacepro.io:SurfaceModel:dresden-surface-007",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Dresden ASAM OpenCRG Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Dresden ASAM OpenCRG Surface Model",
+        "gx:description": "friction map surface model for Dresden, Saxony.",
+        "gx:version": "5.1.5",
+        "gx:license": "proprietary",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "ASAM OpenCRG",
+          "surface-model:version": "1.1"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "friction map"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeMotorway"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionLeft"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeBus"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            },
+            "openlabel_v2:DrivableAreaEdge": {
+              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            },
+            "openlabel_v2:WeatherWind": true,
+            "openlabel_v2:WeatherSnow": true,
+            "openlabel_v2:DaySunPosition": {
+              "@id": "openlabel_v2:SunPositionBehind"
+            },
+            "openlabel_v2:SceneryFixedStructure": {
+              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            },
+            "openlabel_v2:HorizontalCurves": true
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "12.20",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "25.40",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": true
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.010",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.050",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "111.0",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": false,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-SN",
+            "georeference:region": "Saxony",
+            "georeference:city": "Dresden",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "13.7293",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "51.0424",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "13.7453",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "51.0584",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:pointcloud.eu:SurfaceModel:detroit-surface-008",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Detroit HDF5 Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Detroit HDF5 Surface Model",
+        "gx:description": "Height surface model for Detroit, Michigan.",
+        "gx:version": "1.4.2",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "HDF5",
+          "surface-model:version": "2.0"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "Height"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeShared"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionRight"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeLoose"
+            },
+            "openlabel_v2:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel_v2:SurfaceConditionIcy"
+            },
+            "openlabel_v2:ScenerySpecialStructure": {
+              "@id": "openlabel_v2:SpecialStructureTollPlaza"
+            },
+            "openlabel_v2:JunctionRoundabout": {
+              "@id": "openlabel_v2:RoundaboutMiniNosignal"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "13.90",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "28.80",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": false
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.050",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.001",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "129.5",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "US",
+            "georeference:state": "US-MI",
+            "georeference:region": "Michigan",
+            "georeference:city": "Detroit",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "-83.0558",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "42.3219",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "-83.0358",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "42.3409",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:surfacepro.io:SurfaceModel:shanghai-surface-009",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Shanghai Custom Binary Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Shanghai Custom Binary Surface Model",
+        "gx:description": "roughness profile surface model for Shanghai, Shanghai.",
+        "gx:version": "2.7.9",
+        "gx:license": "proprietary",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "Custom Binary",
+          "surface-model:version": "1.2"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "roughness profile"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeParking"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionLeft"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeUniform"
+            },
+            "openlabel_v2:WeatherRain": true,
+            "openlabel_v2:RainType": {
+              "@id": "openlabel_v2:RainTypeConvective"
+            },
+            "openlabel_v2:GeometryTransverse": {
+              "@id": "openlabel_v2:TransverseDivided"
+            },
+            "openlabel_v2:TrafficAgentDensity": true,
+            "openlabel_v2:trafficAgentDensityValue": {
+              "@value": "66",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:EnvironmentParticulates": {
+              "@id": "openlabel_v2:ParticulatesWater"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "15.60",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "32.20",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": true
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.001",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.005",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "148.0",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": true
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "CN",
+            "georeference:state": "CN-31",
+            "georeference:region": "Shanghai",
+            "georeference:city": "Shanghai",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "121.4617",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "31.2254",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "121.4857",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "31.2354",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:pointcloud.eu:SurfaceModel:paris-surface-010",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Paris ASAM OpenCRG Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Paris ASAM OpenCRG Surface Model",
+        "gx:description": "texture map surface model for Paris, Ile-de-France.",
+        "gx:version": "3.0.6",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "ASAM OpenCRG",
+          "surface-model:version": "1.1"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "texture map"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeDistributor"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionRight"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            },
+            "openlabel_v2:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel_v2:SurfaceConditionStandingWater"
+            },
+            "openlabel_v2:HorizontalStraights": true
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "17.30",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "35.60",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": false
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.005",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.010",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "166.5",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": false,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "FR",
+            "georeference:state": "FR-75",
+            "georeference:region": "Ile-de-France",
+            "georeference:city": "Paris",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "2.3382",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "48.8501",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "2.3662",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "48.8631",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:surfacepro.io:SurfaceModel:seoul-surface-011",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Seoul HDF5 Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Seoul HDF5 Surface Model",
+        "gx:description": "friction map surface model for Seoul, Seoul.",
+        "gx:version": "4.3.3",
+        "gx:license": "proprietary",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "HDF5",
+          "surface-model:version": "2.0"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "friction map"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:MotorwayManaged"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionLeft"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "2",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeBus"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeLoose"
+            },
+            "openlabel_v2:DrivableAreaEdge": {
+              "@id": "openlabel_v2:EdgeNone"
+            },
+            "openlabel_v2:SceneryFixedStructure": {
+              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            },
+            "openlabel_v2:HorizontalCurves": true
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "19.00",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "39.00",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": true
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.010",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.050",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "185.0",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "KR",
+            "georeference:state": "KR-11",
+            "georeference:region": "Seoul",
+            "georeference:city": "Seoul",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "126.9720",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "37.5585",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "126.9840",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "37.5745",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:pointcloud.eu:SurfaceModel:munich-surface-012",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Munich Custom Binary Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Munich Custom Binary Surface Model",
+        "gx:description": "Height surface model for Munich, Bavaria.",
+        "gx:version": "5.6.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "Custom Binary",
+          "surface-model:version": "1.2"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "Height"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeSlip"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionRight"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "3",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeSpecial"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeUniform"
+            },
+            "openlabel_v2:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel_v2:SurfaceConditionFlooded"
+            },
+            "openlabel_v2:DrivableAreaEdge": {
+              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            },
+            "openlabel_v2:WeatherWind": true,
+            "openlabel_v2:SceneryFixedStructure": {
+              "@id": "openlabel_v2:FixedStructureVegetation"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "20.70",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "42.40",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": false
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.050",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.001",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "203.5",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BY",
+            "georeference:region": "Bavaria",
+            "georeference:city": "Munich",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "11.5740",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "48.1256",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "11.5900",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "48.1446",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:surfacepro.io:SurfaceModel:frankfurt-surface-013",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Frankfurt ASAM OpenCRG Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Frankfurt ASAM OpenCRG Surface Model",
+        "gx:description": "roughness profile surface model for Frankfurt, Hesse.",
+        "gx:version": "1.9.7",
+        "gx:license": "proprietary",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "ASAM OpenCRG",
+          "surface-model:version": "1.1"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "roughness profile"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeRadial"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionLeft"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "1",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeBus"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            },
+            "openlabel_v2:WeatherRain": true,
+            "openlabel_v2:RainType": {
+              "@id": "openlabel_v2:RainTypeConvective"
+            },
+            "openlabel_v2:ScenerySpecialStructure": {
+              "@id": "openlabel_v2:SpecialStructureAutoAccess"
+            },
+            "openlabel_v2:GeometryTransverse": {
+              "@id": "openlabel_v2:TransverseDivided"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "22.40",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "45.80",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": true
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.001",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.005",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "222.0",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": false,
+          "surface-model:rampExists": true
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-HE",
+            "georeference:region": "Hesse",
+            "georeference:city": "Frankfurt",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "8.6721",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "50.1059",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "8.6921",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "50.1159",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:pointcloud.eu:SurfaceModel:hanover-surface-014",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Hanover HDF5 Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Hanover HDF5 Surface Model",
+        "gx:description": "texture map surface model for Hanover, Lower Saxony.",
+        "gx:version": "2.2.4",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "HDF5",
+          "surface-model:version": "2.0"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "texture map"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeMinor"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionRight"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "2",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeSpecial"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeLoose"
+            },
+            "openlabel_v2:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel_v2:SurfaceConditionSnow"
+            },
+            "openlabel_v2:HorizontalStraights": true,
+            "openlabel_v2:TrafficAgentDensity": true,
+            "openlabel_v2:trafficAgentDensityValue": {
+              "@value": "11",
+              "@type": "xsd:integer"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "24.10",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "49.20",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": false
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.005",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.010",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "240.5",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-NI",
+            "georeference:region": "Lower Saxony",
+            "georeference:city": "Hanover",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "9.7200",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "52.3694",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "9.7440",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "52.3824",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:surfacepro.io:SurfaceModel:austin-surface-015",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Austin Custom Binary Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Austin Custom Binary Surface Model",
+        "gx:description": "friction map surface model for Austin, Texas.",
+        "gx:version": "3.5.1",
+        "gx:license": "proprietary",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "Custom Binary",
+          "surface-model:version": "1.2"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "friction map"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:MotorwayUnmanaged"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionLeft"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "3",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeBus"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeUniform"
+            },
+            "openlabel_v2:SceneryTemporaryStructure": {
+              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
+            },
+            "openlabel_v2:HorizontalCurves": true
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "25.80",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "52.60",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": true
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.010",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.050",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "259.0",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "US",
+            "georeference:state": "US-TX",
+            "georeference:region": "Texas",
+            "georeference:city": "Austin",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "-97.7571",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "30.2592",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "-97.7291",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "30.2752",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:pointcloud.eu:SurfaceModel:vienna-surface-016",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Vienna ASAM OpenCRG Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Vienna ASAM OpenCRG Surface Model",
+        "gx:description": "Height surface model for Vienna, Vienna.",
+        "gx:version": "4.8.8",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "ASAM OpenCRG",
+          "surface-model:version": "1.1"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "Height"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeMotorway"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionRight"
+            },
+            "openlabel_v2:LaneSpecificationLaneCount": true,
+            "openlabel_v2:laneSpecificationLaneCountValue": {
+              "@value": "1",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeSpecial"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            },
+            "openlabel_v2:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel_v2:SurfaceConditionContamination"
+            },
+            "openlabel_v2:DrivableAreaEdge": {
+              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            },
+            "openlabel_v2:SceneryFixedStructure": {
+              "@id": "openlabel_v2:FixedStructureVegetation"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "27.50",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "56.00",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": false
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.050",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.001",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "277.5",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": false,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "AT",
+            "georeference:state": "AT-9",
+            "georeference:region": "Vienna",
+            "georeference:city": "Vienna",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "16.3678",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "48.1987",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "16.3798",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "48.2177",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:surfacepro.io:SurfaceModel:london-surface-017",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "London HDF5 Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "London HDF5 Surface Model",
+        "gx:description": "roughness profile surface model for London, Greater London.",
+        "gx:version": "5.1.5",
+        "gx:license": "proprietary",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "HDF5",
+          "surface-model:version": "2.0"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "roughness profile"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeShared"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionLeft"
+            },
+            "openlabel_v2:LaneSpecificationType": {
+              "@id": "openlabel_v2:LaneTypeBus"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeLoose"
+            },
+            "openlabel_v2:DrivableAreaEdge": {
+              "@id": "openlabel_v2:EdgeNone"
+            },
+            "openlabel_v2:WeatherRain": true,
+            "openlabel_v2:RainType": {
+              "@id": "openlabel_v2:RainTypeConvective"
+            },
+            "openlabel_v2:WeatherWind": true,
+            "openlabel_v2:WeatherSnow": true,
+            "openlabel_v2:SceneryFixedStructure": {
+              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            },
+            "openlabel_v2:GeometryTransverse": {
+              "@id": "openlabel_v2:TransverseDivided"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "29.20",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "59.40",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": true
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.001",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.005",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "296.0",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": true
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "GB",
+            "georeference:state": "GB-LND",
+            "georeference:region": "Greater London",
+            "georeference:city": "London",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "-0.1358",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "51.5024",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "-0.1198",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "51.5124",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:pointcloud.eu:SurfaceModel:stuttgart-surface-018",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Stuttgart Custom Binary Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Stuttgart Custom Binary Surface Model",
+        "gx:description": "texture map surface model for Stuttgart, Baden-Wuerttemberg.",
+        "gx:version": "1.4.2",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "Custom Binary",
+          "surface-model:version": "1.2"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "texture map"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeParking"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionRight"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeUniform"
+            },
+            "openlabel_v2:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel_v2:SurfaceConditionMirage"
+            },
+            "openlabel_v2:ScenerySpecialStructure": {
+              "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
+            },
+            "openlabel_v2:JunctionRoundabout": {
+              "@id": "openlabel_v2:RoundaboutNormalNosignal"
+            },
+            "openlabel_v2:HorizontalStraights": true
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "30.90",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "62.80",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": false
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.005",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.010",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "314.5",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BW",
+            "georeference:region": "Baden-Wuerttemberg",
+            "georeference:city": "Stuttgart",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "9.1729",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "48.7693",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "9.1929",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "48.7823",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:surfacepro.io:SurfaceModel:berlin-surface-019",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Berlin ASAM OpenCRG Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Berlin ASAM OpenCRG Surface Model",
+        "gx:description": "friction map surface model for Berlin, Berlin.",
+        "gx:version": "2.7.9",
+        "gx:license": "proprietary",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "ASAM OpenCRG",
+          "surface-model:version": "1.1"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "friction map"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:RoadTypeDistributor"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionLeft"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            },
+            "openlabel_v2:HorizontalCurves": true,
+            "openlabel_v2:TrafficAgentDensity": true,
+            "openlabel_v2:trafficAgentDensityValue": {
+              "@value": "46",
+              "@type": "xsd:integer"
+            },
+            "openlabel_v2:EnvironmentParticulates": {
+              "@id": "openlabel_v2:ParticulatesWater"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "32.60",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "66.20",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": true
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.010",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.050",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "333.0",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": false,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-BE",
+            "georeference:region": "Berlin",
+            "georeference:city": "Berlin",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "13.3930",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "52.5120",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "13.4170",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "52.5280",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:pointcloud.eu:SurfaceModel:cologne-surface-020",
+      "@type": "surface-model:SurfaceModel",
+      "rdfs:label": {
+        "@value": "Cologne HDF5 Surface Model",
+        "@language": "en"
+      },
+      "surface-model:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Cologne HDF5 Surface Model",
+        "gx:description": "Height surface model for Cologne, North Rhine-Westphalia.",
+        "gx:version": "3.0.6",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "surface-model:hasDomainSpecification": {
+        "@type": "surface-model:DomainSpecification",
+        "surface-model:hasFormat": {
+          "@type": "surface-model:Format",
+          "surface-model:formatType": "HDF5",
+          "surface-model:version": "2.0"
+        },
+        "surface-model:hasContent": [
+          {
+            "@type": "surface-model:Content",
+            "surface-model:contentType": "Height"
+          },
+          {
+            "@type": "openlabel_v2:Odd",
+            "openlabel_v2:DrivableAreaType": {
+              "@id": "openlabel_v2:MotorwayManaged"
+            },
+            "openlabel_v2:LaneSpecificationTravelDirection": {
+              "@id": "openlabel_v2:TravelDirectionRight"
+            },
+            "openlabel_v2:DrivableAreaSurfaceType": {
+              "@id": "openlabel_v2:SurfaceTypeLoose"
+            },
+            "openlabel_v2:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel_v2:SurfaceConditionWet"
+            }
+          }
+        ],
+        "surface-model:hasQuantity": {
+          "@type": "surface-model:Quantity",
+          "surface-model:length": {
+            "@value": "34.30",
+            "@type": "xsd:float"
+          },
+          "surface-model:elevationRange": {
+            "@value": "69.60",
+            "@type": "xsd:float"
+          },
+          "surface-model:mapDataField": false
+        },
+        "surface-model:hasQuality": {
+          "@type": "surface-model:Quality",
+          "surface-model:resolutionLongitudinal": {
+            "@value": "0.050",
+            "@type": "xsd:float"
+          },
+          "surface-model:resolutionLateral": {
+            "@value": "0.001",
+            "@type": "xsd:float"
+          },
+          "surface-model:orientation": {
+            "@value": "351.5",
+            "@type": "xsd:float"
+          },
+          "surface-model:platformExists": true,
+          "surface-model:rampExists": false
+        },
+        "surface-model:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "DE",
+            "georeference:state": "DE-NW",
+            "georeference:region": "North Rhine-Westphalia",
+            "georeference:city": "Cologne",
+            "georeference:hasBoundingBox": {
+              "@type": "georeference:BoundingBox",
+              "georeference:xMin": {
+                "@value": "6.9463",
+                "@type": "xsd:float"
+              },
+              "georeference:yMin": {
+                "@value": "50.9280",
+                "@type": "xsd:float"
+              },
+              "georeference:xMax": {
+                "@value": "6.9743",
+                "@type": "xsd:float"
+              },
+              "georeference:yMax": {
+                "@value": "50.9470",
+                "@type": "xsd:float"
+              }
+            }
+          }
+        }
+      },
+      "surface-model:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    }
+  ]
+}

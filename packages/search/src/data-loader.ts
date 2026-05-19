@@ -8,9 +8,8 @@ const __dirname = dirname(__filename)
 const DATA_DIR = join(__dirname, '..', 'data')
 
 /**
- * Load sample TTL data files for development/testing.
- * Loads 5 sample datasets spanning 267 assets across hdmap, scenario,
- * ositrace, environment-model, and surface-model domains.
+ * Load a sample data file for development/testing.
+ * Returns the raw file content, or empty string if the file is missing.
  */
 function loadDataFile(filename: string): string {
   try {
@@ -74,11 +73,19 @@ const FALLBACK_TURTLE = `
 
 /**
  * Load sample data into the SPARQL store for development/testing.
- * Loads all 5 bundled TTL files and falls back to a single inline HD map if
- * none of the sample files are present.
+ * Prefers JSON-LD files (`.jsonld`) and falls back to Turtle (`.ttl`).
+ * Falls back to a single inline HD map if no sample files are present.
  */
 export async function loadSampleData(store: SparqlStore): Promise<void> {
-  const dataFiles = [
+  const jsonldFiles = [
+    'sample-hdmap.jsonld',
+    'sample-scenarios.jsonld',
+    'sample-ositrace.jsonld',
+    'sample-environment-models.jsonld',
+    'sample-surface-models.jsonld',
+  ]
+
+  const ttlFiles = [
     'sample-assets.ttl',
     'sample-scenarios.ttl',
     'sample-ositrace.ttl',
@@ -87,11 +94,24 @@ export async function loadSampleData(store: SparqlStore): Promise<void> {
   ]
 
   let loaded = 0
-  for (const file of dataFiles) {
+
+  // Try JSON-LD files first
+  for (const file of jsonldFiles) {
     const data = loadDataFile(file)
     if (data) {
-      await store.loadTurtle(data)
+      await store.loadJsonLd(data)
       loaded++
+    }
+  }
+
+  // Fall back to TTL files if no JSON-LD files were found
+  if (loaded === 0) {
+    for (const file of ttlFiles) {
+      const data = loadDataFile(file)
+      if (data) {
+        await store.loadTurtle(data)
+        loaded++
+      }
     }
   }
 

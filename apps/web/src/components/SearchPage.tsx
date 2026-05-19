@@ -76,6 +76,7 @@ export function SearchPage() {
           {interpretation && interpretation.mappedTerms.length > 0 && (
             <QueryRefinement
               mappedTerms={interpretation.mappedTerms}
+              domains={interpretation.domains ?? []}
               onRerun={handleRefine}
               loading={loading}
             />

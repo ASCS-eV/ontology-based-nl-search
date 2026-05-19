@@ -14,27 +14,48 @@ function termsEqual(a: MappedTerm[], b: MappedTerm[]): boolean {
   )
 }
 
+function arraysEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  return a.every((v, i) => v === b[i])
+}
+
 interface QueryRefinementProps {
   mappedTerms: MappedTerm[]
-  onRerun: (updatedTerms: MappedTerm[]) => void
+  domains: string[]
+  onRerun: (updatedTerms: MappedTerm[], updatedDomains: string[]) => void
   loading?: boolean
 }
 
 /**
- * Editable chips for the interpreted query terms.
- * Users can remove terms or edit values, then re-run directly.
+ * Editable chips for the interpreted query terms and domains.
+ * Users can remove terms/domains or edit values, then re-run directly.
+ * Removing all domains means "search all domains".
  */
-export function QueryRefinement({ mappedTerms, onRerun, loading }: QueryRefinementProps) {
+export function QueryRefinement({
+  mappedTerms,
+  domains: initialDomains,
+  onRerun,
+  loading,
+}: QueryRefinementProps) {
   const [terms, setTerms] = useState<MappedTerm[]>(mappedTerms)
+  const [domains, setDomains] = useState<string[]>(initialDomains)
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [editValue, setEditValue] = useState('')
 
-  // Sync internal terms when parent provides new mappedTerms (e.g., new search)
+  // Sync internal state when parent provides new data (e.g., new search)
   useEffect(() => {
     setTerms(mappedTerms)
   }, [mappedTerms])
 
-  const hasChanges = !termsEqual(terms, mappedTerms)
+  useEffect(() => {
+    setDomains(initialDomains)
+  }, [initialDomains])
+
+  const hasChanges = !termsEqual(terms, mappedTerms) || !arraysEqual(domains, initialDomains)
+
+  const removeDomain = (domain: string) => {
+    setDomains(domains.filter((d) => d !== domain))
+  }
 
   const removeTerm = (idx: number) => {
     setTerms(terms.filter((_, i) => i !== idx))
@@ -65,10 +86,10 @@ export function QueryRefinement({ mappedTerms, onRerun, loading }: QueryRefineme
   }
 
   const handleRerun = () => {
-    onRerun(terms)
+    onRerun(terms, domains)
   }
 
-  if (terms.length === 0) return null
+  if (terms.length === 0 && domains.length === 0) return null
 
   return (
     <div className="w-full" role="region" aria-label="Refine query">
@@ -80,50 +101,78 @@ export function QueryRefinement({ mappedTerms, onRerun, loading }: QueryRefineme
       </div>
 
       <div className="flex flex-wrap gap-2 items-center">
-        {terms.map((term, i) => (
+        {/* Domain chips */}
+        {domains.map((domain) => (
           <div
-            key={`${term.property}-${i}`}
-            className="group inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-sm shadow-sm hover:shadow transition-shadow"
+            key={`domain-${domain}`}
+            className="group inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-sm shadow-sm hover:shadow transition-shadow"
           >
-            {term.property && (
-              <span className="text-xs text-gray-400 font-mono">{term.property}:</span>
-            )}
-
-            {editingIdx === i ? (
-              <input
-                type="text"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') confirmEdit()
-                  if (e.key === 'Escape') cancelEdit()
-                }}
-                onBlur={confirmEdit}
-                className="w-24 px-1 py-0 text-sm border-b border-blue-400 outline-none bg-transparent"
-                autoFocus
-                aria-label={`Edit value for ${term.property || term.input}`}
-              />
-            ) : (
-              <button
-                onClick={() => startEdit(i)}
-                className="font-medium text-gray-800 hover:text-blue-600 cursor-pointer"
-                title="Click to edit"
-                aria-label={`Edit ${term.mapped}`}
-              >
-                {term.mapped}
-              </button>
-            )}
-
+            <span className="text-xs text-indigo-400 font-mono">domain:</span>
+            <span className="font-medium text-indigo-700">{domain}</span>
             <button
-              onClick={() => removeTerm(i)}
-              className="ml-0.5 w-4 h-4 flex items-center justify-center text-gray-400 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-              aria-label={`Remove ${term.mapped} filter`}
-              title="Remove filter"
+              onClick={() => removeDomain(domain)}
+              className="ml-0.5 w-4 h-4 flex items-center justify-center text-indigo-400 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label={`Remove ${domain} domain filter`}
+              title="Remove domain (empty = all domains)"
             >
               ×
             </button>
           </div>
         ))}
+
+        {/* No-domain hint */}
+        {domains.length === 0 && initialDomains.length > 0 && (
+          <span className="text-xs text-gray-400 italic">all domains</span>
+        )}
+
+        {/* Property filter chips (exclude domain terms — shown above) */}
+        {terms
+          .map((term, origIdx) => ({ term, origIdx }))
+          .filter(({ term }) => term.property !== 'domain' && term.property !== 'domains')
+          .map(({ term, origIdx }) => (
+            <div
+              key={`${term.property}-${origIdx}`}
+              className="group inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-sm shadow-sm hover:shadow transition-shadow"
+            >
+              {term.property && (
+                <span className="text-xs text-gray-400 font-mono">{term.property}:</span>
+              )}
+
+              {editingIdx === origIdx ? (
+                <input
+                  type="text"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') confirmEdit()
+                    if (e.key === 'Escape') cancelEdit()
+                  }}
+                  onBlur={confirmEdit}
+                  className="w-24 px-1 py-0 text-sm border-b border-blue-400 outline-none bg-transparent"
+                  autoFocus
+                  aria-label={`Edit value for ${term.property || term.input}`}
+                />
+              ) : (
+                <button
+                  onClick={() => startEdit(origIdx)}
+                  className="font-medium text-gray-800 hover:text-blue-600 cursor-pointer"
+                  title="Click to edit"
+                  aria-label={`Edit ${term.mapped}`}
+                >
+                  {term.mapped}
+                </button>
+              )}
+
+              <button
+                onClick={() => removeTerm(origIdx)}
+                className="ml-0.5 w-4 h-4 flex items-center justify-center text-gray-400 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label={`Remove ${term.mapped} filter`}
+                title="Remove filter"
+              >
+                ×
+              </button>
+            </div>
+          ))}
 
         {hasChanges && (
           <button

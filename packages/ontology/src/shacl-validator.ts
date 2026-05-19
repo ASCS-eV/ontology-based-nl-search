@@ -360,10 +360,13 @@ export class ShaclValidator {
     const iris = this.resolveSlotIris(slotKey)
     if (iris.length === 0) return { conforms: true, violations: [], resolvedIris: [] }
 
+    // Validate all resolved IRIs in parallel — each is independent and the
+    // engine calls dominate wall-clock time (~3s each on the ENVITED-X graph).
+    const results = await Promise.all(iris.map((iri) => this.validateValue(iri, value)))
+
     const allViolations: ShaclViolation[] = []
     let allConform = true
-    for (const iri of iris) {
-      const result = await this.validateValue(iri, value)
+    for (const result of results) {
       if (!result.conforms) {
         allConform = false
         allViolations.push(...result.violations)

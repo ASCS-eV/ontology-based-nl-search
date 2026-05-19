@@ -574,73 +574,108 @@ function buildDomainPatterns(
   const groupsToEmit = new Set<string>([...filterPropsByGroup.keys(), ...rangePropsByGroup.keys()])
 
   for (const group of [...groupsToEmit].sort()) {
-    const groupVar = `?${groupVariableName(group)}${suffix}`
-    // Second hop: DomainSpecification → group sub-resource. The predicate
-    // is the step-1 predicate of any property classified into this group
-    // — they all share that hop. Fall back to the conventional
-    // `${prefix}:has${Group}` if no path is found, preserving the
-    // pre-21b behavior for any ontology where discovery hasn't been run.
-    const groupPropertyNames = [
-      ...(filterPropsByGroup.get(group) ?? []).map(([n]) => n),
-      ...(rangePropsByGroup.get(group) ?? []).map(([n]) => n),
-    ]
-    const specToGroupPredicate =
-      lookupStepPredicate(vocabIndex, domain, groupPropertyNames, 1) ??
-      `${domain.prefix}:${groupPredicate(group)}`
-    patterns.push(`${specVar} ${specToGroupPredicate} ${groupVar} .`)
+    // Pre-resolve all property prefixes and sub-group by prefix.
+    // Properties from different ontology domains may live on separate RDF
+    // nodes even when they share the same shape group (e.g., hdmap:Content
+    // and openlabel_v2:Odd are both reachable via hasContent). Binding them
+    // to the same SPARQL variable would produce an unsatisfiable pattern.
+    // Sub-grouping by prefix ensures each type-disjoint node gets its own
+    // variable and its own `hasGroup` triple.
+    const prefixBuckets = new Map<
+      string,
+      {
+        foreignDomain: string | null
+        filters: [string, string | string[]][]
+        ranges: [string, { min?: number; max?: number }][]
+      }
+    >()
 
-    // Filter properties classified under this group.
-    for (const [propName, value] of filterPropsByGroup.get(group) ?? []) {
-      const varName = `?${propName}${suffix}`
-      const { prefix: propPrefix, foreignDomain } = resolvePropertyPrefix(
-        propName,
-        domainName,
-        vocabIndex,
-        registry
-      )
-      if (foreignDomain) foreignDomains.add(foreignDomain)
-      patterns.push(`${groupVar} ${propPrefix}:${propName} ${varName} .`)
-      addEnumFilter(patterns, filters, varName, value)
-      selectVars.add(varName)
+    const ensureBucket = (prefix: string, fd: string | null) => {
+      let b = prefixBuckets.get(prefix)
+      if (!b) {
+        b = { foreignDomain: fd, filters: [], ranges: [] }
+        prefixBuckets.set(prefix, b)
+      }
+      return b
     }
 
-    // Range properties classified under this group. Range2D properties
-    // (detected from SHACL via `sh:node → Range2DShape`) use the nested
-    // `min`/`max` structure; simple numeric properties are filtered directly.
-    for (const [propName, range] of rangePropsByGroup.get(group) ?? []) {
-      const { prefix: propPrefix, foreignDomain } = resolvePropertyPrefix(
+    for (const [propName, value] of filterPropsByGroup.get(group) ?? []) {
+      const { prefix: pp, foreignDomain: fd } = resolvePropertyPrefix(
         propName,
         domainName,
         vocabIndex,
         registry
       )
-      if (foreignDomain) foreignDomains.add(foreignDomain)
+      ensureBucket(pp, fd).filters.push([propName, value])
+    }
 
-      if (vocabIndex.range2DProperties.has(propName)) {
-        // Range2D: property links to a blank node with min and max children.
-        const rangeNode = `?${propName}Range${suffix}`
-        patterns.push(`${groupVar} ${propPrefix}:${propName} ${rangeNode} .`)
-        if (range.min !== undefined) {
-          const maxVar = `?${propName}Max${suffix}`
-          patterns.push(`${rangeNode} ${propPrefix}:max ${maxVar} .`)
-          filters.push(`FILTER(xsd:float(${maxVar}) >= ${range.min})`)
-          selectVars.add(maxVar)
-        }
-        if (range.max !== undefined) {
-          const minVar = `?${propName}Min${suffix}`
-          patterns.push(`${rangeNode} ${propPrefix}:min ${minVar} .`)
-          filters.push(`FILTER(xsd:float(${minVar}) <= ${range.max})`)
-          selectVars.add(minVar)
-        }
-      } else {
+    for (const [propName, range] of rangePropsByGroup.get(group) ?? []) {
+      const { prefix: pp, foreignDomain: fd } = resolvePropertyPrefix(
+        propName,
+        domainName,
+        vocabIndex,
+        registry
+      )
+      ensureBucket(pp, fd).ranges.push([propName, range])
+    }
+
+    // Emit each prefix bucket with its own hasGroup binding variable.
+    for (const [propPrefix, bucket] of [...prefixBuckets].sort(([a], [b]) => a.localeCompare(b))) {
+      // Foreign-domain properties get a prefix-qualified variable name to
+      // avoid colliding with the native domain's group variable.
+      const pfxTag = bucket.foreignDomain ? `_${propPrefix.replace(/-/g, '_')}` : ''
+      const groupVar = `?${groupVariableName(group)}${pfxTag}${suffix}`
+
+      // Second hop: DomainSpecification → group sub-resource. Use
+      // path-discovery (lookupStepPredicate) for native-domain properties;
+      // fall back to conventional `${prefix}:has${Group}` for foreign
+      // domains or when discovery hasn't been run.
+      const bucketPropNames = [...bucket.filters.map(([n]) => n), ...bucket.ranges.map(([n]) => n)]
+      const specToGroupPredicate = bucket.foreignDomain
+        ? `${propPrefix}:${groupPredicate(group)}`
+        : (lookupStepPredicate(vocabIndex, domain, bucketPropNames, 1) ??
+          `${domain.prefix}:${groupPredicate(group)}`)
+      patterns.push(`${specVar} ${specToGroupPredicate} ${groupVar} .`)
+
+      if (bucket.foreignDomain) foreignDomains.add(bucket.foreignDomain)
+
+      // Filter properties in this bucket.
+      for (const [propName, value] of bucket.filters) {
         const varName = `?${propName}${suffix}`
         patterns.push(`${groupVar} ${propPrefix}:${propName} ${varName} .`)
+        addEnumFilter(patterns, filters, varName, value)
         selectVars.add(varName)
-        if (range.min !== undefined) {
-          filters.push(`FILTER(xsd:float(${varName}) >= ${range.min})`)
-        }
-        if (range.max !== undefined) {
-          filters.push(`FILTER(xsd:float(${varName}) <= ${range.max})`)
+      }
+
+      // Range properties in this bucket. Range2D properties (detected from
+      // SHACL via `sh:node → Range2DShape`) use nested `min`/`max`; simple
+      // numeric properties are filtered directly.
+      for (const [propName, range] of bucket.ranges) {
+        if (vocabIndex.range2DProperties.has(propName)) {
+          const rangeNode = `?${propName}Range${suffix}`
+          patterns.push(`${groupVar} ${propPrefix}:${propName} ${rangeNode} .`)
+          if (range.min !== undefined) {
+            const maxVar = `?${propName}Max${suffix}`
+            patterns.push(`${rangeNode} ${propPrefix}:max ${maxVar} .`)
+            filters.push(`FILTER(xsd:float(${maxVar}) >= ${range.min})`)
+            selectVars.add(maxVar)
+          }
+          if (range.max !== undefined) {
+            const minVar = `?${propName}Min${suffix}`
+            patterns.push(`${rangeNode} ${propPrefix}:min ${minVar} .`)
+            filters.push(`FILTER(xsd:float(${minVar}) <= ${range.max})`)
+            selectVars.add(minVar)
+          }
+        } else {
+          const varName = `?${propName}${suffix}`
+          patterns.push(`${groupVar} ${propPrefix}:${propName} ${varName} .`)
+          selectVars.add(varName)
+          if (range.min !== undefined) {
+            filters.push(`FILTER(xsd:float(${varName}) >= ${range.min})`)
+          }
+          if (range.max !== undefined) {
+            filters.push(`FILTER(xsd:float(${varName}) <= ${range.max})`)
+          }
         }
       }
     }

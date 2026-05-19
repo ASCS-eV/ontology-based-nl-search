@@ -10,14 +10,18 @@ const baseTerms: MappedTerm[] = [
   { input: 'Germany', mapped: 'DE', confidence: 'medium', property: 'country' },
 ]
 
+const baseDomains = ['hdmap']
+
 describe('QueryRefinement', () => {
-  it('returns null when there are no terms to refine', () => {
-    const { container } = render(<QueryRefinement mappedTerms={[]} onRerun={vi.fn()} />)
+  it('returns null when there are no terms or domains to refine', () => {
+    const { container } = render(
+      <QueryRefinement mappedTerms={[]} domains={[]} onRerun={vi.fn()} />
+    )
     expect(container).toBeEmptyDOMElement()
   })
 
   it('renders every mapped term as a chip', () => {
-    render(<QueryRefinement mappedTerms={baseTerms} onRerun={vi.fn()} />)
+    render(<QueryRefinement mappedTerms={baseTerms} domains={baseDomains} onRerun={vi.fn()} />)
     expect(screen.getByRole('button', { name: 'Edit motorway' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Edit DE' })).toBeInTheDocument()
   })
@@ -29,14 +33,14 @@ describe('QueryRefinement', () => {
    *  - Pass the modified term set to onRerun, NOT the original.
    */
   it('hides the Re-run button until a term changes', () => {
-    render(<QueryRefinement mappedTerms={baseTerms} onRerun={vi.fn()} />)
+    render(<QueryRefinement mappedTerms={baseTerms} domains={baseDomains} onRerun={vi.fn()} />)
     expect(screen.queryByRole('button', { name: /re-run/i })).not.toBeInTheDocument()
   })
 
   it('exposes Re-run after removing a term and passes the trimmed list to onRerun', async () => {
     const user = userEvent.setup()
     const onRerun = vi.fn()
-    render(<QueryRefinement mappedTerms={baseTerms} onRerun={onRerun} />)
+    render(<QueryRefinement mappedTerms={baseTerms} domains={baseDomains} onRerun={onRerun} />)
 
     await user.click(screen.getByRole('button', { name: 'Remove DE filter' }))
 
@@ -45,7 +49,7 @@ describe('QueryRefinement', () => {
     await user.click(rerun)
 
     expect(onRerun).toHaveBeenCalledTimes(1)
-    expect(onRerun).toHaveBeenCalledWith([baseTerms[0]])
+    expect(onRerun).toHaveBeenCalledWith([baseTerms[0]], baseDomains)
   })
 
   /**
@@ -54,7 +58,9 @@ describe('QueryRefinement', () => {
    */
   it('disables Re-run while loading', async () => {
     const user = userEvent.setup()
-    render(<QueryRefinement mappedTerms={baseTerms} onRerun={vi.fn()} loading />)
+    render(
+      <QueryRefinement mappedTerms={baseTerms} domains={baseDomains} onRerun={vi.fn()} loading />
+    )
     await user.click(screen.getByRole('button', { name: 'Remove DE filter' }))
 
     const rerun = screen.getByRole('button', { name: /re-run with modified filters/i })
@@ -69,7 +75,9 @@ describe('QueryRefinement', () => {
    * the structural one must still recognise an in-place new array.
    */
   it('syncs to a new mappedTerms prop value', () => {
-    const { rerender } = render(<QueryRefinement mappedTerms={baseTerms} onRerun={vi.fn()} />)
+    const { rerender } = render(
+      <QueryRefinement mappedTerms={baseTerms} domains={baseDomains} onRerun={vi.fn()} />
+    )
     expect(screen.getByRole('button', { name: 'Edit DE' })).toBeInTheDocument()
 
     rerender(
@@ -77,6 +85,7 @@ describe('QueryRefinement', () => {
         mappedTerms={[
           { input: 'urban', mapped: 'urban', confidence: 'high', property: 'roadTypes' },
         ]}
+        domains={['ositrace']}
         onRerun={vi.fn()}
       />
     )

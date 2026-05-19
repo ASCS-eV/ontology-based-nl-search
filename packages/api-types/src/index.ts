@@ -53,6 +53,12 @@ export interface QueryInterpretation {
   summary: string
   /** Individual term mappings with confidence. */
   mappedTerms: MappedTerm[]
+  /** Domain(s) selected for this search (e.g., ["hdmap", "scenario"]). */
+  domains?: string[]
+  /** Filters that actually made it into the compiled SPARQL. */
+  appliedFilters?: Record<string, string | string[]>
+  /** Location filters that made it into the compiled SPARQL. */
+  appliedLocation?: Record<string, string | string[]>
 }
 
 /** A single sub-stage timing recorded by the request logger. */
