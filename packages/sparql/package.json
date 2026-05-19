@@ -18,6 +18,11 @@
       "types": "./src/policy.ts",
       "import": "./dist/policy.js",
       "default": "./dist/policy.js"
+    },
+    "./escape": {
+      "types": "./src/escape.ts",
+      "import": "./dist/escape.js",
+      "default": "./dist/escape.js"
     }
   },
   "scripts": {
@@ -36,6 +41,7 @@
     "@ontology-search/typescript-config": "workspace:*",
     "@types/node": "^25.7.0",
     "@types/sparqljs": "^3.1.12",
+    "fast-check": "^4.8.0",
     "rimraf": "^6.0.0",
     "typescript": "~5.9.3",
     "vitest": "^3.2.0"

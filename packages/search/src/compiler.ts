@@ -27,6 +27,7 @@ import {
   type DomainDescriptor,
   type DomainRegistry,
 } from '@ontology-search/ontology/domain-registry'
+import { escapeSparqlLiteral, isIri } from '@ontology-search/sparql/escape'
 
 import { getInitializedStore } from './init.js'
 import {
@@ -54,20 +55,11 @@ interface CompilerVocab {
   range2DProperties: Set<string>
 }
 
-/**
- * Escape a string value for safe embedding in a SPARQL double-quoted literal.
- * Prevents SPARQL injection by escaping characters that would break out of the literal.
- *
- * @see https://www.w3.org/TR/sparql11-query/#rString — SPARQL string escape rules
- */
-export function escapeSparqlLiteral(value: string): string {
-  return value
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t')
-}
+// `escapeSparqlLiteral` + `isIri` are sourced from
+// `@ontology-search/sparql/escape` (re-exported here so the existing
+// `@ontology-search/search` public surface — used by the api app — keeps
+// shipping `escapeSparqlLiteral`).
+export { escapeSparqlLiteral } from '@ontology-search/sparql/escape'
 
 /**
  * Assemble a complete SPARQL SELECT query from its constituent parts.
@@ -799,13 +791,12 @@ function resolvePropertyDomain(
   return firstDomain || targetDomain
 }
 
-/**
- * Detect whether a filter value is an absolute IRI (http(s)://… or urn:…).
- * Used to decide between literal equality and hierarchy expansion.
- */
-function isIri(value: string): boolean {
-  return /^https?:\/\//.test(value) || /^urn:/.test(value)
-}
+// `isIri` is imported from `@ontology-search/sparql/escape` (see the
+// `escapeSparqlLiteral` re-export above for rationale). The previous
+// in-file prefix-only check (`^https?://|^urn:`) was both too narrow
+// (it missed `did:web:` IRIs in the project's sample data) and too lax
+// (it accepted any garbage after the scheme); the lifted version
+// enforces the full SPARQL `IRIREF` body grammar.
 
 /**
  * A slot value carries information iff it's a non-empty string or a
