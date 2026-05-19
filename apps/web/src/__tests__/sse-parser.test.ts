@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { parseSSEBuffer } from '../lib/sse-parser'
 
@@ -60,6 +60,43 @@ describe('parseSSEBuffer', () => {
     const buffer = 'data: {"orphan":true}\n'
     const { events } = parseSSEBuffer(buffer)
     expect(events).toHaveLength(0)
+  })
+
+  describe('malformed JSON resilience', () => {
+    let warnSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+    afterEach(() => {
+      warnSpy.mockRestore()
+    })
+
+    /**
+     * Regression: a single bad `data:` line on the wire must not kill the
+     * whole SSE stream. Surrounding well-formed events must still emit.
+     */
+    it('drops a malformed JSON data line and continues parsing', () => {
+      const buffer = [
+        'event: interpretation',
+        'data: {"query":"first"}',
+        'event: gaps',
+        'data: {not json',
+        'event: sparql',
+        'data: "SELECT ?s WHERE { ?s ?p ?o }"',
+        '',
+      ].join('\n')
+
+      const { events } = parseSSEBuffer(buffer)
+
+      expect(events).toHaveLength(2)
+      expect(events[0]?.event).toBe('interpretation')
+      expect(events[1]?.event).toBe('sparql')
+      // The bad line is reported so operators can diagnose the producer.
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      const message = warnSpy.mock.calls[0]?.[0]
+      expect(message).toMatch(/event "gaps"/)
+    })
   })
 
   it('preserves pending event across buffer boundaries', () => {

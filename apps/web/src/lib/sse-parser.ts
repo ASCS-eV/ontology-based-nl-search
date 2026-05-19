@@ -48,8 +48,18 @@ export function parseSSEBuffer<T = unknown>(buffer: string, pendingEvent = ''): 
     if (line.startsWith('event: ')) {
       currentEvent = line.slice(7)
     } else if (line.startsWith('data: ') && currentEvent) {
-      const data = JSON.parse(line.slice(6)) as T
-      events.push({ event: currentEvent, data })
+      // SSE-over-network is an external boundary: a single malformed JSON
+      // payload must not kill the rest of the stream. Skip the bad line,
+      // log it for diagnosis, and keep parsing — every well-formed event
+      // before and after still surfaces to the consumer.
+      const payload = line.slice(6)
+      try {
+        const data = JSON.parse(payload) as T
+        events.push({ event: currentEvent, data })
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : String(err)
+        console.warn(`SSE: dropping malformed data line for event "${currentEvent}": ${reason}`)
+      }
       currentEvent = ''
     }
   }
