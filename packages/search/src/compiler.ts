@@ -314,9 +314,6 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     for (const fd of refForeign) prefixDomains.add(fd)
   }
 
-  // Generate prefixes after pattern generation so foreign domains are included
-  const prefixes = buildPrefixes(registry, [...prefixDomains])
-
   // License (via resource description — shared across all domains)
   if (slots.license) {
     optionals.push(`OPTIONAL {
@@ -326,6 +323,32 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     filters.push(`FILTER(?license = "${escapeSparqlLiteral(slots.license)}")`)
     selectVars.add('?license')
   }
+
+  // Cross-reference join: find assets that reference another domain
+  if (slots.references) {
+    const refDomain = registry.domains.get(slots.references.domain)
+    if (refDomain) {
+      prefixDomains.add('manifest')
+      prefixDomains.add(slots.references.domain)
+      // Each domain defines its own hasManifest (subProperty of envited-x:hasManifest)
+      patterns.push(`?asset ${domain.prefix}:hasManifest ?_refManifest .`)
+      patterns.push(`?_refManifest manifest:hasReferencedArtifacts ?_refLink .`)
+      patterns.push(`?_refLink manifest:iri ?refAsset .`)
+      patterns.push(`?refAsset a ${refDomain.targetClass} .`)
+      patterns.push(`?refAsset rdfs:label ?refName .`)
+      selectVars.add('?refAsset')
+      selectVars.add('?refName')
+
+      if (slots.references.label) {
+        filters.push(
+          `FILTER(CONTAINS(LCASE(?refName), "${escapeSparqlLiteral(slots.references.label.toLowerCase())}"))`
+        )
+      }
+    }
+  }
+
+  // Generate prefixes AFTER all pattern generation so all domains are included
+  const prefixes = buildPrefixes(registry, [...prefixDomains])
 
   // Build the query
   return assembleQuery(prefixes, selectVars, patterns, optionals, filters)

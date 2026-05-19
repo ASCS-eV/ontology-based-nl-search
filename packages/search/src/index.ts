@@ -18,7 +18,7 @@ export type {
 } from './service.js'
 export type { SearchDependencies } from './service.js'
 export { SearchService } from './service.js'
-export type { SearchSlots } from './slots.js'
+export type { ReferenceFilter, SearchSlots } from './slots.js'
 export type {
   LlmStructuredResponse,
   MappedTerm,

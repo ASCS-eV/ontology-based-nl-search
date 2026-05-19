@@ -59,6 +59,7 @@ export interface SlotPipelineSubmission {
       city?: string | string[]
     }
     license?: string
+    references?: { domain: string; label?: string }
   }
   interpretation: QueryInterpretation
   gaps: OntologyGap[]
@@ -120,6 +121,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     ranges: rangeResult.ranges,
     location: shaclResult.location,
     license: shaclResult.license,
+    references: submission.slots.references,
   }
 
   // 5. Deterministic SPARQL compilation.

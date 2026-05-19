@@ -17,6 +17,17 @@ export interface SlotValue {
 }
 
 /**
+ * Cross-reference filter — join this asset's manifest references
+ * to another asset domain.
+ */
+export interface ReferenceFilter {
+  /** Domain of the referenced asset (e.g., "hdmap") */
+  domain: string
+  /** Optional label filter on the referenced asset */
+  label?: string
+}
+
+/**
  * Generic search slots — property localName → value(s).
  * Works for any ontology domain without domain-specific interfaces.
  *
@@ -47,6 +58,11 @@ export interface SearchSlots {
   }
   /** License filter */
   license?: string
+  /**
+   * Cross-reference filter — find assets that reference another domain.
+   * Compiles to a manifest join: asset → manifest:hasReferencedArtifacts → Link → iri → refAsset
+   */
+  references?: ReferenceFilter
 }
 
 /** Create empty slots targeting a specific domain */
