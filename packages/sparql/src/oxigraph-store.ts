@@ -131,23 +131,25 @@ export class OxigraphStore implements SparqlStore {
 
   async loadTurtle(data: string, graphUri?: string): Promise<void> {
     await this.initialize()
-
-    if (graphUri) {
-      const graph = this.oxigraph!.namedNode(graphUri)
-      this.store!.load(data, { format: MIME.TURTLE, to_graph_name: graph })
-    } else {
-      this.store!.load(data, { format: MIME.TURTLE })
-    }
+    this.loadIntoStore(data, MIME.TURTLE, graphUri)
   }
 
   async loadJsonLd(data: string, graphUri?: string): Promise<void> {
     await this.initialize()
+    this.loadIntoStore(data, MIME.JSONLD, graphUri)
+  }
 
+  /**
+   * Load serialized RDF into the Oxigraph WASM store.
+   * Both loadTurtle and loadJsonLd delegate here — the format string
+   * selects the parser inside the WASM module.
+   */
+  private loadIntoStore(data: string, format: string, graphUri?: string): void {
     if (graphUri) {
       const graph = this.oxigraph!.namedNode(graphUri)
-      this.store!.load(data, { format: MIME.JSONLD, to_graph_name: graph })
+      this.store!.load(data, { format, to_graph_name: graph })
     } else {
-      this.store!.load(data, { format: MIME.JSONLD })
+      this.store!.load(data, { format })
     }
   }
 }

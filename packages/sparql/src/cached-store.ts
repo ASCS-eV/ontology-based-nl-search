@@ -29,19 +29,25 @@ export class CachedSparqlStore implements SparqlStore {
   }
 
   async update(sparql: string): Promise<void> {
-    // Invalidate cache on data mutation
-    this.cache.clear()
-    return this.inner.update(sparql)
+    await this.invalidateAndDelegate(() => this.inner.update(sparql))
   }
 
   async loadTurtle(data: string, graphUri?: string): Promise<void> {
-    this.cache.clear()
-    return this.inner.loadTurtle(data, graphUri)
+    await this.invalidateAndDelegate(() => this.inner.loadTurtle(data, graphUri))
   }
 
   async loadJsonLd(data: string, graphUri?: string): Promise<void> {
+    await this.invalidateAndDelegate(() => this.inner.loadJsonLd(data, graphUri))
+  }
+
+  /**
+   * Invalidate the query cache and delegate a mutating operation to the
+   * inner store. Used by update, loadTurtle, and loadJsonLd to ensure
+   * stale cached results are never served after data changes.
+   */
+  private async invalidateAndDelegate(fn: () => Promise<void>): Promise<void> {
     this.cache.clear()
-    return this.inner.loadJsonLd(data, graphUri)
+    return fn()
   }
 
   async isReady(): Promise<boolean> {
