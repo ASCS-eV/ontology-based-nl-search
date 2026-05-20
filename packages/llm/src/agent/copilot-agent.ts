@@ -1,17 +1,19 @@
 /**
- * Copilot Agent — LLM slot-filling via GitHub Copilot SDK with persistent sessions.
+ * Copilot Agent — LLM slot-filling via GitHub Copilot SDK with session pooling.
  *
  * **Architecture:**
- * - Uses a single persistent CopilotSession reused across all requests
+ * - Maintains a pool of persistent CopilotSessions (default 3), reused
+ *   round-robin across all search requests
  * - Eliminates ~5.8s session-create overhead on every search
  * - Relies on SDK's infiniteSessions feature for automatic context compaction
  * - System prompt cached in memory (generated once from 22 SHACL files, 298 KB)
  * - Tool-based structured output: submit_slots is the only tool exposed to LLM
  *
- * **Why Persistent Sessions:**
- * - Creating a new session on every search introduced unacceptable latency
- * - Single persistent session + stateless requests = fast + simple
- * - Active submission callbacks route tool calls to the correct in-flight request
+ * **Why Session Pooling:**
+ * - Single session funnelled all concurrent requests through one context window
+ * - Pool of N sessions allows N concurrent LLM calls without interference
+ * - Round-robin distribution keeps sessions evenly loaded
+ * - Failed sessions are replaced transparently
  *
  * **Post-LLM Pipeline:**
  * - LLM reads raw SHACL Turtle → fills slots
@@ -57,11 +59,14 @@ let client: CopilotClient | null = null
  */
 const submissionRouter = new SubmissionRouter()
 
-/** The persistent session, reused across all search requests */
-let persistentSession: CopilotSession | null = null
-
-/** Promise that resolves when session creation finishes (prevents races) */
-let sessionCreatePromise: Promise<CopilotSession> | null = null
+/** Pool of persistent sessions, reused round-robin across search requests. */
+const sessionPool: CopilotSession[] = []
+/** Number of sessions to create. Small pool sufficient for typical concurrency. */
+const POOL_SIZE = 3
+/** Round-robin index into the session pool. */
+let nextSessionIndex = 0
+/** Promise that resolves when the pool is fully initialized (prevents races). */
+let poolInitPromise: Promise<void> | null = null
 
 async function getSystemPrompt(): Promise<{ prompt: string; vocabulary: OntologyVocabulary }> {
   if (cachedSystemPrompt && cachedVocabulary) {
@@ -225,59 +230,119 @@ function raceWithSignal<T>(promise: Promise<T>, signal: AbortSignal): Promise<T>
 }
 
 /**
- * Get or create the persistent Copilot session.
- * The session is created once and reused — saves ~5.8s per request.
- * infiniteSessions handles context compaction automatically.
+ * Create a single Copilot session with the given system prompt.
+ */
+async function createSession(prompt: string): Promise<CopilotSession> {
+  const c = await getClient()
+  const config = getConfig()
+
+  // reasoningEffort is only supported by certain models (e.g. claude-sonnet-4.6).
+  // Models that don't support it will reject the session.create call.
+  const supportsReasoning = config.AI_MODEL.includes('4.6') || config.AI_MODEL.includes('opus')
+
+  return c.createSession({
+    model: config.AI_MODEL,
+    ...(supportsReasoning ? { reasoningEffort: 'low' } : {}),
+    onPermissionRequest: approveAll,
+    systemMessage: { mode: 'replace', content: prompt },
+    tools: [buildPersistentSubmitSlotsTool()],
+    availableTools: ['submit_slots'],
+    infiniteSessions: { enabled: true },
+  })
+}
+
+/**
+ * Initialize the session pool. Creates POOL_SIZE sessions in parallel.
+ * Called once — subsequent calls return the cached promise.
  *
  * Exported so it can be called during server warmup to pre-pay
  * the session creation cost before any user request arrives.
  */
 export async function getPersistentSession(): Promise<CopilotSession> {
-  if (persistentSession) return persistentSession
-
-  // Prevent parallel session creation races
-  if (sessionCreatePromise) return sessionCreatePromise
-
-  sessionCreatePromise = (async () => {
-    const [{ prompt }, c] = await Promise.all([getSystemPrompt(), getClient()])
-    const config = getConfig()
-
-    // reasoningEffort is only supported by certain models (e.g. claude-sonnet-4.6).
-    // Models that don't support it will reject the session.create call.
-    const supportsReasoning = config.AI_MODEL.includes('4.6') || config.AI_MODEL.includes('opus')
-
-    const session = await c.createSession({
-      model: config.AI_MODEL,
-      ...(supportsReasoning ? { reasoningEffort: 'low' } : {}),
-      onPermissionRequest: approveAll,
-      systemMessage: { mode: 'replace', content: prompt },
-      tools: [buildPersistentSubmitSlotsTool()],
-      availableTools: ['submit_slots'],
-      infiniteSessions: { enabled: true },
-    })
-
-    persistentSession = session
-    sessionCreatePromise = null
-    return session
-  })()
-
-  return sessionCreatePromise
+  await initSessionPool()
+  return acquireSession()
 }
 
 /**
- * Invalidate the persistent session (e.g., on error) so the next call recreates it.
+ * Initialize the full session pool. Idempotent — the first call creates
+ * all sessions, subsequent calls are no-ops.
  */
-async function invalidateSession(): Promise<void> {
-  const s = persistentSession
-  persistentSession = null
-  sessionCreatePromise = null
-  if (s) {
-    try {
-      await s.disconnect()
-    } catch {
-      // intentional: best-effort cleanup — the session may already be
-      // closed by the server or the network may be unavailable
+async function initSessionPool(): Promise<void> {
+  if (sessionPool.length >= POOL_SIZE) return
+  if (poolInitPromise) return poolInitPromise
+
+  poolInitPromise = (async () => {
+    const { prompt } = await getSystemPrompt()
+
+    // Only create the deficit — never exceed POOL_SIZE
+    const needed = POOL_SIZE - sessionPool.length
+    if (needed <= 0) {
+      poolInitPromise = null
+      return
     }
+
+    const sessions = await Promise.all(Array.from({ length: needed }, () => createSession(prompt)))
+
+    sessionPool.push(...sessions)
+    poolInitPromise = null
+  })()
+
+  return poolInitPromise
+}
+
+/**
+ * Acquire a session from the pool via round-robin.
+ * Each session is independent — concurrent requests on different sessions
+ * cannot interfere with each other's context windows.
+ *
+ * Takes a snapshot of the pool length to protect against concurrent
+ * `invalidateSession` calls that `splice()` the array.
+ */
+function acquireSession(): CopilotSession {
+  const len = sessionPool.length
+  if (len === 0) {
+    throw new Error('Copilot session pool exhausted — all sessions failed')
+  }
+  const idx = nextSessionIndex % len
+  const session = sessionPool[idx]
+  if (!session) {
+    // Pool mutated between length check and index access — use first available
+    const fallback = sessionPool[0]
+    if (!fallback) throw new Error('Copilot session pool exhausted — all sessions failed')
+    return fallback
+  }
+  nextSessionIndex = (nextSessionIndex + 1) % len
+  return session
+}
+
+/**
+ * Invalidate a specific session from the pool (e.g., on error) and
+ * replace it with a fresh one so the pool stays at full capacity.
+ */
+async function invalidateSession(session: CopilotSession): Promise<void> {
+  const idx = sessionPool.indexOf(session)
+  if (idx === -1) return // Already removed
+
+  // Remove the dead session
+  sessionPool.splice(idx, 1)
+
+  // Best-effort disconnect
+  try {
+    await session.disconnect()
+  } catch {
+    // intentional: best-effort cleanup — the session may already be
+    // closed by the server or the network may be unavailable
+  }
+
+  // Replenish the pool with a fresh session
+  try {
+    const { prompt } = await getSystemPrompt()
+    const replacement = await createSession(prompt)
+    sessionPool.push(replacement)
+  } catch {
+    // Pool temporarily reduced — next request will still work with
+    // remaining sessions. The pool will heal on the next init call
+    // if it falls below POOL_SIZE.
   }
 }
 
@@ -306,8 +371,7 @@ export async function runCopilotAgent(
   try {
     session = await getPersistentSession()
   } catch (err) {
-    // Session creation failed — invalidate and propagate
-    await invalidateSession()
+    // Pool creation failed — propagate (nothing to invalidate yet)
     throw err
   }
   endSession()
@@ -344,8 +408,8 @@ export async function runCopilotAgent(
     // Aborts propagate cleanly without invalidating the session — other
     // in-flight requests still need it.
     if (err instanceof DOMException && err.name === 'AbortError') throw err
-    // Session may have died — invalidate so next request recreates
-    await invalidateSession()
+    // Session may have died — invalidate so pool replaces it
+    await invalidateSession(session)
     throw err
   } finally {
     unregister()
