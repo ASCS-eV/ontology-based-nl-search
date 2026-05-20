@@ -71,15 +71,15 @@ export class ShaclValidator {
   /** Cached pairings of (property IRI → target class IRI) derived from shapes. */
   private readonly propertyToTargetClass: Map<string, string[]>
   /**
-   * Fast-path constraint index: property IRI → { patterns, inValues }.
+   * Fast-path constraint index: property IRI → indexed SHACL constraints.
    * When a value passes ALL pattern constraints AND (if sh:in exists) is a
    * member of the allowed list, we short-circuit without calling the engine.
-   * This eliminates the ~3s-per-call overhead for simple constraints like
-   * country codes (sh:pattern "[A-Z]{2}").
+   * Properties with only sh:datatype xsd:string (no further constraints)
+   * trivially accept any string value — indexed as `datatypeOnly: true`.
    */
-  private readonly constraintIndex: Map<
+  readonly constraintIndex: Map<
     string,
-    { patterns: RegExp[]; inValues: Set<string> | null }
+    { patterns: RegExp[]; inValues: Set<string> | null; datatypeOnly: boolean }
   >
   /**
    * Memoized per-(propertyIri, value, targetClass) validation outcomes.
@@ -103,7 +103,10 @@ export class ShaclValidator {
   private constructor(
     validator: SHACLValidator,
     propertyToTargetClass: Map<string, string[]>,
-    constraintIndex: Map<string, { patterns: RegExp[]; inValues: Set<string> | null }>
+    constraintIndex: Map<
+      string,
+      { patterns: RegExp[]; inValues: Set<string> | null; datatypeOnly: boolean }
+    >
   ) {
     this.validator = validator
     this.propertyToTargetClass = propertyToTargetClass
@@ -254,8 +257,18 @@ export class ShaclValidator {
   private validateAgainstConstraintIndex(
     _propertyIri: string,
     value: string,
-    constraint: { patterns: RegExp[]; inValues: Set<string> | null }
+    constraint: {
+      patterns: RegExp[]
+      inValues: Set<string> | null
+      datatypeOnly: boolean
+    }
   ): ShaclValidationResult | null {
+    // Datatype-only properties (e.g. sh:datatype xsd:string with no further
+    // value constraints) trivially accept any string value.
+    if (constraint.datatypeOnly) {
+      return { conforms: true, violations: [] }
+    }
+
     // If there are patterns, ALL must pass for the positive short-circuit.
     for (const pattern of constraint.patterns) {
       if (!pattern.test(value)) {
@@ -602,22 +615,52 @@ function termKey(t: Term): string {
 }
 
 /**
- * Build a fast-path constraint index: property IRI → { patterns, inValues }.
- * Extracts sh:pattern and sh:in from the shapes graph so we can validate
- * simple constraints in-process without calling the expensive SHACL engine.
+ * Build a fast-path constraint index: property IRI → { patterns, inValues, datatypeOnly }.
+ *
+ * Extracts sh:pattern, sh:in, and sh:datatype from every property shape in
+ * the graph. For property shapes that have ONLY sh:datatype (no sh:pattern,
+ * no sh:in, no sh:minLength, no sh:maxLength, no sh:hasValue, no sh:class,
+ * no sh:nodeKind) the constraint is trivial: any value of the right type
+ * will pass. We mark these as `datatypeOnly: true` so the fast path can
+ * short-circuit immediately.
+ *
+ * This is fully generic — reads only standard SHACL vocabulary, works with
+ * any shapes graph.
  */
 function indexPropertyConstraints(
   shapes: DatasetCore
-): Map<string, { patterns: RegExp[]; inValues: Set<string> | null }> {
+): Map<string, { patterns: RegExp[]; inValues: Set<string> | null; datatypeOnly: boolean }> {
   const SH_PROPERTY = `${SH_NS}property`
   const SH_PATH = `${SH_NS}path`
   const SH_PATTERN = `${SH_NS}pattern`
   const SH_IN = `${SH_NS}in`
+  const SH_DATATYPE = `${SH_NS}datatype`
   const RDF_FIRST = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#first'
   const RDF_REST = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'
   const RDF_NIL = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'
 
-  const index = new Map<string, { patterns: RegExp[]; inValues: Set<string> | null }>()
+  // Value-constraining SHACL components that, if present, mean datatype alone
+  // is NOT sufficient for validation — the engine must run.
+  const VALUE_CONSTRAINT_PREDS = [
+    `${SH_NS}minLength`,
+    `${SH_NS}maxLength`,
+    `${SH_NS}minInclusive`,
+    `${SH_NS}maxInclusive`,
+    `${SH_NS}minExclusive`,
+    `${SH_NS}maxExclusive`,
+    `${SH_NS}hasValue`,
+    `${SH_NS}class`,
+    `${SH_NS}nodeKind`,
+    `${SH_NS}languageIn`,
+    `${SH_NS}uniqueLang`,
+    `${SH_NS}node`,
+    `${SH_NS}qualifiedValueShape`,
+  ]
+
+  const index = new Map<
+    string,
+    { patterns: RegExp[]; inValues: Set<string> | null; datatypeOnly: boolean }
+  >()
 
   // Walk all property shapes
   for (const propLink of shapes.match(null, namedNode(SH_PROPERTY), null, null)) {
@@ -633,11 +676,23 @@ function indexPropertyConstraints(
     }
     if (!propIri) continue
 
-    const entry = index.get(propIri) ?? { patterns: [], inValues: null }
+    const entry = index.get(propIri) ?? {
+      patterns: [],
+      inValues: null,
+      datatypeOnly: false,
+    }
+
+    // Check if this shape has sh:datatype
+    let hasDatatype = false
+    for (const dtQ of shapes.match(propShape, namedNode(SH_DATATYPE), null, null)) {
+      if (dtQ.object.termType === 'NamedNode') hasDatatype = true
+    }
 
     // Extract sh:pattern (deduplicate by source string)
+    let hasPattern = false
     for (const patQ of shapes.match(propShape, namedNode(SH_PATTERN), null, null)) {
       if (patQ.object.termType === 'Literal') {
+        hasPattern = true
         try {
           const source = patQ.object.value
           // SHACL patterns are anchored (must match entire string)
@@ -651,7 +706,9 @@ function indexPropertyConstraints(
     }
 
     // Extract sh:in (RDF list)
+    let hasIn = false
     for (const inQ of shapes.match(propShape, namedNode(SH_IN), null, null)) {
+      hasIn = true
       const values = new Set<string>()
       let node: Term = inQ.object as Term
       while (node.value !== RDF_NIL) {
@@ -674,7 +731,35 @@ function indexPropertyConstraints(
       }
     }
 
-    if (entry.patterns.length > 0 || entry.inValues !== null) {
+    // Detect datatype-only: has sh:datatype but no value-constraining components.
+    // A previous property shape for the same IRI may already have set patterns or
+    // inValues — if so, this shape doesn't qualify as datatypeOnly.
+    if (
+      hasDatatype &&
+      !hasPattern &&
+      !hasIn &&
+      entry.patterns.length === 0 &&
+      entry.inValues === null
+    ) {
+      let hasOtherConstraint = false
+      for (const pred of VALUE_CONSTRAINT_PREDS) {
+        let found = false
+        for (const _q of shapes.match(propShape, namedNode(pred), null, null)) {
+          found = true
+          break
+        }
+        if (found) {
+          hasOtherConstraint = true
+          break
+        }
+      }
+      if (!hasOtherConstraint) {
+        entry.datatypeOnly = true
+      }
+    }
+
+    // Index this property if it has any fast-path-eligible information
+    if (entry.patterns.length > 0 || entry.inValues !== null || entry.datatypeOnly) {
       index.set(propIri, entry)
     }
   }
