@@ -1,5 +1,13 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "NO_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "no_proxy"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
