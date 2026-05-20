@@ -36,6 +36,12 @@ export const submissionSchema = z.object({
       })
       .optional(),
     license: z.string().optional(),
+    references: z
+      .object({
+        domain: z.string(),
+        label: z.string().optional(),
+      })
+      .optional(),
   }),
   interpretation: z.object({
     summary: z.string(),

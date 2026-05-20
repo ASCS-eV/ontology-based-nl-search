@@ -40,28 +40,12 @@ function parseRange(mapped: string): { min?: number; max?: number } {
 }
 
 /**
- * Detect domains from mapped terms — uses the LLM's domain mapping if
- * available, otherwise falls back to the discovered ontology domains
- * surfaced via /stats.
- */
-function detectDomainsFromTerms(terms: MappedTerm[], availableDomains: string[]): string[] {
-  const domains = new Set<string>()
-  for (const term of terms) {
-    if (term.property === 'domain' && term.mapped) {
-      domains.add(term.mapped)
-    }
-  }
-  if (domains.size > 0) return [...domains]
-  return availableDomains
-}
-
-/**
  * Hook encapsulating the entire search execution lifecycle:
  * - SSE streaming for the initial natural-language search
  * - Direct POST for the refine (slot-based re-query) path
  * - Abort handling for concurrent requests
  */
-export function useSearchExecution(availableDomains: string[]) {
+export function useSearchExecution(_availableDomains?: string[]) {
   const [state, setState] = useState<SearchState>({
     interpretation: null,
     gaps: null,
@@ -166,73 +150,71 @@ export function useSearchExecution(availableDomains: string[]) {
     }
   }, [])
 
-  const handleRefine = useCallback(
-    async (updatedTerms: MappedTerm[]) => {
-      setState((s) => ({
-        ...s,
-        loading: true,
-        error: null,
-        results: null,
-        meta: null,
-        phase: 'executing',
-      }))
+  const handleRefine = useCallback(async (updatedTerms: MappedTerm[], updatedDomains: string[]) => {
+    setState((s) => ({
+      ...s,
+      loading: true,
+      error: null,
+      results: null,
+      meta: null,
+      phase: 'executing',
+    }))
 
-      try {
-        const filters: Record<string, string> = {}
-        const location: Record<string, string> = {}
-        const ranges: Record<string, { min?: number; max?: number }> = {}
+    try {
+      const filters: Record<string, string> = {}
+      const location: Record<string, string> = {}
+      const ranges: Record<string, { min?: number; max?: number }> = {}
 
-        for (const term of updatedTerms) {
-          if (term.property && term.mapped) {
-            if (isLocationProperty(term.property)) {
-              location[term.property] = term.mapped
-            } else if (isNumericRange(term.mapped)) {
-              ranges[term.property] = parseRange(term.mapped)
-            } else {
-              filters[term.property] = term.mapped
-            }
+      for (const term of updatedTerms) {
+        if (term.property && term.mapped) {
+          if (isLocationProperty(term.property)) {
+            location[term.property] = term.mapped
+          } else if (isNumericRange(term.mapped)) {
+            ranges[term.property] = parseRange(term.mapped)
+          } else {
+            filters[term.property] = term.mapped
           }
         }
-
-        const domains = detectDomainsFromTerms(updatedTerms, availableDomains)
-
-        const slots = {
-          domains,
-          filters,
-          ranges,
-          ...(Object.keys(location).length > 0 ? { location } : {}),
-        }
-
-        const res = await fetch('/api/search/refine', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slots }),
-        })
-
-        if (!res.ok) {
-          const errorData = await res.json()
-          throw new Error(errorData.error || 'Refine failed')
-        }
-
-        const data = await res.json()
-        setState((s) => ({
-          ...s,
-          sparql: data.sparql,
-          results: data.results,
-          meta: data.meta,
-          phase: 'done',
-        }))
-      } catch (err) {
-        setState((s) => ({
-          ...s,
-          error: err instanceof Error ? err.message : 'Refine failed',
-        }))
-      } finally {
-        setState((s) => ({ ...s, loading: false, phase: 'done' }))
       }
-    },
-    [availableDomains]
-  )
+
+      // Empty domains = search all domains (cross-domain query)
+      const domains = updatedDomains
+
+      const slots = {
+        domains,
+        filters,
+        ranges,
+        ...(Object.keys(location).length > 0 ? { location } : {}),
+      }
+
+      const res = await fetch('/api/search/refine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slots }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Refine failed')
+      }
+
+      const data = await res.json()
+      setState((s) => ({
+        ...s,
+        sparql: data.sparql,
+        results: data.results,
+        meta: data.meta,
+        phase: 'done',
+      }))
+    } catch (err) {
+      setState((s) => ({
+        ...s,
+        error: err instanceof Error ? err.message : 'Refine failed',
+      }))
+    } finally {
+      setState((s) => ({ ...s, loading: false, phase: 'done' }))
+    }
+  }, [])
 
   return { ...state, handleSearch, handleRefine }
 }

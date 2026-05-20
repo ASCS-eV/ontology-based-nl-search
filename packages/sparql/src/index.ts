@@ -1,9 +1,9 @@
 import { getConfig } from '@ontology-search/core/config'
 
 import { CachedSparqlStore } from './cached-store.js'
-import { OxigraphStore } from './oxigraph-store.js'
 import { RemoteSparqlStore } from './remote-store.js'
 import type { SparqlStore } from './types.js'
+import { WorkerOxigraphStore } from './worker-oxigraph-store.js'
 
 let storeInstance: SparqlStore | null = null
 
@@ -11,6 +11,10 @@ let storeInstance: SparqlStore | null = null
  * Get the SPARQL store instance based on validated application config.
  * Singleton pattern — returns the same instance across calls.
  * Wraps the underlying store with an LRU query cache.
+ *
+ * For in-memory mode, uses WorkerOxigraphStore which runs Oxigraph WASM
+ * in a dedicated worker thread — synchronous WASM query execution no
+ * longer blocks the main event loop.
  *
  * Note: No race condition in Node.js — JS is single-threaded and this
  * function is synchronous. The if-check and assignment cannot interleave.
@@ -28,7 +32,7 @@ export function getSparqlStore(): SparqlStore {
     }
     inner = new RemoteSparqlStore(endpoint)
   } else {
-    inner = new OxigraphStore()
+    inner = new WorkerOxigraphStore()
   }
 
   storeInstance = new CachedSparqlStore(inner, {

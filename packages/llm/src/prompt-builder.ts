@@ -89,6 +89,23 @@ Resolve city names to countries (e.g., "Munich" → country: "DE", city: "Munich
 
 "CC-BY-4.0", "CC-BY-SA-4.0", "CC0-1.0", "MIT", "EPL-2.0", "Apache-2.0"
 
+### \`references\` — Cross-reference filter
+
+Use this when the user asks for assets that **reference or are connected to** another asset type.
+
+| Field    | Description                                                         |
+| -------- | ------------------------------------------------------------------- |
+| \`domain\` | Domain of the referenced asset: "hdmap", "scenario", "ositrace", etc. |
+| \`label\`  | (Optional) text filter on the referenced asset's label              |
+
+**When to use:**
+- "traces where you also have the map" → \`references: { domain: "hdmap" }\`
+- "scenarios with an HD map" → \`references: { domain: "hdmap" }\`
+- "osi traces that reference a Karlsruhe map" → \`references: { domain: "hdmap", label: "Karlsruhe" }\`
+- "maps connected to scenarios" → domain: "hdmap", references: { domain: "scenario" }
+
+**Do NOT use** for simple domain selection — only when the user explicitly wants assets that LINK to another asset type.
+
 ### \`domains\` — Target domain(s)
 
 **When properties appear in MULTIPLE domains** (like \`roadTypes\` which exists in both \`hdmap\` and \`ositrace\`):
@@ -131,7 +148,7 @@ const RULES = `
 
 Call \`submit_slots\` with:
 
-- \`slots\`: Object with \`{ filters, ranges, location, license, domains }\` — only include non-empty fields
+- \`slots\`: Object with \`{ filters, ranges, location, license, references, domains }\` — only include non-empty fields
 - \`interpretation\`: Summary + mapped terms with confidence
 - \`gaps\`: Array of unmapped concepts with reasons and suggestions
 `

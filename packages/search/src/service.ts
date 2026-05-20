@@ -81,6 +81,13 @@ export interface SearchMeta {
   timings: { stage: string; durationMs: number }[]
 }
 
+/** Progress event emitted during incremental search phases. */
+export interface SearchProgress {
+  phase: 'store-ready' | 'interpreting' | 'interpreted' | 'executing' | 'done'
+  /** Partial result data available at this phase. */
+  data?: Partial<Pick<SearchResult, 'interpretation' | 'gaps' | 'sparql'>>
+}
+
 /** Options for a full NL search */
 export interface NlSearchOptions {
   query: string
@@ -93,6 +100,12 @@ export interface NlSearchOptions {
    * use), a fresh id is generated.
    */
   requestId?: string
+  /**
+   * Optional progress callback invoked at each pipeline phase boundary.
+   * Enables incremental SSE streaming — the route can emit events as soon
+   * as each phase completes rather than waiting for the full pipeline.
+   */
+  onProgress?: (progress: SearchProgress) => Promise<void> | void
 }
 
 /** Options for a refine (slot-based) search */
@@ -126,9 +139,13 @@ export class SearchService {
   /**
    * Full natural-language search pipeline:
    * init → LLM interpretation → policy-check → execute → count
+   *
+   * When `onProgress` is provided, emits incremental phase events so the
+   * caller (e.g. SSE route) can push partial results to the client
+   * without waiting for the full pipeline to complete.
    */
   async searchNl(options: NlSearchOptions): Promise<SearchResult> {
-    const { query, domain, signal } = options
+    const { query, domain, signal, onProgress } = options
     const requestId = options.requestId ?? generateRequestId()
     const logger = new RequestLogger({ requestId, query })
 
@@ -138,6 +155,8 @@ export class SearchService {
     endStoreInit()
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+
+    await onProgress?.({ phase: 'interpreting' })
 
     // LLM interpretation (generates slots → compiles → returns SPARQL)
     const endLlm = logger.time('llm-total')
@@ -152,6 +171,18 @@ export class SearchService {
     }
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+
+    // Emit interpretation as soon as it's available (before SPARQL execution)
+    await onProgress?.({
+      phase: 'interpreted',
+      data: {
+        interpretation: structured.interpretation,
+        gaps: structured.gaps,
+        sparql: structured.sparql,
+      },
+    })
+
+    await onProgress?.({ phase: 'executing' })
 
     // Execute SPARQL and count total datasets in parallel (count is non-critical)
     const [execution, totalDatasets] = await Promise.all([

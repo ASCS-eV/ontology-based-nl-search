@@ -231,6 +231,40 @@ describe('SearchService.searchNl', () => {
     expect(result.meta.requestId).toMatch(/^req_/)
     expect(result.meta.requestId).not.toBe('')
   })
+
+  it('calls onProgress at each pipeline phase in order', async () => {
+    const deps = createMockDeps()
+    const service = new SearchService(deps)
+    const phases: string[] = []
+
+    await service.searchNl({
+      query: 'test',
+      onProgress: async (p) => {
+        phases.push(p.phase)
+      },
+    })
+
+    expect(phases).toEqual(['interpreting', 'interpreted', 'executing'])
+  })
+
+  it('emits interpretation data in the interpreted phase', async () => {
+    const deps = createMockDeps()
+    const service = new SearchService(deps)
+    let interpretedData: unknown = null
+
+    await service.searchNl({
+      query: 'test',
+      onProgress: async (p) => {
+        if (p.phase === 'interpreted') interpretedData = p.data
+      },
+    })
+
+    expect(interpretedData).toEqual({
+      interpretation: mockLlmResponse.interpretation,
+      gaps: mockLlmResponse.gaps,
+      sparql: mockLlmResponse.sparql,
+    })
+  })
 })
 
 describe('SearchService.searchRefine', () => {

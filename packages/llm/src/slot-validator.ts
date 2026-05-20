@@ -307,6 +307,9 @@ export function validateSlots(
     interpretation: {
       summary: response.interpretation.summary,
       mappedTerms: validatedTerms,
+      domains: response.interpretation.domains,
+      appliedFilters: response.interpretation.appliedFilters,
+      appliedLocation: response.interpretation.appliedLocation,
     },
     gaps: validatedGaps,
     sparql: response.sparql,
@@ -368,10 +371,14 @@ export async function validateSlotsAgainstShacl(
   let cleanLicense: string | undefined
   const gaps: OntologyGap[] = []
 
-  // Filters — every key/value pair gets a SHACL check. Arrays use the batch
-  // validator: one SHACL engine call per (slot, target-class) pair regardless
-  // of array length. This collapses what would otherwise be N sequential
-  // engine walks (N × ~3s) into a single one.
+  // Build a fast lookup of known-good enum values per slot. Values that
+  // already matched an sh:in enumeration during the correctFilters phase
+  // are guaranteed to pass SHACL validation — skipping the expensive engine
+  // call (~3s per invocation) for these is the single biggest speed win.
+  const enumIndex = vocabulary ? buildAllowedValuesIndex(vocabulary) : undefined
+
+  // Filters — every key/value pair gets a SHACL check unless it can be
+  // short-circuited via the enum index. Arrays use the batch validator.
   //
   // BEFORE checking values, we verify the slot KEY itself exists in the
   // ontology. The LLM occasionally invents property names (e.g. `numberLanes`
@@ -387,6 +394,42 @@ export async function validateSlotsAgainstShacl(
       })
       continue
     }
+
+    // Fast path: if every value is a known enum member, skip the SHACL engine
+    // entirely. The sh:in constraint is the only one that applies to enum
+    // properties, and correctFilters already matched these values.
+    const enumInfo = enumIndex?.get(slotKey)
+    if (enumInfo) {
+      const enumSet = new Set(enumInfo.allowedValues)
+      if (Array.isArray(value)) {
+        const kept = value.filter((v): v is string => typeof v === 'string' && enumSet.has(v))
+        if (kept.length > 0) cleanFilters[slotKey] = kept
+        // Values not in enum still need SHACL validation
+        const needsCheck = value.filter(
+          (v): v is string => typeof v === 'string' && !enumSet.has(v)
+        )
+        if (needsCheck.length > 0) {
+          const validated = await checkArrayAndAccumulate(
+            slotKey,
+            needsCheck,
+            shaclValidator,
+            gaps,
+            vocabulary
+          )
+          if (validated.length > 0) {
+            const prev = cleanFilters[slotKey]
+            cleanFilters[slotKey] = Array.isArray(prev) ? [...prev, ...validated] : validated
+          }
+        }
+      } else if (enumSet.has(value)) {
+        cleanFilters[slotKey] = value
+      } else {
+        const ok = await checkAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
+        if (ok) cleanFilters[slotKey] = value
+      }
+      continue
+    }
+
     if (Array.isArray(value)) {
       const kept = await checkArrayAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
       if (kept.length > 0) cleanFilters[slotKey] = kept

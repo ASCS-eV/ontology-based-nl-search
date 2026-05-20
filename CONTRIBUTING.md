@@ -265,6 +265,6 @@ Copy `.env.example` to `.env.local` and configure:
 
 - `SPARQL_MODE`: `memory` (dev) or `remote` (production)
 - `AI_PROVIDER`: `ollama` (default, free), `openai`, or `copilot`
-- `AI_MODEL`: Model identifier (e.g., `qwen2.5-coder:7b`, `gpt-4o`)
+- `AI_MODEL`: Model identifier (e.g., `qwen3:8b`, `gpt-4o`)
 - `OPENAI_API_KEY`: Your API key (for OpenAI provider)
 - `OLLAMA_BASE_URL`: Ollama server URL (default: `http://localhost:11434/v1`)

@@ -9,10 +9,16 @@ export { getInitializedStore } from './init.js'
 export type { PathStep, PropertyPath } from './property-paths.js'
 export { buildPropertyPaths } from './property-paths.js'
 export { SCHEMA_GRAPH } from './schema-loader.js'
-export type { NlSearchOptions, RefineOptions, RefineResult, SearchResult } from './service.js'
+export type {
+  NlSearchOptions,
+  RefineOptions,
+  RefineResult,
+  SearchProgress,
+  SearchResult,
+} from './service.js'
 export type { SearchDependencies } from './service.js'
 export { SearchService } from './service.js'
-export type { SearchSlots } from './slots.js'
+export type { ReferenceFilter, SearchSlots } from './slots.js'
 export type {
   LlmStructuredResponse,
   MappedTerm,

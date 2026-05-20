@@ -9,6 +9,7 @@ import { QueryRefinement } from './QueryRefinement'
 import { ResultsDisplay } from './ResultsDisplay'
 import { SearchBar } from './SearchBar'
 import { SparqlPreview } from './SparqlPreview'
+import { TypewriterText } from './TypewriterText'
 
 export function SearchPage() {
   const { data: stats } = useQuery<StatsResponse>({
@@ -46,12 +47,8 @@ export function SearchPage() {
     <div className="flex flex-col items-center px-4 pt-12 pb-16">
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-gray-900 mb-3">Simulation Asset Search</h1>
-        <p className="text-gray-500 max-w-lg mx-auto text-sm leading-relaxed">
-          Describe what you&apos;re looking for in plain language. The AI will interpret your query
-          against the ontology and find matching assets.
-        </p>
         {stats && stats.totalAssets > 0 && (
-          <span className="inline-flex items-center gap-1.5 mt-4 px-3 py-1 bg-blue-50 text-blue-900 text-sm font-medium rounded-full border border-blue-100">
+          <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-blue-50 text-blue-900 text-sm font-medium rounded-full border border-blue-100">
             <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
             {stats.totalAssets} assets in graph
           </span>
@@ -59,6 +56,16 @@ export function SearchPage() {
       </div>
 
       <SearchBar onSearch={handleSearch} loading={loading} history={history} />
+
+      {phase === 'interpreting' && !interpretation ? (
+        <p className="text-blue-600 text-xs mt-2 text-center h-4">
+          <TypewriterText text="Interpreting your query against the ontology…" speed={35} />
+        </p>
+      ) : phase === 'executing' && !results ? (
+        <p className="text-blue-600 text-xs mt-2 text-center h-4">
+          <TypewriterText text="Executing SPARQL query…" speed={35} />
+        </p>
+      ) : null}
 
       {error && !results && (
         <div
@@ -76,6 +83,7 @@ export function SearchPage() {
           {interpretation && interpretation.mappedTerms.length > 0 && (
             <QueryRefinement
               mappedTerms={interpretation.mappedTerms}
+              domains={interpretation.domains ?? []}
               onRerun={handleRefine}
               loading={loading}
             />
@@ -83,13 +91,6 @@ export function SearchPage() {
 
           {gaps && <OntologyGapsDisplay gaps={gaps} />}
           {sparql && <SparqlPreview sparql={sparql} />}
-
-          {phase === 'executing' && !results && (
-            <div className="flex items-center gap-2 text-sm text-gray-500 py-3">
-              <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-              Executing SPARQL query…
-            </div>
-          )}
 
           {results && <ResultsDisplay results={results} />}
 

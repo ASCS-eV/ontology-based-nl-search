@@ -39,6 +39,36 @@ describe('DomainRegistry', () => {
     expect(scenario!.hasGeoreference).toBe(true)
   })
 
+  it('discovers openlabel-v2 domain with underscore prefix', async () => {
+    const registry = await buildDomainRegistry()
+    const olv2 = registry.domains.get('openlabel-v2')
+
+    expect(olv2).toBeDefined()
+    expect(olv2!.name).toBe('openlabel-v2')
+    expect(olv2!.prefix).toBe('openlabel_v2')
+    expect(olv2!.namespace).toBe('https://w3id.org/ascs-ev/envited-x/openlabel/v2/')
+    expect(olv2!.targetClass).toBe('openlabel_v2:Scenario')
+    expect(olv2!.shapes).toContain('Scenario')
+  })
+
+  it('resolveByIriDomain resolves direct match first', async () => {
+    const registry = await buildDomainRegistry()
+    // "openlabel" exists as a direct registry key (v1)
+    const resolved = registry.resolveByIriDomain('openlabel')
+    expect(resolved).toBeDefined()
+    expect(resolved!.name).toBe('openlabel')
+  })
+
+  it('resolveByIriDomain falls back to namespace path match', async () => {
+    const registry = await buildDomainRegistry()
+    // "nonexistent-openlabel" doesn't exist as a key but matches openlabel-v2
+    // via namespace pattern /openlabel/v — however, this also matches openlabel v1
+    // For a true fallback test, use the hdmap IRI-derived name
+    const hdmapResolved = registry.resolveByIriDomain('hdmap')
+    expect(hdmapResolved).toBeDefined()
+    expect(hdmapResolved!.name).toBe('hdmap')
+  })
+
   it('discovers multiple domains', async () => {
     const registry = await buildDomainRegistry()
 

@@ -32,6 +32,9 @@ describe('@ontology-search/api-types — wire shape', () => {
     const interpretation: QueryInterpretation = {
       summary: 'opaque summary',
       mappedTerms: [term],
+      domains: ['hdmap'],
+      appliedFilters: { roadTypes: 'motorway', laneTypes: ['driving', 'exit'] },
+      appliedLocation: { country: 'DE' },
     }
     const gap: OntologyGap = {
       term: 'unknown term',

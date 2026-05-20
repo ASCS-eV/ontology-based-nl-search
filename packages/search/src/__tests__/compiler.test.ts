@@ -419,6 +419,41 @@ describe('compileSlots', () => {
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
   })
+
+  it('generates reference join for "ositrace referencing hdmap"', async () => {
+    const slots: SearchSlots = {
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: { domain: 'hdmap' },
+    }
+    const sparql = await compileSlots(slots)
+    // Should join via manifest
+    expect(sparql).toContain('ositrace:hasManifest')
+    expect(sparql).toContain('manifest:hasReferencedArtifacts')
+    expect(sparql).toContain('manifest:iri')
+    expect(sparql).toContain('?refAsset a hdmap:HdMap')
+    expect(sparql).toContain('?refName')
+    // Must have all necessary prefixes
+    expect(sparql).toContain('PREFIX manifest:')
+    expect(sparql).toContain('PREFIX hdmap:')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+
+  it('generates reference join with label filter', async () => {
+    const slots: SearchSlots = {
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: { domain: 'hdmap', label: 'Karlsruhe' },
+    }
+    const sparql = await compileSlots(slots)
+    expect(sparql).toContain('manifest:iri ?refAsset')
+    expect(sparql).toContain('CONTAINS(LCASE(?refName), "karlsruhe")')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
 })
 
 describe('compileCountQuery', () => {

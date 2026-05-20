@@ -34,6 +34,17 @@ const slotSubmissionSchema = z.object({
         .optional()
         .describe('Geographic location filters (single value or array per field)'),
       license: z.string().optional().describe('License identifier'),
+      references: z
+        .object({
+          domain: z
+            .string()
+            .describe('Domain of the referenced asset (e.g., "hdmap", "scenario", "ositrace")'),
+          label: z.string().optional().describe('Optional label filter on the referenced asset'),
+        })
+        .optional()
+        .describe(
+          'Cross-reference filter: find assets that reference another domain. Use when the user asks for assets "with a map", "where you also have the trace", "connected to scenarios", etc.'
+        ),
     })
     .describe('Search slots: fill only properties where the user expressed intent'),
   interpretation: z.object({

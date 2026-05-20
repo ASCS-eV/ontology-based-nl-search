@@ -59,6 +59,7 @@ export interface SlotPipelineSubmission {
       city?: string | string[]
     }
     license?: string
+    references?: { domain: string; label?: string }
   }
   interpretation: QueryInterpretation
   gaps: OntologyGap[]
@@ -120,6 +121,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     ranges: rangeResult.ranges,
     location: shaclResult.location,
     license: shaclResult.license,
+    references: submission.slots.references,
   }
 
   // 5. Deterministic SPARQL compilation.
@@ -127,8 +129,19 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   const sparql = await compileSlots(slots)
   endCompile()
 
+  // Enrich interpretation with the final domains and applied filters
+  // so the user can see exactly what was compiled.
+  const enrichedInterpretation = {
+    ...submission.interpretation,
+    domains: slots.domains,
+    appliedFilters: Object.keys(slots.filters).length > 0 ? slots.filters : undefined,
+    appliedLocation: slots.location
+      ? Object.fromEntries(Object.entries(slots.location).filter(([, v]) => v !== undefined))
+      : undefined,
+  }
+
   const rawResponse: LlmStructuredResponse = {
-    interpretation: submission.interpretation,
+    interpretation: enrichedInterpretation,
     gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
     sparql,
   }

@@ -79,25 +79,47 @@ searchRoutes.post('/stream', (c) => {
       logger.info('Stream search started')
 
       try {
-        await stream.writeSSE({
-          event: SSE_EVENT.STATUS,
-          data: JSON.stringify({ phase: 'interpreting', message: 'Interpreting query…' }),
+        const result = await searchNl({
+          query,
+          signal: controller.signal,
+          requestId,
+          onProgress: async (progress) => {
+            if (controller.signal.aborted) return
+            switch (progress.phase) {
+              case 'interpreting':
+                await stream.writeSSE({
+                  event: SSE_EVENT.STATUS,
+                  data: JSON.stringify({ phase: 'interpreting', message: 'Interpreting query…' }),
+                })
+                break
+              case 'interpreted':
+                if (progress.data) {
+                  await stream.writeSSE({
+                    event: SSE_EVENT.INTERPRETATION,
+                    data: JSON.stringify(progress.data.interpretation),
+                  })
+                  await stream.writeSSE({
+                    event: SSE_EVENT.GAPS,
+                    data: JSON.stringify(progress.data.gaps),
+                  })
+                  await stream.writeSSE({
+                    event: SSE_EVENT.SPARQL,
+                    data: JSON.stringify(progress.data.sparql),
+                  })
+                }
+                break
+              case 'executing':
+                await stream.writeSSE({
+                  event: SSE_EVENT.STATUS,
+                  data: JSON.stringify({ phase: 'executing', message: 'Executing SPARQL query…' }),
+                })
+                break
+            }
+          },
         })
-
-        const result = await searchNl({ query, signal: controller.signal, requestId })
 
         if (controller.signal.aborted) return
 
-        await stream.writeSSE({
-          event: SSE_EVENT.INTERPRETATION,
-          data: JSON.stringify(result.interpretation),
-        })
-        await stream.writeSSE({ event: SSE_EVENT.GAPS, data: JSON.stringify(result.gaps) })
-        await stream.writeSSE({ event: SSE_EVENT.SPARQL, data: JSON.stringify(result.sparql) })
-        await stream.writeSSE({
-          event: SSE_EVENT.STATUS,
-          data: JSON.stringify({ phase: 'executing', message: 'Executing SPARQL query…' }),
-        })
         await stream.writeSSE({
           event: SSE_EVENT.RESULTS,
           data: JSON.stringify({

@@ -50,6 +50,14 @@ export interface DomainRegistry {
   prefixesFor(domain: string): string
   /** Generate SPARQL PREFIX declarations for all domains */
   allPrefixes(): string
+  /**
+   * Resolve a domain by the IRI path-segment name.
+   * Schema queries derive domain names from IRI path segments (e.g., "openlabel"
+   * from `/openlabel/v2/`), which may differ from directory names (e.g., "openlabel-v2").
+   * Returns the DomainDescriptor for the first registry entry whose namespace
+   * contains `/{iriDomain}/v`.
+   */
+  resolveByIriDomain(iriDomain: string): DomainDescriptor | undefined
 }
 
 /**
@@ -94,10 +102,34 @@ function extractNamespace(ttlContent: string, domainName: string): string | null
   const match = ttlContent.match(prefixRegex)
   if (match && match[1]) return match[1]
 
+  // Fallback: try underscore variant (e.g., directory "openlabel-v2" → TTL prefix "openlabel_v2")
+  if (domainName.includes('-')) {
+    const underscoreVariant = domainName.replace(/-/g, '_')
+    const underscoreRegex = new RegExp(`@prefix\\s+${underscoreVariant}:\\s*<([^>]+)>`, 'i')
+    const underscoreMatch = ttlContent.match(underscoreRegex)
+    if (underscoreMatch && underscoreMatch[1]) return underscoreMatch[1]
+  }
+
   // Fallback: look for owl:Ontology IRI
   const ontologyMatch = ttlContent.match(/<([^>]+)>\s+a\s+owl:Ontology/)
   if (ontologyMatch && ontologyMatch[1]) return ontologyMatch[1]
 
+  return null
+}
+
+/**
+ * Find the TTL prefix alias that maps to the given namespace.
+ * When the directory name differs from the TTL prefix (e.g.,
+ * directory "openlabel-v2" → TTL prefix "openlabel_v2"), this
+ * resolves the actual alias used in the file.
+ */
+function findPrefixAlias(
+  declaredPrefixes: Record<string, string>,
+  namespace: string
+): string | null {
+  for (const [alias, ns] of Object.entries(declaredPrefixes)) {
+    if (ns === namespace) return alias
+  }
   return null
 }
 
@@ -227,8 +259,12 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
       const namespace = extractNamespace(shaclContent, entry) || extractNamespace(owlContent, entry)
       if (!namespace) continue
 
-      // Extract target classes
-      const targetClasses = extractTargetClasses(shaclContent, namespace, entry)
+      // Resolve the actual TTL prefix alias (may differ from directory name,
+      // e.g., directory "openlabel-v2" uses TTL prefix "openlabel_v2").
+      const ttlPrefix = findPrefixAlias(filePrefixes, namespace) ?? entry
+
+      // Extract target classes using the actual TTL prefix
+      const targetClasses = extractTargetClasses(shaclContent, namespace, ttlPrefix)
       if (targetClasses.length === 0) continue
 
       // Find primary asset class
@@ -241,8 +277,8 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
       domains.set(entry, {
         name: entry,
         namespace,
-        prefix: entry,
-        targetClass: `${entry}:${primaryClass.localName}`,
+        prefix: ttlPrefix,
+        targetClass: `${ttlPrefix}:${primaryClass.localName}`,
         targetClassIri: primaryClass.iri,
         version,
         shapes,
@@ -283,6 +319,18 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
       return Object.entries(prefixes)
         .map(([key, uri]) => `PREFIX ${key}: <${uri}>`)
         .join('\n')
+    },
+    resolveByIriDomain(iriDomain: string): DomainDescriptor | undefined {
+      // Direct match first (most domains: directory name === IRI path segment)
+      const direct = domains.get(iriDomain)
+      if (direct) return direct
+
+      // Fallback: find a domain whose namespace contains `/{iriDomain}/v`
+      const pattern = `/${iriDomain}/v`
+      for (const desc of domains.values()) {
+        if (desc.namespace.includes(pattern)) return desc
+      }
+      return undefined
     },
   }
 

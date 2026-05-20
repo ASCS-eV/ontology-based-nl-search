@@ -24,6 +24,29 @@ vi.mock('../search-factory.js', () => ({
   searchRefine: vi.fn(),
 }))
 
+/**
+ * Helper to mock searchNl with onProgress simulation.
+ * The route passes onProgress in options; the mock must invoke it
+ * so that incremental SSE events are emitted during the test.
+ */
+function mockSearchNlWithProgress(result: typeof HAPPY_PATH_RESULT) {
+  return vi.fn(async (opts: { onProgress?: (p: unknown) => Promise<void> | void }) => {
+    if (opts.onProgress) {
+      await opts.onProgress({ phase: 'interpreting' })
+      await opts.onProgress({
+        phase: 'interpreted',
+        data: {
+          interpretation: result.interpretation,
+          gaps: result.gaps,
+          sparql: result.sparql,
+        },
+      })
+      await opts.onProgress({ phase: 'executing' })
+    }
+    return result
+  })
+}
+
 vi.mock('@ontology-search/search', () => ({
   getInitializedStore: vi.fn(),
   compileCountQuery: vi.fn(),
@@ -65,7 +88,7 @@ describe('POST /search/stream — SSE protocol', () => {
    */
   it('emits the canonical event sequence on success', async () => {
     const { searchNl } = await import('../search-factory.js')
-    vi.mocked(searchNl).mockResolvedValue(HAPPY_PATH_RESULT as never)
+    vi.mocked(searchNl).mockImplementation(mockSearchNlWithProgress(HAPPY_PATH_RESULT))
 
     const res = await postStream({ query: 'find HD maps in Germany' })
     const events = await collectSSEEvents(res.body)
@@ -85,7 +108,7 @@ describe('POST /search/stream — SSE protocol', () => {
 
   it('emits `done` exactly once and as the terminal event', async () => {
     const { searchNl } = await import('../search-factory.js')
-    vi.mocked(searchNl).mockResolvedValue(HAPPY_PATH_RESULT as never)
+    vi.mocked(searchNl).mockImplementation(mockSearchNlWithProgress(HAPPY_PATH_RESULT))
 
     const res = await postStream({ query: 'find HD maps in Germany' })
     const events = await collectSSEEvents(res.body)
@@ -99,7 +122,7 @@ describe('POST /search/stream — SSE protocol', () => {
 
   it("each event's data is well-formed JSON of the expected shape", async () => {
     const { searchNl } = await import('../search-factory.js')
-    vi.mocked(searchNl).mockResolvedValue(HAPPY_PATH_RESULT as never)
+    vi.mocked(searchNl).mockImplementation(mockSearchNlWithProgress(HAPPY_PATH_RESULT))
 
     const res = await postStream({ query: 'find HD maps in Germany' })
     const events = await collectSSEEvents(res.body)
