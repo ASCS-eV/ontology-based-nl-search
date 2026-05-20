@@ -242,9 +242,13 @@ export async function getPersistentSession(): Promise<CopilotSession> {
     const [{ prompt }, c] = await Promise.all([getSystemPrompt(), getClient()])
     const config = getConfig()
 
+    // reasoningEffort is only supported by certain models (e.g. claude-sonnet-4.6).
+    // Models that don't support it will reject the session.create call.
+    const supportsReasoning = config.AI_MODEL.includes('4.6') || config.AI_MODEL.includes('opus')
+
     const session = await c.createSession({
       model: config.AI_MODEL,
-      reasoningEffort: 'low',
+      ...(supportsReasoning ? { reasoningEffort: 'low' } : {}),
       onPermissionRequest: approveAll,
       systemMessage: { mode: 'replace', content: prompt },
       tools: [buildPersistentSubmitSlotsTool()],

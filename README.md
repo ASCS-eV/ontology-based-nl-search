@@ -33,7 +33,7 @@ pnpm install
 cp .env.example .env.local
 
 # Edit .env.local and set AI_PROVIDER to one of:
-# - "ollama"     (default, free local) - requires: ollama pull qwen2.5-coder:7b
+# - "ollama"     (default, free local) - requires: ollama pull qwen3:8b
 # - "openai"     (requires OPENAI_API_KEY)
 # - "anthropic"  (requires ANTHROPIC_API_KEY)
 # - "claude-cli" (uses ~/.claude/.credentials.json; run `claude` once to log in)
@@ -162,7 +162,7 @@ pnpm run test:e2e     # E2E tests (Playwright)
 **API not starting?**
 
 - Check `.env.local` exists in project root
-- For Ollama: ensure `ollama pull qwen2.5-coder:7b` completed
+- For Ollama: ensure `ollama pull qwen3:8b` completed
 - For OpenAI: verify `OPENAI_API_KEY` is set
 - For Anthropic: verify `ANTHROPIC_API_KEY` is set
 - For Claude CLI: run `claude` once to authenticate (token written to `~/.claude/.credentials.json`)
@@ -182,7 +182,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 | `SPARQL_MODE`       | `memory` (Oxigraph WASM) or `remote` (Fuseki)                                     | `memory`                           |
 | `SPARQL_ENDPOINT`   | Remote SPARQL endpoint URL                                                        | —                                  |
 | `AI_PROVIDER`       | LLM provider: `openai`, `ollama`, `anthropic`, `claude-cli`, `copilot`            | `ollama`                           |
-| `AI_MODEL`          | Model identifier (see `.env.example` for per-provider model lists)                | `qwen2.5-coder:7b`                 |
+| `AI_MODEL`          | Model identifier (see `.env.example` for per-provider model lists)                | `qwen3:8b`                         |
 | `OPENAI_API_KEY`    | OpenAI API key (when `AI_PROVIDER=openai`)                                        | —                                  |
 | `ANTHROPIC_API_KEY` | Anthropic API key (when `AI_PROVIDER=anthropic`; `claude-cli` uses OAuth instead) | —                                  |
 | `OLLAMA_BASE_URL`   | Ollama server URL                                                                 | `http://localhost:11434/v1`        |
