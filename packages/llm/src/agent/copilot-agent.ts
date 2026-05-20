@@ -86,7 +86,10 @@ async function getSystemPrompt(): Promise<{ prompt: string; vocabulary: Ontology
 
 async function getClient(): Promise<CopilotClient> {
   if (client) return client
-  client = new CopilotClient()
+  const { GITHUB_TOKEN } = getConfig()
+  client = new CopilotClient({
+    ...(GITHUB_TOKEN ? { gitHubToken: GITHUB_TOKEN } : {}),
+  })
   await client.start()
   return client
 }

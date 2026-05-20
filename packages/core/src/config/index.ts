@@ -40,6 +40,8 @@ const envSchema = z.object({
   AI_MODEL: z.string().min(1).default('gpt-4o'),
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
+  /** GitHub token for the Copilot SDK. Sourced from env or `gh auth token`. */
+  GITHUB_TOKEN: z.string().optional(),
   OLLAMA_BASE_URL: z.string().url().default('http://localhost:11434/v1'),
   /** Maximum tool-calling steps the Vercel-SDK agent will perform. */
   LLM_MAX_AGENT_STEPS: z.coerce.number().int().positive().default(3),
