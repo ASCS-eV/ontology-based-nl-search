@@ -22,6 +22,9 @@ interface SearchResult {
   interpretation?: {
     summary: string
     mappedTerms: Array<{ input: string; mapped: string; confidence: string; property: string }>
+    domains?: string[]
+    appliedFilters?: Record<string, string | string[]>
+    appliedLocation?: Record<string, string>
   }
   gaps?: Array<{ term: string; reason: string; suggestions: string[] }>
   sparql?: string
@@ -222,6 +225,28 @@ function evaluateTest(
     for (const fragment of expectation.shouldContainInSparql) {
       if (!searchResult.sparql.toLowerCase().includes(fragment.toLowerCase())) {
         failures.push(`Expected SPARQL to contain "${fragment}"`)
+      }
+    }
+  }
+
+  // Structural check: multiple peer domains should produce UNION queries.
+  // Known hierarchies (scenario→hdmap, scenario→environment-model) use JOINs.
+  const KNOWN_HIERARCHIES = new Set(['scenario'])
+  const domains = searchResult.interpretation?.domains ?? []
+  if (domains.length > 1 && searchResult.sparql) {
+    const hasParent = domains.some((d) => KNOWN_HIERARCHIES.has(d))
+    if (!hasParent && !searchResult.sparql.includes('UNION')) {
+      failures.push(`Multi-domain peer query [${domains.join(', ')}] should use UNION but doesn't`)
+    }
+  }
+
+  // Structural check: all detected domains should appear in the SPARQL body
+  // (either as PREFIX or in the query patterns). This catches the old bug where
+  // domains were selected but silently dropped from the query.
+  if (domains.length > 0 && searchResult.sparql) {
+    for (const domain of domains) {
+      if (!searchResult.sparql.includes(`${domain}:`)) {
+        failures.push(`Domain "${domain}" detected but not found in SPARQL query body`)
       }
     }
   }
@@ -583,6 +608,368 @@ const TEST_CASES: TestCase[] = [
     query: 'CC-BY-4.0 licensed maps',
     expectation: {
       shouldContainInSparql: ['CC-BY-4.0'],
+    },
+  },
+
+  // === OSI TRACE QUERIES ===
+  {
+    query: 'OSI traces in Germany',
+    expectation: {
+      shouldMapTerms: [{ input: 'germany', mapped: 'DE', property: 'country' }],
+      shouldContainInSparql: ['ositrace:OSITrace'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'Sensor data traces from France',
+    expectation: {
+      shouldContainInSparql: ['ositrace'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'OSI traces with motorway roads',
+    expectation: {
+      shouldContainInSparql: ['ositrace', 'motorway'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'MCAP format OSI recordings',
+    expectation: {
+      shouldContainInSparql: ['ositrace', 'MCAP'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'OSI SensorView traces in Berlin',
+    expectation: {
+      shouldContainInSparql: ['ositrace', 'SensorView'],
+    },
+  },
+  {
+    query: 'GroundTruth traces from Lyon',
+    expectation: {
+      shouldContainInSparql: ['ositrace', 'GroundTruth'],
+    },
+  },
+  {
+    query: 'OSI traces with lidar data source',
+    expectation: {
+      shouldContainInSparql: ['ositrace', 'lidar'],
+    },
+  },
+  {
+    query: 'How many OSI trace recordings do we have from Italy?',
+    expectation: {
+      shouldMapTerms: [{ input: 'italy', mapped: 'IT', property: 'country' }],
+      shouldContainInSparql: ['ositrace'],
+      shouldFindResults: true,
+    },
+  },
+
+  // === MULTI-DOMAIN PEER QUERIES (UNION) ===
+  // These should trigger UNION queries searching both domains independently
+  {
+    query: 'French motorway data',
+    expectation: {
+      shouldMapTerms: [{ input: 'french', mapped: 'FR', property: 'country' }],
+      shouldContainInSparql: ['motorway', 'UNION'],
+      shouldFindResults: true,
+      minResults: 8, // 7 hdmap + at least 1 ositrace
+    },
+  },
+  {
+    query: 'All motorway recordings and maps in Germany',
+    expectation: {
+      shouldMapTerms: [{ input: 'germany', mapped: 'DE', property: 'country' }],
+      shouldContainInSparql: ['motorway', 'UNION'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'HD maps and OSI traces with town roads',
+    expectation: {
+      shouldContainInSparql: ['UNION', 'town'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'Road data from the Netherlands',
+    expectation: {
+      shouldMapTerms: [{ input: 'netherlands', mapped: 'NL', property: 'country' }],
+      // LLM might select both hdmap + ositrace or just one — both valid
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'Maps and sensor traces of rural roads in Sweden',
+    expectation: {
+      shouldMapTerms: [{ input: 'sweden', mapped: 'SE', property: 'country' }],
+      shouldContainInSparql: ['rural'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'Any data about motorways in Korea',
+    expectation: {
+      shouldContainInSparql: ['motorway'],
+      shouldFindResults: true,
+    },
+  },
+
+  // === CROSS-REFERENCE QUERIES (scenario referencing hdmap) ===
+  {
+    query: 'Scenarios that use German motorway maps',
+    expectation: {
+      shouldContainInSparql: ['scenario', 'manifest:hasReferencedArtifacts'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'Lane change scenarios with referenced HD maps',
+    expectation: {
+      shouldContainInSparql: ['scenario', 'lane-change'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'Scenarios referencing maps from Japan',
+    expectation: {
+      shouldContainInSparql: ['scenario'],
+    },
+  },
+
+  // === STRANGE / EDGE CASE AD ENGINEER QUERIES ===
+  {
+    query: 'Autobahn Daten fuer AEB Tests',
+    expectation: {
+      // German query - should still work
+      shouldContainInSparql: ['motorway'],
+    },
+  },
+  {
+    query: 'I need data for my simulation but not sure what format',
+    expectation: {
+      // Vague query — should return something or report gaps
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'dSpace AURELION recordings',
+    expectation: {
+      shouldContainInSparql: ['AURELION'],
+    },
+  },
+  {
+    query: 'What map formats are available?',
+    expectation: {
+      // Meta-question — might use investigation tools or return all formats
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'data for pedestrian detection algorithm validation',
+    expectation: {
+      shouldContainInSparql: ['pedestrian'],
+    },
+  },
+  {
+    query: 'highway merge ramp OpenDRIVE with 3 lanes',
+    expectation: {
+      shouldContainInSparql: ['motorway', 'OpenDRIVE'],
+    },
+  },
+  {
+    query: 'show me everything from Paris',
+    expectation: {
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'OSI and HD maps for Chinese highways',
+    expectation: {
+      shouldMapTerms: [{ input: 'chinese', mapped: 'CN', property: 'country' }],
+      shouldContainInSparql: ['UNION', 'motorway'],
+    },
+  },
+  {
+    query: 'traces with more than 10000 frames',
+    expectation: {
+      shouldContainInSparql: ['ositrace', 'numberFrames'],
+    },
+  },
+  {
+    query: 'proprietary licensed sensor recordings',
+    expectation: {
+      shouldContainInSparql: ['ositrace', 'proprietary'],
+    },
+  },
+  {
+    query: 'bicycle and pedestrian detection traces',
+    expectation: {
+      shouldContainInSparql: ['ositrace'],
+    },
+  },
+  {
+    query: 'emergency braking scenarios in fog with referenced HD map',
+    expectation: {
+      shouldContainInSparql: ['scenario', 'emergency', 'fog'],
+    },
+  },
+  {
+    query: '🚗 highway maps',
+    expectation: {
+      // Emoji in query — should not crash, extract highway → motorway
+      shouldContainInSparql: ['motorway'],
+    },
+  },
+  {
+    query: '',
+    expectation: {
+      // Empty query — should handle gracefully
+      shouldFindResults: false,
+    },
+  },
+  {
+    query: 'SELECT * WHERE { ?s ?p ?o }',
+    expectation: {
+      // SPARQL injection attempt — should NOT execute raw SPARQL
+      // The system should interpret this as a natural language query
+      shouldFindResults: false,
+    },
+  },
+  {
+    query: 'maps from a country that drives on the left side',
+    expectation: {
+      // Abstract reasoning — might trigger GB, JP, AU
+      shouldFindResults: true,
+    },
+  },
+
+  // === MORE OSI TRACE + MULTI-DOMAIN COVERAGE ===
+  {
+    query: 'OSI traces from US with town roads',
+    expectation: {
+      shouldContainInSparql: ['ositrace', 'town'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'French road data including sensor recordings',
+    expectation: {
+      shouldMapTerms: [{ input: 'french', mapped: 'FR', property: 'country' }],
+      shouldFindResults: true,
+      minResults: 5,
+    },
+  },
+  {
+    query: 'Maps and traces for highway testing in Italy',
+    expectation: {
+      shouldMapTerms: [{ input: 'italy', mapped: 'IT', property: 'country' }],
+      shouldContainInSparql: ['motorway'],
+    },
+  },
+  {
+    query: 'High-precision OSI recordings with precision under 0.01',
+    expectation: {
+      shouldContainInSparql: ['ositrace', 'precision'],
+    },
+  },
+  {
+    query: 'OpenDRIVE maps from Korea with motorway_entry roads',
+    expectation: {
+      shouldMapTerms: [{ input: 'korea', mapped: 'KR', property: 'country' }],
+      shouldContainInSparql: ['OpenDRIVE', 'motorway_entry'],
+    },
+  },
+  {
+    query: 'Lanelet2 format town maps in China',
+    expectation: {
+      shouldMapTerms: [{ input: 'china', mapped: 'CN', property: 'country' }],
+      shouldContainInSparql: ['Lanelet2', 'town'],
+    },
+  },
+  {
+    query: 'Scenario with cut-in on motorway referencing German map',
+    expectation: {
+      shouldContainInSparql: ['scenario', 'cut-in'],
+    },
+  },
+  {
+    query: 'All assets from Japan',
+    expectation: {
+      shouldMapTerms: [{ input: 'japan', mapped: 'JP', property: 'country' }],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'German sensor data in MCAP format for ADAS validation',
+    expectation: {
+      shouldMapTerms: [{ input: 'german', mapped: 'DE', property: 'country' }],
+      shouldContainInSparql: ['ositrace', 'MCAP'],
+    },
+  },
+  {
+    query: 'HD maps with many intersections near Munich',
+    expectation: {
+      shouldContainInSparql: ['hdmap', 'intersection'],
+    },
+  },
+  {
+    query: 'Sensor recordings with right-hand traffic',
+    expectation: {
+      shouldContainInSparql: ['ositrace', 'right-hand'],
+    },
+  },
+  {
+    query: 'Maps and OSI data for urban driving',
+    expectation: {
+      shouldContainInSparql: ['town'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'French autoroute simulation data',
+    expectation: {
+      // autoroute = French for motorway
+      shouldMapTerms: [{ input: 'french', mapped: 'FR', property: 'country' }],
+      shouldContainInSparql: ['motorway'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'OSI version 3.7 traces',
+    expectation: {
+      shouldContainInSparql: ['ositrace', '3.7'],
+    },
+  },
+  {
+    query: 'Custom road type HD maps in Australia',
+    expectation: {
+      shouldMapTerms: [{ input: 'australia', mapped: 'AU', property: 'country' }],
+      shouldContainInSparql: ['custom'],
+      shouldFindResults: true,
+    },
+  },
+  {
+    query: 'Scenarios with trucks in rainy weather at night',
+    expectation: {
+      shouldContainInSparql: ['scenario', 'truck', 'rain'],
+    },
+  },
+  {
+    query: 'British sensor data for motorway',
+    expectation: {
+      shouldMapTerms: [{ input: 'british', mapped: 'GB', property: 'country' }],
+      shouldContainInSparql: ['motorway'],
+    },
+  },
+  {
+    query: 'Find MIT licensed OSI traces from France',
+    expectation: {
+      shouldMapTerms: [{ input: 'france', mapped: 'FR', property: 'country' }],
+      shouldContainInSparql: ['ositrace', 'MIT', 'license'],
     },
   },
 ]
