@@ -12,13 +12,19 @@ import { SparqlPreview } from './SparqlPreview'
 import { TypewriterText } from './TypewriterText'
 
 export function SearchPage() {
-  const { data: stats } = useQuery<StatsResponse>({
+  const {
+    data: stats,
+    isSuccess: apiReady,
+    isLoading: apiLoading,
+  } = useQuery<StatsResponse>({
     queryKey: ['stats'],
     queryFn: async () => {
       const res = await fetch('/api/stats')
       if (!res.ok) throw new Error('Failed to load stats')
       return res.json()
     },
+    retry: true,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
   })
 
   const { history, addToHistory } = useSearchHistory()
@@ -55,7 +61,13 @@ export function SearchPage() {
         )}
       </div>
 
-      <SearchBar onSearch={handleSearch} loading={loading} history={history} />
+      <SearchBar onSearch={handleSearch} loading={loading} disabled={!apiReady} history={history} />
+
+      {apiLoading && (
+        <p className="text-gray-400 text-xs mt-2 text-center h-4 animate-pulse">
+          Connecting to search API…
+        </p>
+      )}
 
       {phase === 'interpreting' && !interpretation ? (
         <p className="text-blue-600 text-xs mt-2 text-center h-4">
