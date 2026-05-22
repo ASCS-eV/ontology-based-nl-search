@@ -14,20 +14,26 @@ import { generateText, stepCountIs } from 'ai'
 import { buildSystemPrompt } from '../prompt-builder.js'
 import { getModel } from '../provider.js'
 import type { LlmStructuredResponse } from '../types.js'
+import { createInvestigationTools } from './investigation-tools.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
 import { agentTools, type SlotSubmissionParams } from './tools.js'
 
 /** Cached system prompt and vocabulary */
 let cachedSystemPrompt: string | null = null
 let cachedVocabulary: OntologyVocabulary | null = null
+let cachedStore: import('@ontology-search/sparql/types').SparqlStore | null = null
 
 /**
  * Build system prompt from live ontology vocabulary.
  * Cached after first build — the ontology doesn't change at runtime.
  */
-async function getSystemPrompt(): Promise<{ prompt: string; vocabulary: OntologyVocabulary }> {
-  if (cachedSystemPrompt && cachedVocabulary) {
-    return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary }
+async function getSystemPrompt(): Promise<{
+  prompt: string
+  vocabulary: OntologyVocabulary
+  store: import('@ontology-search/sparql/types').SparqlStore
+}> {
+  if (cachedSystemPrompt && cachedVocabulary && cachedStore) {
+    return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary, store: cachedStore }
   }
 
   // Read raw SHACL files for the system prompt (LLM reads native Turtle)
@@ -37,7 +43,8 @@ async function getSystemPrompt(): Promise<{ prompt: string; vocabulary: Ontology
   // Extract vocabulary separately — still needed for post-LLM slot validation
   const store = await getInitializedStore()
   cachedVocabulary = await extractVocabulary(store)
-  return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary }
+  cachedStore = store
+  return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary, store }
 }
 
 export interface AgentOptions {
@@ -63,18 +70,20 @@ export async function runSparqlAgent(
   const targetDomain = options?.domain ?? (await getPrimaryDomain())
 
   const endPrompt = sw.time('prompt-build')
-  const { prompt, vocabulary } = await getSystemPrompt()
+  const { prompt, vocabulary, store } = await getSystemPrompt()
   const model = getModel()
+  const investigationTools = createInvestigationTools(store)
   endPrompt()
 
   const endLlmCall = sw.time('llm-round-trip')
-  // With slot-filling, the agent typically needs only 1 step: submit_slots.
-  // LLM_MAX_AGENT_STEPS (default 3) leaves headroom for retries.
+  // Investigation tools allow the LLM to explore the schema if needed.
+  // Typical path: LLM reads SHACL in prompt → directly calls submit_slots (1 step).
+  // Complex queries: LLM calls discover_* tools first → then submit_slots (2-3 steps).
   const result = await generateText({
     model,
     system: prompt,
     prompt: naturalLanguageQuery,
-    tools: agentTools,
+    tools: { ...agentTools, ...investigationTools },
     toolChoice: 'required',
     stopWhen: stepCountIs(getConfig().LLM_MAX_AGENT_STEPS),
     abortSignal: options?.signal,

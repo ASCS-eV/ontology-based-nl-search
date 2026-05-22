@@ -75,7 +75,7 @@ exports[`compileSlots — determinism + snapshot suite > empty slots with no dom
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 SELECT ?asset ?name WHERE {
-  VALUES ?assetClass { <https://w3id.org/gaia-x4plcaad/ontologies/automotive-simulator/v2/AutomotiveSimulator> <https://w3id.org/ascs-ev/envited-x/environment-model/v5/EnvironmentModel> <https://w3id.org/ascs-ev/envited-x/hdmap/v6/HdMap> <https://w3id.org/gaia-x4plcaad/ontologies/leakage-test/v3/LeakageTest> <https://w3id.org/ascs-ev/envited-x/ositrace/v6/OSITrace> <https://w3id.org/ascs-ev/envited-x/scenario/v6/Scenario> <https://w3id.org/gaia-x4plcaad/ontologies/service/v2/Service> <https://w3id.org/gaia-x4plcaad/ontologies/simulation-model/v3/SimulationModel> <https://w3id.org/ascs-ev/envited-x/surface-model/v6/SurfaceModel> <https://w3id.org/gaia-x4plcaad/ontologies/survey/v6/SurveyResultDataOffering> <https://w3id.org/gaia-x4plcaad/ontologies/vv-report/v2/VvReport> }
+  VALUES ?assetClass { <https://w3id.org/gaia-x4plcaad/ontologies/automotive-simulator/v2/AutomotiveSimulator> <https://w3id.org/ascs-ev/envited-x/environment-model/v5/EnvironmentModel> <https://w3id.org/ascs-ev/envited-x/hdmap/v6/HdMap> <https://w3id.org/gaia-x4plcaad/ontologies/leakage-test/v3/LeakageTest> <https://w3id.org/ascs-ev/envited-x/ositrace/v6/OSITrace> <https://w3id.org/ascs-ev/envited-x/scenario/v6/Scenario> <https://w3id.org/gaia-x4plcaad/ontologies/service/v2/Service> <https://w3id.org/gaia-x4plcaad/ontologies/simulated-sensor/v2/SimulatedSensor> <https://w3id.org/gaia-x4plcaad/ontologies/simulation-model/v3/SimulationModel> <https://w3id.org/ascs-ev/envited-x/surface-model/v6/SurfaceModel> <https://w3id.org/gaia-x4plcaad/ontologies/survey/v6/SurveyResultDataOffering> <https://w3id.org/ascs-ev/envited-x/tzip21/v1/Asset> <https://w3id.org/gaia-x4plcaad/ontologies/vv-report/v2/VvReport> }
   ?asset a ?assetClass ;
     rdfs:label ?name .
 }
@@ -256,7 +256,7 @@ SELECT ?asset ?name ?roadTypes ?numberIntersections ?country ?license WHERE {
   FILTER(?roadTypes = "motorway")
   FILTER(xsd:float(?numberIntersections) >= 5)
   FILTER(xsd:float(?numberIntersections) <= 50)
-  FILTER(CONTAINS(LCASE(?country), "de"))
+  FILTER(CONTAINS(LCASE(STR(?country)), "de"))
   FILTER(?license = "CC-BY-4.0")
 }
 LIMIT 100"
@@ -321,10 +321,10 @@ SELECT ?asset ?name ?country ?state ?region ?city WHERE {
   ?loc georeference:state ?state .
   ?loc georeference:region ?region .
   ?loc georeference:city ?city .
-  FILTER(CONTAINS(LCASE(?country), "de"))
-  FILTER(CONTAINS(LCASE(?state), "bavaria"))
-  FILTER(CONTAINS(LCASE(?region), "oberbayern"))
-  FILTER(CONTAINS(LCASE(?city), "munich"))
+  FILTER(CONTAINS(LCASE(STR(?country)), "de"))
+  FILTER(CONTAINS(LCASE(STR(?state)), "bavaria"))
+  FILTER(CONTAINS(LCASE(STR(?region)), "oberbayern"))
+  FILTER(CONTAINS(LCASE(STR(?city)), "munich"))
 }
 LIMIT 100"
 `;
@@ -343,12 +343,12 @@ SELECT ?asset ?name ?country WHERE {
   ?domSpec hdmap:hasGeoreference ?georef .
   ?georef georeference:hasProjectLocation ?loc .
   ?loc georeference:country ?country .
-  FILTER(?country IN ("DE", "FR", "IT"))
+  FILTER(LCASE(STR(?country)) IN ("de", "fr", "it"))
 }
 LIMIT 100"
 `;
 
-exports[`compileSlots — determinism + snapshot suite > location with single country (CONTAINS LCASE matching) 1`] = `
+exports[`compileSlots — determinism + snapshot suite > location with single country (STR matching) 1`] = `
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
@@ -362,7 +362,7 @@ SELECT ?asset ?name ?country WHERE {
   ?domSpec hdmap:hasGeoreference ?georef .
   ?georef georeference:hasProjectLocation ?loc .
   ?loc georeference:country ?country .
-  FILTER(CONTAINS(LCASE(?country), "de"))
+  FILTER(CONTAINS(LCASE(STR(?country)), "de"))
 }
 LIMIT 100"
 `;
@@ -381,7 +381,75 @@ SELECT ?asset ?name ?country WHERE {
   ?domSpec hdmap:hasGeoreference ?georef .
   ?georef georeference:hasProjectLocation ?loc .
   ?loc georeference:country ?country .
-  FILTER(?country = "DE")
+  FILTER(LCASE(STR(?country)) = "de")
+}
+LIMIT 100"
+`;
+
+exports[`compileSlots — determinism + snapshot suite > peer domains (hdmap + ositrace) with location → UNION with country filter 1`] = `
+"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX gx: <https://w3id.org/gaia-x/development#>
+PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
+PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
+SELECT ?asset ?name ?roadTypes ?country WHERE {
+    {
+    ?asset a hdmap:HdMap ;
+      rdfs:label ?name .
+    ?asset hdmap:hasDomainSpecification ?domSpec .
+    ?domSpec hdmap:hasContent ?content .
+    ?content hdmap:roadTypes ?roadTypes .
+    ?domSpec hdmap:hasGeoreference ?georef .
+    ?georef georeference:hasProjectLocation ?loc .
+    ?loc georeference:country ?country .
+    FILTER(?roadTypes = "motorway")
+    FILTER(CONTAINS(LCASE(STR(?country)), "fr"))
+  }
+  UNION
+  {
+    ?asset a ositrace:OSITrace ;
+      rdfs:label ?name .
+    ?asset ositrace:hasDomainSpecification ?domSpec .
+    ?domSpec ositrace:hasContent ?content .
+    ?content ositrace:roadTypes ?roadTypes .
+    ?domSpec ositrace:hasGeoreference ?georef .
+    ?georef georeference:hasProjectLocation ?loc .
+    ?loc georeference:country ?country .
+    FILTER(?roadTypes = "motorway")
+    FILTER(CONTAINS(LCASE(STR(?country)), "fr"))
+  }
+}
+LIMIT 100"
+`;
+
+exports[`compileSlots — determinism + snapshot suite > peer domains (hdmap + ositrace) with shared roadTypes → UNION 1`] = `
+"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX gx: <https://w3id.org/gaia-x/development#>
+PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
+PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
+SELECT ?asset ?name ?roadTypes WHERE {
+    {
+    ?asset a hdmap:HdMap ;
+      rdfs:label ?name .
+    ?asset hdmap:hasDomainSpecification ?domSpec .
+    ?domSpec hdmap:hasContent ?content .
+    ?content hdmap:roadTypes ?roadTypes .
+    FILTER(?roadTypes = "motorway")
+  }
+  UNION
+  {
+    ?asset a ositrace:OSITrace ;
+      rdfs:label ?name .
+    ?asset ositrace:hasDomainSpecification ?domSpec .
+    ?domSpec ositrace:hasContent ?content .
+    ?content ositrace:roadTypes ?roadTypes .
+    FILTER(?roadTypes = "motorway")
+  }
 }
 LIMIT 100"
 `;

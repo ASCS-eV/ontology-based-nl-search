@@ -15,10 +15,39 @@ export interface PolicyResult {
 const BASE_ALLOWED_PREFIXES = new Set<string>(Object.values(RDF_PREFIXES))
 
 /**
- * Pattern for ASCS/ENVITED-X ontology IRIs.
- * Matches: https://w3id.org/ascs-ev/envited-x/{domain}/{version}/
+ * Ontology namespace IRIs registered at startup from the domain registry.
+ * Replaces the former hardcoded ENVITED-X regex pattern — any ontology
+ * loaded via the registry is automatically allowed.
  */
-const ENVITED_X_PATTERN = /^https:\/\/w3id\.org\/ascs-ev\/envited-x\//
+let registeredNamespaces = new Set<string>()
+
+/**
+ * Register additional namespace IRIs as allowed SPARQL prefixes.
+ * Called during app warmup after the domain registry is built.
+ * This makes the policy ontology-agnostic: whatever namespaces the
+ * loaded ontology declares are automatically allowed.
+ */
+export function registerPolicyNamespaces(namespaces: Iterable<string>): void {
+  registeredNamespaces = new Set(namespaces)
+}
+
+/** Reset registered namespaces (for test isolation). */
+export function resetPolicyNamespaces(): void {
+  registeredNamespaces = new Set()
+}
+
+/**
+ * Check whether an IRI is allowed by the policy.
+ * An IRI is allowed if it exactly matches a known base prefix OR
+ * starts with any registered ontology namespace.
+ */
+function isAllowedIri(iri: string): boolean {
+  if (BASE_ALLOWED_PREFIXES.has(iri)) return true
+  for (const ns of registeredNamespaces) {
+    if (iri.startsWith(ns)) return true
+  }
+  return false
+}
 
 const parser = new Parser()
 
@@ -80,10 +109,10 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
     violations.push('SERVICE clauses are not allowed (no federation)')
   }
 
-  // Check prefixes — allow W3C standards, GAIA-X, and any ENVITED-X ontology
+  // Check prefixes — allow W3C standards and registered ontology namespaces
   if (parsed.prefixes) {
     for (const [, iriStr] of Object.entries(parsed.prefixes)) {
-      if (!BASE_ALLOWED_PREFIXES.has(iriStr) && !ENVITED_X_PATTERN.test(iriStr)) {
+      if (!isAllowedIri(iriStr)) {
         violations.push(`Prefix IRI not in allowlist: ${iriStr}`)
       }
     }

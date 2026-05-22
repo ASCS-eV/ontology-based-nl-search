@@ -1,3 +1,4 @@
+import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { describe, expect, it } from 'vitest'
 
 import { getInitializedStore } from '../init.js'
@@ -6,7 +7,8 @@ import { buildPropertyPaths } from '../property-paths.js'
 describe('buildPropertyPaths', () => {
   it('returns at least one path per discovered leaf property', async () => {
     const store = await getInitializedStore()
-    const paths = await buildPropertyPaths(store)
+    const registry = await buildDomainRegistry()
+    const paths = await buildPropertyPaths(store, registry)
     expect(paths.length).toBeGreaterThan(0)
 
     for (const path of paths) {
@@ -32,7 +34,8 @@ describe('buildPropertyPaths', () => {
    */
   it('reconstructs the hdmap→DomainSpecification→Content→roadTypes chain', async () => {
     const store = await getInitializedStore()
-    const paths = await buildPropertyPaths(store)
+    const registry = await buildDomainRegistry()
+    const paths = await buildPropertyPaths(store, registry)
 
     const roadTypes = paths.find((p) => p.domain === 'hdmap' && p.propertyName === 'roadTypes')
     expect(roadTypes).toBeDefined()
@@ -56,7 +59,8 @@ describe('buildPropertyPaths', () => {
    */
   it('reconstructs the chain for a scenario-specific leaf property', async () => {
     const store = await getInitializedStore()
-    const paths = await buildPropertyPaths(store)
+    const registry = await buildDomainRegistry()
+    const paths = await buildPropertyPaths(store, registry)
 
     const weatherSummary = paths.find(
       (p) => p.domain === 'scenario' && p.propertyName === 'weatherSummary'
@@ -78,7 +82,8 @@ describe('buildPropertyPaths', () => {
    */
   it('discovers paths for every domain that has an asset class', async () => {
     const store = await getInitializedStore()
-    const paths = await buildPropertyPaths(store)
+    const registry = await buildDomainRegistry()
+    const paths = await buildPropertyPaths(store, registry)
     const reachableDomains = new Set(paths.map((p) => p.domain))
     // hdmap and scenario are the canonical asset domains in the workspace
     // ontology — the discovery must cover both.
@@ -94,8 +99,9 @@ describe('buildPropertyPaths', () => {
    */
   it('is deterministic across repeated calls', async () => {
     const store = await getInitializedStore()
-    const a = await buildPropertyPaths(store)
-    const b = await buildPropertyPaths(store)
+    const registry = await buildDomainRegistry()
+    const a = await buildPropertyPaths(store, registry)
+    const b = await buildPropertyPaths(store, registry)
     expect(b).toEqual(a)
   }, 30_000)
 })

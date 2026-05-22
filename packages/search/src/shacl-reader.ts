@@ -6,11 +6,12 @@
  * natively. The LLM understands Turtle/SHACL and can resolve synonyms,
  * patterns, and constraints directly from the source.
  *
- * Domains excluded:
- * - gx: 2.3 MB file, only 7 properties used by envited-x (which re-declares them)
+ * Oversized SHACL files (>500 KB) are automatically excluded to avoid
+ * exceeding the LLM's context window. This is ontology-agnostic — any
+ * domain with a large SHACL file is excluded regardless of its name.
  */
 import { discoverShapeFiles } from '@ontology-search/ontology/sources'
-import { readFileSync } from 'fs'
+import { readFileSync, statSync } from 'fs'
 import { basename } from 'path'
 
 /** A single SHACL file's content with its domain metadata */
@@ -26,27 +27,33 @@ export interface ShaclDomainContent {
 }
 
 /**
- * Domains excluded from raw SHACL injection into the LLM prompt.
- *
- * gx.shacl.ttl is 2.3 MB (~572K tokens) — far too large.
- * envited-x.shacl.ttl already re-declares the 7 gx: properties it uses
- * (gx:name, gx:description, gx:license, gx:copyrightOwnedBy, etc.)
- * with their constraints, so the LLM still sees them.
+ * Maximum SHACL file size (in bytes) to include in the LLM prompt.
+ * Files larger than this threshold are skipped to avoid exceeding
+ * the LLM's context window. Ontology-agnostic — applies regardless
+ * of which ontology is loaded.
  */
-const EXCLUDED_DOMAINS = new Set(['gx'])
+const MAX_SHACL_SIZE_BYTES = 500_000
 
 /**
- * Read all SHACL files from ontology sources, excluding oversized domains.
+ * Read all SHACL files from ontology sources, excluding oversized files.
  *
  * Returns an array of domain content objects sorted by domain name.
  * Each entry contains the raw Turtle content of the .shacl.ttl file.
  */
 export function readShaclFiles(): ShaclDomainContent[] {
-  const files = discoverShapeFiles({ exclude: EXCLUDED_DOMAINS })
+  const files = discoverShapeFiles()
   const results: ShaclDomainContent[] = []
 
   for (const { path: filePath, domain } of files) {
     try {
+      const fileSize = statSync(filePath).size
+      if (fileSize > MAX_SHACL_SIZE_BYTES) {
+        console.info(
+          `[shacl-reader] Skipping ${basename(filePath)} (${(fileSize / 1024).toFixed(0)} KB) — exceeds ${(MAX_SHACL_SIZE_BYTES / 1024).toFixed(0)} KB threshold`
+        )
+        continue
+      }
+
       const content = readFileSync(filePath, 'utf-8')
       results.push({
         domain,

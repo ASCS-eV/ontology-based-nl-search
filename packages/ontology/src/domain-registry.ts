@@ -58,6 +58,18 @@ export interface DomainRegistry {
    * contains `/{iriDomain}/v`.
    */
   resolveByIriDomain(iriDomain: string): DomainDescriptor | undefined
+  /**
+   * Reverse-lookup: map a full IRI to its owning domain name using
+   * longest-prefix matching against known domain namespaces.
+   * Returns `undefined` when the IRI does not start with any known namespace.
+   */
+  domainForIri(iri: string): string | undefined
+  /**
+   * Collect every namespace IRI from every domain (own namespace plus
+   * all `@prefix` declarations from its files). Used to feed the
+   * SPARQL policy allowlist at startup.
+   */
+  getAllNamespaces(): Set<string>
 }
 
 /**
@@ -331,6 +343,31 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
         if (desc.namespace.includes(pattern)) return desc
       }
       return undefined
+    },
+    domainForIri(iri: string): string | undefined {
+      // Longest-prefix match: among all domain namespaces that are a
+      // prefix of the IRI, pick the one with the longest namespace.
+      // This avoids misclassification when one namespace is a prefix
+      // of another (e.g., `/envited-x/` vs `/envited-x/hdmap/`).
+      let bestName: string | undefined
+      let bestLen = 0
+      for (const [name, desc] of domains) {
+        if (iri.startsWith(desc.namespace) && desc.namespace.length > bestLen) {
+          bestName = name
+          bestLen = desc.namespace.length
+        }
+      }
+      return bestName
+    },
+    getAllNamespaces(): Set<string> {
+      const ns = new Set<string>()
+      for (const desc of domains.values()) {
+        ns.add(desc.namespace)
+        for (const v of Object.values(desc.declaredPrefixes)) {
+          ns.add(v)
+        }
+      }
+      return ns
     },
   }
 

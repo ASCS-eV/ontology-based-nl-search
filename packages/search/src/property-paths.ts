@@ -26,6 +26,7 @@
  * @see https://www.w3.org/TR/shacl/#PropertyShape — SHACL PropertyShape
  */
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
+import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
@@ -65,143 +66,147 @@ export interface PropertyPath {
   steps: PathStep[]
 }
 
-/** Raw `(parentClass, predicate, childShape)` edge from the schema. */
-interface RawEdge {
-  parentClass: string
-  predicate: string
-  childShape: string
-}
-
 /** Local-name extraction (after last `/` or `#`). */
 function extractLocalName(iri: string): string {
   const idx = Math.max(iri.lastIndexOf('#'), iri.lastIndexOf('/'))
   return idx >= 0 ? iri.substring(idx + 1) : iri
 }
 
-/** Extract the ENVITED-X-style domain segment from an IRI. */
-function extractDomain(iri: string): string {
-  const match = iri.match(/\/([^/]+)\/v\d+\//)
+/** Extract the domain name for an IRI using registry or path convention. */
+function extractDomain(iri: string, registry?: DomainRegistry): string {
+  if (registry) {
+    return registry.domainForIri(iri) ?? ''
+  }
+  const match = iri.match(new RegExp('/([^/]+)/v\\d+/'))
   return match?.[1] ?? ''
 }
 
-/**
- * Query every shape-to-shape edge: each property shape that has a
- * `sh:node` target (directly OR via an `sh:or` disjunction list)
- * contributes one edge per child shape.
- *
- * The `sh:or` branch matters because the workspace ontology declares
- * union wrappers like `hdmap:ContentOrOddSceneryShape` — anonymous
- * shapes with no `sh:targetClass` of their own. The next query
- * (`queryShapeTargets`) resolves such wrappers down to a concrete
- * target class.
- *
- * **Implementation note**: run as two separate queries instead of one
- * `UNION`. Oxigraph WASM crashes (`RuntimeError: unreachable`) when a
- * SPARQL `UNION` is combined with a property-path `*` star in the
- * same query — the schema-queries module documents the same workaround
- * for cross-domain reference discovery.
- */
-async function queryShapeEdges(store: SparqlStore): Promise<RawEdge[]> {
-  const directSparql = `
-    ${sparqlPrefixes('sh')}
-
-    SELECT DISTINCT ?parentClass ?predicate ?childShape WHERE {
-      GRAPH <${SCHEMA_GRAPH}> {
-        ?parentShape sh:targetClass ?parentClass .
-        ?parentShape sh:property ?propShape .
-        ?propShape sh:path ?predicate .
-        ?propShape sh:node ?childShape .
-        FILTER(isIRI(?predicate))
-      }
-    }
-  `
-
-  const orListSparql = `
-    ${sparqlPrefixes('sh', 'rdf')}
-
-    SELECT DISTINCT ?parentClass ?predicate ?childShape WHERE {
-      GRAPH <${SCHEMA_GRAPH}> {
-        ?parentShape sh:targetClass ?parentClass .
-        ?parentShape sh:property ?propShape .
-        ?propShape sh:path ?predicate .
-        ?propShape sh:or ?orList .
-        ?orList rdf:rest*/rdf:first ?orItem .
-        ?orItem sh:node ?childShape .
-        FILTER(isIRI(?predicate))
-      }
-    }
-  `
-
-  const [direct, orList] = await Promise.all([store.query(directSparql), store.query(orListSparql)])
-  const edges: RawEdge[] = []
-  const seen = new Set<string>()
-  for (const result of [direct, orList]) {
-    for (const row of result.results.bindings) {
-      const parentClass = row['parentClass']?.value
-      const predicate = row['predicate']?.value
-      const childShape = row['childShape']?.value
-      if (!parentClass || !predicate || !childShape) continue
-      const key = `${parentClass}|${predicate}|${childShape}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      edges.push({ parentClass, predicate, childShape })
-    }
-  }
-  return edges
+/** Resolved edge: parent class → predicate → child class (target classes, not shapes). */
+interface ResolvedEdge {
+  parentClass: string
+  predicate: string
+  childClass: string
 }
 
 /**
- * Map every shape IRI to the set of target classes it represents.
+ * Query shape-to-shape edges and resolve them to
+ * (parentClass, predicate, childClass) triples.
  *
- * Concrete shapes contribute one entry (`shape → its sh:targetClass`).
- * Union wrappers (`shape sh:or (... [sh:node X] ...)`) collapse to
- * the target classes of their alternatives — so an edge that lands
- * on a wrapper can be resolved to the same set of leaf shapes the
- * wrapper would have validated against.
+ * Uses two queries without rdf:rest star property paths (Oxigraph WASM
+ * crashes with RuntimeError on UNION + property-path-star even in 0.5.x).
+ * Instead, sh:or lists are traversed by querying direct rdf:first/rdf:rest
+ * links to a bounded depth (RDF lists in SHACL shapes are short).
  */
-async function queryShapeTargets(store: SparqlStore): Promise<Map<string, string[]>> {
-  // Same Oxigraph-WASM UNION+`*` crash workaround as queryShapeEdges:
-  // run direct and `sh:or`-list cases as separate queries.
-  const directSparql = `
-    ${sparqlPrefixes('sh')}
+async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEdge[]> {
+  // Step 1: Get edges from parentClass → predicate → childShape
+  // Handles both direct sh:node and sh:or disjunction (bounded list depth)
+  const edgeSparql = `
+    ${sparqlPrefixes('sh', 'rdf')}
 
-    SELECT DISTINCT ?shape ?targetClass WHERE {
+    SELECT DISTINCT ?parentClass ?predicate ?childShape WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
-        ?shape sh:targetClass ?targetClass .
-        FILTER(isIRI(?targetClass))
+        ?parentShape sh:targetClass ?parentClass .
+        ?parentShape sh:property ?propShape .
+        ?propShape sh:path ?predicate .
+        FILTER(isIRI(?predicate))
+
+        {
+          ?propShape sh:node ?childShape .
+        } UNION {
+          ?propShape sh:or ?list .
+          ?list rdf:first ?item .
+          ?item sh:node ?childShape .
+        } UNION {
+          ?propShape sh:or ?list .
+          ?list rdf:rest ?r1 .
+          ?r1 rdf:first ?item .
+          ?item sh:node ?childShape .
+        } UNION {
+          ?propShape sh:or ?list .
+          ?list rdf:rest ?r1 . ?r1 rdf:rest ?r2 .
+          ?r2 rdf:first ?item .
+          ?item sh:node ?childShape .
+        } UNION {
+          ?propShape sh:or ?list .
+          ?list rdf:rest ?r1 . ?r1 rdf:rest ?r2 . ?r2 rdf:rest ?r3 .
+          ?r3 rdf:first ?item .
+          ?item sh:node ?childShape .
+        }
       }
     }
   `
 
-  const orListSparql = `
+  // Step 2: Resolve shapes to their target classes (same bounded-depth pattern)
+  const targetSparql = `
     ${sparqlPrefixes('sh', 'rdf')}
 
     SELECT DISTINCT ?shape ?targetClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
-        ?shape sh:or ?orList .
-        ?orList rdf:rest*/rdf:first ?orItem .
-        ?orItem sh:node ?nested .
-        ?nested sh:targetClass ?targetClass .
+        {
+          ?shape sh:targetClass ?targetClass .
+        } UNION {
+          ?shape sh:or ?list .
+          ?list rdf:first ?item .
+          ?item sh:node ?inner .
+          ?inner sh:targetClass ?targetClass .
+        } UNION {
+          ?shape sh:or ?list .
+          ?list rdf:rest ?r1 .
+          ?r1 rdf:first ?item .
+          ?item sh:node ?inner .
+          ?inner sh:targetClass ?targetClass .
+        } UNION {
+          ?shape sh:or ?list .
+          ?list rdf:rest ?r1 . ?r1 rdf:rest ?r2 .
+          ?r2 rdf:first ?item .
+          ?item sh:node ?inner .
+          ?inner sh:targetClass ?targetClass .
+        } UNION {
+          ?shape sh:or ?list .
+          ?list rdf:rest ?r1 . ?r1 rdf:rest ?r2 . ?r2 rdf:rest ?r3 .
+          ?r3 rdf:first ?item .
+          ?item sh:node ?inner .
+          ?inner sh:targetClass ?targetClass .
+        }
         FILTER(isIRI(?targetClass))
       }
     }
   `
 
-  const [direct, orList] = await Promise.all([store.query(directSparql), store.query(orListSparql)])
-  const out = new Map<string, string[]>()
-  for (const result of [direct, orList]) {
-    for (const row of result.results.bindings) {
-      const shape = row['shape']?.value
-      const targetClass = row['targetClass']?.value
-      if (!shape || !targetClass) continue
-      const existing = out.get(shape) ?? []
-      if (!existing.includes(targetClass)) {
-        existing.push(targetClass)
-        out.set(shape, existing)
-      }
+  const [edgeResult, targetResult] = await Promise.all([
+    store.query(edgeSparql),
+    store.query(targetSparql),
+  ])
+
+  // Build shape → targetClass[] lookup
+  const shapeTargets = new Map<string, string[]>()
+  for (const row of targetResult.results.bindings) {
+    const shape = row['shape']?.value
+    const targetClass = row['targetClass']?.value
+    if (!shape || !targetClass) continue
+    const list = shapeTargets.get(shape) ?? []
+    list.push(targetClass)
+    shapeTargets.set(shape, list)
+  }
+
+  // Resolve edges
+  const edges: ResolvedEdge[] = []
+  const seen = new Set<string>()
+  for (const row of edgeResult.results.bindings) {
+    const parentClass = row['parentClass']?.value
+    const predicate = row['predicate']?.value
+    const childShape = row['childShape']?.value
+    if (!parentClass || !predicate || !childShape) continue
+
+    const targets = shapeTargets.get(childShape) ?? []
+    for (const childClass of targets) {
+      const key = `${parentClass}|${predicate}|${childClass}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      edges.push({ parentClass, predicate, childClass })
     }
   }
-  return out
+  return edges
 }
 
 /**
@@ -297,38 +302,33 @@ function pathStepsTo(
  * Discover the predicate chain from every asset class to every leaf
  * property declared in the schema graph.
  *
- * Assumes the schema has already been loaded into the configured
- * SCHEMA_GRAPH (the api app's warmup phase does this).
+ * Uses a single SPARQL query (`queryResolvedEdges`) to get the fully
+ * resolved class-to-class edge graph, then BFS from each asset class
+ * to reconstruct predicate paths. BFS is needed because SPARQL 1.1
+ * property paths (`*`, `+`) can test reachability but cannot bind
+ * intermediate predicates along the way.
  *
- * Limitations of this initial (21a) version:
- *   - Resolves `sh:or` disjunctions one level deep; deeper nesting
- *     would need a recursive walk.
- *   - Picks one path per (asset, leaf) pair via BFS; if the schema
- *     has multiple parallel paths, only the shortest is emitted.
- *   - Does not yet handle `sh:and` conjunctions or `sh:property`
- *     inheritance.
+ * Picks one path per (asset, leaf) pair via BFS; if the schema has
+ * multiple parallel paths, only the shortest is emitted.
  */
-export async function buildPropertyPaths(store: SparqlStore): Promise<PropertyPath[]> {
-  const [edges, shapeTargets, leaves, assetDomainRows] = await Promise.all([
-    queryShapeEdges(store),
-    queryShapeTargets(store),
+export async function buildPropertyPaths(
+  store: SparqlStore,
+  registry?: DomainRegistry
+): Promise<PropertyPath[]> {
+  const [resolvedEdges, leaves, assetDomainRows] = await Promise.all([
+    queryResolvedEdges(store),
     queryLeafProperties(store),
-    queryAssetDomains(store),
+    queryAssetDomains(store, registry),
   ])
   const assetClasses = assetDomainRows.map((row) => row.assetClass)
 
-  // Build the forward edge graph: parentClass → [(predicate, childClass), ...]
-  // Each raw edge points at a shape; the shape may resolve to multiple
-  // target classes (union wrappers). One forward edge per resolved class.
+  // Build the forward edge graph directly from resolved edges
   const forwardEdges = new Map<string, { predicate: string; child: string }[]>()
-  for (const { parentClass, predicate, childShape } of edges) {
-    const childClasses = shapeTargets.get(childShape) ?? []
-    for (const child of childClasses) {
-      if (child === parentClass) continue // skip self-loops
-      const list = forwardEdges.get(parentClass) ?? []
-      list.push({ predicate, child })
-      forwardEdges.set(parentClass, list)
-    }
+  for (const { parentClass, predicate, childClass } of resolvedEdges) {
+    if (childClass === parentClass) continue // skip self-loops
+    const list = forwardEdges.get(parentClass) ?? []
+    list.push({ predicate, child: childClass })
+    forwardEdges.set(parentClass, list)
   }
 
   // For each asset class, walk forward and emit one PropertyPath per leaf
@@ -340,7 +340,7 @@ export async function buildPropertyPaths(store: SparqlStore): Promise<PropertyPa
       const steps = pathStepsTo(owningClass, predecessors, propertyIri)
       if (!steps) continue
       out.push({
-        domain: extractDomain(assetClass),
+        domain: extractDomain(assetClass, registry),
         propertyName: extractLocalName(propertyIri),
         propertyIri,
         assetClass,

@@ -8769,6 +8769,192 @@
           }
         ]
       }
+    },
+    {
+      "@id": "did:web:sensorworks.io:OSITrace:paris-motorway-051",
+      "@type": "ositrace:OSITrace",
+      "rdfs:label": {
+        "@value": "Paris Motorway OSI Trace",
+        "@language": "en"
+      },
+      "ositrace:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Paris Motorway OSI Trace",
+        "gx:description": "SensorView trace of motorway road in Paris, Ile-de-France.",
+        "gx:version": "3.7.0",
+        "gx:license": "MIT",
+        "gx:containsPII": false
+      },
+      "ositrace:hasDomainSpecification": {
+        "@type": "ositrace:DomainSpecification",
+        "ositrace:hasFormat": {
+          "@type": "ositrace:Format",
+          "ositrace:formatType": "ASAM OSI SensorView",
+          "ositrace:version": "3.7.0",
+          "ositrace:fileFormat": "MCAP",
+          "ositrace:compression": "lz4",
+          "ositrace:osiTraceFormatVersion": "1.0.0"
+        },
+        "ositrace:hasContent": {
+          "@type": "ositrace:Content",
+          "ositrace:roadTypes": "motorway",
+          "ositrace:laneTypes": ["driving", "shoulder"],
+          "ositrace:levelOfDetail": "car",
+          "ositrace:trafficDirection": "right-hand",
+          "ositrace:granularity": "object list"
+        },
+        "ositrace:hasQuantity": {
+          "@type": "ositrace:Quantity",
+          "ositrace:numberFrames": { "@value": "22000", "@type": "xsd:integer" },
+          "ositrace:numberOfChannels": { "@value": "3", "@type": "xsd:integer" }
+        },
+        "ositrace:hasQuality": {
+          "@type": "ositrace:Quality",
+          "ositrace:precision": { "@value": "0.005", "@type": "xsd:float" }
+        },
+        "ositrace:hasDataSource": {
+          "@type": "ositrace:DataSource",
+          "ositrace:usedDataSources": "lidar",
+          "ositrace:measurementSystem": "Vehicle Sensor Rig"
+        },
+        "ositrace:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "FR",
+            "georeference:state": "FR-IDF",
+            "georeference:region": "Ile-de-France",
+            "georeference:city": "Paris"
+          }
+        }
+      },
+      "ositrace:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:avrecord.io:OSITrace:lyon-motorway-052",
+      "@type": "ositrace:OSITrace",
+      "rdfs:label": {
+        "@value": "Lyon Motorway OSI Trace",
+        "@language": "en"
+      },
+      "ositrace:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Lyon Motorway OSI Trace",
+        "gx:description": "GroundTruth trace of motorway road in Lyon, Auvergne-Rhone-Alpes.",
+        "gx:version": "2.5.0",
+        "gx:license": "CC-BY-4.0",
+        "gx:containsPII": false
+      },
+      "ositrace:hasDomainSpecification": {
+        "@type": "ositrace:DomainSpecification",
+        "ositrace:hasFormat": {
+          "@type": "ositrace:Format",
+          "ositrace:formatType": "ASAM OSI GroundTruth",
+          "ositrace:version": "3.6.0",
+          "ositrace:fileFormat": "Protobuf",
+          "ositrace:compression": "zstd",
+          "ositrace:osiTraceFormatVersion": "1.0.0"
+        },
+        "ositrace:hasContent": {
+          "@type": "ositrace:Content",
+          "ositrace:roadTypes": "motorway",
+          "ositrace:laneTypes": ["driving", "emergency"],
+          "ositrace:levelOfDetail": "truck",
+          "ositrace:trafficDirection": "right-hand",
+          "ositrace:granularity": "detection list"
+        },
+        "ositrace:hasQuantity": {
+          "@type": "ositrace:Quantity",
+          "ositrace:numberFrames": { "@value": "18500", "@type": "xsd:integer" },
+          "ositrace:numberOfChannels": { "@value": "2", "@type": "xsd:integer" }
+        },
+        "ositrace:hasQuality": {
+          "@type": "ositrace:Quality",
+          "ositrace:precision": { "@value": "0.01", "@type": "xsd:float" }
+        },
+        "ositrace:hasDataSource": {
+          "@type": "ositrace:DataSource",
+          "ositrace:usedDataSources": "radar",
+          "ositrace:measurementSystem": "Highway Test Vehicle"
+        },
+        "ositrace:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "FR",
+            "georeference:state": "FR-ARA",
+            "georeference:region": "Auvergne-Rhone-Alpes",
+            "georeference:city": "Lyon"
+          }
+        }
+      },
+      "ositrace:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
+    },
+    {
+      "@id": "did:web:tracelab.eu:OSITrace:marseille-motorway-053",
+      "@type": "ositrace:OSITrace",
+      "rdfs:label": {
+        "@value": "Marseille Motorway OSI Trace",
+        "@language": "en"
+      },
+      "ositrace:hasResourceDescription": {
+        "@type": "envited-x:ResourceDescription",
+        "gx:name": "Marseille Motorway OSI Trace",
+        "gx:description": "SensorData trace of motorway road in Marseille, Provence-Alpes-Cote d'Azur.",
+        "gx:version": "4.0.1",
+        "gx:license": "Apache-2.0",
+        "gx:containsPII": false
+      },
+      "ositrace:hasDomainSpecification": {
+        "@type": "ositrace:DomainSpecification",
+        "ositrace:hasFormat": {
+          "@type": "ositrace:Format",
+          "ositrace:formatType": "ASAM OSI SensorData",
+          "ositrace:version": "3.7.0",
+          "ositrace:fileFormat": "MCAP",
+          "ositrace:compression": "lz4",
+          "ositrace:osiTraceFormatVersion": "1.1.0"
+        },
+        "ositrace:hasContent": {
+          "@type": "ositrace:Content",
+          "ositrace:roadTypes": "motorway",
+          "ositrace:laneTypes": ["driving", "entry"],
+          "ositrace:levelOfDetail": "car",
+          "ositrace:trafficDirection": "right-hand",
+          "ositrace:granularity": "raw data"
+        },
+        "ositrace:hasQuantity": {
+          "@type": "ositrace:Quantity",
+          "ositrace:numberFrames": { "@value": "31000", "@type": "xsd:integer" },
+          "ositrace:numberOfChannels": { "@value": "4", "@type": "xsd:integer" }
+        },
+        "ositrace:hasQuality": {
+          "@type": "ositrace:Quality",
+          "ositrace:precision": { "@value": "0.008", "@type": "xsd:float" }
+        },
+        "ositrace:hasDataSource": {
+          "@type": "ositrace:DataSource",
+          "ositrace:usedDataSources": "camera",
+          "ositrace:measurementSystem": "Autonomous Fleet Vehicle"
+        },
+        "ositrace:hasGeoreference": {
+          "@type": "georeference:Georeference",
+          "georeference:hasProjectLocation": {
+            "@type": "georeference:ProjectLocation",
+            "georeference:country": "FR",
+            "georeference:state": "FR-PAC",
+            "georeference:region": "Provence-Alpes-Cote d'Azur",
+            "georeference:city": "Marseille"
+          }
+        }
+      },
+      "ositrace:hasManifest": {
+        "@type": "manifest:Manifest"
+      }
     }
   ]
 }

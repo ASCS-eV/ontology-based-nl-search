@@ -6,7 +6,7 @@ import { z } from 'zod'
  *
  * Design: The schema mirrors SearchSlots directly — no conversion needed.
  * The LLM fills property names matching the ontology local names
- * (e.g., "roadTypes", "laneTypes", "formatType") as documented in skill.md.
+ * (from SHACL sh:path declarations) as documented in skill.md.
  */
 const slotSubmissionSchema = z.object({
   slots: z
@@ -38,12 +38,12 @@ const slotSubmissionSchema = z.object({
         .object({
           domain: z
             .string()
-            .describe('Domain of the referenced asset (e.g., "hdmap", "scenario", "ositrace")'),
+            .describe('Domain of the referenced asset (use domain names from the SHACL shapes)'),
           label: z.string().optional().describe('Optional label filter on the referenced asset'),
         })
         .optional()
         .describe(
-          'Cross-reference filter: find assets that reference another domain. Use when the user asks for assets "with a map", "where you also have the trace", "connected to scenarios", etc.'
+          'Cross-reference filter: find assets that reference another domain. Use when the user asks for assets connected to or referencing another asset type.'
         ),
     })
     .describe('Search slots: fill only properties where the user expressed intent'),

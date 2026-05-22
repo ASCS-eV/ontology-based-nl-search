@@ -1,6 +1,15 @@
-import { enforceSparqlPolicy } from '../policy.js'
+import { enforceSparqlPolicy, registerPolicyNamespaces, resetPolicyNamespaces } from '../policy.js'
 
 describe('enforceSparqlPolicy', () => {
+  // Register ontology namespaces so the test queries pass prefix validation.
+  // In production this is done during app warmup from the domain registry.
+  beforeAll(() => {
+    registerPolicyNamespaces(['https://w3id.org/ascs-ev/envited-x/'])
+  })
+  afterAll(() => {
+    resetPolicyNamespaces()
+  })
+
   const validSelect = `
     PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -89,5 +98,34 @@ describe('enforceSparqlPolicy', () => {
     const result = enforceSparqlPolicy('THIS IS NOT SPARQL')
     expect(result.allowed).toBe(false)
     expect(result.violations[0]).toContain('Parse error')
+  })
+
+  it('allows registered non-ENVITED-X ontology namespaces', () => {
+    registerPolicyNamespaces([
+      'https://w3id.org/ascs-ev/envited-x/',
+      'https://example.org/custom-ontology/v1/',
+    ])
+    const q = `
+      PREFIX custom: <https://example.org/custom-ontology/v1/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?name WHERE { ?x a custom:Asset ; rdfs:label ?name }
+    `
+    const result = enforceSparqlPolicy(q)
+    expect(result.allowed).toBe(true)
+    expect(result.violations).toHaveLength(0)
+  })
+
+  it('rejects ontology namespaces when none are registered', () => {
+    resetPolicyNamespaces()
+    const q = `
+      PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?name WHERE { ?x a hdmap:HdMap ; rdfs:label ?name }
+    `
+    const result = enforceSparqlPolicy(q)
+    expect(result.allowed).toBe(false)
+    expect(result.violations[0]).toContain('not in allowlist')
+    // Re-register for remaining tests
+    registerPolicyNamespaces(['https://w3id.org/ascs-ev/envited-x/'])
   })
 })

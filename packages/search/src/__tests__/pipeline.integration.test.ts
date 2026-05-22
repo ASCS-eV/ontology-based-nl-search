@@ -34,8 +34,9 @@
  * - Any UI behaviour (task 18).
  */
 
+import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { enforceSparqlPolicy } from '@ontology-search/sparql/policy'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 // Intra-package imports use relative paths because the package's exports
 // resolve to ./dist/index.js, which isn't built when CI runs tests
@@ -80,9 +81,18 @@ function realServiceWithMockedLlm(slots: SearchSlots): SearchService {
 }
 
 beforeAll(async () => {
+  // Register ontology namespaces in the policy (replaces hardcoded ENVITED_X_PATTERN)
+  const registry = await buildDomainRegistry()
+  const { registerPolicyNamespaces } = await import('@ontology-search/sparql/policy')
+  registerPolicyNamespaces(registry.getAllNamespaces())
   // Warm the store and downstream caches once; ~3s on first call.
   await getInitializedStore()
 }, 60_000)
+
+afterAll(async () => {
+  const { resetPolicyNamespaces } = await import('@ontology-search/sparql/policy')
+  resetPolicyNamespaces()
+})
 
 describe('SearchService — real pipeline integration', () => {
   /**
@@ -182,8 +192,8 @@ describe('SearchService — real pipeline integration', () => {
 
   /**
    * Location filtering takes the array-aware path introduced in
-   * PR #4. A single country must apply CONTAINS LCASE matching; an
-   * array must apply FILTER IN. Either path must return a finite
+   * PR #4. A single country must apply STR-based CONTAINS matching;
+   * an array must apply FILTER IN. Either path must return a finite
    * non-error result against the real data.
    */
   it('applies a location filter without producing a policy violation', async () => {
@@ -277,6 +287,14 @@ describe('SearchService — real pipeline integration', () => {
       },
       { domains: ['scenario', 'hdmap'], filters: { scenarioCategory: 'urban' }, ranges: {} },
       { domains: [], filters: {}, ranges: {} },
+      // Peer-domain UNION query
+      { domains: ['hdmap', 'ositrace'], filters: { roadTypes: 'motorway' }, ranges: {} },
+      {
+        domains: ['hdmap', 'ositrace'],
+        filters: { roadTypes: 'town' },
+        ranges: {},
+        location: { country: 'DE' },
+      },
     ]
 
     for (const slots of cases) {
@@ -329,5 +347,52 @@ describe('SearchService — real pipeline integration', () => {
     // With the hallucinated filter dropped the query matches the
     // unfiltered baseline (no real narrowing applied).
     expect(result.meta.matchCount).toBeGreaterThan(0)
+  }, 60_000)
+
+  /**
+   * Peer-domain UNION: when multiple non-hierarchical domains are
+   * selected (hdmap + ositrace), the compiler must generate a UNION
+   * query that searches BOTH domains independently. This was a bug
+   * where the compiler silently dropped ositrace from the query
+   * because it had no domain-specific constraints (they were shared).
+   */
+  it('generates UNION for peer domains and finds assets in both', async () => {
+    const result = await realServiceWithMockedLlm({
+      domains: ['hdmap', 'ositrace'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+      location: { country: 'FR' },
+    }).searchNl({ query: 'French motorway data' })
+
+    expect(result.execution.error).toBeUndefined()
+    expect(result.sparql).toContain('UNION')
+    expect(result.sparql).toContain('hdmap:HdMap')
+    expect(result.sparql).toContain('ositrace:OSITrace')
+    // Must find results from BOTH domains: 7 hdmap + 3 ositrace = 10
+    expect(result.meta.matchCount).toBeGreaterThanOrEqual(10)
+    // Verify results include both asset types
+    const assetIds = result.execution.results.map((r) => r.asset)
+    const hasHdmap = assetIds.some((id) => id?.includes('HdMap'))
+    const hasOsi = assetIds.some((id) => id?.includes('OSITrace'))
+    expect(hasHdmap).toBe(true)
+    expect(hasOsi).toBe(true)
+  }, 60_000)
+
+  /**
+   * Peer-domain UNION with an empty result: the UNION query structure
+   * must not cause an execution error even if zero results are returned
+   * (e.g., a country with no matching assets in either domain).
+   */
+  it('UNION query executes without error even with zero results', async () => {
+    const result = await realServiceWithMockedLlm({
+      domains: ['hdmap', 'ositrace'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+      location: { country: 'ZZ' }, // Non-existent country code
+    }).searchNl({ query: 'Fictional country motorway data' })
+
+    expect(result.execution.error).toBeUndefined()
+    expect(result.sparql).toContain('UNION')
+    expect(result.meta.matchCount).toBe(0)
   }, 60_000)
 })

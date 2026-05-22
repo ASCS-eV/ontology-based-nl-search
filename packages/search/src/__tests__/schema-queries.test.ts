@@ -1,3 +1,4 @@
+import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { describe, expect, it } from 'vitest'
 
 import { getInitializedStore } from '../init.js'
@@ -73,7 +74,8 @@ describe('schema-queries', () => {
   describe('queryAssetDomains', () => {
     it('discovers asset domains from rdfs:subClassOf hierarchy', async () => {
       const store = await getInitializedStore()
-      const domains = await queryAssetDomains(store)
+      const registry = await buildDomainRegistry()
+      const domains = await queryAssetDomains(store, registry)
 
       // Should find asset domains (SimulationAsset, SoftwareAsset, CodeAsset subclasses)
       expect(domains.length).toBeGreaterThan(0)
@@ -88,7 +90,8 @@ describe('schema-queries', () => {
 
     it('includes key simulation asset domains', async () => {
       const store = await getInitializedStore()
-      const domains = await queryAssetDomains(store)
+      const registry = await buildDomainRegistry()
+      const domains = await queryAssetDomains(store, registry)
 
       const domainNames = new Set(domains.map((d) => d.domainName))
 
@@ -100,7 +103,8 @@ describe('schema-queries', () => {
 
     it('excludes supporting ontologies (not asset subclasses)', async () => {
       const store = await getInitializedStore()
-      const domains = await queryAssetDomains(store)
+      const registry = await buildDomainRegistry()
+      const domains = await queryAssetDomains(store, registry)
 
       const domainNames = new Set(domains.map((d) => d.domainName))
 
@@ -111,7 +115,8 @@ describe('schema-queries', () => {
 
     it('returns unique domains', async () => {
       const store = await getInitializedStore()
-      const domains = await queryAssetDomains(store)
+      const registry = await buildDomainRegistry()
+      const domains = await queryAssetDomains(store, registry)
 
       const domainNames = domains.map((d) => d.domainName)
       const uniqueNames = new Set(domainNames)
@@ -123,7 +128,10 @@ describe('schema-queries', () => {
   describe('queryDomainReferences', () => {
     it('discovers domain reference relationships from SHACL shapes', async () => {
       const store = await getInitializedStore()
-      const refs = await queryDomainReferences(store)
+      const registry = await buildDomainRegistry()
+      const assetDomains = await queryAssetDomains(store, registry)
+      const knownAssetClasses = new Set(assetDomains.map((d) => d.assetClass))
+      const refs = await queryDomainReferences(store, registry, knownAssetClasses)
 
       expect(refs.length).toBeGreaterThan(0)
 
@@ -136,7 +144,10 @@ describe('schema-queries', () => {
 
     it('discovers scenario → hdmap reference', async () => {
       const store = await getInitializedStore()
-      const refs = await queryDomainReferences(store)
+      const registry = await buildDomainRegistry()
+      const assetDomains = await queryAssetDomains(store, registry)
+      const knownAssetClasses = new Set(assetDomains.map((d) => d.assetClass))
+      const refs = await queryDomainReferences(store, registry, knownAssetClasses)
 
       const hdmapRef = refs.find((r) => r.parentDomain === 'scenario' && r.childDomain === 'hdmap')
       expect(hdmapRef).toBeDefined()
@@ -144,7 +155,10 @@ describe('schema-queries', () => {
 
     it('discovers scenario → environment-model reference', async () => {
       const store = await getInitializedStore()
-      const refs = await queryDomainReferences(store)
+      const registry = await buildDomainRegistry()
+      const assetDomains = await queryAssetDomains(store, registry)
+      const knownAssetClasses = new Set(assetDomains.map((d) => d.assetClass))
+      const refs = await queryDomainReferences(store, registry, knownAssetClasses)
 
       const envRef = refs.find(
         (r) => r.parentDomain === 'scenario' && r.childDomain === 'environment-model'
@@ -154,7 +168,10 @@ describe('schema-queries', () => {
 
     it('returns distinct parent-child pairs', async () => {
       const store = await getInitializedStore()
-      const refs = await queryDomainReferences(store)
+      const registry = await buildDomainRegistry()
+      const assetDomains = await queryAssetDomains(store, registry)
+      const knownAssetClasses = new Set(assetDomains.map((d) => d.assetClass))
+      const refs = await queryDomainReferences(store, registry, knownAssetClasses)
 
       const keys = refs.map((r) => `${r.parentDomain}→${r.childDomain}`)
       const uniqueKeys = new Set(keys)
@@ -166,7 +183,8 @@ describe('schema-queries', () => {
   describe('queryPropertyShapeGroups', () => {
     it('classifies properties into shape groups from SHACL nesting', async () => {
       const store = await getInitializedStore()
-      const groups = await queryPropertyShapeGroups(store)
+      const registry = await buildDomainRegistry()
+      const groups = await queryPropertyShapeGroups(store, registry)
 
       expect(groups.length).toBeGreaterThan(0)
 
@@ -179,7 +197,8 @@ describe('schema-queries', () => {
 
     it('correctly classifies known hdmap properties', async () => {
       const store = await getInitializedStore()
-      const groups = await queryPropertyShapeGroups(store)
+      const registry = await buildDomainRegistry()
+      const groups = await queryPropertyShapeGroups(store, registry)
 
       const lookup = new Map(groups.map((g) => [`${g.localName}:${g.domain}`, g.shapeGroup]))
 

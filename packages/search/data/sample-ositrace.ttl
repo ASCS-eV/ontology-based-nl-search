@@ -2956,3 +2956,180 @@
     a manifest:Manifest
   ] .
 
+
+# --- OSI Trace 51: Paris motorway OSI Trace ---
+
+<did:web:sensorworks.io:OSITrace:paris-motorway-051> a ositrace:OSITrace ;
+  rdfs:label "Paris motorway OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Paris motorway OSI Trace" ;
+    gx:description "SensorView trace of motorway road in Paris, Ile-de-France" ;
+    gx:version "3.7.0" ;
+    gx:license "MIT" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorView" ;
+      ositrace:version "3.7.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "lz4" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "motorway" ;
+      ositrace:laneTypes "driving" , "shoulder" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "22000"^^xsd:integer ;
+      ositrace:numberOfChannels "3"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.005"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "lidar" ;
+      ositrace:measurementSystem "Vehicle Sensor Rig"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:state "FR-IDF" ;
+        georeference:region "Ile-de-France" ;
+        georeference:city "Paris"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 52: Lyon motorway OSI Trace ---
+
+<did:web:avrecord.io:OSITrace:lyon-motorway-052> a ositrace:OSITrace ;
+  rdfs:label "Lyon motorway OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Lyon motorway OSI Trace" ;
+    gx:description "GroundTruth trace of motorway road in Lyon, Auvergne-Rhone-Alpes" ;
+    gx:version "2.5.0" ;
+    gx:license "CC-BY-4.0" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI GroundTruth" ;
+      ositrace:version "3.5.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "zstd" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "motorway" ;
+      ositrace:laneTypes "driving" , "exit" ;
+      ositrace:levelOfDetail "truck" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "detection list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "18500"^^xsd:integer ;
+      ositrace:numberOfChannels "4"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.01"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "real-world recording" ;
+      ositrace:measurementSystem "dSpace AURELION"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:state "FR-ARA" ;
+        georeference:region "Auvergne-Rhone-Alpes" ;
+        georeference:city "Lyon"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .
+
+# --- OSI Trace 53: Marseille motorway OSI Trace ---
+
+<did:web:simtrace.io:OSITrace:marseille-motorway-053> a ositrace:OSITrace ;
+  rdfs:label "Marseille motorway OSI Trace"@en ;
+  ositrace:hasResourceDescription [
+    a envited-x:ResourceDescription ;
+    gx:name "Marseille motorway OSI Trace" ;
+    gx:description "SensorData trace of motorway road in Marseille, Provence-Alpes-Cote-d-Azur" ;
+    gx:version "1.0.0" ;
+    gx:license "proprietary" ;
+    gx:containsPII false
+  ] ;
+  ositrace:hasDomainSpecification [
+    a ositrace:DomainSpecification ;
+    ositrace:hasFormat [
+      a ositrace:Format ;
+      ositrace:formatType "ASAM OSI SensorData" ;
+      ositrace:version "3.6.0" ;
+      ositrace:fileFormat "MCAP" ;
+      ositrace:compression "uncompressed" ;
+      ositrace:osiTraceFormatVersion "1.0.0"
+    ] ;
+    ositrace:hasContent [
+      a ositrace:Content ;
+      ositrace:roadTypes "motorway" ;
+      ositrace:laneTypes "driving" , "median" ;
+      ositrace:levelOfDetail "car" ;
+      ositrace:trafficDirection "right-hand" ;
+      ositrace:granularity "object list"
+    ] ;
+    ositrace:hasQuantity [
+      a ositrace:Quantity ;
+      ositrace:numberFrames "25000"^^xsd:integer ;
+      ositrace:numberOfChannels "2"^^xsd:integer
+    ] ;
+    ositrace:hasQuality [
+      a ositrace:Quality ;
+      ositrace:precision "0.02"^^xsd:float
+    ] ;
+    ositrace:hasDataSource [
+      a ositrace:DataSource ;
+      ositrace:usedDataSources "camera" ;
+      ositrace:measurementSystem "Mobile Mapping System"
+    ] ;
+    ositrace:hasGeoreference [
+      a georeference:Georeference ;
+      georeference:hasProjectLocation [
+        a georeference:ProjectLocation ;
+        georeference:country "FR" ;
+        georeference:state "FR-PAC" ;
+        georeference:region "Provence-Alpes-Cote-d-Azur" ;
+        georeference:city "Marseille"
+      ]
+    ]
+  ] ;
+  ositrace:hasManifest [
+    a manifest:Manifest
+  ] .

@@ -1,8 +1,21 @@
-import { enforceSparqlPolicy } from '@ontology-search/sparql/policy'
-import { vi } from 'vitest'
+import {
+  enforceSparqlPolicy,
+  registerPolicyNamespaces,
+  resetPolicyNamespaces,
+} from '@ontology-search/sparql/policy'
+import { afterAll, beforeAll, vi } from 'vitest'
 
+import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
 import { compileCountQuery, compileSlots, escapeSparqlLiteral } from '../compiler.js'
 import type { SearchSlots } from '../slots.js'
+
+// Register ontology namespaces so compiled queries pass policy validation
+beforeAll(() => {
+  registerPolicyNamespaces(['https://w3id.org/ascs-ev/envited-x/'])
+})
+afterAll(() => {
+  resetPolicyNamespaces()
+})
 
 // Mock the schema query functions to provide test data
 vi.mock('../schema-queries.js', () => ({
@@ -142,24 +155,49 @@ vi.mock('../property-paths.js', () => {
       { domain: 'scenario', propertyName: 'entityTypes', group: 'Content', assetClass: 'Scenario' },
       { domain: 'ositrace', propertyName: 'roadTypes', group: 'Content', assetClass: 'OSITrace' },
     ]
+  // Location properties — these go through a deeper path:
+  // asset → hasDomainSpecification → hasGeoreference → hasProjectLocation → leaf
+  const geoNs = 'https://w3id.org/ascs-ev/envited-x/georeference/v5/'
+  const locationProperties = [
+    { domain: 'hdmap', propertyName: 'country', assetClass: 'HDMap' },
+    { domain: 'hdmap', propertyName: 'city', assetClass: 'HDMap' },
+    { domain: 'hdmap', propertyName: 'state', assetClass: 'HDMap' },
+    { domain: 'hdmap', propertyName: 'region', assetClass: 'HDMap' },
+    { domain: 'scenario', propertyName: 'country', assetClass: 'Scenario' },
+    { domain: 'scenario', propertyName: 'city', assetClass: 'Scenario' },
+  ]
   const ns = (domain: string) => `https://w3id.org/ascs-ev/envited-x/${domain}/v6/`
+  const regularPaths = properties.map(({ domain, propertyName, group, assetClass }) => ({
+    domain,
+    propertyName,
+    propertyIri: ns(domain) + propertyName,
+    assetClass: ns(domain) + assetClass,
+    steps: [
+      {
+        predicate: ns(domain) + 'hasDomainSpecification',
+        intermediate: ns(domain) + 'DomainSpecification',
+      },
+      { predicate: ns(domain) + `has${group}`, intermediate: ns(domain) + group },
+      { predicate: ns(domain) + propertyName },
+    ],
+  }))
+  const locationPaths = locationProperties.map(({ domain, propertyName, assetClass }) => ({
+    domain,
+    propertyName,
+    propertyIri: geoNs + propertyName,
+    assetClass: ns(domain) + assetClass,
+    steps: [
+      {
+        predicate: ns(domain) + 'hasDomainSpecification',
+        intermediate: ns(domain) + 'DomainSpecification',
+      },
+      { predicate: ns(domain) + 'hasGeoreference', intermediate: geoNs + 'Georeference' },
+      { predicate: geoNs + 'hasProjectLocation', intermediate: geoNs + 'ProjectLocation' },
+      { predicate: geoNs + propertyName },
+    ],
+  }))
   return {
-    buildPropertyPaths: vi.fn().mockResolvedValue(
-      properties.map(({ domain, propertyName, group, assetClass }) => ({
-        domain,
-        propertyName,
-        propertyIri: ns(domain) + propertyName,
-        assetClass: ns(domain) + assetClass,
-        steps: [
-          {
-            predicate: ns(domain) + 'hasDomainSpecification',
-            intermediate: ns(domain) + 'DomainSpecification',
-          },
-          { predicate: ns(domain) + `has${group}`, intermediate: ns(domain) + group },
-          { predicate: ns(domain) + propertyName },
-        ],
-      }))
-    ),
+    buildPropertyPaths: vi.fn().mockResolvedValue([...regularPaths, ...locationPaths]),
   }
 })
 
@@ -183,10 +221,53 @@ describe('compileSlots', () => {
       location: { country: 'DE' },
     }
     const sparql = await compileSlots(slots)
-    expect(sparql).toContain('FILTER(CONTAINS(LCASE(?country), "de"))')
+    expect(sparql).toContain('FILTER(CONTAINS(LCASE(STR(?country)), "de"))')
     expect(sparql).toContain('georeference:country ?country')
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
+  })
+
+  it('matches literal and IRI location values with the same STR-based country filter', async () => {
+    const sparql = await compileSlots({
+      domains: ['hdmap'],
+      filters: {},
+      ranges: {},
+      location: { country: 'FR' },
+    })
+
+    const store = new OxigraphStore()
+    await store.loadTurtle(`
+        @prefix hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/> .
+        @prefix georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/> .
+        @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+        <http://example.org/assets/literal-country> a hdmap:HdMap ;
+          rdfs:label "Literal Country" ;
+          hdmap:hasDomainSpecification [
+            hdmap:hasGeoreference [
+              georeference:hasProjectLocation [
+                georeference:country "FR"
+              ]
+            ]
+          ] .
+
+        <http://example.org/assets/iri-country> a hdmap:HdMap ;
+          rdfs:label "IRI Country" ;
+          hdmap:hasDomainSpecification [
+            hdmap:hasGeoreference [
+              georeference:hasProjectLocation [
+                georeference:country <http://example.org/country/FR>
+              ]
+            ]
+          ] .
+      `)
+
+    const results = await store.query(sparql)
+    expect(results.results.bindings).toHaveLength(2)
+    expect(results.results.bindings.map((binding) => binding.asset!.value).sort()).toEqual([
+      'http://example.org/assets/iri-country',
+      'http://example.org/assets/literal-country',
+    ])
   })
 
   it('filters by multi-country location with IN clause (region expansion)', async () => {
@@ -200,9 +281,8 @@ describe('compileSlots', () => {
       location: { country: ['DE', 'FR', 'IT'] },
     }
     const sparql = await compileSlots(slots)
-    expect(sparql).toContain('FILTER(?country IN ("DE", "FR", "IT"))')
-    // Must NOT fall back to CONTAINS/LCASE for arrays.
-    expect(sparql).not.toContain('CONTAINS(LCASE(?country)')
+    expect(sparql).toContain('FILTER(LCASE(STR(?country)) IN ("de", "fr", "it"))')
+    expect(sparql).not.toContain('CONTAINS(LCASE(STR(?country))')
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
   })
@@ -215,7 +295,7 @@ describe('compileSlots', () => {
       location: { country: ['DE'] },
     }
     const sparql = await compileSlots(slots)
-    expect(sparql).toContain('FILTER(?country = "DE")')
+    expect(sparql).toContain('FILTER(LCASE(STR(?country)) = "de")')
   })
 
   /**
@@ -296,7 +376,7 @@ describe('compileSlots', () => {
       location: { country: 'DE' },
     }
     const sparql = await compileSlots(slots)
-    expect(sparql).toContain('FILTER(CONTAINS(LCASE(?country), "de"))')
+    expect(sparql).toContain('FILTER(CONTAINS(LCASE(STR(?country)), "de"))')
     expect(sparql).toContain('FILTER(?roadTypes = "motorway")')
     expect(sparql).toContain('FILTER(?formatType = "ASAM OpenDRIVE")')
     const policy = enforceSparqlPolicy(sparql)
@@ -316,7 +396,7 @@ describe('compileSlots', () => {
     expect(policy.allowed).toBe(true)
   })
 
-  it('handles city with case-insensitive CONTAINS', async () => {
+  it('handles city with STR-based CONTAINS', async () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],
       filters: {},
@@ -324,7 +404,7 @@ describe('compileSlots', () => {
       location: { city: 'Munich' },
     }
     const sparql = await compileSlots(slots)
-    expect(sparql).toContain('FILTER(CONTAINS(LCASE(?city), "munich"))')
+    expect(sparql).toContain('FILTER(CONTAINS(LCASE(STR(?city)), "munich"))')
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
   })
@@ -451,6 +531,62 @@ describe('compileSlots', () => {
     const sparql = await compileSlots(slots)
     expect(sparql).toContain('manifest:iri ?refAsset')
     expect(sparql).toContain('CONTAINS(LCASE(?refName), "karlsruhe")')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+})
+
+describe('peer-domain UNION queries', () => {
+  it('generates UNION for peer domains with shared filters (hdmap + ositrace)', async () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap', 'ositrace'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+    }
+    const sparql = await compileSlots(slots)
+    // Should use UNION, not a JOIN via manifest
+    expect(sparql).toContain('UNION')
+    // Both domains should have their own arm
+    expect(sparql).toContain('hdmap:HdMap')
+    expect(sparql).toContain('ositrace:OSITrace')
+    // roadTypes filter should appear in both arms
+    const roadTypesMatches = sparql.match(/roadTypes/g)
+    expect(roadTypesMatches?.length).toBeGreaterThanOrEqual(2)
+    // Should NOT have manifest join (peer domains, not parent-child)
+    expect(sparql).not.toContain('manifest:hasReferencedArtifacts')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+
+  it('generates UNION with location filter applied to both arms', async () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap', 'ositrace'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+      location: { country: 'FR' },
+    }
+    const sparql = await compileSlots(slots)
+    expect(sparql).toContain('UNION')
+    expect(sparql).toContain('hdmap:HdMap')
+    expect(sparql).toContain('ositrace:OSITrace')
+    // Location filter should be present (in one or both arms)
+    expect(sparql).toContain('country')
+    expect(sparql.toLowerCase()).toContain('fr')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+
+  it('still uses hierarchy JOIN for scenario + hdmap', async () => {
+    const slots: SearchSlots = {
+      domains: ['scenario', 'hdmap'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+    }
+    const sparql = await compileSlots(slots)
+    // scenario references hdmap — should be a JOIN, not UNION
+    expect(sparql).not.toContain('UNION')
+    expect(sparql).toContain('scenario:Scenario')
+    expect(sparql).toContain('manifest:hasReferencedArtifacts')
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
   })

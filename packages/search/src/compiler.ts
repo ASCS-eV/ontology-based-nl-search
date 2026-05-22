@@ -39,6 +39,7 @@ import {
   queryRange2DProperties,
 } from './schema-queries.js'
 import type { SearchSlots } from './slots.js'
+import { validateSparql } from './sparql-validator.js'
 
 /** Property info from ontology - supports properties existing in multiple domains */
 interface CompilerProperty {
@@ -92,11 +93,18 @@ function assembleQuery(
   const selectClause = `SELECT ${vars.join(' ')}`
   const whereBody = [...patterns, ...optionals, ...filters].join('\n  ')
 
-  return `${prefixes}
-${selectClause} WHERE {
-  ${whereBody}
-}
-LIMIT ${limit}`
+  const query = `${prefixes}\n${selectClause} WHERE {\n  ${whereBody}\n}\nLIMIT ${limit}`
+
+  // Post-assembly validation: catch syntax errors and W3C compliance issues
+  const validation = validateSparql(query)
+  if (!validation.valid) {
+    console.error('[compiler] Generated SPARQL has errors:', validation.errors)
+  }
+  if (validation.warnings.length > 0) {
+    console.warn('[compiler] SPARQL warnings:', validation.warnings)
+  }
+
+  return query
 }
 
 /** Cached compiler vocabulary (ontology doesn't change at runtime) */
@@ -107,11 +115,12 @@ async function getCompilerVocab(): Promise<CompilerVocab> {
   if (cachedCompilerVocab) return cachedCompilerVocab
 
   const store = await getInitializedStore()
+  const registry = await buildDomainRegistry()
   const [propertyDomains, shapeGroupInfos, range2DInfos, propertyPaths] = await Promise.all([
-    queryPropertyDomains(store),
-    queryPropertyShapeGroups(store),
-    queryRange2DProperties(store),
-    buildPropertyPaths(store),
+    queryPropertyDomains(store, registry),
+    queryPropertyShapeGroups(store, registry),
+    queryRange2DProperties(store, registry),
+    buildPropertyPaths(store, registry),
   ])
 
   const properties = new Map<string, CompilerProperty>()
@@ -163,7 +172,8 @@ export async function getAssetDomains(): Promise<Set<string>> {
   if (cachedAssetDomains) return cachedAssetDomains
 
   const store = await getInitializedStore()
-  const domainInfos = await queryAssetDomains(store)
+  const registry = await buildDomainRegistry()
+  const domainInfos = await queryAssetDomains(store, registry)
   cachedAssetDomains = new Set(domainInfos.map((d) => d.domainName))
 
   if (cachedAssetDomains.size === 0) {
@@ -181,7 +191,13 @@ async function getDomainReferences(): Promise<Map<string, Set<string>>> {
   if (cachedDomainReferences) return cachedDomainReferences
 
   const store = await getInitializedStore()
-  const refs = await queryDomainReferences(store)
+  const registry = await buildDomainRegistry()
+
+  // Get asset domain infos to filter references to known asset classes
+  const assetDomainInfos = await queryAssetDomains(store, registry)
+  const knownAssetClasses = new Set(assetDomainInfos.map((d) => d.assetClass))
+
+  const refs = await queryDomainReferences(store, registry, knownAssetClasses)
   cachedDomainReferences = new Map()
 
   for (const { parentDomain, childDomain } of refs) {
@@ -197,24 +213,136 @@ async function getDomainReferences(): Promise<Map<string, Set<string>>> {
 }
 
 /**
+ * Detect whether the given domains have a parent-child referencing
+ * relationship (e.g., scenario references hdmap). Returns true only when
+ * at least one domain in the set references another domain in the set.
+ */
+function detectHierarchy(domains: string[], domainRefs: Map<string, Set<string>>): boolean {
+  const domainSet = new Set(domains)
+  for (const [parent, children] of domainRefs.entries()) {
+    if (domainSet.has(parent)) {
+      for (const child of children) {
+        if (domainSet.has(child)) return true
+      }
+    }
+  }
+  return false
+}
+
+/**
+ * Compile a UNION query for peer domains — independent asset types that
+ * share similar properties (e.g., hdmap + ositrace both have roadTypes).
+ *
+ * Generates one UNION arm per domain, each with the domain-specific
+ * patterns, filters, and location constraints. Shared FILTER clauses
+ * (location, license) are placed outside the UNION.
+ */
+async function compilePeerDomainUnion(
+  slots: SearchSlots,
+  domains: string[],
+  filtersByDomain: Record<string, Record<string, string | string[]>>,
+  rangesByDomain: Record<string, Record<string, { min?: number; max?: number }>>,
+  registry: DomainRegistry,
+  vocabIndex: CompilerVocab
+): Promise<string> {
+  const prefixDomains = new Set<string>()
+  const selectVars = new Set(['?asset', '?name'])
+  const outerFilters: string[] = []
+
+  // Build UNION arms
+  const unionArms: string[] = []
+
+  for (const domainName of domains) {
+    const domain = registry.domains.get(domainName)
+    if (!domain) continue
+
+    prefixDomains.add(domainName)
+
+    const armPatterns: string[] = []
+    const armFilters: string[] = []
+    const armOptionals: string[] = []
+    const armSelectVars = new Set<string>()
+
+    // Base pattern — asset type + label
+    armPatterns.push(`?asset a ${domain.targetClass} ;`)
+    armPatterns.push('  rdfs:label ?name .')
+
+    // Build domain-specific patterns
+    const domainFilters = filtersByDomain[domainName] || {}
+    const domainRanges = rangesByDomain[domainName] || {}
+    const foreignDomains = buildDomainPatterns(
+      domainName,
+      domain,
+      domainFilters,
+      domainRanges,
+      slots.location,
+      armPatterns,
+      armFilters,
+      armOptionals,
+      armSelectVars,
+      vocabIndex,
+      registry,
+      '?asset',
+      '?domSpec'
+    )
+    for (const fd of foreignDomains) prefixDomains.add(fd)
+    for (const v of armSelectVars) selectVars.add(v)
+
+    // Combine arm into a single block
+    const armBody = [...armPatterns, ...armOptionals, ...armFilters]
+      .map((line) => `    ${line}`)
+      .join('\n')
+    unionArms.push(`  {\n${armBody}\n  }`)
+  }
+
+  // License (shared across all domains, placed outside UNION)
+  if (slots.license) {
+    const firstDomain = registry.domains.get(domains[0]!)
+    if (firstDomain) {
+      outerFilters.push(`OPTIONAL {
+    ?asset ${firstDomain.prefix}:hasResourceDescription ?resDesc .
+    ?resDesc gx:license ?license .
+  }`)
+      outerFilters.push(`FILTER(?license = "${escapeSparqlLiteral(slots.license)}")`)
+      selectVars.add('?license')
+      prefixDomains.add(domains[0]!)
+    }
+  }
+
+  // Build the UNION body
+  const unionBody = unionArms.join('\n  UNION\n')
+  const patterns = [unionBody]
+  const optionals: string[] = []
+
+  // Generate prefixes
+  const prefixes = buildPrefixes(registry, [...prefixDomains])
+
+  return assembleQuery(prefixes, selectVars, patterns, optionals, outerFilters)
+}
+
+/**
  * Compile structured search slots into a valid SPARQL SELECT query.
  * Resolves the target domain(s) from the registry and builds
  * appropriate graph patterns.
  *
- * When filters span multiple domains, identifies the primary (composite)
+ * When multiple peer domains are selected (no parent-child reference),
+ * generates a UNION query searching all domains independently.
+ *
+ * When filters span domains with a referencing hierarchy (e.g.,
+ * scenario referencing hdmap), identifies the primary (composite)
  * domain and generates a join via manifest:hasReferencedArtifacts.
  *
  * When no domain is specified and no filters exist, searches across ALL
- * asset types using envited-x:SimulationAsset superclass.
+ * asset types using discovered asset domain classes.
  */
 export async function compileSlots(slots: SearchSlots): Promise<string> {
   const registry = await buildDomainRegistry()
   const vocabIndex = await getCompilerVocab()
 
-  // When no domain is specified, use cross-domain search via SimulationAsset superclass
+  // When no domain is specified, use cross-domain search
   if (slots.domains.length === 0) {
     const assetDomains = await getAssetDomains()
-    return compileCrossDomainQuery(slots, registry, assetDomains)
+    return compileCrossDomainQuery(slots, registry, assetDomains, vocabIndex)
   }
 
   const detectedDomains = slots.domains
@@ -224,6 +352,24 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
 
   // Partition ranges by domain
   const rangesByDomain = partitionRangesByDomain(slots.ranges, detectedDomains, vocabIndex)
+
+  // Determine whether the domains are peers (no parent-child relationship)
+  // or have a referencing hierarchy. Peer domains get a UNION query; parent-child
+  // domains get a JOIN via manifest:hasReferencedArtifacts.
+  const domainRefs = await getDomainReferences()
+  const hasHierarchy = detectedDomains.length > 1 && detectHierarchy(detectedDomains, domainRefs)
+
+  if (!hasHierarchy && detectedDomains.length > 1) {
+    // Peer domains: generate UNION query that searches all domains independently
+    return compilePeerDomainUnion(
+      slots,
+      detectedDomains,
+      filtersByDomain,
+      rangesByDomain,
+      registry,
+      vocabIndex
+    )
+  }
 
   // Determine primary domain — the one that references others, or the single domain
   const primaryDomain = await resolvePrimaryDomain(detectedDomains, filtersByDomain)
@@ -243,6 +389,11 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     prefixDomains.add(d)
   }
   for (const d of Object.keys(rangesByDomain)) {
+    prefixDomains.add(d)
+  }
+  // Include all user-selected domains so their prefixes are available for
+  // pattern generation. Unused prefixes are stripped in assembleQuery().
+  for (const d of detectedDomains) {
     prefixDomains.add(d)
   }
 
@@ -275,18 +426,53 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   )
   for (const fd of primaryForeign) prefixDomains.add(fd)
 
-  // Build cross-domain joins for referenced domains
+  // Build cross-domain joins for referenced domains.
+  // Only include domains that have actual filters, ranges, or will receive
+  // a delegated location filter. Domains selected by the LLM but without
+  // any constraint are skipped to avoid over-constraining the query with
+  // mandatory JOINs that eliminate results.
   const allReferencedDomains = new Set([
     ...Object.keys(filtersByDomain).filter((d) => d !== primaryDomain),
     ...Object.keys(rangesByDomain).filter((d) => d !== primaryDomain),
+    ...detectedDomains.filter((d) => d !== primaryDomain),
   ])
+
+  // Determine whether the primary domain can handle location filters.
+  // If not, delegate location to the first referenced domain that has
+  // location properties — avoids silently dropping the filter entirely.
+  const hasLocationSlots =
+    !!slots.location &&
+    (isNonEmpty(slots.location.country) ||
+      isNonEmpty(slots.location.state) ||
+      isNonEmpty(slots.location.region) ||
+      isNonEmpty(slots.location.city))
+  const primaryHasLocation = hasLocationSlots && vocabIndex.paths.has(`${primaryDomain}:country`)
+  let _locationDelegated = primaryHasLocation
+
+  // Pre-scan: determine which referenced domain will receive delegated location
+  let locationDelegateDomain: string | undefined
+  if (hasLocationSlots && !primaryHasLocation) {
+    for (const refDomainName of allReferencedDomains) {
+      if (vocabIndex.paths.has(`${refDomainName}:country`)) {
+        locationDelegateDomain = refDomainName
+        break
+      }
+    }
+  }
+
   for (const refDomainName of allReferencedDomains) {
     const refDomain = registry.domains.get(refDomainName)
     if (!refDomain) continue
 
     const refFilters = filtersByDomain[refDomainName] || {}
     const refRanges = rangesByDomain[refDomainName] || {}
-    if (Object.keys(refFilters).length === 0 && Object.keys(refRanges).length === 0) continue
+    const willReceiveLocation = refDomainName === locationDelegateDomain
+
+    // Skip referenced domains that have no filters, ranges, or delegated
+    // location — they add only constraints (mandatory JOINs) without value.
+    const hasRefConstraints =
+      Object.keys(refFilters).length > 0 || Object.keys(refRanges).length > 0 || willReceiveLocation
+    if (!hasRefConstraints) continue
 
     // Join via manifest → hasReferencedArtifacts
     const refVar = `?ref_${refDomainName.replace(/-/g, '_')}`
@@ -296,12 +482,20 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     patterns.push(`?manifest manifest:hasReferencedArtifacts ${refVar} .`)
     patterns.push(`${refVar} a ${refDomain.targetClass} .`)
 
+    // Location delegation: if the primary domain has no location properties,
+    // pass the location filter to exactly ONE referenced domain that does.
+    let refLocation: SearchSlots['location'] | undefined
+    if (willReceiveLocation) {
+      refLocation = slots.location
+      _locationDelegated = true
+    }
+
     const refForeign = buildDomainPatterns(
       refDomainName,
       refDomain,
       refFilters,
       refRanges,
-      undefined,
+      refLocation,
       patterns,
       filters,
       optionals,
@@ -330,7 +524,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     if (refDomain) {
       prefixDomains.add('manifest')
       prefixDomains.add(slots.references.domain)
-      // Each domain defines its own hasManifest (subProperty of envited-x:hasManifest)
+      // Each domain defines its own hasManifest (subProperty of the base hasManifest)
       patterns.push(`?asset ${domain.prefix}:hasManifest ?_refManifest .`)
       patterns.push(`?_refManifest manifest:hasReferencedArtifacts ?_refLink .`)
       patterns.push(`?_refLink manifest:iri ?refAsset .`)
@@ -379,28 +573,14 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
 function compileCrossDomainQuery(
   slots: SearchSlots,
   registry: DomainRegistry,
-  assetDomains: Set<string>
+  assetDomains: Set<string>,
+  vocabIndex: CompilerVocab
 ): string {
   // The asset-class VALUES uses full IRIs so the cross-domain mode
   // doesn't pin the policy allowlist to specific ontology namespaces.
-  // The OPTIONAL location and license blocks still walk the asset's
-  // DomainSpecification path (which is a meta-model assumption tracked
-  // path (a meta-model assumption); their prefixes are added on demand below.
+  // Prefixes are added on-demand based on discovered property paths.
+  const usedPrefixes = new Set<string>()
   const prefixLines: string[] = [sparqlPrefix('rdfs'), sparqlPrefix('xsd'), sparqlPrefix('gx')]
-  const hasLocationFilter =
-    !!slots.location &&
-    (isNonEmpty(slots.location.country) ||
-      isNonEmpty(slots.location.state) ||
-      isNonEmpty(slots.location.region) ||
-      isNonEmpty(slots.location.city))
-  const needsMetaModelPrefixes = hasLocationFilter || !!slots.license
-  if (needsMetaModelPrefixes) {
-    const envitedX = registry.domains.get('envited-x')
-    const georef = registry.domains.get('georeference')
-    if (envitedX) prefixLines.push(`PREFIX envited-x: <${envitedX.namespace}>`)
-    if (georef) prefixLines.push(`PREFIX georeference: <${georef.namespace}>`)
-  }
-  const prefixes = prefixLines.join('\n')
 
   const patterns: string[] = []
   const filters: string[] = []
@@ -408,8 +588,7 @@ function compileCrossDomainQuery(
   const selectVars = ['?asset', '?name']
 
   // Build the VALUES list of every discovered asset target class as
-  // full IRI literals. Sort for deterministic SPARQL output — the
-  // compiler-determinism snapshot suite relies on this.
+  // full IRI literals. Sort for deterministic SPARQL output.
   const targetClassIris: string[] = []
   for (const domainName of [...assetDomains].sort()) {
     const desc = registry.domains.get(domainName)
@@ -422,52 +601,124 @@ function compileCrossDomainQuery(
     patterns.push('?asset a ?assetClass ;')
     patterns.push('  rdfs:label ?name .')
   } else {
-    // Fallback: no asset domains discovered — emit a single-binding
-    // VALUES that matches nothing rather than a superclass-only
-    // query that quietly relies on RDFS inference.
     patterns.push('VALUES ?assetClass {}')
     patterns.push('?asset a ?assetClass ;')
     patterns.push('  rdfs:label ?name .')
   }
 
-  // Apply location filters if present (and non-empty — see isNonEmpty)
-  if (
-    slots.location &&
+  // Apply location filters using discovered property paths.
+  // For cross-domain queries, we build SPARQL property path alternatives
+  // from all domains that have location properties.
+  const hasLocationFilter =
+    !!slots.location &&
     (isNonEmpty(slots.location.country) ||
       isNonEmpty(slots.location.state) ||
       isNonEmpty(slots.location.region) ||
       isNonEmpty(slots.location.city))
-  ) {
-    optionals.push(`OPTIONAL {
-    ?asset envited-x:hasDomainSpecification ?domSpec .
-    ?domSpec envited-x:hasGeoreference ?georef .
-    ?georef georeference:hasProjectLocation ?loc .`)
 
-    if (isNonEmpty(slots.location.country)) {
-      optionals.push(`    ?loc georeference:country ?country .`)
-      addLocationFilter(filters, '?country', slots.location.country)
-      selectVars.push('?country')
-    }
-    if (isNonEmpty(slots.location.city)) {
-      optionals.push(`    ?loc georeference:city ?city .`)
-      addLocationFilter(filters, '?city', slots.location.city)
-      selectVars.push('?city')
+  if (hasLocationFilter) {
+    // Find any domain that has a 'country' property path — use it to
+    // discover the predicate chain for location queries.
+    let locationPath: PropertyPath | undefined
+    for (const [key, path] of vocabIndex.paths) {
+      if (key.endsWith(':country') && path.steps.length >= 4) {
+        locationPath = path
+        break
+      }
     }
 
-    optionals.push(`  }`)
+    if (locationPath) {
+      // Build the location block using full IRIs (ontology-agnostic)
+      const step0 = locationPath.steps[0] // asset → domSpec
+      const step1 = locationPath.steps[1] // domSpec → georef
+      const step2 = locationPath.steps[2] // georef → location
+
+      // Add prefixes for the domains involved
+      const ensurePrefix = (predicateIri: string) => {
+        const desc = findDomainForIri(predicateIri, registry)
+        if (desc && !usedPrefixes.has(desc.name)) {
+          usedPrefixes.add(desc.name)
+          prefixLines.push(`PREFIX ${desc.prefix}: <${desc.namespace}>`)
+        }
+        return desc ? prefixedPredicate(predicateIri, desc) : `<${predicateIri}>`
+      }
+
+      if (step0 && step1 && step2) {
+        const pred0 = ensurePrefix(step0.predicate)
+        const pred1 = ensurePrefix(step1.predicate)
+        const pred2 = ensurePrefix(step2.predicate)
+
+        optionals.push(`OPTIONAL {
+    ?asset ${pred0} ?domSpec .
+    ?domSpec ${pred1} ?georef .
+    ?georef ${pred2} ?loc .`)
+
+        const locationFields = [
+          { field: 'country', value: slots.location!.country },
+          { field: 'city', value: slots.location!.city },
+          { field: 'state', value: slots.location!.state },
+          { field: 'region', value: slots.location!.region },
+        ]
+
+        for (const { field, value } of locationFields) {
+          if (!isNonEmpty(value)) continue
+          // Find the leaf predicate for this field
+          const fieldPath = vocabIndex.paths.get(`${locationPath.domain}:${field}`)
+          if (!fieldPath) continue
+          const leafStep = fieldPath.steps[fieldPath.steps.length - 1]
+          if (!leafStep) continue
+          const leafPred = ensurePrefix(leafStep.predicate)
+          optionals.push(`    ?loc ${leafPred} ?${field} .`)
+          addLocationFilter(filters, `?${field}`, value)
+          selectVars.push(`?${field}`)
+        }
+
+        optionals.push(`  }`)
+      }
+    }
   }
 
-  // License filter if specified
+  // License filter — discover the predicate chain from property paths
   if (slots.license) {
-    optionals.push(`OPTIONAL {
-    ?asset envited-x:hasResourceDescription ?resDesc .
-    ?resDesc gx:license ?license .
+    // Find the 'license' property path from any domain
+    let licensePath: PropertyPath | undefined
+    for (const [key, path] of vocabIndex.paths) {
+      if (key.endsWith(':license')) {
+        licensePath = path
+        break
+      }
+    }
+
+    if (licensePath && licensePath.steps.length >= 2) {
+      const ensurePrefix = (predicateIri: string) => {
+        const desc = findDomainForIri(predicateIri, registry)
+        if (desc && !usedPrefixes.has(desc.name)) {
+          usedPrefixes.add(desc.name)
+          prefixLines.push(`PREFIX ${desc.prefix}: <${desc.namespace}>`)
+        }
+        return desc ? prefixedPredicate(predicateIri, desc) : `<${predicateIri}>`
+      }
+
+      // Build the chain: asset → resDesc → license
+      const resDescPred = ensurePrefix(licensePath.steps[0]!.predicate)
+      const licensePred = ensurePrefix(licensePath.steps[licensePath.steps.length - 1]!.predicate)
+      optionals.push(`OPTIONAL {
+    ?asset ${resDescPred} ?resDesc .
+    ?resDesc ${licensePred} ?license .
   }`)
+    } else {
+      // Fallback: use full IRI if no path found
+      optionals.push(`OPTIONAL {
+    ?asset <urn:unknown:hasResourceDescription> ?resDesc .
+    ?resDesc <${iri('gx', 'license')}> ?license .
+  }`)
+    }
     filters.push(`FILTER(?license = "${escapeSparqlLiteral(slots.license)}")`)
     selectVars.push('?license')
   }
 
   // Build the query
+  const prefixes = prefixLines.join('\n')
   return assembleQuery(prefixes, selectVars, patterns, optionals, filters)
 }
 
@@ -485,6 +736,23 @@ function prefixedPredicate(predicateIri: string, domain: DomainDescriptor): stri
     return `${domain.prefix}:${predicateIri.slice(domain.namespace.length)}`
   }
   return `<${predicateIri}>`
+}
+
+/**
+ * Find the DomainDescriptor whose namespace matches a predicate IRI.
+ * Used to resolve cross-domain predicates (e.g., georeference:country)
+ * to their prefix for SPARQL emission.
+ */
+function findDomainForIri(iri: string, registry: DomainRegistry): DomainDescriptor | undefined {
+  let bestDesc: DomainDescriptor | undefined
+  let bestLen = 0
+  for (const desc of registry.domains.values()) {
+    if (iri.startsWith(desc.namespace) && desc.namespace.length > bestLen) {
+      bestDesc = desc
+      bestLen = desc.namespace.length
+    }
+  }
+  return bestDesc
 }
 
 /**
@@ -704,36 +972,73 @@ function buildDomainPatterns(
     }
   }
 
-  // Georeference location filters
-  if (hasLocationFilters && domain.hasGeoreference) {
-    const georefVar = `?georef${suffix}`
-    const locVar = `?loc${suffix}`
-    patterns.push(`${specVar} ${domain.prefix}:hasGeoreference ${georefVar} .`)
-    patterns.push(`${georefVar} georeference:hasProjectLocation ${locVar} .`)
+  // Georeference location filters — discovered from property paths.
+  // Don't check domain.hasGeoreference (hardcoded, ontology-specific).
+  // Instead, check if this domain actually has location properties.
+  if (hasLocationFilters) {
+    const locationFields = ['country', 'state', 'region', 'city'] as const
+    const locationValues = {
+      country: location?.country,
+      state: location?.state,
+      region: location?.region,
+      city: location?.city,
+    }
 
-    if (isNonEmpty(location!.country)) {
-      const v = `?country${suffix}`
-      patterns.push(`${locVar} georeference:country ${v} .`)
-      addLocationFilter(filters, v, location!.country)
-      selectVars.add(v)
+    // Use the first available location property's path to discover the
+    // predicate chain from DomainSpecification → georeference → location
+    let geoPath: PropertyPath | undefined
+    for (const field of locationFields) {
+      const path = vocabIndex.paths.get(`${domainName}:${field}`)
+      if (path && path.steps.length >= 3) {
+        geoPath = path
+        break
+      }
     }
-    if (isNonEmpty(location!.state)) {
-      const v = `?state${suffix}`
-      patterns.push(`${locVar} georeference:state ${v} .`)
-      addLocationFilter(filters, v, location!.state)
-      selectVars.add(v)
-    }
-    if (isNonEmpty(location!.region)) {
-      const v = `?region${suffix}`
-      patterns.push(`${locVar} georeference:region ${v} .`)
-      addLocationFilter(filters, v, location!.region)
-      selectVars.add(v)
-    }
-    if (isNonEmpty(location!.city)) {
-      const v = `?city${suffix}`
-      patterns.push(`${locVar} georeference:city ${v} .`)
-      addLocationFilter(filters, v, location!.city)
-      selectVars.add(v)
+
+    if (geoPath) {
+      // The path steps look like:
+      //   [0] asset → DomainSpecification (already emitted above as assetToSpecPredicate)
+      //   [1] DomainSpecification → Georeference sub-shape
+      //   [2] Georeference → ProjectLocation
+      //   [3] ProjectLocation → leaf (country/city/etc.)
+      // We need steps [1] and [2] for the intermediate nodes.
+      const geoStep = geoPath.steps[1]
+      const locStep = geoPath.steps[2]
+      if (geoStep && locStep) {
+        const georefVar = `?georef${suffix}`
+        const locVar = `?loc${suffix}`
+        patterns.push(`${specVar} ${prefixedPredicate(geoStep.predicate, domain)} ${georefVar} .`)
+
+        // The location predicate may be in a different domain (e.g., georeference:).
+        // Use full IRI if it's not in this domain's namespace.
+        const geoRefDomain = findDomainForIri(locStep.predicate, registry)
+        const locPredicate = geoRefDomain
+          ? prefixedPredicate(locStep.predicate, geoRefDomain)
+          : `<${locStep.predicate}>`
+        if (geoRefDomain && geoRefDomain.name !== domainName) {
+          foreignDomains.add(geoRefDomain.name)
+        }
+        patterns.push(`${georefVar} ${locPredicate} ${locVar} .`)
+
+        for (const field of locationFields) {
+          if (!isNonEmpty(locationValues[field])) continue
+          const fieldPath = vocabIndex.paths.get(`${domainName}:${field}`)
+          if (!fieldPath) continue
+          const leafStep = fieldPath.steps[fieldPath.steps.length - 1]
+          if (!leafStep) continue
+          const leafDomain = findDomainForIri(leafStep.predicate, registry)
+          const leafPredicate = leafDomain
+            ? prefixedPredicate(leafStep.predicate, leafDomain)
+            : `<${leafStep.predicate}>`
+          if (leafDomain && leafDomain.name !== domainName) {
+            foreignDomains.add(leafDomain.name)
+          }
+          const v = `?${field}${suffix}`
+          patterns.push(`${locVar} ${leafPredicate} ${v} .`)
+          addLocationFilter(filters, v, locationValues[field])
+          selectVars.add(v)
+        }
+      }
     }
   }
 
@@ -768,15 +1073,17 @@ function partitionFiltersByDomain(
     return result
   }
 
-  // Multi-domain: use ontology to find which detected domain owns each property
+  // Multi-domain: use ontology to find which detected domain owns each property.
+  // A property may exist in MULTIPLE domains (e.g., roadTypes in both hdmap
+  // and ositrace). Assign it to ALL matching domains so UNION queries work.
   for (const [propName, value] of Object.entries(known)) {
     const propInfo = vocabIndex.properties.get(propName)
     if (!propInfo) continue
 
-    // Find which detected domain defines this property
-    const matchingDomain = detectedDomains.find((d) => propInfo.domains.has(d))
+    // Find ALL detected domains that define this property
+    const matchingDomains = detectedDomains.filter((d) => propInfo.domains.has(d))
 
-    if (matchingDomain) {
+    for (const matchingDomain of matchingDomains) {
       if (!result[matchingDomain]) result[matchingDomain] = {}
       result[matchingDomain]![propName] = value
     }
@@ -812,7 +1119,8 @@ function partitionRangesByDomain(
     return result
   }
 
-  // Multi-domain: use ontology to find which detected domain owns each property
+  // Multi-domain: use ontology to find which detected domain owns each property.
+  // A property may exist in MULTIPLE domains — assign to ALL matching domains.
   for (const [propName, range] of Object.entries(known)) {
     const propInfo = vocabIndex.properties.get(propName)
 
@@ -821,10 +1129,10 @@ function partitionRangesByDomain(
       continue
     }
 
-    // Find which detected domain defines this property
-    const matchingDomain = detectedDomains.find((d) => propInfo.domains.has(d))
+    // Find ALL detected domains that define this property
+    const matchingDomains = detectedDomains.filter((d) => propInfo.domains.has(d))
 
-    if (matchingDomain) {
+    for (const matchingDomain of matchingDomains) {
       if (!result[matchingDomain]) result[matchingDomain] = {}
       result[matchingDomain]![propName] = range
     }
@@ -1040,24 +1348,26 @@ function isKnownProperty(propName: string, vocabIndex: CompilerVocab): boolean {
  * an array. Generic — used for every georeference:* literal slot.
  *
  *  - **Array**: `FILTER(?v IN ("DE","FR","IT"))` — exact equality over a set,
- *    so a region expressed as a list of ISO codes filters precisely.
- *  - **Single string**: `FILTER(CONTAINS(LCASE(?v), "<value>"))` — preserves
- *    the existing case-insensitive UX for free-form single values
- *    (city/state names). Note: this is lossy for short codes — flagged for
- *    follow-up; the array path uses strict equality.
+ *    so a region expressed as a list of codes filters precisely.
+ *  - **Single string**: `FILTER(CONTAINS(STR(?v), "FR"))` — textual matching
+ *    over the string form of the RDF term, so the same filter works for both
+ *    literal values and IRI-valued location resources.
  */
 function addLocationFilter(filters: string[], varName: string, value: string | string[]): void {
+  // W3C SPARQL 1.1 §17.4.2: LCASE() requires a string argument.
+  // STR() converts IRIs and typed literals to their lexical string form,
+  // making this safe for both IRI-valued and literal-valued properties.
   if (Array.isArray(value)) {
     if (value.length === 1) {
-      filters.push(`FILTER(${varName} = "${escapeSparqlLiteral(value[0]!)}")`)
+      const v = escapeSparqlLiteral(value[0]!.toLowerCase())
+      filters.push(`FILTER(LCASE(STR(${varName})) = "${v}")`)
     } else {
-      const lits = value.map((v) => `"${escapeSparqlLiteral(v)}"`).join(', ')
-      filters.push(`FILTER(${varName} IN (${lits}))`)
+      const lits = value.map((v) => `"${escapeSparqlLiteral(v.toLowerCase())}"`).join(', ')
+      filters.push(`FILTER(LCASE(STR(${varName})) IN (${lits}))`)
     }
   } else {
-    filters.push(
-      `FILTER(CONTAINS(LCASE(${varName}), "${escapeSparqlLiteral(value.toLowerCase())}"))`
-    )
+    const v = escapeSparqlLiteral(value.toLowerCase())
+    filters.push(`FILTER(CONTAINS(LCASE(STR(${varName})), "${v}"))`)
   }
 }
 

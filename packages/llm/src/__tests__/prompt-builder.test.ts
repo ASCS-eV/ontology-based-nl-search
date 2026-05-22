@@ -113,8 +113,8 @@ fb:Shape a sh:NodeShape ;
   it('includes examples', () => {
     const prompt = buildSystemPrompt(mockShaclContent)
     expect(prompt).toContain('Example 1')
-    expect(prompt).toContain('German highway map')
-    expect(prompt).toContain('emergency braking')
+    expect(prompt).toContain('Single domain with filter and range')
+    expect(prompt).toContain('Unmapped term becomes a gap')
   })
 
   it('includes ranges instruction with implicit ranges', () => {
