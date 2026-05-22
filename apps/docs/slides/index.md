@@ -4,7 +4,7 @@ pageClass: slide-page
 title: Presentation
 ---
 
-<SlideProvider :total-slides="8">
+<SlideProvider :total-slides="10">
 <SlideDeck>
 
 <Slide :index="0" variant="title">
@@ -81,6 +81,7 @@ title: Presentation
 flowchart LR
     Q(["🗣️ User query"]) --> P["Prompt\nbuilder"]
     P --> A["🧠 LLM\nagent"]
+    A -.->|"investigate"| SG[("Schema\ngraph")]
     A --> V["Slot\nvalidator"]
     V --> C["SPARQL\ncompiler"]
     C --> O[("Oxigraph\nstore")]
@@ -96,21 +97,21 @@ flowchart LR
     class A llm;
     class V guard;
     class C compiler;
-    class O store;
+    class O,SG store;
 ```
 
   <div class="signal-grid">
     <div class="signal-card">
-      <h3>Structured prompt</h3>
-      <p>Vocabulary tables are generated from the ontology at startup and reused across queries.</p>
+      <h3>Schema-driven prompt</h3>
+      <p>Raw SHACL shapes are injected into the prompt at startup — the LLM sees all properties and allowed values natively.</p>
     </div>
     <div class="signal-card">
-      <h3>Single responsibility</h3>
-      <p>The LLM interprets intent; the validator checks it; the compiler turns it into executable SPARQL.</p>
+      <h3>Investigation tools</h3>
+      <p>The LLM can query the schema graph via SPARQL to discover domains, properties, and values at runtime.</p>
     </div>
     <div class="signal-card">
       <h3>Readable outcome</h3>
-      <p>Users can inspect what the system understood before results are even returned.</p>
+      <p>Users see what the system understood (interpretation, gaps, confidence) before results arrive.</p>
     </div>
   </div>
 </Slide>
@@ -226,7 +227,68 @@ flowchart LR
   </div>
 </Slide>
 
-<Slide :index="7" variant="cta">
+<Slide :index="7">
+  <p class="eyebrow">Ontology-agnostic design</p>
+  <h2>Works with any ontology — not just ENVITED-X.</h2>
+  <p class="lead">The system discovers all structure from the OWL + SHACL schema graph at runtime. Zero hardcoded domain names, predicates, or class IRIs in production code.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">🔍</div>
+      <h3>Property Path Discovery</h3>
+      <p>Walks SHACL shapes to find predicate chains from asset classes to leaf properties — no hardcoded <code>hasDomainSpecification</code>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🗺️</div>
+      <h3>Domain Registry</h3>
+      <p>Asset types discovered via <code>rdfs:subClassOf</code> + <code>sh:targetClass</code> — swap ontologies, get new domains automatically.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔗</div>
+      <h3>Smart Location Delegation</h3>
+      <p>Location filters route to whichever domain has location properties — no hardcoded georeference assumption.</p>
+    </div>
+  </div>
+  <div class="callout">Replace ENVITED-X with a retail ontology ("outdoor-shoes", "winter-jackets") — the same pipeline handles "waterproof hiking boots under €100" without code changes.</div>
+</Slide>
+
+<Slide :index="8">
+  <p class="eyebrow">RDF reasoning at runtime</p>
+  <h2>The LLM explores the ontology using SPARQL — before filling slots.</h2>
+  <p class="lead">Five investigation tools give the agent on-demand access to the schema graph. The LLM can discover domains, properties, allowed values, and cross-domain connections dynamically.</p>
+  <div class="stack-grid">
+    <div class="stack-card">
+      <span>discover_domains</span>
+      <strong>What asset types exist?</strong>
+      <p>Lists all searchable domains from <code>sh:targetClass</code> declarations.</p>
+    </div>
+    <div class="stack-card">
+      <span>discover_properties</span>
+      <strong>What filters are available?</strong>
+      <p>Returns property names, datatypes, and whether they have <code>sh:in</code> enumerations.</p>
+    </div>
+    <div class="stack-card">
+      <span>discover_values</span>
+      <strong>What values are valid?</strong>
+      <p>Extracts exact allowed values from <code>sh:in</code> RDF lists.</p>
+    </div>
+    <div class="stack-card">
+      <span>discover_connections</span>
+      <strong>How do domains relate?</strong>
+      <p>Finds cross-domain references via manifest artifacts.</p>
+    </div>
+    <div class="stack-card">
+      <span>investigate_schema</span>
+      <strong>Full SPARQL exploration</strong>
+      <p>The LLM writes arbitrary SELECT queries against the schema graph.</p>
+    </div>
+  </div>
+  <div class="mono-block">
+    <span class="mono-label">Key insight</span><br />
+    The same SPARQL engine that executes user queries also serves as a reasoning backend for the LLM agent — the schema graph is both compiler metadata <em>and</em> an explorable knowledge base.
+  </div>
+</Slide>
+
+<Slide :index="9" variant="cta">
   <div class="badge">Live Demo</div>
   <p class="eyebrow">Experience the search assistant end to end</p>
   <h2>See the ontology search workflow in action.</h2>

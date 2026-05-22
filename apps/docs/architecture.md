@@ -7,14 +7,15 @@ The system converts natural language queries into precise SPARQL queries grounde
 ```mermaid
 graph TD
     Q["🗣️ User Query<br/>(any language)"] --> PB["Prompt Builder"]
-    PB --> LLM["LLM Agent<br/>(submit_slots tool)"]
+    PB --> LLM["LLM Agent<br/>(6 tools)"]
+    LLM -.->|"investigate"| SG
     LLM --> SV["Slot Validator"]
     SV --> SC["SPARQL Compiler"]
     SC --> OX["Oxigraph Store"]
     OX --> RES["📊 Results + Meta"]
 
-    subgraph "Ontology Layer"
-      OWL["OWL + SHACL<br/>(45 files, 22 domains)"] --> SQ["Schema Queries + Vocabulary"]
+    subgraph "Schema Layer"
+      SG["Schema Graph<br/>‹urn:graph:schema›"] --> SQ["Schema Queries + Vocab"]
       SQ --> PB
       SQ --> SV
       SQ --> SC
@@ -25,6 +26,7 @@ graph TD
     style SV fill:#fef3c7,stroke:#f59e0b
     style SC fill:#dcfce7,stroke:#22c55e
     style OX fill:#dbeafe,stroke:#3b82f6
+    style SG fill:#dbeafe,stroke:#3b82f6
 ```
 
 ## Module Boundaries
@@ -66,38 +68,41 @@ graph LR
 
 ### Package Responsibilities
 
-| Package                     | Module                    | Role                                                                  |
-| --------------------------- | ------------------------- | --------------------------------------------------------------------- |
-| `@ontology-search/core`     | `config/`                 | Zod-validated env config                                              |
-|                             | `logging/`                | Structured JSON logger with correlation IDs                           |
-|                             | `errors/`                 | Shared error types and base classes                                   |
-| `@ontology-search/sparql`   | `oxigraph-store.ts`       | Oxigraph WASM wrapper, SPARQL execution                               |
-|                             | `remote-store.ts`         | HTTP client for any SPARQL 1.1 endpoint                               |
-|                             | `cached-store.ts`         | LRU query cache decorator (wraps either store)                        |
-|                             | `cache.ts`                | LRU cache implementation                                              |
-|                             | `policy.ts`               | Query validation policies                                             |
-| `@ontology-search/ontology` | `warmup.ts`               | Loads instance TTL data at startup                                    |
-|                             | `paths.ts`                | Resolves project root and ontology file paths                         |
-|                             | `domain-registry.ts`      | Domain lookups and registration                                       |
-|                             | `vocabulary-index.ts`     | Vocabulary indexing for property → domain mapping                     |
-| `@ontology-search/search`   | `schema-loader.ts`        | Loads 45 OWL+SHACL files into `<urn:graph:schema>`                    |
-|                             | `schema-queries.ts`       | Graph-driven SPARQL helpers for domains, references, and shape groups |
-|                             | `vocabulary-extractor.ts` | SPARQL-based extraction of `sh:in` enums + numeric props              |
-|                             | `compiler.ts`             | SearchSlots → deterministic SPARQL via `CompilerVocab`                |
-|                             | `service.ts`              | Orchestrates init → interpret → compile → execute                     |
-|                             | `factory.ts`              | Service factory and dependency wiring                                 |
-|                             | `slots.ts`                | SearchSlots type definitions                                          |
-|                             | `data-loader.ts`          | Loads 5 sample TTL files for dev/test                                 |
-|                             | `init.ts`                 | Initialization sequence                                               |
-| `@ontology-search/llm`      | `prompt-builder.ts`       | Auto-generates LLM system prompt from raw SHACL                       |
-|                             | `slot-validator.ts`       | Post-LLM validation: fuzzy match, multi-domain correction             |
-|                             | `agent/copilot-agent.ts`  | Copilot SDK agent path                                                |
-|                             | `agent/index.ts`          | Vercel AI SDK agent path (OpenAI/Ollama)                              |
-|                             | `agent/tools.ts`          | submit_slots tool definition                                          |
-| `@ontology-search/api`      | `routes/search.ts`        | Hono SSE streaming endpoint                                           |
-|                             | `routes/stats.ts`         | Statistics endpoint                                                   |
-|                             | `warmup.ts`               | Startup orchestration (load ontology, init store)                     |
-| `@ontology-search/testing`  | `helpers/`                | Shared test utilities (mock logger, fixtures)                         |
+| Package                     | Module                         | Role                                                                  |
+| --------------------------- | ------------------------------ | --------------------------------------------------------------------- |
+| `@ontology-search/core`     | `config/`                      | Zod-validated env config                                              |
+|                             | `logging/`                     | Structured JSON logger with correlation IDs                           |
+|                             | `errors/`                      | Shared error types and base classes                                   |
+| `@ontology-search/sparql`   | `oxigraph-store.ts`            | Oxigraph WASM wrapper, SPARQL execution                               |
+|                             | `remote-store.ts`              | HTTP client for any SPARQL 1.1 endpoint                               |
+|                             | `cached-store.ts`              | LRU query cache decorator (wraps either store)                        |
+|                             | `cache.ts`                     | LRU cache implementation                                              |
+|                             | `policy.ts`                    | Query validation policies                                             |
+| `@ontology-search/ontology` | `warmup.ts`                    | Loads instance TTL data at startup                                    |
+|                             | `paths.ts`                     | Resolves project root and ontology file paths                         |
+|                             | `domain-registry.ts`           | Domain lookups and registration                                       |
+|                             | `vocabulary-index.ts`          | Vocabulary indexing for property → domain mapping                     |
+| `@ontology-search/search`   | `schema-loader.ts`             | Loads 45 OWL+SHACL files into `<urn:graph:schema>`                    |
+|                             | `schema-queries.ts`            | Graph-driven SPARQL helpers for domains, references, and shape groups |
+|                             | `property-paths.ts`            | Discovers predicate chains from SHACL (ontology-agnostic)             |
+|                             | `vocabulary-extractor.ts`      | SPARQL-based extraction of `sh:in` enums + numeric props              |
+|                             | `compiler.ts`                  | SearchSlots → deterministic SPARQL via `CompilerVocab`                |
+|                             | `sparql-validator.ts`          | Post-compilation SPARQL syntax validation                             |
+|                             | `service.ts`                   | Orchestrates init → interpret → compile → execute                     |
+|                             | `factory.ts`                   | Service factory and dependency wiring                                 |
+|                             | `slots.ts`                     | SearchSlots type definitions                                          |
+|                             | `data-loader.ts`               | Loads 5 sample TTL files for dev/test                                 |
+|                             | `init.ts`                      | Initialization sequence                                               |
+| `@ontology-search/llm`      | `prompt-builder.ts`            | Auto-generates LLM system prompt from raw SHACL                       |
+|                             | `slot-validator.ts`            | Post-LLM validation: fuzzy match, multi-domain correction             |
+|                             | `agent/copilot-agent.ts`       | Copilot SDK agent path + investigation tools                          |
+|                             | `agent/index.ts`               | Vercel AI SDK agent path (OpenAI/Ollama)                              |
+|                             | `agent/tools.ts`               | submit_slots tool definition                                          |
+|                             | `agent/investigation-tools.ts` | 5 schema discovery tools for LLM runtime reasoning                    |
+| `@ontology-search/api`      | `routes/search.ts`             | Hono SSE streaming endpoint                                           |
+|                             | `routes/stats.ts`              | Statistics endpoint                                                   |
+|                             | `warmup.ts`                    | Startup orchestration (load ontology, init store)                     |
+| `@ontology-search/testing`  | `helpers/`                     | Shared test utilities (mock logger, fixtures)                         |
 
 ### Dependency Rules
 
@@ -128,6 +133,25 @@ graph BT
 - **`llm`** depends on `core`, `ontology`, and `search`
 - **Apps** (`api`, `web`) compose packages — packages never depend on apps
 - **`testing`** provides shared test utilities — not used in production code
+
+## Ontology-Agnostic Design
+
+The system is designed to work with **any set of OWL + SHACL ontologies** — no hardcoded domain names, predicates, or class IRIs exist in production code. All structure is discovered at runtime from the schema graph.
+
+### Graph-Driven Discovery
+
+| Component               | What It Discovers                  | Source                               |
+| ----------------------- | ---------------------------------- | ------------------------------------ |
+| **Domain Registry**     | Asset types (hdmap, scenario, ...) | `rdfs:subClassOf` + `sh:targetClass` |
+| **Property Paths**      | Predicate chains (asset → leaf)    | `sh:property` / `sh:node` traversal  |
+| **Schema Queries**      | Shape groups, cross-domain refs    | SPARQL against `<urn:graph:schema>`  |
+| **Investigation Tools** | Anything — LLM explores at runtime | Ad-hoc SPARQL SELECT                 |
+
+### RDF Reasoning Capability
+
+The LLM has **5 investigation tools** that query the schema graph using SPARQL. This enables runtime ontology exploration beyond the static prompt — the LLM can verify concepts, discover relationships, and explore property hierarchies before filling slots.
+
+See: [Generic Design](/generic-design) for the full architecture of the ontology-agnostic approach, property path discovery, and RDF reasoning capabilities.
 
 ## Data Flow (Swim Lane)
 

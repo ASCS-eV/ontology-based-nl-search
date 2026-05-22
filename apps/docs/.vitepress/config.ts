@@ -5,7 +5,7 @@ export default withMermaid(
   defineConfig({
     title: 'Ontology NL Search',
     description: 'Natural language search for ENVITED-X simulation assets',
-    base: '/docs/',
+    base: process.env.VITEPRESS_BASE || '/docs/',
     appearance: false,
     themeConfig: {
       nav: [
@@ -15,10 +15,15 @@ export default withMermaid(
           text: 'Docs',
           items: [
             { text: 'Architecture', link: '/architecture' },
+            { text: 'Generic Design', link: '/generic-design' },
             { text: 'Query Flow', link: '/query-flow' },
             { text: 'Ontology Model', link: '/ontology' },
             { text: 'Agent Design', link: '/agent' },
             { text: 'Data Model', link: '/data' },
+            { text: 'SPARQL 1.1 Overview', link: '/sparql-reference/sparql-1.1-overview' },
+            { text: 'FILTER Functions', link: '/sparql-reference/filter-functions' },
+            { text: 'SPARQL Best Practices', link: '/sparql-reference/best-practices' },
+            { text: 'IRIs vs Literals', link: '/sparql-reference/iri-vs-literals' },
             { text: 'Roadmap', link: '/roadmap' },
           ],
         },
@@ -33,6 +38,7 @@ export default withMermaid(
           text: 'Architecture',
           items: [
             { text: 'System Architecture', link: '/architecture' },
+            { text: 'Generic Design', link: '/generic-design' },
             { text: 'Query Flow', link: '/query-flow' },
           ],
         },
@@ -42,6 +48,15 @@ export default withMermaid(
             { text: 'Ontology Model', link: '/ontology' },
             { text: 'Agent Design', link: '/agent' },
             { text: 'Data Model', link: '/data' },
+          ],
+        },
+        {
+          text: 'SPARQL Reference',
+          items: [
+            { text: 'SPARQL 1.1 Overview', link: '/sparql-reference/sparql-1.1-overview' },
+            { text: 'FILTER Functions', link: '/sparql-reference/filter-functions' },
+            { text: 'SPARQL Best Practices', link: '/sparql-reference/best-practices' },
+            { text: 'IRIs vs Literals', link: '/sparql-reference/iri-vs-literals' },
           ],
         },
         {

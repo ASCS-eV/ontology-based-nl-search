@@ -1,150 +1,115 @@
 # Agent Design
 
-Constrained tool-use pattern for reliable structured output.
+Multi-tool agent with constrained output and runtime schema reasoning.
 
-## Single-Tool Agent
+## Tool Architecture
 
-The agent has exactly one tool: **`submit_slots`**. This constrains the LLM to produce valid, typed search parameters rather than free-form text or raw SPARQL.
+The agent has **6 tools**: one output tool (`submit_slots`) and five investigation tools for runtime ontology exploration. The LLM never writes SPARQL — it fills structured slots or queries the schema graph.
 
 ```mermaid
 sequenceDiagram
-    participant S as System
-    participant L as LLM
-    participant T as submit_slots
+    participant U as User
+    participant L as LLM Agent
+    participant IT as Investigation Tools
+    participant SS as submit_slots
+    participant V as Validator + Compiler
 
-    S->>L: System prompt (raw SHACL shapes) + user query
-    L->>T: submit_slots({ domains, filters, ranges, interpretation, gaps })
-    T-->>S: Validated SearchSlots
-    Note over S: Slot Validator (fuzzy match + domain fix)
-    Note over S: Compile to SPARQL
-    Note over S: Execute against Oxigraph
+    U->>L: Query + system prompt (raw SHACL)
+    alt Complex or unfamiliar query
+        L->>IT: discover_properties / discover_values / ...
+        IT-->>L: Schema structure (from Oxigraph)
+    end
+    L->>SS: submit_slots({ domains, filters, ranges, gaps })
+    SS-->>V: Validated SearchSlots → SPARQL → Results
 ```
 
-### Tool Schema
+### submit_slots Schema
 
 ```typescript
 submit_slots({
   slots: {
-    domains: string[],        // ["hdmap"], ["scenario"], or ["hdmap", "scenario"]
-    filters: {                // Enum property filters
-      roadTypes?: string,     // "motorway" | "urban" | "rural" | ...
-      formatType?: string,    // "ASAM OpenDRIVE" | "lanelet2" | ...
-      country?: string,       // "DE" | "US" | "JP" | ...
-      // ... any sh:in property
-    },
-    ranges: {                 // Numeric property ranges
-      laneCount?: { min?: number, max?: number },
-      length?: { min?: number, max?: number },
-      // ... any sh:datatype numeric property
-    },
-    location?: { country?, state?, city? },
+    domains: string[],           // Asset types to search
+    filters: Record<string, string | string[]>,  // Enum filters (any sh:in property)
+    ranges: Record<string, { min?: number; max?: number }>,  // Numeric ranges
+    location?: { country?, state?, region?, city? },
     license?: string
   },
-  interpretation: string,     // Human-readable summary
-  gaps: [{                    // Terms not in ontology
-    term: string,
-    reason: string,
-    suggestions?: string[]
-  }]
+  interpretation: string,        // Human-readable summary
+  gaps: [{ term, reason, suggestions? }]  // Unresolvable terms
 })
 ```
 
 ## Context Engineering
 
-The system prompt is **auto-generated from raw SHACL ontology shapes** — the LLM reads the native Turtle/SHACL definitions directly, including `sh:in` enumerations, `sh:pattern` constraints, `sh:datatype` declarations, and `sh:description` annotations:
-
-```mermaid
-graph TD
-    TTL["22 SHACL files<br/>(298 KB from 21 domains)"] --> SR["SHACL Reader"]
-    SR --> PB["Prompt Builder"]
-    PB --> SP["System Prompt"]
-    SP --> RAW["Raw Turtle Shapes<br/>sh:in, sh:pattern, sh:datatype, sh:description"]
-    SP --> LOC["Location Fields<br/>country (ISO 3166-1), state, city"]
-    SP --> EX["Few-Shot Examples<br/>query → expected submit_slots call"]
-
-    style TTL fill:#dcfce7,stroke:#22c55e
-    style SR fill:#dbeafe,stroke:#3b82f6
-    style PB fill:#dbeafe,stroke:#3b82f6
-    style SP fill:#f0f9ff,stroke:#798bb3
-```
-
-Prompt input currently comes from **22 SHACL files** (about **298 KB** across **21 domains**, excluding `gx`). Those ontology shapes back a runtime sample dataset of **267 assets across 5 domains**: 117 HD maps, 50 scenarios, 50 OSI traces, 30 environment models, and 20 surface models.
-
-### What the prompt includes
-
-| Section                     | Purpose                                                                           |
-| --------------------------- | --------------------------------------------------------------------------------- |
-| Raw SHACL shapes per domain | Full Turtle content — the LLM reads `sh:in`, `sh:pattern`, `sh:datatype` natively |
-| Location field instructions | ISO codes, free-text allowed                                                      |
-| Synonym resolution rules    | "YOU are the synonym resolver — map user terms to ontology values"                |
-| Gap reporting rules         | "Report unmatched terms with reason and suggestions"                              |
-| Few-shot examples           | 4 example queries with expected tool-call output                                  |
-
-### Why raw SHACL instead of extracted tables
-
-The LLM reads SHACL Turtle natively and understands the full constraint model:
-
-- **`sh:in (...)`** — enumerated allowed values (the LLM maps synonyms to exact values)
-- **`sh:pattern "..."`** — regex constraints (e.g., 2-letter country codes)
-- **`sh:datatype xsd:integer`** — numeric properties for range queries
-- **`sh:description`** — semantic meaning for better synonym resolution
-- **`sh:name`** — human-readable labels
-
-This eliminates vocabulary extraction as a bottleneck — no properties are missed because the LLM sees **everything** in the SHACL shapes. The `gx` domain is excluded (2.3 MB) because `envited-x` already re-declares the 7 `gx:` properties it uses.
-
-## Post-LLM Validation Pipeline
-
-After the LLM submits slots, three validation steps run:
+The system prompt is **auto-generated from raw SHACL shapes** at startup. The LLM reads native Turtle directly:
 
 ```mermaid
 graph LR
-    subgraph "1. correctFilters()"
-        CF1["Exact match?"] -->|yes| CF2["✅ Keep"]
-        CF1 -->|no| CF3["Case-insensitive?"]
-        CF3 -->|yes| CF4["✅ Normalize"]
-        CF3 -->|no| CF5["Substring?"]
-        CF5 -->|yes| CF6["✅ Match"]
-        CF5 -->|no| CF7["Edit distance ≤ 4?"]
-        CF7 -->|yes| CF8["✅ Fuzzy match"]
-        CF7 -->|no| CF9["❌ Demote to gap"]
-    end
+    SHACL["SHACL files<br/>(all domains)"] --> PB["Prompt Builder"]
+    PB --> SP["System Prompt"]
+    SP --> S1["Raw Turtle Shapes"]
+    SP --> S2["Location + License rules"]
+    SP --> S3["Few-shot examples"]
 
-    style CF2 fill:#dcfce7,stroke:#22c55e
-    style CF4 fill:#dcfce7,stroke:#22c55e
-    style CF6 fill:#dcfce7,stroke:#22c55e
-    style CF8 fill:#fef3c7,stroke:#f59e0b
-    style CF9 fill:#fef2f2,stroke:#ef4444
+    style SHACL fill:#dcfce7,stroke:#22c55e
+    style PB fill:#dbeafe,stroke:#3b82f6
 ```
 
-### Domain Correction
+### Why raw SHACL in the prompt
 
-When the LLM picks the wrong domain (e.g., `scenario` when filters are `roadTypes`, `country`), the validator:
+The LLM natively understands SHACL constraint vocabulary:
 
-1. Builds a `Map<string, Set<string>>` index so shared properties stay multi-domain aware
-2. Keeps the LLM's choice when a property already exists in one of the selected domains
-3. Adds every missing required domain when filters or ranges point elsewhere
-4. Merges cross-domain queries instead of collapsing them to a single hardcoded winner
+- **`sh:in (...)`** — allowed values → synonym resolution
+- **`sh:pattern`** — format constraints (ISO codes, etc.)
+- **`sh:datatype xsd:integer`** → range queries
+- **`sh:description`** — semantic context for disambiguation
 
-### Confidence Recomputation
+No properties can be missed because the LLM sees the full shapes. The investigation tools supplement this with on-demand exploration for edge cases.
 
-The validator removes LLM bias from confidence scores and recomputes objectively:
+## Post-LLM Validation
 
-| Match type               | Confidence | Example                              |
-| ------------------------ | ---------- | ------------------------------------ |
-| Exact `sh:in` match      | **high**   | `"motorway"` in roadTypes vocabulary |
-| Case-insensitive match   | **high**   | `"Motorway"` → `"motorway"`          |
-| Substring match          | **medium** | `"motorways"` → `"motorway"`         |
-| Edit-distance match (≤4) | **medium** | `"motoway"` → `"motorway"`           |
-| No match                 | **gap**    | `"ADAS testing"` → reported as gap   |
+Three corrections run after the LLM submits slots:
+
+```mermaid
+graph LR
+    RAW["LLM Output"] --> FC["Filter Correction<br/>(fuzzy match)"]
+    FC --> DC["Domain Correction<br/>(property→domain map)"]
+    DC --> CC["Confidence Recompute"]
+    CC --> OUT["Validated Slots"]
+
+    style FC fill:#dcfce7,stroke:#22c55e
+    style DC fill:#fef3c7,stroke:#f59e0b
+    style CC fill:#dbeafe,stroke:#3b82f6
+```
+
+| Correction     | Logic                                                          | Example                                 |
+| -------------- | -------------------------------------------------------------- | --------------------------------------- |
+| **Filter**     | Exact → case-insensitive → substring → edit-distance ≤ 4 → gap | `"motoway"` → `"motorway"`              |
+| **Domain**     | Property→domain map; add missing, keep valid                   | `scenario` + `roadTypes` → adds `hdmap` |
+| **Confidence** | Recompute from match quality, not LLM self-assessment          | Exact = high, fuzzy = medium            |
+
+## Investigation Tools (RDF Reasoning)
+
+Five tools query the schema graph (`<urn:graph:schema>`) at runtime, giving the LLM on-demand ontology exploration:
+
+| Tool                   | Purpose                               | Returns                            |
+| ---------------------- | ------------------------------------- | ---------------------------------- |
+| `discover_domains`     | List searchable asset types           | `[{domain, classIri}]`             |
+| `discover_properties`  | Filterable properties for a domain    | `[{localName, datatype, hasEnum}]` |
+| `discover_values`      | Allowed `sh:in` values for a property | `["motorway", "rural", ...]`       |
+| `discover_connections` | Cross-domain references               | `[{from, to}]`                     |
+| `investigate_schema`   | Arbitrary SPARQL SELECT on schema     | `[{var1, var2, ...}]`              |
+
+**Safety:** Read-only, SELECT-only, 50-row cap, no interactive permissions.
+
+**When used:** Most queries resolve from the static prompt alone. Tools activate for niche properties, unfamiliar concepts, or complex cross-domain exploration.
 
 ## Provider Flexibility
 
-The agent logic works with multiple LLM providers — same validation pipeline, different backends:
+| Provider           | SDK           | Use Case                      |
+| ------------------ | ------------- | ----------------------------- |
+| **GitHub Copilot** | Copilot SDK   | Enterprise, GitHub-integrated |
+| **OpenAI**         | Vercel AI SDK | Cloud, highest quality        |
+| **Ollama**         | Vercel AI SDK | Local, privacy-first          |
 
-| Provider           | SDK                                 | Use Case                           |
-| ------------------ | ----------------------------------- | ---------------------------------- |
-| **GitHub Copilot** | Copilot SDK (`@github/copilot-sdk`) | Enterprise, integrated with GitHub |
-| **OpenAI**         | Vercel AI SDK                       | Cloud-hosted, highest quality      |
-| **Ollama**         | Vercel AI SDK                       | Local, privacy-first, no API costs |
-
-Configured via `AI_PROVIDER` environment variable. Both agent paths share the same post-LLM validation pipeline.
+All providers share the same validation pipeline and investigation tools.
