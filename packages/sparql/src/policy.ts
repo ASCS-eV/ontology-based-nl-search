@@ -1,6 +1,6 @@
 import { getConfig } from '@ontology-search/core/config'
 import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
-import { Parser } from 'sparqljs'
+import { Generator, Parser, type SparqlQuery } from 'sparqljs'
 
 export interface PolicyResult {
   allowed: boolean
@@ -145,4 +145,105 @@ function containsService(patterns: SparqlPattern[] | undefined): boolean {
     if (p.triples && containsService(p.triples)) return true
   }
   return false
+}
+
+function containsGraph(patterns: SparqlPattern[] | undefined): boolean {
+  if (!patterns) return false
+  for (const p of patterns) {
+    if (p.type === 'graph') return true
+    if (p.patterns && containsGraph(p.patterns)) return true
+  }
+  return false
+}
+
+// ─── Schema-scoped query validation ──────────────────────────────────────────
+
+const generator = new Generator()
+
+/**
+ * Validate and scope a SPARQL query for schema-only access.
+ *
+ * Uses the sparqljs AST (not regex) to enforce:
+ * - SELECT-only (rejects ASK, DESCRIBE, CONSTRUCT, updates)
+ * - No SERVICE clauses (no federation)
+ * - No GRAPH patterns (no cross-graph access)
+ * - No FROM/FROM NAMED (no graph redirection)
+ * - Injects FROM <schemaGraph> via AST to guarantee schema scoping
+ * - Caps results at 50 rows
+ *
+ * Returns the validated, schema-scoped query string on success.
+ */
+export function validateSchemaQuery(
+  query: string,
+  schemaGraph: string
+): PolicyResult & { query: string } {
+  const violations: string[] = []
+
+  if (!query || !query.trim()) {
+    return { allowed: false, violations: ['Query is empty'], query }
+  }
+
+  let parsed: ParsedQuery
+  try {
+    parsed = parser.parse(query) as unknown as ParsedQuery
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return { allowed: false, violations: [`Parse error: ${msg}`], query }
+  }
+
+  // Must be a SELECT query (blocks ASK, DESCRIBE, CONSTRUCT)
+  if (parsed.type !== 'query') {
+    violations.push(`Only SELECT queries are allowed, got: ${parsed.type}`)
+    return { allowed: false, violations, query }
+  }
+  if (parsed.queryType !== 'SELECT') {
+    violations.push(`Only SELECT queries are allowed, got: ${parsed.queryType}`)
+  }
+
+  // No write operations (INSERT, DELETE, etc. are type 'update', caught above,
+  // but belt-and-suspenders for safety)
+  if (/\b(INSERT|DELETE|DROP|CLEAR|CREATE|LOAD)\b/i.test(query)) {
+    violations.push('Write operations are not allowed')
+  }
+
+  // No SERVICE clauses
+  if (parsed.where && containsService(parsed.where)) {
+    violations.push('SERVICE clauses are not allowed (no federation)')
+  }
+
+  // No GRAPH patterns (prevents cross-graph access)
+  if (parsed.where && containsGraph(parsed.where)) {
+    violations.push('GRAPH clauses are not allowed — queries are scoped to the schema graph')
+  }
+
+  // No FROM/FROM NAMED (prevents graph redirection)
+  const parsedAny = parsed as unknown as Record<string, unknown>
+  const from = parsedAny.from as { default?: unknown[]; named?: unknown[] } | undefined
+  if (
+    from &&
+    ((from.default && from.default.length > 0) || (from.named && from.named.length > 0))
+  ) {
+    violations.push(
+      'FROM/FROM NAMED clauses are not allowed — queries are scoped to the schema graph'
+    )
+  }
+
+  if (violations.length > 0) {
+    return { allowed: false, violations, query }
+  }
+
+  // Inject FROM <schemaGraph> via AST and regenerate the query.
+  // This guarantees schema scoping regardless of input syntax (e.g., no WHERE keyword).
+  parsedAny.from = {
+    default: [{ termType: 'NamedNode', value: schemaGraph }],
+    named: [],
+  }
+  // Cap at 50 results
+  if (!parsed.limit || parsed.limit > 50) {
+    parsed.limit = 50
+  }
+
+  const scopedQuery = generator.stringify(parsed as unknown as SparqlQuery)
+
+  return { allowed: true, violations: [], query: scopedQuery }
 }

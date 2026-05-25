@@ -165,6 +165,8 @@ vi.mock('../property-paths.js', () => {
     { domain: 'hdmap', propertyName: 'region', assetClass: 'HDMap' },
     { domain: 'scenario', propertyName: 'country', assetClass: 'Scenario' },
     { domain: 'scenario', propertyName: 'city', assetClass: 'Scenario' },
+    { domain: 'ositrace', propertyName: 'country', assetClass: 'OSITrace' },
+    { domain: 'ositrace', propertyName: 'city', assetClass: 'OSITrace' },
   ]
   const ns = (domain: string) => `https://w3id.org/ascs-ev/envited-x/${domain}/v6/`
   const regularPaths = properties.map(({ domain, propertyName, group, assetClass }) => ({
@@ -589,6 +591,80 @@ describe('peer-domain UNION queries', () => {
     expect(sparql).toContain('manifest:hasReferencedArtifacts')
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
+  })
+
+  it('skips UNION arms for domains with no applicable filters (Bug #1 regression)', async () => {
+    // automotive-simulator has no roadTypes property — should be skipped
+    const slots: SearchSlots = {
+      domains: ['hdmap', 'ositrace', 'automotive-simulator'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+    }
+    const sparql = await compileSlots(slots)
+    expect(sparql).toContain('UNION')
+    expect(sparql).toContain('hdmap:HdMap')
+    expect(sparql).toContain('ositrace:OSITrace')
+    // automotive-simulator should be skipped since it has no applicable filters
+    expect(sparql).not.toContain('automotive-simulator:AutomotiveSimulator')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+
+  it('skips UNION arms for domains with no applicable location path (Bug #1 location variant)', async () => {
+    // automotive-simulator has no georeference path — should be skipped
+    // even when location is the only constraint
+    const slots: SearchSlots = {
+      domains: ['hdmap', 'ositrace', 'automotive-simulator'],
+      filters: {},
+      ranges: {},
+      location: { country: 'DE' },
+    }
+    const sparql = await compileSlots(slots)
+    expect(sparql).toContain('UNION')
+    expect(sparql).toContain('hdmap:HdMap')
+    expect(sparql).toContain('ositrace:OSITrace')
+    expect(sparql).not.toContain('automotive-simulator:AutomotiveSimulator')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+})
+
+describe('domain name normalization (Bug #2 regression)', () => {
+  it('normalizes "Environment Model" to "environment-model"', async () => {
+    const slots: SearchSlots = {
+      domains: ['Environment Model'],
+      filters: {},
+      ranges: {},
+    }
+    const sparql = await compileSlots(slots)
+    // Should not throw — domain name is normalized
+    expect(sparql).toContain('environment-model:EnvironmentModel')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+
+  it('normalizes PascalCase "EnvironmentModel" to "environment-model"', async () => {
+    const slots: SearchSlots = {
+      domains: ['EnvironmentModel'],
+      filters: {},
+      ranges: {},
+    }
+    const sparql = await compileSlots(slots)
+    expect(sparql).toContain('environment-model:EnvironmentModel')
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
+
+  it('normalizes "HD Map" to "hdmap" style', async () => {
+    const slots: SearchSlots = {
+      domains: ['HD Map'],
+      filters: {},
+      ranges: {},
+    }
+    // "hd-map" won't match "hdmap" in registry, but it should not crash.
+    // The normalized form "hd-map" may not exist, but the error message should
+    // be about an unknown domain, not an unhandled exception.
+    await expect(compileSlots(slots)).rejects.toThrow(/Unknown domain/)
   })
 })
 

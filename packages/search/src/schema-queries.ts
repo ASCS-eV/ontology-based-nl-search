@@ -22,6 +22,9 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
 
+/** Tracks which domain mismatches have already been warned about (emit once). */
+const warnedDomainMismatches = new Set<string>()
+
 /** Property-domain association from SHACL shapes */
 export interface PropertyDomainInfo {
   /** Property local name (e.g., "roadTypes") */
@@ -199,12 +202,13 @@ export async function queryAssetDomains(
     }
   }
 
-  // Detect domains in registry that were not discovered via rdfs:subClassOf
-  // This indicates potential SHACL extraction issues or naming convention mismatches
+  // Detect domains in registry that were not discovered via rdfs:subClassOf.
+  // Warn only once per domain to avoid log spam on repeated calls.
   if (registry && registry.domains.size > 0) {
     const discoveredDomains = new Set(domains.map((d) => d.domainName))
     for (const [name] of registry.domains) {
-      if (!discoveredDomains.has(name)) {
+      if (!discoveredDomains.has(name) && !warnedDomainMismatches.has(name)) {
+        warnedDomainMismatches.add(name)
         console.warn(
           `[schema-queries] Domain '${name}' in registry but not discovered via rdfs:subClassOf ` +
             `— check that sh:targetClass declaration exists and matches PascalCase naming convention`

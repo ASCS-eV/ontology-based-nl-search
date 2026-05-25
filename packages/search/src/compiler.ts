@@ -262,10 +262,37 @@ async function compilePeerDomainUnion(
 
   // Build UNION arms
   const unionArms: string[] = []
+  const hasFilters = Object.values(filtersByDomain).some((f) => Object.keys(f).length > 0)
+  const hasRanges = Object.values(rangesByDomain).some((r) => Object.keys(r).length > 0)
+  const hasLocation = !!(slots.location?.country || slots.location?.city)
+  const queryHasConstraints = hasFilters || hasRanges || hasLocation
 
   for (const domainName of domains) {
     const domain = registry.domains.get(domainName)
     if (!domain) continue
+
+    const domainFilters = filtersByDomain[domainName] || {}
+    const domainRanges = rangesByDomain[domainName] || {}
+    const domainHasFilterOrRange =
+      Object.keys(domainFilters).length > 0 || Object.keys(domainRanges).length > 0
+
+    // Check whether location constraints can actually be applied to this domain
+    // by verifying it has discoverable property paths for location fields.
+    const domainHasLocationPath =
+      hasLocation &&
+      ['country', 'state', 'region', 'city'].some((field) => {
+        const path = vocabIndex.paths.get(`${domainName}:${field}`)
+        return path && path.steps.length >= 3
+      })
+
+    const domainHasConstraints = domainHasFilterOrRange || domainHasLocationPath
+
+    // Skip domains with zero applicable constraints when the query clearly
+    // intends to filter. This prevents UNION arms that return ALL assets
+    // from a domain unrelated to the search intent.
+    if (queryHasConstraints && !domainHasConstraints) {
+      continue
+    }
 
     prefixDomains.add(domainName)
 
@@ -279,8 +306,6 @@ async function compilePeerDomainUnion(
     armPatterns.push('  rdfs:label ?name .')
 
     // Build domain-specific patterns
-    const domainFilters = filtersByDomain[domainName] || {}
-    const domainRanges = rangesByDomain[domainName] || {}
     const foreignDomains = buildDomainPatterns(
       domainName,
       domain,
@@ -351,6 +376,20 @@ async function compilePeerDomainUnion(
 export async function compileSlots(slots: SearchSlots): Promise<string> {
   const registry = await buildDomainRegistry()
   const vocabIndex = await getCompilerVocab()
+
+  // Normalize domain names: lowercase, insert hyphens at camelCase boundaries,
+  // replace spaces/underscores with hyphens.
+  // Handles LLM variants like "Environment Model", "EnvironmentModel", "environment_model".
+  slots = {
+    ...slots,
+    domains: slots.domains.map((d) =>
+      d
+        .replace(/([a-z])([A-Z])/g, '$1-$2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+        .toLowerCase()
+        .replace(/[\s_]+/g, '-')
+    ),
+  }
 
   // When no domain is specified, use cross-domain search
   if (slots.domains.length === 0) {

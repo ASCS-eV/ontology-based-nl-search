@@ -40,6 +40,7 @@ import { compileSlots } from '@ontology-search/search/compiler'
 import { getShaclContent } from '@ontology-search/search/shacl-reader'
 import type { SearchSlots } from '@ontology-search/search/slots'
 import { escapeSparqlLiteral } from '@ontology-search/sparql/escape'
+import { validateSchemaQuery } from '@ontology-search/sparql/policy'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
@@ -438,35 +439,13 @@ function buildInvestigationTools(store: SparqlStore) {
         required: ['sparql'],
       },
       handler: async (params: { sparql: string }) => {
-        const normalized = params.sparql.trim().toUpperCase()
-        if (!normalized.startsWith('SELECT') && !normalized.startsWith('PREFIX')) {
-          return { error: 'Only SELECT queries are allowed', results: [] }
+        const validation = validateSchemaQuery(params.sparql, SCHEMA_GRAPH)
+        if (!validation.allowed) {
+          return { error: validation.violations.join('; '), results: [] }
         }
-        if (/\b(INSERT|DELETE|DROP|CLEAR|CREATE|LOAD)\b/i.test(params.sparql)) {
-          return { error: 'Write operations are not allowed', results: [] }
-        }
-        // Reject GRAPH clauses targeting non-schema graphs and FROM/FROM NAMED
-        // clauses that could redirect the query to instance data.
-        // Match as SPARQL keywords (followed by whitespace), not within IRIs.
-        if (/\bGRAPH\s/i.test(params.sparql)) {
-          return {
-            error: 'GRAPH clauses are not allowed — queries are scoped to the schema graph',
-            results: [],
-          }
-        }
-        if (/\bFROM\s/i.test(params.sparql)) {
-          return {
-            error:
-              'FROM/FROM NAMED clauses are not allowed — queries are scoped to the schema graph',
-            results: [],
-          }
-        }
-
-        // Always scope the query to the schema graph
-        const wrappedQuery = params.sparql.replace(/\bWHERE\b/i, `FROM <${SCHEMA_GRAPH}> WHERE`)
 
         try {
-          const results = await store.query(wrappedQuery)
+          const results = await store.query(validation.query)
           const bindings = results.results.bindings.slice(0, 50).map((b) => {
             const row: Record<string, string> = {}
             for (const [key, val] of Object.entries(b)) {
@@ -475,9 +454,9 @@ function buildInvestigationTools(store: SparqlStore) {
             return row
           })
           return { variables: results.head.vars, results: bindings, count: bindings.length }
-        } catch (err) {
+        } catch {
           return {
-            error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+            error: 'Query execution failed — check syntax and try a simpler query',
             results: [],
           }
         }

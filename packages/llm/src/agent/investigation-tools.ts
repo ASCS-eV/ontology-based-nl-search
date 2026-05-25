@@ -14,6 +14,7 @@
  */
 import { SCHEMA_GRAPH } from '@ontology-search/search'
 import { escapeSparqlLiteral } from '@ontology-search/sparql/escape'
+import { validateSchemaQuery } from '@ontology-search/sparql/policy'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 import { tool } from 'ai'
 import { z } from 'zod'
@@ -125,11 +126,11 @@ export function createInvestigationTools(store: SparqlStore) {
             classIri: b['classIri']?.value ?? '',
           }))
           return { domains, count: domains.length }
-        } catch (err) {
+        } catch {
           return {
             domains: [],
             count: 0,
-            error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+            error: 'Failed to discover domains — the schema graph may not be loaded',
           }
         }
       },
@@ -173,12 +174,12 @@ export function createInvestigationTools(store: SparqlStore) {
             hasEnumeratedValues: b['hasEnum']?.value === 'true',
           }))
           return { domain, properties, count: properties.length }
-        } catch (err) {
+        } catch {
           return {
             domain,
             properties: [],
             count: 0,
-            error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+            error: 'Failed to discover properties — check the domain name and try again',
           }
         }
       },
@@ -215,13 +216,13 @@ export function createInvestigationTools(store: SparqlStore) {
           const results = await store.query(query)
           const values = results.results.bindings.map((b) => b['value']?.value ?? '')
           return { propertyName, domain: domain || 'all', values, count: values.length }
-        } catch (err) {
+        } catch {
           return {
             propertyName,
             domain: domain || 'all',
             values: [],
             count: 0,
-            error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+            error: 'Failed to discover values — check property name and domain',
           }
         }
       },
@@ -266,11 +267,11 @@ export function createInvestigationTools(store: SparqlStore) {
             toClass: b['childClass']?.value ?? '',
           }))
           return { connections, count: connections.length }
-        } catch (err) {
+        } catch {
           return {
             connections: [],
             count: 0,
-            error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+            error: 'Failed to discover connections — check the domain name and try again',
           }
         }
       },
@@ -284,36 +285,13 @@ export function createInvestigationTools(store: SparqlStore) {
         'Only SELECT queries are allowed — no INSERT/DELETE/UPDATE.',
       inputSchema: schemaQueryParams,
       execute: async ({ sparql }) => {
-        // Security: only allow SELECT queries on schema graph
-        const normalized = sparql.trim().toUpperCase()
-        if (!normalized.startsWith('SELECT') && !normalized.startsWith('PREFIX')) {
-          return { error: 'Only SELECT queries are allowed', results: [] }
+        const validation = validateSchemaQuery(sparql, SCHEMA_GRAPH)
+        if (!validation.allowed) {
+          return { error: validation.violations.join('; '), results: [] }
         }
-        if (/\b(INSERT|DELETE|DROP|CLEAR|CREATE|LOAD)\b/i.test(sparql)) {
-          return { error: 'Write operations are not allowed', results: [] }
-        }
-        // Reject GRAPH clauses targeting non-schema graphs and FROM/FROM NAMED
-        // clauses that could redirect the query to instance data.
-        // Match as SPARQL keywords (followed by whitespace), not within IRIs.
-        if (/\bGRAPH\s/i.test(sparql)) {
-          return {
-            error: 'GRAPH clauses are not allowed — queries are scoped to the schema graph',
-            results: [],
-          }
-        }
-        if (/\bFROM\s/i.test(sparql)) {
-          return {
-            error:
-              'FROM/FROM NAMED clauses are not allowed — queries are scoped to the schema graph',
-            results: [],
-          }
-        }
-
-        // Always scope the query to the schema graph
-        const wrappedQuery = sparql.replace(/\bWHERE\b/i, `FROM <${SCHEMA_GRAPH}> WHERE`)
 
         try {
-          const results = await store.query(wrappedQuery)
+          const results = await store.query(validation.query)
           const bindings = results.results.bindings.slice(0, 50).map((b) => {
             const row: Record<string, string> = {}
             for (const [key, val] of Object.entries(b)) {
@@ -322,9 +300,9 @@ export function createInvestigationTools(store: SparqlStore) {
             return row
           })
           return { variables: results.head.vars, results: bindings, count: bindings.length }
-        } catch (err) {
+        } catch {
           return {
-            error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+            error: 'Query execution failed — check syntax and try a simpler query',
             results: [],
           }
         }
