@@ -24,8 +24,8 @@
  * here should be regenerated deliberately, not silently auto-fixed.
  */
 
-import { enforceSparqlPolicy } from '@ontology-search/sparql/policy'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { enforceSparqlPolicy, registerPolicyNamespaces } from '@ontology-search/sparql/policy'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { compileSlots } from '../compiler.js'
 import { getInitializedStore } from '../init.js'
@@ -35,6 +35,12 @@ beforeAll(async () => {
   // Warm the singletons once. The compiler's internal vocabulary cache plus
   // the domain registry are then re-used across every test in this file.
   await getInitializedStore()
+
+  // Register ontology namespaces with the SPARQL policy so compiled queries
+  // pass prefix validation. In production this is done during warmup.
+  const { buildDomainRegistry } = await import('@ontology-search/ontology/domain-registry')
+  const registry = await buildDomainRegistry()
+  registerPolicyNamespaces(registry.getAllNamespaces())
 }, 60_000)
 
 /**
@@ -173,7 +179,7 @@ describe('compileSlots — determinism + snapshot suite', () => {
 
   // ─── Location filters ──────────────────────────────────────────────────
 
-  it('location with single country (CONTAINS LCASE matching)', async () => {
+  it('location with single country (STR matching)', async () => {
     const sparql = await assertDeterministic({
       domains: ['hdmap'],
       filters: {},
@@ -326,5 +332,29 @@ describe('compileSlots — determinism + snapshot suite', () => {
       location: undefined,
     })
     expect(b).toBe(a)
+  })
+
+  // ─── Peer-domain UNION queries ────────────────────────────────────────
+
+  it('peer domains (hdmap + ositrace) with shared roadTypes → UNION', async () => {
+    const sparql = await assertDeterministic({
+      domains: ['hdmap', 'ositrace'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+    })
+    expect(sparql).toContain('UNION')
+    expect(sparql).toMatchSnapshot()
+  })
+
+  it('peer domains (hdmap + ositrace) with location → UNION with country filter', async () => {
+    const sparql = await assertDeterministic({
+      domains: ['hdmap', 'ositrace'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+      location: { country: 'FR' },
+    })
+    expect(sparql).toContain('UNION')
+    expect(sparql).toContain('country')
+    expect(sparql).toMatchSnapshot()
   })
 })

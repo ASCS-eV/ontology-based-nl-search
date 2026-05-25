@@ -3,21 +3,27 @@
  *
  * This module queries the SHACL shapes graph to extract ontology structure:
  * - Property-domain mappings (which domains define which properties)
- * - Asset domain discovery (all classes that are SimulationAssets)
+ * - Asset domain discovery (all classes that are cross-domain subclasses)
  * - Domain references (which domains reference which other domains)
  * - Property shape group classification (Content, Format, Quantity, etc.)
  * - Range2D property detection
  *
- * Architecture: Query the graph, don't extract metadata.
- * All domain knowledge comes from SPARQL queries, not hardcoded maps.
+ * Architecture: Query the graph, don't hardcode metadata.
+ * All domain knowledge comes from SPARQL queries + the domain registry,
+ * not from hardcoded namespace patterns or class names.
  *
  * @see https://www.w3.org/TR/sparql11-query/
  * @see https://www.w3.org/TR/shacl/
  */
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
+import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
+import { isIri } from '@ontology-search/sparql/escape'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
+
+/** Tracks which domain mismatches have already been warned about (emit once). */
+const warnedDomainMismatches = new Set<string>()
 
 /** Property-domain association from SHACL shapes */
 export interface PropertyDomainInfo {
@@ -66,12 +72,17 @@ export interface Range2DPropertyInfo {
 }
 
 /**
- * Extract domain name from IRI.
+ * Extract domain name from IRI using the domain registry.
  *
- * Uses the ENVITED-X IRI convention: `.../domain/vN/ClassName`
- * Example: "https://w3id.org/.../hdmap/v6/HDMap" → "hdmap"
+ * Delegates to `registry.domainForIri()` for longest-prefix matching
+ * against known domain namespaces. Falls back to the IRI path-segment
+ * convention (`/domain/vN/`) when no registry is provided.
  */
-function extractDomain(iri: string): string {
+function extractDomain(iri: string, registry?: DomainRegistry): string {
+  if (registry) {
+    return registry.domainForIri(iri) ?? ''
+  }
+  // Fallback: IRI path-segment convention (e.g., ".../hdmap/v6/HdMap" → "hdmap")
   const match = iri.match(/\/([^/]+)\/v\d+\//)
   return match?.[1] ?? ''
 }
@@ -91,7 +102,10 @@ function extractLocalName(iri: string): string {
  * multiple domains (e.g., roadTypes in both hdmap and ositrace) will have
  * multiple rows.
  */
-export async function queryPropertyDomains(store: SparqlStore): Promise<PropertyDomainInfo[]> {
+export async function queryPropertyDomains(
+  store: SparqlStore,
+  registry?: DomainRegistry
+): Promise<PropertyDomainInfo[]> {
   const sparql = `
     ${sparqlPrefixes('sh')}
 
@@ -116,7 +130,7 @@ export async function queryPropertyDomains(store: SparqlStore): Promise<Property
     if (!iri || !targetClass) continue
 
     const localName = extractLocalName(iri)
-    const domain = extractDomain(targetClass)
+    const domain = extractDomain(targetClass, registry)
     const key = `${localName}:${domain}`
 
     if (localName && domain && !seen.has(key)) {
@@ -131,46 +145,75 @@ export async function queryPropertyDomains(store: SparqlStore): Promise<Property
 /**
  * Query for all asset domains via rdfs:subClassOf hierarchy.
  *
- * Discovers asset types by finding classes whose superclass IRI
- * is in the envited-x base namespace (SimulationAsset, SoftwareAsset,
- * CodeAsset, ServiceAsset). Version-independent — matches any version
- * by filtering on the namespace path pattern.
+ * Discovers asset types by finding cross-domain rdfs:subClassOf
+ * relationships where the subclass is a known primary target class
+ * from the domain registry. This is ontology-agnostic — it works
+ * with any ontology structure where domain classes inherit from
+ * base asset classes in a different domain.
  */
-export async function queryAssetDomains(store: SparqlStore): Promise<AssetDomainInfo[]> {
-  // Version-independent: match any class that is rdfs:subClassOf
-  // something in the envited-x base ontology namespace
+export async function queryAssetDomains(
+  store: SparqlStore,
+  registry?: DomainRegistry
+): Promise<AssetDomainInfo[]> {
   const sparql = `
     ${sparqlPrefixes('rdfs')}
 
-    SELECT DISTINCT ?assetClass WHERE {
+    SELECT DISTINCT ?subClass ?superClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
-        ?assetClass rdfs:subClassOf ?superclass .
-        FILTER(
-          CONTAINS(STR(?superclass), "/envited-x/envited-x/") &&
-          (
-            STRENDS(STR(?superclass), "SimulationAsset") ||
-            STRENDS(STR(?superclass), "SoftwareAsset") ||
-            STRENDS(STR(?superclass), "CodeAsset") ||
-            STRENDS(STR(?superclass), "ServiceAsset")
-          )
-        )
+        ?subClass rdfs:subClassOf ?superClass .
+        FILTER(isIRI(?subClass) && isIRI(?superClass))
       }
     }
-    ORDER BY ?assetClass
+    ORDER BY ?subClass
   `
 
   const result = await store.query(sparql)
   const domains: AssetDomainInfo[] = []
   const seen = new Set<string>()
 
-  for (const row of result.results.bindings) {
-    const assetClass = row['assetClass']?.value
-    if (!assetClass) continue
+  // Collect primary target class IRIs from the registry
+  const primaryIris = new Set<string>()
+  if (registry) {
+    for (const desc of registry.domains.values()) {
+      primaryIris.add(desc.targetClassIri)
+    }
+  }
 
-    const domainName = extractDomain(assetClass)
-    if (domainName && !seen.has(domainName)) {
-      seen.add(domainName)
-      domains.push({ domainName, assetClass })
+  for (const row of result.results.bindings) {
+    const subClass = row['subClass']?.value
+    const superClass = row['superClass']?.value
+    if (!subClass || !superClass) continue
+
+    const subDomain = extractDomain(subClass, registry)
+    const superDomain = extractDomain(superClass, registry)
+
+    // Cross-domain inheritance: subclass is in a different domain than superclass
+    // AND the subclass must be the primary target class for its domain
+    // (this filters out sub-shapes like Content, Format, etc.)
+    if (
+      subDomain &&
+      superDomain &&
+      subDomain !== superDomain &&
+      !seen.has(subDomain) &&
+      (primaryIris.size === 0 || primaryIris.has(subClass))
+    ) {
+      seen.add(subDomain)
+      domains.push({ domainName: subDomain, assetClass: subClass })
+    }
+  }
+
+  // Detect domains in registry that were not discovered via rdfs:subClassOf.
+  // Warn only once per domain to avoid log spam on repeated calls.
+  if (registry && registry.domains.size > 0) {
+    const discoveredDomains = new Set(domains.map((d) => d.domainName))
+    for (const [name] of registry.domains) {
+      if (!discoveredDomains.has(name) && !warnedDomainMismatches.has(name)) {
+        warnedDomainMismatches.add(name)
+        console.warn(
+          `[schema-queries] Domain '${name}' in registry but not discovered via rdfs:subClassOf ` +
+            `— check that sh:targetClass declaration exists and matches PascalCase naming convention`
+        )
+      }
     }
   }
 
@@ -178,25 +221,10 @@ export async function queryAssetDomains(store: SparqlStore): Promise<AssetDomain
 }
 
 /**
- * SPARQL filter fragment: restricts a class to known ENVITED-X asset types
- * (SimulationAsset, SoftwareAsset, CodeAsset, ServiceAsset).
- * The variable `?cls` and `?super` must be substituted by the caller.
- */
-const ASSET_DOMAIN_FILTER = (cls: string, sup: string) => `
-  ?${cls} rdfs:subClassOf ?${sup} .
-  FILTER(
-    CONTAINS(STR(?${sup}), "/envited-x/envited-x/") &&
-    (STRENDS(STR(?${sup}), "SimulationAsset") ||
-     STRENDS(STR(?${sup}), "SoftwareAsset") ||
-     STRENDS(STR(?${sup}), "CodeAsset") ||
-     STRENDS(STR(?${sup}), "ServiceAsset"))
-  )
-`
-
-/**
  * Query for domain reference relationships.
  *
- * Finds which domains reference other domains via manifest:hasReferencedArtifacts.
+ * Finds which domains reference other domains via the "hasReferencedArtifacts"
+ * predicate (discovered from the manifest domain in the registry).
  * Uses a multi-strategy approach to handle different SHACL nesting patterns:
  *
  * 1. **Direct sh:class** — simple `sh:class` on the property shape (original pattern)
@@ -210,15 +238,20 @@ const ASSET_DOMAIN_FILTER = (cls: string, sup: string) => `
  *   B. Walk up through `sh:and` conjunction list to the domain shape
  *   C. Walk up through `sh:or` disjunction list to the domain shape
  *
- * Separate queries avoid Oxigraph WASM crashes from UNION + property path `*`.
+ * Post-filtering with the known asset domain set replaces the former
+ * hardcoded ASSET_DOMAIN_FILTER SPARQL fragment.
  */
-export async function queryDomainReferences(store: SparqlStore): Promise<DomainReferenceInfo[]> {
+export async function queryDomainReferences(
+  store: SparqlStore,
+  registry?: DomainRegistry,
+  knownAssetClasses?: Set<string>
+): Promise<DomainReferenceInfo[]> {
   const references: DomainReferenceInfo[] = []
   const seen = new Set<string>()
 
   const addReference = (parentClass: string, childClass: string): void => {
-    const parentDomain = extractDomain(parentClass)
-    const childDomain = extractDomain(childClass)
+    const parentDomain = extractDomain(parentClass, registry)
+    const childDomain = extractDomain(childClass, registry)
     const key = `${parentDomain}:${childDomain}`
     if (parentDomain && childDomain && parentDomain !== childDomain && !seen.has(key)) {
       seen.add(key)
@@ -226,20 +259,26 @@ export async function queryDomainReferences(store: SparqlStore): Promise<DomainR
     }
   }
 
+  // Discover manifest namespace from registry (if available)
+  const manifestNs = discoverManifestNamespace(registry)
+  if (!manifestNs) {
+    console.warn(
+      '[schema-queries] No manifest namespace found in registry — cross-domain references will not be discovered'
+    )
+    return references
+  }
+
   // Strategy 1: Direct sh:class on hasReferencedArtifacts property shape.
-  // Handles simple SHACL patterns where the child class is declared directly.
   const directSparql = `
     ${sparqlPrefixes('sh', 'rdfs')}
-    PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
 
     SELECT DISTINCT ?parentClass ?childClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
         ?shape sh:targetClass ?parentClass .
         ?shape sh:property ?propShape .
-        ?propShape sh:path manifest:hasReferencedArtifacts .
+        ?propShape sh:path <${manifestNs}hasReferencedArtifacts> .
         ?propShape sh:class ?childClass .
-        ${ASSET_DOMAIN_FILTER('parentClass', 'parentSuper')}
-        ${ASSET_DOMAIN_FILTER('childClass', 'childSuper')}
+        FILTER(isIRI(?parentClass) && isIRI(?childClass))
       }
     }
   `
@@ -247,25 +286,30 @@ export async function queryDomainReferences(store: SparqlStore): Promise<DomainR
   for (const row of directResult.results.bindings) {
     const parentClass = row['parentClass']?.value
     const childClass = row['childClass']?.value
-    if (parentClass && childClass) addReference(parentClass, childClass)
+    if (parentClass && childClass) {
+      if (
+        isAssetClass(parentClass, knownAssetClasses) &&
+        isAssetClass(childClass, knownAssetClasses)
+      ) {
+        addReference(parentClass, childClass)
+      }
+    }
   }
 
   // Strategy 2: Nested SHACL — walk sh:node → sh:or → rdf:list → sh:node → targetClass.
-  // Phase A: Find (constraintShape, childClass) pairs from the nested structure.
   const nestedChildSparql = `
     ${sparqlPrefixes('sh', 'rdfs', 'rdf')}
-    PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
 
     SELECT DISTINCT ?constraintShape ?childClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
         ?constraintShape sh:property ?propShape .
-        ?propShape sh:path manifest:hasReferencedArtifacts .
+        ?propShape sh:path <${manifestNs}hasReferencedArtifacts> .
         ?propShape sh:node ?wrapper .
         ?wrapper sh:or ?orList .
         ?orList rdf:rest*/rdf:first ?item .
         ?item sh:node ?childShape .
         ?childShape sh:targetClass ?childClass .
-        ${ASSET_DOMAIN_FILTER('childClass', 'childSuper')}
+        FILTER(isIRI(?childClass))
       }
     }
   `
@@ -275,13 +319,14 @@ export async function queryDomainReferences(store: SparqlStore): Promise<DomainR
     const cs = row['constraintShape']?.value
     const cc = row['childClass']?.value
     if (!cs || !cc) continue
+    if (knownAssetClasses && !isAssetClass(cc, knownAssetClasses)) continue
     if (!constraintToChildren.has(cs)) constraintToChildren.set(cs, [])
     constraintToChildren.get(cs)!.push(cc)
   }
 
   // Phase B: For each constraint shape, discover its parent domain.
   for (const [constraintIri, childClasses] of constraintToChildren) {
-    const parentClass = await resolveParentDomain(store, constraintIri)
+    const parentClass = await resolveParentDomain(store, constraintIri, knownAssetClasses)
     if (parentClass) {
       for (const childClass of childClasses) {
         addReference(parentClass, childClass)
@@ -293,36 +338,71 @@ export async function queryDomainReferences(store: SparqlStore): Promise<DomainR
 }
 
 /**
+ * Discover the manifest namespace from the registry.
+ * Looks for a domain named "manifest" or any domain that declares
+ * a "manifest" prefix in its declared prefixes.
+ */
+function discoverManifestNamespace(registry?: DomainRegistry): string | undefined {
+  if (!registry) return undefined
+  const manifest = registry.domains.get('manifest')
+  if (manifest) return manifest.namespace
+  for (const desc of registry.domains.values()) {
+    const manifestNs = desc.declaredPrefixes['manifest']
+    if (manifestNs) return manifestNs
+  }
+  return undefined
+}
+
+/**
+ * Check whether a class IRI is a known asset class.
+ * When no set is provided (no pre-computed asset classes), all classes pass.
+ */
+function isAssetClass(classIri: string, knownAssetClasses?: Set<string>): boolean {
+  if (!knownAssetClasses || knownAssetClasses.size === 0) return true
+  return knownAssetClasses.has(classIri)
+}
+
+/**
  * Resolve the parent asset domain for a SHACL constraint shape.
  *
  * Tries multiple strategies in order:
- *   A. Constraint itself has sh:targetClass that is an asset domain
+ *   A. Constraint itself has sh:targetClass that is a known asset class
  *   B. Constraint is nested in an sh:and conjunction list of a domain shape
  *   C. Constraint is nested in an sh:or disjunction list of a domain shape
+ *
+ * Post-filters results against known asset classes when available.
  */
 async function resolveParentDomain(
   store: SparqlStore,
-  constraintIri: string
+  constraintIri: string,
+  knownAssetClasses?: Set<string>
 ): Promise<string | null> {
+  // Validate IRI before interpolation into SPARQL to prevent injection
+  // from malformed RDF data in the schema graph.
+  if (!isIri(constraintIri)) {
+    console.warn(`[schema-queries] skipping invalid constraint IRI: ${constraintIri}`)
+    return null
+  }
+
   // Strategy A: Constraint shape directly has sh:targetClass
   const directSparql = `
     ${sparqlPrefixes('sh', 'rdfs')}
     SELECT ?parentClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
         <${constraintIri}> sh:targetClass ?parentClass .
-        ${ASSET_DOMAIN_FILTER('parentClass', 'parentSuper')}
+        FILTER(isIRI(?parentClass))
       }
-    } LIMIT 1
+    } LIMIT 10
   `
   const directResult = await store.query(directSparql)
-  const directBinding = directResult.results.bindings[0]
-  if (directBinding) {
-    return directBinding['parentClass']?.value ?? null
+  for (const binding of directResult.results.bindings) {
+    const parentClass = binding['parentClass']?.value
+    if (parentClass && isAssetClass(parentClass, knownAssetClasses)) {
+      return parentClass
+    }
   }
 
   // Strategy B: Walk up through sh:and conjunction list.
-  // Pattern: domainShape → sh:property → prop → sh:or → list → item →
-  //          sh:and → list → member → sh:node → constraintShape
   const andListSparql = `
     ${sparqlPrefixes('sh', 'rdf', 'rdfs')}
     SELECT DISTINCT ?parentClass WHERE {
@@ -334,19 +414,19 @@ async function resolveParentDomain(
         ?propParent sh:or ?orList .
         ?topShape sh:property ?propParent .
         ?topShape sh:targetClass ?parentClass .
-        ${ASSET_DOMAIN_FILTER('parentClass', 'parentSuper')}
+        FILTER(isIRI(?parentClass))
       }
-    } LIMIT 1
+    } LIMIT 10
   `
   const andResult = await store.query(andListSparql)
-  const andBinding = andResult.results.bindings[0]
-  if (andBinding) {
-    return andBinding['parentClass']?.value ?? null
+  for (const binding of andResult.results.bindings) {
+    const parentClass = binding['parentClass']?.value
+    if (parentClass && isAssetClass(parentClass, knownAssetClasses)) {
+      return parentClass
+    }
   }
 
   // Strategy C: Walk up through sh:or disjunction list directly.
-  // Pattern: domainShape → sh:property → prop → sh:or → list →
-  //          member → sh:node → constraintShape
   const orListSparql = `
     ${sparqlPrefixes('sh', 'rdf', 'rdfs')}
     SELECT DISTINCT ?parentClass WHERE {
@@ -356,14 +436,16 @@ async function resolveParentDomain(
         ?propParent sh:or ?orList .
         ?topShape sh:property ?propParent .
         ?topShape sh:targetClass ?parentClass .
-        ${ASSET_DOMAIN_FILTER('parentClass', 'parentSuper')}
+        FILTER(isIRI(?parentClass))
       }
-    } LIMIT 1
+    } LIMIT 10
   `
   const orResult = await store.query(orListSparql)
-  const orBinding = orResult.results.bindings[0]
-  if (orBinding) {
-    return orBinding['parentClass']?.value ?? null
+  for (const binding of orResult.results.bindings) {
+    const parentClass = binding['parentClass']?.value
+    if (parentClass && isAssetClass(parentClass, knownAssetClasses)) {
+      return parentClass
+    }
   }
 
   return null
@@ -376,11 +458,13 @@ async function resolveParentDomain(
  * belongs to (Content, Format, Quantity, Quality, DataSource). This is the
  * graph-driven replacement for hardcoded property classification.
  *
- * SHACL structure: Shape → sh:targetClass → C, C rdfs:subClassOf envited-x:Content
- * The superclass local name ("Content", "Format", etc.) is the shape group.
+ * Detects cross-domain inheritance: a domain-specific class inherits from
+ * a base class in a different domain. The superclass local name is the
+ * shape group label (e.g., "Content", "Format").
  */
 export async function queryPropertyShapeGroups(
-  store: SparqlStore
+  store: SparqlStore,
+  registry?: DomainRegistry
 ): Promise<PropertyShapeGroupInfo[]> {
   const sparql = `
     ${sparqlPrefixes('sh', 'rdfs')}
@@ -393,7 +477,7 @@ export async function queryPropertyShapeGroups(
         FILTER(isIRI(?propIri))
 
         ?targetClass rdfs:subClassOf ?superclass .
-        FILTER(CONTAINS(STR(?superclass), "/envited-x/envited-x/"))
+        FILTER(isIRI(?superclass))
       }
     }
     ORDER BY ?propIri
@@ -410,11 +494,22 @@ export async function queryPropertyShapeGroups(
     if (!propIri || !targetClass || !superclass) continue
 
     const localName = extractLocalName(propIri)
-    const domain = extractDomain(targetClass)
+    const domain = extractDomain(targetClass, registry)
+    const superDomain = extractDomain(superclass, registry)
     const shapeGroup = extractLocalName(superclass)
     const key = `${localName}:${domain}`
 
-    if (localName && domain && shapeGroup && !seen.has(key)) {
+    // Only include cross-domain inheritance (property's class inherits from
+    // a base class in a different domain). Same-domain subClassOf is just
+    // internal OWL structuring, not a shape group classification.
+    if (
+      localName &&
+      domain &&
+      superDomain &&
+      domain !== superDomain &&
+      shapeGroup &&
+      !seen.has(key)
+    ) {
       seen.add(key)
       groups.push({ localName, domain, shapeGroup })
     }
@@ -430,7 +525,10 @@ export async function queryPropertyShapeGroups(
  * contains "Range2D". These require special SPARQL pattern generation
  * (property → blank node → min/max).
  */
-export async function queryRange2DProperties(store: SparqlStore): Promise<Range2DPropertyInfo[]> {
+export async function queryRange2DProperties(
+  store: SparqlStore,
+  registry?: DomainRegistry
+): Promise<Range2DPropertyInfo[]> {
   const sparql = `
     ${sparqlPrefixes('sh')}
 
@@ -455,7 +553,7 @@ export async function queryRange2DProperties(store: SparqlStore): Promise<Range2
     if (!propIri) continue
 
     const localName = extractLocalName(propIri)
-    const domain = extractDomain(propIri)
+    const domain = extractDomain(propIri, registry)
 
     if (localName && domain) {
       properties.push({ localName, domain })

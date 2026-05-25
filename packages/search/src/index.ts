@@ -19,6 +19,8 @@ export type {
 export type { SearchDependencies } from './service.js'
 export { SearchService } from './service.js'
 export type { ReferenceFilter, SearchSlots } from './slots.js'
+export type { SparqlValidationIssue, SparqlValidationResult } from './sparql-validator.js'
+export { validateSparql } from './sparql-validator.js'
 export type {
   LlmStructuredResponse,
   MappedTerm,

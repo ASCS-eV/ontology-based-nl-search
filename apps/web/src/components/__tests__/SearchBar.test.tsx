@@ -44,6 +44,12 @@ describe('SearchBar', () => {
     expect(screen.getByRole('button', { name: /searching/i })).toBeDisabled()
   })
 
+  it('disables input and button when disabled prop is true', () => {
+    render(<SearchBar onSearch={vi.fn()} disabled />)
+    expect(screen.getByLabelText(/natural language search query/i)).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^search$/i })).toBeDisabled()
+  })
+
   it('opens the history dropdown on focus and fires onSearch with the picked entry', async () => {
     const user = userEvent.setup()
     const onSearch = vi.fn()

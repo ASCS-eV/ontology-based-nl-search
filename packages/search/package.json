@@ -19,6 +19,11 @@
       "import": "./dist/compiler.js",
       "default": "./dist/compiler.js"
     },
+    "./sparql-validator": {
+      "types": "./src/sparql-validator.ts",
+      "import": "./dist/sparql-validator.js",
+      "default": "./dist/sparql-validator.js"
+    },
     "./shacl-reader": {
       "types": "./src/shacl-reader.ts",
       "import": "./dist/shacl-reader.js",
@@ -42,11 +47,13 @@
     "@ontology-search/core": "workspace:*",
     "@ontology-search/ontology": "workspace:*",
     "@ontology-search/sparql": "workspace:*",
+    "sparqljs": "^3.7.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",
     "@types/node": "^25.7.0",
+    "@types/sparqljs": "^3.1.12",
     "rimraf": "^6.0.0",
     "typescript": "~5.9.3",
     "vitest": "^3.2.0"

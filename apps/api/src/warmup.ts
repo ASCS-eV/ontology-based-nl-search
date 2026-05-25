@@ -1,9 +1,11 @@
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { warmupLlmSession } from '@ontology-search/llm'
 import { buildSystemPrompt } from '@ontology-search/llm/prompt-builder'
+import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import { getInitializedStore } from '@ontology-search/search'
 import { getShaclContent } from '@ontology-search/search/shacl-reader'
+import { registerPolicyNamespaces } from '@ontology-search/sparql/policy'
 
 const logger = createComponentLogger('warmup')
 
@@ -27,6 +29,18 @@ export async function warmup(): Promise<WarmupResult> {
     logger.error('Store warmup failed', error)
   }
   const storeMs = Date.now() - start
+
+  // Register all discovered ontology namespaces with the SPARQL policy
+  // so compiled queries pass prefix validation regardless of which
+  // ontology is loaded.
+  try {
+    const registry = await buildDomainRegistry()
+    registerPolicyNamespaces(registry.getAllNamespaces())
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    errors.push(`Policy namespace registration failed: ${msg}`)
+    logger.error('Policy namespace registration failed', error)
+  }
 
   // Pre-build the LLM system prompt from raw SHACL content
   const vocabStart = Date.now()

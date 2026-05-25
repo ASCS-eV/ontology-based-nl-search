@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "node scripts/clean-ports.mjs && turbo run dev --parallel",
+    "dev": "node scripts/clean-ports.mjs && turbo run dev",
     "dev:api": "node scripts/clean-ports.mjs 3003 && pnpm run build && pnpm --filter @ontology-search/api dev",
     "dev:web": "node scripts/clean-ports.mjs 5174 && turbo run dev --filter=@ontology-search/web",
     "test": "turbo run test",

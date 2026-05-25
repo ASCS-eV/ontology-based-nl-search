@@ -34,6 +34,7 @@
     "@ontology-search/core": "workspace:*",
     "@ontology-search/ontology": "workspace:*",
     "@ontology-search/search": "workspace:*",
+    "@ontology-search/sparql": "workspace:*",
     "ai": "^5.0.185",
     "zod": "^4.4.3"
   },

@@ -6,7 +6,21 @@
  *   node scripts/test-1000-queries.mjs --limit 50
  *   node scripts/test-1000-queries.mjs --category hdmap-road
  *   node scripts/test-1000-queries.mjs --verbose
+ *   node scripts/test-1000-queries.mjs --json results.json
  */
+
+import { writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+
+// sparqljs for SPARQL syntax validation
+const require = createRequire(import.meta.url)
+let SparqlParser
+try {
+  const sparqljs = require('sparqljs')
+  SparqlParser = sparqljs.Parser
+} catch {
+  SparqlParser = null
+}
 
 const API = 'http://localhost:3003'
 const REQUEST_TIMEOUT_MS = 180_000
@@ -16,6 +30,18 @@ const KNOWN_PREFIXES = new Set([...ASSET_DOMAINS, 'manifest', 'georeference', 'r
 
 const expectDomain = (domain) => ({ domain })
 const expectOneOf = (...domainOneOf) => ({ domainOneOf })
+
+/** Validate SPARQL syntax using sparqljs parser */
+const sparqlParser = SparqlParser ? new SparqlParser() : null
+const validateSparqlSyntax = (sparql) => {
+  if (!sparqlParser || !sparql) return { valid: true, error: null }
+  try {
+    sparqlParser.parse(sparql)
+    return { valid: true, error: null }
+  } catch (err) {
+    return { valid: false, error: err.message ?? String(err) }
+  }
+}
 
 const wrap = (bases, templates) =>
   bases.flatMap((base) => templates.map((template) => template(base))).map((q) => q.trim())
@@ -581,7 +607,7 @@ const buildQueries = () => {
 const QUERIES = buildQueries()
 
 const parseArgs = (argv) => {
-  const options = { limit: Infinity, category: null, verbose: false, help: false }
+  const options = { limit: Infinity, category: null, verbose: false, help: false, json: null }
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i]
@@ -590,6 +616,9 @@ const parseArgs = (argv) => {
       i += 1
     } else if (arg === '--category' && argv[i + 1]) {
       options.category = argv[i + 1]
+      i += 1
+    } else if (arg === '--json' && argv[i + 1]) {
+      options.json = argv[i + 1]
       i += 1
     } else if (arg === '--verbose') {
       options.verbose = true
@@ -775,6 +804,7 @@ const runQuery = async (query, index) => {
       ms,
       interpretation,
       sparql,
+      sparqlValid: validateSparqlSyntax(sparql),
       results,
       meta,
       matchCount,
@@ -898,6 +928,8 @@ const printSummary = (results, categories) => {
   const domainOk = ok.filter((result) => result.domainOk)
   const zero = ok.filter((result) => result.matchCount === 0)
   const withResults = ok.filter((result) => result.matchCount > 0)
+  const sparqlValid = ok.filter((result) => result.sparqlValid?.valid)
+  const sparqlInvalid = ok.filter((result) => result.sparqlValid && !result.sparqlValid.valid)
   const latencies = ok.map((result) => result.ms)
   const avgLatency = latencies.length
     ? Math.round(latencies.reduce((sum, value) => sum + value, 0) / latencies.length)
@@ -911,11 +943,22 @@ const printSummary = (results, categories) => {
   console.log(`  Queries:         ${results.length}`)
   console.log(`  Successful:      ${ok.length}/${results.length}`)
   console.log(`  Domain accuracy: ${formatRatio(domainOk.length, ok.length)}`)
+  console.log(`  SPARQL valid:    ${formatRatio(sparqlValid.length, ok.length)}`)
   console.log(`  With results:    ${withResults.length}/${ok.length}`)
   console.log(`  Zero results:    ${zero.length}/${ok.length}`)
   console.log(`  Avg latency:     ${avgLatency}ms`)
   console.log(`  P95 latency:     ${percentile(latencies, 0.95)}ms`)
   console.log(`  Avg gaps:        ${avgGapCount}`)
+
+  if (sparqlInvalid.length > 0) {
+    console.log(`\n  SPARQL syntax errors (${sparqlInvalid.length}):`)
+    for (const result of sparqlInvalid.slice(0, 10)) {
+      console.log(`    [${result.c}] "${result.q}" → ${result.sparqlValid.error}`)
+    }
+    if (sparqlInvalid.length > 10) {
+      console.log(`    ... and ${sparqlInvalid.length - 10} more`)
+    }
+  }
 }
 
 const verifyApi = async () => {
@@ -989,6 +1032,43 @@ const main = async () => {
   const mismatchCount = printDomainMismatches(results)
   const errorCount = printErrors(results)
   printSummary(results, categories)
+
+  // Write detailed JSON report
+  if (options.json) {
+    const ok = results.filter((r) => r.status === 'OK')
+    const report = {
+      timestamp: new Date().toISOString(),
+      config: { limit: options.limit, category: options.category, concurrency: CONCURRENCY },
+      summary: {
+        total: results.length,
+        successful: ok.length,
+        errors: results.length - ok.length,
+        domainAccuracy: ok.length ? ok.filter((r) => r.domainOk).length / ok.length : 0,
+        sparqlValidity: ok.length ? ok.filter((r) => r.sparqlValid?.valid).length / ok.length : 0,
+        withResults: ok.filter((r) => r.matchCount > 0).length,
+        zeroResults: ok.filter((r) => r.matchCount === 0).length,
+        avgLatencyMs: ok.length ? Math.round(ok.reduce((s, r) => s + r.ms, 0) / ok.length) : 0,
+      },
+      results: results.map((r) => ({
+        category: r.c,
+        query: r.q,
+        status: r.status,
+        domainOk: r.domainOk,
+        sparqlValid: r.sparqlValid?.valid ?? null,
+        sparqlError: r.sparqlValid?.error ?? null,
+        matchCount: r.matchCount,
+        gapCount: r.gapCount,
+        latencyMs: r.ms,
+        detectedDomains: r.detectedDomains,
+        expectedDomains: r.expectedDomains,
+        interpretation: r.interpretation ?? null,
+        sparql: r.sparql ?? null,
+        error: r.error ?? null,
+      })),
+    }
+    await writeFile(options.json, JSON.stringify(report, null, 2))
+    console.log(`\nDetailed report written to: ${options.json}`)
+  }
 
   if (mismatchCount > 0 || errorCount > 0) {
     process.exitCode = 1

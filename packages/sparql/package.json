@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@ontology-search/core": "workspace:*",
-    "oxigraph": "^0.4.0-alpha.8",
+    "oxigraph": "^0.5.8",
     "sparqljs": "^3.7.4"
   },
   "devDependencies": {

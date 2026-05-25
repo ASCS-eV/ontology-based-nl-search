@@ -8,6 +8,7 @@
     "https_proxy",
     "no_proxy"
   ],
+  "globalDependencies": ["!submodules/**"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

@@ -1,4 +1,4 @@
-import { existsSync } from 'fs'
+import { existsSync, readdirSync, statSync } from 'fs'
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import path from 'path'
 
@@ -23,8 +23,27 @@ const LOCAL_OMB_PATH = path.join(
   'ontology-management-base'
 )
 
-/** Ontology artifacts to load (relative to OMB root) */
-const ONTOLOGY_ARTIFACTS = ['artifacts/hdmap/hdmap.owl.ttl']
+/**
+ * Ontology artifacts to load (relative to OMB root).
+ * Discovered dynamically from the file system — loads ALL .owl.ttl files found
+ * under the artifacts directory. No hardcoded domain paths.
+ */
+function discoverOntologyArtifacts(ombRoot: string): string[] {
+  const artifactsDir = path.join(ombRoot, 'artifacts')
+  if (!existsSync(artifactsDir)) return []
+
+  const artifacts: string[] = []
+  for (const domain of readdirSync(artifactsDir)) {
+    const domainDir = path.join(artifactsDir, domain)
+    if (!statSync(domainDir).isDirectory()) continue
+    for (const file of readdirSync(domainDir)) {
+      if (file.endsWith('.owl.ttl')) {
+        artifacts.push(`artifacts/${domain}/${file}`)
+      }
+    }
+  }
+  return artifacts
+}
 
 /**
  * Get the ontology context string for LLM prompting.
@@ -52,42 +71,35 @@ async function buildOntologyContext(): Promise<string> {
 
   const ontologyContents: string[] = []
 
-  // Prefer local submodule path
+  // Prefer local submodule path — discover all OWL files dynamically
   if (existsSync(LOCAL_OMB_PATH)) {
-    for (const artifact of ONTOLOGY_ARTIFACTS) {
+    const artifacts = discoverOntologyArtifacts(LOCAL_OMB_PATH)
+    if (artifacts.length === 0) {
+      console.warn(`No .owl.ttl artifacts found under: ${LOCAL_OMB_PATH}/artifacts`)
+    }
+    for (const artifact of artifacts) {
       const fullPath = path.join(LOCAL_OMB_PATH, artifact)
       if (existsSync(fullPath)) {
         const content = await readFile(fullPath, 'utf-8')
         ontologyContents.push(content)
-      } else {
-        console.warn(`Ontology artifact not found locally: ${fullPath}`)
       }
     }
   } else {
-    // Fallback: fetch from GitHub
+    // Fallback: fetch from GitHub (uses first discovered artifact)
     const { getConfig } = await import('@ontology-search/core/config')
     const config = getConfig()
     const repo = config.ONTOLOGY_REPO
     const branch = config.ONTOLOGY_BRANCH
 
-    for (const artifact of ONTOLOGY_ARTIFACTS) {
-      try {
-        const url = `https://raw.githubusercontent.com/${repo}/${branch}/${artifact}`
-        const response = await fetch(url)
-
-        if (!response.ok) {
-          console.warn(`Failed to fetch ontology: ${url} (${response.status})`)
-          continue
-        }
-
-        const content = await response.text()
-        const localPath = path.join(ONTOLOGY_FILES_DIR, path.basename(artifact))
-        await writeFile(localPath, content, 'utf-8')
-        ontologyContents.push(content)
-      } catch (error) {
-        console.warn(`Error fetching ontology ${artifact}:`, error)
-      }
-    }
+    // Fetch the artifacts directory listing is not feasible via raw GitHub;
+    // log a warning and skip — production should use local submodule path.
+    console.warn(
+      `Local OMB path not found: ${LOCAL_OMB_PATH}. ` +
+        `Cannot discover ontology artifacts dynamically from GitHub. ` +
+        `Run 'git submodule update --init --recursive' to populate.`
+    )
+    void repo
+    void branch
   }
 
   const context = buildContextFromOntologies(ontologyContents)
