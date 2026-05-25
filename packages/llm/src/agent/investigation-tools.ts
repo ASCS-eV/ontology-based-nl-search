@@ -51,6 +51,7 @@ const schemaQueryParams = z.object({
 interface DomainsResult {
   domains: Array<{ domain: string; classIri: string }>
   count: number
+  error?: string
 }
 
 interface PropertiesResult {
@@ -64,6 +65,7 @@ interface PropertiesResult {
     hasEnumeratedValues: boolean
   }>
   count: number
+  error?: string
 }
 
 interface ValuesResult {
@@ -71,11 +73,13 @@ interface ValuesResult {
   domain: string
   values: string[]
   count: number
+  error?: string
 }
 
 interface ConnectionsResult {
   connections: Array<{ from: string; to: string; fromClass: string; toClass: string }>
   count: number
+  error?: string
 }
 
 interface SchemaQueryResult {
@@ -114,12 +118,20 @@ export function createInvestigationTools(store: SparqlStore) {
           }
           ORDER BY ?domain
         `
-        const results = await store.query(query)
-        const domains = results.results.bindings.map((b) => ({
-          domain: b['domain']?.value ?? '',
-          classIri: b['classIri']?.value ?? '',
-        }))
-        return { domains, count: domains.length }
+        try {
+          const results = await store.query(query)
+          const domains = results.results.bindings.map((b) => ({
+            domain: b['domain']?.value ?? '',
+            classIri: b['classIri']?.value ?? '',
+          }))
+          return { domains, count: domains.length }
+        } catch (err) {
+          return {
+            domains: [],
+            count: 0,
+            error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+          }
+        }
       },
     }),
 
@@ -150,16 +162,25 @@ export function createInvestigationTools(store: SparqlStore) {
           }
           ORDER BY ?localName
         `
-        const results = await store.query(query)
-        const properties = results.results.bindings.map((b) => ({
-          localName: b['localName']?.value ?? '',
-          path: b['path']?.value ?? '',
-          datatype: b['datatype']?.value?.replace(/.*#/, '') ?? 'unknown',
-          name: b['name']?.value ?? '',
-          description: b['description']?.value ?? '',
-          hasEnumeratedValues: b['hasEnum']?.value === 'true',
-        }))
-        return { domain, properties, count: properties.length }
+        try {
+          const results = await store.query(query)
+          const properties = results.results.bindings.map((b) => ({
+            localName: b['localName']?.value ?? '',
+            path: b['path']?.value ?? '',
+            datatype: b['datatype']?.value?.replace(/.*#/, '') ?? 'unknown',
+            name: b['name']?.value ?? '',
+            description: b['description']?.value ?? '',
+            hasEnumeratedValues: b['hasEnum']?.value === 'true',
+          }))
+          return { domain, properties, count: properties.length }
+        } catch (err) {
+          return {
+            domain,
+            properties: [],
+            count: 0,
+            error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+          }
+        }
       },
     }),
 
@@ -190,9 +211,19 @@ export function createInvestigationTools(store: SparqlStore) {
           }
           ORDER BY ?value
         `
-        const results = await store.query(query)
-        const values = results.results.bindings.map((b) => b['value']?.value ?? '')
-        return { propertyName, domain: domain || 'all', values, count: values.length }
+        try {
+          const results = await store.query(query)
+          const values = results.results.bindings.map((b) => b['value']?.value ?? '')
+          return { propertyName, domain: domain || 'all', values, count: values.length }
+        } catch (err) {
+          return {
+            propertyName,
+            domain: domain || 'all',
+            values: [],
+            count: 0,
+            error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+          }
+        }
       },
     }),
 
@@ -226,14 +257,22 @@ export function createInvestigationTools(store: SparqlStore) {
           }
           ORDER BY ?parentDomain ?childDomain
         `
-        const results = await store.query(query)
-        const connections = results.results.bindings.map((b) => ({
-          from: b['parentDomain']?.value ?? '',
-          to: b['childDomain']?.value ?? '',
-          fromClass: b['parentClass']?.value ?? '',
-          toClass: b['childClass']?.value ?? '',
-        }))
-        return { connections, count: connections.length }
+        try {
+          const results = await store.query(query)
+          const connections = results.results.bindings.map((b) => ({
+            from: b['parentDomain']?.value ?? '',
+            to: b['childDomain']?.value ?? '',
+            fromClass: b['parentClass']?.value ?? '',
+            toClass: b['childClass']?.value ?? '',
+          }))
+          return { connections, count: connections.length }
+        } catch (err) {
+          return {
+            connections: [],
+            count: 0,
+            error: `Query failed: ${err instanceof Error ? err.message : String(err)}`,
+          }
+        }
       },
     }),
 
@@ -253,12 +292,25 @@ export function createInvestigationTools(store: SparqlStore) {
         if (/\b(INSERT|DELETE|DROP|CLEAR|CREATE|LOAD)\b/i.test(sparql)) {
           return { error: 'Write operations are not allowed', results: [] }
         }
-
-        // Wrap in GRAPH clause if not already using one
-        let wrappedQuery = sparql
-        if (!sparql.includes(SCHEMA_GRAPH)) {
-          wrappedQuery = sparql.replace(/\bWHERE\b/i, `FROM <${SCHEMA_GRAPH}> WHERE`)
+        // Reject GRAPH clauses targeting non-schema graphs and FROM/FROM NAMED
+        // clauses that could redirect the query to instance data.
+        // Match as SPARQL keywords (followed by whitespace), not within IRIs.
+        if (/\bGRAPH\s/i.test(sparql)) {
+          return {
+            error: 'GRAPH clauses are not allowed — queries are scoped to the schema graph',
+            results: [],
+          }
         }
+        if (/\bFROM\s/i.test(sparql)) {
+          return {
+            error:
+              'FROM/FROM NAMED clauses are not allowed — queries are scoped to the schema graph',
+            results: [],
+          }
+        }
+
+        // Always scope the query to the schema graph
+        const wrappedQuery = sparql.replace(/\bWHERE\b/i, `FROM <${SCHEMA_GRAPH}> WHERE`)
 
         try {
           const results = await store.query(wrappedQuery)

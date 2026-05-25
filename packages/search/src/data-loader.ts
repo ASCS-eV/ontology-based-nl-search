@@ -38,7 +38,7 @@ const FALLBACK_TURTLE = `
  * Load sample data into the SPARQL store for development/testing.
  * Prefers JSON-LD files (`.jsonld`) and falls back to Turtle (`.ttl`).
  * Falls back to an empty graph if no sample files are present.
- * 
+ *
  * This function is ontology-agnostic: it loads whatever sample data files
  * exist without assuming any domain names or ontology structure.
  */

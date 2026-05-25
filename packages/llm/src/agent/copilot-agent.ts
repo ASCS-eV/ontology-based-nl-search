@@ -39,6 +39,7 @@ import {
 import { compileSlots } from '@ontology-search/search/compiler'
 import { getShaclContent } from '@ontology-search/search/shacl-reader'
 import type { SearchSlots } from '@ontology-search/search/slots'
+import { escapeSparqlLiteral } from '@ontology-search/sparql/escape'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
@@ -305,7 +306,7 @@ function buildInvestigationTools(store: SparqlStore) {
               OPTIONAL { ?propShape sh:description ?description }
               BIND(EXISTS { ?propShape sh:in ?list } AS ?hasEnum)
             }
-            FILTER(CONTAINS(LCASE(STR(?cls)), "${params.domain.toLowerCase()}"))
+            FILTER(CONTAINS(LCASE(STR(?cls)), "${escapeSparqlLiteral(params.domain.toLowerCase())}"))
             BIND(REPLACE(STR(?path), "^.*/", "") AS ?localName)
           }
           ORDER BY ?localName
@@ -341,7 +342,7 @@ function buildInvestigationTools(store: SparqlStore) {
       },
       handler: async (params: { propertyName: string; domain: string }) => {
         const domainFilter = params.domain
-          ? `FILTER(CONTAINS(LCASE(STR(?cls)), "${params.domain.toLowerCase()}"))`
+          ? `FILTER(CONTAINS(LCASE(STR(?cls)), "${escapeSparqlLiteral(params.domain.toLowerCase())}"))`
           : ''
         const query = `
           PREFIX sh: <http://www.w3.org/ns/shacl#>
@@ -356,7 +357,7 @@ function buildInvestigationTools(store: SparqlStore) {
               ?list rdf:rest*/rdf:first ?value .
             }
             ${domainFilter}
-            FILTER(STRENDS(STR(?path), "/${params.propertyName}") || STRENDS(STR(?path), "#${params.propertyName}"))
+            FILTER(STRENDS(STR(?path), "/${escapeSparqlLiteral(params.propertyName)}") || STRENDS(STR(?path), "#${escapeSparqlLiteral(params.propertyName)}"))
           }
           ORDER BY ?value
         `
@@ -388,7 +389,7 @@ function buildInvestigationTools(store: SparqlStore) {
       },
       handler: async (params: { domain: string }) => {
         const domainFilter = params.domain
-          ? `FILTER(CONTAINS(LCASE(STR(?parentClass)), "${params.domain.toLowerCase()}") || CONTAINS(LCASE(STR(?childClass)), "${params.domain.toLowerCase()}"))`
+          ? `FILTER(CONTAINS(LCASE(STR(?parentClass)), "${escapeSparqlLiteral(params.domain.toLowerCase())}") || CONTAINS(LCASE(STR(?childClass)), "${escapeSparqlLiteral(params.domain.toLowerCase())}"))`
           : ''
         const query = `
           PREFIX sh: <http://www.w3.org/ns/shacl#>
@@ -444,11 +445,25 @@ function buildInvestigationTools(store: SparqlStore) {
         if (/\b(INSERT|DELETE|DROP|CLEAR|CREATE|LOAD)\b/i.test(params.sparql)) {
           return { error: 'Write operations are not allowed', results: [] }
         }
-
-        let wrappedQuery = params.sparql
-        if (!params.sparql.includes(SCHEMA_GRAPH)) {
-          wrappedQuery = params.sparql.replace(/\bWHERE\b/i, `FROM <${SCHEMA_GRAPH}> WHERE`)
+        // Reject GRAPH clauses targeting non-schema graphs and FROM/FROM NAMED
+        // clauses that could redirect the query to instance data.
+        // Match as SPARQL keywords (followed by whitespace), not within IRIs.
+        if (/\bGRAPH\s/i.test(params.sparql)) {
+          return {
+            error: 'GRAPH clauses are not allowed — queries are scoped to the schema graph',
+            results: [],
+          }
         }
+        if (/\bFROM\s/i.test(params.sparql)) {
+          return {
+            error:
+              'FROM/FROM NAMED clauses are not allowed — queries are scoped to the schema graph',
+            results: [],
+          }
+        }
+
+        // Always scope the query to the schema graph
+        const wrappedQuery = params.sparql.replace(/\bWHERE\b/i, `FROM <${SCHEMA_GRAPH}> WHERE`)
 
         try {
           const results = await store.query(wrappedQuery)

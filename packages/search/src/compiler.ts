@@ -53,6 +53,8 @@ interface CompilerVocab {
   properties: Map<string, CompilerProperty>
   /** Property shape group classification from SHACL nesting (Content, Format, Quantity, etc.) */
   shapeGroups: Map<string, string>
+  /** All property local names that appear in shapeGroups (for O(1) isKnownProperty checks) */
+  shapeGroupPropertyNames: Set<string>
   /** Properties that use Range2D structure (min/max sub-properties) */
   range2DProperties: Set<string>
   /**
@@ -140,9 +142,12 @@ async function getCompilerVocab(): Promise<CompilerVocab> {
   }
 
   // Build shape group index: "propName:domain" → shapeGroup
+  // Also collect distinct property names for O(1) isKnownProperty checks.
   const shapeGroups = new Map<string, string>()
+  const shapeGroupPropertyNames = new Set<string>()
   for (const { localName, domain, shapeGroup } of shapeGroupInfos) {
     shapeGroups.set(`${localName}:${domain}`, shapeGroup)
+    shapeGroupPropertyNames.add(localName)
   }
 
   // Build Range2D property set
@@ -160,7 +165,13 @@ async function getCompilerVocab(): Promise<CompilerVocab> {
     paths.set(`${path.domain}:${path.propertyName}`, path)
   }
 
-  cachedCompilerVocab = { properties, shapeGroups, range2DProperties, paths }
+  cachedCompilerVocab = {
+    properties,
+    shapeGroups,
+    shapeGroupPropertyNames,
+    range2DProperties,
+    paths,
+  }
   return cachedCompilerVocab
 }
 
@@ -296,7 +307,9 @@ async function compilePeerDomainUnion(
   }
 
   // License (shared across all domains, placed outside UNION)
-  if (slots.license) {
+  // TODO(ontology-agnostic): hasResourceDescription should be discovered via
+  // property paths rather than assumed as a convention (tracked as task 21d).
+  if (slots.license && domains.length > 0) {
     const firstDomain = registry.domains.get(domains[0]!)
     if (firstDomain) {
       outerFilters.push(`OPTIONAL {
@@ -447,7 +460,6 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
       isNonEmpty(slots.location.region) ||
       isNonEmpty(slots.location.city))
   const primaryHasLocation = hasLocationSlots && vocabIndex.paths.has(`${primaryDomain}:country`)
-  let _locationDelegated = primaryHasLocation
 
   // Pre-scan: determine which referenced domain will receive delegated location
   let locationDelegateDomain: string | undefined
@@ -475,6 +487,8 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     if (!hasRefConstraints) continue
 
     // Join via manifest → hasReferencedArtifacts
+    // TODO(ontology-agnostic): these predicates are still hardcoded and should
+    // be discovered via SHACL property paths (tracked as task 21d).
     const refVar = `?ref_${refDomainName.replace(/-/g, '_')}`
     const refSpecVar = `?refSpec_${refDomainName.replace(/-/g, '_')}`
 
@@ -487,7 +501,6 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
     let refLocation: SearchSlots['location'] | undefined
     if (willReceiveLocation) {
       refLocation = slots.location
-      _locationDelegated = true
     }
 
     const refForeign = buildDomainPatterns(
@@ -509,6 +522,8 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   }
 
   // License (via resource description — shared across all domains)
+  // TODO(ontology-agnostic): hasResourceDescription should be discovered via
+  // property paths rather than assumed as a convention (tracked as task 21d).
   if (slots.license) {
     optionals.push(`OPTIONAL {
     ?asset ${domain.prefix}:hasResourceDescription ?resDesc .
@@ -519,6 +534,8 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   }
 
   // Cross-reference join: find assets that reference another domain
+  // TODO(ontology-agnostic): hasManifest / hasReferencedArtifacts should be
+  // discovered via SHACL property paths (tracked as task 21d).
   if (slots.references) {
     const refDomain = registry.domains.get(slots.references.domain)
     if (refDomain) {
@@ -707,14 +724,16 @@ function compileCrossDomainQuery(
     ?resDesc ${licensePred} ?license .
   }`)
     } else {
-      // Fallback: use full IRI if no path found
-      optionals.push(`OPTIONAL {
-    ?asset <urn:unknown:hasResourceDescription> ?resDesc .
-    ?resDesc <${iri('gx', 'license')}> ?license .
-  }`)
+      // No license property path discovered — skip the license filter
+      // rather than emitting a placeholder IRI that would never match.
+      console.warn(
+        '[compiler] license filter requested but no property path found in ontology — skipping'
+      )
     }
-    filters.push(`FILTER(?license = "${escapeSparqlLiteral(slots.license)}")`)
-    selectVars.push('?license')
+    if (licensePath && licensePath.steps.length >= 2) {
+      filters.push(`FILTER(?license = "${escapeSparqlLiteral(slots.license)}")`)
+      selectVars.push('?license')
+    }
   }
 
   // Build the query
@@ -1209,13 +1228,29 @@ function buildPrefixes(
  * Classify a property into its parent SHACL shape group.
  *
  * Uses graph-queried shape group data from rdfs:subClassOf hierarchy:
- * Shape → sh:targetClass → C, C rdfs:subClassOf envited-x:Content → "Content"
+ * Shape → sh:targetClass → C, C rdfs:subClassOf base:Content → "Content"
  *
- * Falls back to "Content" if no shape group is found (conservative default).
+ * Falls back to the first available shape group for the domain, or "Content"
+ * as a last resort. Logs a warning when the fallback is used so that missing
+ * shape group data is surfaced during development.
  */
 function classifyProperty(propName: string, domainName: string, vocabIndex: CompilerVocab): string {
   const shapeGroup = vocabIndex.shapeGroups.get(`${propName}:${domainName}`)
-  return shapeGroup ?? 'Content'
+  if (shapeGroup) return shapeGroup
+
+  // Fallback: find any shape group used by this domain to avoid
+  // hardcoding "Content" as a default.
+  for (const [key, group] of vocabIndex.shapeGroups) {
+    if (key.endsWith(`:${domainName}`)) {
+      console.warn(
+        `[compiler] no shape group found for ${propName}:${domainName}, falling back to "${group}"`
+      )
+      return group
+    }
+  }
+
+  console.warn(`[compiler] no shape group data for domain "${domainName}", defaulting to "Content"`)
+  return 'Content'
 }
 
 /**
@@ -1336,11 +1371,7 @@ function isNonEmpty(value: string | string[] | undefined): value is string | str
 function isKnownProperty(propName: string, vocabIndex: CompilerVocab): boolean {
   if (vocabIndex.properties.has(propName)) return true
   if (vocabIndex.range2DProperties.has(propName)) return true
-  // shapeGroups is keyed by `${localName}:${domain}` — any domain matches.
-  for (const key of vocabIndex.shapeGroups.keys()) {
-    if (key.startsWith(`${propName}:`)) return true
-  }
-  return false
+  return vocabIndex.shapeGroupPropertyNames.has(propName)
 }
 
 /**

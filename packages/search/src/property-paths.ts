@@ -95,7 +95,11 @@ interface ResolvedEdge {
  * Uses two queries without rdf:rest star property paths (Oxigraph WASM
  * crashes with RuntimeError on UNION + property-path-star even in 0.5.x).
  * Instead, sh:or lists are traversed by querying direct rdf:first/rdf:rest
- * links to a bounded depth (RDF lists in SHACL shapes are short).
+ * links to a bounded depth of 4 (RDF lists in SHACL shapes are typically
+ * short — 2–3 items). If a SHACL sh:or list exceeds depth 4, edges beyond
+ * that depth will be silently missed.
+ *
+ * @see https://github.com/oxigraph/oxigraph/issues — UNION + rdf:rest* crash
  */
 async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEdge[]> {
   // Step 1: Get edges from parentClass → predicate → childShape

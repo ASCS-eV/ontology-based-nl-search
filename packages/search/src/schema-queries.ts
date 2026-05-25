@@ -17,6 +17,7 @@
  */
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
+import { isIri } from '@ontology-search/sparql/escape'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
@@ -372,6 +373,13 @@ async function resolveParentDomain(
   constraintIri: string,
   knownAssetClasses?: Set<string>
 ): Promise<string | null> {
+  // Validate IRI before interpolation into SPARQL to prevent injection
+  // from malformed RDF data in the schema graph.
+  if (!isIri(constraintIri)) {
+    console.warn(`[schema-queries] skipping invalid constraint IRI: ${constraintIri}`)
+    return null
+  }
+
   // Strategy A: Constraint shape directly has sh:targetClass
   const directSparql = `
     ${sparqlPrefixes('sh', 'rdfs')}

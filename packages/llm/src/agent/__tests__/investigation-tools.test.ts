@@ -235,6 +235,28 @@ SELECT ?shape WHERE { ?shape a sh:NodeShape } LIMIT 3`,
     expect(result.error).toBeUndefined()
     expect(result.count).toBeGreaterThan(0)
   })
+
+  it('rejects queries with GRAPH clauses', async () => {
+    const result = await tools.investigate_schema.execute(
+      {
+        sparql: `SELECT ?s ?p ?o WHERE { GRAPH <urn:graph:data> { ?s ?p ?o } } LIMIT 5`,
+      },
+      { toolCallId: 'test', messages: [] }
+    )
+    expect(result.error).toContain('GRAPH clauses are not allowed')
+    expect(result.results).toEqual([])
+  })
+
+  it('rejects queries with FROM clauses', async () => {
+    const result = await tools.investigate_schema.execute(
+      {
+        sparql: `SELECT ?s ?p ?o FROM <urn:graph:data> WHERE { ?s ?p ?o } LIMIT 5`,
+      },
+      { toolCallId: 'test', messages: [] }
+    )
+    expect(result.error).toContain('FROM/FROM NAMED clauses are not allowed')
+    expect(result.results).toEqual([])
+  })
 })
 
 describe('SPARQL injection safety', () => {
