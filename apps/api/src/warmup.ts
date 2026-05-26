@@ -5,6 +5,7 @@ import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import { getInitializedStore } from '@ontology-search/search'
 import { getShaclContent } from '@ontology-search/search/shacl-reader'
+import { probePropertyPathSupport } from '@ontology-search/sparql'
 import { registerPolicyNamespaces } from '@ontology-search/sparql/policy'
 
 const logger = createComponentLogger('warmup')
@@ -22,7 +23,13 @@ export async function warmup(): Promise<WarmupResult> {
   const errors: string[] = []
 
   try {
-    await getInitializedStore()
+    const store = await getInitializedStore()
+    // Probe property-path support BEFORE any other warmup step runs
+    // queries against the store. A store that silently drops
+    // `rdfs:subClassOf*` would let warmup succeed and then return
+    // zero results for every hierarchical query — debugging that in
+    // production is painful, so we fail loudly at startup instead.
+    await probePropertyPathSupport(store)
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'
     errors.push(`Store initialization failed: ${msg}`)

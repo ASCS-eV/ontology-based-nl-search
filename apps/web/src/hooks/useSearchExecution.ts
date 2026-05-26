@@ -17,10 +17,6 @@ export interface SearchState {
   error: string | null
 }
 
-function isLocationProperty(property: string): boolean {
-  return ['country', 'state', 'region', 'city'].includes(property)
-}
-
 function isNumericRange(mapped: string): boolean {
   return /[><=]\s*\d/.test(mapped) || /\d+\s*[-–]\s*\d+/.test(mapped)
 }
@@ -162,14 +158,16 @@ export function useSearchExecution(_availableDomains?: string[]) {
 
     try {
       const filters: Record<string, string> = {}
-      const location: Record<string, string> = {}
       const ranges: Record<string, { min?: number; max?: number }> = {}
 
+      // Task 21d-flat: every mapped term — geography, license, plain
+      // enums — flows through the same `filters` map keyed by SHACL
+      // leaf local name. The compiler walks the discovered property
+      // path for each key; no client-side knowledge of which fields
+      // are "location" is needed.
       for (const term of updatedTerms) {
         if (term.property && term.mapped) {
-          if (isLocationProperty(term.property)) {
-            location[term.property] = term.mapped
-          } else if (isNumericRange(term.mapped)) {
+          if (isNumericRange(term.mapped)) {
             ranges[term.property] = parseRange(term.mapped)
           } else {
             filters[term.property] = term.mapped
@@ -184,7 +182,6 @@ export function useSearchExecution(_availableDomains?: string[]) {
         domains,
         filters,
         ranges,
-        ...(Object.keys(location).length > 0 ? { location } : {}),
       }
 
       const res = await fetch('/api/search/refine', {

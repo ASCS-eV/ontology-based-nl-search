@@ -198,8 +198,42 @@ vi.mock('../property-paths.js', () => {
       { predicate: geoNs + propertyName },
     ],
   }))
+  // Tag location leaves as `iri` so the compiler emits its IRI-aware
+  // FILTER form (`LCASE(STR(?v))`) for country/state/region/city —
+  // matching the workspace ontology which declares these with
+  // `sh:nodeKind sh:IRI`.
+  const allPaths = [
+    ...regularPaths.map((p) => ({ ...p, leafKind: 'literal' as const })),
+    ...locationPaths.map((p) => ({ ...p, leafKind: 'iri' as const })),
+  ]
+  // Synthetic cross-reference chains — model the ENVITED-X manifest
+  // pattern (asset → hasManifest → Manifest → hasReferencedArtifacts
+  // → Link → iri → child-asset-IRI) so cross-reference tests exercise
+  // the path-driven emission. The real chain discovery is verified by
+  // the snapshot suite against the workspace SHACL.
+  const manifestNs = 'https://w3id.org/ascs-ev/envited-x/manifest/v5/'
+  const referenceChain = (parentDomain: string, assetLocalName: string) => ({
+    parentClass: ns(parentDomain) + assetLocalName,
+    parentDomain,
+    kind: 'iri' as const,
+    steps: [
+      { predicate: ns(parentDomain) + 'hasManifest', intermediate: manifestNs + 'Manifest' },
+      {
+        predicate: manifestNs + 'hasReferencedArtifacts',
+        intermediate: manifestNs + 'Link',
+      },
+      { predicate: manifestNs + 'iri' },
+    ],
+  })
   return {
-    buildPropertyPaths: vi.fn().mockResolvedValue([...regularPaths, ...locationPaths]),
+    buildPropertyPaths: vi.fn().mockResolvedValue(allPaths),
+    buildReferenceChains: vi
+      .fn()
+      .mockReturnValue([
+        referenceChain('scenario', 'Scenario'),
+        referenceChain('hdmap', 'HDMap'),
+        referenceChain('ositrace', 'OSITrace'),
+      ]),
   }
 })
 
@@ -218,9 +252,8 @@ describe('compileSlots', () => {
   it('filters by country via location', async () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: 'DE' },
       ranges: {},
-      location: { country: 'DE' },
     }
     const sparql = await compileSlots(slots)
     expect(sparql).toContain('FILTER(CONTAINS(LCASE(STR(?country)), "de"))')
@@ -232,9 +265,8 @@ describe('compileSlots', () => {
   it('matches literal and IRI location values with the same STR-based country filter', async () => {
     const sparql = await compileSlots({
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: 'FR' },
       ranges: {},
-      location: { country: 'FR' },
     })
 
     const store = new OxigraphStore()
@@ -275,12 +307,13 @@ describe('compileSlots', () => {
   it('filters by multi-country location with IN clause (region expansion)', async () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],
-      filters: {},
+      filters: {
+        // Express "europe" as the explicit list of ISO codes — the principle
+        // is that the LLM (or any caller) supplies a multi-country array and
+        // the compiler emits a strict-equality IN clause, NOT CONTAINS.
+        country: ['DE', 'FR', 'IT'],
+      },
       ranges: {},
-      // Express "europe" as the explicit list of ISO codes — the principle is
-      // that the LLM (or any caller) supplies a multi-country array and the
-      // compiler emits a strict-equality IN clause, NOT CONTAINS.
-      location: { country: ['DE', 'FR', 'IT'] },
     }
     const sparql = await compileSlots(slots)
     expect(sparql).toContain('FILTER(LCASE(STR(?country)) IN ("de", "fr", "it"))')
@@ -292,9 +325,8 @@ describe('compileSlots', () => {
   it('collapses a single-element location array to equality', async () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: ['DE'] },
       ranges: {},
-      location: { country: ['DE'] },
     }
     const sparql = await compileSlots(slots)
     expect(sparql).toContain('FILTER(LCASE(STR(?country)) = "de")')
@@ -347,9 +379,8 @@ describe('compileSlots', () => {
   it('drops empty location arrays from compiled SPARQL (R9)', async () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: [] },
       ranges: {},
-      location: { country: [] },
     }
     const sparql = await compileSlots(slots)
     expect(sparql).not.toContain('georeference:country')
@@ -373,9 +404,8 @@ describe('compileSlots', () => {
   it('combines multiple filters', async () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],
-      filters: { roadTypes: 'motorway', formatType: 'ASAM OpenDRIVE' },
+      filters: { roadTypes: 'motorway', formatType: 'ASAM OpenDRIVE', country: 'DE' },
       ranges: {},
-      location: { country: 'DE' },
     }
     const sparql = await compileSlots(slots)
     expect(sparql).toContain('FILTER(CONTAINS(LCASE(STR(?country)), "de"))')
@@ -401,9 +431,8 @@ describe('compileSlots', () => {
   it('handles city with STR-based CONTAINS', async () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],
-      filters: {},
+      filters: { city: 'Munich' },
       ranges: {},
-      location: { city: 'Munich' },
     }
     const sparql = await compileSlots(slots)
     expect(sparql).toContain('FILTER(CONTAINS(LCASE(STR(?city)), "munich"))')
@@ -470,9 +499,10 @@ describe('compileSlots', () => {
         laneTypes: 'driving',
         trafficDirection: 'left-hand',
         formatType: 'Lanelet2',
+        country: 'JP',
+        city: 'Tokyo',
       },
       ranges: { length: { min: 2 }, numberIntersections: { min: 5 } },
-      location: { country: 'JP', city: 'Tokyo' },
     }
     const sparql = await compileSlots(slots)
     const policy = enforceSparqlPolicy(sparql)
@@ -563,9 +593,8 @@ describe('peer-domain UNION queries', () => {
   it('generates UNION with location filter applied to both arms', async () => {
     const slots: SearchSlots = {
       domains: ['hdmap', 'ositrace'],
-      filters: { roadTypes: 'motorway' },
+      filters: { roadTypes: 'motorway', country: 'FR' },
       ranges: {},
-      location: { country: 'FR' },
     }
     const sparql = await compileSlots(slots)
     expect(sparql).toContain('UNION')
@@ -615,9 +644,8 @@ describe('peer-domain UNION queries', () => {
     // even when location is the only constraint
     const slots: SearchSlots = {
       domains: ['hdmap', 'ositrace', 'automotive-simulator'],
-      filters: {},
+      filters: { country: 'DE' },
       ranges: {},
-      location: { country: 'DE' },
     }
     const sparql = await compileSlots(slots)
     expect(sparql).toContain('UNION')

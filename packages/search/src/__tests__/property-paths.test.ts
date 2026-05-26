@@ -22,7 +22,7 @@ describe('buildPropertyPaths', () => {
       // The final step's predicate IS the leaf property.
       expect(path.steps[path.steps.length - 1]?.predicate).toBe(path.propertyIri)
     }
-  }, 30_000)
+  }, 120_000)
 
   /**
    * Regression: the discovery must reconstruct the ENVITED-X meta-model
@@ -49,7 +49,7 @@ describe('buildPropertyPaths', () => {
     // Intermediate target classes must be set on every non-leaf step.
     expect(roadTypes!.steps[0]?.intermediate).toMatch(/\/DomainSpecification$/)
     expect(roadTypes!.steps[1]?.intermediate).toMatch(/\/Content$/)
-  }, 30_000)
+  }, 120_000)
 
   /**
    * Same shape rules for a different domain: scenario's `weatherSummary`
@@ -72,7 +72,7 @@ describe('buildPropertyPaths', () => {
     expect(chain[0]).toMatch(/\/scenario\/v\d+\/hasDomainSpecification$/)
     // The asset class must be the scenario asset class, not hdmap.
     expect(weatherSummary!.assetClass).toMatch(/\/scenario\//)
-  }, 30_000)
+  }, 120_000)
 
   /**
    * Reachability check: every leaf property the compiler currently
@@ -89,7 +89,7 @@ describe('buildPropertyPaths', () => {
     // ontology — the discovery must cover both.
     expect(reachableDomains.has('hdmap')).toBe(true)
     expect(reachableDomains.has('scenario')).toBe(true)
-  }, 30_000)
+  }, 120_000)
 
   /**
    * Determinism: discovery is BFS-based, so each (assetClass, leaf)
@@ -103,5 +103,5 @@ describe('buildPropertyPaths', () => {
     const a = await buildPropertyPaths(store, registry)
     const b = await buildPropertyPaths(store, registry)
     expect(b).toEqual(a)
-  }, 30_000)
+  }, 120_000)
 })

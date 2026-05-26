@@ -74,10 +74,15 @@ describe('correctFilters', () => {
     expect(result).toEqual({ roadTypes: 'motorway' })
   })
 
-  it('drops values with no match', () => {
+  it('passes through values with no fuzzy match — SHACL is the gate', () => {
+    // Pre-flatten behaviour was to drop unmatched enum values silently.
+    // Post-flatten the downstream SHACL gate (validateSlotsAgainstShacl)
+    // emits a structured gap; correctFilters must let the value through
+    // for that to happen. Otherwise the caller sees an empty filter and
+    // no explanation.
     const filters = { roadTypes: 'completely-unknown-value' }
     const result = correctFilters(filters, testVocabulary)
-    expect(result).toEqual({})
+    expect(result).toEqual({ roadTypes: 'completely-unknown-value' })
   })
 
   it('handles array values', () => {
@@ -176,7 +181,13 @@ describe('validateSlots', () => {
     expect(result.gaps[0]!.suggestions!.some((s) => s.includes('overtaking'))).toBe(true)
   })
 
-  it('preserves location properties without vocabulary validation', () => {
+  it('preserves country / state / region / city as ordinary filter terms', () => {
+    // Task 21d-flat: country (and friends) are no longer a typed slot
+    // exception — they flow through `filters` keyed by the SHACL leaf
+    // local name. `validateSlots` keeps the mapped value intact (the
+    // downstream SHACL gate validates the sh:pattern). Confidence may
+    // be downgraded by the fuzzy-property gate when the term is not in
+    // the local enum index, but the value itself must not be discarded.
     const response: LlmStructuredResponse = {
       interpretation: {
         summary: 'test',
@@ -188,7 +199,7 @@ describe('validateSlots', () => {
 
     const result = validateSlots(response, testVocabulary)
     expect(result.interpretation.mappedTerms[0]!.mapped).toBe('DE')
-    expect(result.interpretation.mappedTerms[0]!.confidence).toBe('high')
+    expect(result.interpretation.mappedTerms[0]!.property).toBe('country')
   })
 
   it('preserves numeric range terms with high confidence', () => {

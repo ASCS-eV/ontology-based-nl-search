@@ -97,10 +97,14 @@ fb:Shape a sh:NodeShape ;
     expect(prompt).toContain('sh:datatype')
   })
 
-  it('includes location section', () => {
+  it('explains how geographic constraints flow through generic filters', () => {
     const prompt = buildSystemPrompt(mockShaclContent)
+    // Post task 21d-flat: no dedicated "location" slot — geographic
+    // constraints route into `filters` keyed by the SHACL leaf local
+    // name. The prompt must teach this so the LLM doesn't try to nest
+    // them under a removed sub-object.
     expect(prompt).toContain('country')
-    expect(prompt).toContain('ISO 2-letter')
+    expect(prompt).toMatch(/filters: \{ "country"/)
   })
 
   it('includes rules section', () => {
@@ -163,9 +167,10 @@ describe('buildSystemPrompt — region-expansion guidance (R5)', () => {
 
   it('shows an ISO-3166 array example with at least two countries', () => {
     const prompt = buildSystemPrompt(mockShaclContent)
-    // The example must demonstrate the array-syntax shape with multiple ISO
-    // codes; the specific set is allowed to evolve.
-    expect(prompt).toMatch(/country:\s*\[/)
+    // The example must demonstrate the array-syntax shape with multiple
+    // ISO codes inside a `filters: { "country": [...] }` block; the
+    // specific set is allowed to evolve.
+    expect(prompt).toMatch(/"country":\s*\[/)
     expect(prompt).toMatch(/\[\s*"DE"\s*,\s*"FR"/)
   })
 

@@ -55,10 +55,14 @@ export interface QueryInterpretation {
   mappedTerms: MappedTerm[]
   /** Domain(s) selected for this search (e.g., ["hdmap", "scenario"]). */
   domains?: string[]
-  /** Filters that actually made it into the compiled SPARQL. */
+  /**
+   * Filters that actually made it into the compiled SPARQL. Includes
+   * every leaf constraint — geography (country, state, city, …),
+   * license, and any other SHACL-discovered leaf the user expressed.
+   * Task 21d-flat unified these under a single map; the previous
+   * `appliedLocation` field is gone.
+   */
   appliedFilters?: Record<string, string | string[]>
-  /** Location filters that made it into the compiled SPARQL. */
-  appliedLocation?: Record<string, string | string[]>
 }
 
 /** A single sub-stage timing recorded by the request logger. */

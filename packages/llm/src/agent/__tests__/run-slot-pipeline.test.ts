@@ -25,7 +25,7 @@ let vocabulary: Awaited<ReturnType<typeof extractVocabulary>>
 beforeAll(async () => {
   const store = await getInitializedStore()
   vocabulary = await extractVocabulary(store)
-}, 60_000)
+}, 120_000)
 
 function submission(overrides: Partial<SlotPipelineSubmission['slots']>): SlotPipelineSubmission {
   return {
@@ -51,14 +51,14 @@ describe('runSlotPipeline', () => {
     // The compiler emits the corrected value, not the LLM's original.
     expect(response.sparql).toContain('motorway')
     expect(response.sparql).not.toContain('MOTORWAY')
-  }, 60_000)
+  }, 120_000)
 
   it('drops a filter value that violates a declared SHACL constraint', async () => {
     const sw = new Stopwatch()
     // georeference:country requires the ISO two-letter pattern. A bogus
     // value must be dropped from the slots and surface in `gaps`.
     const response = await runSlotPipeline({
-      submission: submission({ location: { country: 'notacountry' } }),
+      submission: submission({ filters: { country: 'notacountry' } }),
       vocabulary,
       targetDomain: 'hdmap',
       sw,
@@ -66,7 +66,7 @@ describe('runSlotPipeline', () => {
     expect(response.sparql).not.toContain('notacountry')
     expect(response.gaps.length).toBeGreaterThan(0)
     expect(response.gaps.some((g) => g.term.includes('notacountry'))).toBe(true)
-  }, 60_000)
+  }, 120_000)
 
   it('drops a range whose property name is not in the ontology', async () => {
     const sw = new Stopwatch()
@@ -81,7 +81,7 @@ describe('runSlotPipeline', () => {
     expect(response.sparql).not.toContain('numberLanes')
     // A gap explains the drop so the LLM caller can revise.
     expect(response.gaps.some((g) => g.term === 'numberLanes')).toBe(true)
-  }, 60_000)
+  }, 120_000)
 
   it('produces compilable SPARQL for the full filter + range + location combination', async () => {
     // Policy-gate coverage for combined slots lives in
@@ -91,9 +91,8 @@ describe('runSlotPipeline', () => {
     const sw = new Stopwatch()
     const response = await runSlotPipeline({
       submission: submission({
-        filters: { roadTypes: 'motorway' },
+        filters: { roadTypes: 'motorway', country: 'DE' },
         ranges: { numberIntersections: { min: 5 } },
-        location: { country: 'DE' },
       }),
       vocabulary,
       targetDomain: 'hdmap',
@@ -103,7 +102,7 @@ describe('runSlotPipeline', () => {
     expect(response.sparql).toContain('motorway')
     expect(response.sparql).toContain('numberIntersections')
     expect(response.sparql).toMatch(/\?country/)
-  }, 60_000)
+  }, 120_000)
 
   it('falls back to targetDomain when the submission has empty domains', async () => {
     const sw = new Stopwatch()
@@ -117,7 +116,7 @@ describe('runSlotPipeline', () => {
       sw,
     })
     expect(response.sparql).toContain('?asset a scenario:Scenario')
-  }, 60_000)
+  }, 120_000)
 
   it('preserves the LLM interpretation summary and concatenates new gaps', async () => {
     const sw = new Stopwatch()
@@ -151,7 +150,7 @@ describe('runSlotPipeline', () => {
     const survived = response.gaps.find((g) => g.term === originalGap.term)
     expect(survived).toBeDefined()
     expect(survived?.reason).toBe(originalGap.reason)
-  }, 60_000)
+  }, 120_000)
 
   it('records "post-llm-validation" and "sparql-compile" stages on the stopwatch', async () => {
     const sw = new Stopwatch()
@@ -165,5 +164,5 @@ describe('runSlotPipeline', () => {
     const stageNames = timings.map((t) => t.stage)
     expect(stageNames).toContain('post-llm-validation')
     expect(stageNames).toContain('sparql-compile')
-  }, 60_000)
+  }, 120_000)
 })

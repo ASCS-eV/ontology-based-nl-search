@@ -45,6 +45,22 @@ export interface PathStep {
 }
 
 /**
+ * Whether a leaf property binds a literal value, an IRI, or a typed
+ * sub-resource class. Determined from SHACL — `sh:nodeKind sh:IRI`,
+ * `sh:class ?C`, or `sh:datatype xsd:foo` on the leaf property shape.
+ *
+ *  - `iri`        — leaf binds an IRI with no class constraint (e.g.
+ *                   `manifest:iri`). The compiler can constrain the
+ *                   bound resource separately with a `?leaf a Class`
+ *                   pattern to express cross-domain references.
+ *  - `class:<IRI>` — leaf binds an IRI typed as the named class. Direct
+ *                   reference to a known sub-resource type.
+ *  - `literal`    — default; leaf binds a typed literal (xsd:string,
+ *                   xsd:integer, …).
+ */
+export type LeafKind = 'iri' | 'literal' | `class:${string}`
+
+/**
  * A discovered path from an asset class to one of its leaf properties.
  * Independent of the ENVITED-X meta-model: every literal predicate
  * comes from `sh:path` declarations in the schema graph.
@@ -64,6 +80,13 @@ export interface PropertyPath {
    * property itself.
    */
   steps: PathStep[]
+  /**
+   * Kind of value bound by the leaf step. See {@link LeafKind}. Used
+   * by the compiler to identify cross-reference chains (paths whose
+   * leaf binds an IRI / typed class) versus value-filter chains
+   * (paths whose leaf binds a literal).
+   */
+  leafKind: LeafKind
 }
 
 /** Local-name extraction (after last `/` or `#`). */
@@ -213,16 +236,43 @@ async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEdge[]> {
   return edges
 }
 
+interface LeafRow {
+  owningClass: string
+  propertyIri: string
+  leafKind: LeafKind
+}
+
 /**
  * Query every `(targetClass, leaf-predicate, leaf-iri)` triple — the
  * leaves of every property path. A leaf is a property shape with a
  * literal `sh:path` and NO `sh:node` (its values are RDF literals,
- * not sub-resources).
+ * IRIs, or typed instances, not sub-resources to recurse into).
+ *
+ * Returns each leaf annotated with its {@link LeafKind} so the
+ * compiler can distinguish literal-value leaves (used for filters
+ * and ranges) from IRI / class-typed leaves (used to express
+ * cross-domain references).
+ *
+ * Determined from SHACL: `sh:nodeKind sh:IRI` → `iri`, `sh:class ?C`
+ * → `class:<IRI>`, anything else (including `sh:datatype xsd:foo`,
+ * `sh:in`, or unconstrained) → `literal`.
+ *
+ * Implementation note (Oxigraph WASM): an OPTIONAL on both
+ * `sh:nodeKind` and `sh:class` would be the obvious shape, but the
+ * project hits OPTIONAL-correlated crashes in the WASM runtime on the
+ * same workloads where `UNION + property-path *` crashes (see header
+ * comment). The query is split into two SELECT runs and merged in TS.
  */
-async function queryLeafProperties(
-  store: SparqlStore
-): Promise<{ owningClass: string; propertyIri: string }[]> {
-  const sparql = `
+async function queryLeafProperties(store: SparqlStore): Promise<LeafRow[]> {
+  // Single SELECT — the original 21a query, unchanged. Performance is
+  // critical here because the result feeds the BFS in `buildPropertyPaths`,
+  // which runs at compiler-vocab startup. The two extra `OPTIONAL`s the
+  // earlier 21c draft tried (sh:nodeKind, sh:class) blew through the
+  // 30s test timeout on the workspace ontology — Oxigraph WASM appears
+  // to expand OPTIONAL over a property-shape blank-node graph
+  // pathologically. Enrichment now happens via a separate query post-BFS
+  // (see `enrichLeafKinds` below).
+  const leafSparql = `
     ${sparqlPrefixes('sh')}
 
     SELECT DISTINCT ?owningClass ?propertyIri WHERE {
@@ -236,17 +286,69 @@ async function queryLeafProperties(
       }
     }
   `
+  const leafResult = await store.query(leafSparql)
 
-  const result = await store.query(sparql)
-  const leaves: { owningClass: string; propertyIri: string }[] = []
-  for (const row of result.results.bindings) {
+  const leaves: LeafRow[] = []
+  for (const row of leafResult.results.bindings) {
     const owningClass = row['owningClass']?.value
     const propertyIri = row['propertyIri']?.value
-    if (owningClass && propertyIri) {
-      leaves.push({ owningClass, propertyIri })
-    }
+    if (!owningClass || !propertyIri) continue
+    leaves.push({ owningClass, propertyIri, leafKind: 'literal' })
   }
   return leaves
+}
+
+/**
+ * Discover the SHACL nodeKind / sh:class declaration on every leaf
+ * property IRI used by the discovered paths. Runs as a second pass
+ * against the schema graph so the hot BFS query in
+ * `queryLeafProperties` stays minimal.
+ *
+ * Only IRIs that were already discovered as leaves are introspected
+ * — properties never reached by a BFS path are skipped — so the
+ * enrichment cost scales with the discovered-leaf count, not with
+ * the total schema-graph size.
+ */
+async function enrichLeafKinds(
+  store: SparqlStore,
+  paths: PropertyPath[]
+): Promise<Map<string, LeafKind>> {
+  const propIris = new Set<string>()
+  for (const p of paths) propIris.add(p.propertyIri)
+  if (propIris.size === 0) return new Map()
+
+  const valuesClause = [...propIris].map((iri) => `<${iri}>`).join(' ')
+  const sparql = `
+    ${sparqlPrefixes('sh')}
+
+    SELECT DISTINCT ?propertyIri ?nodeKind ?targetClass WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        VALUES ?propertyIri { ${valuesClause} }
+        ?propShape sh:path ?propertyIri .
+        { ?propShape sh:nodeKind ?nodeKind }
+        UNION
+        { ?propShape sh:class ?targetClass . FILTER(isIRI(?targetClass)) }
+      }
+    }
+  `
+  const result = await store.query(sparql)
+
+  const SH_IRI = 'http://www.w3.org/ns/shacl#IRI'
+  const out = new Map<string, LeafKind>()
+  for (const row of result.results.bindings) {
+    const pi = row['propertyIri']?.value
+    if (!pi) continue
+    const nodeKind = row['nodeKind']?.value
+    const targetClass = row['targetClass']?.value
+    // Prefer `class` over `iri` when both are declared on the same
+    // property — `sh:class` carries strictly more information.
+    if (targetClass && !out.get(pi)?.startsWith('class:')) {
+      out.set(pi, `class:${targetClass}`)
+    } else if (nodeKind === SH_IRI && !out.has(pi)) {
+      out.set(pi, 'iri')
+    }
+  }
+  return out
 }
 
 interface PredecessorLink {
@@ -340,7 +442,7 @@ export async function buildPropertyPaths(
   const out: PropertyPath[] = []
   for (const assetClass of assetClasses) {
     const predecessors = bfsFromAsset(assetClass, forwardEdges)
-    for (const { owningClass, propertyIri } of leaves) {
+    for (const { owningClass, propertyIri, leafKind } of leaves) {
       const steps = pathStepsTo(owningClass, predecessors, propertyIri)
       if (!steps) continue
       out.push({
@@ -349,8 +451,115 @@ export async function buildPropertyPaths(
         propertyIri,
         assetClass,
         steps,
+        leafKind,
       })
     }
+  }
+
+  // Second pass: enrich leafKind from the schema graph for the leaves
+  // that actually showed up in a discovered path. Done after BFS so the
+  // hot leaf query stays minimal (see `enrichLeafKinds`).
+  const enriched = await enrichLeafKinds(store, out)
+  for (const path of out) {
+    const kind = enriched.get(path.propertyIri)
+    if (kind) path.leafKind = kind
+  }
+  return out
+}
+
+/**
+ * A discovered cross-domain reference chain.
+ *
+ * Replaces the hard-coded `?asset domain:hasManifest ?m ; ?m
+ * manifest:hasReferencedArtifacts ?link ; ?link manifest:iri ?refAsset`
+ * pattern. For any ontology that expresses cross-asset references
+ * declaratively in SHACL — whether via a manifest pattern, a direct
+ * `references` property, or some other structure — the compiler reads
+ * the actual predicate chain from this set.
+ *
+ * Two flavours emerge from {@link LeafKind}:
+ *
+ *   - `kind: 'iri'`   — the leaf binds an unconstrained IRI. The
+ *                       compiler can pair the chain with a runtime
+ *                       `?refAsset a <ChildClass>` constraint to
+ *                       address any child asset domain via this path.
+ *                       (ENVITED-X manifest pattern uses this shape.)
+ *   - `kind: 'class'` — the leaf binds an IRI typed as the named
+ *                       child asset class. The chain is the join to
+ *                       exactly that child domain; no extra type
+ *                       constraint needed.
+ */
+export interface ReferenceChain {
+  /** Parent asset class IRI at the root of the chain. */
+  parentClass: string
+  /** Parent domain name (e.g. `hdmap`). */
+  parentDomain: string
+  /** Predicates to walk from the parent variable to the bound IRI. */
+  steps: PathStep[]
+  /**
+   * `iri` for open-ended IRI-leaf chains (compiler supplies the
+   * `?refAsset a <ChildClass>` constraint at emission time);
+   * `class` for chains whose leaf SHACL declares `sh:class` directly.
+   */
+  kind: 'iri' | 'class'
+  /**
+   * For `kind: 'class'`, the IRI of the constrained child asset class.
+   * For `kind: 'iri'`, undefined — child domain is determined at the
+   * compiler's call site.
+   */
+  childClass?: string
+  /**
+   * For `kind: 'class'`, the resolved child domain name. For `kind:
+   * 'iri'`, undefined.
+   */
+  childDomain?: string
+}
+
+/**
+ * Derive cross-domain reference chains from the discovered property
+ * paths. Selects paths whose leaf binds an IRI or a typed class, then
+ * groups them by parent asset class.
+ *
+ * Ontology-agnostic: works against any SHACL that declares cross-
+ * references via `sh:nodeKind sh:IRI` or `sh:class`, regardless of
+ * whether the predicate naming follows the ENVITED-X manifest pattern.
+ */
+export function buildReferenceChains(
+  paths: PropertyPath[],
+  registry?: DomainRegistry,
+  knownAssetClasses?: Set<string>
+): ReferenceChain[] {
+  const out: ReferenceChain[] = []
+  for (const path of paths) {
+    if (path.leafKind === 'literal') continue
+    const parentDomain = path.domain || extractDomain(path.assetClass, registry)
+    if (!parentDomain) continue
+
+    if (path.leafKind === 'iri') {
+      out.push({
+        parentClass: path.assetClass,
+        parentDomain,
+        steps: path.steps,
+        kind: 'iri',
+      })
+      continue
+    }
+
+    // path.leafKind === `class:${IRI}` — strip the prefix.
+    const childClass = path.leafKind.slice('class:'.length)
+    if (!childClass) continue
+    if (knownAssetClasses && !knownAssetClasses.has(childClass)) continue
+    const childDomain = extractDomain(childClass, registry)
+    if (!childDomain) continue
+
+    out.push({
+      parentClass: path.assetClass,
+      parentDomain,
+      steps: path.steps,
+      kind: 'class',
+      childClass,
+      childDomain,
+    })
   }
   return out
 }

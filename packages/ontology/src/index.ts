@@ -1,8 +1,11 @@
+import { createComponentLogger } from '@ontology-search/core/logging'
 import { existsSync, readdirSync, statSync } from 'fs'
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import path from 'path'
 
 import { getProjectRoot } from './paths.js'
+
+const log = createComponentLogger('ontology')
 
 // Re-export vocabulary index (still used by domain-registry)
 export type { VocabularyIndex, VocabularyProperty } from './vocabulary-index.js'
@@ -75,7 +78,9 @@ async function buildOntologyContext(): Promise<string> {
   if (existsSync(LOCAL_OMB_PATH)) {
     const artifacts = discoverOntologyArtifacts(LOCAL_OMB_PATH)
     if (artifacts.length === 0) {
-      console.warn(`No .owl.ttl artifacts found under: ${LOCAL_OMB_PATH}/artifacts`)
+      log.warn('No .owl.ttl artifacts found under local ontology path', {
+        path: `${LOCAL_OMB_PATH}/artifacts`,
+      })
     }
     for (const artifact of artifacts) {
       const fullPath = path.join(LOCAL_OMB_PATH, artifact)
@@ -92,11 +97,10 @@ async function buildOntologyContext(): Promise<string> {
     const branch = config.ONTOLOGY_BRANCH
 
     // Fetch the artifacts directory listing is not feasible via raw GitHub;
-    // log a warning and skip — production should use local submodule path.
-    console.warn(
-      `Local OMB path not found: ${LOCAL_OMB_PATH}. ` +
-        `Cannot discover ontology artifacts dynamically from GitHub. ` +
-        `Run 'git submodule update --init --recursive' to populate.`
+    // log a warning and skip — production should use local ontology path.
+    log.warn(
+      "Local ontology path not found; cannot discover artifacts via raw GitHub. Run 'git submodule update --init --recursive' to populate.",
+      { path: LOCAL_OMB_PATH }
     )
     void repo
     void branch

@@ -52,13 +52,6 @@ export interface SlotPipelineSubmission {
     domains?: string[]
     filters?: Record<string, string | string[]>
     ranges?: Record<string, { min?: number; max?: number }>
-    location?: {
-      country?: string | string[]
-      state?: string | string[]
-      region?: string | string[]
-      city?: string | string[]
-    }
-    license?: string
     references?: { domain: string; label?: string }
   }
   interpretation: QueryInterpretation
@@ -92,16 +85,11 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   // 1. Fuzzy match: case / typo correction against sh:in enums.
   const fuzzedFilters = correctFilters(submission.slots.filters ?? {}, vocabulary)
   // 2. SHACL gate: enforces every Core constraint declared in the shapes
-  // graph (sh:pattern, sh:datatype, …) on filters, location, and license.
-  // Values that fail are dropped from slots and emitted as gaps.
+  // graph (sh:pattern, sh:datatype, …) on every filter value, including
+  // the geographic and license keys that used to live in dedicated
+  // sub-shapes. Values that fail are dropped and emitted as gaps.
   const shacl = await ShaclValidator.fromWorkspace()
-  const shaclResult = await validateSlotsAgainstShacl(
-    fuzzedFilters,
-    submission.slots.location,
-    submission.slots.license,
-    shacl,
-    vocabulary
-  )
+  const shaclResult = await validateSlotsAgainstShacl(fuzzedFilters, shacl, vocabulary)
   // 3. Ranges go through their own check: numeric values always pass SHACL
   // datatype constraints, so we only need to confirm the property name is
   // known. Hallucinated keys (e.g. `numberLanes`) are dropped here.
@@ -119,8 +107,6 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     domains: correctedDomains,
     filters: shaclResult.filters,
     ranges: rangeResult.ranges,
-    location: shaclResult.location,
-    license: shaclResult.license,
     references: submission.slots.references,
   }
 
@@ -135,9 +121,6 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     ...submission.interpretation,
     domains: slots.domains,
     appliedFilters: Object.keys(slots.filters).length > 0 ? slots.filters : undefined,
-    appliedLocation: slots.location
-      ? Object.fromEntries(Object.entries(slots.location).filter(([, v]) => v !== undefined))
-      : undefined,
   }
 
   const rawResponse: LlmStructuredResponse = {

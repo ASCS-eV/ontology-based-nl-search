@@ -213,12 +213,6 @@ export function validateSlots(
   for (const term of response.interpretation.mappedTerms) {
     const propertyName = term.property
 
-    // Location fields (country, state, city, region) and license are not enum-validated
-    if (isLocationOrLicenseProperty(propertyName)) {
-      validatedTerms.push(term)
-      continue
-    }
-
     // Numeric range terms — keep as-is (validated structurally, not by vocabulary)
     if (propertyName && numericProps.has(propertyName)) {
       validatedTerms.push({
@@ -309,7 +303,6 @@ export function validateSlots(
       mappedTerms: validatedTerms,
       domains: response.interpretation.domains,
       appliedFilters: response.interpretation.appliedFilters,
-      appliedLocation: response.interpretation.appliedLocation,
     },
     gaps: validatedGaps,
     sparql: response.sparql,
@@ -318,28 +311,22 @@ export function validateSlots(
 
 /**
  * Result of SHACL-validating an entire slot set.
- * Returns the cleansed slot fragments plus any gaps for values that failed
+ *
+ * Returns the cleansed `filters` map plus any gaps for values that failed
  * SHACL constraints. The caller composes these into a SearchSlots object.
+ *
+ * Task 21d folded the previous typed `location` / `license` fields into
+ * `filters` keyed by SHACL leaf local names — every constraint flows
+ * through one generic surface.
  */
 export interface ShaclSlotValidationResult {
   filters: Record<string, string | string[]>
-  /**
-   * Each location field carries the surviving elements. Arrays compile to
-   * `FILTER(?v IN (...))`, single values to `FILTER(?v = "...")`.
-   */
-  location: {
-    country?: string | string[]
-    state?: string | string[]
-    region?: string | string[]
-    city?: string | string[]
-  }
-  license?: string
   gaps: OntologyGap[]
 }
 
 /**
- * Validate every value in `filters`, `location`, and `license` against the
- * full SHACL Core constraint set declared in the shapes graph.
+ * Validate every value in `filters` against the full SHACL Core
+ * constraint set declared in the shapes graph.
  *
  * Generic by construction:
  *   - looks up slot keys → property IRI(s) via the SHACL validator's index,
@@ -351,24 +338,18 @@ export interface ShaclSlotValidationResult {
  * so case/typo errors don't generate false negatives. After fuzzy correction,
  * SHACL is the final gate — nothing reaches the SPARQL compiler unless every
  * declared constraint on the property is satisfied.
+ *
+ * Task 21d removed the typed `location` / `license` parameters: every
+ * constraint now lives in `filters` keyed by the SHACL leaf local name,
+ * and the same validation loop handles geography, license, and any
+ * other leaf the schema declares.
  */
 export async function validateSlotsAgainstShacl(
   filters: Record<string, string | string[]>,
-  location:
-    | {
-        country?: string | string[]
-        state?: string | string[]
-        region?: string | string[]
-        city?: string | string[]
-      }
-    | undefined,
-  license: string | undefined,
   shaclValidator: ShaclValidator,
   vocabulary?: OntologyVocabulary
 ): Promise<ShaclSlotValidationResult> {
   const cleanFilters: Record<string, string | string[]> = {}
-  const cleanLocation: ShaclSlotValidationResult['location'] = {}
-  let cleanLicense: string | undefined
   const gaps: OntologyGap[] = []
 
   // Build a fast lookup of known-good enum values per slot. Values that
@@ -439,28 +420,7 @@ export async function validateSlotsAgainstShacl(
     }
   }
 
-  // Location — every populated field gets a SHACL check. Same batch path for
-  // arrays so a 27-country "europe" array validates in one engine call.
-  if (location) {
-    const cleanLocationRec = cleanLocation as Record<string, string | string[]>
-    for (const [slotKey, value] of Object.entries(location)) {
-      if (Array.isArray(value)) {
-        const kept = await checkArrayAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
-        if (kept.length > 0) cleanLocationRec[slotKey] = kept
-      } else if (typeof value === 'string' && value.length > 0) {
-        const ok = await checkAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
-        if (ok) cleanLocationRec[slotKey] = value
-      }
-    }
-  }
-
-  // License — single literal, same gate.
-  if (typeof license === 'string' && license.length > 0) {
-    const ok = await checkAndAccumulate('license', license, shaclValidator, gaps, vocabulary)
-    if (ok) cleanLicense = license
-  }
-
-  return { filters: cleanFilters, location: cleanLocation, license: cleanLicense, gaps }
+  return { filters: cleanFilters, gaps }
 }
 
 /**
@@ -643,15 +603,20 @@ export function correctFilters(
     }
 
     if (Array.isArray(value)) {
-      const correctedValues: string[] = []
-      for (const v of value) {
+      // Per element: prefer the fuzzy-matched canonical value; fall
+      // back to the raw element so the downstream SHACL gate can emit
+      // a structured gap. Without this pass-through, values too far
+      // from any sh:in entry are silently dropped and the caller sees
+      // an empty filter with no explanation.
+      const correctedValues: string[] = value.map((v) => {
         const match = findBestMatch(v, propInfo.allowedValues)
-        if (match) correctedValues.push(match.match)
-      }
-      if (correctedValues.length > 0) corrected[propName] = correctedValues
+        return match ? match.match : v
+      })
+      corrected[propName] = correctedValues
     } else {
       const match = findBestMatch(value, propInfo.allowedValues)
-      if (match) corrected[propName] = match.match
+      // Same pass-through rationale as the array branch.
+      corrected[propName] = match ? match.match : value
     }
   }
 
@@ -773,10 +738,4 @@ function enrichGapWithSuggestions(
     ...gap,
     suggestions: topSuggestions.length > 0 ? topSuggestions : gap.suggestions,
   }
-}
-
-/** Check if a property is a location or license field (not vocabulary-validated) */
-function isLocationOrLicenseProperty(propertyName: string | undefined): boolean {
-  if (!propertyName) return false
-  return ['country', 'state', 'region', 'city', 'license'].includes(propertyName)
 }

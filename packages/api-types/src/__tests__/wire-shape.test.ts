@@ -33,8 +33,14 @@ describe('@ontology-search/api-types — wire shape', () => {
       summary: 'opaque summary',
       mappedTerms: [term],
       domains: ['hdmap'],
-      appliedFilters: { roadTypes: 'motorway', laneTypes: ['driving', 'exit'] },
-      appliedLocation: { country: 'DE' },
+      // Task 21d-flat: geographic / license fields live in
+      // `appliedFilters` keyed by SHACL leaf local name — there is no
+      // separate `appliedLocation` field on the wire.
+      appliedFilters: {
+        roadTypes: 'motorway',
+        laneTypes: ['driving', 'exit'],
+        country: 'DE',
+      },
     }
     const gap: OntologyGap = {
       term: 'unknown term',

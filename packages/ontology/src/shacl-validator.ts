@@ -24,12 +24,15 @@ import { readFileSync } from 'node:fs'
 
 import { LruCache } from '@ontology-search/core/cache/lru'
 import { getConfig } from '@ontology-search/core/config'
+import { createComponentLogger } from '@ontology-search/core/logging'
 import datasetFactory from '@rdfjs/dataset'
 import type { DatasetCore, NamedNode, Quad, Term } from '@rdfjs/types'
 import { DataFactory, Parser } from 'n3'
 import SHACLValidator from 'rdf-validate-shacl'
 
 import { discoverShapeFiles } from './sources.js'
+
+const log = createComponentLogger('shacl-validator')
 
 const { namedNode, blankNode, literal, quad } = DataFactory
 
@@ -556,7 +559,7 @@ function loadShapesFromDisk(): DatasetCore {
       const quads = parser.parse(turtle)
       for (const q of quads) ds.add(q as unknown as Quad)
     } catch (err) {
-      console.warn(`[shacl-validator] Failed to parse ${filePath}: ${err}`)
+      log.warn('Failed to parse SHACL file', { file: filePath, error: String(err) })
     }
   }
 

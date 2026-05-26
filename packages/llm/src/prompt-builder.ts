@@ -84,18 +84,31 @@ For properties with \`sh:datatype xsd:integer\` or \`xsd:float\` or \`xsd:decima
 Look at the SHACL shapes to identify which properties are numeric (\`xsd:integer\`, \`xsd:float\`, \`xsd:decimal\`) and map the user's qualitative terms to appropriate thresholds.
 `
 
-/** Location, license, domains sections (stable across ontology changes) */
+/** Generic slot guidance — stable across ontology changes */
 const STATIC_SECTIONS = `
-### \`location\` — Geographic filters
+### Geographic, license, and other "well-known" filters
 
-| Field     | Format                                     |
-| --------- | ------------------------------------------ |
-| \`country\` | ISO 2-letter: "DE", "US", "CN", "JP", etc. |
-| \`state\`   | ISO state code: "DE-BY", "US-CA", etc.     |
-| \`region\`  | Free text: "Upper Bavaria", etc.           |
-| \`city\`    | City name: "Munich", "Berlin", etc.        |
+Geographic filters (country, state, region, city), license identifiers, and any
+other constraint that maps to a SHACL leaf property go into \`filters\` keyed
+by the **exact local name** declared in the SHACL shapes. There is no
+dedicated "location" or "license" slot — the compiler discovers the chain from
+the asset class to whatever leaf the user is constraining, and emits the
+appropriate SPARQL.
 
-Each field accepts a single string OR an array of strings.
+Look at the SHACL shapes for the property's \`sh:path\` local name and
+\`sh:in\` (if any). If the SHACL has a property whose path local name is
+\`country\` with \`sh:datatype xsd:string\` or \`sh:pattern\` for ISO codes,
+emit \`"country": "DE"\`. If the property accepts a region/list, use an array
+for IN-semantics:
+
+- "in Germany" → \`filters: { "country": "DE" }\`
+- "in Germany or France" → \`filters: { "country": ["DE","FR"] }\`
+- "in the EU" → list every EU member ISO code as an array under whichever
+  leaf the SHACL declares ("country", or a different name if the ontology
+  models geography differently)
+- "Munich" → if the SHACL has both \`country\` and \`city\` leaves, emit
+  \`{ "country": "DE", "city": "Munich" }\` so the city's containing
+  country is also constrained
 
 **Always emit an array when the user expresses a region, continent, group of
 countries, or any multi-country intent.** Use your world knowledge to expand
@@ -103,19 +116,9 @@ the region to the explicit list of values it covers — do NOT silently
 substitute one country for a region. The SHACL gate validates every element;
 invalid entries are dropped, valid ones stay.
 
-Examples:
-- "in europe" → \`country: ["DE","FR","IT","ES","NL","BE","AT","CH","PL","SE","NO","DK","FI","PT","IE","GR","CZ","HU","RO","BG","HR","SK","SI","EE","LV","LT","LU"]\`
-- "in scandinavia" → \`country: ["SE","NO","DK","FI","IS"]\`
-- "in the EU" → list the current EU member ISO codes
-- "in DACH" → \`country: ["DE","AT","CH"]\`
-- "in Germany or France" → \`country: ["DE","FR"]\`
-- "in Germany" → \`country: "DE"\` (single value is fine when intent is one country)
-
-Resolve city names to countries (e.g., "Munich" → country: "DE", city: "Munich").
-
-### \`license\` — License identifier
-
-"CC-BY-4.0", "CC-BY-SA-4.0", "CC0-1.0", "MIT", "EPL-2.0", "Apache-2.0"
+License IDs use the same generic surface: if the SHACL declares a
+license-bearing leaf, emit it as a filter keyed by that local name
+(e.g. \`filters: { "license": "CC-BY-4.0" }\`).
 
 ### \`references\` — Cross-reference filter
 
@@ -173,7 +176,7 @@ const RULES = `
 
 Call \`submit_slots\` with:
 
-- \`slots\`: Object with \`{ filters, ranges, location, license, references, domains }\` — only include non-empty fields
+- \`slots\`: Object with \`{ filters, ranges, references, domains }\` — only include non-empty fields. Geographic, license, and other constraints all live inside \`filters\` keyed by the SHACL leaf local name.
 - \`interpretation\`: Summary + mapped terms with confidence
 - \`gaps\`: Array of unmapped concepts with reasons and suggestions
 `
@@ -245,9 +248,12 @@ User: "I need a German asset of type X in format Y with at least 5 units"
 {
   "slots": {
     "domains": ["domain-from-shacl"],
-    "filters": { "propertyFromShacl": "value-from-sh:in", "formatProperty": "format-value" },
-    "ranges": { "numericProperty": { "min": 5 } },
-    "location": { "country": "DE" }
+    "filters": {
+      "propertyFromShacl": "value-from-sh:in",
+      "formatProperty": "format-value",
+      "country": "DE"
+    },
+    "ranges": { "numericProperty": { "min": 5 } }
   },
   "interpretation": {
     "summary": "German asset of type X in format Y, minimum 5 units",
@@ -296,9 +302,8 @@ User: "French assets with intersections and related data of type B"
 {
   "slots": {
     "domains": ["domain-a", "domain-b"],
-    "filters": {},
-    "ranges": { "countProperty": { "min": 1 } },
-    "location": { "country": "FR" }
+    "filters": { "country": "FR" },
+    "ranges": { "countProperty": { "min": 1 } }
   },
   "interpretation": {
     "summary": "French assets from domain A and B containing intersections",

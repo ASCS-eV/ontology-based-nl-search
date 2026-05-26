@@ -196,20 +196,18 @@ describe('SearchService — real pipeline integration', () => {
    * an array must apply FILTER IN. Either path must return a finite
    * non-error result against the real data.
    */
-  it('applies a location filter without producing a policy violation', async () => {
+  it('applies a country filter without producing a policy violation', async () => {
     const single = await realServiceWithMockedLlm({
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: 'DE' },
       ranges: {},
-      location: { country: 'DE' },
     }).searchNl({ query: 'HD maps in Germany' })
     expect(single.execution.error).toBeUndefined()
 
     const multi = await realServiceWithMockedLlm({
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: ['DE', 'FR', 'IT'] },
       ranges: {},
-      location: { country: ['DE', 'FR', 'IT'] },
     }).searchNl({ query: 'HD maps in any of DE/FR/IT' })
     expect(multi.execution.error).toBeUndefined()
     // Array form must match at least as many rows as the single
@@ -281,9 +279,8 @@ describe('SearchService — real pipeline integration', () => {
       { domains: ['hdmap'], filters: {}, ranges: { numberIntersections: { min: 1, max: 10 } } },
       {
         domains: ['hdmap'],
-        filters: {},
+        filters: { country: ['DE', 'FR'] },
         ranges: {},
-        location: { country: ['DE', 'FR'] },
       },
       { domains: ['scenario', 'hdmap'], filters: { scenarioCategory: 'urban' }, ranges: {} },
       { domains: [], filters: {}, ranges: {} },
@@ -291,9 +288,8 @@ describe('SearchService — real pipeline integration', () => {
       { domains: ['hdmap', 'ositrace'], filters: { roadTypes: 'motorway' }, ranges: {} },
       {
         domains: ['hdmap', 'ositrace'],
-        filters: { roadTypes: 'town' },
+        filters: { roadTypes: 'town', country: 'DE' },
         ranges: {},
-        location: { country: 'DE' },
       },
     ]
 
@@ -359,9 +355,8 @@ describe('SearchService — real pipeline integration', () => {
   it('generates UNION for peer domains and finds assets in both', async () => {
     const result = await realServiceWithMockedLlm({
       domains: ['hdmap', 'ositrace'],
-      filters: { roadTypes: 'motorway' },
+      filters: { roadTypes: 'motorway', country: 'FR' },
       ranges: {},
-      location: { country: 'FR' },
     }).searchNl({ query: 'French motorway data' })
 
     expect(result.execution.error).toBeUndefined()
@@ -386,9 +381,8 @@ describe('SearchService — real pipeline integration', () => {
   it('UNION query executes without error even with zero results', async () => {
     const result = await realServiceWithMockedLlm({
       domains: ['hdmap', 'ositrace'],
-      filters: { roadTypes: 'motorway' },
+      filters: { roadTypes: 'motorway', country: 'ZZ' }, // Non-existent country code
       ranges: {},
-      location: { country: 'ZZ' }, // Non-existent country code
     }).searchNl({ query: 'Fictional country motorway data' })
 
     expect(result.execution.error).toBeUndefined()

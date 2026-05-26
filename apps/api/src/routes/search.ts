@@ -10,22 +10,15 @@ import type { AppEnv } from '../types.js'
 
 const searchSlotsSchema = z.object({
   domains: z.array(z.string()).default([]),
+  // Filters keyed by SHACL leaf local name. Geographic constraints
+  // (country, state, region, city), license, and every other leaf
+  // live here — there is no dedicated `location` / `license`
+  // sub-object at the wire level (task 21d-flat). The compiler walks
+  // the SHACL-discovered property path for each key to emit SPARQL.
   filters: z.record(z.string(), z.union([z.string(), z.array(z.string())])).default({}),
   ranges: z
     .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
     .default({}),
-  location: z
-    .object({
-      // Each field accepts a single value or an array of values. Arrays let
-      // a refine caller express a region (e.g. country: ["DE","FR","IT"])
-      // and have the compiler emit `FILTER(?country IN (...))`.
-      country: z.union([z.string(), z.array(z.string())]).optional(),
-      state: z.union([z.string(), z.array(z.string())]).optional(),
-      region: z.union([z.string(), z.array(z.string())]).optional(),
-      city: z.union([z.string(), z.array(z.string())]).optional(),
-    })
-    .optional(),
-  license: z.string().optional(),
 })
 
 export const searchRoutes = new Hono<AppEnv>()

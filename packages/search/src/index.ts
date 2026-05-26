@@ -6,8 +6,8 @@ export {
   getAssetDomains,
 } from './compiler.js'
 export { getInitializedStore } from './init.js'
-export type { PathStep, PropertyPath } from './property-paths.js'
-export { buildPropertyPaths } from './property-paths.js'
+export type { LeafKind, PathStep, PropertyPath, ReferenceChain } from './property-paths.js'
+export { buildPropertyPaths, buildReferenceChains } from './property-paths.js'
 export { SCHEMA_GRAPH } from './schema-loader.js'
 export type {
   NlSearchOptions,

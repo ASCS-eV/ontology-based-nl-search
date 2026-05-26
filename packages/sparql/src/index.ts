@@ -43,4 +43,5 @@ export function getSparqlStore(): SparqlStore {
   return storeInstance
 }
 
+export { probePropertyPathSupport } from './capability-probe.js'
 export type { SparqlBinding, SparqlResults, SparqlStore } from './types.js'

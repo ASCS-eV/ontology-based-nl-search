@@ -3,24 +3,37 @@
  *
  * This module queries the SHACL shapes graph to extract ontology structure:
  * - Property-domain mappings (which domains define which properties)
- * - Asset domain discovery (all classes that are cross-domain subclasses)
+ * - Asset domain discovery (primary target classes per domain)
  * - Domain references (which domains reference which other domains)
  * - Property shape group classification (Content, Format, Quantity, etc.)
  * - Range2D property detection
+ * - SKOS concept-scheme membership + instance-value distributions
  *
- * Architecture: Query the graph, don't hardcode metadata.
- * All domain knowledge comes from SPARQL queries + the domain registry,
- * not from hardcoded namespace patterns or class names.
+ * Architecture: Query the graph, don't hardcode metadata. All domain
+ * knowledge comes from SPARQL queries + the domain registry, not from
+ * hardcoded namespace patterns or class names.
+ *
+ * Size note: each query is a focused SPARQL string plus a small
+ * post-processor specific to that query's row shape. Splitting per
+ * query into separate files would mean a `schema-queries/` directory
+ * of ~8 single-export files that all share the same imports, prefix
+ * helpers, and `extractDomain`/`extractLocalName` utilities. Keeping
+ * them co-located documents the shared contract (every query reads
+ * from `<urn:graph:schema>` and emits `{ domain, localName, … }`-shaped
+ * rows) and gives the compiler a single import surface.
  *
  * @see https://www.w3.org/TR/sparql11-query/
  * @see https://www.w3.org/TR/shacl/
  */
+import { createComponentLogger } from '@ontology-search/core/logging'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { isIri } from '@ontology-search/sparql/escape'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
+
+const log = createComponentLogger('schema-queries')
 
 /** Tracks which domain mismatches have already been warned about (emit once). */
 const warnedDomainMismatches = new Set<string>()
@@ -202,16 +215,36 @@ export async function queryAssetDomains(
     }
   }
 
-  // Detect domains in registry that were not discovered via rdfs:subClassOf.
-  // Warn only once per domain to avoid log spam on repeated calls.
+  // Genericity hook (task 21e): when the registry declares domains
+  // but ZERO were discovered via `rdfs:subClassOf` — the signature of
+  // a flat ontology with no shared asset superclass — surface every
+  // registry-declared primary class. This lets a single-domain or
+  // self-rooted ontology (no shared base type) work without forcing
+  // it to add an ENVITED-X-style superclass hierarchy.
+  //
+  // The fallback is gated on `discoveredDomains.size === 0` so it
+  // does NOT inflate the result for multi-domain ontologies (like
+  // ENVITED-X) where supporting domains (georeference, manifest)
+  // intentionally are not asset classes.
   if (registry && registry.domains.size > 0) {
-    const discoveredDomains = new Set(domains.map((d) => d.domainName))
-    for (const [name] of registry.domains) {
-      if (!discoveredDomains.has(name) && !warnedDomainMismatches.has(name)) {
+    if (domains.length === 0) {
+      for (const [name, desc] of registry.domains) {
+        if (desc.targetClassIri) {
+          domains.push({ domainName: name, assetClass: desc.targetClassIri })
+        }
+      }
+    } else {
+      // Multi-domain workspace: warn once about any registry domain
+      // that didn't appear in the subClassOf discovery, so a
+      // missing `sh:targetClass` declaration doesn't fail silently.
+      const discoveredDomains = new Set(domains.map((d) => d.domainName))
+      for (const [name] of registry.domains) {
+        if (discoveredDomains.has(name)) continue
+        if (warnedDomainMismatches.has(name)) continue
         warnedDomainMismatches.add(name)
-        console.warn(
-          `[schema-queries] Domain '${name}' in registry but not discovered via rdfs:subClassOf ` +
-            `— check that sh:targetClass declaration exists and matches PascalCase naming convention`
+        log.warn(
+          'Domain in registry not discovered via rdfs:subClassOf — supporting ontologies (e.g. manifest, georeference) are expected here; check for typos otherwise',
+          { domain: name }
         )
       }
     }
@@ -262,8 +295,8 @@ export async function queryDomainReferences(
   // Discover manifest namespace from registry (if available)
   const manifestNs = discoverManifestNamespace(registry)
   if (!manifestNs) {
-    console.warn(
-      '[schema-queries] No manifest namespace found in registry — cross-domain references will not be discovered'
+    log.warn(
+      'No manifest namespace found in registry — cross-domain references will not be discovered'
     )
     return references
   }
@@ -380,7 +413,7 @@ async function resolveParentDomain(
   // Validate IRI before interpolation into SPARQL to prevent injection
   // from malformed RDF data in the schema graph.
   if (!isIri(constraintIri)) {
-    console.warn(`[schema-queries] skipping invalid constraint IRI: ${constraintIri}`)
+    log.warn('Skipping invalid constraint IRI', { iri: constraintIri })
     return null
   }
 

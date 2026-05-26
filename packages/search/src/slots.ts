@@ -29,38 +29,44 @@ export interface ReferenceFilter {
 
 /**
  * Generic search slots — property localName → value(s).
- * Works for any ontology domain without domain-specific interfaces.
  *
- * Enumerated properties (sh:in) use exact string values.
- * Numeric properties use comparison operators in the key suffix:
- *   "length__gte" → length >= value
- *   "length__lte" → length <= value
+ * Domain-agnostic by construction. The slot shape contains no
+ * ontology-specific field names: every constraint the user expresses
+ * — geography, license, references, anything else — flows through one
+ * of the four generic buckets below, keyed by the SHACL property's
+ * local name. The compiler walks the SHACL-discovered property path
+ * for that key to emit the corresponding SPARQL pattern; ontologies
+ * with different naming or shape depth need zero code changes.
+ *
+ * Enumerated properties (sh:in) accept the exact `sh:in` values.
+ * Numeric properties go through `ranges` with `min`/`max` bounds.
+ * IRI-valued properties (`sh:nodeKind sh:IRI`) accept either bare
+ * IRI strings or literals, depending on the data.
+ *
+ * Historical note: prior versions carried a typed `location: {
+ * country, state, region, city }` shape. Task 21d-flat removed it —
+ * those field names were inherently ontology-specific (they only
+ * exist in ontologies that import the ENVITED-X georeference shape).
+ * Callers now place country/state/region/city under `filters` keyed
+ * by the exact SHACL property local name, and the compiler discovers
+ * the chain to each leaf.
  */
 export interface SearchSlots {
   /** Target domain(s) for the search (e.g., ["hdmap"] or ["scenario"]) */
   domains: string[]
-  /** Property filters: localName → value or values */
+  /**
+   * Property filters keyed by SHACL property local name. Values are
+   * literal strings (or arrays for `IN (…)` semantics). Works for any
+   * leaf in the schema — including geography, license, and other
+   * fields that used to live in a typed sub-shape.
+   */
   filters: Record<string, string | string[]>
   /** Numeric range filters: localName → { min?, max? } */
   ranges: Record<string, { min?: number; max?: number }>
   /**
-   * Location filters. Each field accepts a single value or an array — arrays
-   * compile to `FILTER(?v IN (...))` so the LLM can express a region as the
-   * explicit list of country/state/city codes it covers, instead of silently
-   * collapsing to a single representative. SHACL validates each element; bad
-   * elements drop and emit gaps, survivors stay.
-   */
-  location?: {
-    country?: string | string[]
-    state?: string | string[]
-    region?: string | string[]
-    city?: string | string[]
-  }
-  /** License filter */
-  license?: string
-  /**
-   * Cross-reference filter — find assets that reference another domain.
-   * Compiles to a manifest join: asset → manifest:hasReferencedArtifacts → Link → iri → refAsset
+   * Cross-reference filter — find assets that reference another
+   * domain. Compiles to a SHACL-discovered chain (see
+   * `buildReferenceChains`) — no specific predicate path is assumed.
    */
   references?: ReferenceFilter
 }

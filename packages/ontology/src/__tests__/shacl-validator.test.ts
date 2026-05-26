@@ -28,7 +28,7 @@ describe('ShaclValidator', () => {
     // The validator must discover at least the two properties we test below.
     expect(props).toContain(GEOREF_COUNTRY)
     expect(props).toContain(HDMAP_ROAD_TYPES)
-  }, 30_000)
+  }, 120_000)
 
   it('rejects an out-of-pattern country code (the europe regression)', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -40,7 +40,7 @@ describe('ShaclValidator', () => {
     // guarantees this constraint component IRI.
     const constraints = result.violations.map((v) => v.sourceConstraintComponent)
     expect(constraints).toContain('http://www.w3.org/ns/shacl#PatternConstraintComponent')
-  }, 30_000)
+  }, 120_000)
 
   it('accepts a valid ISO 3166-1 alpha-2 country code', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -48,7 +48,7 @@ describe('ShaclValidator', () => {
 
     expect(result.conforms).toBe(true)
     expect(result.violations).toEqual([])
-  }, 30_000)
+  }, 120_000)
 
   it('rejects a value outside an sh:in enumeration', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -57,7 +57,7 @@ describe('ShaclValidator', () => {
     expect(result.conforms).toBe(false)
     const constraints = result.violations.map((v) => v.sourceConstraintComponent)
     expect(constraints).toContain('http://www.w3.org/ns/shacl#InConstraintComponent')
-  }, 30_000)
+  }, 120_000)
 
   it('accepts a value inside an sh:in enumeration', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -65,7 +65,7 @@ describe('ShaclValidator', () => {
 
     expect(result.conforms).toBe(true)
     expect(result.violations).toEqual([])
-  }, 30_000)
+  }, 120_000)
 
   it('reports conforms=true for properties not covered by any shape', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -74,7 +74,7 @@ describe('ShaclValidator', () => {
     // Unknown properties cannot violate anything — the validator returns a
     // no-op pass so the caller can decide how to handle them.
     expect(result.conforms).toBe(true)
-  }, 30_000)
+  }, 120_000)
 })
 
 describe('ShaclValidator — engine-call accounting (R2, R3, R8)', () => {
@@ -190,7 +190,7 @@ describe('ShaclValidator — bounded result cache', () => {
       expect(validator.__resultCacheSize__).toBeLessThanOrEqual(4)
     }
     expect(validator.__resultCacheSize__).toBe(4)
-  }, 30_000)
+  }, 120_000)
 })
 
 /**

@@ -1,6 +1,15 @@
 /**
  * Copilot Agent — LLM slot-filling via GitHub Copilot SDK with session pooling.
  *
+ * Size note: this file owns three interleaved responsibilities that
+ * each pull in SDK-specific types — session pool, per-request
+ * submission, and tool callback routing — and cannot be cleanly split
+ * without exposing the SDK's persistent-session lifecycle as a
+ * separate public surface. The token-keyed callback router was
+ * already extracted to `submission-router.ts`; the remaining
+ * session-management and per-request orchestration stay together so
+ * the SDK boundary lives in one module.
+ *
  * **Architecture:**
  * - Maintains a pool of persistent CopilotSessions (default 3), reused
  *   round-robin across all search requests
@@ -143,27 +152,11 @@ function buildPersistentSubmitSlotsTool() {
                 },
               },
             },
-            location: {
-              type: 'object',
-              properties: {
-                // Each field accepts string or array — use an array to express
-                // a region/continent as the explicit list of country codes it
-                // covers. Never silently substitute one country for a region.
-                country: {
-                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-                },
-                state: {
-                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-                },
-                region: {
-                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-                },
-                city: {
-                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-                },
-              },
-            },
-            license: { type: 'string' },
+            // Geographic, license, and other "well-known" constraints all
+            // live inside `filters` keyed by the SHACL leaf local name
+            // (task 21d-flat). The compiler walks the discovered SHACL
+            // chain from the asset class to each leaf; no dedicated
+            // `location` / `license` sub-object exists at the slot level.
           },
         },
         interpretation: {

@@ -1,3 +1,17 @@
+/**
+ * Public surface of `@ontology-search/llm`.
+ *
+ * Exports (declared in `package.json` `exports`):
+ *   - `.`               → this file (high-level facade)
+ *   - `./types`         → `LlmStructuredResponse`, `OntologyGap`, …
+ *   - `./prompt-builder` → `buildSystemPrompt`, `ShaclDomainContent`
+ *
+ * The `agent/` subdirectory is intentionally NOT exported as a subpath —
+ * its contents are implementation details of `generateStructuredSearch`.
+ * External consumers must go through this facade so the internals can be
+ * refactored (provider added/removed, tool schema reshaped) without
+ * breaking downstream packages.
+ */
 import { getConfig } from '@ontology-search/core/config'
 import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
 

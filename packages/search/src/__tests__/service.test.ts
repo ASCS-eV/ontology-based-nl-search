@@ -364,18 +364,18 @@ describe('SearchService.searchRefine', () => {
    * that prevents a refine caller from bypassing SHACL validation.
    */
   it('applies validateSlots before compileSlots (R4)', async () => {
-    const validateSlots = vi.fn(async (s: typeof slots) => ({
-      ...s,
-      // Pretend the validator dropped a previously-present unknown property
-      // and stripped a bad location value.
-      filters: { ...s.filters }, // unchanged
-      location: undefined,
-    }))
+    const validateSlots = vi.fn(async (s: typeof slots) => {
+      // Pretend the validator dropped a bad country value (e.g. it failed
+      // sh:pattern). Strip `country` from the filter map so the
+      // post-validation slots no longer carry it.
+      const { country: _dropped, ...kept } = s.filters as Record<string, string | string[]>
+      return { ...s, filters: kept }
+    })
     const deps = createMockDeps({ validateSlots })
     const service = new SearchService(deps)
 
-    // Call with a "tainted" location field the validator should strip.
-    const tainted = { ...slots, location: { country: 'europe' } }
+    // Call with a "tainted" filter the validator should strip.
+    const tainted = { ...slots, filters: { ...slots.filters, country: 'europe' } }
     await service.searchRefine({ slots: tainted })
 
     expect(validateSlots).toHaveBeenCalledTimes(1)
@@ -383,7 +383,7 @@ describe('SearchService.searchRefine', () => {
 
     // compileSlots must receive the validator's RESULT, not the raw input.
     const compiled = (deps.compileSlots as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
-    expect(compiled.location).toBeUndefined()
+    expect(compiled.filters.country).toBeUndefined()
   })
 
   /**

@@ -13,11 +13,14 @@
  * @see https://www.w3.org/TR/shacl/#InConstraintComponent
  */
 import { MIME } from '@ontology-search/core/http/mime'
+import { createComponentLogger } from '@ontology-search/core/logging'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import { readFileSync } from 'fs'
 import { basename } from 'path'
 
 import { discoverShapeFiles } from './sources.js'
+
+const log = createComponentLogger('vocabulary-index')
 
 /** Oxigraph RDF term (subset of RDF/JS Term) */
 interface RdfTerm {
@@ -79,7 +82,7 @@ export async function buildVocabularyIndex(): Promise<VocabularyIndex> {
       store.load(ttl, { format: MIME.TURTLE })
       if (!domains.includes(domain)) domains.push(domain)
     } catch (err) {
-      console.warn(`[vocabulary-index] Failed to load ${basename(shaclPath)}: ${err}`)
+      log.warn('Failed to load SHACL file', { file: basename(shaclPath), error: String(err) })
     }
   }
 

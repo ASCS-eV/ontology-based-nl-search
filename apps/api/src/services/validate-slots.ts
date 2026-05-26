@@ -23,13 +23,7 @@ export async function validateSlots(slots: SearchSlots): Promise<SearchSlots> {
   const store = await getInitializedStore()
   const vocabulary = await extractVocabulary(store)
 
-  const result = await validateSlotsAgainstShacl(
-    slots.filters ?? {},
-    slots.location,
-    slots.license,
-    shacl,
-    vocabulary
-  )
+  const result = await validateSlotsAgainstShacl(slots.filters ?? {}, shacl, vocabulary)
 
   // Drop ranges with property names not in the schema
   const rangeResult = validateRangesAgainstShacl(slots.ranges ?? {}, shacl)
@@ -38,7 +32,5 @@ export async function validateSlots(slots: SearchSlots): Promise<SearchSlots> {
     ...slots,
     filters: result.filters,
     ranges: rangeResult.ranges,
-    location: result.location,
-    license: result.license,
   }
 }

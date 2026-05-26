@@ -177,56 +177,51 @@ describe('compileSlots — determinism + snapshot suite', () => {
     expect(sparql).toMatchSnapshot()
   })
 
-  // ─── Location filters ──────────────────────────────────────────────────
+  // ─── Geographic filters (task 21d-flat: country/state/region/city now ordinary filters) ──
 
-  it('location with single country (STR matching)', async () => {
+  it('country filter — single value', async () => {
     const sparql = await assertDeterministic({
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: 'DE' },
       ranges: {},
-      location: { country: 'DE' },
     })
     expect(sparql).toMatchSnapshot()
   })
 
-  it('location with multi-value country array (FILTER IN matching)', async () => {
+  it('country filter — multi-value array (FILTER IN matching)', async () => {
     const sparql = await assertDeterministic({
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: ['DE', 'FR', 'IT'] },
       ranges: {},
-      location: { country: ['DE', 'FR', 'IT'] },
     })
     expect(sparql).toMatchSnapshot()
   })
 
-  it('location with single-element country array collapses to FILTER IN of one', async () => {
+  it('country filter — single-element array collapses to FILTER IN of one', async () => {
     const sparql = await assertDeterministic({
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: ['DE'] },
       ranges: {},
-      location: { country: ['DE'] },
     })
     expect(sparql).toMatchSnapshot()
   })
 
-  it('location with all four geographic fields populated', async () => {
+  it('all four geographic fields combined as ordinary filters', async () => {
     const sparql = await assertDeterministic({
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: 'DE', state: 'Bavaria', region: 'Oberbayern', city: 'Munich' },
       ranges: {},
-      location: { country: 'DE', state: 'Bavaria', region: 'Oberbayern', city: 'Munich' },
     })
     expect(sparql).toMatchSnapshot()
   })
 
-  // ─── License ────────────────────────────────────────────────────────────
+  // ─── License (task 21d-flat: ordinary filter keyed by `license`) ───────
 
-  it('license-only filter', async () => {
+  it('license filter only', async () => {
     const sparql = await assertDeterministic({
       domains: ['hdmap'],
-      filters: {},
+      filters: { license: 'CC-BY-4.0' },
       ranges: {},
-      license: 'CC-BY-4.0',
     })
     expect(sparql).toMatchSnapshot()
   })
@@ -234,22 +229,19 @@ describe('compileSlots — determinism + snapshot suite', () => {
   it('license combined with content filter', async () => {
     const sparql = await assertDeterministic({
       domains: ['hdmap'],
-      filters: { roadTypes: 'motorway' },
+      filters: { roadTypes: 'motorway', license: 'CC-BY-4.0' },
       ranges: {},
-      license: 'CC-BY-4.0',
     })
     expect(sparql).toMatchSnapshot()
   })
 
   // ─── Combinations & cross-domain ──────────────────────────────────────
 
-  it('hdmap with filter + range + location + license combined', async () => {
+  it('hdmap with filter + range + country + license combined', async () => {
     const sparql = await assertDeterministic({
       domains: ['hdmap'],
-      filters: { roadTypes: 'motorway' },
+      filters: { roadTypes: 'motorway', country: 'DE', license: 'CC-BY-4.0' },
       ranges: { numberIntersections: { min: 5, max: 50 } },
-      location: { country: 'DE' },
-      license: 'CC-BY-4.0',
     })
     expect(sparql).toMatchSnapshot()
   })
@@ -329,7 +321,6 @@ describe('compileSlots — determinism + snapshot suite', () => {
       domains: ['hdmap'],
       filters: {},
       ranges: {},
-      location: undefined,
     })
     expect(b).toBe(a)
   })
@@ -346,12 +337,11 @@ describe('compileSlots — determinism + snapshot suite', () => {
     expect(sparql).toMatchSnapshot()
   })
 
-  it('peer domains (hdmap + ositrace) with location → UNION with country filter', async () => {
+  it('peer domains (hdmap + ositrace) with country filter → UNION', async () => {
     const sparql = await assertDeterministic({
       domains: ['hdmap', 'ositrace'],
-      filters: { roadTypes: 'motorway' },
+      filters: { roadTypes: 'motorway', country: 'FR' },
       ranges: {},
-      location: { country: 'FR' },
     })
     expect(sparql).toContain('UNION')
     expect(sparql).toContain('country')
