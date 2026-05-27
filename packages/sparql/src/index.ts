@@ -43,5 +43,21 @@ export function getSparqlStore(): SparqlStore {
   return storeInstance
 }
 
+/**
+ * Release the singleton store's resources and clear the instance so a
+ * subsequent `getSparqlStore()` builds a fresh one. Call this from the
+ * host process's graceful-shutdown handler (SIGINT/SIGTERM) — the
+ * in-memory worker store holds a ref'd worker thread that otherwise
+ * keeps the Node event loop alive and blocks a clean exit.
+ *
+ * Idempotent: a no-op when no store has been created yet.
+ */
+export async function closeSparqlStore(): Promise<void> {
+  if (!storeInstance) return
+  const store = storeInstance
+  storeInstance = null
+  await store.close?.()
+}
+
 export { probePropertyPathSupport } from './capability-probe.js'
 export type { SparqlBinding, SparqlResults, SparqlStore } from './types.js'

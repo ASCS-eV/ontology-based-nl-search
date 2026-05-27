@@ -42,6 +42,16 @@ export class RemoteSparqlStore implements SparqlStore {
     return this.buildSignal()
   }
 
+  /**
+   * Lifecycle hook — no-op. This store holds no persistent connection:
+   * each call is a one-shot `fetch` with a per-call `AbortSignal.timeout`,
+   * so there is nothing to release at shutdown. Implemented for interface
+   * symmetry with the worker-backed store.
+   */
+  async close(): Promise<void> {
+    // intentional: stateless HTTP client, nothing to release.
+  }
+
   async isReady(): Promise<boolean> {
     try {
       const response = await fetch(this.endpoint, {

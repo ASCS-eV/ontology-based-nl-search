@@ -43,4 +43,16 @@ export interface SparqlStore {
 
   /** Check if the store is ready */
   isReady(): Promise<boolean>
+
+  /**
+   * Release any held resources (worker threads, sockets, file handles)
+   * so the host process can exit cleanly on SIGINT/SIGTERM. Idempotent
+   * and safe to call when the store was never initialized.
+   *
+   * Optional: stateless stores (e.g. a remote HTTP endpoint that opens
+   * no persistent connection) may omit it. The in-memory worker store
+   * MUST implement it — its worker thread keeps the event loop ref'd,
+   * which otherwise blocks process exit.
+   */
+  close?(): Promise<void>
 }
