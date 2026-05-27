@@ -665,18 +665,23 @@ export async function runCopilotAgent(
     return { ...response, timings: sw.getTimings() }
   }
 
-  // Fallback: LLM didn't call the tool — return broad search
-  const fallbackSlots: SearchSlots = { domains: [targetDomain], filters: {}, ranges: {} }
+  // Fallback: LLM didn't call submit_slots — emit the broadest possible
+  // query (cross-domain VALUES over every discovered asset class) so the
+  // caller sees results from every domain rather than from whichever
+  // domain happened to sort first alphabetically. See the equivalent
+  // change in agent/index.ts for the same rationale.
+  const fallbackSlots: SearchSlots = { domains: [], filters: {}, ranges: {} }
   const sparql = await compileSlots(fallbackSlots)
   return {
     interpretation: {
-      summary: `Searching all ${targetDomain} datasets (LLM did not extract specific filters)`,
+      summary: 'Searching across all asset domains (LLM did not extract specific filters)',
       mappedTerms: [],
     },
     gaps: [
       {
         term: naturalLanguageQuery,
-        reason: 'Could not extract structured filters from the query',
+        reason:
+          'Could not extract structured filters from the query. Try rephrasing with concrete property names from the ontology (e.g. roadTypes, scenarioCategory), or filter by country / license / asset type directly.',
       },
     ],
     sparql,

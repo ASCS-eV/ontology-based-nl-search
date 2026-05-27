@@ -30,6 +30,7 @@ import {
 } from '@ontology-search/ontology/domain-registry'
 import { escapeSparqlLiteral, isIri } from '@ontology-search/sparql/escape'
 
+import { getConceptExpansionIndex } from './concept-expansion.js'
 import { getInitializedStore } from './init.js'
 import {
   buildPropertyPaths,
@@ -230,6 +231,30 @@ async function buildCompilerVocab(): Promise<CompilerVocab> {
     paths,
     referenceChains,
   }
+}
+
+/**
+ * Pre-build every cached graph-derived index the compiler needs so the
+ * first user query doesn't pay the cold-start cost. The compiler vocab
+ * build (property-path BFS + leaf-kind enrichment + reference-chain
+ * discovery) is the single most expensive startup step — observed at
+ * ~39s on the 22-domain workspace ontology. Calling this from the API
+ * warmup moves that cost off the request hot path.
+ *
+ * Idempotent: each underlying getter memoizes its in-flight Promise,
+ * so a second call is a no-op.
+ */
+export async function warmupCompiler(): Promise<void> {
+  const store = await getInitializedStore()
+  await Promise.all([
+    getCompilerVocab(),
+    getAssetDomains(),
+    getDomainReferences(),
+    // The concept-expansion index (SKOS hierarchy) is consumed by the
+    // LLM slot pipeline, not the compiler — but it's the same kind of
+    // one-time graph-derived build, so warm it here alongside the rest.
+    getConceptExpansionIndex(store),
+  ])
 }
 
 /**

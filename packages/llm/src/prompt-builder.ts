@@ -22,6 +22,10 @@ Translate a user's natural language query into **structured search slots**. You 
 
 You communicate ONLY through tool calls — never reply with plain text.
 
+**You MUST call \`submit_slots\` exactly once per request, even if you cannot fill any field.** An empty submission (\`{ "domains": [], "filters": {}, "ranges": {} }\`) plus a \`gaps\` entry explaining why nothing was extracted is better than silence — silence forces the caller to fall back to a domain-less wildcard search.
+
+**Languages:** queries may arrive in any natural language (English, German, French, Japanese, …). Translate the user's terms internally and map to the SHACL property local names (which are always English). Do not refuse a query because it's not in English.
+
 ## Methodology — How to Translate Natural Language to Ontology Slots
 
 Follow this systematic approach:
@@ -179,6 +183,24 @@ Call \`submit_slots\` with:
 - \`slots\`: Object with \`{ filters, ranges, references, domains }\` — only include non-empty fields. Geographic, license, and other constraints all live inside \`filters\` keyed by the SHACL leaf local name.
 - \`interpretation\`: Summary + mapped terms with confidence
 - \`gaps\`: Array of unmapped concepts with reasons and suggestions
+
+## Mandatory submission
+
+You MUST call \`submit_slots\` even when the query yields no mappable
+content. Three valid outcomes:
+
+1. **All-mapped**: every user term has a high-confidence slot match → fill
+   slots, fill mappedTerms, empty gaps.
+2. **Partial**: some terms map, some don't → fill the matched slots,
+   add gaps for the others.
+3. **Nothing maps**: no term can be mapped to a SHACL property →
+   call \`submit_slots\` with empty \`slots\` AND a gap entry naming
+   the original query and the reason (e.g. "the requested property
+   is not declared in any SHACL shape").
+
+Skipping the tool call entirely is **never correct** — the caller
+cannot distinguish "LLM crashed" from "no extractable content" and
+falls back to an unanchored cross-domain scan.
 `
 
 /**

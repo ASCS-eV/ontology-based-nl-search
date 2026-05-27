@@ -119,8 +119,26 @@ export function getModel(): LanguageModel {
     }
 
     case 'claude-cli': {
+      // The Claude CLI OAuth token must be sent as a Bearer token
+      // (NOT as `x-api-key`) plus the `anthropic-beta: oauth-2025-04-20`
+      // header — that's the dedicated OAuth flow for Claude Code
+      // sessions. `@ai-sdk/anthropic` sends `x-api-key: <apiKey>` by
+      // default, which the API rejects with "invalid x-api-key" for
+      // OAuth-issued tokens. We override the transport via a custom
+      // fetch that strips the wrong header and inserts the right ones.
+      const token = getClaudeCliToken()
       const anthropic = createAnthropic({
-        apiKey: getClaudeCliToken(),
+        // apiKey must be non-empty to satisfy the SDK's runtime check;
+        // the value is stripped from the wire by the fetch override
+        // below, so its content is irrelevant.
+        apiKey: 'oauth-bearer-replaced-by-custom-fetch',
+        fetch: async (input, init) => {
+          const headers = new Headers(init?.headers)
+          headers.delete('x-api-key')
+          headers.set('Authorization', `Bearer ${token}`)
+          headers.set('anthropic-beta', 'oauth-2025-04-20')
+          return fetch(input, { ...init, headers })
+        },
       })
       return anthropic(modelId)
     }

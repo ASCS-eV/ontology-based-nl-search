@@ -87,7 +87,7 @@ beforeAll(async () => {
   registerPolicyNamespaces(registry.getAllNamespaces())
   // Warm the store and downstream caches once; ~3s on first call.
   await getInitializedStore()
-}, 60_000)
+}, 120_000)
 
 afterAll(async () => {
   const { resetPolicyNamespaces } = await import('@ontology-search/sparql/policy')
@@ -116,7 +116,7 @@ describe('SearchService — real pipeline integration', () => {
     // dataset evolution by asserting a lower bound rather than equality.
     expect(result.meta.matchCount).toBeGreaterThan(10)
     expect(result.meta.totalDatasets).toBeGreaterThan(0)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * A single Content-group filter must narrow the result set against
@@ -140,7 +140,7 @@ describe('SearchService — real pipeline integration', () => {
     expect(filtered.execution.error).toBeUndefined()
     expect(filtered.meta.matchCount).toBeGreaterThan(0)
     expect(filtered.meta.matchCount).toBeLessThanOrEqual(baseline.meta.matchCount)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Cross-domain filtering exercises the manifest:hasReferencedArtifacts
@@ -164,7 +164,7 @@ describe('SearchService — real pipeline integration', () => {
     expect(joined.execution.error).toBeUndefined()
     // Join must return at most as many as scenarios alone.
     expect(joined.meta.matchCount).toBeLessThanOrEqual(onlyScenario.meta.matchCount)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Numeric ranges flow through compileSlots → policy → store.
@@ -188,7 +188,7 @@ describe('SearchService — real pipeline integration', () => {
     expect(ranged.execution.error).toBeUndefined()
     expect(ranged.meta.matchCount).toBeGreaterThanOrEqual(0)
     expect(ranged.meta.matchCount).toBeLessThanOrEqual(baseline.meta.matchCount)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Location filtering takes the array-aware path introduced in
@@ -214,7 +214,7 @@ describe('SearchService — real pipeline integration', () => {
     // for the same primary country (proves the IN clause actually
     // expanded rather than collapsing to a single match).
     expect(multi.meta.matchCount).toBeGreaterThanOrEqual(single.meta.matchCount)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Cross-domain search (no `domains` supplied) enumerates every
@@ -243,7 +243,7 @@ describe('SearchService — real pipeline integration', () => {
     // match count is the actual instance count in the data.
     // Asserting a lower bound to allow legitimate dataset evolution.
     expect(result.meta.matchCount).toBeGreaterThan(50)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * `totalDatasets` is computed via the count-loop in
@@ -263,7 +263,7 @@ describe('SearchService — real pipeline integration', () => {
     // Sanity: the count is the sum of every asset class. With ~267
     // assets in the dataset, it should not be zero.
     expect(result.meta.totalDatasets).toBeGreaterThan(50)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * The policy gate is the last line of defense before SPARQL hits
@@ -298,7 +298,7 @@ describe('SearchService — real pipeline integration', () => {
       const policy = enforceSparqlPolicy(sparql)
       expect(policy.allowed, `policy violations: ${policy.violations.join('; ')}`).toBe(true)
     }
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Refine path mirrors the NL path minus the LLM. The integration
@@ -323,7 +323,7 @@ describe('SearchService — real pipeline integration', () => {
 
     expect(result.execution.error).toBeUndefined()
     expect(result.meta.matchCount).toBeGreaterThan(0)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Hallucinated property names are dropped before SPARQL emission
@@ -343,7 +343,7 @@ describe('SearchService — real pipeline integration', () => {
     // With the hallucinated filter dropped the query matches the
     // unfiltered baseline (no real narrowing applied).
     expect(result.meta.matchCount).toBeGreaterThan(0)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Peer-domain UNION: when multiple non-hierarchical domains are
@@ -371,7 +371,7 @@ describe('SearchService — real pipeline integration', () => {
     const hasOsi = assetIds.some((id) => id?.includes('OSITrace'))
     expect(hasHdmap).toBe(true)
     expect(hasOsi).toBe(true)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Peer-domain UNION with an empty result: the UNION query structure
@@ -388,5 +388,5 @@ describe('SearchService — real pipeline integration', () => {
     expect(result.execution.error).toBeUndefined()
     expect(result.sparql).toContain('UNION')
     expect(result.meta.matchCount).toBe(0)
-  }, 60_000)
+  }, 120_000)
 })

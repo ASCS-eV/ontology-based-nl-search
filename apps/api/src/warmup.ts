@@ -3,7 +3,7 @@ import { warmupLlmSession } from '@ontology-search/llm'
 import { buildSystemPrompt } from '@ontology-search/llm/prompt-builder'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
-import { getInitializedStore } from '@ontology-search/search'
+import { getInitializedStore, warmupCompiler } from '@ontology-search/search'
 import { getShaclContent } from '@ontology-search/search/shacl-reader'
 import { probePropertyPathSupport } from '@ontology-search/sparql'
 import { registerPolicyNamespaces } from '@ontology-search/sparql/policy'
@@ -14,7 +14,13 @@ const logger = createComponentLogger('warmup')
 export interface WarmupResult {
   ready: boolean
   errors: string[]
-  timings: { storeMs: number; vocabMs: number; shaclMs: number; sessionMs: number }
+  timings: {
+    storeMs: number
+    vocabMs: number
+    compilerMs: number
+    shaclMs: number
+    sessionMs: number
+  }
 }
 
 export async function warmup(): Promise<WarmupResult> {
@@ -61,6 +67,21 @@ export async function warmup(): Promise<WarmupResult> {
   }
   const vocabMs = Date.now() - vocabStart
 
+  // Pre-build the compiler vocabulary (property-path BFS + leaf-kind
+  // enrichment + cross-reference chain discovery). This is the single
+  // most expensive cold-start step — ~39s on the 22-domain workspace
+  // ontology — and previously landed on the first user query's
+  // `sparql-compile` stage. Warming it here moves it off the hot path.
+  const compilerStart = Date.now()
+  try {
+    await warmupCompiler()
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    errors.push(`Compiler vocab warmup failed: ${msg}`)
+    logger.error('Compiler warmup failed', error)
+  }
+  const compilerMs = Date.now() - compilerStart
+
   // Pre-construct the SHACL validator so the first search doesn't pay
   // the shape-parse cost (~7s on the full ontology).
   const shaclStart = Date.now()
@@ -89,6 +110,7 @@ export async function warmup(): Promise<WarmupResult> {
     logger.info(`Warmup complete in ${Date.now() - start}ms`, {
       storeMs,
       vocabMs,
+      compilerMs,
       shaclMs,
       sessionMs,
     })
@@ -99,5 +121,5 @@ export async function warmup(): Promise<WarmupResult> {
     })
   }
 
-  return { ready, errors, timings: { storeMs, vocabMs, shaclMs, sessionMs } }
+  return { ready, errors, timings: { storeMs, vocabMs, compilerMs, shaclMs, sessionMs } }
 }

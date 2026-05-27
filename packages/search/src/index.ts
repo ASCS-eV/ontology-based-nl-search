@@ -4,7 +4,16 @@ export {
   compileSlots,
   escapeSparqlLiteral,
   getAssetDomains,
+  warmupCompiler,
 } from './compiler.js'
+export type { ConceptExpansionIndex } from './concept-expansion.js'
+export {
+  buildConceptExpansionIndex,
+  expandConceptValue,
+  expandFilterConcepts,
+  getConceptExpansionIndex,
+  resetConceptExpansionIndex,
+} from './concept-expansion.js'
 export { getInitializedStore } from './init.js'
 export type { LeafKind, PathStep, PropertyPath, ReferenceChain } from './property-paths.js'
 export { buildPropertyPaths, buildReferenceChains } from './property-paths.js'

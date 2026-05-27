@@ -24,6 +24,11 @@
 import type { Stopwatch } from '@ontology-search/core/logging'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { OntologyVocabulary } from '@ontology-search/search'
+import {
+  expandFilterConcepts,
+  getConceptExpansionIndex,
+  getInitializedStore,
+} from '@ontology-search/search'
 import { compileSlots } from '@ontology-search/search/compiler'
 import type { SearchSlots } from '@ontology-search/search/slots'
 
@@ -84,12 +89,20 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   const endValidation = sw.time('post-llm-validation')
   // 1. Fuzzy match: case / typo correction against sh:in enums.
   const fuzzedFilters = correctFilters(submission.slots.filters ?? {}, vocabulary)
+  // 1b. Concept-hierarchy expansion: if a filter value names a broad
+  // SKOS concept ("Europe", "Scandinavia", a vehicle super-category),
+  // expand it to its transitive narrower members so a literal-valued
+  // property matches the explicit set. Data-driven — no region table
+  // is hardcoded; an ontology with no SKOS hierarchy gets a no-op.
+  const store = await getInitializedStore()
+  const conceptIndex = await getConceptExpansionIndex(store)
+  const expandedFilters = expandFilterConcepts(fuzzedFilters, conceptIndex)
   // 2. SHACL gate: enforces every Core constraint declared in the shapes
   // graph (sh:pattern, sh:datatype, …) on every filter value, including
   // the geographic and license keys that used to live in dedicated
   // sub-shapes. Values that fail are dropped and emitted as gaps.
   const shacl = await ShaclValidator.fromWorkspace()
-  const shaclResult = await validateSlotsAgainstShacl(fuzzedFilters, shacl, vocabulary)
+  const shaclResult = await validateSlotsAgainstShacl(expandedFilters, shacl, vocabulary)
   // 3. Ranges go through their own check: numeric values always pass SHACL
   // datatype constraints, so we only need to confirm the property name is
   // known. Hallucinated keys (e.g. `numberLanes`) are dropped here.
