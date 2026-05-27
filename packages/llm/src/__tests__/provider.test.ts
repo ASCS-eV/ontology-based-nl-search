@@ -14,7 +14,7 @@ import { join } from 'node:path'
 import { CredentialsPermissionError } from '@ontology-search/core/errors'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { assertCredentialsPermissions } from '../provider.js'
+import { assertCredentialsPermissions, parseMistralKeyFromEnv } from '../provider.js'
 
 const isWindows = process.platform === 'win32'
 
@@ -69,5 +69,27 @@ describe('assertCredentialsPermissions', () => {
 
   it.runIf(isWindows)('is a no-op on Windows where POSIX bits are not meaningful', () => {
     expect(() => assertCredentialsPermissions(credPath)).not.toThrow()
+  })
+})
+
+describe('parseMistralKeyFromEnv', () => {
+  it('parses the single-quoted form `vibe --setup` writes', () => {
+    expect(parseMistralKeyFromEnv("MISTRAL_API_KEY='abc123'\n")).toBe('abc123')
+  })
+
+  it('parses double-quoted and bare forms', () => {
+    expect(parseMistralKeyFromEnv('MISTRAL_API_KEY="abc123"')).toBe('abc123')
+    expect(parseMistralKeyFromEnv('MISTRAL_API_KEY=abc123')).toBe('abc123')
+  })
+
+  it('tolerates surrounding whitespace and ignores other keys', () => {
+    const env = 'FOO=bar\n  MISTRAL_API_KEY =  xyz789 \nBAZ=qux\n'
+    expect(parseMistralKeyFromEnv(env)).toBe('xyz789')
+  })
+
+  it('returns null when the key is absent or empty', () => {
+    expect(parseMistralKeyFromEnv('FOO=bar\n')).toBeNull()
+    expect(parseMistralKeyFromEnv("MISTRAL_API_KEY=''")).toBeNull()
+    expect(parseMistralKeyFromEnv('')).toBeNull()
   })
 })

@@ -3,6 +3,7 @@ import { homedir, platform } from 'node:os'
 import { join } from 'node:path'
 
 import { createAnthropic } from '@ai-sdk/anthropic'
+import { createMistral } from '@ai-sdk/mistral'
 import { createOpenAI } from '@ai-sdk/openai'
 import { getConfig } from '@ontology-search/core/config'
 import { AgentError, CredentialsPermissionError } from '@ontology-search/core/errors'
@@ -88,8 +89,60 @@ function getClaudeCliToken(): string {
 }
 
 /**
+ * Read the Mistral API key the `vibe` CLI stored at `~/.vibe/.env`.
+ *
+ * `vibe` (Mistral's coding-agent CLI, analogous to the Claude CLI)
+ * writes `MISTRAL_API_KEY='…'` to that file on `vibe --setup`. We
+ * reuse it so a developer who's already authenticated `vibe` doesn't
+ * re-enter a key. The same permission gate as the Claude credentials
+ * applies — a group/other-readable secrets file is refused.
+ *
+ * @throws CredentialsPermissionError when the file is group/world accessible
+ * @throws AgentError when the file or key is missing
+ */
+function getVibeMistralKey(): string {
+  const envPath = join(homedir(), '.vibe', '.env')
+
+  try {
+    assertCredentialsPermissions(envPath)
+  } catch (err) {
+    if (err instanceof CredentialsPermissionError) throw err
+    // statSync ENOENT — fall through to the readFileSync error path so
+    // the user sees one coherent "run vibe --setup" message.
+  }
+
+  let raw: string
+  try {
+    raw = readFileSync(envPath, 'utf-8')
+  } catch (cause) {
+    throw new AgentError(
+      `Vibe credentials not found at ${envPath}. Run "vibe --setup" to authenticate first.`,
+      { cause }
+    )
+  }
+
+  const key = parseMistralKeyFromEnv(raw)
+  if (!key) {
+    throw new AgentError(`No MISTRAL_API_KEY in ${envPath}. Run "vibe --setup" to authenticate.`)
+  }
+  return key
+}
+
+/**
+ * Extract `MISTRAL_API_KEY` from the contents of a dotenv-style file.
+ * Tolerates single/double quotes and surrounding whitespace — the form
+ * `vibe --setup` writes (`MISTRAL_API_KEY='…'`). Returns null when the
+ * key is absent or empty. Pure + exported for unit testing.
+ */
+export function parseMistralKeyFromEnv(content: string): string | null {
+  const match = content.match(/^\s*MISTRAL_API_KEY\s*=\s*['"]?([^'"\r\n]+)['"]?\s*$/m)
+  return match?.[1]?.trim() ?? null
+}
+
+/**
  * Get the configured AI model based on validated application config.
- * Supports: openai, ollama, anthropic, claude-cli (copilot handled via @github/copilot-sdk separately)
+ * Supports: openai, ollama, anthropic, claude-cli, vibe-cli (copilot
+ * handled via @github/copilot-sdk separately).
  */
 export function getModel(): LanguageModel {
   const config = getConfig()
@@ -143,9 +196,25 @@ export function getModel(): LanguageModel {
       return anthropic(modelId)
     }
 
+    case 'vibe-cli': {
+      // Use the dedicated Mistral provider rather than the OpenAI one:
+      // although Mistral advertises an OpenAI-compatible API, the
+      // @ai-sdk/openai provider emits OpenAI-specific shapes Mistral
+      // rejects — the Responses API (`/v1/responses` → 404) on the
+      // default callable, and `role: "developer"` system messages
+      // (→ 422 union_tag_invalid) on `.chat()`. `@ai-sdk/mistral`
+      // speaks Mistral's chat API natively (system role + tool calling).
+      // The key is the one `vibe --setup` stored in ~/.vibe/.env.
+      const mistral = createMistral({
+        baseURL: config.MISTRAL_BASE_URL,
+        apiKey: getVibeMistralKey(),
+      })
+      return mistral(modelId)
+    }
+
     default:
       throw new AgentError(
-        `Unsupported AI_PROVIDER: "${provider}". Supported: openai, anthropic, claude-cli, copilot, ollama.`
+        `Unsupported AI_PROVIDER: "${provider}". Supported: openai, anthropic, claude-cli, vibe-cli, copilot, ollama.`
       )
   }
 }

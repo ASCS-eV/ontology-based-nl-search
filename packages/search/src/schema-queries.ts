@@ -234,17 +234,25 @@ export async function queryAssetDomains(
         }
       }
     } else {
-      // Multi-domain workspace: warn once about any registry domain
-      // that didn't appear in the subClassOf discovery, so a
-      // missing `sh:targetClass` declaration doesn't fail silently.
+      // Multi-domain workspace: registry domains that didn't surface via
+      // cross-domain `rdfs:subClassOf` are non-asset "supporting"
+      // ontologies (codelists, cross-reference infra like manifest /
+      // georeference, base vocabularies). That's the EXPECTED case, so
+      // we emit ONE aggregated info line listing them rather than a
+      // WARN per domain — seven warn lines for a normal condition is
+      // alarm fatigue. A genuinely missing `sh:targetClass` shows up as
+      // an unexpected name in this list. Logged once per process via the
+      // module-level guard.
       const discoveredDomains = new Set(domains.map((d) => d.domainName))
-      for (const [name] of registry.domains) {
-        if (discoveredDomains.has(name)) continue
-        if (warnedDomainMismatches.has(name)) continue
-        warnedDomainMismatches.add(name)
-        log.warn(
-          'Domain in registry not discovered via rdfs:subClassOf — supporting ontologies (e.g. manifest, georeference) are expected here; check for typos otherwise',
-          { domain: name }
+      const nonAsset = [...registry.domains.keys()]
+        .filter((name) => !discoveredDomains.has(name))
+        .sort()
+      const unlogged = nonAsset.filter((name) => !warnedDomainMismatches.has(name))
+      if (unlogged.length > 0) {
+        for (const name of unlogged) warnedDomainMismatches.add(name)
+        log.info(
+          'Non-asset support domains (no cross-domain rdfs:subClassOf) — expected for codelists / cross-reference vocabularies; verify none is a typo or a missing sh:targetClass',
+          { count: nonAsset.length, domains: nonAsset }
         )
       }
     }

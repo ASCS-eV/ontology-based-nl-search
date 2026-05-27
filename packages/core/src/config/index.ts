@@ -9,7 +9,14 @@ import { z } from 'zod'
  */
 
 const sparqlModeSchema = z.enum(['memory', 'remote'])
-const aiProviderSchema = z.enum(['openai', 'ollama', 'copilot', 'anthropic', 'claude-cli'])
+const aiProviderSchema = z.enum([
+  'openai',
+  'ollama',
+  'copilot',
+  'anthropic',
+  'claude-cli',
+  'vibe-cli',
+])
 
 const envSchema = z.object({
   // SPARQL Store
@@ -43,6 +50,13 @@ const envSchema = z.object({
   /** GitHub token for the Copilot SDK. Sourced from env or `gh auth token`. */
   GITHUB_TOKEN: z.string().optional(),
   OLLAMA_BASE_URL: z.string().url().default('http://localhost:11434/v1'),
+  /**
+   * Base URL for the Mistral OpenAI-compatible API, used by the
+   * `vibe-cli` provider (which reuses the API key the Mistral `vibe`
+   * CLI stored in `~/.vibe/.env`). Defaults to Mistral's hosted
+   * endpoint; override to point at a local model server.
+   */
+  MISTRAL_BASE_URL: z.string().url().default('https://api.mistral.ai/v1'),
   /** Maximum tool-calling steps the Vercel-SDK agent will perform. */
   LLM_MAX_AGENT_STEPS: z.coerce.number().int().positive().default(3),
 

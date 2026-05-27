@@ -25,12 +25,15 @@
  * @see https://www.w3.org/TR/shacl/#NodeShape — SHACL NodeShape
  * @see https://www.w3.org/TR/shacl/#PropertyShape — SHACL PropertyShape
  */
+import { createComponentLogger } from '@ontology-search/core/logging'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
 import { queryAssetDomains } from './schema-queries.js'
+
+const log = createComponentLogger('property-paths')
 
 /** One predicate hop on a property path. */
 export interface PathStep {
@@ -421,12 +424,33 @@ export async function buildPropertyPaths(
   store: SparqlStore,
   registry?: DomainRegistry
 ): Promise<PropertyPath[]> {
+  // Each sub-step is logged with its own duration: this whole function
+  // is the dominant cold-start cost (tens of seconds on a large schema
+  // graph), and without per-phase timings the warmup is an opaque gap.
+  const t0 = Date.now()
+  const edgesEnd = log.time('property-paths/resolved-edges')
+  const leavesEnd = log.time('property-paths/leaf-properties')
+  const assetsEnd = log.time('property-paths/asset-domains')
   const [resolvedEdges, leaves, assetDomainRows] = await Promise.all([
-    queryResolvedEdges(store),
-    queryLeafProperties(store),
-    queryAssetDomains(store, registry),
+    queryResolvedEdges(store).then((r) => {
+      edgesEnd()
+      return r
+    }),
+    queryLeafProperties(store).then((r) => {
+      leavesEnd()
+      return r
+    }),
+    queryAssetDomains(store, registry).then((r) => {
+      assetsEnd()
+      return r
+    }),
   ])
   const assetClasses = assetDomainRows.map((row) => row.assetClass)
+  log.debug('Property-path inputs discovered', {
+    edges: resolvedEdges.length,
+    leaves: leaves.length,
+    assetClasses: assetClasses.length,
+  })
 
   // Build the forward edge graph directly from resolved edges
   const forwardEdges = new Map<string, { predicate: string; child: string }[]>()
@@ -439,6 +463,7 @@ export async function buildPropertyPaths(
 
   // For each asset class, walk forward and emit one PropertyPath per leaf
   // whose owning class is reachable.
+  const bfsEnd = log.time('property-paths/bfs')
   const out: PropertyPath[] = []
   for (const assetClass of assetClasses) {
     const predecessors = bfsFromAsset(assetClass, forwardEdges)
@@ -455,15 +480,25 @@ export async function buildPropertyPaths(
       })
     }
   }
+  bfsEnd()
 
   // Second pass: enrich leafKind from the schema graph for the leaves
   // that actually showed up in a discovered path. Done after BFS so the
   // hot leaf query stays minimal (see `enrichLeafKinds`).
+  const enrichEnd = log.time('property-paths/enrich-leaf-kinds')
   const enriched = await enrichLeafKinds(store, out)
   for (const path of out) {
     const kind = enriched.get(path.propertyIri)
     if (kind) path.leafKind = kind
   }
+  enrichEnd()
+
+  log.info('Property paths discovered', {
+    paths: out.length,
+    assetClasses: assetClasses.length,
+    enrichedLeaves: enriched.size,
+    durationMs: Date.now() - t0,
+  })
   return out
 }
 
