@@ -124,3 +124,34 @@ export interface StatsResponse {
   domains: Record<string, number>
   availableDomains: string[]
 }
+
+/**
+ * One outgoing reference in a lineage tree. The predicate chain is the
+ * full path the SPARQL engine traversed from the parent to `target` —
+ * UI renders the leaf predicate's local name as the edge label and
+ * keeps the full chain for hover/expand inspection.
+ */
+export interface TraceabilityEdge {
+  predicatePath: string[]
+  target: TraceabilityNode
+}
+
+/**
+ * One node in a lineage tree (WP3, task #19). Returned by
+ * `GET /traceability` per asset, recursively expanded up to the depth
+ * budget. `truncated` is `true` when the walker stopped at this node
+ * because depth was exhausted — UI may offer a "load more" affordance.
+ */
+export interface TraceabilityNode {
+  asset: string
+  name: string
+  type: string
+  domain: string
+  references: TraceabilityEdge[]
+  truncated: boolean
+}
+
+/** Body of the `/traceability` JSON response. */
+export interface TraceabilityResponse {
+  node: TraceabilityNode
+}

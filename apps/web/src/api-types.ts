@@ -21,4 +21,7 @@ export type {
   SearchResponse,
   StatsResponse,
   TimingEntry,
+  TraceabilityEdge,
+  TraceabilityNode,
+  TraceabilityResponse,
 } from '@ontology-search/api-types'

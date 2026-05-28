@@ -10,6 +10,7 @@ import { rateLimit } from './middleware/rate-limit.js'
 import { requestId } from './middleware/request-id.js'
 import { searchRoutes } from './routes/search.js'
 import { statsRoutes } from './routes/stats.js'
+import { traceabilityRoutes } from './routes/traceability.js'
 import type { AppEnv } from './types.js'
 
 const config = getConfig()
@@ -55,5 +56,6 @@ app.get('/health', (c) => c.json({ status: 'ok' }))
 
 app.route('/search', searchRoutes)
 app.route('/stats', statsRoutes)
+app.route('/traceability', traceabilityRoutes)
 
 export { app }

@@ -17,6 +17,9 @@ vi.mock('@ontology-search/search', () => ({
   getInitializedStore: vi.fn(),
   compileCountQuery: vi.fn(),
   getAssetDomains: vi.fn().mockResolvedValue(new Set(['hdmap', 'scenario'])),
+  exploreLineage: vi.fn(),
+  DEFAULT_LINEAGE_DEPTH: 3,
+  MAX_LINEAGE_DEPTH: 6,
 }))
 
 vi.mock('@ontology-search/ontology/domain-registry', () => ({
@@ -250,6 +253,63 @@ describe('POST /search/refine', () => {
     const headerId = res.headers.get('x-request-id')
     expect(headerId).toBeTruthy()
     expect(vi.mocked(searchRefine).mock.lastCall?.[0].requestId).toBe(headerId)
+  })
+})
+
+describe('GET /traceability', () => {
+  it('400s without an asset query parameter', async () => {
+    const res = await app.request('/traceability')
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error || json.message).toMatch(/asset/i)
+  })
+
+  it('400s when depth is non-numeric', async () => {
+    const res = await app.request('/traceability?asset=did%3Aweb%3Aexample%3Atest&depth=banana')
+    expect(res.status).toBe(400)
+  })
+
+  it('returns the lineage node from exploreLineage on success', async () => {
+    const { exploreLineage } = await import('@ontology-search/search')
+    vi.mocked(exploreLineage).mockResolvedValue({
+      asset: 'did:web:example:scenario-1',
+      name: 'Scenario 1',
+      type: 'https://example.org/scenario/Scenario',
+      domain: 'scenario',
+      references: [],
+      truncated: false,
+    })
+
+    const res = await app.request(
+      '/traceability?asset=' + encodeURIComponent('did:web:example:scenario-1')
+    )
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.node.asset).toBe('did:web:example:scenario-1')
+    expect(json.node.references).toEqual([])
+    expect(vi.mocked(exploreLineage)).toHaveBeenCalledWith('did:web:example:scenario-1', {
+      depth: undefined,
+    })
+  })
+
+  it('forwards a numeric depth to exploreLineage', async () => {
+    const { exploreLineage } = await import('@ontology-search/search')
+    vi.mocked(exploreLineage).mockResolvedValue({
+      asset: 'did:web:example:scenario-1',
+      name: 'Scenario 1',
+      type: 'https://example.org/scenario/Scenario',
+      domain: 'scenario',
+      references: [],
+      truncated: false,
+    })
+
+    const res = await app.request(
+      '/traceability?asset=' + encodeURIComponent('did:web:example:scenario-1') + '&depth=2'
+    )
+    expect(res.status).toBe(200)
+    expect(vi.mocked(exploreLineage)).toHaveBeenCalledWith('did:web:example:scenario-1', {
+      depth: 2,
+    })
   })
 })
 

@@ -1,5 +1,8 @@
+import { useState } from 'react'
+
 import type { ResultTraceStep } from '../api-types'
 import { downloadFile, resultsToCsv, resultsToJsonLd } from '../lib/export-utils'
+import { LineageExplorer } from './LineageExplorer'
 
 interface ResultsDisplayProps {
   results: Record<string, string>[]
@@ -178,12 +181,23 @@ export function ResultsDisplay({ results, traceability }: ResultsDisplayProps) {
 
 function AssetCard({ group }: { group: GroupedAsset }) {
   const propertyEntries = Object.entries(group.properties)
+  const [lineageOpen, setLineageOpen] = useState(false)
 
   return (
     <div className="border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
-      <div className="px-4 py-3 border-b border-gray-100">
-        <h3 className="font-medium text-gray-900">{group.name}</h3>
-        <p className="text-xs text-gray-400 font-mono mt-0.5">{formatDid(group.asset)}</p>
+      <div className="px-4 py-3 border-b border-gray-100 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="font-medium text-gray-900">{group.name}</h3>
+          <p className="text-xs text-gray-400 font-mono mt-0.5">{formatDid(group.asset)}</p>
+        </div>
+        <button
+          onClick={() => setLineageOpen((open) => !open)}
+          className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-md border border-emerald-200/70 transition-colors"
+          aria-expanded={lineageOpen}
+          aria-label={lineageOpen ? 'Hide lineage' : 'Explore lineage'}
+        >
+          {lineageOpen ? 'Hide lineage' : 'Explore lineage'}
+        </button>
       </div>
 
       {propertyEntries.length > 0 && (
@@ -222,6 +236,8 @@ function AssetCard({ group }: { group: GroupedAsset }) {
           </div>
         </div>
       )}
+
+      {lineageOpen && <LineageExplorer asset={group.asset} />}
     </div>
   )
 }

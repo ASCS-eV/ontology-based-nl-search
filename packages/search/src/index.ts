@@ -39,6 +39,8 @@ export type {
 } from './slots.js'
 export type { SparqlValidationIssue, SparqlValidationResult } from './sparql-validator.js'
 export { validateSparql } from './sparql-validator.js'
+export type { LineageOptions, TraceabilityEdge, TraceabilityNode } from './traceability.js'
+export { DEFAULT_LINEAGE_DEPTH, exploreLineage, MAX_LINEAGE_DEPTH } from './traceability.js'
 export type {
   LlmStructuredResponse,
   MappedTerm,
