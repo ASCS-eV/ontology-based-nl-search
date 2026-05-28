@@ -134,4 +134,66 @@ describe('ResultsDisplay', () => {
     // Only 1 reference chip (deduplicated)
     expect(screen.getByText('References (1)')).toBeInTheDocument()
   })
+
+  /**
+   * Traceability breadcrumb: when the per-row `traceability` array is
+   * supplied alongside `results`, the reference must carry an inline
+   * predicate-chain breadcrumb (WP3, task #18). Each step renders its
+   * IRI's local name with the full IRI in `title` for hover inspection.
+   */
+  it('renders a traceability breadcrumb under each reference when trace data is supplied', () => {
+    const results = [
+      {
+        asset: 'urn:scenario:1',
+        name: 'Scenario 1',
+        refAsset: 'urn:hdmap:42',
+        refName: 'Munich HD Map',
+      },
+    ]
+    const traceability = [
+      [
+        {
+          predicate: 'https://example.org/scenario/v6/hasManifest',
+          intermediate: '_:b0',
+        },
+        {
+          predicate: 'https://example.org/manifest/v5/hasReferencedArtifacts',
+          intermediate: '_:b1',
+        },
+        {
+          predicate: 'https://example.org/manifest/v5/iri',
+          intermediate: 'urn:hdmap:42',
+        },
+      ],
+    ]
+    render(<ResultsDisplay results={results} traceability={traceability} />)
+    // Breadcrumb roots at the primary `asset`.
+    expect(screen.getByText('asset')).toBeInTheDocument()
+    // Each step renders its predicate's local name (the post-`/` suffix).
+    expect(screen.getByText('hasManifest')).toBeInTheDocument()
+    expect(screen.getByText('hasReferencedArtifacts')).toBeInTheDocument()
+    expect(screen.getByText('iri')).toBeInTheDocument()
+    // Full IRI lives in the hover title.
+    expect(screen.getByText('hasManifest').getAttribute('title')).toBe(
+      'https://example.org/scenario/v6/hasManifest'
+    )
+  })
+
+  /**
+   * Defensive: without trace data, the references list still renders.
+   * Traceability is purely additive.
+   */
+  it('omits the breadcrumb when no traceability data is supplied', () => {
+    const results = [
+      {
+        asset: 'urn:scenario:1',
+        name: 'Scenario 1',
+        refAsset: 'urn:hdmap:42',
+        refName: 'Munich HD Map',
+      },
+    ]
+    render(<ResultsDisplay results={results} />)
+    expect(screen.queryByText('asset')).not.toBeInTheDocument()
+    expect(screen.getByText('Munich HD Map')).toBeInTheDocument()
+  })
 })

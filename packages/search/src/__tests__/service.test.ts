@@ -46,7 +46,7 @@ function createMockDeps(overrides?: Partial<SearchDependencies>): SearchDependen
   return {
     getStore: vi.fn().mockResolvedValue(mockStore),
     interpretQuery: vi.fn().mockResolvedValue(mockLlmResponse),
-    compileSlots: vi.fn().mockResolvedValue(MOCK_SPARQL),
+    compileSlots: vi.fn().mockResolvedValue({ sparql: MOCK_SPARQL }),
     compileCountQueries: vi.fn().mockResolvedValue([
       {
         domain: 'hdmap',

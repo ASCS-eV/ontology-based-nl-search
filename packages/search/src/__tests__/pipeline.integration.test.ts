@@ -42,7 +42,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 // resolve to ./dist/index.js, which isn't built when CI runs tests
 // directly via vitest. The same pattern is used by every other test file
 // in this package (compiler.test.ts, schema-queries.test.ts, etc.).
-import { compileAllCountQueries, compileSlots } from '../compiler.js'
+import {
+  compileAllCountQueries,
+  compileSlots,
+  compileSlotsWithTrace,
+  getAssetDomains,
+  resolveKnownDomains,
+} from '../compiler.js'
 import { getInitializedStore } from '../init.js'
 import { type SearchDependencies, SearchService } from '../service.js'
 import type { SearchSlots } from '../slots.js'
@@ -59,7 +65,11 @@ function realServiceWithMockedLlm(slots: SearchSlots): SearchService {
     query: string,
     _options: { domain?: string; signal?: AbortSignal }
   ): Promise<LlmStructuredResponse> => {
-    const sparql = await compileSlots(slots)
+    // Use the trace-aware compile path so the mocked LLM returns the same
+    // shape the real `run-slot-pipeline` does (sparql + trace). Without
+    // this, the service would never see a traceability plan in `searchNl`
+    // and per-row breadcrumbs would silently drop.
+    const { sparql, trace } = await compileSlotsWithTrace(slots)
     return {
       interpretation: {
         summary: `mocked LLM produced fixed slots for "${query}"`,
@@ -67,13 +77,14 @@ function realServiceWithMockedLlm(slots: SearchSlots): SearchService {
       },
       gaps: [],
       sparql,
+      trace,
     }
   }
 
   const deps: SearchDependencies = {
     getStore: getInitializedStore,
     interpretQuery,
-    compileSlots,
+    compileSlots: compileSlotsWithTrace,
     compileCountQueries: compileAllCountQueries,
     enforcePolicy: enforceSparqlPolicy,
   }
@@ -164,6 +175,74 @@ describe('SearchService — real pipeline integration', () => {
     expect(joined.execution.error).toBeUndefined()
     // Join must return at most as many as scenarios alone.
     expect(joined.meta.matchCount).toBeLessThanOrEqual(onlyScenario.meta.matchCount)
+  }, 120_000)
+
+  /**
+   * Data-driven references fallback: when the LLM asks for "X that
+   * references Y" and the SHACL doesn't declare a typed leaf chain from X
+   * to Y (e.g. ositrace inherits `hasReferencedArtifacts` via the shared
+   * manifest:ManifestShape, so chain discovery doesn't surface a `class:
+   * hdmap:HdMap` leaf), the compiler must fall back to a generic
+   * any-predicate property-path JOIN against the instance graph. The
+   * fixture has 50/53 ositraces with `manifest:hasReferencedArtifacts`
+   * pointing to real hdmap IRIs, so the JOIN must find non-zero matches.
+   */
+  it('joins ositrace → hdmap via data-driven any-predicate fallback', async () => {
+    const result = await realServiceWithMockedLlm({
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: { domain: 'hdmap' },
+    }).searchNl({ query: 'OSI traces that reference HD maps' })
+
+    expect(result.execution.error).toBeUndefined()
+    // The JOIN must emit — the fixture has real ositrace → hdmap edges.
+    expect(result.sparql).toContain('?refAsset')
+    expect(result.sparql).toContain('hdmap:HdMap')
+    expect(result.meta.matchCount).toBeGreaterThan(0)
+  }, 120_000)
+
+  /**
+   * Traceability plumbing (WP3, task #18): the executor must populate
+   * `ExecutionResult.traceability` aligned by row index whenever the
+   * compiled query carried a `TraceabilityPlan`. Each per-row entry
+   * lists the predicate IRIs walked from `?asset` to `?refAsset`, with
+   * the bound intermediate value at each step.
+   */
+  it('populates per-row traceability when the query contains a cross-reference JOIN', async () => {
+    const result = await realServiceWithMockedLlm({
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: { domain: 'hdmap' },
+    }).searchNl({ query: 'OSI traces that reference HD maps' })
+
+    expect(result.execution.error).toBeUndefined()
+    expect(result.meta.matchCount).toBeGreaterThan(0)
+    expect(result.execution.traceability).toBeDefined()
+    expect(result.execution.traceability).toHaveLength(result.execution.results.length)
+    const firstTrace = result.execution.traceability![0]!
+    expect(firstTrace.length).toBeGreaterThan(0)
+    for (const step of firstTrace) {
+      expect(step.predicate).toMatch(/^https?:\/\/.+/) // full IRI
+      expect(step.intermediate.length).toBeGreaterThan(0)
+    }
+  }, 120_000)
+
+  /**
+   * Plain (non-references) queries must NOT carry a traceability array.
+   * Otherwise every row in the table view would gain an empty breadcrumb,
+   * defeating the "additive when meaningful" contract.
+   */
+  it('leaves traceability undefined for plain queries with no references slot', async () => {
+    const result = await realServiceWithMockedLlm({
+      domains: ['hdmap'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+    }).searchNl({ query: 'motorway hdmaps' })
+
+    expect(result.execution.error).toBeUndefined()
+    expect(result.execution.traceability).toBeUndefined()
   }, 120_000)
 
   /**
@@ -311,7 +390,7 @@ describe('SearchService — real pipeline integration', () => {
       interpretQuery: async () => {
         throw new Error('refine path must not call interpretQuery')
       },
-      compileSlots,
+      compileSlots: compileSlotsWithTrace,
       compileCountQueries: compileAllCountQueries,
       enforcePolicy: enforceSparqlPolicy,
     }
@@ -388,5 +467,39 @@ describe('SearchService — real pipeline integration', () => {
     expect(result.execution.error).toBeUndefined()
     expect(result.sparql).toContain('UNION')
     expect(result.meta.matchCount).toBe(0)
+  }, 120_000)
+
+  /**
+   * Regression for the slot-list pollution that lets a non-asset domain
+   * (or a fully-phantom name) reach the compiler. Two distinct bugs share
+   * one gate:
+   *
+   *   1. `domains: ["hdmap", "unknown"]` — an LLM hallucination / sentinel
+   *      that the registry can't resolve at all.
+   *   2. `domains: ["ositrace", "gx"]` — a support vocabulary the registry
+   *      DOES know about but that doesn't root any asset class in the
+   *      discovered `rdfs:subClassOf` hierarchy. The compiler would
+   *      otherwise emit a `?asset a gx:<arbitraryClass>` UNION arm
+   *      (e.g. `gx:AccessControlManagement`) that has nothing to do with
+   *      the query.
+   *
+   * Generic — derives one asset and one non-asset name from the live
+   * registry / asset-domain set rather than hardcoding any ontology name.
+   */
+  it('resolveKnownDomains keeps asset domains and drops phantom + non-asset names', async () => {
+    const registry = await buildDomainRegistry()
+    const assetDomains = await getAssetDomains()
+    const realAsset = registry.domainNames.find((n) => assetDomains.has(n))
+    const nonAsset = registry.domainNames.find((n) => !assetDomains.has(n))
+    expect(realAsset).toBeDefined()
+
+    const input = [realAsset!, 'unknown', 'definitely-not-a-domain']
+    if (nonAsset) input.push(nonAsset)
+
+    const known = await resolveKnownDomains(input)
+    expect(known).toContain(realAsset)
+    expect(known).not.toContain('unknown')
+    expect(known).not.toContain('definitely-not-a-domain')
+    if (nonAsset) expect(known).not.toContain(nonAsset)
   }, 120_000)
 })

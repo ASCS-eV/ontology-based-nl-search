@@ -71,6 +71,47 @@ export interface SearchSlots {
   references?: ReferenceFilter
 }
 
+/**
+ * One step in the cross-reference path the compiler emitted. The
+ * combination of (predicate, variable) lets the service later read each
+ * row's binding for `variable` and pair it with `predicate` to display a
+ * breadcrumb of the traversal.
+ */
+export interface TraceabilityStep {
+  /**
+   * SPARQL variable bound to this step's RDF node, *without* the leading
+   * `?` (e.g. `"ref_step_1"`, `"refAsset"`). The service looks up this
+   * key in the binding to find the intermediate IRI/blank-node at runtime.
+   */
+  variable: string
+  /** Full predicate IRI used to reach this step from the previous one. */
+  predicate: string
+}
+
+/**
+ * Compile-time plan describing the cross-reference JOIN the compiler
+ * emitted. The service uses it to reconstruct a per-row traceability
+ * array from the bound variables — turning a flat result set into an
+ * ordered chain the UI can render as a breadcrumb (WP3).
+ */
+export interface TraceabilityPlan {
+  /** SPARQL variable name (no `?`) anchoring the chain — typically `"asset"`. */
+  sourceVariable: string
+  /** Steps in traversal order. The last step's `variable` is the joined child. */
+  steps: TraceabilityStep[]
+}
+
+/**
+ * Return type of {@link compileSlots}. `sparql` is the executable query;
+ * `trace` is present only when the query contains a cross-reference JOIN
+ * (single-domain path with `slots.references`). Callers that don't care
+ * about traceability simply destructure `{ sparql }` and ignore the rest.
+ */
+export interface CompileResult {
+  sparql: string
+  trace?: TraceabilityPlan
+}
+
 /** Create empty slots targeting a specific domain */
 export function createEmptySlots(domain: string): SearchSlots {
   return {

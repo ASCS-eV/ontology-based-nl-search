@@ -47,6 +47,20 @@ async function getSystemPrompt(): Promise<{
   return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary, store }
 }
 
+/**
+ * Pre-populate the agent's system-prompt cache during startup warmup so the
+ * first user query doesn't pay the SHACL-read + buildSystemPrompt +
+ * extractVocabulary cost (tens of seconds on a cold start; observed as
+ * `prompt-build` spending >10s while the cache stood empty).
+ *
+ * `getSystemPrompt` already memoises into module-private singletons; this
+ * helper just triggers that build during warmup so the warm-cache value is
+ * what the first request sees. No-op when the cache is already populated.
+ */
+export async function warmupAgentPrompt(): Promise<void> {
+  await getSystemPrompt()
+}
+
 export interface AgentOptions {
   domain?: string
   /** Cancel the LLM round-trip when the caller aborts. */

@@ -2,6 +2,7 @@ export {
   compileAllCountQueries,
   compileCountQuery,
   compileSlots,
+  compileSlotsWithTrace,
   escapeSparqlLiteral,
   getAssetDomains,
   warmupCompiler,
@@ -17,6 +18,8 @@ export {
 export { getInitializedStore } from './init.js'
 export type { LeafKind, PathStep, PropertyPath, ReferenceChain } from './property-paths.js'
 export { buildPropertyPaths, buildReferenceChains } from './property-paths.js'
+export type { DataReferenceEdge, ReferenceIndex } from './reference-index.js'
+export { getReferenceIndex, resetReferenceIndex } from './reference-index.js'
 export { SCHEMA_GRAPH } from './schema-loader.js'
 export type {
   NlSearchOptions,
@@ -27,7 +30,13 @@ export type {
 } from './service.js'
 export type { SearchDependencies } from './service.js'
 export { SearchService } from './service.js'
-export type { ReferenceFilter, SearchSlots } from './slots.js'
+export type {
+  CompileResult,
+  ReferenceFilter,
+  SearchSlots,
+  TraceabilityPlan,
+  TraceabilityStep,
+} from './slots.js'
 export type { SparqlValidationIssue, SparqlValidationResult } from './sparql-validator.js'
 export { validateSparql } from './sparql-validator.js'
 export type {

@@ -39,13 +39,18 @@ import {
   type ReferenceChain,
 } from './property-paths.js'
 import {
+  type DataReferenceEdge,
+  getReferenceIndex,
+  type ReferenceIndex,
+} from './reference-index.js'
+import {
   queryAssetDomains,
   queryDomainReferences,
   queryPropertyDomains,
   queryPropertyShapeGroups,
   queryRange2DProperties,
 } from './schema-queries.js'
-import type { SearchSlots } from './slots.js'
+import type { CompileResult, SearchSlots, TraceabilityPlan, TraceabilityStep } from './slots.js'
 import { validateSparql } from './sparql-validator.js'
 
 /** Property info from ontology - supports properties existing in multiple domains */
@@ -250,6 +255,11 @@ export async function warmupCompiler(): Promise<void> {
     getCompilerVocab(),
     getAssetDomains(),
     getDomainReferences(),
+    // Data-driven reference index for traceability (WP3, task #17): the
+    // SHACL-discovered chains describe what *can* be linked; this index
+    // records what *is* linked in the loaded instance data, including
+    // multi-hop paths through blank-node manifest links.
+    getReferenceIndex(),
     // The concept-expansion index (SKOS hierarchy) is consumed by the
     // LLM slot pipeline, not the compiler — but it's the same kind of
     // one-time graph-derived build, so warm it here alongside the rest.
@@ -458,28 +468,97 @@ async function compilePeerDomainUnion(
  * When no domain is specified and no filters exist, searches across ALL
  * asset types using discovered asset domain classes.
  */
-export async function compileSlots(slots: SearchSlots): Promise<string> {
-  const registry = await buildDomainRegistry()
-  const vocabIndex = await getCompilerVocab()
+/**
+ * Normalize an LLM-supplied domain name toward the registry's directory-name
+ * convention: lowercase, hyphens at camelCase boundaries, spaces/underscores
+ * to hyphens. Handles variants like "Environment Model", "EnvironmentModel",
+ * "environment_model" → "environment-model". Idempotent.
+ */
+export function normalizeDomainName(domain: string): string {
+  return domain
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+}
 
-  // Normalize domain names: lowercase, insert hyphens at camelCase boundaries,
-  // replace spaces/underscores with hyphens.
-  // Handles LLM variants like "Environment Model", "EnvironmentModel", "environment_model".
+/**
+ * Filter a domain list to those that are valid primary search targets —
+ * i.e. **asset** domains, discovered data-drivenly from the SHACL /
+ * `rdfs:subClassOf` hierarchy (see `queryAssetDomains`). Drops:
+ *
+ *   - Phantom names (LLM-hallucinated "unknown", typos, sentinels from a
+ *     failed IRI attribution) — not in the registry at all.
+ *   - Non-asset support vocabularies (`gx`, `georeference`, `manifest`, …)
+ *     that the registry knows about but that don't root any asset class in
+ *     the discovered subclass hierarchy. The compiler would otherwise emit
+ *     a primary `?asset a <Class>` UNION arm using the registry's arbitrary
+ *     `targetClass` pick (e.g. `gx:AccessControlManagement`), which has
+ *     nothing to do with the query and returns zero rows.
+ *
+ * Order-preserving and de-duplicated. Names are canonicalized to the
+ * registry's directory key (so an IRI-segment input like `openlabel` maps
+ * to the registry key `openlabel-v2`) before downstream lookup.
+ *
+ * Nothing about any specific ontology is hardcoded: the asset-domain set
+ * comes from `getAssetDomains()`, which queries the graph.
+ */
+export async function resolveKnownDomains(domains: string[]): Promise<string[]> {
+  const registry = await buildDomainRegistry()
+  const assetDomains = await getAssetDomains()
+  const seen = new Set<string>()
+  const known: string[] = []
+  for (const raw of domains) {
+    const name = normalizeDomainName(raw)
+    const canonical = registry.domains.has(name) ? name : registry.resolveByIriDomain(name)?.name
+    if (!canonical || seen.has(canonical)) continue
+    if (assetDomains.has(canonical)) {
+      seen.add(canonical)
+      known.push(canonical)
+    }
+  }
+  return known
+}
+
+/**
+ * Backward-compatible wrapper that returns the SPARQL string only.
+ * Callers that don't need the traceability plan keep their existing
+ * `const sparql = await compileSlots(slots)` shape. New callers (the
+ * service emitting per-row breadcrumbs) use {@link compileSlotsWithTrace}.
+ */
+export async function compileSlots(slots: SearchSlots): Promise<string> {
+  const { sparql } = await compileSlotsWithTrace(slots)
+  return sparql
+}
+
+/**
+ * Compile slots and return the SPARQL plus, when the query contains a
+ * cross-reference JOIN, a {@link TraceabilityPlan} the service uses to
+ * assemble a per-row breadcrumb from the bound intermediate variables.
+ *
+ * Same compilation semantics as {@link compileSlots} — the wrapper just
+ * drops the `trace` field when its caller doesn't ask for it.
+ */
+export async function compileSlotsWithTrace(slots: SearchSlots): Promise<CompileResult> {
+  const [registry, vocabIndex] = await Promise.all([buildDomainRegistry(), getCompilerVocab()])
+
+  // Traceability plan accumulated when the query contains a cross-
+  // reference JOIN. The service uses it to attach a per-row breadcrumb
+  // (WP3, task #18). Stays `undefined` for non-references queries.
+  let trace: TraceabilityPlan | undefined
+
+  // Normalize domain names so downstream registry lookups and prefix
+  // resolution see the directory-name convention regardless of how the LLM
+  // capitalized or spaced them.
   slots = {
     ...slots,
-    domains: slots.domains.map((d) =>
-      d
-        .replace(/([a-z])([A-Z])/g, '$1-$2')
-        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
-        .toLowerCase()
-        .replace(/[\s_]+/g, '-')
-    ),
+    domains: slots.domains.map(normalizeDomainName),
   }
 
   // When no domain is specified, use cross-domain search
   if (slots.domains.length === 0) {
     const assetDomains = await getAssetDomains()
-    return compileCrossDomainQuery(slots, registry, assetDomains, vocabIndex)
+    return { sparql: compileCrossDomainQuery(slots, registry, assetDomains, vocabIndex) }
   }
 
   const detectedDomains = slots.domains
@@ -498,14 +577,16 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
 
   if (!hasHierarchy && detectedDomains.length > 1) {
     // Peer domains: generate UNION query that searches all domains independently
-    return compilePeerDomainUnion(
-      slots,
-      detectedDomains,
-      filtersByDomain,
-      rangesByDomain,
-      registry,
-      vocabIndex
-    )
+    return {
+      sparql: await compilePeerDomainUnion(
+        slots,
+        detectedDomains,
+        filtersByDomain,
+        rangesByDomain,
+        registry,
+        vocabIndex
+      ),
+    }
   }
 
   // Determine primary domain — the one that references others, or the single domain
@@ -640,20 +721,22 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   // license-specific OPTIONAL block is needed here.
 
   // Cross-reference join driven by the explicit `slots.references` slot.
-  // Discovers the predicate chain from `primaryDomain` to a child asset
-  // via SHACL leaf properties (task 21c). Skips emission when no chain
-  // is declared rather than inventing the ENVITED-X-shaped literals.
+  // Resolution precedence (most precise first):
+  //   1. SHACL-declared chain via `pickReferenceChain` — used when the
+  //      parent's shape inlines a typed leaf to the child class.
+  //   2. Data-driven path from the reference index — used when the SHACL
+  //      declaration is transitive (e.g. inherited via a shared
+  //      `manifest:ManifestShape`) and the index has observed the actual
+  //      instance-graph chain.
+  //   3. Generic any-predicate property path `(!<urn:none>)+` — last
+  //      resort when neither SHACL nor instance data declare a link.
   if (slots.references) {
     const refDomain = registry.domains.get(slots.references.domain)
     if (refDomain) {
+      prefixDomains.add(slots.references.domain)
+      const traceSteps: TraceabilityStep[] = []
       const chain = pickReferenceChain(vocabIndex, primaryDomain, slots.references.domain)
-      if (!chain) {
-        log.warn(
-          'slots.references requested but no cross-reference chain declared in SHACL for parent → child',
-          { parent: primaryDomain, child: slots.references.domain }
-        )
-      } else {
-        prefixDomains.add(slots.references.domain)
+      if (chain) {
         emitReferenceChainTriples(
           chain,
           '?asset',
@@ -662,17 +745,61 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
           registry,
           'refSlot',
           patterns,
-          prefixDomains
+          prefixDomains,
+          traceSteps
         )
-        patterns.push(`?refAsset rdfs:label ?refName .`)
-        selectVars.add('?refAsset')
-        selectVars.add('?refName')
-
-        if (slots.references.label) {
-          filters.push(
-            `FILTER(CONTAINS(LCASE(?refName), "${escapeSparqlLiteral(slots.references.label.toLowerCase())}"))`
+      } else {
+        // Load the data-driven reference index lazily: only queries with
+        // a references slot AND no SHACL chain consult it, so the cost
+        // of `getReferenceIndex` (cached after first call; pre-warmed by
+        // `warmupCompiler`) stays off the hot path of plain queries.
+        const referenceIndex = await getReferenceIndex()
+        const dataPath = pickDataReferenceEdge(
+          referenceIndex,
+          primaryDomain,
+          slots.references.domain
+        )
+        if (dataPath) {
+          emitDataReferencePath(dataPath, '?asset', '?refAsset', patterns, traceSteps)
+          patterns.push(`?refAsset a ${refDomain.targetClass} .`)
+          log.info('slots.references: emitting JOIN from data-driven reference index', {
+            parent: primaryDomain,
+            child: slots.references.domain,
+            hops: dataPath.predicatePath.length,
+            samples: dataPath.sampleCount,
+          })
+        } else {
+          // Neither SHACL nor the data index found a connection.
+          // `<urn:none>` is a sentinel IRI guaranteed not to appear in
+          // the data; `!<urn:none>` is therefore the universal predicate
+          // set, and `(!<urn:none>)+` is "any predicate, one or more
+          // hops". Last resort — may be slow on large graphs.
+          patterns.push(`?asset (!<urn:none>)+ ?refAsset .`)
+          patterns.push(`?refAsset a ${refDomain.targetClass} .`)
+          log.info(
+            'slots.references: no SHACL chain or data path; emitting wildcard property-path JOIN',
+            { parent: primaryDomain, child: slots.references.domain }
           )
         }
+      }
+      patterns.push(`?refAsset rdfs:label ?refName .`)
+      selectVars.add('?refAsset')
+      selectVars.add('?refName')
+
+      if (slots.references.label) {
+        filters.push(
+          `FILTER(CONTAINS(LCASE(?refName), "${escapeSparqlLiteral(slots.references.label.toLowerCase())}"))`
+        )
+      }
+
+      // Promote each intermediate step variable into the SELECT so the
+      // service can read it from the binding and assemble a per-row
+      // traceability breadcrumb. The wildcard branch records no steps,
+      // so the plan stays undefined there — no intermediate to display
+      // because the SPARQL engine collapses the property path internally.
+      if (traceSteps.length > 0) {
+        for (const step of traceSteps) selectVars.add(`?${step.variable}`)
+        trace = { sourceVariable: 'asset', steps: traceSteps }
       }
     }
   }
@@ -681,7 +808,10 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
   const prefixes = buildPrefixes(registry, [...prefixDomains])
 
   // Build the query
-  return assembleQuery(prefixes, selectVars, patterns, optionals, filters)
+  return {
+    sparql: assembleQuery(prefixes, selectVars, patterns, optionals, filters),
+    trace,
+  }
 }
 
 /**
@@ -915,6 +1045,62 @@ function findDomainForIri(iri: string, registry: DomainRegistry): DomainDescript
  * the parent. The caller skips reference emission rather than inventing
  * a literal predicate chain.
  */
+/**
+ * Pick a data-driven reference edge from `parentDomain` to `childDomain`,
+ * preferring the shortest predicate path (fewer hops → cheaper JOIN) and
+ * breaking ties by sample count (more data backing → more likely the
+ * intended link). Returns null when the index has observed no
+ * connection between the two domains.
+ */
+function pickDataReferenceEdge(
+  index: ReferenceIndex,
+  parentDomain: string,
+  childDomain: string
+): DataReferenceEdge | null {
+  const edges = index.get(parentDomain)
+  if (!edges) return null
+  let best: DataReferenceEdge | null = null
+  for (const e of edges) {
+    if (e.targetDomain !== childDomain) continue
+    if (
+      !best ||
+      e.predicatePath.length < best.predicatePath.length ||
+      (e.predicatePath.length === best.predicatePath.length && e.sampleCount > best.sampleCount)
+    ) {
+      best = e
+    }
+  }
+  return best
+}
+
+/**
+ * Emit a SPARQL JOIN that walks the discovered predicate path step by
+ * step, using fresh blank-node intermediates. The final step binds the
+ * supplied `refVar` so the caller can constrain the child's type and
+ * pull its label.
+ *
+ * Each predicate is emitted as a full `<IRI>` literal — that's the only
+ * way to guarantee the query carries the exact path the index observed,
+ * regardless of whether the prefix is registered.
+ */
+function emitDataReferencePath(
+  edge: DataReferenceEdge,
+  sourceVar: string,
+  refVar: string,
+  patterns: string[],
+  traceSteps?: TraceabilityStep[]
+): void {
+  let cursor = sourceVar
+  for (let i = 0; i < edge.predicatePath.length; i++) {
+    const isLast = i === edge.predicatePath.length - 1
+    const next = isLast ? refVar : `?ref_step_${i + 1}`
+    const predicate = edge.predicatePath[i]!
+    patterns.push(`${cursor} <${predicate}> ${next} .`)
+    traceSteps?.push({ variable: next.slice(1), predicate })
+    cursor = next
+  }
+}
+
 function pickReferenceChain(
   vocabIndex: CompilerVocab,
   parentDomain: string,
@@ -959,7 +1145,8 @@ function emitReferenceChainTriples(
   registry: DomainRegistry,
   idTag: string,
   patterns: string[],
-  prefixDomains: Set<string>
+  prefixDomains: Set<string>,
+  traceSteps?: TraceabilityStep[]
 ): void {
   let cursor = assetVar
   for (let i = 0; i < chain.steps.length; i++) {
@@ -970,6 +1157,7 @@ function emitReferenceChainTriples(
     const pred = desc ? prefixedPredicate(step.predicate, desc) : `<${step.predicate}>`
     if (desc) prefixDomains.add(desc.name)
     patterns.push(`${cursor} ${pred} ${next} .`)
+    traceSteps?.push({ variable: next.slice(1), predicate: step.predicate })
     cursor = next
   }
   if (childTargetClass && chain.kind === 'iri') {

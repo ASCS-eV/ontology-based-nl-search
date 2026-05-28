@@ -16,6 +16,7 @@ export type {
   OntologyGap,
   QueryInterpretation,
   ResultRow,
+  ResultTraceStep,
   SearchMeta,
   SearchResponse,
   StatsResponse,

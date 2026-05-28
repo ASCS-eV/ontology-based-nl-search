@@ -1,7 +1,13 @@
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { useCallback, useRef, useState } from 'react'
 
-import type { MappedTerm, OntologyGap, QueryInterpretation, SearchMeta } from '../api-types'
+import type {
+  MappedTerm,
+  OntologyGap,
+  QueryInterpretation,
+  ResultTraceStep,
+  SearchMeta,
+} from '../api-types'
 import { parseSSEBuffer } from '../lib/sse-parser'
 
 export type SearchPhase = 'idle' | 'interpreting' | 'executing' | 'done'
@@ -11,6 +17,13 @@ export interface SearchState {
   gaps: OntologyGap[] | null
   sparql: string | null
   results: Record<string, string>[] | null
+  /**
+   * Per-row traceability breadcrumb. Aligned by index with `results`.
+   * Present when the query contained a cross-reference JOIN (the
+   * compiler emits a `TraceabilityPlan` which the service expands per
+   * row). UI components render this as a breadcrumb under the row.
+   */
+  traceability: ResultTraceStep[][] | null
   meta: SearchMeta | null
   phase: SearchPhase
   loading: boolean
@@ -47,6 +60,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
     gaps: null,
     sparql: null,
     results: null,
+    traceability: null,
     meta: null,
     phase: 'idle',
     loading: false,
@@ -65,6 +79,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
       gaps: null,
       sparql: null,
       results: null,
+      traceability: null,
       meta: null,
       phase: 'interpreting',
       loading: true,
@@ -115,10 +130,15 @@ export function useSearchExecution(_availableDomains?: string[]) {
               setState((s) => ({ ...s, sparql: data as string }))
               break
             case SSE_EVENT.RESULTS: {
-              const resultData = data as { results: Record<string, string>[]; error?: string }
+              const resultData = data as {
+                results: Record<string, string>[]
+                traceability?: ResultTraceStep[][]
+                error?: string
+              }
               setState((s) => ({
                 ...s,
                 results: resultData.results,
+                traceability: resultData.traceability ?? null,
                 error: resultData.error ?? s.error,
               }))
               break
@@ -152,6 +172,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
       loading: true,
       error: null,
       results: null,
+      traceability: null,
       meta: null,
       phase: 'executing',
     }))
@@ -200,6 +221,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
         ...s,
         sparql: data.sparql,
         results: data.results,
+        traceability: data.traceability ?? null,
         meta: data.meta,
         phase: 'done',
       }))

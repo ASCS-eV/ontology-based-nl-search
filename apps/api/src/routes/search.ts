@@ -117,6 +117,7 @@ searchRoutes.post('/stream', (c) => {
           event: SSE_EVENT.RESULTS,
           data: JSON.stringify({
             results: result.execution.results,
+            traceability: result.execution.traceability,
             error: result.execution.error ? 'Query execution failed' : undefined,
           }),
         })
@@ -194,7 +195,12 @@ searchRoutes.post('/refine', async (c) => {
     logger.info('Refine search completed', { matchCount: result.meta.matchCount })
 
     return c.json(
-      { sparql: result.sparql, results: result.execution.results, meta: result.meta },
+      {
+        sparql: result.sparql,
+        results: result.execution.results,
+        traceability: result.execution.traceability,
+        meta: result.meta,
+      },
       200,
       { [REQUEST_ID_HEADER]: requestId }
     )

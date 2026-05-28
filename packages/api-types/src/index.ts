@@ -89,6 +89,18 @@ export interface SearchMeta {
 export type ResultRow = Record<string, string>
 
 /**
+ * One step in a per-row traceability breadcrumb. The web client uses
+ * these to render the asset → … → joined-asset path the SPARQL engine
+ * walked, so users can see *why* a row matched (WP3, task #18).
+ */
+export interface ResultTraceStep {
+  /** Full predicate IRI used to reach this step. */
+  predicate: string
+  /** Bound RDF term (IRI / blank-node) at this step. */
+  intermediate: string
+}
+
+/**
  * Complete search response. Used by both `/search/refine` (synchronous
  * JSON) and assembled by the web client from the streamed `/search/stream`
  * SSE events.
@@ -98,6 +110,11 @@ export interface SearchResponse {
   gaps: OntologyGap[]
   sparql: string
   results: ResultRow[]
+  /**
+   * Optional per-row breadcrumb. Present only when the SPARQL contained
+   * a cross-reference JOIN; aligned by index with `results`.
+   */
+  traceability?: ResultTraceStep[][]
   meta: SearchMeta
 }
 

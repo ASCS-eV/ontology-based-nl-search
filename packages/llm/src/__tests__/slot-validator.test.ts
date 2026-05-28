@@ -266,4 +266,29 @@ describe('correctDomains', () => {
     expect(result).toContain('hdmap')
     expect(result).toContain('scenario')
   })
+
+  it('never injects a phantom domain for an unattributed (empty-domain) property', () => {
+    // The vocabulary extractor emits an empty-string domain when an IRI
+    // can't be attributed to any registered namespace. Such a property must
+    // not surface as a searchable domain — regression for the
+    // `domains: ["hdmap", ""]` / `domain:unknown` artifact.
+    const vocabWithOrphan: OntologyVocabulary = {
+      ...testVocabulary,
+      enumProperties: [
+        ...testVocabulary.enumProperties,
+        {
+          localName: 'orphanProp',
+          domain: '', // unresolvable IRI → no domain
+          iri: 'https://example.org/external#orphanProp',
+          label: 'orphan',
+          description: '',
+          allowedValues: ['x'],
+        },
+      ],
+    }
+    const result = correctDomains(['hdmap'], { orphanProp: 'x' }, {}, vocabWithOrphan)
+    expect(result).toEqual(['hdmap'])
+    expect(result).not.toContain('')
+    expect(result).not.toContain('unknown')
+  })
 })

@@ -29,7 +29,7 @@ import {
   getConceptExpansionIndex,
   getInitializedStore,
 } from '@ontology-search/search'
-import { compileSlots } from '@ontology-search/search/compiler'
+import { compileSlotsWithTrace, resolveKnownDomains } from '@ontology-search/search/compiler'
 import type { SearchSlots } from '@ontology-search/search/slots'
 
 import {
@@ -114,18 +114,48 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     rangeResult.ranges,
     vocabulary
   )
+  // 4b. Drop any domain the registry can't resolve — an LLM-hallucinated
+  // "unknown", a typo, or an extraction artifact. The compiler skips these
+  // silently when building UNION arms, so leaving them in `slots.domains`
+  // only pollutes the interpretation with a phantom `domain:unknown` row
+  // that never affected the SPARQL. Filtering here keeps the interpretation
+  // honest about what was actually compiled.
+  const knownDomains = await resolveKnownDomains(correctedDomains)
+
+  // 4c. `references.domain` is a cross-reference JOIN target (parent →
+  // child via the discovered SHACL reference chain), not a peer of the
+  // primary domain. When the LLM emits both `domains: [parent, child]`
+  // and `references: { domain: child }`, the compiler's peer-UNION path
+  // would silently ignore the references slot and emit two independent
+  // arms instead of a join. Canonicalize the reference domain and remove
+  // it from the peer set so the single-domain JOIN path is taken.
+  // Drop the references slot entirely when the named child isn't an
+  // asset domain — the compiler can't build a chain to a phantom.
+  let normalizedReferences = submission.slots.references
+  let primaryDomains = knownDomains
+  if (normalizedReferences?.domain) {
+    const [canonicalRef] = await resolveKnownDomains([normalizedReferences.domain])
+    if (canonicalRef) {
+      normalizedReferences = { ...normalizedReferences, domain: canonicalRef }
+      primaryDomains = knownDomains.filter((d) => d !== canonicalRef)
+    } else {
+      normalizedReferences = undefined
+    }
+  }
   endValidation()
 
   const slots: SearchSlots = {
-    domains: correctedDomains,
+    domains: primaryDomains,
     filters: shaclResult.filters,
     ranges: rangeResult.ranges,
-    references: submission.slots.references,
+    references: normalizedReferences,
   }
 
-  // 5. Deterministic SPARQL compilation.
+  // 5. Deterministic SPARQL compilation. Capture the traceability plan
+  // so per-row breadcrumbs surface downstream in `ExecutionResult` —
+  // the trace is `undefined` for plain queries (no cross-reference JOIN).
   const endCompile = sw.time('sparql-compile')
-  const sparql = await compileSlots(slots)
+  const { sparql, trace } = await compileSlotsWithTrace(slots)
   endCompile()
 
   // Enrich interpretation with the final domains and applied filters
@@ -140,6 +170,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     interpretation: enrichedInterpretation,
     gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
     sparql,
+    trace,
   }
 
   // 6. Final post-compile sanity / confidence-floor pass.

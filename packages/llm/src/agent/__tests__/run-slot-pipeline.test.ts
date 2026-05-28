@@ -152,6 +152,59 @@ describe('runSlotPipeline', () => {
     expect(survived?.reason).toBe(originalGap.reason)
   }, 120_000)
 
+  it('removes the references child from the peer-domain set so the JOIN path is taken', async () => {
+    // Regression: when the LLM emits both `domains: [parent, child]` AND
+    // `references: { domain: child }`, the compiler's peer-UNION path was
+    // silently ignoring the references slot and emitting two independent
+    // arms instead of a join. The pipeline must canonicalise the reference
+    // domain and exclude it from the primary-domain set so compileSlots
+    // routes through the single-domain cross-reference path.
+    //
+    // Whether the compiler then emits an actual JOIN depends on the SHACL
+    // declaring a chain between the chosen pair (a separate ontology
+    // concern). What we assert here is the pipeline-level contract: the
+    // child no longer pollutes `slots.domains`, and the compiled SPARQL is
+    // NOT a peer UNION of two top-level asset classes.
+    const sw = new Stopwatch()
+    const response = await runSlotPipeline({
+      submission: submission({
+        domains: ['scenario', 'hdmap'],
+        references: { domain: 'hdmap' },
+      }),
+      vocabulary,
+      targetDomain: 'scenario',
+      sw,
+    })
+    expect(response.interpretation.domains).toEqual(['scenario'])
+    expect(response.sparql).toContain('scenario:Scenario')
+    // The cross-reference JOIN must emit (either via a SHACL-declared chain
+    // or, when the SHACL doesn't surface one, the data-driven any-predicate
+    // fallback). The child class is anchored on `?refAsset`, never on
+    // `?asset` — that would be a peer-UNION mistake.
+    expect(response.sparql).toContain('?refAsset')
+    expect(response.sparql).toContain('hdmap:HdMap')
+    expect(response.sparql).not.toMatch(/\?asset\s+a\s+hdmap:HdMap/)
+    expect(response.sparql).not.toContain('UNION')
+  }, 120_000)
+
+  it("drops the references slot when its domain isn't an asset domain", async () => {
+    // Defensive: the LLM may name a non-asset support vocabulary (e.g. the
+    // gx fallback domain) as the references target. Without resolution that
+    // would be carried into the compiler, which would just skip emission.
+    // Dropping it in the pipeline keeps the interpretation honest.
+    const sw = new Stopwatch()
+    const response = await runSlotPipeline({
+      submission: submission({
+        domains: ['hdmap'],
+        references: { domain: 'definitely-not-a-domain' },
+      }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      sw,
+    })
+    expect(response.sparql).not.toContain('?refAsset')
+  }, 120_000)
+
   it('records "post-llm-validation" and "sparql-compile" stages on the stopwatch', async () => {
     const sw = new Stopwatch()
     await runSlotPipeline({

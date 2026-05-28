@@ -1,36 +1,62 @@
+import type { ResultTraceStep } from '../api-types'
 import { downloadFile, resultsToCsv, resultsToJsonLd } from '../lib/export-utils'
 
 interface ResultsDisplayProps {
   results: Record<string, string>[]
+  /**
+   * Per-row traceability breadcrumb, aligned by index with `results`.
+   * When present, each reference badge gets an expandable predicate-chain
+   * breadcrumb showing the graph path the JOIN walked (WP3, task #18).
+   */
+  traceability?: ResultTraceStep[][] | null
 }
 
 /** Columns that represent cross-references (hidden from main display, shown in References section) */
 const REF_COLUMNS = new Set(['refAsset', 'refName'])
+/**
+ * Variables the compiler binds for traceability-step intermediates. These
+ * are infrastructure rows; the user sees the predicate breadcrumb in the
+ * "References" section, not as plain columns next to user-meaningful
+ * fields like `name` / `country`.
+ */
+const TRACE_VAR_PREFIX_RE = /^(?:ref_step_|_refSlot_)/
 
 /** Check whether results contain cross-reference data */
 function hasReferences(results: Record<string, string>[]): boolean {
   return results.some((r) => r['refAsset'] || r['refName'])
 }
 
+interface GroupedReference {
+  asset: string
+  name: string
+  /** Predicate-IRI chain the SPARQL JOIN walked from the primary asset. */
+  trace?: ResultTraceStep[]
+}
+
 interface GroupedAsset {
   asset: string
   name: string
   properties: Record<string, string>
-  references: { asset: string; name: string }[]
+  references: GroupedReference[]
 }
 
 /** Group flat rows by primary asset, collecting references per group */
-function groupByAsset(results: Record<string, string>[]): GroupedAsset[] {
+function groupByAsset(
+  results: Record<string, string>[],
+  traceability?: ResultTraceStep[][] | null
+): GroupedAsset[] {
   const groups = new Map<string, GroupedAsset>()
 
-  for (const row of results) {
+  for (let i = 0; i < results.length; i++) {
+    const row = results[i]!
+    const trace = traceability?.[i]
     const key = row['asset'] ?? ''
     if (!groups.has(key)) {
       const properties: Record<string, string> = {}
       for (const [k, v] of Object.entries(row)) {
-        if (!REF_COLUMNS.has(k) && k !== 'asset' && k !== 'name' && v) {
-          properties[k] = v
-        }
+        if (REF_COLUMNS.has(k) || k === 'asset' || k === 'name' || !v) continue
+        if (TRACE_VAR_PREFIX_RE.test(k)) continue
+        properties[k] = v
       }
       groups.set(key, {
         asset: key,
@@ -43,7 +69,11 @@ function groupByAsset(results: Record<string, string>[]): GroupedAsset[] {
     if (row['refAsset'] && row['refName']) {
       const alreadyAdded = group.references.some((r) => r.asset === row['refAsset'])
       if (!alreadyAdded) {
-        group.references.push({ asset: row['refAsset'], name: row['refName'] })
+        group.references.push({
+          asset: row['refAsset'],
+          name: row['refName'],
+          trace: trace && trace.length > 0 ? trace : undefined,
+        })
       }
     }
   }
@@ -51,7 +81,7 @@ function groupByAsset(results: Record<string, string>[]): GroupedAsset[] {
   return [...groups.values()]
 }
 
-export function ResultsDisplay({ results }: ResultsDisplayProps) {
+export function ResultsDisplay({ results, traceability }: ResultsDisplayProps) {
   if (results.length === 0) {
     return (
       <div
@@ -80,7 +110,7 @@ export function ResultsDisplay({ results }: ResultsDisplayProps) {
   }
 
   const showCards = hasReferences(results)
-  const grouped = showCards ? groupByAsset(results) : []
+  const grouped = showCards ? groupByAsset(results, traceability) : []
 
   return (
     <div className="w-full" role="region" aria-label="Search results">
@@ -176,22 +206,59 @@ function AssetCard({ group }: { group: GroupedAsset }) {
             <LinkIcon />
             References ({group.references.length})
           </p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-col gap-2">
             {group.references.map((ref) => (
-              <span
-                key={ref.asset}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-blue-100 text-blue-800 border border-blue-200"
-                title={ref.asset}
-              >
-                <MapIcon />
-                {ref.name}
-              </span>
+              <div key={ref.asset} className="flex flex-col gap-1">
+                <span
+                  className="inline-flex self-start items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-blue-100 text-blue-800 border border-blue-200"
+                  title={ref.asset}
+                >
+                  <MapIcon />
+                  {ref.name}
+                </span>
+                {ref.trace && ref.trace.length > 0 && <TraceabilityBreadcrumb steps={ref.trace} />}
+              </div>
             ))}
           </div>
         </div>
       )}
     </div>
   )
+}
+
+/**
+ * Render the predicate-chain breadcrumb from the primary asset down to a
+ * referenced child. Shows each predicate's localName; the full IRI is in
+ * the `title` for hover inspection (WP3, task #18).
+ */
+function TraceabilityBreadcrumb({ steps }: { steps: ResultTraceStep[] }) {
+  return (
+    <ol className="flex flex-wrap items-center gap-1 text-[10px] text-blue-700/80 font-mono">
+      <li className="px-1 py-0.5 rounded bg-white/60 border border-blue-100">asset</li>
+      {steps.map((step, i) => {
+        const local = localName(step.predicate)
+        return (
+          <li key={i} className="flex items-center gap-1">
+            <span aria-hidden="true">→</span>
+            <span
+              className="px-1 py-0.5 rounded bg-white/60 border border-blue-100"
+              title={step.predicate}
+            >
+              {local}
+            </span>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+/** Extract the local name suffix of an IRI for compact display. */
+function localName(iri: string): string {
+  const hash = iri.lastIndexOf('#')
+  const slash = iri.lastIndexOf('/')
+  const cut = Math.max(hash, slash)
+  return cut >= 0 ? iri.slice(cut + 1) : iri
 }
 
 function LinkIcon() {

@@ -10,11 +10,14 @@
  */
 import type { TimingEntry } from '@ontology-search/core/logging'
 
+import type { TraceabilityPlan } from './slots.js'
+
 export type {
   MappedTerm,
   OntologyGap,
   QueryInterpretation,
   ResultRow,
+  ResultTraceStep,
   SearchMeta,
   SearchResponse,
   StatsResponse,
@@ -31,6 +34,12 @@ export interface LlmStructuredResponse {
   interpretation: QueryInterpretation
   gaps: OntologyGap[]
   sparql: string
+  /**
+   * Traceability plan emitted by the compiler when the SPARQL contains
+   * a cross-reference JOIN. The service uses it to attach per-row
+   * breadcrumbs in `ExecutionResult.traceability` (WP3, task #18).
+   */
+  trace?: TraceabilityPlan
   /** Per-stage timings within the LLM pipeline. */
   timings?: TimingEntry[]
 }

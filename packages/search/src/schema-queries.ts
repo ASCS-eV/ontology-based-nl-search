@@ -91,7 +91,7 @@ export interface Range2DPropertyInfo {
  * against known domain namespaces. Falls back to the IRI path-segment
  * convention (`/domain/vN/`) when no registry is provided.
  */
-function extractDomain(iri: string, registry?: DomainRegistry): string {
+export function extractDomain(iri: string, registry?: DomainRegistry): string {
   if (registry) {
     return registry.domainForIri(iri) ?? ''
   }
@@ -101,7 +101,7 @@ function extractDomain(iri: string, registry?: DomainRegistry): string {
 }
 
 /** Extract local name from IRI (after last / or #) */
-function extractLocalName(iri: string): string {
+export function extractLocalName(iri: string): string {
   const hashIdx = iri.lastIndexOf('#')
   const slashIdx = iri.lastIndexOf('/')
   const idx = Math.max(hashIdx, slashIdx)

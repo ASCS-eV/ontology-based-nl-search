@@ -1,10 +1,8 @@
 import { createComponentLogger } from '@ontology-search/core/logging'
-import { warmupLlmSession } from '@ontology-search/llm'
-import { buildSystemPrompt } from '@ontology-search/llm/prompt-builder'
+import { warmupAgentPrompt, warmupLlmSession } from '@ontology-search/llm'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import { getInitializedStore, warmupCompiler } from '@ontology-search/search'
-import { getShaclContent } from '@ontology-search/search/shacl-reader'
 import { probePropertyPathSupport } from '@ontology-search/sparql'
 import { registerPolicyNamespaces } from '@ontology-search/sparql/policy'
 
@@ -89,15 +87,12 @@ export async function warmup(): Promise<WarmupResult> {
     errors
   )
 
-  // [3/6] Pre-build the LLM system prompt from raw SHACL content.
-  const vocabMs = await runStep(
-    3,
-    'LLM system prompt build',
-    async () => {
-      buildSystemPrompt(getShaclContent())
-    },
-    errors
-  )
+  // [3/6] Pre-build the LLM system prompt + vocabulary into the agent's
+  // module-private cache so the first user request sees a hot cache.
+  // Previously this step called `buildSystemPrompt(getShaclContent())`
+  // into a discarded local — the agent then rebuilt on the first request,
+  // showing up as ~14s of `prompt-build` on the first query trace.
+  const vocabMs = await runStep(3, 'LLM system prompt build', warmupAgentPrompt, errors)
 
   // [4/6] Compiler vocabulary — property-path BFS + leaf-kind enrichment
   // + cross-reference chains + concept-expansion index. The single most

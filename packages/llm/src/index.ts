@@ -16,7 +16,9 @@ import { getConfig } from '@ontology-search/core/config'
 import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
 
 import { getPersistentSession, runCopilotAgent } from './agent/copilot-agent.js'
-import { runSparqlAgent } from './agent/index.js'
+import { runSparqlAgent, warmupAgentPrompt } from './agent/index.js'
+
+export { warmupAgentPrompt }
 import type { LlmStructuredResponse } from './types.js'
 
 // Re-export the SHACL slot-validation helpers so the api app can use the
@@ -37,11 +39,20 @@ export interface SearchOptions {
 }
 
 /**
- * Pre-create the Copilot SDK session so the first user query doesn't
- * pay the ~6s session-create cost. No-op for non-copilot providers.
+ * Pre-populate the LLM session-level caches so the first user query
+ * doesn't pay any cold-start cost:
+ *
+ *  - Agent system-prompt cache (`warmupAgentPrompt`): SHACL read +
+ *    `buildSystemPrompt` + `extractVocabulary`. Tens of seconds on a cold
+ *    start; benefits every provider. Without this, the warmup step that
+ *    "builds the system prompt" did so into a local variable that was
+ *    discarded — the agent's own cache only filled on first user request.
+ *  - Copilot SDK session: ~6s session-create cost. Only relevant for the
+ *    Copilot provider.
  */
 export async function warmupLlmSession(): Promise<void> {
   const config = getConfig()
+  await warmupAgentPrompt()
   if (config.AI_PROVIDER === 'copilot') {
     await getPersistentSession()
   }

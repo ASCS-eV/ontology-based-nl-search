@@ -6,7 +6,12 @@ import {
 import { afterAll, beforeAll, vi } from 'vitest'
 
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
-import { compileCountQuery, compileSlots, escapeSparqlLiteral } from '../compiler.js'
+import {
+  compileCountQuery,
+  compileSlots,
+  escapeSparqlLiteral,
+  normalizeDomainName,
+} from '../compiler.js'
 import type { SearchSlots } from '../slots.js'
 
 // Register ontology namespaces so compiled queries pass policy validation
@@ -744,5 +749,18 @@ describe('escapeSparqlLiteral', () => {
   it('handles combined special characters', () => {
     const input = 'val"ue\\with\nnewline'
     expect(escapeSparqlLiteral(input)).toBe('val\\"ue\\\\with\\nnewline')
+  })
+})
+
+describe('normalizeDomainName', () => {
+  it('lowercases and hyphenates camelCase / spaced / underscored variants', () => {
+    expect(normalizeDomainName('EnvironmentModel')).toBe('environment-model')
+    expect(normalizeDomainName('Environment Model')).toBe('environment-model')
+    expect(normalizeDomainName('environment_model')).toBe('environment-model')
+  })
+
+  it('is idempotent on an already-normalized name', () => {
+    expect(normalizeDomainName('hdmap')).toBe('hdmap')
+    expect(normalizeDomainName('openlabel-v2')).toBe('openlabel-v2')
   })
 })

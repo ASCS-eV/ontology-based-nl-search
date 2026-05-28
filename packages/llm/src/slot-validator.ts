@@ -641,24 +641,22 @@ export function correctDomains(
   ranges: Record<string, { min?: number; max?: number }>,
   vocabulary: OntologyVocabulary
 ): string[] {
-  // Build property → Set<domain> index (multi-domain aware)
+  // Build property → Set<domain> index (multi-domain aware). Skip
+  // occurrences whose domain couldn't be attributed (empty-string sentinel
+  // from the vocabulary extractor) so an unattributed property never injects
+  // a phantom domain into the corrected set.
   const propDomainsIndex = new Map<string, Set<string>>()
-  for (const prop of vocabulary.enumProperties) {
-    const existing = propDomainsIndex.get(prop.localName)
+  const indexProperty = (localName: string, domain: string): void => {
+    if (!domain) return
+    const existing = propDomainsIndex.get(localName)
     if (existing) {
-      existing.add(prop.domain)
+      existing.add(domain)
     } else {
-      propDomainsIndex.set(prop.localName, new Set([prop.domain]))
+      propDomainsIndex.set(localName, new Set([domain]))
     }
   }
-  for (const prop of vocabulary.numericProperties) {
-    const existing = propDomainsIndex.get(prop.localName)
-    if (existing) {
-      existing.add(prop.domain)
-    } else {
-      propDomainsIndex.set(prop.localName, new Set([prop.domain]))
-    }
-  }
+  for (const prop of vocabulary.enumProperties) indexProperty(prop.localName, prop.domain)
+  for (const prop of vocabulary.numericProperties) indexProperty(prop.localName, prop.domain)
 
   // Collect domains required by filter/range properties
   // If a property exists in the LLM's chosen domain, use that

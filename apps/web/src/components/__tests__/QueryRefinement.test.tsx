@@ -69,6 +69,24 @@ describe('QueryRefinement', () => {
   })
 
   /**
+   * Regression: an LLM submission may include a property-only marker term
+   * (mapped == "") alongside the real mapping. Without filtering, the
+   * refinement panel would render an empty "country:" / "references.domain:"
+   * chip with no value next to the colon — confusing and unactionable.
+   */
+  it('skips property-only marker terms whose mapped value is empty', () => {
+    const terms: MappedTerm[] = [
+      { input: 'french', mapped: 'FR', confidence: 'high', property: 'country' },
+      { input: '', mapped: '', confidence: 'low', property: 'country' },
+      { input: '', mapped: '', confidence: 'low', property: 'references.domain' },
+    ]
+    render(<QueryRefinement mappedTerms={terms} domains={['ositrace']} onRerun={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Edit FR' })).toBeInTheDocument()
+    // The empty-mapped markers must not render an empty button.
+    expect(screen.queryByRole('button', { name: 'Edit ' })).not.toBeInTheDocument()
+  })
+
+  /**
    * Regression for the PR #26 change: a new `mappedTerms` prop must reset
    * the internal edit state — otherwise stale chips would survive a new
    * search. The earlier implementation used JSON.stringify-based comparison;
