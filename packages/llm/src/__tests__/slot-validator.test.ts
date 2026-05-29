@@ -181,6 +181,64 @@ describe('validateSlots', () => {
     expect(result.gaps[0]!.suggestions!.some((s) => s.includes('overtaking'))).toBe(true)
   })
 
+  /**
+   * Regression: the gap-enricher previously suggested unrelated short
+   * strings (e.g. `IT-AP`, `PH-MAS`, `PythonAPI` for a "maps" gap)
+   * because full-string Levenshtein on a multi-word `gap.term` could
+   * align any matching character anywhere. Tokenisation + a higher
+   * 0.5 floor + substring containment keeps signal in, noise out.
+   *
+   * The mock vocabulary has `roadTypes` containing "motorway" — a
+   * substring of which is NOT in "with maps" — so we use the
+   * scenarioCategory enum to assert positive behaviour and we assert
+   * that no all-noise candidate slips through for a multi-word gap.
+   */
+  it('keeps gap suggestions tight: substring tokens win, multi-word noise rejected', () => {
+    const response: LlmStructuredResponse = {
+      interpretation: { summary: 'test', mappedTerms: [] },
+      // The gap term shares a stem ("overtak") with one mock value
+      // ("overtaking" under scenarioCategory) and nothing else — the
+      // enricher should surface that one and reject the other 5
+      // scenarioCategory values that have no token overlap.
+      gaps: [{ term: 'with overtaking', reason: 'Not found' }],
+      sparql: 'SELECT * WHERE { }',
+    }
+
+    const result = validateSlots(response, testVocabulary)
+    const suggestions = result.gaps[0]!.suggestions ?? []
+    expect(suggestions.length).toBeGreaterThan(0)
+    expect(suggestions.some((s) => s.includes('overtaking'))).toBe(true)
+    // Nothing matching only by 5-character-soup similarity should
+    // creep in. "cut-in" / "lane-change" / "emergency-braking" share
+    // no token with "with overtaking" (after stopword filtering).
+    expect(suggestions.some((s) => s.includes('cut-in'))).toBe(false)
+    expect(suggestions.some((s) => s.includes('lane-change'))).toBe(false)
+  })
+
+  /**
+   * Honest gap reporting: schema-limit gaps (e.g. dropped references)
+   * carry `suggestions: []` as a sentinel — the enricher must respect
+   * it and NOT append "related concepts" noise. Adding suggestions to
+   * a "we can't do this yet" explanation only misleads the reader.
+   */
+  it('leaves schema-limit gaps alone when they carry the empty-suggestions sentinel', () => {
+    const response: LlmStructuredResponse = {
+      interpretation: { summary: 'test', mappedTerms: [] },
+      gaps: [
+        {
+          term: 'maps',
+          reason: 'Cross-reference to "hdmap" was dropped — schema limit.',
+          suggestions: [],
+        },
+      ],
+      sparql: 'SELECT * WHERE { }',
+    }
+
+    const result = validateSlots(response, testVocabulary)
+    // Stays empty — the enricher saw the array and bailed.
+    expect(result.gaps[0]!.suggestions).toEqual([])
+  })
+
   it('preserves country / state / region / city as ordinary filter terms', () => {
     // Task 21d-flat: country (and friends) are no longer a typed slot
     // exception — they flow through `filters` keyed by the SHACL leaf

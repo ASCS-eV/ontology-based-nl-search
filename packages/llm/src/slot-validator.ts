@@ -40,8 +40,101 @@ const MAX_PROPERTY_MATCH_DISTANCE = 2
 /** Maximum suggestions to generate per gap */
 const MAX_SUGGESTIONS = 5
 
-/** Minimum similarity score (0-1) to include a suggestion */
-const MIN_SUGGESTION_SIMILARITY = 0.3
+/**
+ * Minimum similarity score (0-1) to include a suggestion. Raised to
+ * 0.5 in tandem with the tokenised matcher below — at 0.3 with full-
+ * string Levenshtein, any two 5-character strings (no shared letters)
+ * scored ~0.44 because edit distance can opportunistically align any
+ * matching character anywhere. The tokenised approach + 0.5 floor
+ * filters that noise cleanly.
+ */
+const MIN_SUGGESTION_SIMILARITY = 0.5
+
+/**
+ * Common English / German stopwords plus a few connectives the LLM
+ * sometimes echoes back in `gap.term`. We strip them before scoring
+ * so a multi-word gap doesn't drag noise into the suggestion candidates.
+ * Kept short and additive — anything not on the list still scores,
+ * just falls below the 0.5 floor when truly unrelated.
+ */
+const SUGGESTION_STOPWORDS = new Set([
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'of',
+  'for',
+  'from',
+  'to',
+  'in',
+  'on',
+  'at',
+  'by',
+  'with',
+  'without',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'that',
+  'this',
+  'these',
+  'those',
+  'der',
+  'die',
+  'das',
+  'und',
+  'oder',
+  'mit',
+  'ohne',
+  'aus',
+  'von',
+  'für',
+  'zu',
+])
+
+/**
+ * Score how well a multi-word gap term matches one candidate enum
+ * value. Tokenises the gap on non-alphanumeric boundaries, drops
+ * short / stopword tokens, then takes the best per-token score
+ * across two channels:
+ *   1. Substring containment (case-insensitive) — the gap word lives
+ *      inside the candidate (or vice versa for long gap words). This
+ *      catches the most common shape: user says "maps", candidate is
+ *      `hdmap` / `HdMap` / `HighDefinitionMap`.
+ *   2. Levenshtein similarity on the single token vs the candidate.
+ *      Catches typo'd or stemmed variants ("europa" → "europe").
+ *
+ * Falls back to whole-string Levenshtein when the gap has no usable
+ * tokens (e.g. an all-stopword phrase or a single short string).
+ *
+ * Plural stemming: drop a trailing `s` / `es` / `ies` so "maps"
+ * matches "map", "categories" matches "category".
+ */
+function suggestionScore(gapTerm: string, candidate: string): number {
+  const candLower = candidate.toLowerCase()
+  const tokens = gapTerm
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 3 && !SUGGESTION_STOPWORDS.has(t))
+  if (tokens.length === 0) return similarity(gapTerm.toLowerCase(), candLower)
+  let best = 0
+  for (const tok of tokens) {
+    const stem = tok.replace(/(ies|es|s)$/, '')
+    if (candLower.includes(stem)) {
+      best = Math.max(best, 1)
+      continue
+    }
+    if (stem.length >= 3 && stem.includes(candLower)) {
+      best = Math.max(best, 0.9)
+      continue
+    }
+    best = Math.max(best, similarity(tok, candLower))
+  }
+  return best
+}
 
 /**
  * Levenshtein edit distance between two strings.
@@ -711,15 +804,20 @@ function enrichGapWithSuggestions(
   gap: OntologyGap,
   allowedIndex: Map<string, { allowedValues: string[]; domain: string }>
 ): OntologyGap {
-  // If gap already has good suggestions, keep them
-  if (gap.suggestions && gap.suggestions.length > 0) return gap
+  // If gap already has good suggestions, keep them. An explicit
+  // empty array is the "do not enrich" sentinel — used by gaps
+  // that describe a schema limitation rather than a value mismatch
+  // (e.g. dropped-reference gaps from `collectDroppedReferenceGaps`).
+  // Adding "related concepts" to a "we don't support this shape yet"
+  // explanation only misleads the reader.
+  if (Array.isArray(gap.suggestions)) return gap
 
   // Search across all enum properties for the best matching values
   const allSuggestions: { value: string; score: number; property: string }[] = []
 
   for (const [propName, { allowedValues }] of allowedIndex) {
     for (const allowed of allowedValues) {
-      const score = similarity((gap.term ?? '').toLowerCase(), allowed.toLowerCase())
+      const score = suggestionScore(gap.term ?? '', allowed)
       if (score >= MIN_SUGGESTION_SIMILARITY) {
         allSuggestions.push({ value: allowed, score, property: propName })
       }

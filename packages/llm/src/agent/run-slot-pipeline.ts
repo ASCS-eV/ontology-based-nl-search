@@ -224,6 +224,10 @@ function collectDroppedReferenceGaps(
     out.push({
       term: term.input || mappedDomain,
       reason: `Cross-reference to "${mappedDomain}" was dropped — only a single \`references\` slot is supported per query. Re-run the search asking for that link instead, or wait for multi-hop reference chains to ship.`,
+      // Explicit empty array signals the gap-enricher to leave this
+      // alone — schema-limit gaps don't benefit from value-similarity
+      // "related concepts", which would just be noise here.
+      suggestions: [],
     })
   }
   return out
