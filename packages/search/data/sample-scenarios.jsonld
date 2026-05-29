@@ -224,6 +224,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:frankfurt-motorway-007"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -629,6 +638,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:hanover-highway-008"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -1030,6 +1048,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:austin-custom-009"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -1320,6 +1347,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-vienna-005"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:vienna-rural-010"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -1624,6 +1660,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:london-town-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -1924,6 +1969,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-stuttgart-007"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:stuttgart-motorway-012"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -2326,6 +2380,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:berlin-highway-013"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -2696,6 +2759,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:cologne-custom-014"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -2991,6 +3063,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:san-francisco-rural-015"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -3267,6 +3348,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-tokyo-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:tokyo-town-016"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -3570,6 +3660,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simcorp.io:HdMap:ref-stockholm-012"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:stockholm-motorway-017"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -3952,6 +4051,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-milan-013"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:milan-highway-018"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -4347,6 +4455,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:karlsruhe-custom-019"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -4655,6 +4772,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:hamburg-rural-020"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -4947,6 +5073,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:dresden-town-001"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -5234,6 +5369,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-detroit-017"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:detroit-motorway-002"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -5621,6 +5765,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:shanghai-highway-003"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -5992,6 +6145,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:paris-custom-004"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -6271,6 +6433,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simcorp.io:HdMap:ref-seoul-020"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:seoul-rural-005"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -6588,6 +6759,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-munich-041"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:munich-town-006"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -6918,6 +7098,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simcorp.io:HdMap:ref-frankfurt-022"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:frankfurt-motorway-007"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -7322,6 +7511,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:hanover-highway-008"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -7719,6 +7917,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:austin-custom-009"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -8010,6 +8217,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-vienna-025"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:vienna-rural-010"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -8309,6 +8525,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:london-town-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -8604,6 +8829,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-stuttgart-027"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:stuttgart-motorway-012"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -9008,6 +9242,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:berlin-highway-013"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -9373,6 +9616,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:cologne-custom-014"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -9663,6 +9915,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:san-francisco-rural-015"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -9942,6 +10203,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-tokyo-031"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:tokyo-town-016"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -10243,6 +10513,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simcorp.io:HdMap:ref-stockholm-032"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:stockholm-motorway-017"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -10624,6 +10903,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-milan-033"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:milan-highway-018"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -11025,6 +11313,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:karlsruhe-custom-019"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -11332,6 +11629,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:hamburg-rural-020"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -11619,6 +11925,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simcorp.io:HdMap:ref-dresden-036"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:dresden-town-001"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -11916,6 +12231,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-detroit-037"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:detroit-motorway-002"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -12303,6 +12627,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:shanghai-highway-003"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -12672,6 +13005,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:paris-custom-004"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -12957,6 +13299,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simcorp.io:HdMap:ref-seoul-040"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:seoul-rural-005"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -13264,6 +13615,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-munich-021"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:munich-town-006"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -13593,6 +13953,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simcorp.io:HdMap:ref-frankfurt-042"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:frankfurt-motorway-007"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -14003,6 +14372,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:hanover-highway-008"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -14399,6 +14777,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:austin-custom-009"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -14690,6 +15077,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-vienna-045"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:vienna-rural-010"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -14994,6 +15390,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:london-town-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -15288,6 +15693,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:simtrace.io:HdMap:ref-stuttgart-047"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:stuttgart-motorway-012"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
@@ -15691,6 +16105,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:berlin-highway-013"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -16062,6 +16485,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:cologne-custom-014"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -16351,6 +16783,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:san-francisco-rural-015"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -16620,6 +17061,15 @@
             "@type": "manifest:Link",
             "manifest:iri": {
               "@id": "did:web:jpmap.co.jp:HdMap:tokyo-highway-163"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:tokyo-town-016"
             },
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"

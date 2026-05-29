@@ -766,7 +766,15 @@ export async function compileSlotsWithTrace(slots: SearchSlots): Promise<Compile
           slots.references.domain
         )
         if (dataPath) {
-          emitDataReferencePath(dataPath, '?asset', '?refAsset', patterns, traceSteps)
+          emitDataReferencePath(
+            dataPath,
+            '?asset',
+            '?refAsset',
+            patterns,
+            registry,
+            prefixDomains,
+            traceSteps
+          )
           patterns.push(`?refAsset a ${refDomain.targetClass} .`)
           log.info('slots.references: emitting JOIN from data-driven reference index', {
             parent: primaryDomain,
@@ -1094,6 +1102,8 @@ function emitDataReferencePath(
   sourceVar: string,
   refVar: string,
   patterns: string[],
+  registry: DomainRegistry,
+  prefixDomains: Set<string>,
   traceSteps?: TraceabilityStep[]
 ): void {
   let cursor = sourceVar
@@ -1101,7 +1111,15 @@ function emitDataReferencePath(
     const isLast = i === edge.predicatePath.length - 1
     const next = isLast ? refVar : `?ref_step_${i + 1}`
     const predicate = edge.predicatePath[i]!
-    patterns.push(`${cursor} <${predicate}> ${next} .`)
+    // Mirror `emitReferenceChainTriples`: prefer the registered prefix
+    // form when the predicate's namespace resolves, fall back to a full
+    // `<IRI>` literal otherwise. Keeps the emitted SPARQL readable and
+    // pulls in the predicate's domain prefix so the final PREFIX block
+    // lists every namespace the query actually uses.
+    const desc = findDomainForIri(predicate, registry)
+    const pred = desc ? prefixedPredicate(predicate, desc) : `<${predicate}>`
+    if (desc) prefixDomains.add(desc.name)
+    patterns.push(`${cursor} ${pred} ${next} .`)
     traceSteps?.push({ variable: next.slice(1), predicate })
     cursor = next
   }

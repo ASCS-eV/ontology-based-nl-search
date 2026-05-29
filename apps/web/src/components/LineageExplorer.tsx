@@ -96,7 +96,12 @@ export function LineageExplorer({ asset, depth }: LineageExplorerProps) {
       </p>
       <div className="flex flex-col gap-2">
         {node.references.map((edge, i) => (
-          <LineageBranch key={`${node.asset}-${i}`} edge={edge} />
+          <LineageBranch
+            key={`${node.asset}-${i}`}
+            edge={edge}
+            depth={1}
+            parentName={node.name || 'asset'}
+          />
         ))}
       </div>
     </div>
@@ -105,32 +110,61 @@ export function LineageExplorer({ asset, depth }: LineageExplorerProps) {
 
 /**
  * One outgoing edge + recursive subtree, rendered with the same blue
- * pill + breadcrumb style as the existing References section.
+ * pill + breadcrumb style as the existing References section. Depth
+ * controls the indent rail; `parentName` surfaces a `↳ via …` hint on
+ * nodes reached through an intermediate (depth ≥ 2) so the tree shape
+ * stays readable even when many siblings share a label.
  */
-function LineageBranch({ edge }: { edge: TraceabilityNode['references'][number] }) {
+function LineageBranch({
+  edge,
+  depth,
+  parentName,
+}: {
+  edge: TraceabilityNode['references'][number]
+  depth: number
+  parentName: string
+}) {
   const target = edge.target
   return (
     <div className="flex flex-col gap-1">
-      <span
-        className="inline-flex self-start items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-blue-100 text-blue-800 border border-blue-200"
-        title={target.asset}
-      >
-        <MapIcon />
-        {target.name}
-        {target.domain && (
-          <span className="text-[10px] text-blue-600/80 font-mono">({target.domain})</span>
-        )}
-        {target.truncated && (
-          <span className="text-[10px] text-blue-600/80 italic" title="Depth budget exhausted">
-            more…
+      <div className="flex items-baseline gap-1.5 flex-wrap">
+        <span aria-hidden="true" className="text-blue-400 text-xs font-mono leading-none">
+          ↳
+        </span>
+        <span
+          className="inline-flex self-start items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-blue-100 text-blue-800 border border-blue-200"
+          title={target.asset}
+        >
+          <MapIcon />
+          {target.name}
+          {target.domain && (
+            <span className="text-[10px] text-blue-600/80 font-mono">({target.domain})</span>
+          )}
+          {target.truncated && (
+            <span className="text-[10px] text-blue-600/80 italic" title="Depth budget exhausted">
+              more…
+            </span>
+          )}
+        </span>
+        {depth > 1 && (
+          <span
+            className="text-[10px] text-blue-600/70 italic"
+            title="Reached through an intermediate asset"
+          >
+            via {parentName}
           </span>
         )}
-      </span>
+      </div>
       <LineageBreadcrumb predicatePath={edge.predicatePath} />
       {target.references.length > 0 && (
-        <div className="pl-4 border-l border-blue-200/60 flex flex-col gap-1">
+        <div className="pl-5 ml-1 border-l-2 border-blue-300/70 flex flex-col gap-1.5 mt-1">
           {target.references.map((childEdge, i) => (
-            <LineageBranch key={`${target.asset}-${i}`} edge={childEdge} />
+            <LineageBranch
+              key={`${target.asset}-${i}`}
+              edge={childEdge}
+              depth={depth + 1}
+              parentName={target.name || 'asset'}
+            />
           ))}
         </div>
       )}

@@ -64,6 +64,60 @@ describe('LineageExplorer', () => {
     expect(screen.getByText('iri')).toBeInTheDocument()
   })
 
+  it('labels grandchildren with a "via <parent>" hint so deep nesting reads at a glance', async () => {
+    // The flat-paste failure mode: when many siblings share a label
+    // (e.g. several "Cologne Motorway HD Map" pills), the indentation
+    // alone can be hard to read. A small italic "via <parent>" tag on
+    // any node reached through an intermediate (depth ≥ 2) anchors the
+    // tree shape visually.
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          node: {
+            asset: 'did:web:example:scenario-1',
+            name: 'Scenario 1',
+            type: '',
+            domain: 'scenario',
+            truncated: false,
+            references: [
+              {
+                predicatePath: ['https://example.org/manifest/v5/iri'],
+                target: {
+                  asset: 'did:web:example:ositrace-1',
+                  name: 'OSI Trace 1',
+                  type: '',
+                  domain: 'ositrace',
+                  truncated: false,
+                  references: [
+                    {
+                      predicatePath: ['https://example.org/manifest/v5/iri'],
+                      target: {
+                        asset: 'did:web:example:hdmap-1',
+                        name: 'HD Map 1',
+                        type: '',
+                        domain: 'hdmap',
+                        truncated: false,
+                        references: [],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    )
+
+    render(<LineageExplorer asset="did:web:example:scenario-1" />)
+    // Depth 1 pill: no "via" hint.
+    expect(await screen.findByText('OSI Trace 1')).toBeInTheDocument()
+    // Depth 2 grandchild: hint names the intermediate.
+    expect(screen.getByText(/via OSI Trace 1/i)).toBeInTheDocument()
+    expect(screen.getByText('HD Map 1')).toBeInTheDocument()
+  })
+
   it('marks a truncated descendant with a "more…" hint', async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(
