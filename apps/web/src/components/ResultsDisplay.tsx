@@ -43,6 +43,40 @@ interface GroupedAsset {
   references: GroupedReference[]
 }
 
+/**
+ * Cluster of references sharing a display label. The fixture (and
+ * real-world data) often points one asset at multiple physical
+ * resources that carry an identical `rdfs:label` — e.g. several map
+ * tiles all labelled "Cologne Motorway HD Map". Rendering each as a
+ * separate pill bloats the card; collapsing by label with a `×N`
+ * count keeps the surface scannable while preserving every IRI in
+ * the pill's `title` attribute for hover inspection.
+ */
+interface ReferenceLabelCluster {
+  label: string
+  /** Distinct asset IRIs that all share this label. */
+  assets: string[]
+  /** Predicate breadcrumb from the parent — identical across cluster members by construction. */
+  trace?: ResultTraceStep[]
+}
+
+function clusterReferencesByLabel(refs: GroupedReference[]): ReferenceLabelCluster[] {
+  const byLabel = new Map<string, ReferenceLabelCluster>()
+  for (const ref of refs) {
+    const existing = byLabel.get(ref.name)
+    if (existing) {
+      if (!existing.assets.includes(ref.asset)) existing.assets.push(ref.asset)
+    } else {
+      byLabel.set(ref.name, {
+        label: ref.name,
+        assets: [ref.asset],
+        trace: ref.trace,
+      })
+    }
+  }
+  return [...byLabel.values()]
+}
+
 /** Group flat rows by primary asset, collecting references per group */
 function groupByAsset(
   results: Record<string, string>[],
@@ -221,16 +255,23 @@ function AssetCard({ group }: { group: GroupedAsset }) {
             References ({group.references.length})
           </p>
           <div className="flex flex-col gap-2">
-            {group.references.map((ref) => (
-              <div key={ref.asset} className="flex flex-col gap-1">
+            {clusterReferencesByLabel(group.references).map((cluster) => (
+              <div key={cluster.label} className="flex flex-col gap-1">
                 <span
                   className="inline-flex self-start items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-blue-100 text-blue-800 border border-blue-200"
-                  title={ref.asset}
+                  title={cluster.assets.join('\n')}
                 >
                   <MapIcon />
-                  {ref.name}
+                  {cluster.label}
+                  {cluster.assets.length > 1 && (
+                    <span className="text-[10px] text-blue-600/80 font-mono">
+                      ×{cluster.assets.length}
+                    </span>
+                  )}
                 </span>
-                {ref.trace && ref.trace.length > 0 && <TraceabilityBreadcrumb steps={ref.trace} />}
+                {cluster.trace && cluster.trace.length > 0 && (
+                  <TraceabilityBreadcrumb steps={cluster.trace} />
+                )}
               </div>
             ))}
           </div>

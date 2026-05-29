@@ -64,6 +64,67 @@ describe('LineageExplorer', () => {
     expect(screen.getByText('iri')).toBeInTheDocument()
   })
 
+  it('collapses siblings sharing a label into one pill with ×N count', async () => {
+    // The "Cologne Motorway HD Map" ×8 case in real fixture: many
+    // distinct IRIs, one label. Should render as ONE pill in the
+    // lineage tree, not eight identical-looking ones.
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          node: {
+            asset: 'did:web:example:scenario',
+            name: 'Some Scenario',
+            type: '',
+            domain: 'scenario',
+            truncated: false,
+            references: [
+              {
+                predicatePath: ['https://example.org/manifest/v5/iri'],
+                target: {
+                  asset: 'did:web:example:hdmap-1',
+                  name: 'Cologne Motorway HD Map',
+                  type: '',
+                  domain: 'hdmap',
+                  truncated: false,
+                  references: [],
+                },
+              },
+              {
+                predicatePath: ['https://example.org/manifest/v5/iri'],
+                target: {
+                  asset: 'did:web:example:hdmap-2',
+                  name: 'Cologne Motorway HD Map',
+                  type: '',
+                  domain: 'hdmap',
+                  truncated: false,
+                  references: [],
+                },
+              },
+              {
+                predicatePath: ['https://example.org/manifest/v5/iri'],
+                target: {
+                  asset: 'did:web:example:hdmap-3',
+                  name: 'Cologne Motorway HD Map',
+                  type: '',
+                  domain: 'hdmap',
+                  truncated: false,
+                  references: [],
+                },
+              },
+            ],
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    )
+
+    render(<LineageExplorer asset="did:web:example:scenario" />)
+    // ×3 badge surfaces; the label appears exactly once.
+    expect(await screen.findByText('×3')).toBeInTheDocument()
+    const labels = screen.getAllByText('Cologne Motorway HD Map')
+    expect(labels).toHaveLength(1)
+  })
+
   it('labels grandchildren with a "via <parent>" hint so deep nesting reads at a glance', async () => {
     // The flat-paste failure mode: when many siblings share a label
     // (e.g. several "Cologne Motorway HD Map" pills), the indentation

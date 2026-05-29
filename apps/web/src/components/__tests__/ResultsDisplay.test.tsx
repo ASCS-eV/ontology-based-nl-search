@@ -136,6 +136,49 @@ describe('ResultsDisplay', () => {
   })
 
   /**
+   * Label-cluster dedup: when one asset references multiple distinct
+   * resources that share an `rdfs:label` (common with map tiles —
+   * "Cologne Motorway HD Map" repeats across several IRIs), collapse
+   * the pills into ONE pill with an `×N` count badge. Every IRI is
+   * preserved in the `title` attribute for hover inspection.
+   */
+  it('collapses references sharing a display label into a single pill with an ×N count', () => {
+    const results = [
+      {
+        asset: 'did:web:x:Trace:1',
+        name: 'Trace A',
+        refAsset: 'did:web:x:HdMap:1',
+        refName: 'Cologne Motorway HD Map',
+      },
+      {
+        asset: 'did:web:x:Trace:1',
+        name: 'Trace A',
+        refAsset: 'did:web:x:HdMap:2',
+        refName: 'Cologne Motorway HD Map',
+      },
+      {
+        asset: 'did:web:x:Trace:1',
+        name: 'Trace A',
+        refAsset: 'did:web:x:HdMap:3',
+        refName: 'Cologne Motorway HD Map',
+      },
+    ]
+    render(<ResultsDisplay results={results} />)
+    // The card-level count still reflects the underlying refs.
+    expect(screen.getByText('References (3)')).toBeInTheDocument()
+    // ONE pill, not three.
+    const pills = screen.getAllByText('Cologne Motorway HD Map')
+    expect(pills).toHaveLength(1)
+    // The ×N badge surfaces the cluster size.
+    expect(screen.getByText('×3')).toBeInTheDocument()
+    // All three IRIs are reachable via the pill's `title` attribute.
+    const pill = pills[0]!.closest('span[title]')
+    expect(pill?.getAttribute('title')).toContain('did:web:x:HdMap:1')
+    expect(pill?.getAttribute('title')).toContain('did:web:x:HdMap:2')
+    expect(pill?.getAttribute('title')).toContain('did:web:x:HdMap:3')
+  })
+
+  /**
    * Traceability breadcrumb: when the per-row `traceability` array is
    * supplied alongside `results`, the reference must carry an inline
    * predicate-chain breadcrumb (WP3, task #18). Each step renders its

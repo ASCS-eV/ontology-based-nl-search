@@ -88,6 +88,7 @@ export function LineageExplorer({ asset, depth }: LineageExplorerProps) {
       </div>
     )
   }
+  const clusters = clusterEdgesByLabel(node.references)
   return (
     <div className="px-4 py-3 bg-blue-50/50 border-t border-gray-100">
       <p className="text-xs font-medium text-blue-700 mb-2 flex items-center gap-1">
@@ -95,10 +96,10 @@ export function LineageExplorer({ asset, depth }: LineageExplorerProps) {
         Lineage ({countReferences(node)} reachable)
       </p>
       <div className="flex flex-col gap-2">
-        {node.references.map((edge, i) => (
+        {clusters.map((cluster, i) => (
           <LineageBranch
-            key={`${node.asset}-${i}`}
-            edge={edge}
+            key={`${node.asset}-${i}-${cluster.label}`}
+            cluster={cluster}
             depth={1}
             parentName={node.name || 'asset'}
           />
@@ -109,6 +110,50 @@ export function LineageExplorer({ asset, depth }: LineageExplorerProps) {
 }
 
 /**
+ * A label-cluster of outgoing edges that share a display name and
+ * predicate chain — analogous to the References-pill cluster in
+ * `ResultsDisplay`. Collapsing by `target.name` keeps the lineage
+ * tree readable when many siblings share the same `rdfs:label`
+ * (common in our fixture's HD-Map tiles). The first cluster member
+ * keeps its full nested subtree; siblings only contribute their IRI
+ * to the `×N` hover list — their subtrees aren't shown twice.
+ */
+interface LineageEdgeCluster {
+  label: string
+  domain: string
+  truncated: boolean
+  predicatePath: string[]
+  /** Distinct asset IRIs sharing this label at this level. */
+  assets: string[]
+  /** Subtree of the first cluster member — used when expanding the pill. */
+  primaryTarget: TraceabilityNode
+}
+
+function clusterEdgesByLabel(edges: TraceabilityNode['references']): LineageEdgeCluster[] {
+  const byKey = new Map<string, LineageEdgeCluster>()
+  for (const edge of edges) {
+    const t = edge.target
+    // Cluster on (label, predicate-chain) so unrelated paths to a
+    // similarly-named asset don't accidentally collapse.
+    const key = `${t.name}|${edge.predicatePath.join('>')}`
+    const existing = byKey.get(key)
+    if (existing) {
+      if (!existing.assets.includes(t.asset)) existing.assets.push(t.asset)
+    } else {
+      byKey.set(key, {
+        label: t.name,
+        domain: t.domain,
+        truncated: t.truncated,
+        predicatePath: edge.predicatePath,
+        assets: [t.asset],
+        primaryTarget: t,
+      })
+    }
+  }
+  return [...byKey.values()]
+}
+
+/**
  * One outgoing edge + recursive subtree, rendered with the same blue
  * pill + breadcrumb style as the existing References section. Depth
  * controls the indent rail; `parentName` surfaces a `↳ via …` hint on
@@ -116,15 +161,16 @@ export function LineageExplorer({ asset, depth }: LineageExplorerProps) {
  * stays readable even when many siblings share a label.
  */
 function LineageBranch({
-  edge,
+  cluster,
   depth,
   parentName,
 }: {
-  edge: TraceabilityNode['references'][number]
+  cluster: LineageEdgeCluster
   depth: number
   parentName: string
 }) {
-  const target = edge.target
+  const primary = cluster.primaryTarget
+  const childClusters = clusterEdgesByLabel(primary.references)
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline gap-1.5 flex-wrap">
@@ -133,14 +179,17 @@ function LineageBranch({
         </span>
         <span
           className="inline-flex self-start items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-blue-100 text-blue-800 border border-blue-200"
-          title={target.asset}
+          title={cluster.assets.join('\n')}
         >
           <MapIcon />
-          {target.name}
-          {target.domain && (
-            <span className="text-[10px] text-blue-600/80 font-mono">({target.domain})</span>
+          {cluster.label}
+          {cluster.domain && (
+            <span className="text-[10px] text-blue-600/80 font-mono">({cluster.domain})</span>
           )}
-          {target.truncated && (
+          {cluster.assets.length > 1 && (
+            <span className="text-[10px] text-blue-600/80 font-mono">×{cluster.assets.length}</span>
+          )}
+          {cluster.truncated && (
             <span className="text-[10px] text-blue-600/80 italic" title="Depth budget exhausted">
               more…
             </span>
@@ -155,15 +204,15 @@ function LineageBranch({
           </span>
         )}
       </div>
-      <LineageBreadcrumb predicatePath={edge.predicatePath} />
-      {target.references.length > 0 && (
+      <LineageBreadcrumb predicatePath={cluster.predicatePath} />
+      {childClusters.length > 0 && (
         <div className="pl-5 ml-1 border-l-2 border-blue-300/70 flex flex-col gap-1.5 mt-1">
-          {target.references.map((childEdge, i) => (
+          {childClusters.map((childCluster, i) => (
             <LineageBranch
-              key={`${target.asset}-${i}`}
-              edge={childEdge}
+              key={`${primary.asset}-${i}-${childCluster.label}`}
+              cluster={childCluster}
               depth={depth + 1}
-              parentName={target.name || 'asset'}
+              parentName={cluster.label || 'asset'}
             />
           ))}
         </div>
