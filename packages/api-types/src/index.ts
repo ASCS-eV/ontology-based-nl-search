@@ -155,3 +155,43 @@ export interface TraceabilityNode {
 export interface TraceabilityResponse {
   node: TraceabilityNode
 }
+
+/**
+ * One property's value(s) inside a facet group on a specific asset.
+ * `values` is a list because SHACL properties may carry multiple
+ * bindings (e.g. multi-valued enumerations).
+ */
+export interface FacetValue {
+  property: string
+  values: string[]
+}
+
+/**
+ * Per-asset facet snapshot returned by `GET /metadata/asset` (WP3
+ * task #20). `groups` is keyed by the discovered SHACL shape-group
+ * name (Content, Format, Quality, …). The endpoint treats all groups
+ * uniformly — Quality is one facet, not a special case.
+ */
+export interface AssetMetadata {
+  asset: string
+  type: string
+  domain: string
+  groups: Record<string, FacetValue[]>
+}
+
+/** Distribution stats for one property across a domain. */
+export interface PropertyStats {
+  property: string
+  totalValues: number
+  distinctValues: number
+  samples: string[]
+  numericRange?: { min: number; max: number }
+}
+
+/** Body of the `/metadata/aggregate` JSON response. */
+export interface DomainGroupAggregate {
+  domain: string
+  group: string
+  assetCount: number
+  properties: PropertyStats[]
+}

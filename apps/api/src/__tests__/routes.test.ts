@@ -20,6 +20,8 @@ vi.mock('@ontology-search/search', () => ({
   exploreLineage: vi.fn(),
   DEFAULT_LINEAGE_DEPTH: 3,
   MAX_LINEAGE_DEPTH: 6,
+  getAssetMetadata: vi.fn(),
+  getDomainMetadataAggregate: vi.fn(),
 }))
 
 vi.mock('@ontology-search/ontology/domain-registry', () => ({
@@ -310,6 +312,64 @@ describe('GET /traceability', () => {
     expect(vi.mocked(exploreLineage)).toHaveBeenCalledWith('did:web:example:scenario-1', {
       depth: 2,
     })
+  })
+})
+
+describe('GET /metadata/asset', () => {
+  it('400s when iri is missing', async () => {
+    const res = await app.request('/metadata/asset')
+    expect(res.status).toBe(400)
+  })
+
+  it('forwards the iri to getAssetMetadata and returns the snapshot', async () => {
+    const { getAssetMetadata } = await import('@ontology-search/search')
+    vi.mocked(getAssetMetadata).mockResolvedValue({
+      asset: 'did:web:example:a',
+      type: 'https://example.org/hdmap/HdMap',
+      domain: 'hdmap',
+      groups: {
+        Quality: [{ property: 'precision', values: ['0.020'] }],
+        Content: [{ property: 'roadTypes', values: ['motorway'] }],
+      },
+    })
+    const res = await app.request('/metadata/asset?iri=' + encodeURIComponent('did:web:example:a'))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.domain).toBe('hdmap')
+    expect(json.groups.Quality[0].property).toBe('precision')
+    expect(vi.mocked(getAssetMetadata)).toHaveBeenCalledWith('did:web:example:a')
+  })
+})
+
+describe('GET /metadata/aggregate', () => {
+  it('400s when domain or group is missing', async () => {
+    expect((await app.request('/metadata/aggregate')).status).toBe(400)
+    expect((await app.request('/metadata/aggregate?domain=hdmap')).status).toBe(400)
+    expect((await app.request('/metadata/aggregate?group=Quality')).status).toBe(400)
+  })
+
+  it('forwards (domain, group) to getDomainMetadataAggregate', async () => {
+    const { getDomainMetadataAggregate } = await import('@ontology-search/search')
+    vi.mocked(getDomainMetadataAggregate).mockResolvedValue({
+      domain: 'hdmap',
+      group: 'Quality',
+      assetCount: 117,
+      properties: [
+        {
+          property: 'precision',
+          totalValues: 117,
+          distinctValues: 4,
+          samples: ['0.020', '0.050', '0.100', '0.200'],
+          numericRange: { min: 0.02, max: 0.2 },
+        },
+      ],
+    })
+    const res = await app.request('/metadata/aggregate?domain=hdmap&group=Quality')
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.assetCount).toBe(117)
+    expect(json.properties[0].numericRange).toEqual({ min: 0.02, max: 0.2 })
+    expect(vi.mocked(getDomainMetadataAggregate)).toHaveBeenCalledWith('hdmap', 'Quality')
   })
 })
 

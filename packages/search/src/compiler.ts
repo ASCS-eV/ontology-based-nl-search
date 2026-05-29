@@ -148,8 +148,14 @@ function assembleQuery(
  */
 let cachedCompilerVocabPromise: Promise<CompilerVocab> | null = null
 
-/** Build the compiler vocabulary from the ontology schema graph using SPARQL queries */
-async function getCompilerVocab(): Promise<CompilerVocab> {
+/**
+ * Build the compiler vocabulary from the ontology schema graph via
+ * SPARQL queries. Exported (intra-package only — not on the public
+ * surface of `@ontology-search/search`) so the metadata index can
+ * reuse the same `shapeGroups` and `paths` indices the compiler
+ * builds, avoiding parallel discovery and drift.
+ */
+export async function getCompilerVocab(): Promise<CompilerVocab> {
   if (cachedCompilerVocabPromise) return cachedCompilerVocabPromise
   cachedCompilerVocabPromise = buildCompilerVocab()
   return cachedCompilerVocabPromise

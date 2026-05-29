@@ -16,6 +16,13 @@ export {
   resetConceptExpansionIndex,
 } from './concept-expansion.js'
 export { getInitializedStore } from './init.js'
+export type {
+  AssetMetadata,
+  DomainGroupAggregate,
+  FacetValue,
+  PropertyStats,
+} from './metadata-index.js'
+export { getAssetMetadata, getDomainMetadataAggregate } from './metadata-index.js'
 export type { LeafKind, PathStep, PropertyPath, ReferenceChain } from './property-paths.js'
 export { buildPropertyPaths, buildReferenceChains } from './property-paths.js'
 export type { DataReferenceEdge, ReferenceIndex } from './reference-index.js'
