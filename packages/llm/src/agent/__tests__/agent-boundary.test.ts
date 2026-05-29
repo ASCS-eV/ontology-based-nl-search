@@ -279,6 +279,34 @@ describe('runSparqlAgent — agent boundary', () => {
   })
 
   /**
+   * `LLM_TEMPERATURE` flows through to the LLM call so the
+   * "deterministic by default" contract is observable from the wire.
+   * Zero is the right default for an extraction task; without this
+   * pin a future refactor could silently drop the field and re-
+   * introduce the Mistral run-to-run variance we caught in the
+   * browser pass.
+   */
+  it('forwards LLM_TEMPERATURE to generateText (default 0 for deterministic extraction)', async () => {
+    mockLlmResult([{ toolResults: [{ toolName: 'submit_slots', output: fakeSubmission() }] }])
+    await runSparqlAgent('test')
+    const lastCall = vi.mocked(generateText).mock.lastCall
+    expect(lastCall?.[0]?.temperature).toBe(0)
+  })
+
+  /**
+   * `LLM_THINKING_BUDGET` is OFF by default — no `providerOptions` block
+   * should land in the call, regardless of provider. Wiring it always
+   * would shift the request shape and could break providers that
+   * reject unrecognised provider-option keys.
+   */
+  it('omits providerOptions when LLM_THINKING_BUDGET is 0 (default)', async () => {
+    mockLlmResult([{ toolResults: [{ toolName: 'submit_slots', output: fakeSubmission() }] }])
+    await runSparqlAgent('test')
+    const lastCall = vi.mocked(generateText).mock.lastCall
+    expect(lastCall?.[0]?.providerOptions).toBeUndefined()
+  })
+
+  /**
    * The agent must forward `options.signal` to `generateText` so client
    * disconnects cancel the LLM call (the criterion #16 contract). This
    * pins the wiring at the boundary.

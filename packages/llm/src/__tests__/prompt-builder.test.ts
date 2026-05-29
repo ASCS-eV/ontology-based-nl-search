@@ -124,6 +124,30 @@ fb:Shape a sh:NodeShape ;
    * guidance is present; the test stays correct as ontology terms
    * evolve.
    */
+  /**
+   * Regression: the prompt must teach the structural cross-reference
+   * rule generically (without naming any specific verb or language).
+   * Surface change of intent: "scenarios derived from traces" should
+   * compile to `references.domain: ositrace`, not to a `sourceType`
+   * filter. The discriminator the LLM uses is whether two named
+   * concepts BOTH resolve to asset classes the SHACL connects — not
+   * the English wording. The test pins the structural-rule headings;
+   * specific ontology terms must stay OUT.
+   */
+  it('teaches the cross-reference rule structurally, never via English cues', () => {
+    const prompt = buildSystemPrompt(mockShaclContent)
+    expect(prompt).toContain('Cross-reference vs Filter')
+    // The rule is ontology- AND language-agnostic; the prompt must
+    // SAY so to keep future contributors from sneaking in cue lists.
+    expect(prompt).toMatch(/structural/i)
+    expect(prompt).toMatch(/language-agnostic/i)
+    // Explicit English phrasal cues like "derived from", "based on",
+    // "linked to" MUST NOT appear in the prompt as classifier rules.
+    expect(prompt).not.toMatch(/"derived from"/i)
+    expect(prompt).not.toMatch(/"based on"/i)
+    expect(prompt).not.toMatch(/"linked to"/i)
+  })
+
   it('teaches value-first property disambiguation generically', () => {
     const prompt = buildSystemPrompt(mockShaclContent)
     expect(prompt).toContain('Value-first Property Disambiguation')

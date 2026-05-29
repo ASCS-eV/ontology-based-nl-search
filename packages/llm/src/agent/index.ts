@@ -90,6 +90,22 @@ export async function runSparqlAgent(
   endPrompt()
 
   const endLlmCall = sw.time('llm-round-trip')
+  const config = getConfig()
+  // Anthropic exposes an explicit chain-of-thought budget; every other
+  // provider selects reasoning by model name (Mistral `magistral-*`,
+  // OpenAI `o1` / `o4`). Skip the providerOptions entry when the budget
+  // is zero or the provider can't use it — passing it would just be
+  // dead weight in the request.
+  const wantsThinking =
+    config.LLM_THINKING_BUDGET > 0 &&
+    (config.AI_PROVIDER === 'anthropic' || config.AI_PROVIDER === 'claude-cli')
+  const providerOptions = wantsThinking
+    ? {
+        anthropic: {
+          thinking: { type: 'enabled' as const, budgetTokens: config.LLM_THINKING_BUDGET },
+        },
+      }
+    : undefined
   // Investigation tools allow the LLM to explore the schema if needed.
   // Typical path: LLM reads SHACL in prompt → directly calls submit_slots (1 step).
   // Complex queries: LLM calls discover_* tools first → then submit_slots (2-3 steps).
@@ -99,8 +115,15 @@ export async function runSparqlAgent(
     prompt: naturalLanguageQuery,
     tools: { ...agentTools, ...investigationTools },
     toolChoice: 'required',
-    stopWhen: stepCountIs(getConfig().LLM_MAX_AGENT_STEPS),
+    stopWhen: stepCountIs(config.LLM_MAX_AGENT_STEPS),
     abortSignal: options?.signal,
+    // Slot filling is an EXTRACTION task, not a generative one.
+    // Default to greedy decoding (temperature 0) so the same query
+    // always yields the same slots. Configurable via `LLM_TEMPERATURE`
+    // for the rare experiment where variance is wanted; honoured by
+    // every Vercel-SDK provider.
+    temperature: config.LLM_TEMPERATURE,
+    ...(providerOptions ? { providerOptions } : {}),
   })
   endLlmCall()
 

@@ -170,6 +170,43 @@ const RULES = `
 8. ALWAYS extract numeric constraints into ranges — never ignore them
 9. For \`sh:pattern\` properties (like country codes), generate values matching the pattern (e.g., "Germany" → "DE" for a 2-letter alpha pattern)
 
+## Cross-reference vs Filter — Use the SHACL Structure, Not the User's Wording
+
+When a user query names two or more concepts that each resolve to a
+distinct asset class in the SHACL (each appears as the \`sh:targetClass\`
+of some shape, i.e. they ARE asset types, not enum values), the
+relationship between them is structurally a **cross-reference**, not a
+property filter — regardless of which natural-language verb (or
+language) the user used to express the link.
+
+Procedure when you spot more than one asset-class concept in the query:
+
+1. Pick the primary asset class — the one the user is searching FOR (the
+   "head" concept). It becomes the \`domains\` entry.
+2. For each secondary asset class, inspect the SHACL: does the primary
+   class's shape (or its nested shapes) declare a property path that
+   ends at an IRI / class binding of the secondary class? Look for
+   \`sh:property\` chains whose target shape eventually carries
+   \`sh:nodeKind sh:IRI\`, \`sh:class <Secondary>\`, or a manifest-style
+   reference predicate.
+3. If yes, the secondary becomes \`references.domain: <secondary>\`.
+4. Only treat a concept as a property filter when (a) it matches an
+   \`sh:in\` literal or \`sh:pattern\` constraint on a property of the
+   primary's shape AND (b) it does NOT also resolve to an asset class.
+
+Concretely: if the query mentions concept A and concept B, both are
+asset classes, and the SHACL declares a chain from A's shape that can
+reach a B-typed value, the slots are \`domains: [A], references: {
+domain: B }\`. **Do NOT** map B to a \`sh:in\` value of some other
+property on A — even if a value with B's local name happens to exist
+in that enum. The structural reading wins over the lexical one.
+
+This rule is ontology- and language-agnostic. The same SHACL link
+makes "scenarios derived from traces", "Szenarien aus Traces", and
+"シナリオがトレースから" all compile to the same slots, because the
+trigger is the structural reachability between the two asset classes
+in the SHACL — not any specific verb.
+
 ## Value-first Property Disambiguation
 
 Many ontologies declare the same domain concept under more than one shape: one property's \`sh:in\` carries the bare lowercase tokens a user typically types ("motorway", "rural"), and another property's \`sh:in\` lists the CamelCase class identifiers the ontology engineer also defined ("RoadTypeMotorway", "RoadTypeRural"). Both can be semantically valid — but only one is what the user actually said.
