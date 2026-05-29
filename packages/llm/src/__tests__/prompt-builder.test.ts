@@ -114,6 +114,27 @@ fb:Shape a sh:NodeShape ;
     expect(prompt).toContain('Tiered Confidence')
   })
 
+  /**
+   * Regression: an LLM observed mapping "motorways" to a CamelCase
+   * compound value `RoadTypeMotorway` on a different property when the
+   * intended target property's `sh:in` already contained the bare
+   * lowercase `motorway`. The prompt's "value-first" disambiguation
+   * section pins the rule the model must follow — without referencing
+   * any specific ontology term. This test only asserts the structural
+   * guidance is present; the test stays correct as ontology terms
+   * evolve.
+   */
+  it('teaches value-first property disambiguation generically', () => {
+    const prompt = buildSystemPrompt(mockShaclContent)
+    expect(prompt).toContain('Value-first Property Disambiguation')
+    // The rule: prefer the property whose `sh:in` carries the user's
+    // word as a whole literal over a property whose value space
+    // requires reshaping (CamelCase compounds, substrings).
+    expect(prompt).toContain('VERBATIM')
+    expect(prompt).toMatch(/CamelCase/)
+    expect(prompt).toMatch(/case-insensitive/i)
+  })
+
   it('includes examples', () => {
     const prompt = buildSystemPrompt(mockShaclContent)
     expect(prompt).toContain('Example 1')

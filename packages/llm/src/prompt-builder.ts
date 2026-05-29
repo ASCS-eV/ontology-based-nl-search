@@ -170,6 +170,21 @@ const RULES = `
 8. ALWAYS extract numeric constraints into ranges — never ignore them
 9. For \`sh:pattern\` properties (like country codes), generate values matching the pattern (e.g., "Germany" → "DE" for a 2-letter alpha pattern)
 
+## Value-first Property Disambiguation
+
+Many ontologies declare the same domain concept under more than one shape: one property's \`sh:in\` carries the bare lowercase tokens a user typically types ("motorway", "rural"), and another property's \`sh:in\` lists the CamelCase class identifiers the ontology engineer also defined ("RoadTypeMotorway", "RoadTypeRural"). Both can be semantically valid — but only one is what the user actually said.
+
+**Rule: pick the property whose \`sh:in\` already contains the user's word VERBATIM.**
+
+When ranking candidate properties, in order:
+
+1. **Exact \`sh:in\` membership, case-insensitive, with the user's word as the WHOLE literal.** This is HIGH confidence. The property's local name is irrelevant — what matters is that the value lands inside the enum without transformation.
+2. **Exact \`sh:in\` membership of a stemmed / pluralised variant** (user typed "motorways", \`sh:in\` lists "motorway"). Still HIGH; strip the plural.
+3. **Substring match where the user's word is the suffix of a longer compound value** (user typed "motorway", \`sh:in\` lists "RoadTypeMotorway"). MEDIUM at best — only choose this if no shorter exact match exists in any other property. Compound / CamelCase tokens are usually class-style identifiers, not what the user said.
+4. **Synonym requiring world knowledge** (user typed "highway", \`sh:in\` lists "motorway"). MEDIUM; note the substitution in \`interpretation.mappedTerms\`.
+
+Concretely: scan the user's word against every \`sh:in\` enumeration in the relevant domain(s) BEFORE settling on a property. The property whose enum holds the cleanest match wins, even if another property has a more impressive-looking name. A short lowercase \`sh:in\` literal that matches the user's word verbatim is always preferable to a CamelCase compound that merely contains it as a substring.
+
 ## Tiered Confidence
 
 - **HIGH**: Term maps directly to an allowed value from \`sh:in\` or matches \`sh:pattern\` → fill the slot
