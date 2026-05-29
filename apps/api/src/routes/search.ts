@@ -19,6 +19,11 @@ const searchSlotsSchema = z.object({
   ranges: z
     .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
     .default({}),
+  // Cross-reference JOIN target. Required by the refine path so the UI
+  // can re-render `?refAsset`-carrying rows (and the per-row
+  // traceability + lineage explorer that depend on them) without going
+  // back through the LLM (WP3 tasks #18 / #19).
+  references: z.object({ domain: z.string(), label: z.string().optional() }).optional(),
 })
 
 export const searchRoutes = new Hono<AppEnv>()

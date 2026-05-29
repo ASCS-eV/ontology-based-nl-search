@@ -194,6 +194,40 @@ describe('POST /search/refine', () => {
     expect(json.meta.matchCount).toBe(1)
   })
 
+  /**
+   * Regression: the wire schema must accept `references` so the refine
+   * path can reach the cross-reference JOIN compiler — without it,
+   * `references: { domain: 'hdmap' }` was silently stripped, the
+   * response had no `?refAsset` rows, and the AssetCard / lineage UI
+   * never rendered. Verified end-to-end in the browser during the WP3
+   * test pass.
+   */
+  it('forwards a `references` slot through to the service', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(searchRefine).mockResolvedValue({
+      sparql: 'SELECT * WHERE { ?s ?p ?o }',
+      execution: { results: [], error: undefined },
+      meta: { matchCount: 0, executionTimeMs: 10 },
+    })
+
+    const res = await app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slots: {
+          domains: ['scenario'],
+          filters: {},
+          ranges: {},
+          references: { domain: 'hdmap', label: 'Munich' },
+        },
+      }),
+    })
+
+    expect(res.status).toBe(200)
+    const lastCall = vi.mocked(searchRefine).mock.lastCall?.[0]
+    expect(lastCall?.slots.references).toEqual({ domain: 'hdmap', label: 'Munich' })
+  })
+
   it('returns 422 for invalid slot shape', async () => {
     const res = await app.request('/search/refine', {
       method: 'POST',
