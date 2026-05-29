@@ -563,7 +563,57 @@ function loadShapesFromDisk(): DatasetCore {
     }
   }
 
+  // Strip SHACL-Advanced constraints rdf-validate-shacl (Zazuko, Core
+  // only) can't evaluate. When the engine encounters one of these on a
+  // shape we ARE validating against, it throws
+  // `Cannot find validator for constraint component <iri>` and aborts
+  // the entire validation — taking out every slot under that target
+  // class. Removing the triple severs the shape→constraint link; the
+  // rest of the Core constraints on the same shape (sh:pattern, sh:in,
+  // sh:datatype, …) continue to validate normally.
+  //
+  // Trade-off: any data-quality rule expressed as `sh:sparql` becomes a
+  // no-op for the slot-validation gate. The compiler / store still
+  // enforce structural correctness; only the bespoke SPARQL-encoded
+  // check is dropped. A single info-level log line records the strip so
+  // the operator can verify which shapes are affected.
+  stripUnsupportedConstraints(ds)
   return ds
+}
+
+/**
+ * Predicates whose object encodes a SHACL constraint that
+ * `rdf-validate-shacl` 0.6 doesn't implement. Each triple gets removed
+ * from the working dataset; the constraint node graphs become
+ * orphaned, which the validator ignores.
+ */
+const UNSUPPORTED_CONSTRAINT_PREDICATES: readonly string[] = [
+  `${SH_NS}sparql`,
+  // SHACL-Advanced node-expression / rule predicates that show up in
+  // some published ontologies and trigger the same constraint-lookup
+  // error path. Kept conservative — extend when the validator throws
+  // on a different predicate.
+  `${SH_NS}rule`,
+  `${SH_NS}values`,
+]
+
+function stripUnsupportedConstraints(ds: DatasetCore): void {
+  const toRemove: Quad[] = []
+  for (const unsupported of UNSUPPORTED_CONSTRAINT_PREDICATES) {
+    const pred = namedNode(unsupported)
+    for (const q of ds.match(null, pred, null, null)) toRemove.push(q as Quad)
+  }
+  if (toRemove.length === 0) return
+  for (const q of toRemove) ds.delete(q)
+  const breakdown = new Map<string, number>()
+  for (const q of toRemove) {
+    const key = q.predicate.value
+    breakdown.set(key, (breakdown.get(key) ?? 0) + 1)
+  }
+  log.info(
+    'Stripped SHACL-Advanced constraints rdf-validate-shacl cannot evaluate; affected shapes pass Core-only validation downstream',
+    { breakdown: Object.fromEntries(breakdown) }
+  )
 }
 
 // ─── Internal: property → target class index ─────────────────────────────────

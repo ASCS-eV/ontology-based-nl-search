@@ -67,6 +67,26 @@ describe('ShaclValidator', () => {
     expect(result.violations).toEqual([])
   }, 120_000)
 
+  /**
+   * Regression: `rdf-validate-shacl` 0.6 implements only SHACL Core. When
+   * a shape graph carries SHACL-Advanced constraints like `sh:sparql`,
+   * the engine throws `Cannot find validator for constraint component …`
+   * as soon as it tries to evaluate a candidate against that shape — and
+   * the whole validation aborts. The OpenLABEL workspace ontology uses
+   * `sh:sparql` on the shape containing `particulatesWaterValue`, so
+   * any LLM submission that touches that property tripped the bug.
+   *
+   * Fix in `loadShapesFromDisk`: strip `sh:sparql` (and a couple of
+   * sibling Advanced predicates) from the dataset before constructing
+   * the engine. The shape continues to enforce its Core constraints; the
+   * bespoke SPARQL rule becomes a no-op. This test pins the contract.
+   */
+  it('does not throw when validating against a shape that carries an sh:sparql constraint', async () => {
+    const validator = await ShaclValidator.fromWorkspace()
+    const PROP = 'https://openlabel.asam.net/V1-0-0/ontologies/particulatesWaterValue'
+    await expect(validator.validateValue(PROP, '0.5')).resolves.toBeDefined()
+  }, 120_000)
+
   it('reports conforms=true for properties not covered by any shape', async () => {
     const validator = await ShaclValidator.fromWorkspace()
     const result = await validator.validateValue('https://example.org/unknownProperty', 'anything')
