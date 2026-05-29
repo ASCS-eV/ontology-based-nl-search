@@ -1,5 +1,5 @@
 import { getConfig } from '@ontology-search/core/config'
-import { Stopwatch } from '@ontology-search/core/logging'
+import { createComponentLogger, Stopwatch } from '@ontology-search/core/logging'
 import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
 import {
   extractVocabulary,
@@ -114,7 +114,15 @@ export async function runSparqlAgent(
     system: prompt,
     prompt: naturalLanguageQuery,
     tools: { ...agentTools, ...investigationTools },
-    toolChoice: 'required',
+    // Force the LLM to invoke `submit_slots` instead of leaving tool
+    // selection up to the model. With `'required'` (any tool), Haiku
+    // consistently spent its step budget on `discover_*` exploration
+    // and never reached `submit_slots` — the prompt already contains
+    // the full SHACL, so investigation calls were redundant
+    // overhead. Targeting `submit_slots` specifically means the LLM
+    // commits immediately on step 1, restoring the contract that
+    // every provider produces structured slots in one round-trip.
+    toolChoice: { type: 'tool', toolName: 'submit_slots' },
     stopWhen: stepCountIs(config.LLM_MAX_AGENT_STEPS),
     abortSignal: options?.signal,
     // Slot filling is an EXTRACTION task, not a generative one.
@@ -132,6 +140,16 @@ export async function runSparqlAgent(
     .flatMap((step) => step.toolResults)
     .find((r) => r.toolName === 'submit_slots')
 
+  if (!submitCall) {
+    // Diagnostic: when no submit_slots call is found, dump enough of the
+    // raw LLM response that an operator can tell whether the model
+    // refused to call any tool (emitted prose), called a different tool,
+    // or had no tool dispatch at all. Helps distinguish provider auth
+    // issues (claude-cli OAuth tool-use restrictions) from model
+    // behaviour problems (cold Mistral on first call) — both surface
+    // here as "fallback fired".
+    diagnoseMissingSubmit(result)
+  }
   if (submitCall) {
     const answer = submitCall.output as SlotSubmissionParams
     const response = await runSlotPipeline({
@@ -168,4 +186,46 @@ export async function runSparqlAgent(
     sparql,
     timings: sw.getTimings(),
   }
+}
+
+const diagnosticLog = createComponentLogger('agent-diagnostics')
+
+/**
+ * Surface why `submit_slots` wasn't called. Three patterns recur:
+ *   1. Model emitted prose instead of any tool call — usually means
+ *      the OAuth flow stripped `tools` from the request, or the model
+ *      ignored the system prompt's "you MUST call submit_slots" rule.
+ *   2. Model called only an investigation tool and then stopped —
+ *      `LLM_MAX_AGENT_STEPS=1` cut it off mid-flow.
+ *   3. Model called the right tool but with a malformed payload that
+ *      Zod rejected silently — the call ends up in `toolCalls` but
+ *      never in `toolResults`. The dispatched tool names alone can't
+ *      distinguish this; we also log `finishReason` and a preview of
+ *      `result.text`.
+ *
+ * Logs at INFO so the line is visible in dev without flipping
+ * LOG_LEVEL. Truncates `text` to a short preview to keep noise low
+ * even when the model emitted a long response.
+ */
+// Structural type avoids re-stating the generic-tool-shape result type;
+// only fields the diagnostic actually reads are listed.
+interface DiagnoseInput {
+  finishReason: unknown
+  text?: string
+  steps: ReadonlyArray<{
+    toolCalls?: ReadonlyArray<{ toolName: string }>
+    toolResults?: ReadonlyArray<{ toolName: string }>
+  }>
+}
+function diagnoseMissingSubmit(result: DiagnoseInput): void {
+  const toolCallNames = result.steps.flatMap((s) => (s.toolCalls ?? []).map((c) => c.toolName))
+  const toolResultNames = result.steps.flatMap((s) => (s.toolResults ?? []).map((r) => r.toolName))
+  const textPreview = (result.text ?? '').slice(0, 400)
+  diagnosticLog.info('No submit_slots tool call — fallback fired', {
+    finishReason: result.finishReason,
+    stepCount: result.steps.length,
+    toolCallNames,
+    toolResultNames,
+    textPreview,
+  })
 }

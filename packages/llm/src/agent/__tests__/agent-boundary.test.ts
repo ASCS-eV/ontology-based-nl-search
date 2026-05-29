@@ -279,6 +279,22 @@ describe('runSparqlAgent — agent boundary', () => {
   })
 
   /**
+   * Regression: `toolChoice` must target `submit_slots` by name, not the
+   * generic `'required'` (which lets the model pick any tool). When set
+   * to `'required'`, Claude Haiku consistently spent its full
+   * step budget on `discover_*` exploration tools and never reached
+   * `submit_slots`, returning the empty-slot fallback. Pinning the
+   * tool name forces a structured-output call on step 1, regardless
+   * of the model's "explore first" inclinations.
+   */
+  it('forces toolChoice to submit_slots by name', async () => {
+    mockLlmResult([{ toolResults: [{ toolName: 'submit_slots', output: fakeSubmission() }] }])
+    await runSparqlAgent('test')
+    const lastCall = vi.mocked(generateText).mock.lastCall
+    expect(lastCall?.[0]?.toolChoice).toEqual({ type: 'tool', toolName: 'submit_slots' })
+  })
+
+  /**
    * `LLM_TEMPERATURE` flows through to the LLM call so the
    * "deterministic by default" contract is observable from the wire.
    * Zero is the right default for an extraction task; without this
