@@ -151,6 +151,21 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     references: normalizedReferences,
   }
 
+  // 4d. Honest dropped-reference report. The LLM's mappedTerms array
+  // can carry MORE than one `references.domain` entry (one per asset-
+  // class the user named), but `slots.references` is a single object —
+  // only one survives into the compiled SPARQL. Without an explicit
+  // gap, the UI shows multiple `references.domain:` chips but the
+  // SPARQL silently uses only one, leaving the user wondering why
+  // their second reference didn't filter anything. Emit a gap for
+  // each dropped entry so the interpretation panel is truthful about
+  // what was compiled vs ignored. N-hop reference chains are tracked
+  // as a separate workstream; when they land, this gap goes away.
+  const droppedReferenceGaps = collectDroppedReferenceGaps(
+    submission.interpretation.mappedTerms ?? [],
+    normalizedReferences?.domain
+  )
+
   // 5. Deterministic SPARQL compilation. Capture the traceability plan
   // so per-row breadcrumbs surface downstream in `ExecutionResult` —
   // the trace is `undefined` for plain queries (no cross-reference JOIN).
@@ -168,11 +183,48 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
 
   const rawResponse: LlmStructuredResponse = {
     interpretation: enrichedInterpretation,
-    gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
+    gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps, ...droppedReferenceGaps],
     sparql,
     trace,
   }
 
   // 6. Final post-compile sanity / confidence-floor pass.
   return validateSlots(rawResponse, vocabulary)
+}
+
+/**
+ * Inspect the LLM's `mappedTerms` for cross-reference mappings that
+ * lost the slot race. `slots.references` is a single object — when
+ * the LLM names more than one asset class as a reference target, only
+ * the chosen one survives compilation. The others would otherwise
+ * disappear silently between the interpretation panel and the SPARQL,
+ * leaving the user with a "but I asked for X too" mystery.
+ *
+ * Returns one gap per dropped entry, deduplicating by the mapped
+ * domain name so noise stays low.
+ */
+function collectDroppedReferenceGaps(
+  mappedTerms: ReadonlyArray<{ input?: string; mapped?: string; property?: string }>,
+  chosenDomain: string | undefined
+): OntologyGap[] {
+  const droppedSeen = new Set<string>()
+  const out: OntologyGap[] = []
+  for (const term of mappedTerms) {
+    // Match the property naming the LLM tool schema uses for the
+    // references slot — anything starting with `references` (e.g.
+    // `references.domain`) is a candidate. We tolerate variants
+    // because the slot schema and the prompt examples both use it
+    // and the LLM occasionally truncates.
+    if (!term.property || !term.property.startsWith('references')) continue
+    const mappedDomain = term.mapped?.trim()
+    if (!mappedDomain) continue
+    if (chosenDomain && mappedDomain === chosenDomain) continue
+    if (droppedSeen.has(mappedDomain)) continue
+    droppedSeen.add(mappedDomain)
+    out.push({
+      term: term.input || mappedDomain,
+      reason: `Cross-reference to "${mappedDomain}" was dropped — only a single \`references\` slot is supported per query. Re-run the search asking for that link instead, or wait for multi-hop reference chains to ship.`,
+    })
+  }
+  return out
 }

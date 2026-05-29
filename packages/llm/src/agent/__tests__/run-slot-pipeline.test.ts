@@ -205,6 +205,60 @@ describe('runSlotPipeline', () => {
     expect(response.sparql).not.toContain('?refAsset')
   }, 120_000)
 
+  /**
+   * Honest dropped-reference report. `slots.references` is a single
+   * object, but the LLM's mappedTerms can carry several
+   * `references.domain` entries (one per asset class the user named).
+   * Without an explicit gap, the UI shows multiple chips while the
+   * SPARQL silently uses only one — leaving the user wondering why
+   * their second reference filtered nothing. Pipeline must emit a
+   * gap naming the dropped target so the interpretation stays honest.
+   */
+  it('emits a gap for each LLM-emitted references.domain that the single-slot schema dropped', async () => {
+    const sw = new Stopwatch()
+    const response = await runSlotPipeline({
+      submission: {
+        slots: {
+          domains: ['scenario'],
+          filters: {},
+          ranges: {},
+          // The LLM committed `ositrace` to the structured slot —
+          // but its interpretation also named `hdmap` as a second
+          // references target.
+          references: { domain: 'ositrace' },
+        },
+        interpretation: {
+          summary: 'mock submission',
+          mappedTerms: [
+            {
+              input: 'derived from traces',
+              mapped: 'ositrace',
+              confidence: 'high',
+              property: 'references.domain',
+            },
+            {
+              input: 'with maps',
+              mapped: 'hdmap',
+              confidence: 'low',
+              property: 'references.domain',
+            },
+          ],
+        },
+        gaps: [],
+      },
+      vocabulary,
+      targetDomain: 'scenario',
+      sw,
+    })
+    // The chosen ositrace reference is gone-not-flagged (it survived).
+    expect(response.gaps.some((g) => g.term.includes('derived from traces'))).toBe(false)
+    // The dropped hdmap reference is surfaced.
+    const droppedGap = response.gaps.find((g) => g.term.includes('with maps'))
+    expect(droppedGap).toBeDefined()
+    expect(droppedGap?.reason).toMatch(/dropped/i)
+    expect(droppedGap?.reason).toContain('hdmap')
+  }, 120_000)
+
   it('records "post-llm-validation" and "sparql-compile" stages on the stopwatch', async () => {
     const sw = new Stopwatch()
     await runSlotPipeline({
