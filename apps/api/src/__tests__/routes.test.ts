@@ -17,6 +17,11 @@ vi.mock('@ontology-search/search', () => ({
   getInitializedStore: vi.fn(),
   compileCountQuery: vi.fn(),
   getAssetDomains: vi.fn().mockResolvedValue(new Set(['hdmap', 'scenario'])),
+  exploreLineage: vi.fn(),
+  DEFAULT_LINEAGE_DEPTH: 3,
+  MAX_LINEAGE_DEPTH: 6,
+  getAssetMetadata: vi.fn(),
+  getDomainMetadataAggregate: vi.fn(),
 }))
 
 vi.mock('@ontology-search/ontology/domain-registry', () => ({
@@ -189,6 +194,40 @@ describe('POST /search/refine', () => {
     expect(json.meta.matchCount).toBe(1)
   })
 
+  /**
+   * Regression: the wire schema must accept `references` so the refine
+   * path can reach the cross-reference JOIN compiler — without it,
+   * `references: { domain: 'hdmap' }` was silently stripped, the
+   * response had no `?refAsset` rows, and the AssetCard / lineage UI
+   * never rendered. Verified end-to-end in the browser during the WP3
+   * test pass.
+   */
+  it('forwards a `references` slot through to the service', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(searchRefine).mockResolvedValue({
+      sparql: 'SELECT * WHERE { ?s ?p ?o }',
+      execution: { results: [], error: undefined },
+      meta: { matchCount: 0, executionTimeMs: 10 },
+    })
+
+    const res = await app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slots: {
+          domains: ['scenario'],
+          filters: {},
+          ranges: {},
+          references: { domain: 'hdmap', label: 'Munich' },
+        },
+      }),
+    })
+
+    expect(res.status).toBe(200)
+    const lastCall = vi.mocked(searchRefine).mock.lastCall?.[0]
+    expect(lastCall?.slots.references).toEqual({ domain: 'hdmap', label: 'Munich' })
+  })
+
   it('returns 422 for invalid slot shape', async () => {
     const res = await app.request('/search/refine', {
       method: 'POST',
@@ -250,6 +289,121 @@ describe('POST /search/refine', () => {
     const headerId = res.headers.get('x-request-id')
     expect(headerId).toBeTruthy()
     expect(vi.mocked(searchRefine).mock.lastCall?.[0].requestId).toBe(headerId)
+  })
+})
+
+describe('GET /traceability', () => {
+  it('400s without an asset query parameter', async () => {
+    const res = await app.request('/traceability')
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error || json.message).toMatch(/asset/i)
+  })
+
+  it('400s when depth is non-numeric', async () => {
+    const res = await app.request('/traceability?asset=did%3Aweb%3Aexample%3Atest&depth=banana')
+    expect(res.status).toBe(400)
+  })
+
+  it('returns the lineage node from exploreLineage on success', async () => {
+    const { exploreLineage } = await import('@ontology-search/search')
+    vi.mocked(exploreLineage).mockResolvedValue({
+      asset: 'did:web:example:scenario-1',
+      name: 'Scenario 1',
+      type: 'https://example.org/scenario/Scenario',
+      domain: 'scenario',
+      references: [],
+      truncated: false,
+    })
+
+    const res = await app.request(
+      '/traceability?asset=' + encodeURIComponent('did:web:example:scenario-1')
+    )
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.node.asset).toBe('did:web:example:scenario-1')
+    expect(json.node.references).toEqual([])
+    expect(vi.mocked(exploreLineage)).toHaveBeenCalledWith('did:web:example:scenario-1', {
+      depth: undefined,
+    })
+  })
+
+  it('forwards a numeric depth to exploreLineage', async () => {
+    const { exploreLineage } = await import('@ontology-search/search')
+    vi.mocked(exploreLineage).mockResolvedValue({
+      asset: 'did:web:example:scenario-1',
+      name: 'Scenario 1',
+      type: 'https://example.org/scenario/Scenario',
+      domain: 'scenario',
+      references: [],
+      truncated: false,
+    })
+
+    const res = await app.request(
+      '/traceability?asset=' + encodeURIComponent('did:web:example:scenario-1') + '&depth=2'
+    )
+    expect(res.status).toBe(200)
+    expect(vi.mocked(exploreLineage)).toHaveBeenCalledWith('did:web:example:scenario-1', {
+      depth: 2,
+    })
+  })
+})
+
+describe('GET /metadata/asset', () => {
+  it('400s when iri is missing', async () => {
+    const res = await app.request('/metadata/asset')
+    expect(res.status).toBe(400)
+  })
+
+  it('forwards the iri to getAssetMetadata and returns the snapshot', async () => {
+    const { getAssetMetadata } = await import('@ontology-search/search')
+    vi.mocked(getAssetMetadata).mockResolvedValue({
+      asset: 'did:web:example:a',
+      type: 'https://example.org/hdmap/HdMap',
+      domain: 'hdmap',
+      groups: {
+        Quality: [{ property: 'precision', values: ['0.020'] }],
+        Content: [{ property: 'roadTypes', values: ['motorway'] }],
+      },
+    })
+    const res = await app.request('/metadata/asset?iri=' + encodeURIComponent('did:web:example:a'))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.domain).toBe('hdmap')
+    expect(json.groups.Quality[0].property).toBe('precision')
+    expect(vi.mocked(getAssetMetadata)).toHaveBeenCalledWith('did:web:example:a')
+  })
+})
+
+describe('GET /metadata/aggregate', () => {
+  it('400s when domain or group is missing', async () => {
+    expect((await app.request('/metadata/aggregate')).status).toBe(400)
+    expect((await app.request('/metadata/aggregate?domain=hdmap')).status).toBe(400)
+    expect((await app.request('/metadata/aggregate?group=Quality')).status).toBe(400)
+  })
+
+  it('forwards (domain, group) to getDomainMetadataAggregate', async () => {
+    const { getDomainMetadataAggregate } = await import('@ontology-search/search')
+    vi.mocked(getDomainMetadataAggregate).mockResolvedValue({
+      domain: 'hdmap',
+      group: 'Quality',
+      assetCount: 117,
+      properties: [
+        {
+          property: 'precision',
+          totalValues: 117,
+          distinctValues: 4,
+          samples: ['0.020', '0.050', '0.100', '0.200'],
+          numericRange: { min: 0.02, max: 0.2 },
+        },
+      ],
+    })
+    const res = await app.request('/metadata/aggregate?domain=hdmap&group=Quality')
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.assetCount).toBe(117)
+    expect(json.properties[0].numericRange).toEqual({ min: 0.02, max: 0.2 })
+    expect(vi.mocked(getDomainMetadataAggregate)).toHaveBeenCalledWith('hdmap', 'Quality')
   })
 })
 

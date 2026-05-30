@@ -7,7 +7,8 @@ function readHistory(): string[] {
   try {
     return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]')
   } catch {
-    // intentional: corrupted localStorage — clear and start fresh
+    // intentional: corrupted localStorage — clear and start fresh.
+
     console.warn('SearchHistory: corrupted localStorage entry, resetting')
     localStorage.removeItem(HISTORY_KEY)
     return []

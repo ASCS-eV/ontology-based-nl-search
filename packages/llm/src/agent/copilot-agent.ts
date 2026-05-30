@@ -1,6 +1,15 @@
 /**
  * Copilot Agent — LLM slot-filling via GitHub Copilot SDK with session pooling.
  *
+ * Size note: this file owns three interleaved responsibilities that
+ * each pull in SDK-specific types — session pool, per-request
+ * submission, and tool callback routing — and cannot be cleanly split
+ * without exposing the SDK's persistent-session lifecycle as a
+ * separate public surface. The token-keyed callback router was
+ * already extracted to `submission-router.ts`; the remaining
+ * session-management and per-request orchestration stay together so
+ * the SDK boundary lives in one module.
+ *
  * **Architecture:**
  * - Maintains a pool of persistent CopilotSessions (default 3), reused
  *   round-robin across all search requests
@@ -143,27 +152,11 @@ function buildPersistentSubmitSlotsTool() {
                 },
               },
             },
-            location: {
-              type: 'object',
-              properties: {
-                // Each field accepts string or array — use an array to express
-                // a region/continent as the explicit list of country codes it
-                // covers. Never silently substitute one country for a region.
-                country: {
-                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-                },
-                state: {
-                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-                },
-                region: {
-                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-                },
-                city: {
-                  oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-                },
-              },
-            },
-            license: { type: 'string' },
+            // Geographic, license, and other "well-known" constraints all
+            // live inside `filters` keyed by the SHACL leaf local name
+            // (task 21d-flat). The compiler walks the discovered SHACL
+            // chain from the asset class to each leaf; no dedicated
+            // `location` / `license` sub-object exists at the slot level.
           },
         },
         interpretation: {
@@ -672,18 +665,23 @@ export async function runCopilotAgent(
     return { ...response, timings: sw.getTimings() }
   }
 
-  // Fallback: LLM didn't call the tool — return broad search
-  const fallbackSlots: SearchSlots = { domains: [targetDomain], filters: {}, ranges: {} }
+  // Fallback: LLM didn't call submit_slots — emit the broadest possible
+  // query (cross-domain VALUES over every discovered asset class) so the
+  // caller sees results from every domain rather than from whichever
+  // domain happened to sort first alphabetically. See the equivalent
+  // change in agent/index.ts for the same rationale.
+  const fallbackSlots: SearchSlots = { domains: [], filters: {}, ranges: {} }
   const sparql = await compileSlots(fallbackSlots)
   return {
     interpretation: {
-      summary: `Searching all ${targetDomain} datasets (LLM did not extract specific filters)`,
+      summary: 'Searching across all asset domains (LLM did not extract specific filters)',
       mappedTerms: [],
     },
     gaps: [
       {
         term: naturalLanguageQuery,
-        reason: 'Could not extract structured filters from the query',
+        reason:
+          'Could not extract structured filters from the query. Try rephrasing with concrete property names from the ontology (e.g. roadTypes, scenarioCategory), or filter by country / license / asset type directly.',
       },
     ],
     sparql,

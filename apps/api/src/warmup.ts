@@ -1,10 +1,9 @@
 import { createComponentLogger } from '@ontology-search/core/logging'
-import { warmupLlmSession } from '@ontology-search/llm'
-import { buildSystemPrompt } from '@ontology-search/llm/prompt-builder'
+import { warmupAgentPrompt, warmupLlmSession } from '@ontology-search/llm'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
-import { getInitializedStore } from '@ontology-search/search'
-import { getShaclContent } from '@ontology-search/search/shacl-reader'
+import { getInitializedStore, warmupCompiler } from '@ontology-search/search'
+import { probePropertyPathSupport } from '@ontology-search/sparql'
 import { registerPolicyNamespaces } from '@ontology-search/sparql/policy'
 
 const logger = createComponentLogger('warmup')
@@ -13,84 +12,127 @@ const logger = createComponentLogger('warmup')
 export interface WarmupResult {
   ready: boolean
   errors: string[]
-  timings: { storeMs: number; vocabMs: number; shaclMs: number; sessionMs: number }
+  timings: {
+    storeMs: number
+    vocabMs: number
+    compilerMs: number
+    shaclMs: number
+    sessionMs: number
+  }
+}
+
+/** Total number of warmup steps — used for `[n/TOTAL]` progress prefixes. */
+const TOTAL_STEPS = 6
+
+/**
+ * Run one named warmup step with start/finish progress logging and
+ * error isolation. A failing step is recorded in `errors` (degrading
+ * the service) but never aborts the remaining steps — a search API
+ * that can't reach the LLM should still serve `/stats`, etc.
+ *
+ * Returns the step's wall-clock duration so the caller can assemble
+ * the timings summary and spot the slow step at a glance.
+ */
+async function runStep(
+  step: number,
+  label: string,
+  fn: () => Promise<void>,
+  errors: string[]
+): Promise<number> {
+  logger.info(`[${step}/${TOTAL_STEPS}] ${label} — starting`)
+  const start = Date.now()
+  try {
+    await fn()
+    const durationMs = Date.now() - start
+    logger.info(`[${step}/${TOTAL_STEPS}] ${label} — done`, { durationMs })
+    return durationMs
+  } catch (error) {
+    const durationMs = Date.now() - start
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    errors.push(`${label} failed: ${msg}`)
+    logger.error(`[${step}/${TOTAL_STEPS}] ${label} — FAILED`, error, { durationMs })
+    return durationMs
+  }
 }
 
 export async function warmup(): Promise<WarmupResult> {
-  logger.info('Warming up SPARQL store and ontology indexes...')
+  logger.info('Warming up — initializing store, indexes, validator, and LLM session', {
+    steps: TOTAL_STEPS,
+  })
   const start = Date.now()
   const errors: string[] = []
 
-  try {
-    await getInitializedStore()
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error'
-    errors.push(`Store initialization failed: ${msg}`)
-    logger.error('Store warmup failed', error)
-  }
-  const storeMs = Date.now() - start
+  // [1/6] Store init + property-path capability probe. Probe runs first
+  // so a store that silently drops `rdfs:subClassOf*` fails loudly at
+  // startup rather than returning zero rows for hierarchical queries.
+  const storeMs = await runStep(
+    1,
+    'SPARQL store + capability probe',
+    async () => {
+      const store = await getInitializedStore()
+      await probePropertyPathSupport(store)
+    },
+    errors
+  )
 
-  // Register all discovered ontology namespaces with the SPARQL policy
-  // so compiled queries pass prefix validation regardless of which
-  // ontology is loaded.
-  try {
-    const registry = await buildDomainRegistry()
-    registerPolicyNamespaces(registry.getAllNamespaces())
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error'
-    errors.push(`Policy namespace registration failed: ${msg}`)
-    logger.error('Policy namespace registration failed', error)
-  }
+  // [2/6] Register every discovered namespace with the SPARQL policy so
+  // compiled queries pass prefix validation regardless of the ontology.
+  await runStep(
+    2,
+    'SPARQL policy namespace registration',
+    async () => {
+      const registry = await buildDomainRegistry()
+      registerPolicyNamespaces(registry.getAllNamespaces())
+    },
+    errors
+  )
 
-  // Pre-build the LLM system prompt from raw SHACL content
-  const vocabStart = Date.now()
-  try {
-    const shaclContent = getShaclContent()
-    buildSystemPrompt(shaclContent)
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error'
-    errors.push(`Prompt build failed: ${msg}`)
-    logger.error('Vocab warmup failed', error)
-  }
-  const vocabMs = Date.now() - vocabStart
+  // [3/6] Pre-build the LLM system prompt + vocabulary into the agent's
+  // module-private cache so the first user request sees a hot cache.
+  // Previously this step called `buildSystemPrompt(getShaclContent())`
+  // into a discarded local — the agent then rebuilt on the first request,
+  // showing up as ~14s of `prompt-build` on the first query trace.
+  const vocabMs = await runStep(3, 'LLM system prompt build', warmupAgentPrompt, errors)
 
-  // Pre-construct the SHACL validator so the first search doesn't pay
-  // the shape-parse cost (~7s on the full ontology).
-  const shaclStart = Date.now()
-  try {
-    await ShaclValidator.fromWorkspace()
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error'
-    errors.push(`SHACL validator init failed: ${msg}`)
-    logger.error('SHACL warmup failed', error)
-  }
-  const shaclMs = Date.now() - shaclStart
+  // [4/6] Compiler vocabulary — property-path BFS + leaf-kind enrichment
+  // + cross-reference chains + concept-expansion index. The single most
+  // expensive cold-start step; its sub-phases log their own timings (see
+  // `buildPropertyPaths`).
+  const compilerMs = await runStep(
+    4,
+    'Compiler vocabulary (property paths, references, concepts)',
+    warmupCompiler,
+    errors
+  )
 
-  // Pre-create the LLM session so first query is instant
-  const sessionStart = Date.now()
-  try {
-    await warmupLlmSession()
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error'
-    errors.push(`LLM session warmup failed: ${msg}`)
-    logger.error('LLM session warmup failed', error)
-  }
-  const sessionMs = Date.now() - sessionStart
+  // [5/6] SHACL validator — parse every shape into an RDF/JS dataset for
+  // the slot-validation gate.
+  const shaclMs = await runStep(
+    5,
+    'SHACL validator',
+    async () => {
+      await ShaclValidator.fromWorkspace()
+    },
+    errors
+  )
 
+  // [6/6] LLM session — pre-create so the first query is instant (no-op
+  // for providers that don't pool sessions).
+  const sessionMs = await runStep(6, 'LLM session', warmupLlmSession, errors)
+
+  const totalMs = Date.now() - start
   const ready = errors.length === 0
+  const timings = { storeMs, vocabMs, compilerMs, shaclMs, sessionMs }
+
   if (ready) {
-    logger.info(`Warmup complete in ${Date.now() - start}ms`, {
-      storeMs,
-      vocabMs,
-      shaclMs,
-      sessionMs,
-    })
+    logger.info(`Warmup complete in ${totalMs}ms`, { ...timings, totalMs })
   } else {
-    logger.warn(`Warmup completed with ${errors.length} error(s) — service degraded`, {
+    logger.warn(`Warmup completed with ${errors.length} error(s) — service DEGRADED`, {
       errors,
-      totalMs: Date.now() - start,
+      ...timings,
+      totalMs,
     })
   }
 
-  return { ready, errors, timings: { storeMs, vocabMs, shaclMs, sessionMs } }
+  return { ready, errors, timings }
 }

@@ -109,6 +109,30 @@ export class OntologySourcesError extends AppError {
   readonly httpStatus = 503
 }
 
+/**
+ * A credentials file (e.g. `~/.claude/.credentials.json`) is readable by
+ * group or other on the filesystem. Reading it would silently leak the
+ * embedded OAuth token to any process running as a different user on the
+ * machine, so we refuse and ask the operator to `chmod 600` it first.
+ * Surfaced as 503 because the LLM session can't start without credentials.
+ */
+export class CredentialsPermissionError extends AppError {
+  readonly code = ERROR_CODE.SERVICE_UNAVAILABLE
+  readonly httpStatus = 503
+}
+
+/**
+ * A SPARQL store's capabilities don't meet the runtime contract — e.g. it
+ * doesn't support the property-path syntax (`*`, `+`) that the compiler
+ * emits for `rdfs:subClassOf` / `skos:broaderTransitive` hierarchy walks.
+ * Probed at startup so a mis-provisioned store is rejected loudly instead
+ * of silently returning zero rows for every hierarchical filter.
+ */
+export class StoreCapabilityError extends AppError {
+  readonly code = ERROR_CODE.SERVICE_UNAVAILABLE
+  readonly httpStatus = 503
+}
+
 /** Create a 400 Bad Request error */
 export function badRequest(message: string, details?: string[]): HttpError {
   return { status: 400, body: { error: message, code: ERROR_CODE.BAD_REQUEST, details } }

@@ -1,5 +1,5 @@
 import { getConfig } from '@ontology-search/core/config'
-import { Stopwatch } from '@ontology-search/core/logging'
+import { createComponentLogger, Stopwatch } from '@ontology-search/core/logging'
 import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
 import {
   extractVocabulary,
@@ -47,6 +47,20 @@ async function getSystemPrompt(): Promise<{
   return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary, store }
 }
 
+/**
+ * Pre-populate the agent's system-prompt cache during startup warmup so the
+ * first user query doesn't pay the SHACL-read + buildSystemPrompt +
+ * extractVocabulary cost (tens of seconds on a cold start; observed as
+ * `prompt-build` spending >10s while the cache stood empty).
+ *
+ * `getSystemPrompt` already memoises into module-private singletons; this
+ * helper just triggers that build during warmup so the warm-cache value is
+ * what the first request sees. No-op when the cache is already populated.
+ */
+export async function warmupAgentPrompt(): Promise<void> {
+  await getSystemPrompt()
+}
+
 export interface AgentOptions {
   domain?: string
   /** Cancel the LLM round-trip when the caller aborts. */
@@ -76,6 +90,22 @@ export async function runSparqlAgent(
   endPrompt()
 
   const endLlmCall = sw.time('llm-round-trip')
+  const config = getConfig()
+  // Anthropic exposes an explicit chain-of-thought budget; every other
+  // provider selects reasoning by model name (Mistral `magistral-*`,
+  // OpenAI `o1` / `o4`). Skip the providerOptions entry when the budget
+  // is zero or the provider can't use it — passing it would just be
+  // dead weight in the request.
+  const wantsThinking =
+    config.LLM_THINKING_BUDGET > 0 &&
+    (config.AI_PROVIDER === 'anthropic' || config.AI_PROVIDER === 'claude-cli')
+  const providerOptions = wantsThinking
+    ? {
+        anthropic: {
+          thinking: { type: 'enabled' as const, budgetTokens: config.LLM_THINKING_BUDGET },
+        },
+      }
+    : undefined
   // Investigation tools allow the LLM to explore the schema if needed.
   // Typical path: LLM reads SHACL in prompt → directly calls submit_slots (1 step).
   // Complex queries: LLM calls discover_* tools first → then submit_slots (2-3 steps).
@@ -84,9 +114,24 @@ export async function runSparqlAgent(
     system: prompt,
     prompt: naturalLanguageQuery,
     tools: { ...agentTools, ...investigationTools },
-    toolChoice: 'required',
-    stopWhen: stepCountIs(getConfig().LLM_MAX_AGENT_STEPS),
+    // Force the LLM to invoke `submit_slots` instead of leaving tool
+    // selection up to the model. With `'required'` (any tool), Haiku
+    // consistently spent its step budget on `discover_*` exploration
+    // and never reached `submit_slots` — the prompt already contains
+    // the full SHACL, so investigation calls were redundant
+    // overhead. Targeting `submit_slots` specifically means the LLM
+    // commits immediately on step 1, restoring the contract that
+    // every provider produces structured slots in one round-trip.
+    toolChoice: { type: 'tool', toolName: 'submit_slots' },
+    stopWhen: stepCountIs(config.LLM_MAX_AGENT_STEPS),
     abortSignal: options?.signal,
+    // Slot filling is an EXTRACTION task, not a generative one.
+    // Default to greedy decoding (temperature 0) so the same query
+    // always yields the same slots. Configurable via `LLM_TEMPERATURE`
+    // for the rare experiment where variance is wanted; honoured by
+    // every Vercel-SDK provider.
+    temperature: config.LLM_TEMPERATURE,
+    ...(providerOptions ? { providerOptions } : {}),
   })
   endLlmCall()
 
@@ -95,6 +140,16 @@ export async function runSparqlAgent(
     .flatMap((step) => step.toolResults)
     .find((r) => r.toolName === 'submit_slots')
 
+  if (!submitCall) {
+    // Diagnostic: when no submit_slots call is found, dump enough of the
+    // raw LLM response that an operator can tell whether the model
+    // refused to call any tool (emitted prose), called a different tool,
+    // or had no tool dispatch at all. Helps distinguish provider auth
+    // issues (claude-cli OAuth tool-use restrictions) from model
+    // behaviour problems (cold Mistral on first call) — both surface
+    // here as "fallback fired".
+    diagnoseMissingSubmit(result)
+  }
   if (submitCall) {
     const answer = submitCall.output as SlotSubmissionParams
     const response = await runSlotPipeline({
@@ -106,21 +161,71 @@ export async function runSparqlAgent(
     return { ...response, timings: sw.getTimings() }
   }
 
-  // Fallback: LLM didn't call the tool — return broad search
-  const fallbackSlots: SearchSlots = { domains: [targetDomain], filters: {}, ranges: {} }
+  // Fallback: LLM didn't call submit_slots — emit the broadest possible
+  // query (cross-domain VALUES over every discovered asset class) so the
+  // caller sees results from every domain rather than from whichever
+  // domain happened to sort first alphabetically. The previous fallback
+  // used `getPrimaryDomain()` as a default, which silently anchored
+  // empty queries to a single arbitrary domain — e.g. routing a
+  // German "gibt es karten…" query into the `automotive-simulator`
+  // domain just because it sorts before `hdmap`.
+  const fallbackSlots: SearchSlots = { domains: [], filters: {}, ranges: {} }
   const sparql = await compileSlots(fallbackSlots)
   return {
     interpretation: {
-      summary: `Searching all ${targetDomain} datasets (LLM did not extract specific filters)`,
+      summary: 'Searching across all asset domains (LLM did not extract specific filters)',
       mappedTerms: [],
     },
     gaps: [
       {
         term: naturalLanguageQuery,
-        reason: 'Could not extract structured filters from the query',
+        reason:
+          'Could not extract structured filters from the query. Try rephrasing with concrete property names from the ontology (e.g. roadTypes, scenarioCategory), or filter by country / license / asset type directly.',
       },
     ],
     sparql,
     timings: sw.getTimings(),
   }
+}
+
+const diagnosticLog = createComponentLogger('agent-diagnostics')
+
+/**
+ * Surface why `submit_slots` wasn't called. Three patterns recur:
+ *   1. Model emitted prose instead of any tool call — usually means
+ *      the OAuth flow stripped `tools` from the request, or the model
+ *      ignored the system prompt's "you MUST call submit_slots" rule.
+ *   2. Model called only an investigation tool and then stopped —
+ *      `LLM_MAX_AGENT_STEPS=1` cut it off mid-flow.
+ *   3. Model called the right tool but with a malformed payload that
+ *      Zod rejected silently — the call ends up in `toolCalls` but
+ *      never in `toolResults`. The dispatched tool names alone can't
+ *      distinguish this; we also log `finishReason` and a preview of
+ *      `result.text`.
+ *
+ * Logs at INFO so the line is visible in dev without flipping
+ * LOG_LEVEL. Truncates `text` to a short preview to keep noise low
+ * even when the model emitted a long response.
+ */
+// Structural type avoids re-stating the generic-tool-shape result type;
+// only fields the diagnostic actually reads are listed.
+interface DiagnoseInput {
+  finishReason: unknown
+  text?: string
+  steps: ReadonlyArray<{
+    toolCalls?: ReadonlyArray<{ toolName: string }>
+    toolResults?: ReadonlyArray<{ toolName: string }>
+  }>
+}
+function diagnoseMissingSubmit(result: DiagnoseInput): void {
+  const toolCallNames = result.steps.flatMap((s) => (s.toolCalls ?? []).map((c) => c.toolName))
+  const toolResultNames = result.steps.flatMap((s) => (s.toolResults ?? []).map((r) => r.toolName))
+  const textPreview = (result.text ?? '').slice(0, 400)
+  diagnosticLog.info('No submit_slots tool call — fallback fired', {
+    finishReason: result.finishReason,
+    stepCount: result.steps.length,
+    toolCallNames,
+    toolResultNames,
+    textPreview,
+  })
 }

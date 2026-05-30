@@ -215,6 +215,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-frankfurt-002"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:frankfurt-motorway-007"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -223,7 +241,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-munich-001",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Cut In in Frankfurt",
+        "@value": "Referenced HD Map for Highway Merge in Munich",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -611,6 +629,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-hanover-003"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:hanover-highway-008"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -619,7 +655,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-frankfurt-002",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Overtake in Hanover",
+        "@value": "Referenced HD Map for Cut In in Frankfurt",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -1003,6 +1039,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-austin-004"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:austin-custom-009"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -1011,7 +1065,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-hanover-003",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Intersection Crossing in Austin",
+        "@value": "Referenced HD Map for Overtake in Hanover",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -1288,6 +1342,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-vienna-005"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:vienna-rural-010"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -1296,7 +1368,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-austin-004",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Obstacle Avoidance in Vienna",
+        "@value": "Referenced HD Map for Intersection Crossing in Austin",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -1579,6 +1651,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-london-006"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:london-town-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -1587,7 +1677,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-vienna-005",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Lane Change in London",
+        "@value": "Referenced HD Map for Obstacle Avoidance in Vienna",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -1874,6 +1964,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-stuttgart-007"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:stuttgart-motorway-012"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -1882,7 +1990,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-london-006",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Pedestrian Crossing in Stuttgart",
+        "@value": "Referenced HD Map for Lane Change in London",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -2263,6 +2371,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-berlin-008"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:berlin-highway-013"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -2271,7 +2397,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-stuttgart-007",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Follow Vehicle in Berlin",
+        "@value": "Referenced HD Map for Pedestrian Crossing in Stuttgart",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -2624,6 +2750,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-cologne-009"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:cologne-custom-014"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -2632,7 +2776,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-berlin-008",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Cut Out in Cologne",
+        "@value": "Referenced HD Map for Follow Vehicle in Berlin",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -2910,6 +3054,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-san-francisco-010"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:san-francisco-rural-015"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -2918,7 +3080,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-cologne-009",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Emergency Brake in San Francisco",
+        "@value": "Referenced HD Map for Cut Out in Cologne",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -3181,6 +3343,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-tokyo-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:tokyo-town-016"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -3189,7 +3369,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-san-francisco-010",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Highway Merge in Tokyo",
+        "@value": "Referenced HD Map for Emergency Brake in San Francisco",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -3475,6 +3655,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-stockholm-012"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:stockholm-motorway-017"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -3483,7 +3681,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-tokyo-011",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Cut In in Stockholm",
+        "@value": "Referenced HD Map for Highway Merge in Tokyo",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -3848,6 +4046,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-milan-013"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:milan-highway-018"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -3856,7 +4072,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-stockholm-012",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Overtake in Milan",
+        "@value": "Referenced HD Map for Cut In in Stockholm",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -4230,6 +4446,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-karlsruhe-014"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:karlsruhe-custom-019"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -4238,7 +4472,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-milan-013",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Intersection Crossing in Karlsruhe",
+        "@value": "Referenced HD Map for Overtake in Milan",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -4529,6 +4763,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-hamburg-015"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:hamburg-rural-020"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -4537,7 +4789,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-karlsruhe-014",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Obstacle Avoidance in Hamburg",
+        "@value": "Referenced HD Map for Intersection Crossing in Karlsruhe",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -4812,6 +5064,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-dresden-016"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:dresden-town-001"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -4820,7 +5090,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-hamburg-015",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Lane Change in Dresden",
+        "@value": "Referenced HD Map for Obstacle Avoidance in Hamburg",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -5094,6 +5364,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-detroit-017"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:detroit-motorway-002"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -5102,7 +5390,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-dresden-016",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Pedestrian Crossing in Detroit",
+        "@value": "Referenced HD Map for Lane Change in Dresden",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -5468,6 +5756,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-shanghai-018"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:shanghai-highway-003"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -5476,7 +5782,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-detroit-017",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Follow Vehicle in Shanghai",
+        "@value": "Referenced HD Map for Pedestrian Crossing in Detroit",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -5830,6 +6136,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-paris-019"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:paris-custom-004"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -5838,7 +6162,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-shanghai-018",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Cut Out in Paris",
+        "@value": "Referenced HD Map for Follow Vehicle in Shanghai",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -6104,6 +6428,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-seoul-020"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:seoul-rural-005"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -6112,7 +6454,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-paris-019",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Emergency Brake in Seoul",
+        "@value": "Referenced HD Map for Cut Out in Paris",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -6403,6 +6745,33 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-munich-001"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-munich-041"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:munich-town-006"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -6411,7 +6780,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-seoul-020",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Highway Merge in Munich",
+        "@value": "Referenced HD Map for Emergency Brake in Seoul",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -6724,6 +7093,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-frankfurt-022"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:frankfurt-motorway-007"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -6732,7 +7119,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-munich-021",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Cut In in Frankfurt",
+        "@value": "Referenced HD Map for Highway Merge in Munich",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -7115,6 +7502,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-hanover-023"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:hanover-highway-008"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -7123,7 +7528,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-frankfurt-022",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Overtake in Hanover",
+        "@value": "Referenced HD Map for Cut In in Frankfurt",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -7503,6 +7908,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-austin-024"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:austin-custom-009"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -7511,7 +7934,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-hanover-023",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Intersection Crossing in Austin",
+        "@value": "Referenced HD Map for Overtake in Hanover",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -7789,6 +8212,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-vienna-025"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:vienna-rural-010"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -7797,7 +8238,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-austin-024",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Obstacle Avoidance in Vienna",
+        "@value": "Referenced HD Map for Intersection Crossing in Austin",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -8075,6 +8516,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-london-026"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:london-town-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -8083,7 +8542,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-vienna-025",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Lane Change in London",
+        "@value": "Referenced HD Map for Obstacle Avoidance in Vienna",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -8365,6 +8824,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-stuttgart-027"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:stuttgart-motorway-012"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -8373,7 +8850,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-london-026",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Pedestrian Crossing in Stuttgart",
+        "@value": "Referenced HD Map for Lane Change in London",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -8756,6 +9233,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-berlin-028"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:berlin-highway-013"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -8764,7 +9259,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-stuttgart-027",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Follow Vehicle in Berlin",
+        "@value": "Referenced HD Map for Pedestrian Crossing in Stuttgart",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -9112,6 +9607,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-cologne-029"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:cologne-custom-014"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -9120,7 +9633,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-berlin-028",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Cut Out in Cologne",
+        "@value": "Referenced HD Map for Follow Vehicle in Berlin",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -9393,6 +9906,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-san-francisco-030"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:san-francisco-rural-015"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -9401,7 +9932,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-cologne-029",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Emergency Brake in San Francisco",
+        "@value": "Referenced HD Map for Cut Out in Cologne",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -9667,6 +10198,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-tokyo-031"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:tokyo-town-016"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -9675,7 +10224,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-san-francisco-030",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Highway Merge in Tokyo",
+        "@value": "Referenced HD Map for Emergency Brake in San Francisco",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -9959,6 +10508,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-stockholm-032"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:stockholm-motorway-017"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -9967,7 +10534,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-tokyo-031",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Cut In in Stockholm",
+        "@value": "Referenced HD Map for Highway Merge in Tokyo",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -10331,6 +10898,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-milan-033"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:milan-highway-018"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -10339,7 +10924,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-stockholm-032",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Overtake in Milan",
+        "@value": "Referenced HD Map for Cut In in Stockholm",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -10719,6 +11304,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-karlsruhe-034"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:karlsruhe-custom-019"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -10727,7 +11330,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-milan-033",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Intersection Crossing in Karlsruhe",
+        "@value": "Referenced HD Map for Overtake in Milan",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -11017,6 +11620,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-hamburg-035"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:hamburg-rural-020"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -11025,7 +11646,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-karlsruhe-034",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Obstacle Avoidance in Hamburg",
+        "@value": "Referenced HD Map for Intersection Crossing in Karlsruhe",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -11299,6 +11920,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-dresden-036"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:dresden-town-001"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -11307,7 +11946,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-hamburg-035",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Lane Change in Dresden",
+        "@value": "Referenced HD Map for Obstacle Avoidance in Hamburg",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -11587,6 +12226,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-detroit-037"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:detroit-motorway-002"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -11595,7 +12252,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-dresden-036",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Pedestrian Crossing in Detroit",
+        "@value": "Referenced HD Map for Lane Change in Dresden",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -11961,6 +12618,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-shanghai-038"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:shanghai-highway-003"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -11969,7 +12644,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-detroit-037",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Follow Vehicle in Shanghai",
+        "@value": "Referenced HD Map for Pedestrian Crossing in Detroit",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -12321,6 +12996,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-paris-039"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:paris-custom-004"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -12329,7 +13022,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-shanghai-038",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Cut Out in Paris",
+        "@value": "Referenced HD Map for Follow Vehicle in Shanghai",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -12601,6 +13294,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-seoul-040"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:seoul-rural-005"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -12609,7 +13320,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-paris-039",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Emergency Brake in Seoul",
+        "@value": "Referenced HD Map for Cut Out in Paris",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -12899,6 +13610,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-munich-021"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:munich-town-006"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -12907,7 +13636,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-seoul-040",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Highway Merge in Munich",
+        "@value": "Referenced HD Map for Emergency Brake in Seoul",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -13219,6 +13948,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-frankfurt-042"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:frankfurt-motorway-007"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -13227,7 +13974,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-munich-041",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Cut In in Frankfurt",
+        "@value": "Referenced HD Map for Highway Merge in Munich",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -13616,6 +14363,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-hanover-043"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:hanover-highway-008"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -13624,7 +14389,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-frankfurt-042",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Overtake in Hanover",
+        "@value": "Referenced HD Map for Cut In in Frankfurt",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -14003,6 +14768,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-austin-044"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:austin-custom-009"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -14011,7 +14794,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-hanover-043",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Intersection Crossing in Austin",
+        "@value": "Referenced HD Map for Overtake in Hanover",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -14289,6 +15072,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-vienna-045"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:vienna-rural-010"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -14297,7 +15098,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-austin-044",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Obstacle Avoidance in Vienna",
+        "@value": "Referenced HD Map for Intersection Crossing in Austin",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -14580,6 +15381,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-london-046"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:london-town-011"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -14588,7 +15407,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-vienna-045",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Lane Change in London",
+        "@value": "Referenced HD Map for Obstacle Avoidance in Vienna",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -14869,6 +15688,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-stuttgart-047"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:stuttgart-motorway-012"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -14877,7 +15714,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-london-046",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Pedestrian Crossing in Stuttgart",
+        "@value": "Referenced HD Map for Lane Change in London",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -15259,6 +16096,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-berlin-048"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:berlin-highway-013"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -15267,7 +16122,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-stuttgart-047",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Follow Vehicle in Berlin",
+        "@value": "Referenced HD Map for Pedestrian Crossing in Stuttgart",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -15621,6 +16476,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simtrace.io:HdMap:ref-cologne-049"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:cologne-custom-014"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -15629,7 +16502,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-berlin-048",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Cut Out in Cologne",
+        "@value": "Referenced HD Map for Follow Vehicle in Berlin",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -15901,6 +16774,24 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:simcorp.io:HdMap:ref-san-francisco-050"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:osidata.io:OSITrace:san-francisco-rural-015"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -15909,7 +16800,7 @@
       "@id": "did:web:simtrace.io:HdMap:ref-cologne-049",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Emergency Brake in San Francisco",
+        "@value": "Referenced HD Map for Cut Out in Cologne",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {
@@ -16174,6 +17065,15 @@
             "manifest:hasCategory": {
               "@id": "manifest:isAssetReference"
             }
+          },
+          {
+            "@type": "manifest:Link",
+            "manifest:iri": {
+              "@id": "did:web:roadtech.com:OSITrace:tokyo-town-016"
+            },
+            "manifest:hasCategory": {
+              "@id": "manifest:isAssetReference"
+            }
           }
         ]
       }
@@ -16182,7 +17082,7 @@
       "@id": "did:web:simcorp.io:HdMap:ref-san-francisco-050",
       "@type": "hdmap:HdMap",
       "rdfs:label": {
-        "@value": "Referenced HD Map for Highway Merge in Tokyo",
+        "@value": "Referenced HD Map for Emergency Brake in San Francisco",
         "@language": "en"
       },
       "hdmap:hasDomainSpecification": {

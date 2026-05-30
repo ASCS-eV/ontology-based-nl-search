@@ -191,6 +191,11 @@ export class WorkerOxigraphStore implements SparqlStore {
    */
   async terminate(): Promise<void> {
     if (!this.worker) return
+    // Detach the exit handler before we tear the worker down: the
+    // graceful `terminate` below fires an `exit` event, and `onExit`
+    // would otherwise reject any (already-settled) pending entries and
+    // log a spurious "worker exited" during normal shutdown.
+    this.worker.removeAllListeners('exit')
     try {
       await this.send({ type: 'terminate' })
     } catch {
@@ -199,5 +204,15 @@ export class WorkerOxigraphStore implements SparqlStore {
     await this.worker?.terminate()
     this.worker = null
     this.ready = false
+  }
+
+  /**
+   * SparqlStore lifecycle hook — releases the worker thread so the host
+   * process can exit. Alias for {@link terminate}; the interface uses
+   * the generic name `close` while the worker-specific verb stays for
+   * call sites that already use it.
+   */
+  async close(): Promise<void> {
+    await this.terminate()
   }
 }

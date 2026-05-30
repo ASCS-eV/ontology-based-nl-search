@@ -16,7 +16,7 @@ import type {
 } from '@ontology-search/search'
 import {
   compileAllCountQueries,
-  compileSlots,
+  compileSlotsWithTrace,
   getInitializedStore,
   type SearchDependencies,
   SearchService,
@@ -36,7 +36,7 @@ export async function getSearchService(): Promise<SearchService> {
   const deps: SearchDependencies = {
     getStore: getInitializedStore,
     interpretQuery: generateStructuredSearch,
-    compileSlots,
+    compileSlots: compileSlotsWithTrace,
     compileCountQueries: compileAllCountQueries,
     enforcePolicy: enforceSparqlPolicy,
     validateSlots,

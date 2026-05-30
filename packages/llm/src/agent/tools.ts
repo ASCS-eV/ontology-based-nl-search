@@ -15,25 +15,13 @@ const slotSubmissionSchema = z.object({
       filters: z
         .record(z.string(), z.union([z.string(), z.array(z.string())]))
         .default({})
-        .describe('Property filters: localName → value(s)'),
+        .describe(
+          'Property filters keyed by SHACL leaf local name. Includes EVERY literal/IRI constraint — geography, license, etc. Geographic filters use the property local names declared in the ontology (e.g. "country", "state", "region", "city" when the SHACL has those leaves); the compiler discovers the chain from the asset class to each leaf. Use arrays for IN-semantics (e.g. ["DE","FR"] when the user expresses a region).'
+        ),
       ranges: z
         .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
         .default({})
         .describe('Numeric ranges: localName → { min?, max? }'),
-      location: z
-        .object({
-          // Each field accepts a string or array of strings. Use an array
-          // when the user expresses a region, continent, or any multi-country
-          // intent — emit the explicit list of ISO codes the region covers.
-          // Never silently substitute one country for a region.
-          country: z.union([z.string(), z.array(z.string())]).optional(),
-          state: z.union([z.string(), z.array(z.string())]).optional(),
-          region: z.union([z.string(), z.array(z.string())]).optional(),
-          city: z.union([z.string(), z.array(z.string())]).optional(),
-        })
-        .optional()
-        .describe('Geographic location filters (single value or array per field)'),
-      license: z.string().optional().describe('License identifier'),
       references: z
         .object({
           domain: z

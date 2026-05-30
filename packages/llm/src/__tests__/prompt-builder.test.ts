@@ -97,10 +97,14 @@ fb:Shape a sh:NodeShape ;
     expect(prompt).toContain('sh:datatype')
   })
 
-  it('includes location section', () => {
+  it('explains how geographic constraints flow through generic filters', () => {
     const prompt = buildSystemPrompt(mockShaclContent)
+    // Post task 21d-flat: no dedicated "location" slot — geographic
+    // constraints route into `filters` keyed by the SHACL leaf local
+    // name. The prompt must teach this so the LLM doesn't try to nest
+    // them under a removed sub-object.
     expect(prompt).toContain('country')
-    expect(prompt).toContain('ISO 2-letter')
+    expect(prompt).toMatch(/filters: \{ "country"/)
   })
 
   it('includes rules section', () => {
@@ -108,6 +112,51 @@ fb:Shape a sh:NodeShape ;
     expect(prompt).toContain('Rules')
     expect(prompt).toContain('synonym resolver')
     expect(prompt).toContain('Tiered Confidence')
+  })
+
+  /**
+   * Regression: an LLM observed mapping "motorways" to a CamelCase
+   * compound value `RoadTypeMotorway` on a different property when the
+   * intended target property's `sh:in` already contained the bare
+   * lowercase `motorway`. The prompt's "value-first" disambiguation
+   * section pins the rule the model must follow — without referencing
+   * any specific ontology term. This test only asserts the structural
+   * guidance is present; the test stays correct as ontology terms
+   * evolve.
+   */
+  /**
+   * Regression: the prompt must teach the structural cross-reference
+   * rule generically (without naming any specific verb or language).
+   * Surface change of intent: "scenarios derived from traces" should
+   * compile to `references.domain: ositrace`, not to a `sourceType`
+   * filter. The discriminator the LLM uses is whether two named
+   * concepts BOTH resolve to asset classes the SHACL connects — not
+   * the English wording. The test pins the structural-rule headings;
+   * specific ontology terms must stay OUT.
+   */
+  it('teaches the cross-reference rule structurally, never via English cues', () => {
+    const prompt = buildSystemPrompt(mockShaclContent)
+    expect(prompt).toContain('Cross-reference vs Filter')
+    // The rule is ontology- AND language-agnostic; the prompt must
+    // SAY so to keep future contributors from sneaking in cue lists.
+    expect(prompt).toMatch(/structural/i)
+    expect(prompt).toMatch(/language-agnostic/i)
+    // Explicit English phrasal cues like "derived from", "based on",
+    // "linked to" MUST NOT appear in the prompt as classifier rules.
+    expect(prompt).not.toMatch(/"derived from"/i)
+    expect(prompt).not.toMatch(/"based on"/i)
+    expect(prompt).not.toMatch(/"linked to"/i)
+  })
+
+  it('teaches value-first property disambiguation generically', () => {
+    const prompt = buildSystemPrompt(mockShaclContent)
+    expect(prompt).toContain('Value-first Property Disambiguation')
+    // The rule: prefer the property whose `sh:in` carries the user's
+    // word as a whole literal over a property whose value space
+    // requires reshaping (CamelCase compounds, substrings).
+    expect(prompt).toContain('VERBATIM')
+    expect(prompt).toMatch(/CamelCase/)
+    expect(prompt).toMatch(/case-insensitive/i)
   })
 
   it('includes examples', () => {
@@ -163,9 +212,10 @@ describe('buildSystemPrompt — region-expansion guidance (R5)', () => {
 
   it('shows an ISO-3166 array example with at least two countries', () => {
     const prompt = buildSystemPrompt(mockShaclContent)
-    // The example must demonstrate the array-syntax shape with multiple ISO
-    // codes; the specific set is allowed to evolve.
-    expect(prompt).toMatch(/country:\s*\[/)
+    // The example must demonstrate the array-syntax shape with multiple
+    // ISO codes inside a `filters: { "country": [...] }` block; the
+    // specific set is allowed to evolve.
+    expect(prompt).toMatch(/"country":\s*\[/)
     expect(prompt).toMatch(/\[\s*"DE"\s*,\s*"FR"/)
   })
 

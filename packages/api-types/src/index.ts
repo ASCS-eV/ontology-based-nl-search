@@ -55,10 +55,14 @@ export interface QueryInterpretation {
   mappedTerms: MappedTerm[]
   /** Domain(s) selected for this search (e.g., ["hdmap", "scenario"]). */
   domains?: string[]
-  /** Filters that actually made it into the compiled SPARQL. */
+  /**
+   * Filters that actually made it into the compiled SPARQL. Includes
+   * every leaf constraint — geography (country, state, city, …),
+   * license, and any other SHACL-discovered leaf the user expressed.
+   * Task 21d-flat unified these under a single map; the previous
+   * `appliedLocation` field is gone.
+   */
   appliedFilters?: Record<string, string | string[]>
-  /** Location filters that made it into the compiled SPARQL. */
-  appliedLocation?: Record<string, string | string[]>
 }
 
 /** A single sub-stage timing recorded by the request logger. */
@@ -85,6 +89,18 @@ export interface SearchMeta {
 export type ResultRow = Record<string, string>
 
 /**
+ * One step in a per-row traceability breadcrumb. The web client uses
+ * these to render the asset → … → joined-asset path the SPARQL engine
+ * walked, so users can see *why* a row matched (WP3, task #18).
+ */
+export interface ResultTraceStep {
+  /** Full predicate IRI used to reach this step. */
+  predicate: string
+  /** Bound RDF term (IRI / blank-node) at this step. */
+  intermediate: string
+}
+
+/**
  * Complete search response. Used by both `/search/refine` (synchronous
  * JSON) and assembled by the web client from the streamed `/search/stream`
  * SSE events.
@@ -94,6 +110,11 @@ export interface SearchResponse {
   gaps: OntologyGap[]
   sparql: string
   results: ResultRow[]
+  /**
+   * Optional per-row breadcrumb. Present only when the SPARQL contained
+   * a cross-reference JOIN; aligned by index with `results`.
+   */
+  traceability?: ResultTraceStep[][]
   meta: SearchMeta
 }
 
@@ -102,4 +123,75 @@ export interface StatsResponse {
   totalAssets: number
   domains: Record<string, number>
   availableDomains: string[]
+}
+
+/**
+ * One outgoing reference in a lineage tree. The predicate chain is the
+ * full path the SPARQL engine traversed from the parent to `target` —
+ * UI renders the leaf predicate's local name as the edge label and
+ * keeps the full chain for hover/expand inspection.
+ */
+export interface TraceabilityEdge {
+  predicatePath: string[]
+  target: TraceabilityNode
+}
+
+/**
+ * One node in a lineage tree (WP3, task #19). Returned by
+ * `GET /traceability` per asset, recursively expanded up to the depth
+ * budget. `truncated` is `true` when the walker stopped at this node
+ * because depth was exhausted — UI may offer a "load more" affordance.
+ */
+export interface TraceabilityNode {
+  asset: string
+  name: string
+  type: string
+  domain: string
+  references: TraceabilityEdge[]
+  truncated: boolean
+}
+
+/** Body of the `/traceability` JSON response. */
+export interface TraceabilityResponse {
+  node: TraceabilityNode
+}
+
+/**
+ * One property's value(s) inside a facet group on a specific asset.
+ * `values` is a list because SHACL properties may carry multiple
+ * bindings (e.g. multi-valued enumerations).
+ */
+export interface FacetValue {
+  property: string
+  values: string[]
+}
+
+/**
+ * Per-asset facet snapshot returned by `GET /metadata/asset` (WP3
+ * task #20). `groups` is keyed by the discovered SHACL shape-group
+ * name (Content, Format, Quality, …). The endpoint treats all groups
+ * uniformly — Quality is one facet, not a special case.
+ */
+export interface AssetMetadata {
+  asset: string
+  type: string
+  domain: string
+  groups: Record<string, FacetValue[]>
+}
+
+/** Distribution stats for one property across a domain. */
+export interface PropertyStats {
+  property: string
+  totalValues: number
+  distinctValues: number
+  samples: string[]
+  numericRange?: { min: number; max: number }
+}
+
+/** Body of the `/metadata/aggregate` JSON response. */
+export interface DomainGroupAggregate {
+  domain: string
+  group: string
+  assetCount: number
+  properties: PropertyStats[]
 }

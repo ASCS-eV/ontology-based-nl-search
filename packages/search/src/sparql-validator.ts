@@ -1,3 +1,27 @@
+/**
+ * SPARQL Validator — post-compile syntactic + W3C-conformance gate.
+ *
+ * Parses every compiled query with `sparqljs` (a SPARQL 1.1 parser)
+ * and walks the resulting AST to catch issues the compiler can emit
+ * but the engine would only fail at execution time:
+ *
+ *   - Aggregate use in non-aggregation contexts
+ *   - SELECT vars not bound in WHERE
+ *   - GROUP BY violations
+ *   - ORDER BY over unbound or unselected vars
+ *   - LIMIT/OFFSET shape
+ *   - Unused PREFIX declarations (warning)
+ *
+ * The file is large because the AST walker has to handle every
+ * `Pattern` / `Expression` / `Term` shape the parser surfaces — each
+ * branch is a focused dispatch with limited shared structure, so
+ * splitting would mean threading the parser type union through helper
+ * modules without simplifying any individual branch. The module sits
+ * at the compiler/policy boundary and stays a single file by design.
+ *
+ * @see https://www.w3.org/TR/sparql11-query/
+ * @see https://github.com/RubenVerborgh/SPARQL.js
+ */
 import {
   type AggregateExpression,
   type Expression,

@@ -10,9 +10,12 @@
  * exceeding the LLM's context window. This is ontology-agnostic — any
  * domain with a large SHACL file is excluded regardless of its name.
  */
+import { createComponentLogger } from '@ontology-search/core/logging'
 import { discoverShapeFiles } from '@ontology-search/ontology/sources'
 import { readFileSync, statSync } from 'fs'
 import { basename } from 'path'
+
+const log = createComponentLogger('shacl-reader')
 
 /** A single SHACL file's content with its domain metadata */
 export interface ShaclDomainContent {
@@ -48,9 +51,11 @@ export function readShaclFiles(): ShaclDomainContent[] {
     try {
       const fileSize = statSync(filePath).size
       if (fileSize > MAX_SHACL_SIZE_BYTES) {
-        console.info(
-          `[shacl-reader] Skipping ${basename(filePath)} (${(fileSize / 1024).toFixed(0)} KB) — exceeds ${(MAX_SHACL_SIZE_BYTES / 1024).toFixed(0)} KB threshold`
-        )
+        log.info('Skipping oversized SHACL file', {
+          file: basename(filePath),
+          sizeKb: Math.round(fileSize / 1024),
+          thresholdKb: Math.round(MAX_SHACL_SIZE_BYTES / 1024),
+        })
         continue
       }
 
@@ -62,16 +67,18 @@ export function readShaclFiles(): ShaclDomainContent[] {
         sizeBytes: Buffer.byteLength(content, 'utf-8'),
       })
     } catch (err) {
-      console.warn(`[shacl-reader] Failed to read ${basename(filePath)}: ${err}`)
+      log.warn('Failed to read SHACL file', { file: basename(filePath), error: String(err) })
     }
   }
 
   results.sort((a, b) => a.domain.localeCompare(b.domain))
 
   const totalSize = results.reduce((sum, r) => sum + r.sizeBytes, 0)
-  console.info(
-    `[shacl-reader] Read ${results.length} SHACL files from ${new Set(results.map((r) => r.domain)).size} domains (${(totalSize / 1024).toFixed(0)} KB total)`
-  )
+  log.info('Read SHACL files', {
+    fileCount: results.length,
+    domainCount: new Set(results.map((r) => r.domain)).size,
+    totalKb: Math.round(totalSize / 1024),
+  })
 
   return results
 }

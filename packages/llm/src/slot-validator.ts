@@ -40,8 +40,101 @@ const MAX_PROPERTY_MATCH_DISTANCE = 2
 /** Maximum suggestions to generate per gap */
 const MAX_SUGGESTIONS = 5
 
-/** Minimum similarity score (0-1) to include a suggestion */
-const MIN_SUGGESTION_SIMILARITY = 0.3
+/**
+ * Minimum similarity score (0-1) to include a suggestion. Raised to
+ * 0.5 in tandem with the tokenised matcher below — at 0.3 with full-
+ * string Levenshtein, any two 5-character strings (no shared letters)
+ * scored ~0.44 because edit distance can opportunistically align any
+ * matching character anywhere. The tokenised approach + 0.5 floor
+ * filters that noise cleanly.
+ */
+const MIN_SUGGESTION_SIMILARITY = 0.5
+
+/**
+ * Common English / German stopwords plus a few connectives the LLM
+ * sometimes echoes back in `gap.term`. We strip them before scoring
+ * so a multi-word gap doesn't drag noise into the suggestion candidates.
+ * Kept short and additive — anything not on the list still scores,
+ * just falls below the 0.5 floor when truly unrelated.
+ */
+const SUGGESTION_STOPWORDS = new Set([
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'of',
+  'for',
+  'from',
+  'to',
+  'in',
+  'on',
+  'at',
+  'by',
+  'with',
+  'without',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'that',
+  'this',
+  'these',
+  'those',
+  'der',
+  'die',
+  'das',
+  'und',
+  'oder',
+  'mit',
+  'ohne',
+  'aus',
+  'von',
+  'für',
+  'zu',
+])
+
+/**
+ * Score how well a multi-word gap term matches one candidate enum
+ * value. Tokenises the gap on non-alphanumeric boundaries, drops
+ * short / stopword tokens, then takes the best per-token score
+ * across two channels:
+ *   1. Substring containment (case-insensitive) — the gap word lives
+ *      inside the candidate (or vice versa for long gap words). This
+ *      catches the most common shape: user says "maps", candidate is
+ *      `hdmap` / `HdMap` / `HighDefinitionMap`.
+ *   2. Levenshtein similarity on the single token vs the candidate.
+ *      Catches typo'd or stemmed variants ("europa" → "europe").
+ *
+ * Falls back to whole-string Levenshtein when the gap has no usable
+ * tokens (e.g. an all-stopword phrase or a single short string).
+ *
+ * Plural stemming: drop a trailing `s` / `es` / `ies` so "maps"
+ * matches "map", "categories" matches "category".
+ */
+function suggestionScore(gapTerm: string, candidate: string): number {
+  const candLower = candidate.toLowerCase()
+  const tokens = gapTerm
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 3 && !SUGGESTION_STOPWORDS.has(t))
+  if (tokens.length === 0) return similarity(gapTerm.toLowerCase(), candLower)
+  let best = 0
+  for (const tok of tokens) {
+    const stem = tok.replace(/(ies|es|s)$/, '')
+    if (candLower.includes(stem)) {
+      best = Math.max(best, 1)
+      continue
+    }
+    if (stem.length >= 3 && stem.includes(candLower)) {
+      best = Math.max(best, 0.9)
+      continue
+    }
+    best = Math.max(best, similarity(tok, candLower))
+  }
+  return best
+}
 
 /**
  * Levenshtein edit distance between two strings.
@@ -213,12 +306,6 @@ export function validateSlots(
   for (const term of response.interpretation.mappedTerms) {
     const propertyName = term.property
 
-    // Location fields (country, state, city, region) and license are not enum-validated
-    if (isLocationOrLicenseProperty(propertyName)) {
-      validatedTerms.push(term)
-      continue
-    }
-
     // Numeric range terms — keep as-is (validated structurally, not by vocabulary)
     if (propertyName && numericProps.has(propertyName)) {
       validatedTerms.push({
@@ -309,7 +396,6 @@ export function validateSlots(
       mappedTerms: validatedTerms,
       domains: response.interpretation.domains,
       appliedFilters: response.interpretation.appliedFilters,
-      appliedLocation: response.interpretation.appliedLocation,
     },
     gaps: validatedGaps,
     sparql: response.sparql,
@@ -318,28 +404,22 @@ export function validateSlots(
 
 /**
  * Result of SHACL-validating an entire slot set.
- * Returns the cleansed slot fragments plus any gaps for values that failed
+ *
+ * Returns the cleansed `filters` map plus any gaps for values that failed
  * SHACL constraints. The caller composes these into a SearchSlots object.
+ *
+ * Task 21d folded the previous typed `location` / `license` fields into
+ * `filters` keyed by SHACL leaf local names — every constraint flows
+ * through one generic surface.
  */
 export interface ShaclSlotValidationResult {
   filters: Record<string, string | string[]>
-  /**
-   * Each location field carries the surviving elements. Arrays compile to
-   * `FILTER(?v IN (...))`, single values to `FILTER(?v = "...")`.
-   */
-  location: {
-    country?: string | string[]
-    state?: string | string[]
-    region?: string | string[]
-    city?: string | string[]
-  }
-  license?: string
   gaps: OntologyGap[]
 }
 
 /**
- * Validate every value in `filters`, `location`, and `license` against the
- * full SHACL Core constraint set declared in the shapes graph.
+ * Validate every value in `filters` against the full SHACL Core
+ * constraint set declared in the shapes graph.
  *
  * Generic by construction:
  *   - looks up slot keys → property IRI(s) via the SHACL validator's index,
@@ -351,24 +431,18 @@ export interface ShaclSlotValidationResult {
  * so case/typo errors don't generate false negatives. After fuzzy correction,
  * SHACL is the final gate — nothing reaches the SPARQL compiler unless every
  * declared constraint on the property is satisfied.
+ *
+ * Task 21d removed the typed `location` / `license` parameters: every
+ * constraint now lives in `filters` keyed by the SHACL leaf local name,
+ * and the same validation loop handles geography, license, and any
+ * other leaf the schema declares.
  */
 export async function validateSlotsAgainstShacl(
   filters: Record<string, string | string[]>,
-  location:
-    | {
-        country?: string | string[]
-        state?: string | string[]
-        region?: string | string[]
-        city?: string | string[]
-      }
-    | undefined,
-  license: string | undefined,
   shaclValidator: ShaclValidator,
   vocabulary?: OntologyVocabulary
 ): Promise<ShaclSlotValidationResult> {
   const cleanFilters: Record<string, string | string[]> = {}
-  const cleanLocation: ShaclSlotValidationResult['location'] = {}
-  let cleanLicense: string | undefined
   const gaps: OntologyGap[] = []
 
   // Build a fast lookup of known-good enum values per slot. Values that
@@ -439,28 +513,7 @@ export async function validateSlotsAgainstShacl(
     }
   }
 
-  // Location — every populated field gets a SHACL check. Same batch path for
-  // arrays so a 27-country "europe" array validates in one engine call.
-  if (location) {
-    const cleanLocationRec = cleanLocation as Record<string, string | string[]>
-    for (const [slotKey, value] of Object.entries(location)) {
-      if (Array.isArray(value)) {
-        const kept = await checkArrayAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
-        if (kept.length > 0) cleanLocationRec[slotKey] = kept
-      } else if (typeof value === 'string' && value.length > 0) {
-        const ok = await checkAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
-        if (ok) cleanLocationRec[slotKey] = value
-      }
-    }
-  }
-
-  // License — single literal, same gate.
-  if (typeof license === 'string' && license.length > 0) {
-    const ok = await checkAndAccumulate('license', license, shaclValidator, gaps, vocabulary)
-    if (ok) cleanLicense = license
-  }
-
-  return { filters: cleanFilters, location: cleanLocation, license: cleanLicense, gaps }
+  return { filters: cleanFilters, gaps }
 }
 
 /**
@@ -643,15 +696,20 @@ export function correctFilters(
     }
 
     if (Array.isArray(value)) {
-      const correctedValues: string[] = []
-      for (const v of value) {
+      // Per element: prefer the fuzzy-matched canonical value; fall
+      // back to the raw element so the downstream SHACL gate can emit
+      // a structured gap. Without this pass-through, values too far
+      // from any sh:in entry are silently dropped and the caller sees
+      // an empty filter with no explanation.
+      const correctedValues: string[] = value.map((v) => {
         const match = findBestMatch(v, propInfo.allowedValues)
-        if (match) correctedValues.push(match.match)
-      }
-      if (correctedValues.length > 0) corrected[propName] = correctedValues
+        return match ? match.match : v
+      })
+      corrected[propName] = correctedValues
     } else {
       const match = findBestMatch(value, propInfo.allowedValues)
-      if (match) corrected[propName] = match.match
+      // Same pass-through rationale as the array branch.
+      corrected[propName] = match ? match.match : value
     }
   }
 
@@ -676,24 +734,22 @@ export function correctDomains(
   ranges: Record<string, { min?: number; max?: number }>,
   vocabulary: OntologyVocabulary
 ): string[] {
-  // Build property → Set<domain> index (multi-domain aware)
+  // Build property → Set<domain> index (multi-domain aware). Skip
+  // occurrences whose domain couldn't be attributed (empty-string sentinel
+  // from the vocabulary extractor) so an unattributed property never injects
+  // a phantom domain into the corrected set.
   const propDomainsIndex = new Map<string, Set<string>>()
-  for (const prop of vocabulary.enumProperties) {
-    const existing = propDomainsIndex.get(prop.localName)
+  const indexProperty = (localName: string, domain: string): void => {
+    if (!domain) return
+    const existing = propDomainsIndex.get(localName)
     if (existing) {
-      existing.add(prop.domain)
+      existing.add(domain)
     } else {
-      propDomainsIndex.set(prop.localName, new Set([prop.domain]))
+      propDomainsIndex.set(localName, new Set([domain]))
     }
   }
-  for (const prop of vocabulary.numericProperties) {
-    const existing = propDomainsIndex.get(prop.localName)
-    if (existing) {
-      existing.add(prop.domain)
-    } else {
-      propDomainsIndex.set(prop.localName, new Set([prop.domain]))
-    }
-  }
+  for (const prop of vocabulary.enumProperties) indexProperty(prop.localName, prop.domain)
+  for (const prop of vocabulary.numericProperties) indexProperty(prop.localName, prop.domain)
 
   // Collect domains required by filter/range properties
   // If a property exists in the LLM's chosen domain, use that
@@ -748,15 +804,20 @@ function enrichGapWithSuggestions(
   gap: OntologyGap,
   allowedIndex: Map<string, { allowedValues: string[]; domain: string }>
 ): OntologyGap {
-  // If gap already has good suggestions, keep them
-  if (gap.suggestions && gap.suggestions.length > 0) return gap
+  // If gap already has good suggestions, keep them. An explicit
+  // empty array is the "do not enrich" sentinel — used by gaps
+  // that describe a schema limitation rather than a value mismatch
+  // (e.g. dropped-reference gaps from `collectDroppedReferenceGaps`).
+  // Adding "related concepts" to a "we don't support this shape yet"
+  // explanation only misleads the reader.
+  if (Array.isArray(gap.suggestions)) return gap
 
   // Search across all enum properties for the best matching values
   const allSuggestions: { value: string; score: number; property: string }[] = []
 
   for (const [propName, { allowedValues }] of allowedIndex) {
     for (const allowed of allowedValues) {
-      const score = similarity((gap.term ?? '').toLowerCase(), allowed.toLowerCase())
+      const score = suggestionScore(gap.term ?? '', allowed)
       if (score >= MIN_SUGGESTION_SIMILARITY) {
         allSuggestions.push({ value: allowed, score, property: propName })
       }
@@ -773,10 +834,4 @@ function enrichGapWithSuggestions(
     ...gap,
     suggestions: topSuggestions.length > 0 ? topSuggestions : gap.suggestions,
   }
-}
-
-/** Check if a property is a location or license field (not vocabulary-validated) */
-function isLocationOrLicenseProperty(propertyName: string | undefined): boolean {
-  if (!propertyName) return false
-  return ['country', 'state', 'region', 'city', 'license'].includes(propertyName)
 }

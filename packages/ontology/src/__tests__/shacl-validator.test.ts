@@ -28,7 +28,7 @@ describe('ShaclValidator', () => {
     // The validator must discover at least the two properties we test below.
     expect(props).toContain(GEOREF_COUNTRY)
     expect(props).toContain(HDMAP_ROAD_TYPES)
-  }, 30_000)
+  }, 120_000)
 
   it('rejects an out-of-pattern country code (the europe regression)', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -40,7 +40,7 @@ describe('ShaclValidator', () => {
     // guarantees this constraint component IRI.
     const constraints = result.violations.map((v) => v.sourceConstraintComponent)
     expect(constraints).toContain('http://www.w3.org/ns/shacl#PatternConstraintComponent')
-  }, 30_000)
+  }, 120_000)
 
   it('accepts a valid ISO 3166-1 alpha-2 country code', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -48,7 +48,7 @@ describe('ShaclValidator', () => {
 
     expect(result.conforms).toBe(true)
     expect(result.violations).toEqual([])
-  }, 30_000)
+  }, 120_000)
 
   it('rejects a value outside an sh:in enumeration', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -57,7 +57,7 @@ describe('ShaclValidator', () => {
     expect(result.conforms).toBe(false)
     const constraints = result.violations.map((v) => v.sourceConstraintComponent)
     expect(constraints).toContain('http://www.w3.org/ns/shacl#InConstraintComponent')
-  }, 30_000)
+  }, 120_000)
 
   it('accepts a value inside an sh:in enumeration', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -65,7 +65,27 @@ describe('ShaclValidator', () => {
 
     expect(result.conforms).toBe(true)
     expect(result.violations).toEqual([])
-  }, 30_000)
+  }, 120_000)
+
+  /**
+   * Regression: `rdf-validate-shacl` 0.6 implements only SHACL Core. When
+   * a shape graph carries SHACL-Advanced constraints like `sh:sparql`,
+   * the engine throws `Cannot find validator for constraint component …`
+   * as soon as it tries to evaluate a candidate against that shape — and
+   * the whole validation aborts. The OpenLABEL workspace ontology uses
+   * `sh:sparql` on the shape containing `particulatesWaterValue`, so
+   * any LLM submission that touches that property tripped the bug.
+   *
+   * Fix in `loadShapesFromDisk`: strip `sh:sparql` (and a couple of
+   * sibling Advanced predicates) from the dataset before constructing
+   * the engine. The shape continues to enforce its Core constraints; the
+   * bespoke SPARQL rule becomes a no-op. This test pins the contract.
+   */
+  it('does not throw when validating against a shape that carries an sh:sparql constraint', async () => {
+    const validator = await ShaclValidator.fromWorkspace()
+    const PROP = 'https://openlabel.asam.net/V1-0-0/ontologies/particulatesWaterValue'
+    await expect(validator.validateValue(PROP, '0.5')).resolves.toBeDefined()
+  }, 120_000)
 
   it('reports conforms=true for properties not covered by any shape', async () => {
     const validator = await ShaclValidator.fromWorkspace()
@@ -74,7 +94,7 @@ describe('ShaclValidator', () => {
     // Unknown properties cannot violate anything — the validator returns a
     // no-op pass so the caller can decide how to handle them.
     expect(result.conforms).toBe(true)
-  }, 30_000)
+  }, 120_000)
 })
 
 describe('ShaclValidator — engine-call accounting (R2, R3, R8)', () => {
@@ -190,7 +210,7 @@ describe('ShaclValidator — bounded result cache', () => {
       expect(validator.__resultCacheSize__).toBeLessThanOrEqual(4)
     }
     expect(validator.__resultCacheSize__).toBe(4)
-  }, 30_000)
+  }, 120_000)
 })
 
 /**

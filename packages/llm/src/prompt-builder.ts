@@ -22,6 +22,10 @@ Translate a user's natural language query into **structured search slots**. You 
 
 You communicate ONLY through tool calls — never reply with plain text.
 
+**You MUST call \`submit_slots\` exactly once per request, even if you cannot fill any field.** An empty submission (\`{ "domains": [], "filters": {}, "ranges": {} }\`) plus a \`gaps\` entry explaining why nothing was extracted is better than silence — silence forces the caller to fall back to a domain-less wildcard search.
+
+**Languages:** queries may arrive in any natural language (English, German, French, Japanese, …). Translate the user's terms internally and map to the SHACL property local names (which are always English). Do not refuse a query because it's not in English.
+
 ## Methodology — How to Translate Natural Language to Ontology Slots
 
 Follow this systematic approach:
@@ -84,18 +88,31 @@ For properties with \`sh:datatype xsd:integer\` or \`xsd:float\` or \`xsd:decima
 Look at the SHACL shapes to identify which properties are numeric (\`xsd:integer\`, \`xsd:float\`, \`xsd:decimal\`) and map the user's qualitative terms to appropriate thresholds.
 `
 
-/** Location, license, domains sections (stable across ontology changes) */
+/** Generic slot guidance — stable across ontology changes */
 const STATIC_SECTIONS = `
-### \`location\` — Geographic filters
+### Geographic, license, and other "well-known" filters
 
-| Field     | Format                                     |
-| --------- | ------------------------------------------ |
-| \`country\` | ISO 2-letter: "DE", "US", "CN", "JP", etc. |
-| \`state\`   | ISO state code: "DE-BY", "US-CA", etc.     |
-| \`region\`  | Free text: "Upper Bavaria", etc.           |
-| \`city\`    | City name: "Munich", "Berlin", etc.        |
+Geographic filters (country, state, region, city), license identifiers, and any
+other constraint that maps to a SHACL leaf property go into \`filters\` keyed
+by the **exact local name** declared in the SHACL shapes. There is no
+dedicated "location" or "license" slot — the compiler discovers the chain from
+the asset class to whatever leaf the user is constraining, and emits the
+appropriate SPARQL.
 
-Each field accepts a single string OR an array of strings.
+Look at the SHACL shapes for the property's \`sh:path\` local name and
+\`sh:in\` (if any). If the SHACL has a property whose path local name is
+\`country\` with \`sh:datatype xsd:string\` or \`sh:pattern\` for ISO codes,
+emit \`"country": "DE"\`. If the property accepts a region/list, use an array
+for IN-semantics:
+
+- "in Germany" → \`filters: { "country": "DE" }\`
+- "in Germany or France" → \`filters: { "country": ["DE","FR"] }\`
+- "in the EU" → list every EU member ISO code as an array under whichever
+  leaf the SHACL declares ("country", or a different name if the ontology
+  models geography differently)
+- "Munich" → if the SHACL has both \`country\` and \`city\` leaves, emit
+  \`{ "country": "DE", "city": "Munich" }\` so the city's containing
+  country is also constrained
 
 **Always emit an array when the user expresses a region, continent, group of
 countries, or any multi-country intent.** Use your world knowledge to expand
@@ -103,19 +120,9 @@ the region to the explicit list of values it covers — do NOT silently
 substitute one country for a region. The SHACL gate validates every element;
 invalid entries are dropped, valid ones stay.
 
-Examples:
-- "in europe" → \`country: ["DE","FR","IT","ES","NL","BE","AT","CH","PL","SE","NO","DK","FI","PT","IE","GR","CZ","HU","RO","BG","HR","SK","SI","EE","LV","LT","LU"]\`
-- "in scandinavia" → \`country: ["SE","NO","DK","FI","IS"]\`
-- "in the EU" → list the current EU member ISO codes
-- "in DACH" → \`country: ["DE","AT","CH"]\`
-- "in Germany or France" → \`country: ["DE","FR"]\`
-- "in Germany" → \`country: "DE"\` (single value is fine when intent is one country)
-
-Resolve city names to countries (e.g., "Munich" → country: "DE", city: "Munich").
-
-### \`license\` — License identifier
-
-"CC-BY-4.0", "CC-BY-SA-4.0", "CC0-1.0", "MIT", "EPL-2.0", "Apache-2.0"
+License IDs use the same generic surface: if the SHACL declares a
+license-bearing leaf, emit it as a filter keyed by that local name
+(e.g. \`filters: { "license": "CC-BY-4.0" }\`).
 
 ### \`references\` — Cross-reference filter
 
@@ -163,6 +170,58 @@ const RULES = `
 8. ALWAYS extract numeric constraints into ranges — never ignore them
 9. For \`sh:pattern\` properties (like country codes), generate values matching the pattern (e.g., "Germany" → "DE" for a 2-letter alpha pattern)
 
+## Cross-reference vs Filter — Use the SHACL Structure, Not the User's Wording
+
+When a user query names two or more concepts that each resolve to a
+distinct asset class in the SHACL (each appears as the \`sh:targetClass\`
+of some shape, i.e. they ARE asset types, not enum values), the
+relationship between them is structurally a **cross-reference**, not a
+property filter — regardless of which natural-language verb (or
+language) the user used to express the link.
+
+Procedure when you spot more than one asset-class concept in the query:
+
+1. Pick the primary asset class — the one the user is searching FOR (the
+   "head" concept). It becomes the \`domains\` entry.
+2. For each secondary asset class, inspect the SHACL: does the primary
+   class's shape (or its nested shapes) declare a property path that
+   ends at an IRI / class binding of the secondary class? Look for
+   \`sh:property\` chains whose target shape eventually carries
+   \`sh:nodeKind sh:IRI\`, \`sh:class <Secondary>\`, or a manifest-style
+   reference predicate.
+3. If yes, the secondary becomes \`references.domain: <secondary>\`.
+4. Only treat a concept as a property filter when (a) it matches an
+   \`sh:in\` literal or \`sh:pattern\` constraint on a property of the
+   primary's shape AND (b) it does NOT also resolve to an asset class.
+
+Concretely: if the query mentions concept A and concept B, both are
+asset classes, and the SHACL declares a chain from A's shape that can
+reach a B-typed value, the slots are \`domains: [A], references: {
+domain: B }\`. **Do NOT** map B to a \`sh:in\` value of some other
+property on A — even if a value with B's local name happens to exist
+in that enum. The structural reading wins over the lexical one.
+
+This rule is ontology- and language-agnostic. The same SHACL link
+makes "scenarios derived from traces", "Szenarien aus Traces", and
+"シナリオがトレースから" all compile to the same slots, because the
+trigger is the structural reachability between the two asset classes
+in the SHACL — not any specific verb.
+
+## Value-first Property Disambiguation
+
+Many ontologies declare the same domain concept under more than one shape: one property's \`sh:in\` carries the bare lowercase tokens a user typically types ("motorway", "rural"), and another property's \`sh:in\` lists the CamelCase class identifiers the ontology engineer also defined ("RoadTypeMotorway", "RoadTypeRural"). Both can be semantically valid — but only one is what the user actually said.
+
+**Rule: pick the property whose \`sh:in\` already contains the user's word VERBATIM.**
+
+When ranking candidate properties, in order:
+
+1. **Exact \`sh:in\` membership, case-insensitive, with the user's word as the WHOLE literal.** This is HIGH confidence. The property's local name is irrelevant — what matters is that the value lands inside the enum without transformation.
+2. **Exact \`sh:in\` membership of a stemmed / pluralised variant** (user typed "motorways", \`sh:in\` lists "motorway"). Still HIGH; strip the plural.
+3. **Substring match where the user's word is the suffix of a longer compound value** (user typed "motorway", \`sh:in\` lists "RoadTypeMotorway"). MEDIUM at best — only choose this if no shorter exact match exists in any other property. Compound / CamelCase tokens are usually class-style identifiers, not what the user said.
+4. **Synonym requiring world knowledge** (user typed "highway", \`sh:in\` lists "motorway"). MEDIUM; note the substitution in \`interpretation.mappedTerms\`.
+
+Concretely: scan the user's word against every \`sh:in\` enumeration in the relevant domain(s) BEFORE settling on a property. The property whose enum holds the cleanest match wins, even if another property has a more impressive-looking name. A short lowercase \`sh:in\` literal that matches the user's word verbatim is always preferable to a CamelCase compound that merely contains it as a substring.
+
 ## Tiered Confidence
 
 - **HIGH**: Term maps directly to an allowed value from \`sh:in\` or matches \`sh:pattern\` → fill the slot
@@ -173,9 +232,27 @@ const RULES = `
 
 Call \`submit_slots\` with:
 
-- \`slots\`: Object with \`{ filters, ranges, location, license, references, domains }\` — only include non-empty fields
+- \`slots\`: Object with \`{ filters, ranges, references, domains }\` — only include non-empty fields. Geographic, license, and other constraints all live inside \`filters\` keyed by the SHACL leaf local name.
 - \`interpretation\`: Summary + mapped terms with confidence
 - \`gaps\`: Array of unmapped concepts with reasons and suggestions
+
+## Mandatory submission
+
+You MUST call \`submit_slots\` even when the query yields no mappable
+content. Three valid outcomes:
+
+1. **All-mapped**: every user term has a high-confidence slot match → fill
+   slots, fill mappedTerms, empty gaps.
+2. **Partial**: some terms map, some don't → fill the matched slots,
+   add gaps for the others.
+3. **Nothing maps**: no term can be mapped to a SHACL property →
+   call \`submit_slots\` with empty \`slots\` AND a gap entry naming
+   the original query and the reason (e.g. "the requested property
+   is not declared in any SHACL shape").
+
+Skipping the tool call entirely is **never correct** — the caller
+cannot distinguish "LLM crashed" from "no extractable content" and
+falls back to an unanchored cross-domain scan.
 `
 
 /**
@@ -245,9 +322,12 @@ User: "I need a German asset of type X in format Y with at least 5 units"
 {
   "slots": {
     "domains": ["domain-from-shacl"],
-    "filters": { "propertyFromShacl": "value-from-sh:in", "formatProperty": "format-value" },
-    "ranges": { "numericProperty": { "min": 5 } },
-    "location": { "country": "DE" }
+    "filters": {
+      "propertyFromShacl": "value-from-sh:in",
+      "formatProperty": "format-value",
+      "country": "DE"
+    },
+    "ranges": { "numericProperty": { "min": 5 } }
   },
   "interpretation": {
     "summary": "German asset of type X in format Y, minimum 5 units",
@@ -296,9 +376,8 @@ User: "French assets with intersections and related data of type B"
 {
   "slots": {
     "domains": ["domain-a", "domain-b"],
-    "filters": {},
-    "ranges": { "countProperty": { "min": 1 } },
-    "location": { "country": "FR" }
+    "filters": { "country": "FR" },
+    "ranges": { "countProperty": { "min": 1 } }
   },
   "interpretation": {
     "summary": "French assets from domain A and B containing intersections",

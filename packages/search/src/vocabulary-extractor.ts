@@ -10,10 +10,13 @@
  * @see https://www.w3.org/TR/skos-reference/
  */
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
+import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
 import {
+  extractDomain,
+  extractLocalName,
   queryInstanceValueDistribution,
   querySkosConcepts,
   querySubClassEdges,
@@ -91,16 +94,26 @@ let cachedVocabulary: OntologyVocabulary | null = null
 export async function extractVocabulary(store: SparqlStore): Promise<OntologyVocabulary> {
   if (cachedVocabulary) return cachedVocabulary
 
+  // Attribute every property to its owning domain via the registry's
+  // longest-prefix matching — the same mechanism schema-queries uses —
+  // rather than a fragile `/vN/` path-segment regex that returned the
+  // literal "unknown" for any IRI not matching that convention (gx:,
+  // fragment IRIs, …). The registry is a cached singleton, so this is cheap.
+  const registry = await buildDomainRegistry()
+
   const [enumProperties, numericProperties, skosConcepts, subClassEdges] = await Promise.all([
-    extractEnumProperties(store),
-    extractNumericProperties(store),
+    extractEnumProperties(store, registry),
+    extractNumericProperties(store, registry),
     querySkosConcepts(store),
     querySubClassEdges(store),
   ])
 
+  // Drop the empty-string sentinel `extractDomain` returns for an
+  // unresolvable IRI — it is not a searchable domain and must never reach
+  // the interpretation or the compiler.
   const domains = [
     ...new Set([...enumProperties.map((p) => p.domain), ...numericProperties.map((p) => p.domain)]),
-  ]
+  ].filter((d) => d.length > 0)
 
   // Group SKOS concepts by scheme for O(1) lookup at compile time.
   const conceptSchemes = new Map<string, SkosConceptInfo[]>()
@@ -140,7 +153,10 @@ export function resetVocabulary(): void {
 /**
  * Extract all properties with sh:in enumerations from the schema graph.
  */
-async function extractEnumProperties(store: SparqlStore): Promise<EnumProperty[]> {
+async function extractEnumProperties(
+  store: SparqlStore,
+  registry: DomainRegistry
+): Promise<EnumProperty[]> {
   const sparql = `
     ${sparqlPrefixes('sh', 'rdf')}
 
@@ -166,7 +182,7 @@ async function extractEnumProperties(store: SparqlStore): Promise<EnumProperty[]
     if (!iri || !value) continue
 
     const localName = extractLocalName(iri)
-    const domain = extractDomain(iri)
+    const domain = extractDomain(iri, registry)
 
     if (!propertyMap.has(iri)) {
       propertyMap.set(iri, {
@@ -191,7 +207,10 @@ async function extractEnumProperties(store: SparqlStore): Promise<EnumProperty[]
 /**
  * Extract all numeric properties (xsd:integer, xsd:float) from the schema graph.
  */
-async function extractNumericProperties(store: SparqlStore): Promise<NumericProperty[]> {
+async function extractNumericProperties(
+  store: SparqlStore,
+  registry: DomainRegistry
+): Promise<NumericProperty[]> {
   const sparql = `
     ${sparqlPrefixes('sh', 'xsd')}
 
@@ -226,25 +245,9 @@ async function extractNumericProperties(store: SparqlStore): Promise<NumericProp
       label: row['name']?.value ?? extractLocalName(iri),
       description: row['description']?.value ?? '',
       datatype,
-      domain: extractDomain(iri),
+      domain: extractDomain(iri, registry),
     })
   }
 
   return properties
-}
-
-/** Extract local name from an IRI (after last / or #) */
-function extractLocalName(iri: string): string {
-  const hashIdx = iri.lastIndexOf('#')
-  const slashIdx = iri.lastIndexOf('/')
-  const idx = Math.max(hashIdx, slashIdx)
-  return idx >= 0 ? iri.substring(idx + 1) : iri
-}
-
-/** Extract domain from IRI (e.g., "hdmap" from ".../hdmap/v6/roadTypes") */
-function extractDomain(iri: string): string {
-  const parts = iri.split('/')
-  const versionIdx = parts.findIndex((p) => /^v\d+$/.test(p))
-  if (versionIdx > 0) return parts[versionIdx - 1] ?? 'unknown'
-  return 'unknown'
 }

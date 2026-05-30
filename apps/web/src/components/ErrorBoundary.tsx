@@ -32,6 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     // Surfaces in browser devtools / production error tracker.
+
     console.error('ErrorBoundary caught', { error, componentStack: info.componentStack })
   }
 

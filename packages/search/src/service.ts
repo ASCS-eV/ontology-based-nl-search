@@ -14,7 +14,7 @@ import { generateRequestId, RequestLogger } from '@ontology-search/core/logging'
 import type { PolicyResult } from '@ontology-search/sparql/policy'
 import type { SparqlBinding, SparqlStore } from '@ontology-search/sparql/types'
 
-import type { SearchSlots } from './slots.js'
+import type { CompileResult, SearchSlots, TraceabilityPlan } from './slots.js'
 import type { LlmStructuredResponse } from './types.js'
 
 // ─── Dependency Interfaces ───────────────────────────────────────────────────
@@ -28,8 +28,14 @@ export interface SearchDependencies {
     query: string,
     options: { domain?: string; signal?: AbortSignal }
   ) => Promise<LlmStructuredResponse>
-  /** Compile search slots into a SPARQL query string */
-  compileSlots: (slots: SearchSlots) => Promise<string>
+  /**
+   * Compile search slots into a SPARQL query and (when the query
+   * contains a cross-reference JOIN) a traceability plan the service
+   * uses to attach a per-row breadcrumb. Production wires this to
+   * `compileSlotsWithTrace`; tests typically supply a stub returning
+   * just `{ sparql }`.
+   */
+  compileSlots: (slots: SearchSlots) => Promise<CompileResult>
   /** Compile count queries for all registered asset domains */
   compileCountQueries: () => Promise<{ domain: string; query: string }[]>
   /** Validate a SPARQL query against security policy */
@@ -49,9 +55,29 @@ export interface SearchDependencies {
 /** Flattened SPARQL binding row for API consumers */
 export type ResultRow = Record<string, string>
 
+/**
+ * One row of a cross-reference traceability breadcrumb (WP3, task #18).
+ * Aligned by index with `ExecutionResult.results`. Each `intermediate`
+ * is the IRI / blank-node value bound to the corresponding step
+ * variable; `predicate` is the edge the engine traversed to reach it.
+ */
+export interface ResultTraceStep {
+  /** Full predicate IRI used to reach this step. */
+  predicate: string
+  /** Bound RDF term (IRI or blank-node identifier) at this step. */
+  intermediate: string
+}
+
 /** Result of executing a compiled SPARQL query */
 export interface ExecutionResult {
   results: ResultRow[]
+  /**
+   * Per-row traceability breadcrumbs. Present iff the compiled query
+   * carried a `TraceabilityPlan`; aligned by index with `results`.
+   * Each inner array lists the steps the JOIN walked from `?asset` to
+   * the joined `?refAsset` — UI clients render this as a breadcrumb.
+   */
+  traceability?: ResultTraceStep[][]
   sparql: string
   error?: string
 }
@@ -184,9 +210,12 @@ export class SearchService {
 
     await onProgress?.({ phase: 'executing' })
 
-    // Execute SPARQL and count total datasets in parallel (count is non-critical)
+    // Execute SPARQL and count total datasets in parallel (count is non-critical).
+    // The LLM agent already compiled the SPARQL upstream; if it threaded
+    // a traceability plan through `structured.trace`, the executor uses
+    // it to attach per-row breadcrumbs.
     const [execution, totalDatasets] = await Promise.all([
-      this.executeSparql(structured.sparql, logger, signal),
+      this.executeSparql(structured.sparql, structured.trace, logger, signal),
       this.countTotalDatasets(logger, signal),
     ])
 
@@ -220,15 +249,16 @@ export class SearchService {
     const validatedSlots = this.deps.validateSlots ? await this.deps.validateSlots(slots) : slots
     endValidate()
 
-    // Compile slots to SPARQL
+    // Compile slots to SPARQL — capture trace plan when present so the
+    // executor can attach per-row breadcrumbs.
     const endCompile = logger.time('compile-slots')
-    const sparql = await this.deps.compileSlots(validatedSlots)
+    const { sparql, trace } = await this.deps.compileSlots(validatedSlots)
     endCompile()
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
     // Execute
-    const execution = await this.executeSparql(sparql, logger, signal)
+    const execution = await this.executeSparql(sparql, trace, logger, signal)
 
     const meta = this.buildMeta(requestId, execution.results.length, 0, logger)
     logger.info('Refine completed', { matchCount: meta.matchCount })
@@ -240,10 +270,13 @@ export class SearchService {
 
   /**
    * Execute a SPARQL query through the policy layer and store.
-   * Returns results or a policy/execution error.
+   * Returns results or a policy/execution error. When `trace` is
+   * supplied, also assembles a per-row traceability breadcrumb by
+   * reading the plan's step variables from each binding.
    */
   private async executeSparql(
     sparql: string,
+    trace: TraceabilityPlan | undefined,
     logger: RequestLogger,
     signal?: AbortSignal
   ): Promise<ExecutionResult> {
@@ -266,6 +299,9 @@ export class SearchService {
 
       return {
         results: this.flattenBindings(sparqlResults.results.bindings),
+        traceability: trace
+          ? this.assembleTraceability(sparqlResults.results.bindings, trace)
+          : undefined,
         sparql: policy.query,
       }
     } catch (err) {
@@ -293,6 +329,27 @@ export class SearchService {
         row[key] = term.value
       }
       return row
+    })
+  }
+
+  /**
+   * Walk the trace plan against each row's binding to build a
+   * per-row traceability breadcrumb. Steps whose variable isn't
+   * bound in the row are skipped — that's a normal outcome for
+   * `OPTIONAL`-flavoured patterns the compiler may emit later.
+   */
+  private assembleTraceability(
+    bindings: SparqlBinding[],
+    trace: TraceabilityPlan
+  ): ResultTraceStep[][] {
+    return bindings.map((binding) => {
+      const steps: ResultTraceStep[] = []
+      for (const planStep of trace.steps) {
+        const term = binding[planStep.variable]
+        if (!term) continue
+        steps.push({ predicate: planStep.predicate, intermediate: term.value })
+      }
+      return steps
     })
   }
 

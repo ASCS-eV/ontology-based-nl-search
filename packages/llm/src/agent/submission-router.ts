@@ -27,15 +27,6 @@ export const submissionSchema = z.object({
     ranges: z
       .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
       .optional(),
-    location: z
-      .object({
-        country: z.union([z.string(), z.array(z.string())]).optional(),
-        state: z.union([z.string(), z.array(z.string())]).optional(),
-        region: z.union([z.string(), z.array(z.string())]).optional(),
-        city: z.union([z.string(), z.array(z.string())]).optional(),
-      })
-      .optional(),
-    license: z.string().optional(),
     references: z
       .object({
         domain: z.string(),

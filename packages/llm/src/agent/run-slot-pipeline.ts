@@ -24,7 +24,12 @@
 import type { Stopwatch } from '@ontology-search/core/logging'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { OntologyVocabulary } from '@ontology-search/search'
-import { compileSlots } from '@ontology-search/search/compiler'
+import {
+  expandFilterConcepts,
+  getConceptExpansionIndex,
+  getInitializedStore,
+} from '@ontology-search/search'
+import { compileSlotsWithTrace, resolveKnownDomains } from '@ontology-search/search/compiler'
 import type { SearchSlots } from '@ontology-search/search/slots'
 
 import {
@@ -52,13 +57,6 @@ export interface SlotPipelineSubmission {
     domains?: string[]
     filters?: Record<string, string | string[]>
     ranges?: Record<string, { min?: number; max?: number }>
-    location?: {
-      country?: string | string[]
-      state?: string | string[]
-      region?: string | string[]
-      city?: string | string[]
-    }
-    license?: string
     references?: { domain: string; label?: string }
   }
   interpretation: QueryInterpretation
@@ -91,17 +89,20 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   const endValidation = sw.time('post-llm-validation')
   // 1. Fuzzy match: case / typo correction against sh:in enums.
   const fuzzedFilters = correctFilters(submission.slots.filters ?? {}, vocabulary)
+  // 1b. Concept-hierarchy expansion: if a filter value names a broad
+  // SKOS concept ("Europe", "Scandinavia", a vehicle super-category),
+  // expand it to its transitive narrower members so a literal-valued
+  // property matches the explicit set. Data-driven — no region table
+  // is hardcoded; an ontology with no SKOS hierarchy gets a no-op.
+  const store = await getInitializedStore()
+  const conceptIndex = await getConceptExpansionIndex(store)
+  const expandedFilters = expandFilterConcepts(fuzzedFilters, conceptIndex)
   // 2. SHACL gate: enforces every Core constraint declared in the shapes
-  // graph (sh:pattern, sh:datatype, …) on filters, location, and license.
-  // Values that fail are dropped from slots and emitted as gaps.
+  // graph (sh:pattern, sh:datatype, …) on every filter value, including
+  // the geographic and license keys that used to live in dedicated
+  // sub-shapes. Values that fail are dropped and emitted as gaps.
   const shacl = await ShaclValidator.fromWorkspace()
-  const shaclResult = await validateSlotsAgainstShacl(
-    fuzzedFilters,
-    submission.slots.location,
-    submission.slots.license,
-    shacl,
-    vocabulary
-  )
+  const shaclResult = await validateSlotsAgainstShacl(expandedFilters, shacl, vocabulary)
   // 3. Ranges go through their own check: numeric values always pass SHACL
   // datatype constraints, so we only need to confirm the property name is
   // known. Hallucinated keys (e.g. `numberLanes`) are dropped here.
@@ -113,20 +114,63 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     rangeResult.ranges,
     vocabulary
   )
+  // 4b. Drop any domain the registry can't resolve — an LLM-hallucinated
+  // "unknown", a typo, or an extraction artifact. The compiler skips these
+  // silently when building UNION arms, so leaving them in `slots.domains`
+  // only pollutes the interpretation with a phantom `domain:unknown` row
+  // that never affected the SPARQL. Filtering here keeps the interpretation
+  // honest about what was actually compiled.
+  const knownDomains = await resolveKnownDomains(correctedDomains)
+
+  // 4c. `references.domain` is a cross-reference JOIN target (parent →
+  // child via the discovered SHACL reference chain), not a peer of the
+  // primary domain. When the LLM emits both `domains: [parent, child]`
+  // and `references: { domain: child }`, the compiler's peer-UNION path
+  // would silently ignore the references slot and emit two independent
+  // arms instead of a join. Canonicalize the reference domain and remove
+  // it from the peer set so the single-domain JOIN path is taken.
+  // Drop the references slot entirely when the named child isn't an
+  // asset domain — the compiler can't build a chain to a phantom.
+  let normalizedReferences = submission.slots.references
+  let primaryDomains = knownDomains
+  if (normalizedReferences?.domain) {
+    const [canonicalRef] = await resolveKnownDomains([normalizedReferences.domain])
+    if (canonicalRef) {
+      normalizedReferences = { ...normalizedReferences, domain: canonicalRef }
+      primaryDomains = knownDomains.filter((d) => d !== canonicalRef)
+    } else {
+      normalizedReferences = undefined
+    }
+  }
   endValidation()
 
   const slots: SearchSlots = {
-    domains: correctedDomains,
+    domains: primaryDomains,
     filters: shaclResult.filters,
     ranges: rangeResult.ranges,
-    location: shaclResult.location,
-    license: shaclResult.license,
-    references: submission.slots.references,
+    references: normalizedReferences,
   }
 
-  // 5. Deterministic SPARQL compilation.
+  // 4d. Honest dropped-reference report. The LLM's mappedTerms array
+  // can carry MORE than one `references.domain` entry (one per asset-
+  // class the user named), but `slots.references` is a single object —
+  // only one survives into the compiled SPARQL. Without an explicit
+  // gap, the UI shows multiple `references.domain:` chips but the
+  // SPARQL silently uses only one, leaving the user wondering why
+  // their second reference didn't filter anything. Emit a gap for
+  // each dropped entry so the interpretation panel is truthful about
+  // what was compiled vs ignored. N-hop reference chains are tracked
+  // as a separate workstream; when they land, this gap goes away.
+  const droppedReferenceGaps = collectDroppedReferenceGaps(
+    submission.interpretation.mappedTerms ?? [],
+    normalizedReferences?.domain
+  )
+
+  // 5. Deterministic SPARQL compilation. Capture the traceability plan
+  // so per-row breadcrumbs surface downstream in `ExecutionResult` —
+  // the trace is `undefined` for plain queries (no cross-reference JOIN).
   const endCompile = sw.time('sparql-compile')
-  const sparql = await compileSlots(slots)
+  const { sparql, trace } = await compileSlotsWithTrace(slots)
   endCompile()
 
   // Enrich interpretation with the final domains and applied filters
@@ -135,17 +179,56 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     ...submission.interpretation,
     domains: slots.domains,
     appliedFilters: Object.keys(slots.filters).length > 0 ? slots.filters : undefined,
-    appliedLocation: slots.location
-      ? Object.fromEntries(Object.entries(slots.location).filter(([, v]) => v !== undefined))
-      : undefined,
   }
 
   const rawResponse: LlmStructuredResponse = {
     interpretation: enrichedInterpretation,
-    gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
+    gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps, ...droppedReferenceGaps],
     sparql,
+    trace,
   }
 
   // 6. Final post-compile sanity / confidence-floor pass.
   return validateSlots(rawResponse, vocabulary)
+}
+
+/**
+ * Inspect the LLM's `mappedTerms` for cross-reference mappings that
+ * lost the slot race. `slots.references` is a single object — when
+ * the LLM names more than one asset class as a reference target, only
+ * the chosen one survives compilation. The others would otherwise
+ * disappear silently between the interpretation panel and the SPARQL,
+ * leaving the user with a "but I asked for X too" mystery.
+ *
+ * Returns one gap per dropped entry, deduplicating by the mapped
+ * domain name so noise stays low.
+ */
+function collectDroppedReferenceGaps(
+  mappedTerms: ReadonlyArray<{ input?: string; mapped?: string; property?: string }>,
+  chosenDomain: string | undefined
+): OntologyGap[] {
+  const droppedSeen = new Set<string>()
+  const out: OntologyGap[] = []
+  for (const term of mappedTerms) {
+    // Match the property naming the LLM tool schema uses for the
+    // references slot — anything starting with `references` (e.g.
+    // `references.domain`) is a candidate. We tolerate variants
+    // because the slot schema and the prompt examples both use it
+    // and the LLM occasionally truncates.
+    if (!term.property || !term.property.startsWith('references')) continue
+    const mappedDomain = term.mapped?.trim()
+    if (!mappedDomain) continue
+    if (chosenDomain && mappedDomain === chosenDomain) continue
+    if (droppedSeen.has(mappedDomain)) continue
+    droppedSeen.add(mappedDomain)
+    out.push({
+      term: term.input || mappedDomain,
+      reason: `Cross-reference to "${mappedDomain}" was dropped — only a single \`references\` slot is supported per query. Re-run the search asking for that link instead, or wait for multi-hop reference chains to ship.`,
+      // Explicit empty array signals the gap-enricher to leave this
+      // alone — schema-limit gaps don't benefit from value-similarity
+      // "related concepts", which would just be noise here.
+      suggestions: [],
+    })
+  }
+  return out
 }

@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.79",
+    "@ai-sdk/mistral": "^2.0.33",
     "@ai-sdk/openai": "^2.0.106",
     "@github/copilot-sdk": "^0.3.0",
     "@ontology-search/core": "workspace:*",

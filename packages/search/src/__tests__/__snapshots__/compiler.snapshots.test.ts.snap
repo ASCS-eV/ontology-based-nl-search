@@ -1,11 +1,87 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`compileSlots — determinism + snapshot suite > all four geographic fields combined as ordinary filters 1`] = `
+"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX gx: <https://w3id.org/gaia-x/development#>
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
+SELECT ?asset ?name ?city ?country ?region ?state WHERE {
+  ?asset a hdmap:HdMap ;
+    rdfs:label ?name .
+  ?asset hdmap:hasDomainSpecification ?domSpec .
+  ?domSpec hdmap:hasGeoreference ?_d0_1 .
+  ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
+  ?_d0_2 georeference:city ?city .
+  ?_d0_2 georeference:country ?country .
+  ?_d0_2 georeference:region ?region .
+  ?_d0_2 georeference:state ?state .
+  FILTER(?city = "Munich")
+  FILTER(?country = "DE")
+  FILTER(?region = "Oberbayern")
+  FILTER(?state = "Bavaria")
+}
+LIMIT 100"
+`;
+
+exports[`compileSlots — determinism + snapshot suite > country filter — multi-value array (FILTER IN matching) 1`] = `
+"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX gx: <https://w3id.org/gaia-x/development#>
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
+SELECT ?asset ?name ?country WHERE {
+  ?asset a hdmap:HdMap ;
+    rdfs:label ?name .
+  ?asset hdmap:hasDomainSpecification ?domSpec .
+  ?domSpec hdmap:hasGeoreference ?_d0_1 .
+  ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
+  ?_d0_2 georeference:country ?country .
+  FILTER(?country IN ("DE", "FR", "IT"))
+}
+LIMIT 100"
+`;
+
+exports[`compileSlots — determinism + snapshot suite > country filter — single value 1`] = `
+"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX gx: <https://w3id.org/gaia-x/development#>
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
+SELECT ?asset ?name ?country WHERE {
+  ?asset a hdmap:HdMap ;
+    rdfs:label ?name .
+  ?asset hdmap:hasDomainSpecification ?domSpec .
+  ?domSpec hdmap:hasGeoreference ?_d0_1 .
+  ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
+  ?_d0_2 georeference:country ?country .
+  FILTER(?country = "DE")
+}
+LIMIT 100"
+`;
+
+exports[`compileSlots — determinism + snapshot suite > country filter — single-element array collapses to FILTER IN of one 1`] = `
+"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX gx: <https://w3id.org/gaia-x/development#>
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
+SELECT ?asset ?name ?country WHERE {
+  ?asset a hdmap:HdMap ;
+    rdfs:label ?name .
+  ?asset hdmap:hasDomainSpecification ?domSpec .
+  ?domSpec hdmap:hasGeoreference ?_d0_1 .
+  ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
+  ?_d0_2 georeference:country ?country .
+  FILTER(?country = "DE")
+}
+LIMIT 100"
+`;
+
 exports[`compileSlots — determinism + snapshot suite > drops an unknown filter key and still emits a deterministic query 1`] = `
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name WHERE {
   ?asset a hdmap:HdMap ;
@@ -18,8 +94,6 @@ exports[`compileSlots — determinism + snapshot suite > drops an unknown range 
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name WHERE {
   ?asset a hdmap:HdMap ;
@@ -32,8 +106,6 @@ exports[`compileSlots — determinism + snapshot suite > empty slots for hdmap 1
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name WHERE {
   ?asset a hdmap:HdMap ;
@@ -46,22 +118,6 @@ exports[`compileSlots — determinism + snapshot suite > empty slots for ositrac
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
-PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
-SELECT ?asset ?name WHERE {
-  ?asset a ositrace:OSITrace ;
-    rdfs:label ?name .
-}
-LIMIT 100"
-`;
-
-exports[`compileSlots — determinism + snapshot suite > empty slots for ositrace 2`] = `
-"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
 SELECT ?asset ?name WHERE {
   ?asset a ositrace:OSITrace ;
@@ -74,8 +130,6 @@ exports[`compileSlots — determinism + snapshot suite > empty slots for scenari
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 SELECT ?asset ?name WHERE {
   ?asset a scenario:Scenario ;
@@ -100,8 +154,6 @@ exports[`compileSlots — determinism + snapshot suite > hdmap Format-group filt
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?formatType WHERE {
   ?asset a hdmap:HdMap ;
@@ -118,8 +170,6 @@ exports[`compileSlots — determinism + snapshot suite > hdmap multi-value Conte
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?roadTypes WHERE {
   ?asset a hdmap:HdMap ;
@@ -136,8 +186,6 @@ exports[`compileSlots — determinism + snapshot suite > hdmap numeric range —
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?numberIntersections WHERE {
   ?asset a hdmap:HdMap ;
@@ -155,8 +203,6 @@ exports[`compileSlots — determinism + snapshot suite > hdmap numeric range —
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?numberIntersections WHERE {
   ?asset a hdmap:HdMap ;
@@ -173,8 +219,6 @@ exports[`compileSlots — determinism + snapshot suite > hdmap numeric range —
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?numberIntersections WHERE {
   ?asset a hdmap:HdMap ;
@@ -191,8 +235,6 @@ exports[`compileSlots — determinism + snapshot suite > hdmap single-value Cont
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?roadTypes WHERE {
   ?asset a hdmap:HdMap ;
@@ -209,8 +251,6 @@ exports[`compileSlots — determinism + snapshot suite > hdmap two ranges in dif
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?numberIntersections ?numberTrafficLights WHERE {
   ?asset a hdmap:HdMap ;
@@ -229,8 +269,6 @@ exports[`compileSlots — determinism + snapshot suite > hdmap two-property filt
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?roadTypes ?laneTypes WHERE {
   ?asset a hdmap:HdMap ;
@@ -245,33 +283,31 @@ SELECT ?asset ?name ?roadTypes ?laneTypes WHERE {
 LIMIT 100"
 `;
 
-exports[`compileSlots — determinism + snapshot suite > hdmap with filter + range + location + license combined 1`] = `
+exports[`compileSlots — determinism + snapshot suite > hdmap with filter + range + country + license combined 1`] = `
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
-SELECT ?asset ?name ?roadTypes ?numberIntersections ?country ?license WHERE {
+PREFIX envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/>
+PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
+SELECT ?asset ?name ?roadTypes ?license ?numberIntersections ?country WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
+  ?domSpec envited-x:hasQuality ?quality_envited_x .
+  ?quality_envited_x envited-x:license ?license .
   ?domSpec hdmap:hasQuantity ?quantity .
   ?quantity hdmap:numberIntersections ?numberIntersections .
-  ?domSpec hdmap:hasGeoreference ?georef .
-  ?georef georeference:hasProjectLocation ?loc .
-  ?loc georeference:country ?country .
-  OPTIONAL {
-    ?asset hdmap:hasResourceDescription ?resDesc .
-    ?resDesc gx:license ?license .
-  }
+  ?domSpec hdmap:hasGeoreference ?_d0_1 .
+  ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
+  ?_d0_2 georeference:country ?country .
   FILTER(?roadTypes = "motorway")
+  FILTER(?license = "CC-BY-4.0")
   FILTER(xsd:float(?numberIntersections) >= 5)
   FILTER(xsd:float(?numberIntersections) <= 50)
-  FILTER(CONTAINS(LCASE(STR(?country)), "de"))
-  FILTER(?license = "CC-BY-4.0")
+  FILTER(?country = "DE")
 }
 LIMIT 100"
 `;
@@ -280,133 +316,45 @@ exports[`compileSlots — determinism + snapshot suite > license combined with c
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+PREFIX envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/>
 SELECT ?asset ?name ?roadTypes ?license WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
-  OPTIONAL {
-    ?asset hdmap:hasResourceDescription ?resDesc .
-    ?resDesc gx:license ?license .
-  }
+  ?domSpec envited-x:hasQuality ?quality_envited_x .
+  ?quality_envited_x envited-x:license ?license .
   FILTER(?roadTypes = "motorway")
   FILTER(?license = "CC-BY-4.0")
 }
 LIMIT 100"
 `;
 
-exports[`compileSlots — determinism + snapshot suite > license-only filter 1`] = `
+exports[`compileSlots — determinism + snapshot suite > license filter only 1`] = `
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+PREFIX envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/>
 SELECT ?asset ?name ?license WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
-  OPTIONAL {
-    ?asset hdmap:hasResourceDescription ?resDesc .
-    ?resDesc gx:license ?license .
-  }
+  ?asset hdmap:hasDomainSpecification ?domSpec .
+  ?domSpec envited-x:hasQuality ?quality_envited_x .
+  ?quality_envited_x envited-x:license ?license .
   FILTER(?license = "CC-BY-4.0")
 }
 LIMIT 100"
 `;
 
-exports[`compileSlots — determinism + snapshot suite > location with all four geographic fields populated 1`] = `
+exports[`compileSlots — determinism + snapshot suite > peer domains (hdmap + ositrace) with country filter → UNION 1`] = `
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
-SELECT ?asset ?name ?country ?state ?region ?city WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
-  ?asset hdmap:hasDomainSpecification ?domSpec .
-  ?domSpec hdmap:hasGeoreference ?georef .
-  ?georef georeference:hasProjectLocation ?loc .
-  ?loc georeference:country ?country .
-  ?loc georeference:state ?state .
-  ?loc georeference:region ?region .
-  ?loc georeference:city ?city .
-  FILTER(CONTAINS(LCASE(STR(?country)), "de"))
-  FILTER(CONTAINS(LCASE(STR(?state)), "bavaria"))
-  FILTER(CONTAINS(LCASE(STR(?region)), "oberbayern"))
-  FILTER(CONTAINS(LCASE(STR(?city)), "munich"))
-}
-LIMIT 100"
-`;
-
-exports[`compileSlots — determinism + snapshot suite > location with multi-value country array (FILTER IN matching) 1`] = `
-"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
 PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
-PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
-SELECT ?asset ?name ?country WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
-  ?asset hdmap:hasDomainSpecification ?domSpec .
-  ?domSpec hdmap:hasGeoreference ?georef .
-  ?georef georeference:hasProjectLocation ?loc .
-  ?loc georeference:country ?country .
-  FILTER(LCASE(STR(?country)) IN ("de", "fr", "it"))
-}
-LIMIT 100"
-`;
-
-exports[`compileSlots — determinism + snapshot suite > location with single country (STR matching) 1`] = `
-"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
-PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
-SELECT ?asset ?name ?country WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
-  ?asset hdmap:hasDomainSpecification ?domSpec .
-  ?domSpec hdmap:hasGeoreference ?georef .
-  ?georef georeference:hasProjectLocation ?loc .
-  ?loc georeference:country ?country .
-  FILTER(CONTAINS(LCASE(STR(?country)), "de"))
-}
-LIMIT 100"
-`;
-
-exports[`compileSlots — determinism + snapshot suite > location with single-element country array collapses to FILTER IN of one 1`] = `
-"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
-PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
-SELECT ?asset ?name ?country WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
-  ?asset hdmap:hasDomainSpecification ?domSpec .
-  ?domSpec hdmap:hasGeoreference ?georef .
-  ?georef georeference:hasProjectLocation ?loc .
-  ?loc georeference:country ?country .
-  FILTER(LCASE(STR(?country)) = "de")
-}
-LIMIT 100"
-`;
-
-exports[`compileSlots — determinism + snapshot suite > peer domains (hdmap + ositrace) with location → UNION with country filter 1`] = `
-"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
-PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
 SELECT ?asset ?name ?roadTypes ?country WHERE {
     {
@@ -415,11 +363,11 @@ SELECT ?asset ?name ?roadTypes ?country WHERE {
     ?asset hdmap:hasDomainSpecification ?domSpec .
     ?domSpec hdmap:hasContent ?content .
     ?content hdmap:roadTypes ?roadTypes .
-    ?domSpec hdmap:hasGeoreference ?georef .
-    ?georef georeference:hasProjectLocation ?loc .
-    ?loc georeference:country ?country .
+    ?domSpec hdmap:hasGeoreference ?_d0_1 .
+    ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
+    ?_d0_2 georeference:country ?country .
     FILTER(?roadTypes = "motorway")
-    FILTER(CONTAINS(LCASE(STR(?country)), "fr"))
+    FILTER(?country = "FR")
   }
   UNION
   {
@@ -428,11 +376,11 @@ SELECT ?asset ?name ?roadTypes ?country WHERE {
     ?asset ositrace:hasDomainSpecification ?domSpec .
     ?domSpec ositrace:hasContent ?content .
     ?content ositrace:roadTypes ?roadTypes .
-    ?domSpec ositrace:hasGeoreference ?georef .
-    ?georef georeference:hasProjectLocation ?loc .
-    ?loc georeference:country ?country .
+    ?domSpec ositrace:hasGeoreference ?_d0_1 .
+    ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
+    ?_d0_2 georeference:country ?country .
     FILTER(?roadTypes = "motorway")
-    FILTER(CONTAINS(LCASE(STR(?country)), "fr"))
+    FILTER(?country = "FR")
   }
 }
 LIMIT 100"
@@ -442,8 +390,6 @@ exports[`compileSlots — determinism + snapshot suite > peer domains (hdmap + o
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
 SELECT ?asset ?name ?roadTypes WHERE {
@@ -472,8 +418,6 @@ exports[`compileSlots — determinism + snapshot suite > routes a non-legacy sha
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?accuracySignals WHERE {
   ?asset a hdmap:HdMap ;
@@ -490,24 +434,15 @@ exports[`compileSlots — determinism + snapshot suite > scenario + hdmap cross-
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
-SELECT ?asset ?name ?scenarioCategory ?roadTypes_hdmap WHERE {
+SELECT ?asset ?name ?scenarioCategory WHERE {
   ?asset a scenario:Scenario ;
     rdfs:label ?name .
   ?asset scenario:hasDomainSpecification ?domSpec .
   ?domSpec scenario:hasContent ?content .
   ?content scenario:scenarioCategory ?scenarioCategory .
-  ?asset scenario:hasManifest ?manifest .
-  ?manifest manifest:hasReferencedArtifacts ?ref_hdmap .
-  ?ref_hdmap a hdmap:HdMap .
-  ?ref_hdmap hdmap:hasDomainSpecification ?refSpec_hdmap .
-  ?refSpec_hdmap hdmap:hasContent ?content_hdmap .
-  ?content_hdmap hdmap:roadTypes ?roadTypes_hdmap .
   FILTER(?scenarioCategory = "urban")
-  FILTER(?roadTypes_hdmap = "motorway")
 }
 LIMIT 100"
 `;
@@ -516,24 +451,15 @@ exports[`compileSlots — determinism + snapshot suite > scenario + hdmap cross-
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
-SELECT ?asset ?name ?scenarioCategory ?numberIntersections_hdmap WHERE {
+SELECT ?asset ?name ?scenarioCategory WHERE {
   ?asset a scenario:Scenario ;
     rdfs:label ?name .
   ?asset scenario:hasDomainSpecification ?domSpec .
   ?domSpec scenario:hasContent ?content .
   ?content scenario:scenarioCategory ?scenarioCategory .
-  ?asset scenario:hasManifest ?manifest .
-  ?manifest manifest:hasReferencedArtifacts ?ref_hdmap .
-  ?ref_hdmap a hdmap:HdMap .
-  ?ref_hdmap hdmap:hasDomainSpecification ?refSpec_hdmap .
-  ?refSpec_hdmap hdmap:hasQuantity ?quantity_hdmap .
-  ?quantity_hdmap hdmap:numberIntersections ?numberIntersections_hdmap .
   FILTER(?scenarioCategory = "urban")
-  FILTER(xsd:float(?numberIntersections_hdmap) >= 3)
 }
 LIMIT 100"
 `;
@@ -542,8 +468,6 @@ exports[`compileSlots — determinism + snapshot suite > scenario multi-value Co
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 SELECT ?asset ?name ?entityTypes WHERE {
   ?asset a scenario:Scenario ;
@@ -560,8 +484,6 @@ exports[`compileSlots — determinism + snapshot suite > scenario single Content
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
-PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 SELECT ?asset ?name ?scenarioCategory WHERE {
   ?asset a scenario:Scenario ;

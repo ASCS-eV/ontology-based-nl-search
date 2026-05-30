@@ -7,6 +7,7 @@
  *
  * @see https://www.w3.org/TR/sparql11-query/#namedGraphs
  */
+import { createComponentLogger } from '@ontology-search/core/logging'
 import { discoverShapeFiles } from '@ontology-search/ontology/sources'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 import { readFileSync } from 'fs'
@@ -14,6 +15,8 @@ import { basename } from 'path'
 
 /** Named graph IRI for ontology schema triples */
 export const SCHEMA_GRAPH = 'urn:graph:schema'
+
+const log = createComponentLogger('schema-loader')
 
 /**
  * Load all ontology schema files (OWL + SHACL) into the store's schema named graph.
@@ -33,13 +36,15 @@ export async function loadSchemaGraph(
       domains.add(domain)
       fileCount++
     } catch (err) {
-      console.warn(`[schema-loader] Failed to load ${basename(filePath)}: ${err}`)
+      log.warn('Failed to load schema file', { file: basename(filePath), error: String(err) })
     }
   }
 
-  console.info(
-    `[schema-loader] Loaded ${fileCount} schema files from ${domains.size} domains into <${SCHEMA_GRAPH}>`
-  )
+  log.info('Loaded schema files', {
+    fileCount,
+    domainCount: domains.size,
+    graph: SCHEMA_GRAPH,
+  })
 
   return { domains: [...domains], fileCount }
 }

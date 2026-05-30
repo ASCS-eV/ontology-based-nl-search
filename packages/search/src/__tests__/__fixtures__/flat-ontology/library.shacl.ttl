@@ -1,0 +1,72 @@
+# Synthetic flat-ontology SHACL fixture for genericity proof.
+#
+# Models a library catalogue with a direct property path — NO
+# DomainSpecification indirection, NO hasContent / hasFormat /
+# hasGeoreference, NO manifest pattern. Every leaf hangs directly off
+# the asset class. If the compiler emits any ENVITED-X meta-model
+# predicate against this graph, the genericity claim is broken.
+#
+# Asset: library:Book
+#   ├── library:title         (xsd:string)         — free-text title
+#   ├── library:isbn          (xsd:string, pattern) — ISBN-10/13 regex
+#   ├── library:pageCount     (xsd:integer)         — numeric range
+#   ├── library:genre         (sh:in)               — enum
+#   ├── library:language      (xsd:string)          — ISO-639 code
+#   └── library:relatedBook   (sh:class library:Book) — cross-reference
+
+@prefix library: <http://example.org/library/v1/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+<http://example.org/library/v1/shapes> a owl:Ontology ;
+    owl:imports <http://example.org/library/v1> .
+
+library:Book a owl:Class ;
+    rdfs:label "Book"@en .
+
+library:BookShape a sh:NodeShape ;
+    sh:targetClass library:Book ;
+    sh:property [
+        sh:path library:title ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "title"@en ;
+        sh:description "Title of the book."@en ;
+    ] ;
+    sh:property [
+        sh:path library:isbn ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[0-9]{10}([0-9]{3})?$" ;
+        sh:name "ISBN"@en ;
+        sh:description "ISBN-10 or ISBN-13 (digits only)."@en ;
+    ] ;
+    sh:property [
+        sh:path library:pageCount ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1 ;
+        sh:name "page count"@en ;
+        sh:description "Total number of pages."@en ;
+    ] ;
+    sh:property [
+        sh:path library:genre ;
+        sh:in ("fiction" "non-fiction" "biography" "poetry" "reference") ;
+        sh:name "genre"@en ;
+        sh:description "Top-level genre."@en ;
+    ] ;
+    sh:property [
+        sh:path library:language ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[a-z]{2,3}$" ;
+        sh:name "language"@en ;
+        sh:description "ISO-639 language code."@en ;
+    ] ;
+    sh:property [
+        sh:path library:relatedBook ;
+        sh:class library:Book ;
+        sh:nodeKind sh:IRI ;
+        sh:name "related book"@en ;
+        sh:description "A book referenced by this one (sequel, companion, …)."@en ;
+    ] .

@@ -34,6 +34,7 @@ export function SearchPage() {
     gaps,
     sparql,
     results,
+    traceability,
     meta,
     phase,
     loading,
@@ -104,7 +105,7 @@ export function SearchPage() {
           {gaps && <OntologyGapsDisplay gaps={gaps} />}
           {sparql && <SparqlPreview sparql={sparql} />}
 
-          {results && <ResultsDisplay results={results} />}
+          {results && <ResultsDisplay results={results} traceability={traceability} />}
 
           {meta && (
             <div className="pt-2 text-xs text-gray-400 flex flex-col items-center gap-1">

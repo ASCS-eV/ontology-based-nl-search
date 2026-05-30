@@ -160,16 +160,16 @@ flowchart LR
       <h3>Example query</h3>
       <p class="query-quote">“German highways with 3 lanes”</p>
       <ul class="tight-list">
-        <li><strong>German</strong> → <code>country: "DE"</code></li>
-        <li><strong>highways</strong> → <code>roadTypes: "motorway"</code></li>
-        <li><strong>3 lanes</strong> → <code>laneCount.min = 3</code></li>
+        <li><strong>German</strong> → <code>filters.country = ["DE"]</code></li>
+        <li><strong>highways</strong> → <code>filters.roadTypes = ["motorway"]</code></li>
+        <li><strong>3 lanes</strong> → <code>ranges.laneCount.min = 3</code></li>
       </ul>
     </div>
     <div class="panel">
       <h3>Validation after interpretation</h3>
       <ul class="tight-list">
         <li>Slot Validator confirms <code>DE</code> and <code>motorway</code> against <code>sh:in</code> vocabulary.</li>
-        <li>Domain correction verifies that the query belongs to the <code>hdmap</code> domain.</li>
+        <li>Country, region and license route through <code>filters</code> like any other leaf — no privileged slots.</li>
         <li>Only then does the compiler produce the final SPARQL query.</li>
       </ul>
     </div>
@@ -201,8 +201,8 @@ flowchart LR
     </div>
     <div class="stack-card">
       <span>AI</span>
-      <strong>Copilot SDK / Vercel AI SDK</strong>
-      <p>Multi-provider agent layer with the same validation pipeline.</p>
+      <strong>Vercel AI SDK + Copilot SDK</strong>
+      <p>5 providers (OpenAI, Anthropic, claude-cli, vibe-cli/Mistral, Ollama) plus GitHub Copilot — one validation pipeline.</p>
     </div>
     <div class="stack-card">
       <span>SPARQL</span>
@@ -252,39 +252,29 @@ flowchart LR
 </Slide>
 
 <Slide :index="8">
-  <p class="eyebrow">RDF reasoning at runtime</p>
-  <h2>The LLM explores the ontology using SPARQL — before filling slots.</h2>
-  <p class="lead">Five investigation tools give the agent on-demand access to the schema graph. The LLM can discover domains, properties, allowed values, and cross-domain connections dynamically.</p>
-  <div class="stack-grid">
-    <div class="stack-card">
-      <span>discover_domains</span>
-      <strong>What asset types exist?</strong>
-      <p>Lists all searchable domains from <code>sh:targetClass</code> declarations.</p>
+  <p class="eyebrow">WP3 / AP5.4 — Traceability layer</p>
+  <h2>Every result row carries its full lineage back to source.</h2>
+  <p class="lead">The compiler binds named intermediate variables along every cross-reference JOIN; the service walks them into a per-row predicate chain, and the UI renders that chain plus a multi-hop lineage explorer for any asset.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">🧭</div>
+      <h3>Per-row breadcrumb</h3>
+      <p>Each cross-reference badge shows the SHACL-discovered predicate path that connected the assets — e.g. <code>scenario → hasManifest → hasReferencedArtifacts → ositrace</code>.</p>
     </div>
-    <div class="stack-card">
-      <span>discover_properties</span>
-      <strong>What filters are available?</strong>
-      <p>Returns property names, datatypes, and whether they have <code>sh:in</code> enumerations.</p>
+    <div class="card">
+      <div class="card-icon">🌳</div>
+      <h3>Multi-hop lineage</h3>
+      <p>“Explore lineage” expands a nested tree of every outgoing <code>@id</code> reference per asset — verified end-to-end across <strong>scenario → ositrace → hdmap</strong> (3 asset classes, WP3 acceptance).</p>
     </div>
-    <div class="stack-card">
-      <span>discover_values</span>
-      <strong>What values are valid?</strong>
-      <p>Extracts exact allowed values from <code>sh:in</code> RDF lists.</p>
-    </div>
-    <div class="stack-card">
-      <span>discover_connections</span>
-      <strong>How do domains relate?</strong>
-      <p>Finds cross-domain references via manifest artifacts.</p>
-    </div>
-    <div class="stack-card">
-      <span>investigate_schema</span>
-      <strong>Full SPARQL exploration</strong>
-      <p>The LLM writes arbitrary SELECT queries against the schema graph.</p>
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <h3>Metadata facets</h3>
+      <p><code>/metadata/asset?iri=…</code> returns the per-shape-group snapshot (Content, Format, Quality, DataSource…). <code>/metadata/aggregate?domain=…&amp;group=…</code> exposes per-domain distribution and numeric ranges.</p>
     </div>
   </div>
   <div class="mono-block">
-    <span class="mono-label">Key insight</span><br />
-    The same SPARQL engine that executes user queries also serves as a reasoning backend for the LLM agent — the schema graph is both compiler metadata <em>and</em> an explorable knowledge base.
+    <span class="mono-label">Discovery, not configuration</span><br />
+    Reference signatures <code>(sourceClass, predicatePath, targetClass)</code> are discovered by BFS over typed asset instances at warmup. No ENVITED-X meta-model literal in production source.
   </div>
 </Slide>
 

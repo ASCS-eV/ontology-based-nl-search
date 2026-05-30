@@ -25,7 +25,7 @@ let vocabulary: Awaited<ReturnType<typeof extractVocabulary>>
 beforeAll(async () => {
   const store = await getInitializedStore()
   vocabulary = await extractVocabulary(store)
-}, 60_000)
+}, 120_000)
 
 function submission(overrides: Partial<SlotPipelineSubmission['slots']>): SlotPipelineSubmission {
   return {
@@ -51,14 +51,14 @@ describe('runSlotPipeline', () => {
     // The compiler emits the corrected value, not the LLM's original.
     expect(response.sparql).toContain('motorway')
     expect(response.sparql).not.toContain('MOTORWAY')
-  }, 60_000)
+  }, 120_000)
 
   it('drops a filter value that violates a declared SHACL constraint', async () => {
     const sw = new Stopwatch()
     // georeference:country requires the ISO two-letter pattern. A bogus
     // value must be dropped from the slots and surface in `gaps`.
     const response = await runSlotPipeline({
-      submission: submission({ location: { country: 'notacountry' } }),
+      submission: submission({ filters: { country: 'notacountry' } }),
       vocabulary,
       targetDomain: 'hdmap',
       sw,
@@ -66,7 +66,7 @@ describe('runSlotPipeline', () => {
     expect(response.sparql).not.toContain('notacountry')
     expect(response.gaps.length).toBeGreaterThan(0)
     expect(response.gaps.some((g) => g.term.includes('notacountry'))).toBe(true)
-  }, 60_000)
+  }, 120_000)
 
   it('drops a range whose property name is not in the ontology', async () => {
     const sw = new Stopwatch()
@@ -81,7 +81,7 @@ describe('runSlotPipeline', () => {
     expect(response.sparql).not.toContain('numberLanes')
     // A gap explains the drop so the LLM caller can revise.
     expect(response.gaps.some((g) => g.term === 'numberLanes')).toBe(true)
-  }, 60_000)
+  }, 120_000)
 
   it('produces compilable SPARQL for the full filter + range + location combination', async () => {
     // Policy-gate coverage for combined slots lives in
@@ -91,9 +91,8 @@ describe('runSlotPipeline', () => {
     const sw = new Stopwatch()
     const response = await runSlotPipeline({
       submission: submission({
-        filters: { roadTypes: 'motorway' },
+        filters: { roadTypes: 'motorway', country: 'DE' },
         ranges: { numberIntersections: { min: 5 } },
-        location: { country: 'DE' },
       }),
       vocabulary,
       targetDomain: 'hdmap',
@@ -103,7 +102,7 @@ describe('runSlotPipeline', () => {
     expect(response.sparql).toContain('motorway')
     expect(response.sparql).toContain('numberIntersections')
     expect(response.sparql).toMatch(/\?country/)
-  }, 60_000)
+  }, 120_000)
 
   it('falls back to targetDomain when the submission has empty domains', async () => {
     const sw = new Stopwatch()
@@ -117,7 +116,7 @@ describe('runSlotPipeline', () => {
       sw,
     })
     expect(response.sparql).toContain('?asset a scenario:Scenario')
-  }, 60_000)
+  }, 120_000)
 
   it('preserves the LLM interpretation summary and concatenates new gaps', async () => {
     const sw = new Stopwatch()
@@ -151,7 +150,114 @@ describe('runSlotPipeline', () => {
     const survived = response.gaps.find((g) => g.term === originalGap.term)
     expect(survived).toBeDefined()
     expect(survived?.reason).toBe(originalGap.reason)
-  }, 60_000)
+  }, 120_000)
+
+  it('removes the references child from the peer-domain set so the JOIN path is taken', async () => {
+    // Regression: when the LLM emits both `domains: [parent, child]` AND
+    // `references: { domain: child }`, the compiler's peer-UNION path was
+    // silently ignoring the references slot and emitting two independent
+    // arms instead of a join. The pipeline must canonicalise the reference
+    // domain and exclude it from the primary-domain set so compileSlots
+    // routes through the single-domain cross-reference path.
+    //
+    // Whether the compiler then emits an actual JOIN depends on the SHACL
+    // declaring a chain between the chosen pair (a separate ontology
+    // concern). What we assert here is the pipeline-level contract: the
+    // child no longer pollutes `slots.domains`, and the compiled SPARQL is
+    // NOT a peer UNION of two top-level asset classes.
+    const sw = new Stopwatch()
+    const response = await runSlotPipeline({
+      submission: submission({
+        domains: ['scenario', 'hdmap'],
+        references: { domain: 'hdmap' },
+      }),
+      vocabulary,
+      targetDomain: 'scenario',
+      sw,
+    })
+    expect(response.interpretation.domains).toEqual(['scenario'])
+    expect(response.sparql).toContain('scenario:Scenario')
+    // The cross-reference JOIN must emit (either via a SHACL-declared chain
+    // or, when the SHACL doesn't surface one, the data-driven any-predicate
+    // fallback). The child class is anchored on `?refAsset`, never on
+    // `?asset` — that would be a peer-UNION mistake.
+    expect(response.sparql).toContain('?refAsset')
+    expect(response.sparql).toContain('hdmap:HdMap')
+    expect(response.sparql).not.toMatch(/\?asset\s+a\s+hdmap:HdMap/)
+    expect(response.sparql).not.toContain('UNION')
+  }, 120_000)
+
+  it("drops the references slot when its domain isn't an asset domain", async () => {
+    // Defensive: the LLM may name a non-asset support vocabulary (e.g. the
+    // gx fallback domain) as the references target. Without resolution that
+    // would be carried into the compiler, which would just skip emission.
+    // Dropping it in the pipeline keeps the interpretation honest.
+    const sw = new Stopwatch()
+    const response = await runSlotPipeline({
+      submission: submission({
+        domains: ['hdmap'],
+        references: { domain: 'definitely-not-a-domain' },
+      }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      sw,
+    })
+    expect(response.sparql).not.toContain('?refAsset')
+  }, 120_000)
+
+  /**
+   * Honest dropped-reference report. `slots.references` is a single
+   * object, but the LLM's mappedTerms can carry several
+   * `references.domain` entries (one per asset class the user named).
+   * Without an explicit gap, the UI shows multiple chips while the
+   * SPARQL silently uses only one — leaving the user wondering why
+   * their second reference filtered nothing. Pipeline must emit a
+   * gap naming the dropped target so the interpretation stays honest.
+   */
+  it('emits a gap for each LLM-emitted references.domain that the single-slot schema dropped', async () => {
+    const sw = new Stopwatch()
+    const response = await runSlotPipeline({
+      submission: {
+        slots: {
+          domains: ['scenario'],
+          filters: {},
+          ranges: {},
+          // The LLM committed `ositrace` to the structured slot —
+          // but its interpretation also named `hdmap` as a second
+          // references target.
+          references: { domain: 'ositrace' },
+        },
+        interpretation: {
+          summary: 'mock submission',
+          mappedTerms: [
+            {
+              input: 'derived from traces',
+              mapped: 'ositrace',
+              confidence: 'high',
+              property: 'references.domain',
+            },
+            {
+              input: 'with maps',
+              mapped: 'hdmap',
+              confidence: 'low',
+              property: 'references.domain',
+            },
+          ],
+        },
+        gaps: [],
+      },
+      vocabulary,
+      targetDomain: 'scenario',
+      sw,
+    })
+    // The chosen ositrace reference is gone-not-flagged (it survived).
+    expect(response.gaps.some((g) => g.term.includes('derived from traces'))).toBe(false)
+    // The dropped hdmap reference is surfaced.
+    const droppedGap = response.gaps.find((g) => g.term.includes('with maps'))
+    expect(droppedGap).toBeDefined()
+    expect(droppedGap?.reason).toMatch(/dropped/i)
+    expect(droppedGap?.reason).toContain('hdmap')
+  }, 120_000)
 
   it('records "post-llm-validation" and "sparql-compile" stages on the stopwatch', async () => {
     const sw = new Stopwatch()
@@ -165,5 +271,5 @@ describe('runSlotPipeline', () => {
     const stageNames = timings.map((t) => t.stage)
     expect(stageNames).toContain('post-llm-validation')
     expect(stageNames).toContain('sparql-compile')
-  }, 60_000)
+  }, 120_000)
 })

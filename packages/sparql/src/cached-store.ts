@@ -54,6 +54,15 @@ export class CachedSparqlStore implements SparqlStore {
     return this.inner.isReady()
   }
 
+  /**
+   * Lifecycle hook — drop the cache and release the inner store's
+   * resources (e.g. its worker thread). Idempotent.
+   */
+  async close(): Promise<void> {
+    this.cache.clear()
+    await this.inner.close?.()
+  }
+
   /** Get cache statistics */
   getCacheStats() {
     return this.cache.stats

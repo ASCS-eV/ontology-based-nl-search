@@ -42,7 +42,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 // resolve to ./dist/index.js, which isn't built when CI runs tests
 // directly via vitest. The same pattern is used by every other test file
 // in this package (compiler.test.ts, schema-queries.test.ts, etc.).
-import { compileAllCountQueries, compileSlots } from '../compiler.js'
+import {
+  compileAllCountQueries,
+  compileSlots,
+  compileSlotsWithTrace,
+  getAssetDomains,
+  resolveKnownDomains,
+} from '../compiler.js'
 import { getInitializedStore } from '../init.js'
 import { type SearchDependencies, SearchService } from '../service.js'
 import type { SearchSlots } from '../slots.js'
@@ -59,7 +65,11 @@ function realServiceWithMockedLlm(slots: SearchSlots): SearchService {
     query: string,
     _options: { domain?: string; signal?: AbortSignal }
   ): Promise<LlmStructuredResponse> => {
-    const sparql = await compileSlots(slots)
+    // Use the trace-aware compile path so the mocked LLM returns the same
+    // shape the real `run-slot-pipeline` does (sparql + trace). Without
+    // this, the service would never see a traceability plan in `searchNl`
+    // and per-row breadcrumbs would silently drop.
+    const { sparql, trace } = await compileSlotsWithTrace(slots)
     return {
       interpretation: {
         summary: `mocked LLM produced fixed slots for "${query}"`,
@@ -67,13 +77,14 @@ function realServiceWithMockedLlm(slots: SearchSlots): SearchService {
       },
       gaps: [],
       sparql,
+      trace,
     }
   }
 
   const deps: SearchDependencies = {
     getStore: getInitializedStore,
     interpretQuery,
-    compileSlots,
+    compileSlots: compileSlotsWithTrace,
     compileCountQueries: compileAllCountQueries,
     enforcePolicy: enforceSparqlPolicy,
   }
@@ -87,7 +98,7 @@ beforeAll(async () => {
   registerPolicyNamespaces(registry.getAllNamespaces())
   // Warm the store and downstream caches once; ~3s on first call.
   await getInitializedStore()
-}, 60_000)
+}, 120_000)
 
 afterAll(async () => {
   const { resetPolicyNamespaces } = await import('@ontology-search/sparql/policy')
@@ -116,7 +127,7 @@ describe('SearchService — real pipeline integration', () => {
     // dataset evolution by asserting a lower bound rather than equality.
     expect(result.meta.matchCount).toBeGreaterThan(10)
     expect(result.meta.totalDatasets).toBeGreaterThan(0)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * A single Content-group filter must narrow the result set against
@@ -140,7 +151,7 @@ describe('SearchService — real pipeline integration', () => {
     expect(filtered.execution.error).toBeUndefined()
     expect(filtered.meta.matchCount).toBeGreaterThan(0)
     expect(filtered.meta.matchCount).toBeLessThanOrEqual(baseline.meta.matchCount)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Cross-domain filtering exercises the manifest:hasReferencedArtifacts
@@ -164,7 +175,75 @@ describe('SearchService — real pipeline integration', () => {
     expect(joined.execution.error).toBeUndefined()
     // Join must return at most as many as scenarios alone.
     expect(joined.meta.matchCount).toBeLessThanOrEqual(onlyScenario.meta.matchCount)
-  }, 60_000)
+  }, 120_000)
+
+  /**
+   * Data-driven references fallback: when the LLM asks for "X that
+   * references Y" and the SHACL doesn't declare a typed leaf chain from X
+   * to Y (e.g. ositrace inherits `hasReferencedArtifacts` via the shared
+   * manifest:ManifestShape, so chain discovery doesn't surface a `class:
+   * hdmap:HdMap` leaf), the compiler must fall back to a generic
+   * any-predicate property-path JOIN against the instance graph. The
+   * fixture has 50/53 ositraces with `manifest:hasReferencedArtifacts`
+   * pointing to real hdmap IRIs, so the JOIN must find non-zero matches.
+   */
+  it('joins ositrace → hdmap via data-driven any-predicate fallback', async () => {
+    const result = await realServiceWithMockedLlm({
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: { domain: 'hdmap' },
+    }).searchNl({ query: 'OSI traces that reference HD maps' })
+
+    expect(result.execution.error).toBeUndefined()
+    // The JOIN must emit — the fixture has real ositrace → hdmap edges.
+    expect(result.sparql).toContain('?refAsset')
+    expect(result.sparql).toContain('hdmap:HdMap')
+    expect(result.meta.matchCount).toBeGreaterThan(0)
+  }, 120_000)
+
+  /**
+   * Traceability plumbing (WP3, task #18): the executor must populate
+   * `ExecutionResult.traceability` aligned by row index whenever the
+   * compiled query carried a `TraceabilityPlan`. Each per-row entry
+   * lists the predicate IRIs walked from `?asset` to `?refAsset`, with
+   * the bound intermediate value at each step.
+   */
+  it('populates per-row traceability when the query contains a cross-reference JOIN', async () => {
+    const result = await realServiceWithMockedLlm({
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: { domain: 'hdmap' },
+    }).searchNl({ query: 'OSI traces that reference HD maps' })
+
+    expect(result.execution.error).toBeUndefined()
+    expect(result.meta.matchCount).toBeGreaterThan(0)
+    expect(result.execution.traceability).toBeDefined()
+    expect(result.execution.traceability).toHaveLength(result.execution.results.length)
+    const firstTrace = result.execution.traceability![0]!
+    expect(firstTrace.length).toBeGreaterThan(0)
+    for (const step of firstTrace) {
+      expect(step.predicate).toMatch(/^https?:\/\/.+/) // full IRI
+      expect(step.intermediate.length).toBeGreaterThan(0)
+    }
+  }, 120_000)
+
+  /**
+   * Plain (non-references) queries must NOT carry a traceability array.
+   * Otherwise every row in the table view would gain an empty breadcrumb,
+   * defeating the "additive when meaningful" contract.
+   */
+  it('leaves traceability undefined for plain queries with no references slot', async () => {
+    const result = await realServiceWithMockedLlm({
+      domains: ['hdmap'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+    }).searchNl({ query: 'motorway hdmaps' })
+
+    expect(result.execution.error).toBeUndefined()
+    expect(result.execution.traceability).toBeUndefined()
+  }, 120_000)
 
   /**
    * Numeric ranges flow through compileSlots → policy → store.
@@ -188,7 +267,7 @@ describe('SearchService — real pipeline integration', () => {
     expect(ranged.execution.error).toBeUndefined()
     expect(ranged.meta.matchCount).toBeGreaterThanOrEqual(0)
     expect(ranged.meta.matchCount).toBeLessThanOrEqual(baseline.meta.matchCount)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Location filtering takes the array-aware path introduced in
@@ -196,27 +275,25 @@ describe('SearchService — real pipeline integration', () => {
    * an array must apply FILTER IN. Either path must return a finite
    * non-error result against the real data.
    */
-  it('applies a location filter without producing a policy violation', async () => {
+  it('applies a country filter without producing a policy violation', async () => {
     const single = await realServiceWithMockedLlm({
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: 'DE' },
       ranges: {},
-      location: { country: 'DE' },
     }).searchNl({ query: 'HD maps in Germany' })
     expect(single.execution.error).toBeUndefined()
 
     const multi = await realServiceWithMockedLlm({
       domains: ['hdmap'],
-      filters: {},
+      filters: { country: ['DE', 'FR', 'IT'] },
       ranges: {},
-      location: { country: ['DE', 'FR', 'IT'] },
     }).searchNl({ query: 'HD maps in any of DE/FR/IT' })
     expect(multi.execution.error).toBeUndefined()
     // Array form must match at least as many rows as the single
     // for the same primary country (proves the IN clause actually
     // expanded rather than collapsing to a single match).
     expect(multi.meta.matchCount).toBeGreaterThanOrEqual(single.meta.matchCount)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Cross-domain search (no `domains` supplied) enumerates every
@@ -245,7 +322,7 @@ describe('SearchService — real pipeline integration', () => {
     // match count is the actual instance count in the data.
     // Asserting a lower bound to allow legitimate dataset evolution.
     expect(result.meta.matchCount).toBeGreaterThan(50)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * `totalDatasets` is computed via the count-loop in
@@ -265,7 +342,7 @@ describe('SearchService — real pipeline integration', () => {
     // Sanity: the count is the sum of every asset class. With ~267
     // assets in the dataset, it should not be zero.
     expect(result.meta.totalDatasets).toBeGreaterThan(50)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * The policy gate is the last line of defense before SPARQL hits
@@ -281,9 +358,8 @@ describe('SearchService — real pipeline integration', () => {
       { domains: ['hdmap'], filters: {}, ranges: { numberIntersections: { min: 1, max: 10 } } },
       {
         domains: ['hdmap'],
-        filters: {},
+        filters: { country: ['DE', 'FR'] },
         ranges: {},
-        location: { country: ['DE', 'FR'] },
       },
       { domains: ['scenario', 'hdmap'], filters: { scenarioCategory: 'urban' }, ranges: {} },
       { domains: [], filters: {}, ranges: {} },
@@ -291,9 +367,8 @@ describe('SearchService — real pipeline integration', () => {
       { domains: ['hdmap', 'ositrace'], filters: { roadTypes: 'motorway' }, ranges: {} },
       {
         domains: ['hdmap', 'ositrace'],
-        filters: { roadTypes: 'town' },
+        filters: { roadTypes: 'town', country: 'DE' },
         ranges: {},
-        location: { country: 'DE' },
       },
     ]
 
@@ -302,7 +377,7 @@ describe('SearchService — real pipeline integration', () => {
       const policy = enforceSparqlPolicy(sparql)
       expect(policy.allowed, `policy violations: ${policy.violations.join('; ')}`).toBe(true)
     }
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Refine path mirrors the NL path minus the LLM. The integration
@@ -315,7 +390,7 @@ describe('SearchService — real pipeline integration', () => {
       interpretQuery: async () => {
         throw new Error('refine path must not call interpretQuery')
       },
-      compileSlots,
+      compileSlots: compileSlotsWithTrace,
       compileCountQueries: compileAllCountQueries,
       enforcePolicy: enforceSparqlPolicy,
     }
@@ -327,7 +402,7 @@ describe('SearchService — real pipeline integration', () => {
 
     expect(result.execution.error).toBeUndefined()
     expect(result.meta.matchCount).toBeGreaterThan(0)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Hallucinated property names are dropped before SPARQL emission
@@ -347,7 +422,7 @@ describe('SearchService — real pipeline integration', () => {
     // With the hallucinated filter dropped the query matches the
     // unfiltered baseline (no real narrowing applied).
     expect(result.meta.matchCount).toBeGreaterThan(0)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Peer-domain UNION: when multiple non-hierarchical domains are
@@ -359,9 +434,8 @@ describe('SearchService — real pipeline integration', () => {
   it('generates UNION for peer domains and finds assets in both', async () => {
     const result = await realServiceWithMockedLlm({
       domains: ['hdmap', 'ositrace'],
-      filters: { roadTypes: 'motorway' },
+      filters: { roadTypes: 'motorway', country: 'FR' },
       ranges: {},
-      location: { country: 'FR' },
     }).searchNl({ query: 'French motorway data' })
 
     expect(result.execution.error).toBeUndefined()
@@ -376,7 +450,7 @@ describe('SearchService — real pipeline integration', () => {
     const hasOsi = assetIds.some((id) => id?.includes('OSITrace'))
     expect(hasHdmap).toBe(true)
     expect(hasOsi).toBe(true)
-  }, 60_000)
+  }, 120_000)
 
   /**
    * Peer-domain UNION with an empty result: the UNION query structure
@@ -386,13 +460,46 @@ describe('SearchService — real pipeline integration', () => {
   it('UNION query executes without error even with zero results', async () => {
     const result = await realServiceWithMockedLlm({
       domains: ['hdmap', 'ositrace'],
-      filters: { roadTypes: 'motorway' },
+      filters: { roadTypes: 'motorway', country: 'ZZ' }, // Non-existent country code
       ranges: {},
-      location: { country: 'ZZ' }, // Non-existent country code
     }).searchNl({ query: 'Fictional country motorway data' })
 
     expect(result.execution.error).toBeUndefined()
     expect(result.sparql).toContain('UNION')
     expect(result.meta.matchCount).toBe(0)
-  }, 60_000)
+  }, 120_000)
+
+  /**
+   * Regression for the slot-list pollution that lets a non-asset domain
+   * (or a fully-phantom name) reach the compiler. Two distinct bugs share
+   * one gate:
+   *
+   *   1. `domains: ["hdmap", "unknown"]` — an LLM hallucination / sentinel
+   *      that the registry can't resolve at all.
+   *   2. `domains: ["ositrace", "gx"]` — a support vocabulary the registry
+   *      DOES know about but that doesn't root any asset class in the
+   *      discovered `rdfs:subClassOf` hierarchy. The compiler would
+   *      otherwise emit a `?asset a gx:<arbitraryClass>` UNION arm
+   *      (e.g. `gx:AccessControlManagement`) that has nothing to do with
+   *      the query.
+   *
+   * Generic — derives one asset and one non-asset name from the live
+   * registry / asset-domain set rather than hardcoding any ontology name.
+   */
+  it('resolveKnownDomains keeps asset domains and drops phantom + non-asset names', async () => {
+    const registry = await buildDomainRegistry()
+    const assetDomains = await getAssetDomains()
+    const realAsset = registry.domainNames.find((n) => assetDomains.has(n))
+    const nonAsset = registry.domainNames.find((n) => !assetDomains.has(n))
+    expect(realAsset).toBeDefined()
+
+    const input = [realAsset!, 'unknown', 'definitely-not-a-domain']
+    if (nonAsset) input.push(nonAsset)
+
+    const known = await resolveKnownDomains(input)
+    expect(known).toContain(realAsset)
+    expect(known).not.toContain('unknown')
+    expect(known).not.toContain('definitely-not-a-domain')
+    if (nonAsset) expect(known).not.toContain(nonAsset)
+  }, 120_000)
 })

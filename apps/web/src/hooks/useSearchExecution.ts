@@ -1,7 +1,13 @@
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { useCallback, useRef, useState } from 'react'
 
-import type { MappedTerm, OntologyGap, QueryInterpretation, SearchMeta } from '../api-types'
+import type {
+  MappedTerm,
+  OntologyGap,
+  QueryInterpretation,
+  ResultTraceStep,
+  SearchMeta,
+} from '../api-types'
 import { parseSSEBuffer } from '../lib/sse-parser'
 
 export type SearchPhase = 'idle' | 'interpreting' | 'executing' | 'done'
@@ -11,14 +17,17 @@ export interface SearchState {
   gaps: OntologyGap[] | null
   sparql: string | null
   results: Record<string, string>[] | null
+  /**
+   * Per-row traceability breadcrumb. Aligned by index with `results`.
+   * Present when the query contained a cross-reference JOIN (the
+   * compiler emits a `TraceabilityPlan` which the service expands per
+   * row). UI components render this as a breadcrumb under the row.
+   */
+  traceability: ResultTraceStep[][] | null
   meta: SearchMeta | null
   phase: SearchPhase
   loading: boolean
   error: string | null
-}
-
-function isLocationProperty(property: string): boolean {
-  return ['country', 'state', 'region', 'city'].includes(property)
 }
 
 function isNumericRange(mapped: string): boolean {
@@ -51,6 +60,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
     gaps: null,
     sparql: null,
     results: null,
+    traceability: null,
     meta: null,
     phase: 'idle',
     loading: false,
@@ -69,6 +79,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
       gaps: null,
       sparql: null,
       results: null,
+      traceability: null,
       meta: null,
       phase: 'interpreting',
       loading: true,
@@ -119,10 +130,15 @@ export function useSearchExecution(_availableDomains?: string[]) {
               setState((s) => ({ ...s, sparql: data as string }))
               break
             case SSE_EVENT.RESULTS: {
-              const resultData = data as { results: Record<string, string>[]; error?: string }
+              const resultData = data as {
+                results: Record<string, string>[]
+                traceability?: ResultTraceStep[][]
+                error?: string
+              }
               setState((s) => ({
                 ...s,
                 results: resultData.results,
+                traceability: resultData.traceability ?? null,
                 error: resultData.error ?? s.error,
               }))
               break
@@ -156,20 +172,23 @@ export function useSearchExecution(_availableDomains?: string[]) {
       loading: true,
       error: null,
       results: null,
+      traceability: null,
       meta: null,
       phase: 'executing',
     }))
 
     try {
       const filters: Record<string, string> = {}
-      const location: Record<string, string> = {}
       const ranges: Record<string, { min?: number; max?: number }> = {}
 
+      // Task 21d-flat: every mapped term — geography, license, plain
+      // enums — flows through the same `filters` map keyed by SHACL
+      // leaf local name. The compiler walks the discovered property
+      // path for each key; no client-side knowledge of which fields
+      // are "location" is needed.
       for (const term of updatedTerms) {
         if (term.property && term.mapped) {
-          if (isLocationProperty(term.property)) {
-            location[term.property] = term.mapped
-          } else if (isNumericRange(term.mapped)) {
+          if (isNumericRange(term.mapped)) {
             ranges[term.property] = parseRange(term.mapped)
           } else {
             filters[term.property] = term.mapped
@@ -184,7 +203,6 @@ export function useSearchExecution(_availableDomains?: string[]) {
         domains,
         filters,
         ranges,
-        ...(Object.keys(location).length > 0 ? { location } : {}),
       }
 
       const res = await fetch('/api/search/refine', {
@@ -203,6 +221,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
         ...s,
         sparql: data.sparql,
         results: data.results,
+        traceability: data.traceability ?? null,
         meta: data.meta,
         phase: 'done',
       }))

@@ -125,10 +125,16 @@ export function QueryRefinement({
           <span className="text-xs text-gray-400 italic">all domains</span>
         )}
 
-        {/* Property filter chips (exclude domain terms — shown above) */}
+        {/* Property filter chips (exclude domain terms — shown above).
+            Drop any term whose `mapped` value is empty: the LLM sometimes
+            emits a property-only marker alongside the real mapping, which
+            would otherwise render as a bare "country:" / "references.domain:"
+            chip with no value next to it. */}
         {terms
           .map((term, origIdx) => ({ term, origIdx }))
-          .filter(({ term }) => term.property !== 'domain' && term.property !== 'domains')
+          .filter(
+            ({ term }) => term.property !== 'domain' && term.property !== 'domains' && term.mapped
+          )
           .map(({ term, origIdx }) => (
             <div
               key={`${term.property}-${origIdx}`}

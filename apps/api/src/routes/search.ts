@@ -10,22 +10,20 @@ import type { AppEnv } from '../types.js'
 
 const searchSlotsSchema = z.object({
   domains: z.array(z.string()).default([]),
+  // Filters keyed by SHACL leaf local name. Geographic constraints
+  // (country, state, region, city), license, and every other leaf
+  // live here — there is no dedicated `location` / `license`
+  // sub-object at the wire level (task 21d-flat). The compiler walks
+  // the SHACL-discovered property path for each key to emit SPARQL.
   filters: z.record(z.string(), z.union([z.string(), z.array(z.string())])).default({}),
   ranges: z
     .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
     .default({}),
-  location: z
-    .object({
-      // Each field accepts a single value or an array of values. Arrays let
-      // a refine caller express a region (e.g. country: ["DE","FR","IT"])
-      // and have the compiler emit `FILTER(?country IN (...))`.
-      country: z.union([z.string(), z.array(z.string())]).optional(),
-      state: z.union([z.string(), z.array(z.string())]).optional(),
-      region: z.union([z.string(), z.array(z.string())]).optional(),
-      city: z.union([z.string(), z.array(z.string())]).optional(),
-    })
-    .optional(),
-  license: z.string().optional(),
+  // Cross-reference JOIN target. Required by the refine path so the UI
+  // can re-render `?refAsset`-carrying rows (and the per-row
+  // traceability + lineage explorer that depend on them) without going
+  // back through the LLM (WP3 tasks #18 / #19).
+  references: z.object({ domain: z.string(), label: z.string().optional() }).optional(),
 })
 
 export const searchRoutes = new Hono<AppEnv>()
@@ -124,6 +122,7 @@ searchRoutes.post('/stream', (c) => {
           event: SSE_EVENT.RESULTS,
           data: JSON.stringify({
             results: result.execution.results,
+            traceability: result.execution.traceability,
             error: result.execution.error ? 'Query execution failed' : undefined,
           }),
         })
@@ -201,7 +200,12 @@ searchRoutes.post('/refine', async (c) => {
     logger.info('Refine search completed', { matchCount: result.meta.matchCount })
 
     return c.json(
-      { sparql: result.sparql, results: result.execution.results, meta: result.meta },
+      {
+        sparql: result.sparql,
+        results: result.execution.results,
+        traceability: result.execution.traceability,
+        meta: result.meta,
+      },
       200,
       { [REQUEST_ID_HEADER]: requestId }
     )

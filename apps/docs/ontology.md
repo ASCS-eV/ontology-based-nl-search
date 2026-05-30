@@ -108,18 +108,20 @@ Additional ontology-only domains are still discovered at startup (for example au
 
 ## Cross-Domain Relationships
 
-Domains can reference each other. The compiler handles these cross-domain joins:
+Domains reference each other through SHACL property paths. The compiler discovers these cross-references at runtime — no predicate name is hardcoded in production code:
 
 ```mermaid
 graph LR
-    SC["Scenario"] -->|"hasReferencedArtifacts"| HD["HD Map"]
-    SC -->|"hasReferencedArtifacts"| EM["Environment Model"]
-    HD -->|"hasGeoreference"| GEO["Georeference<br/>(shared)"]
-    SC -->|"hasGeoreference"| GEO
+    SC["Scenario"] -->|"cross-reference (SHACL-discovered)"| HD["HD Map"]
+    SC -->|"cross-reference (SHACL-discovered)"| EM["Environment Model"]
+    HD -->|"shared shape group"| GEO["Georeference<br/>(shared)"]
+    SC -->|"shared shape group"| GEO
 
     style SC fill:#848ab7,stroke:#5a6f9f,color:#fff
     style HD fill:#dbeafe,stroke:#3b82f6
     style GEO fill:#fef3c7,stroke:#f59e0b
 ```
 
-When a user searches for "scenarios on German motorways", the compiler generates a SPARQL query that joins scenario assets with their referenced HD map's georeference properties. Broader queries can stay multi-domain as well: because `roadTypes` exists in both HD map and OSI trace ontologies, a search like "German motorway assets" can match both domains without hardcoded domain tables.
+At warmup, `reference-index.ts` BFSes every typed asset instance and records each outgoing reference as a `(sourceClass, predicatePath, targetClass)` signature. The compiler uses these signatures to emit JOINs, and the per-row traceability breadcrumb under each result renders the actual predicate path that connected the two assets.
+
+When a user searches for "scenarios on German motorways", the compiler generates a SPARQL query that joins scenario assets with their referenced HD map's georeference shape group. Broader queries can stay multi-domain as well: because `roadTypes` exists in both HD map and OSI trace ontologies, a search like "German motorway assets" can match both domains without hardcoded domain tables.

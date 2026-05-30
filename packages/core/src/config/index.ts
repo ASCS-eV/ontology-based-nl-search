@@ -9,7 +9,14 @@ import { z } from 'zod'
  */
 
 const sparqlModeSchema = z.enum(['memory', 'remote'])
-const aiProviderSchema = z.enum(['openai', 'ollama', 'copilot', 'anthropic', 'claude-cli'])
+const aiProviderSchema = z.enum([
+  'openai',
+  'ollama',
+  'copilot',
+  'anthropic',
+  'claude-cli',
+  'vibe-cli',
+])
 
 const envSchema = z.object({
   // SPARQL Store
@@ -43,8 +50,40 @@ const envSchema = z.object({
   /** GitHub token for the Copilot SDK. Sourced from env or `gh auth token`. */
   GITHUB_TOKEN: z.string().optional(),
   OLLAMA_BASE_URL: z.string().url().default('http://localhost:11434/v1'),
+  /**
+   * Base URL for the Mistral OpenAI-compatible API, used by the
+   * `vibe-cli` provider (which reuses the API key the Mistral `vibe`
+   * CLI stored in `~/.vibe/.env`). Defaults to Mistral's hosted
+   * endpoint; override to point at a local model server.
+   */
+  MISTRAL_BASE_URL: z.string().url().default('https://api.mistral.ai/v1'),
   /** Maximum tool-calling steps the Vercel-SDK agent will perform. */
   LLM_MAX_AGENT_STEPS: z.coerce.number().int().positive().default(3),
+  /**
+   * Sampling temperature passed to the LLM. Slot-filling is an
+   * extraction task, so `0` (greedy decoding — same input always
+   * yields the same output) is the right default. Honoured by every
+   * Vercel-SDK provider (openai, ollama, anthropic, claude-cli,
+   * vibe-cli). The Copilot SDK doesn't expose this knob and ignores
+   * it. Raise above 0 only when intentionally introducing variance
+   * (e.g. A/B comparisons or creative-task experiments).
+   */
+  LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
+  /**
+   * Anthropic-only: token budget for the model's hidden
+   * chain-of-thought. `0` (default) disables reasoning — same speed as
+   * the regular chat completion. Set to a positive integer (Anthropic
+   * recommends ≥ 1024) to enable; the answer becomes more accurate on
+   * hard disambiguation cases but the call takes 2–5× longer.
+   *
+   * Ignored by every other Vercel-SDK provider:
+   *   - Mistral exposes reasoning via a separate model family
+   *     (`magistral-*`); change `AI_MODEL` to enable it there.
+   *   - OpenAI `o1` / `o4` are reasoning-by-design; the budget is
+   *     fixed by the model, not the caller.
+   *   - Ollama and the local providers don't implement this concept.
+   */
+  LLM_THINKING_BUDGET: z.coerce.number().int().nonnegative().default(0),
 
   // Ontology
   ONTOLOGY_REPO: z.string().default('ASCS-eV/ontology-management-base'),

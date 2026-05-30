@@ -28,16 +28,28 @@ sequenceDiagram
 ```typescript
 submit_slots({
   slots: {
-    domains: string[],           // Asset types to search
-    filters: Record<string, string | string[]>,  // Enum filters (any sh:in property)
+    domains: string[],                                       // Asset types to search
+    filters: Record<string, string | string[]>,              // Enum filters (any sh:in property,
+                                                              //   including country / region /
+                                                              //   license — all keyed by SHACL
+                                                              //   leaf local name, no special-case
+                                                              //   `location` or `license` slots)
     ranges: Record<string, { min?: number; max?: number }>,  // Numeric ranges
-    location?: { country?, state?, region?, city? },
-    license?: string
+    references?: { domain: string }                          // Cross-domain JOIN to another
+                                                              //   asset class (SHACL-discovered)
   },
-  interpretation: string,        // Human-readable summary
-  gaps: [{ term, reason, suggestions? }]  // Unresolvable terms
+  interpretation: string,                                    // Human-readable summary
+  gaps: [{ term, reason, suggestions? }]                     // Unresolvable terms; suggestions
+                                                              //   come from tokenised match
+                                                              //   against the real vocabulary
 })
 ```
+
+Slot shape changed in the 2026-05-26 audit: there are no longer top-level `location` or `license` objects — both flow through `filters` keyed by the SHACL leaf local name (e.g. `country`, `region`, `license`). The new `references` slot binds one cross-domain JOIN whose target is a SHACL-discovered asset class. When the LLM nominates multiple cross-domain references, the dropped ones surface as honest `OntologyGap`s explaining the single-slot constraint.
+
+### Forced tool choice
+
+The agent runs with `toolChoice: { type: 'tool', toolName: 'submit_slots' }` — the LLM commits to structured output on step 1. The five investigation tools are still wired in (the prompt mentions them) but are no longer the path of least resistance: the full SHACL is embedded in the system prompt, so investigation calls are typically redundant. Forcing the choice eliminated a class of failures where cautious models (Haiku, in particular) exhausted `LLM_MAX_AGENT_STEPS` on `discover_*` calls and never reached `submit_slots`.
 
 ## Context Engineering
 
@@ -106,10 +118,23 @@ Five tools query the schema graph (`<urn:graph:schema>`) at runtime, giving the 
 
 ## Provider Flexibility
 
-| Provider           | SDK           | Use Case                      |
-| ------------------ | ------------- | ----------------------------- |
-| **GitHub Copilot** | Copilot SDK   | Enterprise, GitHub-integrated |
-| **OpenAI**         | Vercel AI SDK | Cloud, highest quality        |
-| **Ollama**         | Vercel AI SDK | Local, privacy-first          |
+| Provider           | SDK                       | Use Case                                                   |
+| ------------------ | ------------------------- | ---------------------------------------------------------- |
+| **GitHub Copilot** | `@github/copilot-sdk`     | Enterprise, GitHub-integrated                              |
+| **OpenAI**         | Vercel AI SDK             | Cloud, highest quality                                     |
+| **Anthropic**      | `@ai-sdk/anthropic`       | Direct Claude API access                                   |
+| **claude-cli**     | `@ai-sdk/anthropic` + CLI | Reuses the local `claude` CLI's OAuth session (no API key) |
+| **vibe-cli**       | `@ai-sdk/openai`-compat   | Routes through the local `vibe` CLI (Mistral models)       |
+| **Ollama**         | Vercel AI SDK             | Local, privacy-first                                       |
 
-All providers share the same validation pipeline and investigation tools.
+All providers share the same validation pipeline. Selected via the `AI_PROVIDER` env var; the model is selected by `AI_MODEL`.
+
+### Tuning knobs
+
+| Env var               | Default | Notes                                                                                                                      |
+| --------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `LLM_TEMPERATURE`     | `0`     | Slot filling is extraction, not generation. Variance is just noise — default is greedy decoding.                           |
+| `LLM_THINKING_BUDGET` | `0`     | Token budget for Anthropic's `thinking` block (claude-cli/anthropic only). Other providers select reasoning by model name. |
+| `LLM_MAX_AGENT_STEPS` | `3`     | Hard cap on tool-call rounds. With `toolChoice` forcing `submit_slots`, the typical query needs 1 step.                    |
+
+Reasoning mode by provider: Mistral uses the `magistral-*` family, OpenAI uses the `o`-series model names (`o1`, `o4-mini`), Anthropic exposes a typed `thinking` block — `LLM_THINKING_BUDGET` is the only var that surfaces it explicitly.

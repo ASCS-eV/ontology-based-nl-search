@@ -41,6 +41,12 @@ export interface SSEParseResult<T = unknown> {
  * skipped with a `console.warn` for operator diagnosis; well-formed
  * events before and after still surface to the consumer.
  *
+ * Note on criterion 12 (no `console.*` outside the structured logger):
+ * this module runs in BOTH the browser and Node — the structured logger
+ * is Node-only (it reads `process.env`) and has no `requestId` available
+ * mid-stream-parse. `console.warn` is the lowest-common-denominator
+ * surface that survives both runtimes.
+ *
  * @param buffer - Accumulated text from the stream (may contain partial lines)
  * @param pendingEvent - Event name carried from a previous chunk (optional)
  * @returns Parsed events, remaining incomplete text, and any pending event name
@@ -61,6 +67,7 @@ export function parseSSEBuffer<T = unknown>(buffer: string, pendingEvent = ''): 
         events.push({ event: currentEvent, data })
       } catch (err) {
         const reason = err instanceof Error ? err.message : String(err)
+
         console.warn(`SSE: dropping malformed data line for event "${currentEvent}": ${reason}`)
       }
       currentEvent = ''
