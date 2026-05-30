@@ -58,16 +58,18 @@ The LLM agent receives the user query + generated prompt and calls `submit_slots
 {
   "slots": {
     "domains": ["hdmap"],
-    "filters": { "roadTypes": "motorway" },
+    "filters": { "roadTypes": ["motorway"], "country": ["DE"] },
     "ranges": { "laneCount": { "min": 3 } },
-    "location": { "country": "DE" }
+    "references": { "domain": "ositrace" }
   },
-  "interpretation": "German motorways with at least 3 lanes",
+  "interpretation": "German motorway HD maps with at least 3 lanes; cross-referenced to OSI traces",
   "gaps": [{ "term": "ADAS testing", "reason": "Not a defined ontology property" }]
 }
 ```
 
-The LLM resolves natural-language synonyms ("highway" → "motorway", "German" → "DE") grounded by the raw SHACL shapes. For complex queries, it may first use **investigation tools** to explore the schema graph before committing to slots.
+The LLM resolves natural-language synonyms ("highway" → "motorway", "German" → "DE") grounded by the raw SHACL shapes. There are no top-level `location` or `license` slots: country, region, city and license all flow through the same `filters` map, keyed by SHACL leaf local name. The optional `references` slot binds one cross-domain JOIN to a SHACL-discovered asset class — when the LLM nominates more than one, the dropped references surface as honest `gaps` rather than disappearing.
+
+The agent is configured with `toolChoice: { type: 'tool', toolName: 'submit_slots' }` — the LLM commits on step 1. Investigation tools remain available but are rarely needed because the full SHACL is already in the prompt.
 
 ## Stage 4: Post-LLM Validation
 

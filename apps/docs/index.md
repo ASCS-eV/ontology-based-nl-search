@@ -22,8 +22,10 @@ features:
     details: LLM fills structured slots — a deterministic compiler generates verified SPARQL. No hallucinated queries, ever.
   - title: 🌐 Graph-Driven Multi-Domain Search
     details: Shared properties such as `roadTypes` can span HD maps, OSI traces, scenarios, environment models, and surface models without hardcoded domain tables.
+  - title: 🧭 Traceability + Lineage (WP3)
+    details: Every result row carries a per-row predicate-chain breadcrumb back to source; the "Explore lineage" panel walks outgoing references multi-hop across asset classes.
   - title: ⚡ Progressive Streaming
     details: Results stream via SSE as each pipeline phase completes. Users see the AI interpretation immediately while execution runs.
   - title: 🔌 Multi-Provider
-    details: Works with GitHub Copilot, OpenAI, or Ollama. Same validation pipeline, different LLM backends.
+    details: 5 providers via Vercel AI SDK (OpenAI, Anthropic, claude-cli, vibe-cli/Mistral, Ollama) plus GitHub Copilot SDK. Same validation pipeline, different LLM backends.
 ---

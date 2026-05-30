@@ -73,25 +73,25 @@ graph LR
 
 The `buildPropertyPaths()` function produces one `PropertyPath` per (asset-class, leaf-property) pair. The compiler uses these paths to emit SPARQL triples without any ontology-specific knowledge.
 
-## Location Filter Delegation
+## Filter Routing
 
-Location handling illustrates the generic approach. The compiler does **not** check for a hardcoded `hasGeoreference` predicate. Instead:
+Filters are key-value pairs keyed by SHACL leaf local name — `country`, `region`, `license`, `roadTypes`, `formatType`, and so on. There is no privileged `location` or `license` slot: country, state, region, city, and license all flow through the same map. The compiler resolves each filter against the discovered property-path graph:
 
-1. It checks whether the primary domain has a `country` property path
-2. If yes → applies location filter to primary domain
-3. If no → delegates to the first referenced domain that has location paths
-4. Referenced domains without active filters are **not** joined (avoids over-constraint)
+1. For each `(filterKey, value)` pair, find every domain whose property paths end in a leaf named `filterKey`.
+2. If the primary domain owns the path → emit the triple pattern on the primary.
+3. If not → JOIN through the first referenced domain that owns it.
+4. Referenced domains without any active filter are **not** joined (avoids over-constraint).
 
 ```mermaid
 flowchart TD
-    LOC["Location filter: country=FR"]
-    PRIMARY{"Primary domain<br/>has country path?"}
-    LOC --> PRIMARY
-    PRIMARY -->|Yes| AP["Apply to primary"]
-    PRIMARY -->|No| SCAN["Scan referenced domains"]
-    SCAN --> FIRST{"First ref domain<br/>with country path?"}
-    FIRST -->|Found| DELEGATE["Delegate to that domain"]
-    FIRST -->|None| DROP["Drop filter (no domain supports it)"]
+    F["Filter: country=DE<br/>(any SHACL leaf, not a privileged slot)"]
+    OWNED{"Primary domain<br/>owns the leaf path?"}
+    F --> OWNED
+    OWNED -->|Yes| AP["Emit on primary"]
+    OWNED -->|No| SCAN["Scan referenced domains"]
+    SCAN --> FIRST{"First ref domain<br/>owning the leaf?"}
+    FIRST -->|Found| DELEGATE["JOIN through that domain"]
+    FIRST -->|None| DROP["Honest gap (no domain has this property)"]
 
     style AP fill:#dcfce7,stroke:#22c55e
     style DELEGATE fill:#fef3c7,stroke:#f59e0b
@@ -124,16 +124,10 @@ sequenceDiagram
     U->>L: "French motorways"
     Note over L: Prompt has SHACL shapes for context
 
-    alt Simple query (enough context in prompt)
-        L->>SS: submit_slots(domains:[hdmap], filters:{roadTypes:motorway}, location:{country:FR})
-    else Complex/unfamiliar query
-        L->>IT: discover_domains()
-        IT-->>L: [{domain:hdmap, class:...}, {domain:scenario, ...}]
-        L->>IT: discover_properties("hdmap")
-        IT-->>L: [{localName:roadTypes, hasEnum:true}, ...]
-        L->>IT: discover_values("roadTypes", "hdmap")
-        IT-->>L: ["motorway", "rural", "urban", ...]
-        L->>SS: submit_slots(domains:[hdmap], filters:{roadTypes:motorway}, location:{country:FR})
+    alt Simple query (the prompt's SHACL is enough — almost always the case)
+        L->>SS: submit_slots(domains:[hdmap], filters:{roadTypes:[motorway], country:[FR]})
+    else Cross-domain query
+        L->>SS: submit_slots(domains:[scenario], filters:{country:[FR]}, references:{domain:hdmap})
     end
 ```
 
@@ -166,9 +160,9 @@ When the LLM selects multiple domains, the compiler applies intelligent constrai
 
 ```mermaid
 flowchart TD
-    SLOTS["SearchSlots<br/>domains: [hdmap, ositrace]<br/>filters: {roadTypes: motorway}<br/>location: {country: FR}"]
+    SLOTS["SearchSlots<br/>domains: [hdmap, ositrace]<br/>filters: {roadTypes: [motorway], country: [FR]}"]
 
-    SLOTS --> PRIMARY["Primary domain: hdmap<br/>(has roadTypes + country)"]
+    SLOTS --> PRIMARY["Primary domain: hdmap<br/>(owns both roadTypes and country leaves)"]
     SLOTS --> REF["Referenced: ositrace<br/>(no filters → SKIP)"]
 
     PRIMARY --> QUERY["Generated SPARQL queries<br/>only hdmap with both filters"]
@@ -180,8 +174,8 @@ flowchart TD
 
 **Rules:**
 
-1. Filters apply only to the domain that owns the property
-2. Location applies to primary domain (or delegates to first domain with location paths)
+1. Filters apply only to the domain that owns the SHACL leaf path
+2. Country / region / city / license route by leaf ownership too — no privileged location slot
 3. Referenced domains without any constraints are **skipped** — no empty mandatory JOINs
 4. This prevents the "over-constraint" problem where multi-domain selection returns zero results
 
