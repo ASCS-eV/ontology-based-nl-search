@@ -117,6 +117,31 @@ describe('rateLimit middleware', () => {
   })
 
   /**
+   * Memory-safety regression (criterion 19): the bucket store is LRU-bounded,
+   * so a flood of distinct (or spoofed `x-forwarded-for`) client keys evicts
+   * the least-recently-used bucket instead of growing forever. With
+   * maxBuckets=2, client A's exhausted bucket is evicted once two other
+   * clients arrive — so A gets a fresh burst on return (200) rather than the
+   * stale 429 the previous unbounded Map would have kept indefinitely.
+   */
+  it('evicts least-recently-used buckets when the store is full (bounded memory)', async () => {
+    const app = new Hono<AppEnv>()
+    app.use('*', rateLimit({ rps: 1, burst: 1, now, maxBuckets: 2 }))
+    app.get('/ok', (c) => c.json({ ok: true }))
+
+    // A exhausts its single token.
+    expect((await get(app, 'A')).status).toBe(200)
+    expect((await get(app, 'A')).status).toBe(429)
+
+    // Two more distinct clients push the store past maxBuckets=2, evicting A.
+    expect((await get(app, 'B')).status).toBe(200)
+    expect((await get(app, 'C')).status).toBe(200)
+
+    // A's stale empty bucket was evicted → fresh burst, not the old 429.
+    expect((await get(app, 'A')).status).toBe(200)
+  })
+
+  /**
    * Falls back to x-real-ip when x-forwarded-for is absent. Without
    * either, all anonymous clients share the `_shared` bucket — safer
    * fail-closed behaviour than letting un-keyed traffic past.

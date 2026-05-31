@@ -13,19 +13,27 @@
  *      default for development; production deployments behind a
  *      proxy will populate the headers.
  *
- * The bucket store is a simple `Map`. It grows unbounded if many
- * distinct clients hit the API; that's acceptable for the current
- * single-process deployment shape but the buckets get pruned on
- * miss-after-refill so long-idle entries don't accumulate forever.
+ * The bucket store is an LRU cache bounded at `MAX_RATE_LIMIT_BUCKETS`
+ * entries (criterion 19): when the bound is reached the least-recently-used
+ * client's bucket is evicted, so a flood of distinct — or spoofed
+ * `x-forwarded-for` — client keys cannot grow the map without bound
+ * (a memory-exhaustion DoS the previous unbounded `Map` was open to; its
+ * doc-comment claimed a "pruned on miss-after-refill" sweep that did not
+ * exist). An evicted idle client simply gets a fresh burst on its next
+ * request, which is correct since it has been idle.
  *
  * Pass `RATE_LIMIT_RPS=0` to disable entirely — `rateLimit()` returns
  * a passthrough middleware in that case.
  *
  * @see https://en.wikipedia.org/wiki/Token_bucket
  */
+import { LruCache } from '@ontology-search/core/cache/lru'
 import { createMiddleware } from 'hono/factory'
 
 import type { AppEnv } from '../types.js'
+
+/** Hard cap on retained per-client buckets before LRU eviction. */
+const MAX_RATE_LIMIT_BUCKETS = 10_000
 
 interface RateLimitOptions {
   /** Average requests-per-second per client. `0` disables the limiter. */
@@ -37,6 +45,12 @@ interface RateLimitOptions {
    * relying on `vi.useFakeTimers()`. Defaults to `Date.now`.
    */
   now?: () => number
+  /**
+   * Maximum number of per-client buckets retained before LRU eviction.
+   * Bounds memory under a flood of distinct/spoofed client keys.
+   * Defaults to {@link MAX_RATE_LIMIT_BUCKETS}.
+   */
+  maxBuckets?: number
 }
 
 interface Bucket {
@@ -58,7 +72,11 @@ function clientKey(headers: Headers): string {
 export function rateLimit(options: RateLimitOptions) {
   const { rps, burst } = options
   const now = options.now ?? Date.now
-  const buckets = new Map<string, Bucket>()
+  // LRU-bounded so distinct/spoofed client keys can't grow memory without
+  // bound. No ttlMs — buckets live until evicted by capacity pressure.
+  const buckets = new LruCache<string, Bucket>({
+    maxSize: options.maxBuckets ?? MAX_RATE_LIMIT_BUCKETS,
+  })
 
   // Disabled path: zero-cost passthrough so `app.use('*', rateLimit(...))`
   // is safe to call unconditionally.
