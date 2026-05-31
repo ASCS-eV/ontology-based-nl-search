@@ -276,6 +276,12 @@ describe('runSparqlAgent — agent boundary', () => {
 
     expect(response.sparql).toBe(FALLBACK_SPARQL)
     expect(response.gaps.length).toBeGreaterThan(0)
+    // Genericity: the fallback hint must NOT name ENVITED-X demo predicates.
+    // It is built from the live vocabulary, so on any other ontology it
+    // reflects that ontology's properties (or a generic, property-free hint).
+    const reason = response.gaps[0]?.reason ?? ''
+    expect(reason).not.toContain('roadTypes')
+    expect(reason).not.toContain('scenarioCategory')
   })
 
   /**
