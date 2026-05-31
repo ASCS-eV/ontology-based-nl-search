@@ -26,7 +26,7 @@
  * @see https://www.w3.org/TR/shacl/#PropertyShape — SHACL PropertyShape
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
-import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
+import { iri, sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
@@ -336,7 +336,7 @@ async function enrichLeafKinds(
   `
   const result = await store.query(sparql)
 
-  const SH_IRI = 'http://www.w3.org/ns/shacl#IRI'
+  const SH_IRI = iri('sh', 'IRI')
   const out = new Map<string, LeafKind>()
   for (const row of result.results.bindings) {
     const pi = row['propertyIri']?.value

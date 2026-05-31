@@ -45,15 +45,14 @@ import {
   type OntologyVocabulary,
   SCHEMA_GRAPH,
 } from '@ontology-search/search'
-import { compileSlots } from '@ontology-search/search/compiler'
 import { getShaclContent } from '@ontology-search/search/shacl-reader'
-import type { SearchSlots } from '@ontology-search/search/slots'
 import { escapeSparqlLiteral } from '@ontology-search/sparql/escape'
 import { validateSchemaQuery } from '@ontology-search/sparql/policy'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
 import type { LlmStructuredResponse } from '../types.js'
+import { buildEmptyFallbackResponse } from './empty-fallback.js'
 import type { AgentOptions } from './index.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
 import { renderTokenDirective, type Submission, SubmissionRouter } from './submission-router.js'
@@ -665,26 +664,8 @@ export async function runCopilotAgent(
     return { ...response, timings: sw.getTimings() }
   }
 
-  // Fallback: LLM didn't call submit_slots — emit the broadest possible
-  // query (cross-domain VALUES over every discovered asset class) so the
-  // caller sees results from every domain rather than from whichever
-  // domain happened to sort first alphabetically. See the equivalent
-  // change in agent/index.ts for the same rationale.
-  const fallbackSlots: SearchSlots = { domains: [], filters: {}, ranges: {} }
-  const sparql = await compileSlots(fallbackSlots)
-  return {
-    interpretation: {
-      summary: 'Searching across all asset domains (LLM did not extract specific filters)',
-      mappedTerms: [],
-    },
-    gaps: [
-      {
-        term: naturalLanguageQuery,
-        reason:
-          'Could not extract structured filters from the query. Try rephrasing with concrete property names from the ontology (e.g. roadTypes, scenarioCategory), or filter by country / license / asset type directly.',
-      },
-    ],
-    sparql,
-    timings: sw.getTimings(),
-  }
+  // Fallback: LLM didn't call submit_slots — shared with the Vercel agent so
+  // the cross-domain query and vocabulary-derived hint stay identical.
+  const fallback = await buildEmptyFallbackResponse(naturalLanguageQuery, vocabulary)
+  return { ...fallback, timings: sw.getTimings() }
 }

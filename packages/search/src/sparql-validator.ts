@@ -22,6 +22,7 @@
  * @see https://www.w3.org/TR/sparql11-query/
  * @see https://github.com/RubenVerborgh/SPARQL.js
  */
+import { iri } from '@ontology-search/core/rdf/prefixes'
 import {
   type AggregateExpression,
   type Expression,
@@ -669,9 +670,7 @@ function isStringLiteral(value: unknown): value is LiteralTerm {
     return false
   }
 
-  return (
-    value.language.length > 0 || value.datatype?.value === 'http://www.w3.org/2001/XMLSchema#string'
-  )
+  return value.language.length > 0 || value.datatype?.value === iri('xsd', 'string')
 }
 
 function formatExpectedArity(expected: number[]): string {

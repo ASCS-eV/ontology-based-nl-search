@@ -14,7 +14,8 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { getAssetDomains, getCompilerVocab } from '../compiler.js'
+import { getAssetDomains } from '../asset-domains.js'
+import { getCompilerVocab } from '../compiler.js'
 import { getInitializedStore } from '../init.js'
 import {
   type AssetMetadata,

@@ -25,6 +25,7 @@ import { readFileSync } from 'node:fs'
 import { LruCache } from '@ontology-search/core/cache/lru'
 import { getConfig } from '@ontology-search/core/config'
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { iri, RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
 import datasetFactory from '@rdfjs/dataset'
 import type { DatasetCore, NamedNode, Quad, Term } from '@rdfjs/types'
 import { DataFactory, Parser } from 'n3'
@@ -37,7 +38,7 @@ const log = createComponentLogger('shacl-validator')
 const { namedNode, blankNode, literal, quad } = DataFactory
 
 /** SHACL constraint component IRIs we surface in violation messages. */
-const SH_NS = 'http://www.w3.org/ns/shacl#'
+const SH_NS = RDF_PREFIXES.sh
 
 /** Result of validating a candidate value. */
 export interface ShaclValidationResult {
@@ -688,9 +689,9 @@ function indexPropertyConstraints(
   const SH_PATTERN = `${SH_NS}pattern`
   const SH_IN = `${SH_NS}in`
   const SH_DATATYPE = `${SH_NS}datatype`
-  const RDF_FIRST = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#first'
-  const RDF_REST = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'
-  const RDF_NIL = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'
+  const RDF_FIRST = iri('rdf', 'first')
+  const RDF_REST = iri('rdf', 'rest')
+  const RDF_NIL = iri('rdf', 'nil')
 
   // Value-constraining SHACL components that, if present, mean datatype alone
   // is NOT sufficient for validation — the engine must run.
@@ -839,7 +840,7 @@ function buildCandidateDataset(
 ): DatasetCore {
   const ds = datasetFactory.dataset()
   const subject = blankNode()
-  const rdfType = namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+  const rdfType = namedNode(iri('rdf', 'type'))
 
   ds.add(quad(subject, rdfType, namedNode(targetClass)))
   ds.add(quad(subject, namedNode(propertyIri), toLiteralOrIri(value)))
@@ -867,7 +868,7 @@ function buildBatchCandidateDataset(
   targetClass: string
 ): { dataset: DatasetCore; valueToFocusIri: Map<string, string> } {
   const ds = datasetFactory.dataset()
-  const rdfType = namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+  const rdfType = namedNode(iri('rdf', 'type'))
   const cls = namedNode(targetClass)
   const propNode = namedNode(propertyIri)
   const valueToFocusIri = new Map<string, string>()
@@ -895,17 +896,10 @@ function makeCacheKey(
 function toLiteralOrIri(value: string | number | boolean): NamedNode | ReturnType<typeof literal> {
   if (typeof value === 'number') {
     const isInt = Number.isInteger(value)
-    return literal(
-      String(value),
-      namedNode(
-        isInt
-          ? 'http://www.w3.org/2001/XMLSchema#integer'
-          : 'http://www.w3.org/2001/XMLSchema#decimal'
-      )
-    )
+    return literal(String(value), namedNode(isInt ? iri('xsd', 'integer') : iri('xsd', 'decimal')))
   }
   if (typeof value === 'boolean') {
-    return literal(String(value), namedNode('http://www.w3.org/2001/XMLSchema#boolean'))
+    return literal(String(value), namedNode(iri('xsd', 'boolean')))
   }
   // Strings that look like absolute IRIs become NamedNodes so sh:class /
   // sh:nodeKind constraints can evaluate correctly. Everything else is a

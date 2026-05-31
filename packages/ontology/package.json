@@ -14,11 +14,6 @@
       "import": "./dist/domain-registry.js",
       "default": "./dist/domain-registry.js"
     },
-    "./vocabulary-index": {
-      "types": "./src/vocabulary-index.ts",
-      "import": "./dist/vocabulary-index.js",
-      "default": "./dist/vocabulary-index.js"
-    },
     "./shacl-validator": {
       "types": "./src/shacl-validator.ts",
       "import": "./dist/shacl-validator.js",

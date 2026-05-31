@@ -24,8 +24,10 @@ import { join } from 'path'
 import { describe, expect, it } from 'vitest'
 
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
+import { buildCompilerVocabFrom, compileSlotsWithTrace } from '../compiler.js'
 import { buildPropertyPaths, buildReferenceChains } from '../property-paths.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
+import { queryRange2DProperties } from '../schema-queries.js'
 
 /** ENVITED-X meta-model predicates the compiler must NEVER emit
  *  against a non-ENVITED-X ontology. Each is a fragment-only match
@@ -65,7 +67,6 @@ function libraryRegistry() {
     targetClassIri: 'http://example.org/library/v1/Book',
     version: 'v1',
     shapes: ['Book'],
-    hasGeoreference: false,
     declaredPrefixes: {
       library: 'http://example.org/library/v1/',
     },
@@ -180,5 +181,80 @@ describe('genericity proof — non-ENVITED-X SHACL graph (task 21e)', () => {
       // handles a 3-step ENVITED-X path.
       expect(path.steps.length).toBe(1)
     }
+  }, 30_000)
+})
+
+/**
+ * Range2D (numeric interval) detection must be STRUCTURAL — keyed on the
+ * `sh:lessThanOrEquals` bound constraint, never on the class name "Range2D" or
+ * the sub-property names "min"/"max". This fixture names its wrapper `Interval`
+ * with `lowerBound`/`upperBound` leaves; the previous
+ * `CONTAINS(STR(?rangeClass), "Range2D")` detection would have found nothing.
+ */
+const INTERVAL_FIXTURE_TTL = `
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix cat: <http://example.org/catalogue/v1/> .
+
+cat:BookShape a sh:NodeShape ;
+  sh:targetClass cat:Book ;
+  sh:property [ sh:path cat:priceRange ; sh:node cat:IntervalShape ] .
+
+cat:IntervalShape a sh:NodeShape ;
+  sh:targetClass cat:Interval ;
+  sh:property [ sh:path cat:lowerBound ; sh:datatype xsd:float ; sh:lessThanOrEquals cat:upperBound ] ;
+  sh:property [ sh:path cat:upperBound ; sh:datatype xsd:float ] .
+`
+
+describe('genericity proof — structural Range2D detection (no class-name / min-max literals)', () => {
+  it('detects an interval wrapper via sh:lessThanOrEquals, not the "Range2D" class name', async () => {
+    const store = new OxigraphStore()
+    await store.loadTurtle(INTERVAL_FIXTURE_TTL, SCHEMA_GRAPH)
+
+    const ranges = await queryRange2DProperties(store)
+    const price = ranges.find((r) => r.localName === 'priceRange')
+
+    expect(price, 'priceRange should be detected as an interval wrapper').toBeDefined()
+    // Lower bound = the leaf bearing sh:lessThanOrEquals; upper bound = its
+    // target. Neither is named "min"/"max", proving name-independence.
+    expect(price!.minPredicate.endsWith('/lowerBound')).toBe(true)
+    expect(price!.maxPredicate.endsWith('/upperBound')).toBe(true)
+  }, 30_000)
+})
+
+/**
+ * The compiler EMISSION (not just discovery) must work on a flat schema.
+ * Before the emission unification, a shallow no-shape-group property was
+ * routed through the ENVITED-X 3-hop shape-group machinery, fabricating
+ * `?asset library:genre ?domSpec ; ?domSpec library:hasContent ?content ;
+ * ?content library:genre ?genre` — a 3-hop query over a 1-hop schema that
+ * matches nothing. This drives compileSlots end-to-end against the flat
+ * fixture and asserts a single discovered hop with no fabricated meta-model.
+ */
+describe('genericity proof — compiler emission on a flat schema', () => {
+  it('compiles a flat-ontology filter to one discovered hop, no fabricated meta-model', async () => {
+    const store = await loadFixture()
+    const registry = libraryRegistry()
+    // `registry as any`: the synthetic test registry stands in for the
+    // disk-derived DomainRegistry (same cast the discovery tests above use).
+    const vocabIndex = await buildCompilerVocabFrom(store, registry as any)
+
+    const { sparql } = await compileSlotsWithTrace(
+      { domains: ['library'], filters: { genre: 'fiction' }, ranges: {} },
+      { registry: registry as any, vocabIndex }
+    )
+
+    // The genre leaf is a 1-step path → emitted directly off the asset.
+    expect(sparql).toMatch(/\?asset\s+library:genre\s+\?genre\s*\./)
+    expect(sparql).toContain('FILTER(?genre = "fiction")')
+    // No fabricated ENVITED-X meta-model predicate (hasContent etc.) and no
+    // phantom DomainSpecification intermediate.
+    for (const forbidden of FORBIDDEN_PREDICATE_LOCAL_NAMES) {
+      expect(
+        sparql.includes(forbidden),
+        `compiled SPARQL must not contain ${forbidden}:\n${sparql}`
+      ).toBe(false)
+    }
+    expect(sparql).not.toContain('?domSpec')
   }, 30_000)
 })

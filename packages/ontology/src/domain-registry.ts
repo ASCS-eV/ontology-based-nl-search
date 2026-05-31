@@ -34,8 +34,6 @@ export interface DomainDescriptor {
   version: string
   /** Shape names that define sub-structures (Content, Format, Quantity, Quality, DataSource) */
   shapes: string[]
-  /** Whether this domain has georeference support */
-  hasGeoreference: boolean
   /** All @prefix declarations found in this domain's TTL files (prefix → namespace) */
   declaredPrefixes: Record<string, string>
 }
@@ -214,13 +212,6 @@ function findPrimaryAssetClass(
 }
 
 /**
- * Check if a domain has georeference support by inspecting owl:imports
- */
-function hasGeoreferenceImport(owlContent: string): boolean {
-  return owlContent.includes('georeference')
-}
-
-/**
  * Build the domain registry by scanning all artifact directories.
  */
 export async function buildDomainRegistry(): Promise<DomainRegistry> {
@@ -294,7 +285,6 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
         targetClassIri: primaryClass.iri,
         version,
         shapes,
-        hasGeoreference: hasGeoreferenceImport(owlContent || shaclContent),
         declaredPrefixes: filePrefixes,
       })
     }

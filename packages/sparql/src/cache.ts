@@ -23,6 +23,25 @@ interface CacheEntry {
   timestamp: number
 }
 
+/**
+ * Recursively freeze a value so it can be shared across cache callers
+ * without defensive copying. The previous implementation `structuredClone`d
+ * the entire result set on every `get` AND `set` — an O(rows × cols) deep
+ * copy on the request hot path (cache HITs especially). Results here are a
+ * read-only plain-data DTO (callers only read `.value` and build new rows),
+ * so a one-time freeze at `set` lets `get` return the stored reference with
+ * zero copy, while still preventing a caller from mutating another's results.
+ */
+function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value)
+    for (const key of Object.keys(value as Record<string, unknown>)) {
+      deepFreeze((value as Record<string, unknown>)[key])
+    }
+  }
+  return value
+}
+
 export class SparqlCache {
   private cache: Map<string, CacheEntry>
   private readonly maxSize: number
@@ -56,7 +75,8 @@ export class SparqlCache {
     this.cache.delete(key)
     this.cache.set(key, entry)
 
-    return structuredClone(entry.results)
+    // Return the stored, deep-frozen reference directly — no per-hit clone.
+    return entry.results
   }
 
   /** Store a result in the cache */
@@ -74,7 +94,7 @@ export class SparqlCache {
       }
     }
 
-    this.cache.set(key, { results: structuredClone(results), timestamp: Date.now() })
+    this.cache.set(key, { results: deepFreeze(results), timestamp: Date.now() })
   }
 
   /** Clear the entire cache */

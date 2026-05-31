@@ -29,7 +29,9 @@ import {
   type DomainRegistry,
 } from '@ontology-search/ontology/domain-registry'
 import { escapeSparqlLiteral, isIri } from '@ontology-search/sparql/escape'
+import type { SparqlStore } from '@ontology-search/sparql/types'
 
+import { getAssetDomains } from './asset-domains.js'
 import { getConceptExpansionIndex } from './concept-expansion.js'
 import { getInitializedStore } from './init.js'
 import {
@@ -67,8 +69,12 @@ interface CompilerVocab {
   shapeGroups: Map<string, string>
   /** All property local names that appear in shapeGroups (for O(1) isKnownProperty checks) */
   shapeGroupPropertyNames: Set<string>
-  /** Properties that use Range2D structure (min/max sub-properties) */
-  range2DProperties: Set<string>
+  /**
+   * Properties that wrap a numeric min/max interval, keyed by leaf local
+   * name. The value carries the SHACL-discovered lower/upper-bound predicate
+   * IRIs so the compiler emits those instead of literal `:min`/`:max`.
+   */
+  range2DProperties: Map<string, { minPredicate: string; maxPredicate: string }>
   /**
    * Discovered property paths keyed by `${domain}:${propertyLocalName}`.
    * Each path lists the predicate hops from an asset class to the leaf
@@ -164,6 +170,19 @@ export async function getCompilerVocab(): Promise<CompilerVocab> {
 async function buildCompilerVocab(): Promise<CompilerVocab> {
   const store = await getInitializedStore()
   const registry = await buildDomainRegistry()
+  return buildCompilerVocabFrom(store, registry)
+}
+
+/**
+ * Build the compiler vocabulary from an explicit store + registry. Extracted
+ * from {@link buildCompilerVocab} so tests can build a vocab against a fixture
+ * graph (a non-ENVITED-X schema) without the global store/registry singletons —
+ * the seam the flat-ontology compile test needs to drive {@link compileSlots}.
+ */
+export async function buildCompilerVocabFrom(
+  store: SparqlStore,
+  registry: DomainRegistry
+): Promise<CompilerVocab> {
   const [propertyDomains, shapeGroupInfos, range2DInfos, propertyPaths] = await Promise.all([
     queryPropertyDomains(store, registry),
     queryPropertyShapeGroups(store, registry),
@@ -196,10 +215,10 @@ async function buildCompilerVocab(): Promise<CompilerVocab> {
     shapeGroupPropertyNames.add(localName)
   }
 
-  // Build Range2D property set
-  const range2DProperties = new Set<string>()
-  for (const { localName } of range2DInfos) {
-    range2DProperties.add(localName)
+  // Build Range2D property index: leaf local name → discovered min/max predicates.
+  const range2DProperties = new Map<string, { minPredicate: string; maxPredicate: string }>()
+  for (const { localName, minPredicate, maxPredicate } of range2DInfos) {
+    range2DProperties.set(localName, { minPredicate, maxPredicate })
   }
 
   // Index property paths by (domain, propertyLocalName) for O(1) lookup
@@ -273,31 +292,9 @@ export async function warmupCompiler(): Promise<void> {
   ])
 }
 
-/**
- * Cached asset domains. Stored as the in-flight Promise (see
- * `cachedCompilerVocabPromise` for the rationale).
- */
-let cachedAssetDomainsPromise: Promise<Set<string>> | null = null
-
-/** Get all asset domains from the ontology graph */
-export async function getAssetDomains(): Promise<Set<string>> {
-  if (cachedAssetDomainsPromise) return cachedAssetDomainsPromise
-  cachedAssetDomainsPromise = buildAssetDomains()
-  return cachedAssetDomainsPromise
-}
-
-async function buildAssetDomains(): Promise<Set<string>> {
-  const store = await getInitializedStore()
-  const registry = await buildDomainRegistry()
-  const domainInfos = await queryAssetDomains(store, registry)
-  const cachedAssetDomains = new Set(domainInfos.map((d) => d.domainName))
-
-  if (cachedAssetDomains.size === 0) {
-    log.warn('No asset domains found via rdfs:subClassOf — check ontology loading')
-  }
-
-  return cachedAssetDomains
-}
+// `getAssetDomains` moved to `./asset-domains.js` to break the
+// compiler ↔ reference-index import cycle (criterion 6 / madge gate).
+// It is imported above and re-exported from the package index there.
 
 /**
  * Cached domain references. Stored as the in-flight Promise (see
@@ -538,6 +535,21 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
 }
 
 /**
+ * Optional dependency overrides for {@link compileSlotsWithTrace}.
+ *
+ * Production callers pass nothing — the global disk-derived registry and the
+ * cached global vocab are used. Tests inject a fixture-built registry + vocab
+ * to drive the compiler against a non-ENVITED-X schema (the seam the
+ * flat-ontology compile test needs). Only the deps a single-domain compile
+ * reads are overridable; cross-domain / references paths still consult the
+ * global asset-domain and reference indexes.
+ */
+export interface CompileOverrides {
+  registry?: DomainRegistry
+  vocabIndex?: CompilerVocab
+}
+
+/**
  * Compile slots and return the SPARQL plus, when the query contains a
  * cross-reference JOIN, a {@link TraceabilityPlan} the service uses to
  * assemble a per-row breadcrumb from the bound intermediate variables.
@@ -545,8 +557,14 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
  * Same compilation semantics as {@link compileSlots} — the wrapper just
  * drops the `trace` field when its caller doesn't ask for it.
  */
-export async function compileSlotsWithTrace(slots: SearchSlots): Promise<CompileResult> {
-  const [registry, vocabIndex] = await Promise.all([buildDomainRegistry(), getCompilerVocab()])
+export async function compileSlotsWithTrace(
+  slots: SearchSlots,
+  overrides?: CompileOverrides
+): Promise<CompileResult> {
+  const [registry, vocabIndex] = await Promise.all([
+    overrides?.registry ?? buildDomainRegistry(),
+    overrides?.vocabIndex ?? getCompilerVocab(),
+  ])
 
   // Traceability plan accumulated when the query contains a cross-
   // reference JOIN. The service uses it to attach a per-row breadcrumb
@@ -578,8 +596,11 @@ export async function compileSlotsWithTrace(slots: SearchSlots): Promise<Compile
   // Determine whether the domains are peers (no parent-child relationship)
   // or have a referencing hierarchy. Peer domains get a UNION query; parent-child
   // domains get a JOIN via manifest:hasReferencedArtifacts.
-  const domainRefs = await getDomainReferences()
-  const hasHierarchy = detectedDomains.length > 1 && detectHierarchy(detectedDomains, domainRefs)
+  // Only multi-domain queries can have a parent-child hierarchy, so the
+  // (global) reference index is consulted only then — a single-domain compile
+  // stays free of the cross-domain discovery dependency.
+  const hasHierarchy =
+    detectedDomains.length > 1 && detectHierarchy(detectedDomains, await getDomainReferences())
 
   if (!hasHierarchy && detectedDomains.length > 1) {
     // Peer domains: generate UNION query that searches all domains independently
@@ -1275,39 +1296,74 @@ function buildDomainPatterns(
   // — a dangling triple with no FILTER would otherwise return zero rows
   // silently. This is the analogue of the `isNonEmpty` gate the previous
   // typed-location code applied per field.
-  const shallowFilterEntries: [string, string | string[]][] = []
+  // Partition entries into three emission strategies, all driven by the
+  // SHACL-discovered property path:
+  //   - SHAPE-GROUP: a property classified into a discovered shape group
+  //     (the ENVITED-X `asset → DomainSpecification → has${Group} → leaf`
+  //     meta-model). Emitted by the shape-group machinery below.
+  //   - DEEP: a path longer than the shape-group standard — walked from the
+  //     spec variable via emitDeepFilters.
+  //   - DIRECT: a property with NO shape group anywhere (a flat ontology's
+  //     `asset → leaf`, or any non-meta-model schema). Walked straight from
+  //     the asset variable — no fabricated `hasDomainSpecification` /
+  //     `has${Group}` hops. This is what makes the compiler work on a schema
+  //     that is not shaped like the ENVITED-X meta-model.
+  // Empty values are dropped (a dangling triple with no FILTER returns zero
+  // rows silently); a property with no discoverable path is left to the
+  // shape-group fallback rather than walked.
+  const shapeGroupFilterEntries: [string, string | string[]][] = []
   const deepFilterEntries: [string, string | string[], PropertyPath][] = []
+  const directFilterEntries: [string, string | string[], PropertyPath][] = []
   for (const [propName, value] of allFilterEntries) {
     if (!isNonEmpty(value)) continue
     const path = vocabIndex.paths.get(`${domainName}:${propName}`)
     if (path && path.steps.length > SHALLOW_PATH_MAX_STEPS) {
       deepFilterEntries.push([propName, value, path])
+    } else if (path && !vocabIndex.shapeGroupPropertyNames.has(propName)) {
+      directFilterEntries.push([propName, value, path])
     } else {
-      shallowFilterEntries.push([propName, value])
+      shapeGroupFilterEntries.push([propName, value])
     }
   }
 
-  const needsDomSpec =
-    shallowFilterEntries.length > 0 || rangeEntries.length > 0 || deepFilterEntries.length > 0
+  const shapeGroupRangeEntries: [string, { min?: number; max?: number }][] = []
+  const directRangeEntries: [string, { min?: number; max?: number }, PropertyPath][] = []
+  for (const [propName, range] of rangeEntries) {
+    const path = vocabIndex.paths.get(`${domainName}:${propName}`)
+    if (path && !vocabIndex.shapeGroupPropertyNames.has(propName)) {
+      directRangeEntries.push([propName, range, path])
+    } else {
+      shapeGroupRangeEntries.push([propName, range])
+    }
+  }
 
-  if (!needsDomSpec) return foreignDomains
+  // The asset → DomainSpecification hop is needed only by the shape-group and
+  // deep strategies (both route through `specVar`); direct properties walk
+  // straight from the asset, so a purely-flat domain emits no spec hop at all.
+  const needsSpecHop =
+    shapeGroupFilterEntries.length > 0 ||
+    shapeGroupRangeEntries.length > 0 ||
+    deepFilterEntries.length > 0
+  const hasAnyEntry =
+    needsSpecHop || directFilterEntries.length > 0 || directRangeEntries.length > 0
 
-  // First hop: asset → DomainSpecification. The predicate is discovered
-  // from any property's path (every property in this domain shares the
-  // first step), falling back to a generic literal when nothing is
-  // discoverable. The fallback is intentional: it preserves backward-
-  // compatible behaviour for the corner case of zero-property domains,
-  // and any real query exercising it would already have flagged a SHACL
-  // discovery problem elsewhere.
-  const candidatePropertyNames = [
-    ...shallowFilterEntries.map(([n]) => n),
-    ...deepFilterEntries.map(([n]) => n),
-    ...rangeEntries.map(([n]) => n),
-  ]
-  const assetToSpecPredicate =
-    lookupStepPredicate(vocabIndex, domain, candidatePropertyNames, 0) ??
-    `${domain.prefix}:hasDomainSpecification`
-  patterns.push(`${assetVar} ${assetToSpecPredicate} ${specVar} .`)
+  if (!hasAnyEntry) return foreignDomains
+
+  if (needsSpecHop) {
+    // First hop: asset → DomainSpecification. The predicate is discovered
+    // from any shape-group/deep property's path (every such property in this
+    // domain shares the first step), falling back to a literal only for the
+    // corner case of a domain whose discovery returned nothing.
+    const candidatePropertyNames = [
+      ...shapeGroupFilterEntries.map(([n]) => n),
+      ...deepFilterEntries.map(([n]) => n),
+      ...shapeGroupRangeEntries.map(([n]) => n),
+    ]
+    const assetToSpecPredicate =
+      lookupStepPredicate(vocabIndex, domain, candidatePropertyNames, 0) ??
+      `${domain.prefix}:hasDomainSpecification`
+    patterns.push(`${assetVar} ${assetToSpecPredicate} ${specVar} .`)
+  }
 
   // Group shallow filter entries AND range entries by their classified
   // shape group, discovered from the SHACL graph at runtime (see
@@ -1322,7 +1378,7 @@ function buildDomainPatterns(
   const filterPropsByGroup = new Map<string, [string, string | string[]][]>()
   const rangePropsByGroup = new Map<string, [string, { min?: number; max?: number }][]>()
 
-  for (const [propName, value] of shallowFilterEntries) {
+  for (const [propName, value] of shapeGroupFilterEntries) {
     const shape = classifyProperty(propName, domainName, vocabIndex)
     let bucket = filterPropsByGroup.get(shape)
     if (!bucket) {
@@ -1332,7 +1388,7 @@ function buildDomainPatterns(
     bucket.push([propName, value])
   }
 
-  for (const [propName, range] of rangeEntries) {
+  for (const [propName, range] of shapeGroupRangeEntries) {
     const shape = classifyProperty(propName, domainName, vocabIndex)
     let bucket = rangePropsByGroup.get(shape)
     if (!bucket) {
@@ -1427,18 +1483,33 @@ function buildDomainPatterns(
       // SHACL via `sh:node → Range2DShape`) use nested `min`/`max`; simple
       // numeric properties are filtered directly.
       for (const [propName, range] of bucket.ranges) {
-        if (vocabIndex.range2DProperties.has(propName)) {
+        const range2D = vocabIndex.range2DProperties.get(propName)
+        if (range2D) {
           const rangeNode = `?${propName}Range${suffix}`
           patterns.push(`${groupVar} ${propPrefix}:${propName} ${rangeNode} .`)
+          // Emit the SHACL-discovered min/max sub-predicates (prefix-compressed
+          // when they live in a known namespace; full IRI otherwise). The
+          // bound-overlap semantics are unchanged: a user `min` constrains the
+          // interval's upper predicate, and vice-versa.
+          const minDesc = findDomainForIri(range2D.minPredicate, registry)
+          const maxDesc = findDomainForIri(range2D.maxPredicate, registry)
+          const minPred = minDesc
+            ? prefixedPredicate(range2D.minPredicate, minDesc)
+            : `<${range2D.minPredicate}>`
+          const maxPred = maxDesc
+            ? prefixedPredicate(range2D.maxPredicate, maxDesc)
+            : `<${range2D.maxPredicate}>`
+          if (minDesc) foreignDomains.add(minDesc.name)
+          if (maxDesc) foreignDomains.add(maxDesc.name)
           if (range.min !== undefined) {
             const maxVar = `?${propName}Max${suffix}`
-            patterns.push(`${rangeNode} ${propPrefix}:max ${maxVar} .`)
+            patterns.push(`${rangeNode} ${maxPred} ${maxVar} .`)
             filters.push(`FILTER(xsd:float(${maxVar}) >= ${range.min})`)
             selectVars.add(maxVar)
           }
           if (range.max !== undefined) {
             const minVar = `?${propName}Min${suffix}`
-            patterns.push(`${rangeNode} ${propPrefix}:min ${minVar} .`)
+            patterns.push(`${rangeNode} ${minPred} ${minVar} .`)
             filters.push(`FILTER(xsd:float(${minVar}) <= ${range.max})`)
             selectVars.add(minVar)
           }
@@ -1477,7 +1548,142 @@ function buildDomainPatterns(
     )
   }
 
+  // Direct properties: no shape group anywhere, so walk each one's discovered
+  // path straight from the asset variable (flat / non-meta-model schemas).
+  if (directFilterEntries.length > 0 || directRangeEntries.length > 0) {
+    emitDirectPathFilters(
+      domainName,
+      directFilterEntries,
+      directRangeEntries,
+      assetVar,
+      suffix,
+      patterns,
+      filters,
+      selectVars,
+      foreignDomains,
+      registry,
+      vocabIndex
+    )
+  }
+
   return foreignDomains
+}
+
+/**
+ * Emit MANDATORY patterns for "direct" properties — those with a discovered
+ * path but NO shape group anywhere (a flat ontology's `asset → leaf`, or any
+ * schema not shaped like the ENVITED-X DomainSpecification meta-model).
+ *
+ * Each property's discovered path is walked straight from the asset variable;
+ * properties that share a path prefix reuse the intermediate variables for a
+ * compact query. Every emitted predicate comes from a discovered PathStep —
+ * no `hasDomainSpecification` / `has${Group}` predicate is fabricated. This is
+ * the emission path that makes the compiler genuinely ontology-agnostic; the
+ * shape-group machinery above stays the path for ENVITED-X-shaped domains so
+ * their output (and the determinism snapshots) are unchanged.
+ */
+function emitDirectPathFilters(
+  domainName: string,
+  filterEntries: [string, string | string[], PropertyPath][],
+  rangeEntries: [string, { min?: number; max?: number }, PropertyPath][],
+  assetVar: string,
+  suffix: string,
+  patterns: string[],
+  filters: string[],
+  selectVars: Set<string>,
+  foreignDomains: Set<string>,
+  registry: DomainRegistry,
+  vocabIndex: CompilerVocab
+): void {
+  type Entry =
+    | { kind: 'filter'; name: string; value: string | string[]; path: PropertyPath }
+    | { kind: 'range'; name: string; range: { min?: number; max?: number }; path: PropertyPath }
+  const all: Entry[] = [
+    ...filterEntries.map(([name, value, path]): Entry => ({ kind: 'filter', name, value, path })),
+    ...rangeEntries.map(([name, range, path]): Entry => ({ kind: 'range', name, range, path })),
+  ]
+
+  // Compress a predicate IRI to prefix form, registering any foreign domain.
+  const emitPredicate = (predicateIri: string): string => {
+    const desc = findDomainForIri(predicateIri, registry)
+    if (desc && desc.name !== domainName) foreignDomains.add(desc.name)
+    return desc ? prefixedPredicate(predicateIri, desc) : `<${predicateIri}>`
+  }
+
+  // Bucket by shared path-prefix (every step except the leaf) so siblings
+  // reuse intermediates. Sorted keys keep the emitted SPARQL deterministic.
+  const buckets = new Map<string, { referencePath: PropertyPath; entries: Entry[] }>()
+  for (const entry of all) {
+    const prefixKey = entry.path.steps
+      .slice(0, -1)
+      .map((s) => s.predicate)
+      .join('|')
+    let bucket = buckets.get(prefixKey)
+    if (!bucket) {
+      bucket = { referencePath: entry.path, entries: [] }
+      buckets.set(prefixKey, bucket)
+    }
+    bucket.entries.push(entry)
+  }
+
+  let bucketIdx = 0
+  for (const [, bucket] of [...buckets].sort(([a], [b]) => a.localeCompare(b))) {
+    const refPath = bucket.referencePath
+    // Walk steps[0..n-2] from the asset, binding shared intermediates.
+    let cursor = assetVar
+    for (let i = 0; i < refPath.steps.length - 1; i++) {
+      const step = refPath.steps[i]!
+      const intVar = `?_dp${bucketIdx}_${i}${suffix}`
+      patterns.push(`${cursor} ${emitPredicate(step.predicate)} ${intVar} .`)
+      cursor = intVar
+    }
+
+    for (const entry of [...bucket.entries].sort((a, b) => a.name.localeCompare(b.name))) {
+      const leafStep = entry.path.steps[entry.path.steps.length - 1]!
+      const leafPred = emitPredicate(leafStep.predicate)
+      if (entry.kind === 'filter') {
+        const v = `?${entry.name}${suffix}`
+        patterns.push(`${cursor} ${leafPred} ${v} .`)
+        if (entry.path.leafKind === 'literal') {
+          addEnumFilter(patterns, filters, v, entry.value)
+        } else {
+          addLocationFilter(filters, v, entry.value)
+        }
+        selectVars.add(v)
+      } else {
+        const range2D = vocabIndex.range2DProperties.get(entry.name)
+        if (range2D) {
+          const rangeNode = `?${entry.name}Range${suffix}`
+          patterns.push(`${cursor} ${leafPred} ${rangeNode} .`)
+          const minPred = emitPredicate(range2D.minPredicate)
+          const maxPred = emitPredicate(range2D.maxPredicate)
+          if (entry.range.min !== undefined) {
+            const maxVar = `?${entry.name}Max${suffix}`
+            patterns.push(`${rangeNode} ${maxPred} ${maxVar} .`)
+            filters.push(`FILTER(xsd:float(${maxVar}) >= ${entry.range.min})`)
+            selectVars.add(maxVar)
+          }
+          if (entry.range.max !== undefined) {
+            const minVar = `?${entry.name}Min${suffix}`
+            patterns.push(`${rangeNode} ${minPred} ${minVar} .`)
+            filters.push(`FILTER(xsd:float(${minVar}) <= ${entry.range.max})`)
+            selectVars.add(minVar)
+          }
+        } else {
+          const v = `?${entry.name}${suffix}`
+          patterns.push(`${cursor} ${leafPred} ${v} .`)
+          selectVars.add(v)
+          if (entry.range.min !== undefined) {
+            filters.push(`FILTER(xsd:float(${v}) >= ${entry.range.min})`)
+          }
+          if (entry.range.max !== undefined) {
+            filters.push(`FILTER(xsd:float(${v}) <= ${entry.range.max})`)
+          }
+        }
+      }
+    }
+    bucketIdx++
+  }
 }
 
 /**
@@ -1696,6 +1902,11 @@ async function resolvePrimaryDomain(
   filtersByDomain: Record<string, Record<string, string | string[]>>
 ): Promise<string> {
   const allDomains = new Set([...detectedDomains, ...Object.keys(filtersByDomain)])
+
+  // A single domain is always its own primary — skip the (global) reference
+  // index entirely so single-domain compilation has no cross-domain dependency.
+  if (allDomains.size === 1) return detectedDomains[0] ?? [...allDomains][0]!
+
   const domainRefs = await getDomainReferences()
 
   // Check if any domain references others that are present

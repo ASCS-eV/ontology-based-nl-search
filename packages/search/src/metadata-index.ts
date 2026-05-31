@@ -30,28 +30,32 @@
  * are populated by `buildPropertyPaths` from the live shapes graph.
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { iri } from '@ontology-search/core/rdf/prefixes'
 import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
-import { getAssetDomains, getCompilerVocab } from './compiler.js'
+import { getAssetDomains } from './asset-domains.js'
+import { getCompilerVocab } from './compiler.js'
 import { getInitializedStore } from './init.js'
 import type { PropertyPath } from './property-paths.js'
 
 const log = createComponentLogger('metadata-index')
 
 /** XSD numeric datatypes the aggregate view detects to report a min/max range. */
-const XSD_NUMERIC = new Set([
-  'http://www.w3.org/2001/XMLSchema#integer',
-  'http://www.w3.org/2001/XMLSchema#decimal',
-  'http://www.w3.org/2001/XMLSchema#float',
-  'http://www.w3.org/2001/XMLSchema#double',
-  'http://www.w3.org/2001/XMLSchema#long',
-  'http://www.w3.org/2001/XMLSchema#int',
-  'http://www.w3.org/2001/XMLSchema#short',
-  'http://www.w3.org/2001/XMLSchema#byte',
-  'http://www.w3.org/2001/XMLSchema#nonNegativeInteger',
-  'http://www.w3.org/2001/XMLSchema#positiveInteger',
-])
+const XSD_NUMERIC = new Set(
+  [
+    'integer',
+    'decimal',
+    'float',
+    'double',
+    'long',
+    'int',
+    'short',
+    'byte',
+    'nonNegativeInteger',
+    'positiveInteger',
+  ].map((t) => iri('xsd', t))
+)
 
 /** Maximum distinct values surfaced in the `samples` field of aggregate stats. */
 const SAMPLE_LIMIT = 12

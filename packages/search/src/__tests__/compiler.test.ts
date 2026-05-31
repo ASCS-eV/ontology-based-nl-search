@@ -99,7 +99,14 @@ vi.mock('../schema-queries.js', () => ({
     { localName: 'weatherSummary', domain: 'scenario', shapeGroup: 'Content' },
     { localName: 'entityTypes', domain: 'scenario', shapeGroup: 'Content' },
   ]),
-  queryRange2DProperties: vi.fn().mockResolvedValue([{ localName: 'speedLimit', domain: 'hdmap' }]),
+  queryRange2DProperties: vi.fn().mockResolvedValue([
+    {
+      localName: 'speedLimit',
+      domain: 'hdmap',
+      minPredicate: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/min',
+      maxPredicate: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/max',
+    },
+  ]),
 }))
 
 // Mock the store init (not needed since we mock extractVocabulary)

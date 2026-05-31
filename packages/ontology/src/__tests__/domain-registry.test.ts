@@ -27,7 +27,6 @@ describe('DomainRegistry', () => {
     expect(hdmap!.namespace).toContain('hdmap')
     expect(hdmap!.targetClass).toBe('hdmap:HdMap')
     expect(hdmap!.version).toMatch(/^v\d+$/)
-    expect(hdmap!.hasGeoreference).toBe(true)
   })
 
   it('discovers scenario domain', async () => {
@@ -36,7 +35,6 @@ describe('DomainRegistry', () => {
 
     expect(scenario).toBeDefined()
     expect(scenario!.targetClass).toBe('scenario:Scenario')
-    expect(scenario!.hasGeoreference).toBe(true)
   })
 
   it('discovers openlabel-v2 domain with underscore prefix', async () => {

@@ -17,7 +17,7 @@
  * when the surrounding module is the structured logger itself.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
@@ -127,5 +127,122 @@ describe('repo-policy: C12 — no console.* outside structured logger', () => {
     }
 
     expect(violations, `Unannotated console.* calls:\n${violations.join('\n')}`).toEqual([])
+  })
+})
+
+/**
+ * C6 — no circular dependency *within* a package (intra-package import cycle).
+ *
+ * The layering CI gate is `madge --circular`, but madge runs nowhere in CI
+ * today and is not part of `pnpm run validate` — so an intra-package cycle
+ * (e.g. `compiler.ts` ⇄ `reference-index.ts`, which existed before this gate)
+ * shipped undetected. This dependency-free detector builds the relative-import
+ * graph per package and asserts it is acyclic, failing CI via `pnpm test`.
+ *
+ * Cross-package cycles are independently prevented by the layered workspace
+ * graph (a package cannot import an app, and `core` has zero workspace deps);
+ * those use `@ontology-search/*` specifiers, not the relative paths this graph
+ * tracks. Type-only imports are erased at runtime and cannot form a runtime
+ * cycle, so they are excluded — matching what actually breaks module init.
+ */
+function resolveRelativeImport(fromFile: string, spec: string): string | null {
+  const base = resolve(dirname(fromFile), spec)
+  const stem = base.endsWith('.js') ? base.slice(0, -3) : base
+  const candidates = [`${stem}.ts`, `${stem}.tsx`, join(stem, 'index.ts'), join(stem, 'index.tsx')]
+  return candidates.find((c) => existsSync(c)) ?? null
+}
+
+/** Relative (value) imports of a source file, resolved to absolute .ts paths. */
+function valueImportEdges(file: SourceFile): string[] {
+  const content = file.lines.join('\n')
+  // Match each import statement up to its `from '...'`. Group 1 is the `type`
+  // keyword for whole-statement type-only imports (skip those).
+  const re = /import\s+(type\s+)?[\s\S]*?from\s+['"](\.[^'"]+)['"]/g
+  const edges: string[] = []
+  let m: RegExpExecArray | null
+  while ((m = re.exec(content)) !== null) {
+    if (m[1]) continue // `import type { … }` — erased at runtime
+    const target = resolveRelativeImport(file.path, m[2]!)
+    if (target) edges.push(target)
+  }
+  return edges
+}
+
+describe('repo-policy: C6 — no intra-package circular dependency', () => {
+  it('the relative-import graph of every package is acyclic', () => {
+    const graph = new Map<string, string[]>()
+    for (const file of FILES) graph.set(file.path, valueImportEdges(file))
+
+    const WHITE = 0
+    const GRAY = 1
+    const BLACK = 2
+    const color = new Map<string, number>()
+    const stack: string[] = []
+    const cycles: string[] = []
+
+    const visit = (node: string): void => {
+      color.set(node, GRAY)
+      stack.push(node)
+      for (const next of graph.get(node) ?? []) {
+        const c = color.get(next) ?? WHITE
+        if (c === GRAY) {
+          const from = stack.indexOf(next)
+          const loop = [...stack.slice(from), next].map((p) => p.replace(`${ROOT}/`, ''))
+          cycles.push(loop.join(' → '))
+        } else if (c === WHITE && graph.has(next)) {
+          visit(next)
+        }
+      }
+      stack.pop()
+      color.set(node, BLACK)
+    }
+
+    for (const node of graph.keys()) {
+      if ((color.get(node) ?? WHITE) === WHITE) visit(node)
+    }
+
+    expect(cycles, `Circular dependencies found:\n${cycles.join('\n')}`).toEqual([])
+  })
+})
+
+/**
+ * C3 — namespace IRIs come from `@ontology-search/core/rdf/prefixes`, never an
+ * inline `http://www.w3.org/...` literal in source (criterion 3). The pattern
+ * deliberately matches `http://` (the W3C *namespace* IRIs) and not `https://`
+ * (documentation links in JSDoc), so `@see https://www.w3.org/TR/...` lines are
+ * untouched.
+ */
+const W3C_IRI_EXEMPT_FILES = new Set([
+  // The single source of truth — the only module allowed to name these IRIs.
+  join(ROOT, 'packages/core/src/rdf/prefixes.ts'),
+  // Embedded RDF documents: these `http://www.w3.org/...` occurrences are
+  // Turtle/SPARQL *data* (`@prefix`/`PREFIX` lines inside template literals),
+  // not namespace constants used in logic.
+  join(ROOT, 'packages/search/src/data-loader.ts'),
+  join(ROOT, 'packages/sparql/src/capability-probe.ts'),
+  // TODO(agent-tools dedup): the discover_* SPARQL builders inline PREFIX lines
+  // and are slated for consolidation; remove these two exemptions when that
+  // refactor routes them through sparqlPrefix().
+  join(ROOT, 'packages/llm/src/agent/copilot-agent.ts'),
+  join(ROOT, 'packages/llm/src/agent/investigation-tools.ts'),
+])
+
+describe('repo-policy: C3 — no inline W3C namespace IRI outside core/rdf/prefixes', () => {
+  it('every production module sources W3C namespace IRIs from the prefixes helper', () => {
+    const violations: string[] = []
+    for (const file of FILES) {
+      if (W3C_IRI_EXEMPT_FILES.has(file.path)) continue
+      for (let i = 0; i < file.lines.length; i++) {
+        const line = file.lines[i]!
+        if (!line.includes('http://www.w3.org/')) continue
+        // Ignore comment lines (block-comment `*` or `//`).
+        if (/^\s*(\*|\/\/)/.test(line)) continue
+        violations.push(`${file.path}:${i + 1} → ${line.trim()}`)
+      }
+    }
+    expect(
+      violations,
+      `Inline W3C namespace IRIs (use iri()/sparqlPrefix()):\n${violations.join('\n')}`
+    ).toEqual([])
   })
 })

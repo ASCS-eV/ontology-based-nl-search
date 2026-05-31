@@ -247,6 +247,50 @@ describe('SearchService.searchNl', () => {
     expect(phases).toEqual(['interpreting', 'interpreted', 'executing'])
   })
 
+  /**
+   * Speed regression: the per-domain dataset COUNT queries must be dispatched
+   * concurrently, not one-at-a-time. We drive a store mock that records the
+   * peak number of simultaneously in-flight COUNT queries; with the previous
+   * serial `for await` loop the peak was 1, with Promise.all it equals the
+   * number of count queries. Deterministic (no timers) — each count query
+   * yields a microtask so siblings can enter before any resolves.
+   */
+  it('dispatches per-domain count queries concurrently', async () => {
+    const countQueries = [
+      { domain: 'a', query: 'SELECT (COUNT(*) AS ?count) WHERE { ?s a <urn:A> }' },
+      { domain: 'b', query: 'SELECT (COUNT(*) AS ?count) WHERE { ?s a <urn:B> }' },
+      { domain: 'c', query: 'SELECT (COUNT(*) AS ?count) WHERE { ?s a <urn:C> }' },
+    ]
+    const countResult: SparqlResults = {
+      head: { vars: ['count'] },
+      results: { bindings: [{ count: { type: 'literal', value: '1' } }] },
+    }
+    let inFlight = 0
+    let peakInFlight = 0
+    const concurrentStore = {
+      ...mockStore,
+      query: vi.fn(async (sparql: string) => {
+        if (!sparql.includes('COUNT')) return mockSparqlResults
+        inFlight++
+        peakInFlight = Math.max(peakInFlight, inFlight)
+        await Promise.resolve() // yield so sibling count queries can enter
+        await Promise.resolve()
+        inFlight--
+        return countResult
+      }),
+    }
+    const deps = createMockDeps({
+      getStore: vi.fn().mockResolvedValue(concurrentStore),
+      compileCountQueries: vi.fn().mockResolvedValue(countQueries),
+    })
+    const service = new SearchService(deps)
+
+    const result = await service.searchNl({ query: 'test' })
+
+    expect(result.meta.totalDatasets).toBe(3)
+    expect(peakInFlight).toBe(countQueries.length)
+  })
+
   it('emits interpretation data in the interpreted phase', async () => {
     const deps = createMockDeps()
     const service = new SearchService(deps)

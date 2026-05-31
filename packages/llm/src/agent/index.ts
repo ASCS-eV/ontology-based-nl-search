@@ -6,14 +6,13 @@ import {
   getInitializedStore,
   type OntologyVocabulary,
 } from '@ontology-search/search'
-import { compileSlots } from '@ontology-search/search/compiler'
 import { getShaclContent } from '@ontology-search/search/shacl-reader'
-import type { SearchSlots } from '@ontology-search/search/slots'
 import { generateText, stepCountIs } from 'ai'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
 import { getModel } from '../provider.js'
 import type { LlmStructuredResponse } from '../types.js'
+import { buildEmptyFallbackResponse } from './empty-fallback.js'
 import { createInvestigationTools } from './investigation-tools.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
 import { agentTools, type SlotSubmissionParams } from './tools.js'
@@ -162,30 +161,10 @@ export async function runSparqlAgent(
   }
 
   // Fallback: LLM didn't call submit_slots — emit the broadest possible
-  // query (cross-domain VALUES over every discovered asset class) so the
-  // caller sees results from every domain rather than from whichever
-  // domain happened to sort first alphabetically. The previous fallback
-  // used `getPrimaryDomain()` as a default, which silently anchored
-  // empty queries to a single arbitrary domain — e.g. routing a
-  // German "gibt es karten…" query into the `automotive-simulator`
-  // domain just because it sorts before `hdmap`.
-  const fallbackSlots: SearchSlots = { domains: [], filters: {}, ranges: {} }
-  const sparql = await compileSlots(fallbackSlots)
-  return {
-    interpretation: {
-      summary: 'Searching across all asset domains (LLM did not extract specific filters)',
-      mappedTerms: [],
-    },
-    gaps: [
-      {
-        term: naturalLanguageQuery,
-        reason:
-          'Could not extract structured filters from the query. Try rephrasing with concrete property names from the ontology (e.g. roadTypes, scenarioCategory), or filter by country / license / asset type directly.',
-      },
-    ],
-    sparql,
-    timings: sw.getTimings(),
-  }
+  // cross-domain query plus a vocabulary-derived hint. Shared with the
+  // Copilot agent so the message can't drift between providers.
+  const fallback = await buildEmptyFallbackResponse(naturalLanguageQuery, vocabulary)
+  return { ...fallback, timings: sw.getTimings() }
 }
 
 const diagnosticLog = createComponentLogger('agent-diagnostics')

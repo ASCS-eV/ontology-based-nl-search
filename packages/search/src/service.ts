@@ -362,19 +362,24 @@ export class SearchService {
     try {
       const store = await this.deps.getStore()
       const countQueries = await this.deps.compileCountQueries()
-      let total = 0
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
-      for (const { query: countSparql } of countQueries) {
-        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-        const countResult = await store.query(countSparql, { signal })
-        const countBinding = countResult.results.bindings[0]
-        if (countBinding?.count) {
-          total += parseInt(countBinding.count.value, 10)
-        }
-      }
+      // Run the per-domain COUNT queries concurrently rather than serially.
+      // They are independent and the total is order-independent, so a serial
+      // `for await` needlessly turned N store round-trips into N sequential
+      // ones — on a remote store (Fuseki) that is N RTTs where one overlap
+      // would do. Each query still carries the abort signal so a client
+      // disconnect cancels every in-flight count.
+      const counts = await Promise.all(
+        countQueries.map(async ({ query: countSparql }) => {
+          const countResult = await store.query(countSparql, { signal })
+          const countBinding = countResult.results.bindings[0]
+          return countBinding?.count ? parseInt(countBinding.count.value, 10) : 0
+        })
+      )
 
       endCount()
-      return total
+      return counts.reduce((sum, n) => sum + n, 0)
     } catch (err) {
       endCount()
       // Propagate aborts so the caller stops the pipeline; swallow other

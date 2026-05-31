@@ -79,6 +79,22 @@ describe('SparqlCache', () => {
     expect(cache.get('q1')).toBeNull()
   })
 
+  it('returns the stored reference (no per-hit clone) and deep-freezes it', () => {
+    const cache = new SparqlCache({ maxSize: TEST_MAX_SIZE, ttlMs: TEST_TTL_MS })
+    const results: SparqlResults = {
+      head: { vars: ['s'] },
+      results: { bindings: [{ s: { type: 'uri', value: 'urn:x' } }] },
+    }
+    cache.set('q', results)
+    const first = cache.get('q')
+    // Every hit returns the same reference — no O(rows×cols) structuredClone
+    // on the hot path (the previous behaviour returned a fresh clone each get).
+    expect(first).toBe(cache.get('q'))
+    // Deep-frozen so sharing the reference across callers is mutation-safe.
+    expect(Object.isFrozen(first)).toBe(true)
+    expect(Object.isFrozen(first!.results.bindings[0])).toBe(true)
+  })
+
   it('reports stats', () => {
     const cache = new SparqlCache({ maxSize: 100, ttlMs: 60000 })
     cache.set('q1', mockResults)
