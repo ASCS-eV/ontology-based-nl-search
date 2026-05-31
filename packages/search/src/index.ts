@@ -1,10 +1,10 @@
+export { getAssetDomains, resetAssetDomains } from './asset-domains.js'
 export {
   compileAllCountQueries,
   compileCountQuery,
   compileSlots,
   compileSlotsWithTrace,
   escapeSparqlLiteral,
-  getAssetDomains,
   warmupCompiler,
 } from './compiler.js'
 export type { ConceptExpansionIndex } from './concept-expansion.js'

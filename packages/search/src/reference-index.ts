@@ -25,9 +25,10 @@
  * ?T` — which is universal RDF.
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { iri } from '@ontology-search/core/rdf/prefixes'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 
-import { getAssetDomains } from './compiler.js'
+import { getAssetDomains } from './asset-domains.js'
 import { getInitializedStore } from './init.js'
 
 const log = createComponentLogger('reference-index')
@@ -42,7 +43,7 @@ const log = createComponentLogger('reference-index')
 const MAX_DEPTH = 6
 
 /** RDF type predicate IRI — excluded from path-step recording. */
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+const RDF_TYPE = iri('rdf', 'type')
 
 /**
  * One discovered link between two typed asset instances, generalised

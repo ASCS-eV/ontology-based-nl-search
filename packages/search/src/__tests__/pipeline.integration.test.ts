@@ -42,11 +42,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 // resolve to ./dist/index.js, which isn't built when CI runs tests
 // directly via vitest. The same pattern is used by every other test file
 // in this package (compiler.test.ts, schema-queries.test.ts, etc.).
+import { getAssetDomains } from '../asset-domains.js'
 import {
   compileAllCountQueries,
   compileSlots,
   compileSlotsWithTrace,
-  getAssetDomains,
   resolveKnownDomains,
 } from '../compiler.js'
 import { getInitializedStore } from '../init.js'

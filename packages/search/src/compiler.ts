@@ -30,6 +30,7 @@ import {
 } from '@ontology-search/ontology/domain-registry'
 import { escapeSparqlLiteral, isIri } from '@ontology-search/sparql/escape'
 
+import { getAssetDomains } from './asset-domains.js'
 import { getConceptExpansionIndex } from './concept-expansion.js'
 import { getInitializedStore } from './init.js'
 import {
@@ -273,31 +274,9 @@ export async function warmupCompiler(): Promise<void> {
   ])
 }
 
-/**
- * Cached asset domains. Stored as the in-flight Promise (see
- * `cachedCompilerVocabPromise` for the rationale).
- */
-let cachedAssetDomainsPromise: Promise<Set<string>> | null = null
-
-/** Get all asset domains from the ontology graph */
-export async function getAssetDomains(): Promise<Set<string>> {
-  if (cachedAssetDomainsPromise) return cachedAssetDomainsPromise
-  cachedAssetDomainsPromise = buildAssetDomains()
-  return cachedAssetDomainsPromise
-}
-
-async function buildAssetDomains(): Promise<Set<string>> {
-  const store = await getInitializedStore()
-  const registry = await buildDomainRegistry()
-  const domainInfos = await queryAssetDomains(store, registry)
-  const cachedAssetDomains = new Set(domainInfos.map((d) => d.domainName))
-
-  if (cachedAssetDomains.size === 0) {
-    log.warn('No asset domains found via rdfs:subClassOf — check ontology loading')
-  }
-
-  return cachedAssetDomains
-}
+// `getAssetDomains` moved to `./asset-domains.js` to break the
+// compiler ↔ reference-index import cycle (criterion 6 / madge gate).
+// It is imported above and re-exported from the package index there.
 
 /**
  * Cached domain references. Stored as the in-flight Promise (see

@@ -18,6 +18,7 @@
  * Ontology-agnostic: the walker reads the index, not any ontology name.
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { iri } from '@ontology-search/core/rdf/prefixes'
 import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
@@ -176,7 +177,7 @@ async function loadTypeAndName(
   const sparql = `
     SELECT ?type ?name WHERE {
       <${assetIri}> a ?type .
-      OPTIONAL { <${assetIri}> <http://www.w3.org/2000/01/rdf-schema#label> ?name }
+      OPTIONAL { <${assetIri}> <${iri('rdfs', 'label')}> ?name }
     }
   `
   const result = await store.query(sparql)
