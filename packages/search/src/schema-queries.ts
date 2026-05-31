@@ -82,6 +82,10 @@ export interface Range2DPropertyInfo {
   localName: string
   /** Domain that defines this property (e.g., "hdmap") */
   domain: string
+  /** Full IRI of the lower-bound sub-predicate (the leaf bearing sh:lessThanOrEquals). */
+  minPredicate: string
+  /** Full IRI of the upper-bound sub-predicate (the sh:lessThanOrEquals target). */
+  maxPredicate: string
 }
 
 /**
@@ -560,11 +564,21 @@ export async function queryPropertyShapeGroups(
 }
 
 /**
- * Query for properties that use Range2D structure (min/max sub-properties).
+ * Query for properties that wrap a numeric min/max interval.
  *
- * Detects properties where sh:node points to a shape whose targetClass
- * contains "Range2D". These require special SPARQL pattern generation
- * (property → blank node → min/max).
+ * Detected STRUCTURALLY, not by class name: a property whose `sh:node`
+ * points to a shape with two scalar leaves where one leaf declares
+ * `sh:lessThanOrEquals <other>` — the SHACL constraint that semantically
+ * marks the lower bound (its value must be ≤ the other leaf's value). The
+ * `sh:lessThanOrEquals` target identifies the upper-bound predicate, and the
+ * bearing leaf's own `sh:path` identifies the lower-bound predicate. Both
+ * sub-predicate IRIs are returned so the compiler emits the discovered
+ * predicates rather than literal `:min`/`:max`.
+ *
+ * Replaces the prior `CONTAINS(STR(?rangeClass), "Range2D")` match and the
+ * hardcoded `min`/`max` local names — an ontology that names its interval
+ * wrapper `Interval`/`BoundingRange` with `lowerBound`/`upperBound` sub-
+ * properties is now detected identically (criterion 9 / 9b).
  */
 export async function queryRange2DProperties(
   store: SparqlStore,
@@ -573,14 +587,17 @@ export async function queryRange2DProperties(
   const sparql = `
     ${sparqlPrefixes('sh')}
 
-    SELECT DISTINCT ?propIri ?rangeClass WHERE {
+    SELECT DISTINCT ?propIri ?minPred ?maxPred WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
         ?shape sh:property ?propShape .
         ?propShape sh:path ?propIri .
         ?propShape sh:node ?rangeShape .
-        ?rangeShape sh:targetClass ?rangeClass .
+        ?rangeShape sh:property ?minLeaf .
+        ?minLeaf sh:path ?minPred .
+        ?minLeaf sh:lessThanOrEquals ?maxPred .
+        ?rangeShape sh:property ?maxLeaf .
+        ?maxLeaf sh:path ?maxPred .
         FILTER(isIRI(?propIri))
-        FILTER(CONTAINS(STR(?rangeClass), "Range2D"))
       }
     }
     ORDER BY ?propIri
@@ -591,13 +608,15 @@ export async function queryRange2DProperties(
 
   for (const row of result.results.bindings) {
     const propIri = row['propIri']?.value
-    if (!propIri) continue
+    const minPredicate = row['minPred']?.value
+    const maxPredicate = row['maxPred']?.value
+    if (!propIri || !minPredicate || !maxPredicate) continue
 
     const localName = extractLocalName(propIri)
     const domain = extractDomain(propIri, registry)
 
     if (localName && domain) {
-      properties.push({ localName, domain })
+      properties.push({ localName, domain, minPredicate, maxPredicate })
     }
   }
 

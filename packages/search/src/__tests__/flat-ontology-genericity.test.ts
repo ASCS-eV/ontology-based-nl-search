@@ -26,6 +26,7 @@ import { describe, expect, it } from 'vitest'
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
 import { buildPropertyPaths, buildReferenceChains } from '../property-paths.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
+import { queryRange2DProperties } from '../schema-queries.js'
 
 /** ENVITED-X meta-model predicates the compiler must NEVER emit
  *  against a non-ENVITED-X ontology. Each is a fragment-only match
@@ -179,5 +180,43 @@ describe('genericity proof — non-ENVITED-X SHACL graph (task 21e)', () => {
       // handles a 3-step ENVITED-X path.
       expect(path.steps.length).toBe(1)
     }
+  }, 30_000)
+})
+
+/**
+ * Range2D (numeric interval) detection must be STRUCTURAL — keyed on the
+ * `sh:lessThanOrEquals` bound constraint, never on the class name "Range2D" or
+ * the sub-property names "min"/"max". This fixture names its wrapper `Interval`
+ * with `lowerBound`/`upperBound` leaves; the previous
+ * `CONTAINS(STR(?rangeClass), "Range2D")` detection would have found nothing.
+ */
+const INTERVAL_FIXTURE_TTL = `
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix cat: <http://example.org/catalogue/v1/> .
+
+cat:BookShape a sh:NodeShape ;
+  sh:targetClass cat:Book ;
+  sh:property [ sh:path cat:priceRange ; sh:node cat:IntervalShape ] .
+
+cat:IntervalShape a sh:NodeShape ;
+  sh:targetClass cat:Interval ;
+  sh:property [ sh:path cat:lowerBound ; sh:datatype xsd:float ; sh:lessThanOrEquals cat:upperBound ] ;
+  sh:property [ sh:path cat:upperBound ; sh:datatype xsd:float ] .
+`
+
+describe('genericity proof — structural Range2D detection (no class-name / min-max literals)', () => {
+  it('detects an interval wrapper via sh:lessThanOrEquals, not the "Range2D" class name', async () => {
+    const store = new OxigraphStore()
+    await store.loadTurtle(INTERVAL_FIXTURE_TTL, SCHEMA_GRAPH)
+
+    const ranges = await queryRange2DProperties(store)
+    const price = ranges.find((r) => r.localName === 'priceRange')
+
+    expect(price, 'priceRange should be detected as an interval wrapper').toBeDefined()
+    // Lower bound = the leaf bearing sh:lessThanOrEquals; upper bound = its
+    // target. Neither is named "min"/"max", proving name-independence.
+    expect(price!.minPredicate.endsWith('/lowerBound')).toBe(true)
+    expect(price!.maxPredicate.endsWith('/upperBound')).toBe(true)
   }, 30_000)
 })

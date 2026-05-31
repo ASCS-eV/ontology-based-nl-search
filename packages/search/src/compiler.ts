@@ -68,8 +68,12 @@ interface CompilerVocab {
   shapeGroups: Map<string, string>
   /** All property local names that appear in shapeGroups (for O(1) isKnownProperty checks) */
   shapeGroupPropertyNames: Set<string>
-  /** Properties that use Range2D structure (min/max sub-properties) */
-  range2DProperties: Set<string>
+  /**
+   * Properties that wrap a numeric min/max interval, keyed by leaf local
+   * name. The value carries the SHACL-discovered lower/upper-bound predicate
+   * IRIs so the compiler emits those instead of literal `:min`/`:max`.
+   */
+  range2DProperties: Map<string, { minPredicate: string; maxPredicate: string }>
   /**
    * Discovered property paths keyed by `${domain}:${propertyLocalName}`.
    * Each path lists the predicate hops from an asset class to the leaf
@@ -197,10 +201,10 @@ async function buildCompilerVocab(): Promise<CompilerVocab> {
     shapeGroupPropertyNames.add(localName)
   }
 
-  // Build Range2D property set
-  const range2DProperties = new Set<string>()
-  for (const { localName } of range2DInfos) {
-    range2DProperties.add(localName)
+  // Build Range2D property index: leaf local name → discovered min/max predicates.
+  const range2DProperties = new Map<string, { minPredicate: string; maxPredicate: string }>()
+  for (const { localName, minPredicate, maxPredicate } of range2DInfos) {
+    range2DProperties.set(localName, { minPredicate, maxPredicate })
   }
 
   // Index property paths by (domain, propertyLocalName) for O(1) lookup
@@ -1406,18 +1410,33 @@ function buildDomainPatterns(
       // SHACL via `sh:node → Range2DShape`) use nested `min`/`max`; simple
       // numeric properties are filtered directly.
       for (const [propName, range] of bucket.ranges) {
-        if (vocabIndex.range2DProperties.has(propName)) {
+        const range2D = vocabIndex.range2DProperties.get(propName)
+        if (range2D) {
           const rangeNode = `?${propName}Range${suffix}`
           patterns.push(`${groupVar} ${propPrefix}:${propName} ${rangeNode} .`)
+          // Emit the SHACL-discovered min/max sub-predicates (prefix-compressed
+          // when they live in a known namespace; full IRI otherwise). The
+          // bound-overlap semantics are unchanged: a user `min` constrains the
+          // interval's upper predicate, and vice-versa.
+          const minDesc = findDomainForIri(range2D.minPredicate, registry)
+          const maxDesc = findDomainForIri(range2D.maxPredicate, registry)
+          const minPred = minDesc
+            ? prefixedPredicate(range2D.minPredicate, minDesc)
+            : `<${range2D.minPredicate}>`
+          const maxPred = maxDesc
+            ? prefixedPredicate(range2D.maxPredicate, maxDesc)
+            : `<${range2D.maxPredicate}>`
+          if (minDesc) foreignDomains.add(minDesc.name)
+          if (maxDesc) foreignDomains.add(maxDesc.name)
           if (range.min !== undefined) {
             const maxVar = `?${propName}Max${suffix}`
-            patterns.push(`${rangeNode} ${propPrefix}:max ${maxVar} .`)
+            patterns.push(`${rangeNode} ${maxPred} ${maxVar} .`)
             filters.push(`FILTER(xsd:float(${maxVar}) >= ${range.min})`)
             selectVars.add(maxVar)
           }
           if (range.max !== undefined) {
             const minVar = `?${propName}Min${suffix}`
-            patterns.push(`${rangeNode} ${propPrefix}:min ${minVar} .`)
+            patterns.push(`${rangeNode} ${minPred} ${minVar} .`)
             filters.push(`FILTER(xsd:float(${minVar}) <= ${range.max})`)
             selectVars.add(minVar)
           }
