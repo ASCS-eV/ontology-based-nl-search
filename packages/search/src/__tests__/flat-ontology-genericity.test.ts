@@ -65,7 +65,6 @@ function libraryRegistry() {
     targetClassIri: 'http://example.org/library/v1/Book',
     version: 'v1',
     shapes: ['Book'],
-    hasGeoreference: false,
     declaredPrefixes: {
       library: 'http://example.org/library/v1/',
     },
