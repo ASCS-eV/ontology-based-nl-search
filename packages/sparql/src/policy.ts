@@ -104,9 +104,16 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
     violations.push(`Only SELECT queries are allowed, got: ${parsed.queryType}`)
   }
 
-  // No SERVICE clauses (check recursively in where patterns)
-  if (parsed.where && containsService(parsed.where)) {
+  // No SERVICE clauses — walk the whole AST so a SERVICE buried in a
+  // sub-SELECT or FILTER EXISTS cannot slip past the gate.
+  if (astHasPatternType(parsed, 'service')) {
     violations.push('SERVICE clauses are not allowed (no federation)')
+  }
+
+  // No FROM / FROM NAMED — the compiler never emits a dataset clause, so any
+  // FROM is an attempt to redirect the query off the default (data) graph.
+  if (astHasFromClause(parsed)) {
+    violations.push('FROM/FROM NAMED clauses are not allowed (no graph redirection)')
   }
 
   // Check prefixes — allow W3C standards and registered ontology namespaces
@@ -137,21 +144,49 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
   }
 }
 
-function containsService(patterns: SparqlPattern[] | undefined): boolean {
-  if (!patterns) return false
-  for (const p of patterns) {
-    if (p.type === 'service') return true
-    if (p.patterns && containsService(p.patterns)) return true
-    if (p.triples && containsService(p.triples)) return true
+/**
+ * Recursively determine whether any node in a parsed SPARQL AST is a
+ * pattern of the given `type` (`service` or `graph`).
+ *
+ * Unlike a hand-rolled recursion over `.patterns`/`.triples`, this walks
+ * EVERY nested container the parser can produce — including sub-SELECT
+ * `query` nodes' `.where`, `FILTER EXISTS`/`NOT EXISTS` operation args, and
+ * UNION/OPTIONAL/MINUS groups. A SERVICE or GRAPH buried inside a subquery
+ * (e.g. `SELECT * { { SELECT ?x { GRAPH <g> { ?x ?p ?o } } } }`) therefore
+ * cannot slip past the gate — the previous two-key recursion missed it,
+ * which let the schema-query sandbox be escaped (named-graph read + SSRF).
+ *
+ * Term nodes carry `termType`, not `type`, so a variable named "graph"
+ * never matches; only genuine GraphPattern/ServicePattern nodes do.
+ */
+function astHasPatternType(node: unknown, patternType: 'service' | 'graph'): boolean {
+  if (Array.isArray(node)) {
+    return node.some((child) => astHasPatternType(child, patternType))
+  }
+  if (node && typeof node === 'object') {
+    const rec = node as Record<string, unknown>
+    if (rec.type === patternType) return true
+    return Object.values(rec).some((value) => astHasPatternType(value, patternType))
   }
   return false
 }
 
-function containsGraph(patterns: SparqlPattern[] | undefined): boolean {
-  if (!patterns) return false
-  for (const p of patterns) {
-    if (p.type === 'graph') return true
-    if (p.patterns && containsGraph(p.patterns)) return true
+/**
+ * Recursively determine whether any (sub)query in the AST declares a
+ * `FROM` / `FROM NAMED` dataset clause — graph redirection that would
+ * escape the intended default-graph scoping.
+ */
+function astHasFromClause(node: unknown): boolean {
+  if (Array.isArray(node)) {
+    return node.some(astHasFromClause)
+  }
+  if (node && typeof node === 'object') {
+    const rec = node as Record<string, unknown>
+    const from = rec.from as { default?: unknown[]; named?: unknown[] } | undefined
+    if (from && ((from.default?.length ?? 0) > 0 || (from.named?.length ?? 0) > 0)) {
+      return true
+    }
+    return Object.values(rec).some(astHasFromClause)
   }
   return false
 }
@@ -159,6 +194,9 @@ function containsGraph(patterns: SparqlPattern[] | undefined): boolean {
 // ─── Schema-scoped query validation ──────────────────────────────────────────
 
 const generator = new Generator()
+
+/** Row ceiling for LLM-authored schema-introspection queries. */
+const SCHEMA_QUERY_MAX_ROWS = 50
 
 /**
  * Validate and scope a SPARQL query for schema-only access.
@@ -169,7 +207,7 @@ const generator = new Generator()
  * - No GRAPH patterns (no cross-graph access)
  * - No FROM/FROM NAMED (no graph redirection)
  * - Injects FROM <schemaGraph> via AST to guarantee schema scoping
- * - Caps results at 50 rows
+ * - Caps results at SCHEMA_QUERY_MAX_ROWS rows
  *
  * Returns the validated, schema-scoped query string on success.
  */
@@ -206,23 +244,23 @@ export function validateSchemaQuery(
     violations.push('Write operations are not allowed')
   }
 
-  // No SERVICE clauses
-  if (parsed.where && containsService(parsed.where)) {
+  // No SERVICE clauses — full-AST walk catches a SERVICE inside a
+  // sub-SELECT / FILTER EXISTS, not just a top-level WHERE pattern.
+  if (astHasPatternType(parsed, 'service')) {
     violations.push('SERVICE clauses are not allowed (no federation)')
   }
 
-  // No GRAPH patterns (prevents cross-graph access)
-  if (parsed.where && containsGraph(parsed.where)) {
+  // No GRAPH patterns (prevents cross-graph access) — full-AST walk, so an
+  // explicit GRAPH inside a sub-SELECT cannot override the injected FROM
+  // scoping and read another named graph.
+  if (astHasPatternType(parsed, 'graph')) {
     violations.push('GRAPH clauses are not allowed — queries are scoped to the schema graph')
   }
 
-  // No FROM/FROM NAMED (prevents graph redirection)
+  // No FROM/FROM NAMED (prevents graph redirection) — checked across the
+  // whole AST so a dataset clause on a sub-SELECT is caught too.
   const parsedAny = parsed as unknown as Record<string, unknown>
-  const from = parsedAny.from as { default?: unknown[]; named?: unknown[] } | undefined
-  if (
-    from &&
-    ((from.default && from.default.length > 0) || (from.named && from.named.length > 0))
-  ) {
+  if (astHasFromClause(parsed)) {
     violations.push(
       'FROM/FROM NAMED clauses are not allowed — queries are scoped to the schema graph'
     )
@@ -238,9 +276,9 @@ export function validateSchemaQuery(
     default: [{ termType: 'NamedNode', value: schemaGraph }],
     named: [],
   }
-  // Cap at 50 results
-  if (!parsed.limit || parsed.limit > 50) {
-    parsed.limit = 50
+  // Cap at the schema-query row ceiling.
+  if (!parsed.limit || parsed.limit > SCHEMA_QUERY_MAX_ROWS) {
+    parsed.limit = SCHEMA_QUERY_MAX_ROWS
   }
 
   const scopedQuery = generator.stringify(parsed as unknown as SparqlQuery)
