@@ -27,13 +27,22 @@ import type { OntologyVocabulary } from '@ontology-search/search'
 
 import type { LlmStructuredResponse, MappedTerm, OntologyGap } from './types.js'
 
-/** Maximum edit distance for a fuzzy match to be accepted */
-const FUZZY_THRESHOLD = 4
+/**
+ * Minimum NORMALIZED similarity (0-1) for a fuzzy value match to be accepted.
+ * Computed as `1 - editDistance/maxLen`, so the bar is length-aware: a 1-char
+ * typo on an 8-char value scores 0.875 (accepted), while a short value merely
+ * embedded in a longer one — "urban" in "suburban", "de" in "model" — scores
+ * well below 0.8 and is correctly rejected. Replaces a raw edit-distance count
+ * (+ a substring special-case) that conflated "is a substring" with "is close"
+ * and accepted spurious matches with no information-theoretic meaning.
+ */
+const FUZZY_SIMILARITY_THRESHOLD = 0.8
 
 /**
  * Maximum edit distance for a property-name correction to be accepted.
- * Tighter than FUZZY_THRESHOLD because property names are short identifiers
- * where larger distances risk false matches (e.g., "city" → "country").
+ * Property names are short identifiers where larger distances risk false
+ * matches (e.g., "city" → "country"), so this stays an absolute bound applied
+ * on top of the similarity gate.
  */
 const MAX_PROPERTY_MATCH_DISTANCE = 2
 
@@ -189,44 +198,31 @@ function findBestMatch(
   if (!value) return null
   const normalizedValue = value.toLowerCase().trim()
 
-  let bestMatch: string | null = null
-  let bestDistance = Infinity
-
+  // Rank every candidate by NORMALIZED similarity (length-aware), not a raw
+  // edit-distance count. The previous substring special-case synthesized a
+  // pseudo-distance from the length difference and raced it against the same
+  // absolute threshold as true edit distance, so a short value contained
+  // anywhere in a longer one was accepted as if it were a high-quality match.
+  let best: { match: string; distance: number; similarity: number } | null = null
   for (const allowed of allowedValues) {
     const normalizedAllowed = allowed.toLowerCase().trim()
 
-    // Exact match (case-insensitive)
+    // Exact match (case-insensitive).
     if (normalizedValue === normalizedAllowed) {
       return { match: allowed, distance: 0, similarity: 1 }
     }
 
-    // Substring containment — "motorway" matches if input is "motorways" or vice versa
-    if (
-      normalizedValue.includes(normalizedAllowed) ||
-      normalizedAllowed.includes(normalizedValue)
-    ) {
-      const dist = Math.abs(normalizedValue.length - normalizedAllowed.length)
-      if (dist < bestDistance) {
-        bestDistance = dist
-        bestMatch = allowed
-      }
-      continue
-    }
-
-    const dist = editDistance(normalizedValue, normalizedAllowed)
-    if (dist < bestDistance) {
-      bestDistance = dist
-      bestMatch = allowed
+    const distance = editDistance(normalizedValue, normalizedAllowed)
+    const sim = similarity(normalizedValue, normalizedAllowed)
+    if (best === null || sim > best.similarity) {
+      best = { match: allowed, distance, similarity: sim }
     }
   }
 
-  if (bestMatch === null || bestDistance > FUZZY_THRESHOLD) return null
-
-  return {
-    match: bestMatch,
-    distance: bestDistance,
-    similarity: similarity(normalizedValue, bestMatch.toLowerCase()),
-  }
+  // Accept on the normalized-similarity floor. A genuine typo/plural
+  // ("motoway"/"motorways" → "motorway") clears 0.8; an unrelated or merely
+  // substring-overlapping value does not.
+  return best !== null && best.similarity >= FUZZY_SIMILARITY_THRESHOLD ? best : null
 }
 
 /**

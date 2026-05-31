@@ -102,6 +102,16 @@ describe('correctFilters', () => {
     const result = correctFilters(filters, testVocabulary)
     expect(result).toEqual({ roadTypes: 'motorway' })
   })
+
+  it('does not "correct" a substring-overlapping value to an unrelated enum', () => {
+    // "suburban" contains "urban" but is a different concept. The previous
+    // substring-distance matcher wrongly corrected it to "urban" (length-diff
+    // 3 < the absolute threshold 4); the normalized-similarity gate scores
+    // 1 - 3/8 = 0.625 < 0.8 and correctly lets it pass through to SHACL.
+    const filters = { roadTypes: 'suburban' }
+    const result = correctFilters(filters, testVocabulary)
+    expect(result).toEqual({ roadTypes: 'suburban' })
+  })
 })
 
 describe('validateSlots', () => {
