@@ -132,15 +132,19 @@ function suggestionScore(gapTerm: string, candidate: string): number {
   let best = 0
   for (const tok of tokens) {
     const stem = tok.replace(/(ies|es|s)$/, '')
-    if (candLower.includes(stem)) {
-      best = Math.max(best, 1)
-      continue
+    // Containment in either direction, scored by COVERAGE — how much of the
+    // longer string the shorter one spans — rather than a flat 1.0/0.9 boost.
+    // A short candidate coincidentally embedded in a long gap token (e.g.
+    // "co" inside "lanecount", or "urban" inside "suburbanization") then earns
+    // only min/max length (0.22 / 0.33), well below the floor, instead of a
+    // near-perfect score. The Levenshtein channel still catches typos.
+    let tokenScore = similarity(tok, candLower)
+    if (candLower.includes(stem) || stem.includes(candLower)) {
+      const coverage =
+        Math.min(stem.length, candLower.length) / Math.max(stem.length, candLower.length)
+      tokenScore = Math.max(tokenScore, coverage)
     }
-    if (stem.length >= 3 && stem.includes(candLower)) {
-      best = Math.max(best, 0.9)
-      continue
-    }
-    best = Math.max(best, similarity(tok, candLower))
+    best = Math.max(best, tokenScore)
   }
   return best
 }

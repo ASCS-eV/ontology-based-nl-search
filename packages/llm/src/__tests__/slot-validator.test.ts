@@ -226,6 +226,26 @@ describe('validateSlots', () => {
   })
 
   /**
+   * Regression for the coverage-scored containment channel: a short enum
+   * value that is only a COINCIDENTAL substring of the gap term must not be
+   * suggested. "urban" sits inside "suburbanization" but is unrelated — the
+   * old flat reverse-containment boost scored it 0.9 and surfaced it; coverage
+   * scoring gives 5/15 = 0.33, below the floor. (This is the class of bug the
+   * e2e surfaced: a dropped numeric "laneCount" gap suggesting "CO" because
+   * "co" is a substring of "lanecount".)
+   */
+  it('rejects a short enum value that only coincidentally substrings the gap term', () => {
+    const response: LlmStructuredResponse = {
+      interpretation: { summary: 'test', mappedTerms: [] },
+      gaps: [{ term: 'suburbanization', reason: 'Not found' }],
+      sparql: 'SELECT * WHERE { }',
+    }
+    const result = validateSlots(response, testVocabulary)
+    const suggestions = result.gaps[0]!.suggestions ?? []
+    expect(suggestions.some((s) => s.includes('urban'))).toBe(false)
+  })
+
+  /**
    * Honest gap reporting: schema-limit gaps (e.g. dropped references)
    * carry `suggestions: []` as a sentinel — the enricher must respect
    * it and NOT append "related concepts" noise. Adding suggestions to
