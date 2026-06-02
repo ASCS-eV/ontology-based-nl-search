@@ -185,6 +185,98 @@ describe('genericity proof — non-ENVITED-X SHACL graph (task 21e)', () => {
 })
 
 /**
+ * Regression for the compiler-vocab warmup fix: edge discovery resolves
+ * `sh:or` membership with an `rdf:rest`-star / `rdf:first` property path
+ * instead of a fixed 4-deep `rdf:rest`/`rdf:first` UNION. The old query could
+ * only see the first FOUR members of an `sh:or` list, so a 5th alternative —
+ * and any leaf reachable only through it — was silently dropped. (The rewrite
+ * also avoids the ~33s Oxigraph-WASM blowup that fixed-depth list walk caused,
+ * but the correctness contract is what this test pins: timing is not asserted.)
+ *
+ * The fixture's asset has one property whose `sh:or` lists FIVE alternative
+ * node shapes; the 5th carries a distinct leaf. Discovery must reach it.
+ */
+const DEEP_OR_FIXTURE_TTL = `
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix cat: <http://example.org/catalogue/v1/> .
+
+cat:CatalogShape a sh:NodeShape ;
+  sh:targetClass cat:Catalog ;
+  sh:property [ sh:path cat:hasItem ; sh:or (
+    [ sh:node cat:Item1Shape ]
+    [ sh:node cat:Item2Shape ]
+    [ sh:node cat:Item3Shape ]
+    [ sh:node cat:Item4Shape ]
+    [ sh:node cat:Item5Shape ]
+  ) ] .
+
+cat:Item1Shape a sh:NodeShape ; sh:targetClass cat:Item1 ;
+  sh:property [ sh:path cat:label1 ; sh:datatype xsd:string ] .
+cat:Item2Shape a sh:NodeShape ; sh:targetClass cat:Item2 ;
+  sh:property [ sh:path cat:label2 ; sh:datatype xsd:string ] .
+cat:Item3Shape a sh:NodeShape ; sh:targetClass cat:Item3 ;
+  sh:property [ sh:path cat:label3 ; sh:datatype xsd:string ] .
+cat:Item4Shape a sh:NodeShape ; sh:targetClass cat:Item4 ;
+  sh:property [ sh:path cat:label4 ; sh:datatype xsd:string ] .
+cat:Item5Shape a sh:NodeShape ; sh:targetClass cat:Item5 ;
+  sh:property [ sh:path cat:label5 ; sh:datatype xsd:string ] .
+`
+
+function catalogRegistry() {
+  const desc = {
+    name: 'catalogue',
+    namespace: 'http://example.org/catalogue/v1/',
+    prefix: 'cat',
+    targetClass: 'cat:Catalog',
+    targetClassIri: 'http://example.org/catalogue/v1/Catalog',
+    version: 'v1',
+    shapes: ['Catalog'],
+    declaredPrefixes: { cat: 'http://example.org/catalogue/v1/' },
+  }
+  const domains = new Map([['catalogue', desc]])
+  return {
+    domains,
+    domainNames: ['catalogue'],
+    prefixesFor() {
+      return `PREFIX cat: <${desc.namespace}>`
+    },
+    allPrefixes() {
+      return this.prefixesFor()
+    },
+    resolveByIriDomain(iriDomain: string) {
+      return iriDomain === 'catalogue' ? desc : undefined
+    },
+    domainForIri(iri: string) {
+      return iri.startsWith(desc.namespace) ? 'catalogue' : undefined
+    },
+    getAllNamespaces() {
+      return new Set([desc.namespace])
+    },
+  }
+}
+
+describe('property-path discovery — sh:or lists deeper than the old 4-member cap', () => {
+  it('reaches a leaf behind the 5th sh:or member (would fail on the fixed-depth walk)', async () => {
+    const store = new OxigraphStore()
+    await store.loadTurtle(DEEP_OR_FIXTURE_TTL, SCHEMA_GRAPH)
+
+    const paths = await buildPropertyPaths(store, catalogRegistry() as any)
+    const leafNames = new Set(paths.map((p) => p.propertyName))
+
+    // All five alternatives — including the 5th, beyond the old rdf:rest×3 cap.
+    for (const n of ['label1', 'label2', 'label3', 'label4', 'label5']) {
+      expect(leafNames.has(n), `expected discovery to reach ${n} via its sh:or member`).toBe(true)
+    }
+
+    // The path to the 5th member is the asset → member-class hop, then leaf.
+    const label5 = paths.find((p) => p.propertyName === 'label5')
+    expect(label5?.assetClass).toBe('http://example.org/catalogue/v1/Catalog')
+    expect(label5?.steps.at(-1)?.predicate).toBe('http://example.org/catalogue/v1/label5')
+  }, 30_000)
+})
+
+/**
  * Range2D (numeric interval) detection must be STRUCTURAL — keyed on the
  * `sh:lessThanOrEquals` bound constraint, never on the class name "Range2D" or
  * the sub-property names "min"/"max". This fixture names its wrapper `Interval`
