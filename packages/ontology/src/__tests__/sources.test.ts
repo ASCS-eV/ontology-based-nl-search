@@ -6,11 +6,15 @@ import { resetConfig } from '@ontology-search/core/config'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
+  assertOntologySourcesAvailable,
   DEFAULT_OMB_SUBMODULE_PATH,
+  diagnoseOntologySources,
   discoverShapeFiles,
+  formatMissingSourcesError,
   getArtifactRoots,
   getWorkspaceRoot,
   loadOntologySourcesManifest,
+  type OntologySourcesDiagnostics,
   OntologySourcesError,
 } from '../sources.js'
 
@@ -214,6 +218,98 @@ describe('ontology source-tree discovery (sources.ts)', () => {
         JSON.stringify({ sources: [{ path: 'does-not-exist' }] })
       )
       expect(discoverShapeFiles()).toEqual([])
+    })
+  })
+
+  describe('diagnoseOntologySources', () => {
+    it('reports zero shape files when the only root is missing', () => {
+      writeFileSync(
+        join(workspaceRoot, 'ontology-sources.json'),
+        JSON.stringify({ sources: [{ path: 'does-not-exist' }] })
+      )
+      const diag = diagnoseOntologySources()
+      expect(diag.totalShapeFiles).toBe(0)
+      expect(diag.roots).toEqual([
+        { path: join(workspaceRoot, 'does-not-exist'), exists: false, shapeFileCount: 0 },
+      ])
+    })
+
+    it('counts .shacl.ttl files per root', () => {
+      const artifactsRoot = join(workspaceRoot, 'artifacts')
+      mkdirSync(join(artifactsRoot, 'hdmap'), { recursive: true })
+      writeFileSync(join(artifactsRoot, 'hdmap', 'a.shacl.ttl'), '@prefix : <#> .')
+      writeFileSync(join(artifactsRoot, 'hdmap', 'a.owl.ttl'), '@prefix : <#> .') // not counted
+      writeFileSync(
+        join(workspaceRoot, 'ontology-sources.json'),
+        JSON.stringify({ sources: [{ path: 'artifacts' }] })
+      )
+      const diag = diagnoseOntologySources()
+      expect(diag.totalShapeFiles).toBe(1)
+      expect(diag.roots[0]).toEqual({ path: artifactsRoot, exists: true, shapeFileCount: 1 })
+    })
+  })
+
+  describe('assertOntologySourcesAvailable', () => {
+    /**
+     * Regression for the first-run gap: with submodules un-initialized the
+     * loader found 0 files, logged it, and the service started "ready" while
+     * every search came back empty. The guard now fails fast with an
+     * actionable message. The default submodule chain does not exist inside
+     * the temp workspace, so a live scan yields zero files here.
+     */
+    it('throws OntologySourcesError with the submodule remediation when nothing is found', () => {
+      expect(() => assertOntologySourcesAvailable()).toThrow(OntologySourcesError)
+      expect(() => assertOntologySourcesAvailable()).toThrow(
+        /git submodule update --init --recursive/
+      )
+    })
+
+    it('does not throw when at least one shape file exists', () => {
+      const artifactsRoot = join(workspaceRoot, 'artifacts')
+      mkdirSync(join(artifactsRoot, 'hdmap'), { recursive: true })
+      writeFileSync(join(artifactsRoot, 'hdmap', 'a.shacl.ttl'), '@prefix : <#> .')
+      writeFileSync(
+        join(workspaceRoot, 'ontology-sources.json'),
+        JSON.stringify({ sources: [{ path: 'artifacts' }] })
+      )
+      expect(() => assertOntologySourcesAvailable()).not.toThrow()
+    })
+
+    it('accepts injected diagnostics (no filesystem) for a non-empty tree', () => {
+      const diag: OntologySourcesDiagnostics = {
+        roots: [{ path: '/x', exists: true, shapeFileCount: 3 }],
+        totalShapeFiles: 3,
+      }
+      expect(() => assertOntologySourcesAvailable(diag)).not.toThrow()
+    })
+  })
+
+  describe('formatMissingSourcesError', () => {
+    it('recommends recursive submodule init when a missing root is under submodules/', () => {
+      const diag: OntologySourcesDiagnostics = {
+        roots: [
+          {
+            path: join('repo', 'submodules', 'foo', 'artifacts'),
+            exists: false,
+            shapeFileCount: 0,
+          },
+        ],
+        totalShapeFiles: 0,
+      }
+      const msg = formatMissingSourcesError(diag)
+      expect(msg).toMatch(/git submodule update --init --recursive/)
+      expect(msg).toMatch(/ontology-sources\.json/)
+      expect(msg).toMatch(/ONTOLOGY_ARTIFACTS_PATH/)
+    })
+
+    it('omits the submodule hint when the missing root is not under submodules/', () => {
+      const diag: OntologySourcesDiagnostics = {
+        roots: [{ path: '/srv/custom-artifacts', exists: false, shapeFileCount: 0 }],
+        totalShapeFiles: 0,
+      }
+      const msg = formatMissingSourcesError(diag)
+      expect(msg).not.toMatch(/git submodule/)
+      expect(msg).toMatch(/ONTOLOGY_ARTIFACTS_PATH/)
     })
   })
 })

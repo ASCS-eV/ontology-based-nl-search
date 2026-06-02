@@ -120,6 +120,13 @@ export async function warmup(): Promise<WarmupResult> {
   // for providers that don't pool sessions).
   const sessionMs = await runStep(6, 'LLM session', warmupLlmSession, errors)
 
+  // A fatal misconfiguration (e.g. no ontology sources) rejects the shared
+  // store init promise, so several dependent steps surface the same message.
+  // Collapse duplicates so /health and the logs show it once.
+  const uniqueErrors = [...new Set(errors)]
+  errors.length = 0
+  errors.push(...uniqueErrors)
+
   const totalMs = Date.now() - start
   const ready = errors.length === 0
   const timings = { storeMs, vocabMs, compilerMs, shaclMs, sessionMs }

@@ -8,7 +8,10 @@
  * @see https://www.w3.org/TR/sparql11-query/#namedGraphs
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
-import { discoverShapeFiles } from '@ontology-search/ontology/sources'
+import {
+  assertOntologySourcesAvailable,
+  discoverShapeFiles,
+} from '@ontology-search/ontology/sources'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 import { readFileSync } from 'fs'
 import { basename } from 'path'
@@ -25,6 +28,12 @@ const log = createComponentLogger('schema-loader')
 export async function loadSchemaGraph(
   store: SparqlStore
 ): Promise<{ domains: string[]; fileCount: number }> {
+  // Fail fast with an actionable message when the ontology source tree is
+  // absent (e.g. git submodules not initialized). Without this the loader
+  // would log "0 files" and return, the service would start "ready", and
+  // every search would silently produce empty/garbage results.
+  assertOntologySourcesAvailable()
+
   const files = discoverShapeFiles({ includeOwl: true })
   const domains = new Set<string>()
   let fileCount = 0

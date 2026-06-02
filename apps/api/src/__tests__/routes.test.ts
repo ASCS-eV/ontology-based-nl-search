@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '../app.js'
+import { setReadiness } from '../readiness.js'
+
+const ZERO_TIMINGS = { storeMs: 0, vocabMs: 0, compilerMs: 0, shaclMs: 0, sessionMs: 0 }
 
 vi.mock('../search-factory.js', () => ({
   searchNl: vi.fn(),
@@ -29,10 +32,36 @@ vi.mock('@ontology-search/ontology/domain-registry', () => ({
 }))
 
 describe('GET /health', () => {
-  it('returns 200 with status ok', async () => {
+  // This block first asserts the pre-warmup "starting" state (module-global
+  // readiness is null until index.ts records it), then drives the ok/degraded
+  // states. Regression for the first-run gap: /health used to return a static
+  // `{ status: 'ok' }`, so an instance with no ontology loaded (warmup
+  // degraded) looked healthy while every search came back empty.
+  it('returns 503 "starting" before warmup records readiness', async () => {
+    const res = await app.request('/health')
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({ status: 'starting' })
+  })
+
+  it('returns 200 "ok" once warmup succeeded', async () => {
+    setReadiness({ ready: true, errors: [], timings: ZERO_TIMINGS })
     const res = await app.request('/health')
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ status: 'ok' })
+  })
+
+  it('returns 503 "degraded" with the errors when warmup failed', async () => {
+    setReadiness({
+      ready: false,
+      errors: ['SPARQL store + capability probe failed: No ontology shape files'],
+      timings: ZERO_TIMINGS,
+    })
+    const res = await app.request('/health')
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({
+      status: 'degraded',
+      errors: ['SPARQL store + capability probe failed: No ontology shape files'],
+    })
   })
 
   it('includes x-request-id header', async () => {

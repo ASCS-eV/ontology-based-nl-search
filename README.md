@@ -20,10 +20,23 @@ A locally running TypeScript web application with a Google-style search bar that
 
 ## Quick Start
 
-### 1. Install dependencies
+### 1. Clone with submodules + install dependencies
+
+The ontology (OWL + SHACL) is the single source of truth for the whole
+pipeline and ships as a **nested git submodule**. Without it the API starts
+degraded and every search returns empty results.
 
 ```bash
+# Fresh clone — pull the ontology submodules in one step:
+git clone --recurse-submodules <repo-url>
+
+# Already cloned without --recurse-submodules? Initialize them now:
+git submodule update --init --recursive
+
+# Install dependencies. `postinstall` runs a preflight that warns if the
+# ontology sources are missing; you can re-run it any time:
 pnpm install
+pnpm run check:setup   # exits non-zero if no ontology shape files are found
 ```
 
 ### 2. Configure environment

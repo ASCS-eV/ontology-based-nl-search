@@ -6,6 +6,7 @@ import { closeSparqlStore } from '@ontology-search/sparql'
 
 import { app } from './app.js'
 import { createShutdownHandler } from './lifecycle.js'
+import { setReadiness } from './readiness.js'
 import { warmup } from './warmup.js'
 
 const log = createComponentLogger('api')
@@ -35,6 +36,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 log.info('Ontology Search API starting', { port })
 
 const warmupResult = await warmup()
+setReadiness(warmupResult)
 
 server = serve({ fetch: app.fetch, port })
 
