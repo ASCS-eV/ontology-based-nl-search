@@ -11,10 +11,14 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { CredentialsPermissionError } from '@ontology-search/core/errors'
+import { AgentError, CredentialsPermissionError } from '@ontology-search/core/errors'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { assertCredentialsPermissions, parseMistralKeyFromEnv } from '../provider.js'
+import {
+  assertCredentialsPermissions,
+  parseClaudeOAuthToken,
+  parseMistralKeyFromEnv,
+} from '../provider.js'
 
 const isWindows = process.platform === 'win32'
 
@@ -91,5 +95,37 @@ describe('parseMistralKeyFromEnv', () => {
     expect(parseMistralKeyFromEnv('FOO=bar\n')).toBeNull()
     expect(parseMistralKeyFromEnv("MISTRAL_API_KEY=''")).toBeNull()
     expect(parseMistralKeyFromEnv('')).toBeNull()
+  })
+})
+
+describe('parseClaudeOAuthToken', () => {
+  const path = '/home/u/.claude/.credentials.json'
+
+  it('returns the access token for a valid, unexpired credentials file', () => {
+    const raw = JSON.stringify({
+      claudeAiOauth: { accessToken: 'tok-123', expiresAt: Date.now() + 60_000 },
+    })
+    expect(parseClaudeOAuthToken(raw, path)).toBe('tok-123')
+  })
+
+  it('throws a typed AgentError (not a raw SyntaxError) on malformed JSON', () => {
+    // Before the fix, JSON.parse threw a SyntaxError outside the typed error
+    // hierarchy the API layer maps by instanceof.
+    expect(() => parseClaudeOAuthToken('{ not valid json', path)).toThrow(AgentError)
+  })
+
+  it('throws AgentError when the access token is missing or the payload is not an object', () => {
+    expect(() => parseClaudeOAuthToken(JSON.stringify({ claudeAiOauth: {} }), path)).toThrow(
+      AgentError
+    )
+    expect(() => parseClaudeOAuthToken('null', path)).toThrow(AgentError)
+    expect(() => parseClaudeOAuthToken('42', path)).toThrow(AgentError)
+  })
+
+  it('throws AgentError when the token has expired', () => {
+    const raw = JSON.stringify({
+      claudeAiOauth: { accessToken: 'tok', expiresAt: Date.now() - 1 },
+    })
+    expect(() => parseClaudeOAuthToken(raw, path)).toThrow(AgentError)
   })
 })
