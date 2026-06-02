@@ -73,8 +73,32 @@ function getClaudeCliToken(): string {
     )
   }
 
-  const creds = JSON.parse(raw)
-  const oauth = creds.claudeAiOauth
+  return parseClaudeOAuthToken(raw, credPath)
+}
+
+/**
+ * Parse the Claude CLI OAuth access token out of a raw credentials-file
+ * string. Pure (no filesystem) so the parse/validation contract is unit-
+ * testable. Every failure path throws the typed {@link AgentError} — including
+ * malformed JSON, which previously surfaced as a raw `SyntaxError` outside the
+ * error hierarchy the API layer maps by `instanceof`.
+ */
+export function parseClaudeOAuthToken(raw: string, credPath: string): string {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch (cause) {
+    throw new AgentError(
+      `Claude CLI credentials at ${credPath} are not valid JSON. Run "claude" to re-authenticate.`,
+      { cause }
+    )
+  }
+
+  // Cast at the JSON boundary: the file is external input, so we read only the
+  // two fields we need and validate them explicitly. Non-object / null parses
+  // yield `undefined` here and fall into the "no access token" branch below.
+  const oauth = (parsed as { claudeAiOauth?: { accessToken?: string; expiresAt?: number } } | null)
+    ?.claudeAiOauth
   if (!oauth?.accessToken) {
     throw new AgentError(`No access token in ${credPath}. Run "claude" to re-authenticate.`)
   }
