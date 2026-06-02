@@ -136,7 +136,7 @@ User Query ("German highways with 3 lanes")
 
 Schema metadata is discovered from the ontology graph at runtime. `packages/search/src/schema-queries.ts` replaces hardcoded domain metadata by deriving asset domains, cross-domain references, property shape groups, and `CompilerVocab` entries directly from SHACL.
 
-The default sample dataset loads **267 assets** across **5 domains**: **117 HD maps**, **50 scenarios**, **50 OSI traces**, **30 environment models**, and **20 surface models**. The ontology registry currently exposes **22 domains** overall.
+The default sample dataset loads **358 assets** across **5 populated domains**: **165 HD maps**, **70 environment models**, **53 OSI traces**, **50 scenarios**, and **20 surface models**. The ontology registry discovers **~20 domains** overall (most ship shapes without sample instances). Exact counts track the sample TTL files and may shift as they evolve.
 
 ## Monorepo Structure
 
@@ -183,8 +183,8 @@ pnpm run test:e2e     # E2E tests (Playwright)
 
 **Search returns no results?**
 
-- Verify SPARQL store loaded: `curl http://localhost:3003/stats` (should show 267 assets across 5 domains)
-- Check ontology submodules: `git submodule update --init --recursive`
+- Verify SPARQL store loaded: `curl http://localhost:3003/stats` (should show a few hundred assets across 5 populated domains)
+- Check ontology submodules: `git submodule update --init --recursive` (or run `pnpm run check:setup`)
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
