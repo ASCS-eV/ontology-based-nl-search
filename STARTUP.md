@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js 22+
-- pnpm 10.33.3+
+- pnpm 11+ (the repo pins `pnpm@11.1.2` via `packageManager`; `corepack enable` will honor it)
 - Git
 
 ## Initial Setup (First Time Only)
@@ -126,7 +126,8 @@ pnpm dev
 # Check API health
 curl http://localhost:3003/health
 
-# Should return: {"status":"ok"}
+# Returns 503 {"status":"starting"|"degraded"} during/after a failed warmup,
+# and {"status":"ok"} once warmup succeeds.
 
 # Check API stats (also tests database connection)
 curl http://localhost:3003/stats
@@ -165,9 +166,9 @@ declare it in `ontology-sources.json` instead of using the submodule.
 
 During warmup, the API loads 5 sample TTL files: `sample-assets.ttl`, `sample-scenarios.ttl`, `sample-ositrace.ttl`, `sample-environment-models.ttl`, and `sample-surface-models.ttl`.
 
-A healthy `/stats` response should report **267 assets** total: 117 HD maps, 50 scenarios, 50 OSI traces, 30 environment models, and 20 surface models.
+A healthy `/stats` response reports the sample-data totals — currently **358 assets**: 165 HD maps, 70 environment models, 53 OSI traces, 50 scenarios, and 20 surface models. (Exact counts track the sample TTL files and may shift as they evolve; any non-zero `totalAssets` with five domains means the store loaded correctly.)
 
-**Wait time**: API warmup takes ~8-12 seconds (loading ontologies + creating LLM session)
+**Wait time**: first cold start takes roughly **30–60 seconds** under `pnpm dev` (which runs the API via `tsx`). The dominant cost is building the compiler vocabulary (property-path discovery); the API logs `[n/6]` warmup steps so you can watch progress. `/health` returns `503` (`starting`/`degraded`) until warmup succeeds, then `200 ok`.
 
 ## Stopping Services
 

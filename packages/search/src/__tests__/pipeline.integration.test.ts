@@ -123,7 +123,7 @@ describe('SearchService — real pipeline integration', () => {
     expect(result.execution.error).toBeUndefined()
     expect(result.execution.results.length).toBeGreaterThan(0)
     expect(result.meta.matchCount).toBe(result.execution.results.length)
-    // The sample dataset declares 117 HD maps. Allow for legitimate
+    // The sample dataset declares ~165 HD maps. Allow for legitimate
     // dataset evolution by asserting a lower bound rather than equality.
     expect(result.meta.matchCount).toBeGreaterThan(10)
     expect(result.meta.totalDatasets).toBeGreaterThan(0)
@@ -316,9 +316,9 @@ describe('SearchService — real pipeline integration', () => {
     }).searchNl({ query: 'everything' })
 
     expect(result.execution.error).toBeUndefined()
-    // The sample dataset declares 267 assets across all 5 sample
-    // domains. The compiler enumerates EVERY discovered asset
-    // class (including the 6 declared-but-empty domains) so the
+    // The sample dataset declares ~358 assets across the 5 populated
+    // sample domains. The compiler enumerates EVERY discovered asset
+    // class (including the declared-but-empty domains) so the
     // match count is the actual instance count in the data.
     // Asserting a lower bound to allow legitimate dataset evolution.
     expect(result.meta.matchCount).toBeGreaterThan(50)
@@ -339,7 +339,7 @@ describe('SearchService — real pipeline integration', () => {
     }).searchNl({ query: 'all HD maps' })
 
     expect(result.meta.totalDatasets).toBeGreaterThan(result.meta.matchCount)
-    // Sanity: the count is the sum of every asset class. With ~267
+    // Sanity: the count is the sum of every asset class. With ~358
     // assets in the dataset, it should not be zero.
     expect(result.meta.totalDatasets).toBeGreaterThan(50)
   }, 120_000)
