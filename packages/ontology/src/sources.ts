@@ -136,6 +136,102 @@ export function getArtifactRoots(): string[] {
   return [join(root, ...DEFAULT_OMB_SUBMODULE_PATH)]
 }
 
+/** Per-root view of what the source resolver found on disk. */
+export interface OntologyRootDiagnostic {
+  /** Absolute path the resolver searched. */
+  path: string
+  /** Whether the directory exists. */
+  exists: boolean
+  /** Number of `*.shacl.ttl` files found in its domain subdirectories. */
+  shapeFileCount: number
+}
+
+/** Aggregate diagnostics across every resolved artifact root. */
+export interface OntologySourcesDiagnostics {
+  roots: OntologyRootDiagnostic[]
+  /** Sum of `shapeFileCount` across all roots. Zero means nothing to load. */
+  totalShapeFiles: number
+}
+
+/**
+ * Inspect every resolved artifact root and report whether it exists and how
+ * many shape files it contains. Drives both the install-time preflight and
+ * the startup fail-fast — neither has to re-implement the resolution order.
+ */
+export function diagnoseOntologySources(): OntologySourcesDiagnostics {
+  const roots = getArtifactRoots().map((root): OntologyRootDiagnostic => {
+    if (!existsSync(root)) return { path: root, exists: false, shapeFileCount: 0 }
+    let shapeFileCount = 0
+    for (const entry of readdirSync(root)) {
+      const domainDir = join(root, entry)
+      if (!statSync(domainDir).isDirectory()) continue
+      for (const file of readdirSync(domainDir)) {
+        if (file.endsWith('.shacl.ttl')) shapeFileCount++
+      }
+    }
+    return { path: root, exists: true, shapeFileCount }
+  })
+  const totalShapeFiles = roots.reduce((sum, r) => sum + r.shapeFileCount, 0)
+  return { roots, totalShapeFiles }
+}
+
+/**
+ * Build the actionable error shown when no ontology shape files are found.
+ * Pure (takes diagnostics, no I/O) so the message contract is unit-testable.
+ *
+ * The remediation is data-driven, not ontology-specific: when a missing root
+ * lives under a `submodules/` segment the most likely cause is an
+ * un-initialized git submodule, so we surface the recursive-init command;
+ * otherwise we point at the two configuration knobs (`ontology-sources.json`
+ * and `ONTOLOGY_ARTIFACTS_PATH`).
+ */
+export function formatMissingSourcesError(diag: OntologySourcesDiagnostics): string {
+  const lines = [
+    'No ontology shape files (*.shacl.ttl) were found. Natural-language search ' +
+      'cannot work without an ontology — the LLM prompt, slot validation, and ' +
+      'query compiler are all driven by the SHACL shapes.',
+    '',
+    'Searched these source roots:',
+    ...diag.roots.map(
+      (r) => `  - ${r.path} ${r.exists ? `(exists, 0 shape files)` : '(missing)'}` // exists+0 means an empty/wrong dir
+    ),
+    '',
+    'To fix:',
+  ]
+
+  const missingSubmoduleRoot = diag.roots.some(
+    (r) => !r.exists && r.path.split(/[/\\]/).includes('submodules')
+  )
+  if (missingSubmoduleRoot) {
+    lines.push(
+      '  • The ontology ships as a git submodule that is not initialized. Run:',
+      '        git submodule update --init --recursive',
+      '    then restart. (Fresh clones: `git clone --recurse-submodules <url>`.)'
+    )
+  }
+  lines.push(
+    '  • Or point ONTOLOGY_ARTIFACTS_PATH at a directory of ontology artifacts,',
+    '  • Or declare your source directories in ontology-sources.json ({ sources: [{ path }] }).'
+  )
+  return lines.join('\n')
+}
+
+/**
+ * Throw {@link OntologySourcesError} when no shape files can be found, so the
+ * service fails fast with an actionable message instead of silently starting
+ * with an empty schema graph and returning empty/garbage search results.
+ *
+ * Accepts the diagnostics as a parameter (defaulting to a live scan) so the
+ * guard can be unit-tested without touching the filesystem.
+ */
+export function assertOntologySourcesAvailable(
+  diag: OntologySourcesDiagnostics = diagnoseOntologySources()
+): void {
+  if (diag.totalShapeFiles === 0) {
+    throw new OntologySourcesError(formatMissingSourcesError(diag))
+  }
+}
+
 /** A discovered shape file with its domain (the directory name above it). */
 export interface ShapeFile {
   path: string

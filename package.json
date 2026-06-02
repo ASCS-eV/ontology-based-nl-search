@@ -20,6 +20,8 @@
     "validate": "turbo run check-types && turbo run test --concurrency=2 && pnpm run lint && pnpm run format:check",
     "clean": "turbo run clean",
     "clean:ports": "node scripts/clean-ports.mjs",
+    "check:setup": "node scripts/check-ontology-sources.mjs --strict",
+    "postinstall": "node scripts/check-ontology-sources.mjs",
     "prepare": "husky"
   },
   "lint-staged": {

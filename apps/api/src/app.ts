@@ -8,6 +8,7 @@ import { logger } from 'hono/logger'
 import { errorHandler } from './middleware/error-handler.js'
 import { rateLimit } from './middleware/rate-limit.js'
 import { requestId } from './middleware/request-id.js'
+import { getReadiness } from './readiness.js'
 import { metadataRoutes } from './routes/metadata.js'
 import { searchRoutes } from './routes/search.js'
 import { statsRoutes } from './routes/stats.js'
@@ -53,7 +54,18 @@ app.use(
 )
 app.onError(errorHandler)
 
-app.get('/health', (c) => c.json({ status: 'ok' }))
+/**
+ * Liveness + readiness probe. Reports the real warmup state so a misconfigured
+ * instance (e.g. ontology submodules not initialized → schema load failed) is
+ * visibly unhealthy instead of returning `ok` while every search comes back
+ * empty. Returns 503 until warmup succeeds so orchestrators don't route to it.
+ */
+app.get('/health', (c) => {
+  const readiness = getReadiness()
+  if (!readiness) return c.json({ status: 'starting' }, 503)
+  if (readiness.ready) return c.json({ status: 'ok' })
+  return c.json({ status: 'degraded', errors: readiness.errors }, 503)
+})
 
 app.route('/metadata', metadataRoutes)
 app.route('/search', searchRoutes)

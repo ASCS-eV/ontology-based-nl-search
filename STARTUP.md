@@ -9,13 +9,21 @@
 ## Initial Setup (First Time Only)
 
 ```bash
-# 1. Install dependencies
+# 1. Initialize the ontology submodules (REQUIRED — search needs the ontology).
+#    Fresh clones can instead use: git clone --recurse-submodules <url>
+git submodule update --init --recursive
+
+# 2. Install dependencies. postinstall runs an ontology-sources preflight and
+#    warns if no shape files are found.
 pnpm install
 
-# 2. Create environment file
+# 3. Verify the ontology sources resolved (optional, exits non-zero on failure)
+pnpm run check:setup
+
+# 4. Create environment file
 cp .env.example .env.local
 
-# 3. Edit .env.local if needed (defaults work for development)
+# 5. Edit .env.local if needed (defaults work for development)
 ```
 
 ## Starting the Application
@@ -125,6 +133,35 @@ curl http://localhost:3003/stats
 
 # Should return JSON with asset counts
 ```
+
+### Issue: "Searches return nothing" / `/health` says `degraded`
+
+**Cause**: No ontology was loaded — almost always because the git submodules
+were not initialized. The ontology drives the LLM prompt, slot validation, and
+query compiler, so without it the API starts **degraded** and every search is
+empty.
+
+**Diagnose**:
+
+```bash
+# Reports 503 + the missing-ontology error while degraded:
+curl -s http://localhost:3003/health
+
+# Or check the sources directly:
+pnpm run check:setup
+```
+
+**Solution**:
+
+```bash
+git submodule update --init --recursive
+# then restart the API
+```
+
+If you keep your ontology elsewhere, point `ONTOLOGY_ARTIFACTS_PATH` at it or
+declare it in `ontology-sources.json` instead of using the submodule.
+
+### Note: sample instance data
 
 During warmup, the API loads 5 sample TTL files: `sample-assets.ttl`, `sample-scenarios.ttl`, `sample-ositrace.ttl`, `sample-environment-models.ttl`, and `sample-surface-models.ttl`.
 
