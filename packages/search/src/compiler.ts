@@ -123,13 +123,30 @@ function assembleQuery(
   patterns: string[],
   optionals: string[],
   filters: string[],
-  limit: number = getConfig().SPARQL_DEFAULT_LIMIT
+  limit: number = getConfig().SPARQL_DEFAULT_LIMIT,
+  distinctSubjectVar?: string
 ): string {
   const vars = selectVars instanceof Set ? [...selectVars] : selectVars
   const selectClause = `SELECT ${vars.join(' ')}`
   const whereBody = [...patterns, ...optionals, ...filters].join('\n  ')
 
-  const query = `${prefixes}\n${selectClause} WHERE {\n  ${whereBody}\n}\nLIMIT ${limit}`
+  let query: string
+  if (distinctSubjectVar) {
+    // Limit DISTINCT subjects, not rows. A cross-reference JOIN fans out (one
+    // row per referenced asset), so a plain row-level LIMIT would silently
+    // truncate distinct matching assets (a trace with 2 referenced maps eats 2
+    // of the LIMIT). Select the limited distinct subjects in a sub-SELECT, then
+    // re-state the body to bind every projected column for exactly those
+    // subjects. The outer row cap is a safety net (SPARQL_MAX_LIMIT, which the
+    // policy enforces anyway); the inner LIMIT is the real distinct-asset bound.
+    const maxLimit = getConfig().SPARQL_MAX_LIMIT
+    query =
+      `${prefixes}\n${selectClause} WHERE {\n` +
+      `  { SELECT DISTINCT ${distinctSubjectVar} WHERE {\n  ${whereBody}\n  } LIMIT ${limit} }\n` +
+      `  ${whereBody}\n}\nLIMIT ${maxLimit}`
+  } else {
+    query = `${prefixes}\n${selectClause} WHERE {\n  ${whereBody}\n}\nLIMIT ${limit}`
+  }
 
   // Post-assembly validation: catch syntax errors and W3C compliance issues
   const validation = validateSparql(query)
@@ -646,6 +663,9 @@ export async function compileSlotsWithTrace(
   const filters: string[] = []
   const optionals: string[] = []
   const selectVars = new Set(['?asset', '?name'])
+  // Set once any cross-reference JOIN is emitted: those fan out (one row per
+  // referenced asset), so the query must LIMIT distinct assets, not rows.
+  let hasReferenceJoin = false
 
   // Base pattern — primary asset type + label
   patterns.push(`?asset a ${domain.targetClass} ;`)
@@ -740,6 +760,7 @@ export async function compileSlotsWithTrace(
       refSpecVar
     )
     for (const fd of refForeign) prefixDomains.add(fd)
+    hasReferenceJoin = true
   }
 
   // License — task 21d folded `license` into regular `slots.filters`
@@ -761,6 +782,7 @@ export async function compileSlotsWithTrace(
     const refDomain = registry.domains.get(slots.references.domain)
     if (refDomain) {
       prefixDomains.add(slots.references.domain)
+      hasReferenceJoin = true
       const traceSteps: TraceabilityStep[] = []
       const chain = pickReferenceChain(vocabIndex, primaryDomain, slots.references.domain)
       if (chain) {
@@ -844,7 +866,15 @@ export async function compileSlotsWithTrace(
 
   // Build the query
   return {
-    sparql: assembleQuery(prefixes, selectVars, patterns, optionals, filters),
+    sparql: assembleQuery(
+      prefixes,
+      selectVars,
+      patterns,
+      optionals,
+      filters,
+      getConfig().SPARQL_DEFAULT_LIMIT,
+      hasReferenceJoin ? '?asset' : undefined
+    ),
     trace,
   }
 }

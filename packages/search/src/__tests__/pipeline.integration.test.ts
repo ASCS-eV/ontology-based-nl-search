@@ -178,6 +178,30 @@ describe('SearchService — real pipeline integration', () => {
   }, 120_000)
 
   /**
+   * A cross-reference JOIN fans out (one row per referenced asset), so a plain
+   * row-level LIMIT would silently truncate distinct matching assets. The
+   * compiler must wrap the asset selection in a `SELECT DISTINCT ?asset … LIMIT`
+   * sub-SELECT so the limit bounds distinct assets, not rows. Plain queries
+   * (no fan-out) must stay a flat SELECT.
+   */
+  it('limits a cross-reference JOIN by distinct asset, not by row', async () => {
+    const { sparql } = await compileSlotsWithTrace({
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: { domain: 'hdmap' },
+    })
+    expect(sparql).toMatch(/SELECT DISTINCT \?asset WHERE \{/)
+
+    const { sparql: plain } = await compileSlotsWithTrace({
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+    })
+    expect(plain).not.toContain('SELECT DISTINCT ?asset')
+  }, 120_000)
+
+  /**
    * Data-driven references fallback: when the LLM asks for "X that
    * references Y" and the SHACL doesn't declare a typed leaf chain from X
    * to Y (e.g. ositrace inherits `hasReferencedArtifacts` via the shared
