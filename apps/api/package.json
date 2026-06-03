@@ -1,5 +1,6 @@
 {
   "name": "@ontology-search/api",
+  "description": "Hono SSE API server and composition root for the natural-language search pipeline.",
   "version": "0.1.0",
   "private": true,
   "type": "module",

@@ -17,10 +17,10 @@ SHACL validates RDF graphs against constraints. **Key insight for us:** SHACL sh
 Constraints on nodes themselves:
 
 ```turtle
-hdmap:HDMapShape
+ex:HDMapShape
   a sh:NodeShape ;
-  sh:targetClass hdmap:HDMap ;
-  sh:property [ sh:path hdmap:roadTypes ; sh:in ("motorway" "town") ] .
+  sh:targetClass ex:HDMap ;
+  sh:property [ sh:path ex:roadTypes ; sh:in ("motorway" "town") ] .
 ```
 
 ## Target Declarations (Critical!)
@@ -28,7 +28,7 @@ hdmap:HDMapShape
 **sh:targetClass** - Which class this shape applies to:
 
 ```turtle
-hdmap:HDMapShape sh:targetClass hdmap:HDMap .
+ex:HDMapShape sh:targetClass ex:HDMap .
 ```
 
 **This tells us:** hdmap domain defines properties in this shape!
@@ -37,7 +37,7 @@ hdmap:HDMapShape sh:targetClass hdmap:HDMap .
 
 ```turtle
 sh:property [
-  sh:path hdmap:roadTypes ;        # Which property
+  sh:path ex:roadTypes ;        # Which property
   sh:in ("motorway" "town" "rural") ;  # Allowed values
   sh:minCount 1 ;                  # Required
   sh:datatype xsd:string ;         # Type
@@ -50,7 +50,7 @@ sh:property [
 
 ```turtle
 sh:property [
-  sh:path hdmap:roadTypes ;
+  sh:path ex:roadTypes ;
   sh:in ("motorway" "town" "rural" "other") ;
 ]
 ```
@@ -70,7 +70,7 @@ sh:property [
 
 ```turtle
 sh:property [
-  sh:path hdmap:length ;
+  sh:path ex:length ;
   sh:datatype xsd:float ;
   sh:minInclusive 0.0 ;
 ]
@@ -80,7 +80,7 @@ sh:property [
 
 ```turtle
 sh:property [
-  sh:path hdmap:roadTypes ;
+  sh:path ex:roadTypes ;
   sh:minCount 1 ;  # Required
   sh:maxCount 1 ;  # Single-valued
 ]
@@ -90,8 +90,8 @@ sh:property [
 
 ```turtle
 sh:property [
-  sh:path manifest:hasReferencedArtifacts ;
-  sh:class hdmap:HDMap ;  # Referenced asset must be HDMap
+  sh:path ex:hasReferencedArtifacts ;
+  sh:class ex:HDMap ;  # Referenced asset must be HDMap
 ]
 ```
 
@@ -105,8 +105,8 @@ PREFIX sh: <http://www.w3.org/ns/shacl#>
 SELECT ?localName ?domain ?iri WHERE {
   ?shape sh:targetClass ?domainClass .
   ?shape sh:property [ sh:path ?iri ] .
-  BIND(localname(?iri) AS ?localName)
-  BIND(localname(?domainClass) AS ?domain)
+  BIND(replace(str(?iri), "^.*[#/]", "") AS ?localName)
+  BIND(replace(str(?domainClass), "^.*[#/]", "") AS ?domain)
 }
 ```
 
@@ -115,8 +115,8 @@ SELECT ?localName ?domain ?iri WHERE {
 ```
 localName   | domain    | iri
 ------------|-----------|------------------
-roadTypes   | hdmap     | hdmap:roadTypes
-roadTypes   | ositrace  | ositrace:roadTypes  # Multi-domain property!
+roadTypes   | domainA   | http://example.org/domainA#roadTypes
+roadTypes   | domainB   | http://example.org/domainB#roadTypes  # Multi-domain property!
 ```
 
 ### Query 2: Extract sh:in Allowed Values
@@ -144,16 +144,16 @@ sh:in [ rdf:first "motorway" ; rdf:rest [ rdf:first "town" ; rdf:rest [ rdf:firs
 
 ```sparql
 PREFIX sh: <http://www.w3.org/ns/shacl#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
+PREFIX ex: <http://example.org/onto#>
 
 SELECT ?parentDomain ?childDomain WHERE {
   ?shape sh:targetClass ?parentClass .
   ?shape sh:property [
-    sh:path manifest:hasReferencedArtifacts ;
+    sh:path ex:hasReferencedArtifacts ;
     sh:class ?childClass
   ] .
-  BIND(localname(?parentClass) AS ?parentDomain)
-  BIND(localname(?childClass) AS ?childDomain)
+  BIND(replace(str(?parentClass), "^.*[#/]", "") AS ?parentDomain)
+  BIND(replace(str(?childClass), "^.*[#/]", "") AS ?childDomain)
 }
 ```
 
@@ -171,8 +171,8 @@ scenario     | environment-model
 **Problem:** `roadTypes` exists in BOTH hdmap and ositrace:
 
 ```turtle
-hdmap:HDMapShape sh:targetClass hdmap:HDMap ;
-  sh:property [ sh:path hdmap:roadTypes ; ... ] .
+ex:HDMapShape sh:targetClass ex:HDMap ;
+  sh:property [ sh:path ex:roadTypes ; ... ] .
 
 ositrace:OSITraceShape sh:targetClass ositrace:OSITrace ;
   sh:property [ sh:path ositrace:roadTypes ; ... ] .
@@ -183,7 +183,7 @@ ositrace:OSITraceShape sh:targetClass ositrace:OSITrace ;
 ```
 propertyDomains("roadTypes") = {hdmap, ositrace}
 detectedDomains = ["hdmap"]
-→ Use hdmap:roadTypes ✅
+→ Use ex:roadTypes ✅
 ```
 
 ## SHACL vs RDFS
@@ -200,11 +200,11 @@ detectedDomains = ["hdmap"]
 
 ```turtle
 # This is NOT RDFS domain
-hdmap:HDMapShape sh:targetClass hdmap:HDMap ;
-  sh:property [ sh:path hdmap:roadTypes ] .
+ex:HDMapShape sh:targetClass ex:HDMap ;
+  sh:property [ sh:path ex:roadTypes ] .
 
 # This would be RDFS domain (but we don't have it)
-hdmap:roadTypes rdfs:domain hdmap:HDMap .
+ex:roadTypes rdfs:domain ex:HDMap .
 ```
 
 ## Shape Context (Advanced)
@@ -212,18 +212,18 @@ hdmap:roadTypes rdfs:domain hdmap:HDMap .
 Properties grouped into sub-shapes:
 
 ```turtle
-hdmap:HDMapShape sh:property [
-  sh:path hdmap:hasDomainSpecification ;
-  sh:node hdmap:DomainSpecificationShape ;
+ex:HDMapShape sh:property [
+  sh:path ex:hasDomainSpecification ;
+  sh:node ex:DomainSpecificationShape ;
 ] .
 
-hdmap:DomainSpecificationShape sh:property [
-  sh:path hdmap:hasContent ;
-  sh:node hdmap:ContentShape ;
+ex:DomainSpecificationShape sh:property [
+  sh:path ex:hasContent ;
+  sh:node ex:ContentShape ;
 ] .
 
-hdmap:ContentShape sh:property [
-  sh:path hdmap:roadTypes ;
+ex:ContentShape sh:property [
+  sh:path ex:roadTypes ;
   sh:in ("motorway" "town" "rural" "other") ;
 ] .
 ```
@@ -254,7 +254,7 @@ SELECT ?domain (GROUP_CONCAT(?prop; separator=", ") AS ?properties)
 WHERE {
   ?shape sh:targetClass ?domainClass .
   ?shape sh:property [ sh:path ?prop ] .
-  BIND(localname(?domainClass) AS ?domain)
+  BIND(replace(str(?domainClass), "^.*[#/]", "") AS ?domain)
 }
 GROUP BY ?domain
 
@@ -263,8 +263,8 @@ SELECT ?localName (COUNT(DISTINCT ?domain) AS ?domainCount)
 WHERE {
   ?shape sh:targetClass ?domainClass .
   ?shape sh:property [ sh:path ?iri ] .
-  BIND(localname(?iri) AS ?localName)
-  BIND(localname(?domainClass) AS ?domain)
+  BIND(replace(str(?iri), "^.*[#/]", "") AS ?localName)
+  BIND(replace(str(?domainClass), "^.*[#/]", "") AS ?domain)
 }
 GROUP BY ?localName
 HAVING (COUNT(DISTINCT ?domain) > 1)

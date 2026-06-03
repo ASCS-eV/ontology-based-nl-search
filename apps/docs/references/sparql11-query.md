@@ -75,11 +75,13 @@ FILTER (BOUND(?optionalVar))
 
 ### IRI Manipulation
 
-- `localname(?iri)` - Extract local name from IRI
-  ```sparql
-  BIND(localname(<https://w3id.org/ascs-ev/envited-x/hdmap/v6/roadTypes>) AS ?name)
-  # Result: "roadTypes"
-  ```
+SPARQL 1.1 has no built-in "local name" function. Extract the local name with
+`REPLACE` (strip everything up to the last `/` or `#`):
+
+```sparql
+BIND(REPLACE(STR(?iri), "^.*[#/]", "") AS ?name)
+# e.g. <http://example.org/onto#roadTypes> → "roadTypes"
+```
 
 ## 5. Named Graphs
 
@@ -152,7 +154,7 @@ PREFIX sh: <http://www.w3.org/ns/shacl#>
 SELECT ?localName ?domain ?iri WHERE {
   ?shape sh:targetClass ?domainClass .
   ?shape sh:property [ sh:path ?iri ] .
-  BIND(localname(?iri) AS ?localName)
+  BIND(replace(str(?iri), "^.*[#/]", "") AS ?localName)
   BIND(replace(str(?domainClass), ".*/([^/]+)/v[0-9]+/.*", "$1") AS ?domain)
 }
 ORDER BY ?localName ?domain
@@ -187,10 +189,10 @@ SELECT ?property ?allowedValue WHERE {
 
 ```sparql
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v5/>
+PREFIX ex: <http://example.org/onto#>
 
 SELECT DISTINCT ?domain ?assetClass WHERE {
-  ?assetClass rdfs:subClassOf envited-x:SimulationAsset .
+  ?assetClass rdfs:subClassOf ex:Asset .
   BIND(replace(str(?assetClass), ".*/([^/]+)/v[0-9]+/.*", "$1") AS ?domain)
 }
 ```
@@ -199,12 +201,12 @@ SELECT DISTINCT ?domain ?assetClass WHERE {
 
 ```sparql
 PREFIX sh: <http://www.w3.org/ns/shacl#>
-PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
+PREFIX ex: <http://example.org/onto#>
 
 SELECT ?parentDomain ?childDomain WHERE {
   ?shape sh:targetClass ?parentClass .
   ?shape sh:property [
-    sh:path manifest:hasReferencedArtifacts ;
+    sh:path ex:hasReferencedArtifacts ;
     sh:class ?childClass
   ] .
   BIND(replace(str(?parentClass), ".*/([^/]+)/v[0-9]+/.*", "$1") AS ?parentDomain)
@@ -215,7 +217,7 @@ SELECT ?parentDomain ?childDomain WHERE {
 ## Key Patterns for Implementation
 
 1. **Property Paths for Lists:** `rdf:rest*/rdf:first`
-2. **IRI Local Name:** `localname(?iri)`
+2. **IRI Local Name:** `replace(str(?iri), "^.*[#/]", "")`
 3. **Domain Extraction:** `replace(str(?iri), ".*/([^/]+)/v[0-9]+/.*", "$1")`
 4. **Named Graph Query:** `FROM <urn:graph:schema>`
 5. **Aggregation:** `GROUP BY` + `COUNT`

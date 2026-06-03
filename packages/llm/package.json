@@ -1,5 +1,6 @@
 {
   "name": "@ontology-search/llm",
+  "description": "LLM interpretation layer — SHACL-grounded prompt builder, multi-provider slot-filling agent, and SHACL slot validation. The LLM never writes SPARQL.",
   "version": "0.1.0",
   "private": true,
   "type": "module",

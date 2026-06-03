@@ -1,5 +1,6 @@
 {
   "name": "@ontology-search/core",
+  "description": "Foundation utilities — Zod config, structured logging, errors, RDF prefixes, SSE, and LRU cache. Zero workspace dependencies.",
   "version": "0.1.0",
   "private": true,
   "type": "module",

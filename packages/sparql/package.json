@@ -1,5 +1,6 @@
 {
   "name": "@ontology-search/sparql",
+  "description": "SPARQL execution and security layer — Oxigraph WASM (worker thread) or remote store with LRU cache, plus the query policy gate and literal escaping.",
   "version": "0.1.0",
   "private": true,
   "type": "module",
