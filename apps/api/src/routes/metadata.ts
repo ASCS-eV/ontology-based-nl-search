@@ -1,3 +1,4 @@
+import type { AssetMetadata, DomainGroupAggregate } from '@ontology-search/api-types'
 import { badRequest, internalError } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { getAssetMetadata, getDomainMetadataAggregate } from '@ontology-search/search'
@@ -34,7 +35,7 @@ metadataRoutes.get('/asset', async (c) => {
       domain: metadata.domain,
       groups: Object.keys(metadata.groups).length,
     })
-    return c.json(metadata, 200, { [REQUEST_ID_HEADER]: requestId })
+    return c.json(metadata satisfies AssetMetadata, 200, { [REQUEST_ID_HEADER]: requestId })
   } catch (error) {
     logger.error('Metadata asset API error', error)
     const err = internalError('Failed to load asset metadata')
@@ -73,7 +74,7 @@ metadataRoutes.get('/aggregate', async (c) => {
       assets: aggregate.assetCount,
       properties: aggregate.properties.length,
     })
-    return c.json(aggregate, 200, { [REQUEST_ID_HEADER]: requestId })
+    return c.json(aggregate satisfies DomainGroupAggregate, 200, { [REQUEST_ID_HEADER]: requestId })
   } catch (error) {
     logger.error('Metadata aggregate API error', error)
     const err = internalError('Failed to compute aggregate metadata')

@@ -1,3 +1,4 @@
+import type { StatsResponse } from '@ontology-search/api-types'
 import { internalError } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { Hono } from 'hono'
@@ -17,7 +18,7 @@ statsRoutes.get('/', async (c) => {
 
     logger.info('Stats request completed', { totalAssets, domainCount: Object.keys(counts).length })
 
-    return c.json({ totalAssets, domains: counts, availableDomains }, 200, {
+    return c.json({ totalAssets, domains: counts, availableDomains } satisfies StatsResponse, 200, {
       [REQUEST_ID_HEADER]: requestId,
     })
   } catch (error) {

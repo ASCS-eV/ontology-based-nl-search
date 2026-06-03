@@ -58,7 +58,7 @@ export interface AssetDomainInfo {
   assetClass: string
 }
 
-/** Domain reference relationship (from manifest:hasReferencedArtifacts) */
+/** A discovered cross-domain reference: a parent asset domain that links to a child asset domain. */
 export interface DomainReferenceInfo {
   /** Parent domain that references others (e.g., "scenario") */
   parentDomain: string
@@ -266,25 +266,30 @@ export async function queryAssetDomains(
 }
 
 /**
- * Query for domain reference relationships.
+ * Query for cross-domain reference relationships (parent asset domain →
+ * referenced child asset domain).
  *
- * Finds which domains reference other domains via the "hasReferencedArtifacts"
- * predicate (discovered from the manifest domain in the registry).
- * Uses a multi-strategy approach to handle different SHACL nesting patterns:
+ * Ontology-agnostic: a cross-domain reference is ANY property shape whose value
+ * resolves to a **known asset class in a different domain** — there is no
+ * dependency on a "manifest" domain or a `hasReferencedArtifacts` predicate
+ * name. The asset-class + different-domain filters are what identify a genuine
+ * reference; the predicate carrying it is irrelevant. Two SHACL value-shapes
+ * are recognized:
  *
- * 1. **Direct sh:class** — simple `sh:class` on the property shape (original pattern)
- * 2. **Nested SHACL walk** — `sh:node → sh:or → rdf:list → sh:node → sh:targetClass`
- *    (handles the actual scenario SHACL structure where referenced artifact types
- *     are declared in an sh:or disjunction list)
+ * 1. **Direct `sh:class`** — the property's value is typed directly as the
+ *    referenced asset class.
+ * 2. **Nested disjunction** — `sh:node → sh:or → rdf:list → sh:node →
+ *    sh:targetClass` declares a set of permitted referenced asset types (the
+ *    open-IRI "manifest" pattern in the demo, but matched structurally).
  *
  * Parent discovery uses fallback strategies because the constraint shape owning
- * `hasReferencedArtifacts` may not have `sh:targetClass` itself:
+ * the reference property may not carry `sh:targetClass` itself:
  *   A. Direct targetClass on the constraint shape
  *   B. Walk up through `sh:and` conjunction list to the domain shape
  *   C. Walk up through `sh:or` disjunction list to the domain shape
  *
- * Post-filtering with the known asset domain set replaces the former
- * hardcoded ASSET_DOMAIN_FILTER SPARQL fragment.
+ * Both the asset-class membership and the parent/child-domain check are applied
+ * in TS against the known asset-domain set.
  */
 export async function queryDomainReferences(
   store: SparqlStore,
@@ -304,16 +309,9 @@ export async function queryDomainReferences(
     }
   }
 
-  // Discover manifest namespace from registry (if available)
-  const manifestNs = discoverManifestNamespace(registry)
-  if (!manifestNs) {
-    log.warn(
-      'No manifest namespace found in registry — cross-domain references will not be discovered'
-    )
-    return references
-  }
-
-  // Strategy 1: Direct sh:class on hasReferencedArtifacts property shape.
+  // Strategy 1: any property shape whose value is directly typed (`sh:class`)
+  // as another asset class. The asset-class + cross-domain filters below select
+  // genuine references; the predicate name is irrelevant.
   const directSparql = `
     ${sparqlPrefixes('sh', 'rdfs')}
 
@@ -321,7 +319,6 @@ export async function queryDomainReferences(
       GRAPH <${SCHEMA_GRAPH}> {
         ?shape sh:targetClass ?parentClass .
         ?shape sh:property ?propShape .
-        ?propShape sh:path <${manifestNs}hasReferencedArtifacts> .
         ?propShape sh:class ?childClass .
         FILTER(isIRI(?parentClass) && isIRI(?childClass))
       }
@@ -341,14 +338,16 @@ export async function queryDomainReferences(
     }
   }
 
-  // Strategy 2: Nested SHACL — walk sh:node → sh:or → rdf:list → sh:node → targetClass.
+  // Strategy 2: any property whose value-shape is a nested disjunction of
+  // permitted referenced types — `sh:node → sh:or → rdf:list → sh:node →
+  // sh:targetClass`. This is the open-IRI reference pattern (the demo's manifest
+  // shape), matched structurally rather than by predicate name.
   const nestedChildSparql = `
     ${sparqlPrefixes('sh', 'rdfs', 'rdf')}
 
     SELECT DISTINCT ?constraintShape ?childClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
         ?constraintShape sh:property ?propShape .
-        ?propShape sh:path <${manifestNs}hasReferencedArtifacts> .
         ?propShape sh:node ?wrapper .
         ?wrapper sh:or ?orList .
         ?orList rdf:rest*/rdf:first ?item .
@@ -380,22 +379,6 @@ export async function queryDomainReferences(
   }
 
   return references
-}
-
-/**
- * Discover the manifest namespace from the registry.
- * Looks for a domain named "manifest" or any domain that declares
- * a "manifest" prefix in its declared prefixes.
- */
-function discoverManifestNamespace(registry?: DomainRegistry): string | undefined {
-  if (!registry) return undefined
-  const manifest = registry.domains.get('manifest')
-  if (manifest) return manifest.namespace
-  for (const desc of registry.domains.values()) {
-    const manifestNs = desc.declaredPrefixes['manifest']
-    if (manifestNs) return manifestNs
-  }
-  return undefined
 }
 
 /**
