@@ -118,19 +118,54 @@ interface ResolvedEdge {
  * Query shape-to-shape edges and resolve them to
  * (parentClass, predicate, childClass) triples.
  *
- * Uses two queries without rdf:rest star property paths (Oxigraph WASM
- * crashes with RuntimeError on UNION + property-path-star even in 0.5.x).
- * Instead, sh:or lists are traversed by querying direct rdf:first/rdf:rest
- * links to a bounded depth of 4 (RDF lists in SHACL shapes are typically
- * short — 2–3 items). If a SHACL sh:or list exceeds depth 4, edges beyond
- * that depth will be silently missed.
+ * `sh:or` list membership is resolved with an `rdf:rest`-star / `rdf:first`
+ * property path, kept in its OWN query (never inside a UNION) — Oxigraph WASM
+ * traps ("unreachable") on `UNION` + property path, and evaluating a
+ * fixed-depth list walk inside a UNION is pathologically slow (~33s for the
+ * 4-deep walk this replaced; the split runs in ~25ms). Each membership form
+ * (direct `sh:node`, `sh:or` member) is a separate query merged in TS. The
+ * property path also handles `sh:or` lists of any length — the previous
+ * fixed-depth UNION silently dropped members past the 4th.
  *
  * @see https://github.com/oxigraph/oxigraph/issues — UNION + rdf:rest* crash
  */
 async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEdge[]> {
-  // Step 1: Get edges from parentClass → predicate → childShape
-  // Handles both direct sh:node and sh:or disjunction (bounded list depth)
-  const edgeSparql = `
+  // An edge is `parentClass --predicate--> childShape`, where the property
+  // shape references the child shape either directly (`sh:node`) or as a
+  // member of an `sh:or` disjunction list.
+  //
+  // Each reference form is its own UNION-free query, merged in TS, for two
+  // reasons (both verified against the workspace ontology):
+  //
+  // 1. PERF: a fixed-depth `rdf:rest`/`rdf:first` list walk expressed *inside
+  //    a UNION* makes Oxigraph WASM evaluate ~33s for a 4-deep walk (the
+  //    planner re-runs the property-shape prefix join per branch over the
+  //    blank-node list). The standalone `rdf:rest*/rdf:first` form is ~10ms.
+  // 2. SAFETY: `UNION` combined with a property path traps the WASM runtime
+  //    ("unreachable") — the same class of crash that forced the OPTIONAL
+  //    split in `queryLeafProperties`. So the property path must live in its
+  //    own query, never unioned.
+  //
+  // `rdf:rest*/rdf:first` also drops the previous hard cap of 4 sh:or members,
+  // so arbitrarily long disjunction lists in other ontologies resolve too.
+  //
+  // Step 1a: edges where the child shape is referenced directly via sh:node.
+  const directEdgeSparql = `
+    ${sparqlPrefixes('sh')}
+
+    SELECT DISTINCT ?parentClass ?predicate ?childShape WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        ?parentShape sh:targetClass ?parentClass .
+        ?parentShape sh:property ?propShape .
+        ?propShape sh:path ?predicate .
+        FILTER(isIRI(?predicate))
+        ?propShape sh:node ?childShape .
+      }
+    }
+  `
+
+  // Step 1b: edges where the child shape is any member of an sh:or list.
+  const orEdgeSparql = `
     ${sparqlPrefixes('sh', 'rdf')}
 
     SELECT DISTINCT ?parentClass ?predicate ?childShape WHERE {
@@ -139,78 +174,50 @@ async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEdge[]> {
         ?parentShape sh:property ?propShape .
         ?propShape sh:path ?predicate .
         FILTER(isIRI(?predicate))
-
-        {
-          ?propShape sh:node ?childShape .
-        } UNION {
-          ?propShape sh:or ?list .
-          ?list rdf:first ?item .
-          ?item sh:node ?childShape .
-        } UNION {
-          ?propShape sh:or ?list .
-          ?list rdf:rest ?r1 .
-          ?r1 rdf:first ?item .
-          ?item sh:node ?childShape .
-        } UNION {
-          ?propShape sh:or ?list .
-          ?list rdf:rest ?r1 . ?r1 rdf:rest ?r2 .
-          ?r2 rdf:first ?item .
-          ?item sh:node ?childShape .
-        } UNION {
-          ?propShape sh:or ?list .
-          ?list rdf:rest ?r1 . ?r1 rdf:rest ?r2 . ?r2 rdf:rest ?r3 .
-          ?r3 rdf:first ?item .
-          ?item sh:node ?childShape .
-        }
+        ?propShape sh:or ?list .
+        ?list rdf:rest*/rdf:first ?item .
+        ?item sh:node ?childShape .
       }
     }
   `
 
-  // Step 2: Resolve shapes to their target classes (same bounded-depth pattern)
-  const targetSparql = `
-    ${sparqlPrefixes('sh', 'rdf')}
+  // Step 2a: shapes that declare a target class directly.
+  const directTargetSparql = `
+    ${sparqlPrefixes('sh')}
 
     SELECT DISTINCT ?shape ?targetClass WHERE {
       GRAPH <${SCHEMA_GRAPH}> {
-        {
-          ?shape sh:targetClass ?targetClass .
-        } UNION {
-          ?shape sh:or ?list .
-          ?list rdf:first ?item .
-          ?item sh:node ?inner .
-          ?inner sh:targetClass ?targetClass .
-        } UNION {
-          ?shape sh:or ?list .
-          ?list rdf:rest ?r1 .
-          ?r1 rdf:first ?item .
-          ?item sh:node ?inner .
-          ?inner sh:targetClass ?targetClass .
-        } UNION {
-          ?shape sh:or ?list .
-          ?list rdf:rest ?r1 . ?r1 rdf:rest ?r2 .
-          ?r2 rdf:first ?item .
-          ?item sh:node ?inner .
-          ?inner sh:targetClass ?targetClass .
-        } UNION {
-          ?shape sh:or ?list .
-          ?list rdf:rest ?r1 . ?r1 rdf:rest ?r2 . ?r2 rdf:rest ?r3 .
-          ?r3 rdf:first ?item .
-          ?item sh:node ?inner .
-          ?inner sh:targetClass ?targetClass .
-        }
+        ?shape sh:targetClass ?targetClass .
         FILTER(isIRI(?targetClass))
       }
     }
   `
 
-  const [edgeResult, targetResult] = await Promise.all([
-    store.query(edgeSparql),
-    store.query(targetSparql),
+  // Step 2b: shapes whose target class is reached through an sh:or member.
+  const orTargetSparql = `
+    ${sparqlPrefixes('sh', 'rdf')}
+
+    SELECT DISTINCT ?shape ?targetClass WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        ?shape sh:or ?list .
+        ?list rdf:rest*/rdf:first ?item .
+        ?item sh:node ?inner .
+        ?inner sh:targetClass ?targetClass .
+        FILTER(isIRI(?targetClass))
+      }
+    }
+  `
+
+  const [directEdges, orEdges, directTargets, orTargets] = await Promise.all([
+    store.query(directEdgeSparql),
+    store.query(orEdgeSparql),
+    store.query(directTargetSparql),
+    store.query(orTargetSparql),
   ])
 
-  // Build shape → targetClass[] lookup
+  // Build shape → targetClass[] lookup from both target forms.
   const shapeTargets = new Map<string, string[]>()
-  for (const row of targetResult.results.bindings) {
+  for (const row of [...directTargets.results.bindings, ...orTargets.results.bindings]) {
     const shape = row['shape']?.value
     const targetClass = row['targetClass']?.value
     if (!shape || !targetClass) continue
@@ -219,10 +226,10 @@ async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEdge[]> {
     shapeTargets.set(shape, list)
   }
 
-  // Resolve edges
+  // Resolve edges from both edge forms.
   const edges: ResolvedEdge[] = []
   const seen = new Set<string>()
-  for (const row of edgeResult.results.bindings) {
+  for (const row of [...directEdges.results.bindings, ...orEdges.results.bindings]) {
     const parentClass = row['parentClass']?.value
     const predicate = row['predicate']?.value
     const childShape = row['childShape']?.value
@@ -236,6 +243,24 @@ async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEdge[]> {
       edges.push({ parentClass, predicate, childClass })
     }
   }
+
+  // Sort deterministically. The downstream BFS reconstructs ONE path per
+  // (asset, leaf) and breaks ties among equal-length paths by edge-insertion
+  // order — so a stable edge order is what makes path discovery reproducible.
+  // The previous fixed-depth UNION happened to emit sh:or members in RDF-list
+  // order; the `rdf:rest*/rdf:first` property path does NOT (SPARQL leaves
+  // path-result order unspecified), so without this sort the chosen
+  // intermediate could flip between runs (e.g. a sensor leaf reachable via
+  // both Camera and Lidar). Sorting by (parent, predicate, child) IRI makes
+  // the choice independent of the engine's result order — the same
+  // determinism discipline the rest of this module uses (see the chain sort
+  // in compiler.ts).
+  edges.sort(
+    (a, b) =>
+      a.parentClass.localeCompare(b.parentClass) ||
+      a.predicate.localeCompare(b.predicate) ||
+      a.childClass.localeCompare(b.childClass)
+  )
   return edges
 }
 
