@@ -24,6 +24,8 @@ export default withMermaid(
             { text: 'FILTER Functions', link: '/sparql-reference/filter-functions' },
             { text: 'SPARQL Best Practices', link: '/sparql-reference/best-practices' },
             { text: 'IRIs vs Literals', link: '/sparql-reference/iri-vs-literals' },
+            { text: 'RDF Schema (RDFS)', link: '/references/rdfs' },
+            { text: 'SHACL', link: '/references/shacl' },
             { text: 'Roadmap', link: '/roadmap' },
           ],
         },
@@ -57,6 +59,13 @@ export default withMermaid(
             { text: 'FILTER Functions', link: '/sparql-reference/filter-functions' },
             { text: 'SPARQL Best Practices', link: '/sparql-reference/best-practices' },
             { text: 'IRIs vs Literals', link: '/sparql-reference/iri-vs-literals' },
+          ],
+        },
+        {
+          text: 'RDF & SHACL Reference',
+          items: [
+            { text: 'RDF Schema (RDFS)', link: '/references/rdfs' },
+            { text: 'SHACL', link: '/references/shacl' },
           ],
         },
         {
