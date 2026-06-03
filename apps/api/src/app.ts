@@ -5,6 +5,7 @@ import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 
+import { apiKeyAuth } from './middleware/auth.js'
 import { errorHandler } from './middleware/error-handler.js'
 import { rateLimit } from './middleware/rate-limit.js'
 import { requestId } from './middleware/request-id.js'
@@ -45,6 +46,8 @@ app.use(
   })
 )
 app.use('*', requestId())
+// Optional API-key gate. No-op unless API_KEY is set; `/health` stays open.
+app.use('*', apiKeyAuth({ apiKey: config.API_KEY }))
 app.use(
   '/search/*',
   bodyLimit({

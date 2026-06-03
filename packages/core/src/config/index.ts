@@ -134,6 +134,14 @@ const envSchema = z.object({
    * when `RATE_LIMIT_RPS > 0`.
    */
   RATE_LIMIT_BURST: z.coerce.number().int().positive().default(10),
+  /**
+   * Optional API key for request authentication. Empty (the default) leaves
+   * the API open — correct for local development and for deployments that
+   * terminate authentication at an upstream gateway. When set, every request
+   * except the `/health` readiness probe must present the key, as either
+   * `Authorization: Bearer <key>` or `x-api-key: <key>`; mismatches get 401.
+   */
+  API_KEY: z.string().optional(),
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).optional(),
