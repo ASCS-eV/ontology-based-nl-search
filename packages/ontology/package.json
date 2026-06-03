@@ -45,7 +45,6 @@
     "@types/n3": "^1.26.1",
     "@types/node": "^25.7.0",
     "@types/rdfjs__dataset": "^2.0.7",
-    "oxigraph": "^0.4.11",
     "rimraf": "^6.0.0",
     "typescript": "~5.9.3",
     "vitest": "^3.2.0"

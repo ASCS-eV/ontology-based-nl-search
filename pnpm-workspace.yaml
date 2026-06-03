@@ -4,3 +4,13 @@ packages:
 allowBuilds:
   '@swc/core': true
   esbuild: true
+overrides:
+  # Security advisories (see `pnpm audit --prod`). Scoped so unrelated
+  # majors are untouched: brace-expansion 1.x consumers keep 1.x.
+  brace-expansion@5: ^5.0.6 # max-protection bypass (<5.0.6), moderate
+  #
+  # NOT overridden: @ai-sdk/provider-utils (GHSA-866g-f22w-33x8, LOW).
+  # The only stable patched line is 4.x, but `ai`@5 / @ai-sdk@2 require
+  # provider-utils@3 — forcing 4.x breaks `import { tool } from 'ai'`.
+  # Accepted until a coordinated ai/@ai-sdk major bump. CI gates at
+  # `--audit-level=moderate`, so this low advisory does not block release.

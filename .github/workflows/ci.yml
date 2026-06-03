@@ -55,7 +55,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Audit dependencies
-        run: pnpm audit --prod || true
+        # Blocking gate: fail the build on moderate-or-higher advisories in
+        # production dependencies. Known low-severity advisories that have no
+        # compatible patch are documented in pnpm-workspace.yaml `overrides`.
+        run: pnpm audit --prod --audit-level=moderate
 
       - name: Type check
         run: pnpm run check-types
