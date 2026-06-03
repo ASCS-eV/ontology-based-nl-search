@@ -296,13 +296,12 @@ describe('runSlotPipeline', () => {
   }, 120_000)
 
   /**
-   * Multi-reference projects only the FIRST referenced asset (`?refAsset` +
-   * breadcrumb); additional references are filter-only JOINs (bound but not
-   * projected), so the asset must reference all of them while the result shape
-   * and breadcrumb stay single-reference. Displaying every referenced asset is
-   * a follow-up.
+   * Multi-reference AND-combines every referenced domain AND projects every
+   * referenced asset (`?refAsset`/`?refName`, then `?refAsset1`/`?refName1`,
+   * …) so the UI can display all of them. The first resolvable reference
+   * additionally owns the single per-row predicate breadcrumb.
    */
-  it('projects the first reference and applies the rest as filter-only JOINs', async () => {
+  it('projects every referenced asset across multiple reference domains', async () => {
     const sw = new Stopwatch()
     const response = await runSlotPipeline({
       submission: {
@@ -322,10 +321,11 @@ describe('runSlotPipeline', () => {
     // Both references are AND-combined JOINs (both target classes present).
     expect(response.sparql).toContain('ositrace:OSITrace')
     expect(response.sparql).toContain('hdmap:HdMap')
-    // Exactly one projected referenced asset (?refAsset); the rest are suffixed
-    // filter-only vars that never reach the SELECT.
+    // Every referenced asset is projected: the first as ?refAsset/?refName,
+    // the second as ?refAsset1/?refName1.
     expect(response.sparql).toMatch(/SELECT[^\n]*\?refAsset\b/)
-    expect(response.sparql).not.toMatch(/SELECT[^\n]*\?refAsset1\b/)
+    expect(response.sparql).toMatch(/SELECT[^\n]*\?refAsset1\b/)
+    expect(response.sparql).toMatch(/SELECT[^\n]*\?refName1\b/)
     // No dropping → no limitation gap.
     expect(response.gaps.some((g) => g.kind === 'limitation')).toBe(false)
   }, 120_000)

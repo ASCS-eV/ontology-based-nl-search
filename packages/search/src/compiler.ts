@@ -779,12 +779,12 @@ export async function compileSlotsWithTrace(
   //      instance-graph chain.
   //   3. Generic any-predicate property path `(!<urn:none>)+` — last
   //      resort when neither SHACL nor instance data declare a link.
-  // Each entry is AND-combined (the asset must reference all of them). The
-  // first resolvable entry is projected as `?refAsset`/`?refName` and drives the
-  // per-row breadcrumb (so the UI and trace are unchanged from the single-
-  // reference era); additional entries are filter-only JOINs — bound but not
-  // projected — and the distinct-asset wrap (assembleQuery) collapses their
-  // fan-out. Displaying every referenced asset is a follow-up.
+  // Each entry is AND-combined (the asset must reference all of them). Every
+  // entry is projected — `?refAsset`/`?refName`, then `?refAsset1`/`?refName1`,
+  // … — so the UI can display all referenced assets, not just the first. The
+  // first resolvable entry additionally drives the per-row predicate breadcrumb
+  // (the single `trace` plan). The distinct-asset wrap (assembleQuery) keeps the
+  // LIMIT counting primary assets despite the reference fan-out.
   const referenceSlots = normalizeReferences(slots.references)
   let projectedReference = false
   for (let i = 0; i < referenceSlots.length; i++) {
@@ -853,22 +853,24 @@ export async function compileSlotsWithTrace(
       }
     }
 
-    // A label binding is needed when projected (breadcrumb) or filtered.
-    if (isPrimary || ref.label) {
-      patterns.push(`${refVar} rdfs:label ${refNameVar} .`)
-    }
+    // Bind a label for every reference so each referenced asset can be
+    // displayed (and so a label filter can apply to any of them).
+    patterns.push(`${refVar} rdfs:label ${refNameVar} .`)
     if (ref.label) {
       filters.push(
         `FILTER(CONTAINS(LCASE(${refNameVar}), "${escapeSparqlLiteral(ref.label.toLowerCase())}"))`
       )
     }
 
+    // Project every reference's asset + name so the UI shows all of them.
+    selectVars.add(refVar)
+    selectVars.add(refNameVar)
+
+    // The first resolvable reference also owns the per-row breadcrumb — the
+    // single `trace` plan the service walks. Promote its intermediate step
+    // variables so the service can read them per row. The wildcard branch
+    // records no steps, so the plan stays undefined there.
     if (isPrimary) {
-      selectVars.add(refVar)
-      selectVars.add(refNameVar)
-      // Promote each intermediate step variable so the service can read the
-      // bindings and assemble the per-row breadcrumb. The wildcard branch
-      // records no steps, so the plan stays undefined there.
       if (traceSteps.length > 0) {
         for (const step of traceSteps) selectVars.add(`?${step.variable}`)
         trace = { sourceVariable: 'asset', steps: traceSteps }

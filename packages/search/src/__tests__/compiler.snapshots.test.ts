@@ -362,7 +362,7 @@ describe('compileSlots — determinism + snapshot suite', () => {
     expect(sparql).toMatchSnapshot()
   })
 
-  it('multiple references (ositrace + hdmap) → two AND-combined JOINs, first projected', async () => {
+  it('multiple references (ositrace + hdmap) → two AND-combined JOINs, both projected', async () => {
     const sparql = await assertDeterministic({
       domains: ['scenario'],
       filters: {},
@@ -372,9 +372,11 @@ describe('compileSlots — determinism + snapshot suite', () => {
     // Both referenced asset classes appear (AND-combined JOINs).
     expect(sparql).toContain('ositrace:OSITrace')
     expect(sparql).toContain('hdmap:HdMap')
-    // Only the first reference is projected; the second is a filter-only var.
+    // Every reference is projected so the UI can display all referenced assets:
+    // the first as ?refAsset/?refName, the second as ?refAsset1/?refName1.
     expect(sparql).toMatch(/SELECT[^\n]*\?refAsset\b/)
-    expect(sparql).not.toMatch(/SELECT[^\n]*\?refAsset1\b/)
+    expect(sparql).toMatch(/SELECT[^\n]*\?refAsset1\b/)
+    expect(sparql).toMatch(/SELECT[^\n]*\?refName1\b/)
     expect(sparql).toMatchSnapshot()
   })
 })
