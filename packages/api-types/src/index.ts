@@ -119,6 +119,15 @@ export interface ResultTraceStep {
 }
 
 /**
+ * One row's traceability, keyed by the projected referenced-asset variable
+ * (`"refAsset"`, `"refAsset1"`, …). A multi-reference result carries one
+ * breadcrumb per referenced asset so the UI can attach each chain to the
+ * matching reference pill. References reached via the wildcard fallback (no
+ * resolved predicate chain) have no entry.
+ */
+export type RowTraceability = Record<string, ResultTraceStep[]>
+
+/**
  * Complete search response. Used by both `/search/refine` (synchronous
  * JSON) and assembled by the web client from the streamed `/search/stream`
  * SSE events.
@@ -129,10 +138,11 @@ export interface SearchResponse {
   sparql: string
   results: ResultRow[]
   /**
-   * Optional per-row breadcrumb. Present only when the SPARQL contained
-   * a cross-reference JOIN; aligned by index with `results`.
+   * Optional per-row traceability, aligned by index with `results`. Present
+   * only when the SPARQL contained a cross-reference JOIN; each entry maps a
+   * referenced-asset variable to that reference's breadcrumb.
    */
-  traceability?: ResultTraceStep[][]
+  traceability?: RowTraceability[]
   meta: SearchMeta
 }
 
@@ -144,8 +154,8 @@ export interface SearchResponse {
 export interface RefineResponse {
   sparql: string
   results: ResultRow[]
-  /** Per-row breadcrumb; present only when the query contained a JOIN. */
-  traceability?: ResultTraceStep[][]
+  /** Per-row, per-reference breadcrumbs; present only when the query had a JOIN. */
+  traceability?: RowTraceability[]
   meta: SearchMeta
 }
 

@@ -221,20 +221,22 @@ describe('ResultsDisplay', () => {
       },
     ]
     const traceability = [
-      [
-        {
-          predicate: 'https://example.org/scenario/v6/hasManifest',
-          intermediate: '_:b0',
-        },
-        {
-          predicate: 'https://example.org/manifest/v5/hasReferencedArtifacts',
-          intermediate: '_:b1',
-        },
-        {
-          predicate: 'https://example.org/manifest/v5/iri',
-          intermediate: 'urn:hdmap:42',
-        },
-      ],
+      {
+        refAsset: [
+          {
+            predicate: 'https://example.org/scenario/v6/hasManifest',
+            intermediate: '_:b0',
+          },
+          {
+            predicate: 'https://example.org/manifest/v5/hasReferencedArtifacts',
+            intermediate: '_:b1',
+          },
+          {
+            predicate: 'https://example.org/manifest/v5/iri',
+            intermediate: 'urn:hdmap:42',
+          },
+        ],
+      },
     ]
     render(<ResultsDisplay results={results} traceability={traceability} />)
     // Breadcrumb roots at the primary `asset`.
@@ -247,6 +249,37 @@ describe('ResultsDisplay', () => {
     expect(screen.getByText('hasManifest').getAttribute('title')).toBe(
       'https://example.org/scenario/v6/hasManifest'
     )
+  })
+
+  /**
+   * Multi-reference: each referenced asset carries its OWN breadcrumb, keyed
+   * by its projected variable (`refAsset`, `refAsset1`). Regression for the
+   * per-reference traceability wire contract.
+   */
+  it('renders a distinct breadcrumb for each referenced asset', () => {
+    const results = [
+      {
+        asset: 'urn:scenario:1',
+        name: 'Scenario 1',
+        refAsset: 'urn:ositrace:7',
+        refName: 'Munich Trace',
+        refAsset1: 'urn:hdmap:42',
+        refName1: 'Munich HD Map',
+      },
+    ]
+    const traceability = [
+      {
+        refAsset: [{ predicate: 'https://example.org/scenario/v6/hasTrace', intermediate: 'x' }],
+        refAsset1: [{ predicate: 'https://example.org/scenario/v6/hasMap', intermediate: 'y' }],
+      },
+    ]
+    render(<ResultsDisplay results={results} traceability={traceability} />)
+    // Both referenced assets render…
+    expect(screen.getByText('Munich Trace')).toBeInTheDocument()
+    expect(screen.getByText('Munich HD Map')).toBeInTheDocument()
+    // …each with its own predicate breadcrumb.
+    expect(screen.getByText('hasTrace')).toBeInTheDocument()
+    expect(screen.getByText('hasMap')).toBeInTheDocument()
   })
 
   /**

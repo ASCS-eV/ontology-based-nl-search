@@ -19,6 +19,7 @@ export type {
   QueryInterpretation,
   ResultRow,
   ResultTraceStep,
+  RowTraceability,
   SearchMeta,
   SearchResponse,
   StatsResponse,
@@ -36,11 +37,12 @@ export interface LlmStructuredResponse {
   gaps: OntologyGap[]
   sparql: string
   /**
-   * Traceability plan emitted by the compiler when the SPARQL contains
-   * a cross-reference JOIN. The service uses it to attach per-row
-   * breadcrumbs in `ExecutionResult.traceability` (WP3, task #18).
+   * Traceability plans emitted by the compiler when the SPARQL contains
+   * cross-reference JOINs — one per projected reference. The service uses
+   * them to attach per-row, per-reference breadcrumbs in
+   * `ExecutionResult.traceability` (WP3, task #18).
    */
-  trace?: TraceabilityPlan
+  trace?: TraceabilityPlan[]
   /** Per-stage timings within the LLM pipeline. */
   timings?: TimingEntry[]
 }

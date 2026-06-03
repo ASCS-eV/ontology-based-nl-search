@@ -568,9 +568,10 @@ export interface CompileOverrides {
 }
 
 /**
- * Compile slots and return the SPARQL plus, when the query contains a
- * cross-reference JOIN, a {@link TraceabilityPlan} the service uses to
- * assemble a per-row breadcrumb from the bound intermediate variables.
+ * Compile slots and return the SPARQL plus, when the query contains
+ * cross-reference JOINs, one {@link TraceabilityPlan} per reference that the
+ * service uses to assemble per-row, per-reference breadcrumbs from the bound
+ * intermediate variables.
  *
  * Same compilation semantics as {@link compileSlots} — the wrapper just
  * drops the `trace` field when its caller doesn't ask for it.
@@ -584,10 +585,11 @@ export async function compileSlotsWithTrace(
     overrides?.vocabIndex ?? getCompilerVocab(),
   ])
 
-  // Traceability plan accumulated when the query contains a cross-
-  // reference JOIN. The service uses it to attach a per-row breadcrumb
-  // (WP3, task #18). Stays `undefined` for non-references queries.
-  let trace: TraceabilityPlan | undefined
+  // Traceability plans accumulated when the query contains cross-reference
+  // JOINs — one per projected reference. The service uses them to attach a
+  // per-row, per-reference breadcrumb (WP3, task #18). Stays empty for
+  // non-references queries.
+  const traces: TraceabilityPlan[] = []
 
   // Normalize domain names so downstream registry lookups and prefix
   // resolution see the directory-name convention regardless of how the LLM
@@ -781,10 +783,10 @@ export async function compileSlotsWithTrace(
   //      resort when neither SHACL nor instance data declare a link.
   // Each entry is AND-combined (the asset must reference all of them). Every
   // entry is projected — `?refAsset`/`?refName`, then `?refAsset1`/`?refName1`,
-  // … — so the UI can display all referenced assets, not just the first. The
-  // first resolvable entry additionally drives the per-row predicate breadcrumb
-  // (the single `trace` plan). The distinct-asset wrap (assembleQuery) keeps the
-  // LIMIT counting primary assets despite the reference fan-out.
+  // … — so the UI can display all referenced assets, and each entry with a
+  // resolved chain contributes its own breadcrumb plan (keyed by its projected
+  // variable). The distinct-asset wrap (assembleQuery) keeps the LIMIT counting
+  // primary assets despite the reference fan-out.
   const referenceSlots = normalizeReferences(slots.references)
   let projectedReference = false
   for (let i = 0; i < referenceSlots.length; i++) {
@@ -866,17 +868,15 @@ export async function compileSlotsWithTrace(
     selectVars.add(refVar)
     selectVars.add(refNameVar)
 
-    // The first resolvable reference also owns the per-row breadcrumb — the
-    // single `trace` plan the service walks. Promote its intermediate step
-    // variables so the service can read them per row. The wildcard branch
-    // records no steps, so the plan stays undefined there.
-    if (isPrimary) {
-      if (traceSteps.length > 0) {
-        for (const step of traceSteps) selectVars.add(`?${step.variable}`)
-        trace = { sourceVariable: 'asset', steps: traceSteps }
-      }
-      projectedReference = true
+    // Each reference with a resolved chain contributes its own breadcrumb:
+    // promote its intermediate step variables so the service can read them per
+    // row, and record a plan keyed by this reference's projected variable. The
+    // wildcard branch records no steps, so it adds no plan.
+    if (traceSteps.length > 0) {
+      for (const step of traceSteps) selectVars.add(`?${step.variable}`)
+      traces.push({ sourceVariable: 'asset', targetVariable: refVar.slice(1), steps: traceSteps })
     }
+    projectedReference = true
   }
 
   // Generate prefixes AFTER all pattern generation so all domains are included
@@ -893,7 +893,7 @@ export async function compileSlotsWithTrace(
       getConfig().SPARQL_DEFAULT_LIMIT,
       hasReferenceJoin ? '?asset' : undefined
     ),
-    trace,
+    trace: traces.length > 0 ? traces : undefined,
   }
 }
 

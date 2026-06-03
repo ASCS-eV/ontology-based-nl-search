@@ -108,27 +108,34 @@ export interface TraceabilityStep {
 }
 
 /**
- * Compile-time plan describing the cross-reference JOIN the compiler
- * emitted. The service uses it to reconstruct a per-row traceability
- * array from the bound variables — turning a flat result set into an
- * ordered chain the UI can render as a breadcrumb (WP3).
+ * Compile-time plan describing one cross-reference JOIN the compiler emitted.
+ * The service uses it to reconstruct a per-row traceability chain from the
+ * bound variables — turning a flat result set into an ordered breadcrumb the
+ * UI can render (WP3). A multi-reference query yields one plan per reference.
  */
 export interface TraceabilityPlan {
   /** SPARQL variable name (no `?`) anchoring the chain — typically `"asset"`. */
   sourceVariable: string
+  /**
+   * The projected referenced-asset variable this chain leads to, without the
+   * leading `?` (e.g. `"refAsset"`, `"refAsset1"`). The service keys each
+   * row's breadcrumb by this so the UI can attach the chain to the matching
+   * referenced-asset pill.
+   */
+  targetVariable: string
   /** Steps in traversal order. The last step's `variable` is the joined child. */
   steps: TraceabilityStep[]
 }
 
 /**
  * Return type of {@link compileSlots}. `sparql` is the executable query;
- * `trace` is present only when the query contains a cross-reference JOIN
- * (single-domain path with `slots.references`). Callers that don't care
- * about traceability simply destructure `{ sparql }` and ignore the rest.
+ * `trace` carries one {@link TraceabilityPlan} per projected cross-reference
+ * (present only when the query contains a reference JOIN). Callers that don't
+ * care about traceability simply destructure `{ sparql }` and ignore the rest.
  */
 export interface CompileResult {
   sparql: string
-  trace?: TraceabilityPlan
+  trace?: TraceabilityPlan[]
 }
 
 /** Create empty slots targeting a specific domain */

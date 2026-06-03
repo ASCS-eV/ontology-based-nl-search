@@ -19,6 +19,7 @@ export type {
   RefineResponse,
   ResultRow,
   ResultTraceStep,
+  RowTraceability,
   SearchMeta,
   SearchResponse,
   StatsResponse,
