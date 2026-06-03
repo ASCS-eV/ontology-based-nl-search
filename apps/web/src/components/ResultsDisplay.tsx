@@ -14,19 +14,30 @@ interface ResultsDisplayProps {
   traceability?: ResultTraceStep[][] | null
 }
 
-/** Columns that represent cross-references (hidden from main display, shown in References section) */
-const REF_COLUMNS = new Set(['refAsset', 'refName'])
 /**
- * Variables the compiler binds for traceability-step intermediates. These
- * are infrastructure rows; the user sees the predicate breadcrumb in the
- * "References" section, not as plain columns next to user-meaningful
- * fields like `name` / `country`.
+ * Cross-reference columns the compiler projects. With multi-reference search
+ * the first reference is `refAsset`/`refName`, the rest are suffixed
+ * `refAsset1`/`refName1`, `refAsset2`/… — one pair per referenced domain.
+ * These are hidden from the main column display and shown in the References
+ * section instead.
  */
-const TRACE_VAR_PREFIX_RE = /^(?:ref_step_|_refSlot_)/
+const REF_ASSET_RE = /^refAsset(\d*)$/
+const REF_NAME_RE = /^refName\d*$/
+function isRefColumn(key: string): boolean {
+  return REF_ASSET_RE.test(key) || REF_NAME_RE.test(key)
+}
+/**
+ * Variables the compiler binds for traceability-step intermediates (primary
+ * `ref_step_*` / `_refSlot_*`, and the suffixed `ref1_step_*` / `_refSlot1_*`
+ * for additional references). These are infrastructure columns; the user sees
+ * the predicate breadcrumb in the "References" section, not as plain columns
+ * next to user-meaningful fields like `name` / `country`.
+ */
+const TRACE_VAR_PREFIX_RE = /^(?:ref\d*_step_|_refSlot\d*_)/
 
 /** Check whether results contain cross-reference data */
 function hasReferences(results: Record<string, string>[]): boolean {
-  return results.some((r) => r['refAsset'] || r['refName'])
+  return results.some((r) => Object.keys(r).some((k) => REF_ASSET_RE.test(k) && r[k]))
 }
 
 interface GroupedReference {
@@ -91,7 +102,7 @@ function groupByAsset(
     if (!groups.has(key)) {
       const properties: Record<string, string> = {}
       for (const [k, v] of Object.entries(row)) {
-        if (REF_COLUMNS.has(k) || k === 'asset' || k === 'name' || !v) continue
+        if (isRefColumn(k) || k === 'asset' || k === 'name' || !v) continue
         if (TRACE_VAR_PREFIX_RE.test(k)) continue
         properties[k] = v
       }
@@ -103,15 +114,20 @@ function groupByAsset(
       })
     }
     const group = groups.get(key)!
-    if (row['refAsset'] && row['refName']) {
-      const alreadyAdded = group.references.some((r) => r.asset === row['refAsset'])
-      if (!alreadyAdded) {
-        group.references.push({
-          asset: row['refAsset'],
-          name: row['refName'],
-          trace: trace && trace.length > 0 ? trace : undefined,
-        })
-      }
+    // Collect every projected reference (refAsset/refName, refAsset1/refName1, …).
+    for (const [k, v] of Object.entries(row)) {
+      const match = REF_ASSET_RE.exec(k)
+      if (!match || !v) continue
+      const suffix = match[1] // '' for the primary reference, '1','2',… for the rest
+      const name = row[`refName${suffix}`]
+      if (!name) continue
+      if (group.references.some((r) => r.asset === v)) continue
+      group.references.push({
+        asset: v,
+        name,
+        // Only the primary reference carries a per-row predicate breadcrumb today.
+        trace: suffix === '' && trace && trace.length > 0 ? trace : undefined,
+      })
     }
   }
 

@@ -112,6 +112,33 @@ describe('ResultsDisplay', () => {
     expect(screen.getByText('References (1)')).toBeInTheDocument()
   })
 
+  /**
+   * Multi-reference search (PR #47 made `references` a list): the compiler
+   * projects `refAsset`/`refName` for the first referenced domain and
+   * `refAsset1`/`refName1`, … for the rest. Every referenced asset must
+   * render — regression for the "only the first reference was displayed" gap.
+   */
+  it('renders every referenced asset across multiple reference domains', () => {
+    const results = [
+      {
+        asset: 'did:web:x:Scenario:1',
+        name: 'Munich Scenario',
+        refAsset: 'did:web:x:OSITrace:1',
+        refName: 'Munich Trace',
+        refAsset1: 'did:web:x:HdMap:1',
+        refName1: 'Munich HD Map',
+      },
+    ]
+    render(<ResultsDisplay results={results} />)
+    expect(screen.getByText('Munich Trace')).toBeInTheDocument()
+    expect(screen.getByText('Munich HD Map')).toBeInTheDocument()
+    // Both references counted on the one card.
+    expect(screen.getByText('References (2)')).toBeInTheDocument()
+    // The suffixed ref columns must not leak into the property grid.
+    expect(screen.queryByText('refAsset1')).not.toBeInTheDocument()
+    expect(screen.queryByText('refName1')).not.toBeInTheDocument()
+  })
+
   it('deduplicates references within the same asset group', () => {
     const results = [
       {
