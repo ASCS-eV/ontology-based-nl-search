@@ -106,6 +106,13 @@ const envSchema = z.object({
     .positive()
     .default(64 * 1024),
   /**
+   * Maximum length (characters) of a natural-language search `query`. Bounds
+   * the prompt forwarded to the LLM: the body-size limit caps the whole request,
+   * but within that an arbitrarily long `query` is an unbounded LLM-cost /
+   * latency amplification vector, so the query string is capped separately.
+   */
+  API_MAX_QUERY_CHARS: z.coerce.number().int().positive().default(2000),
+  /**
    * Comma-separated list of allowed CORS origins. The literal `*` means
    * "any origin" (development default). For production, set to the
    * scheme+host(:port) of every browser frontend that may call the API;

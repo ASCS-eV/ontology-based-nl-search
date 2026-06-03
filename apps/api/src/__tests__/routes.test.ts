@@ -457,3 +457,24 @@ describe('GET /stats', () => {
     expect(json.availableDomains).toContain('hdmap')
   })
 })
+
+describe('middleware', () => {
+  it('CORS: sets Access-Control-Allow-Origin (default "*") on a cross-origin request', async () => {
+    const res = await app.request('/health', { headers: { Origin: 'http://example.com' } })
+    // Default config is CORS_ALLOWED_ORIGINS="*", so the middleware is wired and
+    // permits any origin. (Prod misuse — "*" under NODE_ENV=production — is
+    // rejected at config load, covered in config.test.ts.)
+    expect(res.headers.get('access-control-allow-origin')).toBe('*')
+  })
+
+  it('body-limit: rejects a body larger than API_MAX_BODY_BYTES with 413', async () => {
+    // Default API_MAX_BODY_BYTES is 64 KiB; this body is ~70 KB.
+    const res = await app.request('/search/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'x'.repeat(70_000) }),
+    })
+    expect(res.status).toBe(413)
+    expect(await res.json()).toMatchObject({ code: 'BAD_REQUEST' })
+  })
+})

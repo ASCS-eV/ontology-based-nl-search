@@ -16,6 +16,7 @@ export type {
   MappedTerm,
   OntologyGap,
   QueryInterpretation,
+  RefineResponse,
   ResultRow,
   ResultTraceStep,
   SearchMeta,
