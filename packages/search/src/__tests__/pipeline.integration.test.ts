@@ -245,9 +245,13 @@ describe('SearchService — real pipeline integration', () => {
     expect(result.meta.matchCount).toBeGreaterThan(0)
     expect(result.execution.traceability).toBeDefined()
     expect(result.execution.traceability).toHaveLength(result.execution.results.length)
-    const firstTrace = result.execution.traceability![0]!
-    expect(firstTrace.length).toBeGreaterThan(0)
-    for (const step of firstTrace) {
+    // Each row's traceability is a map keyed by referenced-asset variable; the
+    // single reference here projects as `refAsset`.
+    const firstRow = result.execution.traceability![0]!
+    const primaryTrace = firstRow['refAsset']
+    expect(primaryTrace).toBeDefined()
+    expect(primaryTrace!.length).toBeGreaterThan(0)
+    for (const step of primaryTrace!) {
       expect(step.predicate).toMatch(/^https?:\/\/.+/) // full IRI
       expect(step.intermediate.length).toBeGreaterThan(0)
     }

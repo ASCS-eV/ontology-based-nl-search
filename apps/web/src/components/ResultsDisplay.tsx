@@ -1,17 +1,18 @@
 import { useState } from 'react'
 
-import type { ResultTraceStep } from '../api-types'
+import type { ResultTraceStep, RowTraceability } from '../api-types'
 import { downloadFile, resultsToCsv, resultsToJsonLd } from '../lib/export-utils'
 import { LineageExplorer } from './LineageExplorer'
 
 interface ResultsDisplayProps {
   results: Record<string, string>[]
   /**
-   * Per-row traceability breadcrumb, aligned by index with `results`.
-   * When present, each reference badge gets an expandable predicate-chain
-   * breadcrumb showing the graph path the JOIN walked (WP3, task #18).
+   * Per-row traceability, aligned by index with `results`. Each entry maps a
+   * referenced-asset variable (`refAsset`, `refAsset1`, …) to that reference's
+   * predicate-chain breadcrumb, so every reference badge — not just the first —
+   * gets the graph path the JOIN walked (WP3, task #18).
    */
-  traceability?: ResultTraceStep[][] | null
+  traceability?: RowTraceability[] | null
 }
 
 /**
@@ -91,13 +92,13 @@ function clusterReferencesByLabel(refs: GroupedReference[]): ReferenceLabelClust
 /** Group flat rows by primary asset, collecting references per group */
 function groupByAsset(
   results: Record<string, string>[],
-  traceability?: ResultTraceStep[][] | null
+  traceability?: RowTraceability[] | null
 ): GroupedAsset[] {
   const groups = new Map<string, GroupedAsset>()
 
   for (let i = 0; i < results.length; i++) {
     const row = results[i]!
-    const trace = traceability?.[i]
+    const rowTrace = traceability?.[i]
     const key = row['asset'] ?? ''
     if (!groups.has(key)) {
       const properties: Record<string, string> = {}
@@ -122,11 +123,13 @@ function groupByAsset(
       const name = row[`refName${suffix}`]
       if (!name) continue
       if (group.references.some((r) => r.asset === v)) continue
+      // Each reference's breadcrumb is keyed by its own column name (`refAsset`,
+      // `refAsset1`, …) in the row's trace map.
+      const steps = rowTrace?.[k]
       group.references.push({
         asset: v,
         name,
-        // Only the primary reference carries a per-row predicate breadcrumb today.
-        trace: suffix === '' && trace && trace.length > 0 ? trace : undefined,
+        trace: steps && steps.length > 0 ? steps : undefined,
       })
     }
   }

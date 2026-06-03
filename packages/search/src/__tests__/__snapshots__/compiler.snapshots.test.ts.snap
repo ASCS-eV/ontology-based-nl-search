@@ -357,7 +357,7 @@ PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
 PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
-SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset1 ?refName1 WHERE {
+SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset1 ?refName1 ?ref1_step_1 ?ref1_step_2 WHERE {
   { SELECT DISTINCT ?asset WHERE {
   ?asset a scenario:Scenario ;
     rdfs:label ?name .

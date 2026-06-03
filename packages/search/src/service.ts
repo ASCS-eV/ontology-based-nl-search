@@ -20,6 +20,7 @@ import type {
   LlmStructuredResponse,
   ResultRow,
   ResultTraceStep,
+  RowTraceability,
   SearchMeta as WireSearchMeta,
 } from './types.js'
 
@@ -66,12 +67,13 @@ export interface SearchDependencies {
 export interface ExecutionResult {
   results: ResultRow[]
   /**
-   * Per-row traceability breadcrumbs. Present iff the compiled query
-   * carried a `TraceabilityPlan`; aligned by index with `results`.
-   * Each inner array lists the steps the JOIN walked from `?asset` to
-   * the joined `?refAsset` — UI clients render this as a breadcrumb.
+   * Per-row traceability, aligned by index with `results`. Present iff the
+   * compiled query carried reference `TraceabilityPlan`s. Each entry maps a
+   * referenced-asset variable (`refAsset`, `refAsset1`, …) to the steps the
+   * JOIN walked from `?asset` to that reference — UI clients render each as a
+   * breadcrumb under the matching reference pill.
    */
-  traceability?: ResultTraceStep[][]
+  traceability?: RowTraceability[]
   sparql: string
   error?: string
 }
@@ -271,7 +273,7 @@ export class SearchService {
    */
   private async executeSparql(
     sparql: string,
-    trace: TraceabilityPlan | undefined,
+    trace: TraceabilityPlan[] | undefined,
     logger: RequestLogger,
     signal?: AbortSignal
   ): Promise<ExecutionResult> {
@@ -294,9 +296,10 @@ export class SearchService {
 
       return {
         results: this.flattenBindings(sparqlResults.results.bindings),
-        traceability: trace
-          ? this.assembleTraceability(sparqlResults.results.bindings, trace)
-          : undefined,
+        traceability:
+          trace && trace.length > 0
+            ? this.assembleTraceability(sparqlResults.results.bindings, trace)
+            : undefined,
         sparql: policy.query,
       }
     } catch (err) {
@@ -328,23 +331,29 @@ export class SearchService {
   }
 
   /**
-   * Walk the trace plan against each row's binding to build a
-   * per-row traceability breadcrumb. Steps whose variable isn't
-   * bound in the row are skipped — that's a normal outcome for
-   * `OPTIONAL`-flavoured patterns the compiler may emit later.
+   * Walk every reference's trace plan against each row's binding to build a
+   * per-row, per-reference breadcrumb map keyed by each plan's
+   * `targetVariable` (`refAsset`, `refAsset1`, …). Steps whose variable isn't
+   * bound in the row are skipped — a normal outcome for `OPTIONAL`-flavoured
+   * patterns. A plan that contributes no steps for a row adds no key, so the
+   * UI only renders breadcrumbs that actually resolved.
    */
   private assembleTraceability(
     bindings: SparqlBinding[],
-    trace: TraceabilityPlan
-  ): ResultTraceStep[][] {
+    traces: TraceabilityPlan[]
+  ): RowTraceability[] {
     return bindings.map((binding) => {
-      const steps: ResultTraceStep[] = []
-      for (const planStep of trace.steps) {
-        const term = binding[planStep.variable]
-        if (!term) continue
-        steps.push({ predicate: planStep.predicate, intermediate: term.value })
+      const row: RowTraceability = {}
+      for (const plan of traces) {
+        const steps: ResultTraceStep[] = []
+        for (const planStep of plan.steps) {
+          const term = binding[planStep.variable]
+          if (!term) continue
+          steps.push({ predicate: planStep.predicate, intermediate: term.value })
+        }
+        if (steps.length > 0) row[plan.targetVariable] = steps
       }
-      return steps
+      return row
     })
   }
 

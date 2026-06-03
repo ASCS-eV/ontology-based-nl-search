@@ -5,7 +5,7 @@ import type {
   MappedTerm,
   OntologyGap,
   QueryInterpretation,
-  ResultTraceStep,
+  RowTraceability,
   SearchMeta,
 } from '../api-types'
 import { parseSSEBuffer } from '../lib/sse-parser'
@@ -18,12 +18,12 @@ export interface SearchState {
   sparql: string | null
   results: Record<string, string>[] | null
   /**
-   * Per-row traceability breadcrumb. Aligned by index with `results`.
-   * Present when the query contained a cross-reference JOIN (the
-   * compiler emits a `TraceabilityPlan` which the service expands per
-   * row). UI components render this as a breadcrumb under the row.
+   * Per-row traceability, aligned by index with `results`. Present when the
+   * query contained a cross-reference JOIN; each entry maps a referenced-asset
+   * variable (`refAsset`, `refAsset1`, …) to that reference's breadcrumb. UI
+   * components render each under the matching reference pill.
    */
-  traceability: ResultTraceStep[][] | null
+  traceability: RowTraceability[] | null
   meta: SearchMeta | null
   phase: SearchPhase
   loading: boolean
@@ -132,7 +132,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
             case SSE_EVENT.RESULTS: {
               const resultData = data as {
                 results: Record<string, string>[]
-                traceability?: ResultTraceStep[][]
+                traceability?: RowTraceability[]
                 error?: string
               }
               setState((s) => ({
