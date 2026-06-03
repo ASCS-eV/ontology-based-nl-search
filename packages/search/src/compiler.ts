@@ -53,6 +53,7 @@ import {
   queryRange2DProperties,
 } from './schema-queries.js'
 import type { CompileResult, SearchSlots, TraceabilityPlan, TraceabilityStep } from './slots.js'
+import { normalizeReferences } from './slots.js'
 import { validateSparql } from './sparql-validator.js'
 
 /** Property info from ontology - supports properties existing in multiple domains */
@@ -778,86 +779,101 @@ export async function compileSlotsWithTrace(
   //      instance-graph chain.
   //   3. Generic any-predicate property path `(!<urn:none>)+` — last
   //      resort when neither SHACL nor instance data declare a link.
-  if (slots.references) {
-    const refDomain = registry.domains.get(slots.references.domain)
-    if (refDomain) {
-      prefixDomains.add(slots.references.domain)
-      hasReferenceJoin = true
-      const traceSteps: TraceabilityStep[] = []
-      const chain = pickReferenceChain(vocabIndex, primaryDomain, slots.references.domain)
-      if (chain) {
-        emitReferenceChainTriples(
-          chain,
+  // Each entry is AND-combined (the asset must reference all of them). The
+  // first resolvable entry is projected as `?refAsset`/`?refName` and drives the
+  // per-row breadcrumb (so the UI and trace are unchanged from the single-
+  // reference era); additional entries are filter-only JOINs — bound but not
+  // projected — and the distinct-asset wrap (assembleQuery) collapses their
+  // fan-out. Displaying every referenced asset is a follow-up.
+  const referenceSlots = normalizeReferences(slots.references)
+  let projectedReference = false
+  for (let i = 0; i < referenceSlots.length; i++) {
+    const ref = referenceSlots[i]!
+    const refDomain = registry.domains.get(ref.domain)
+    if (!refDomain) continue
+    prefixDomains.add(ref.domain)
+    hasReferenceJoin = true
+
+    // The first resolvable reference owns the projected `?refAsset`/`?refName`
+    // columns + breadcrumb; the rest get suffixed, unprojected vars.
+    const isPrimary = !projectedReference
+    const refVar = isPrimary ? '?refAsset' : `?refAsset${i}`
+    const refNameVar = isPrimary ? '?refName' : `?refName${i}`
+    const tag = isPrimary ? 'refSlot' : `refSlot${i}`
+    const traceSteps: TraceabilityStep[] = []
+
+    const chain = pickReferenceChain(vocabIndex, primaryDomain, ref.domain)
+    if (chain) {
+      emitReferenceChainTriples(
+        chain,
+        '?asset',
+        refVar,
+        refDomain.targetClass,
+        registry,
+        tag,
+        patterns,
+        prefixDomains,
+        traceSteps
+      )
+    } else {
+      // Load the data-driven reference index lazily: only queries with a
+      // references slot AND no SHACL chain consult it (cached / pre-warmed).
+      const referenceIndex = await getReferenceIndex()
+      const dataPath = pickDataReferenceEdge(referenceIndex, primaryDomain, ref.domain)
+      if (dataPath) {
+        emitDataReferencePath(
+          dataPath,
           '?asset',
-          '?refAsset',
-          refDomain.targetClass,
-          registry,
-          'refSlot',
+          refVar,
           patterns,
+          registry,
           prefixDomains,
-          traceSteps
+          traceSteps,
+          isPrimary ? 'ref' : `ref${i}`
         )
+        patterns.push(`${refVar} a ${refDomain.targetClass} .`)
+        log.info('slots.references: emitting JOIN from data-driven reference index', {
+          parent: primaryDomain,
+          child: ref.domain,
+          hops: dataPath.predicatePath.length,
+          samples: dataPath.sampleCount,
+        })
       } else {
-        // Load the data-driven reference index lazily: only queries with
-        // a references slot AND no SHACL chain consult it, so the cost
-        // of `getReferenceIndex` (cached after first call; pre-warmed by
-        // `warmupCompiler`) stays off the hot path of plain queries.
-        const referenceIndex = await getReferenceIndex()
-        const dataPath = pickDataReferenceEdge(
-          referenceIndex,
-          primaryDomain,
-          slots.references.domain
-        )
-        if (dataPath) {
-          emitDataReferencePath(
-            dataPath,
-            '?asset',
-            '?refAsset',
-            patterns,
-            registry,
-            prefixDomains,
-            traceSteps
-          )
-          patterns.push(`?refAsset a ${refDomain.targetClass} .`)
-          log.info('slots.references: emitting JOIN from data-driven reference index', {
+        // Neither SHACL nor the data index found a connection. `(!<urn:none>)+`
+        // is "any predicate, one or more hops" — a last-resort wildcard.
+        patterns.push(`?asset (!<urn:none>)+ ${refVar} .`)
+        patterns.push(`${refVar} a ${refDomain.targetClass} .`)
+        log.info(
+          'slots.references: no SHACL chain or data path; emitting wildcard property-path JOIN',
+          {
             parent: primaryDomain,
-            child: slots.references.domain,
-            hops: dataPath.predicatePath.length,
-            samples: dataPath.sampleCount,
-          })
-        } else {
-          // Neither SHACL nor the data index found a connection.
-          // `<urn:none>` is a sentinel IRI guaranteed not to appear in
-          // the data; `!<urn:none>` is therefore the universal predicate
-          // set, and `(!<urn:none>)+` is "any predicate, one or more
-          // hops". Last resort — may be slow on large graphs.
-          patterns.push(`?asset (!<urn:none>)+ ?refAsset .`)
-          patterns.push(`?refAsset a ${refDomain.targetClass} .`)
-          log.info(
-            'slots.references: no SHACL chain or data path; emitting wildcard property-path JOIN',
-            { parent: primaryDomain, child: slots.references.domain }
-          )
-        }
-      }
-      patterns.push(`?refAsset rdfs:label ?refName .`)
-      selectVars.add('?refAsset')
-      selectVars.add('?refName')
-
-      if (slots.references.label) {
-        filters.push(
-          `FILTER(CONTAINS(LCASE(?refName), "${escapeSparqlLiteral(slots.references.label.toLowerCase())}"))`
+            child: ref.domain,
+          }
         )
       }
+    }
 
-      // Promote each intermediate step variable into the SELECT so the
-      // service can read it from the binding and assemble a per-row
-      // traceability breadcrumb. The wildcard branch records no steps,
-      // so the plan stays undefined there — no intermediate to display
-      // because the SPARQL engine collapses the property path internally.
+    // A label binding is needed when projected (breadcrumb) or filtered.
+    if (isPrimary || ref.label) {
+      patterns.push(`${refVar} rdfs:label ${refNameVar} .`)
+    }
+    if (ref.label) {
+      filters.push(
+        `FILTER(CONTAINS(LCASE(${refNameVar}), "${escapeSparqlLiteral(ref.label.toLowerCase())}"))`
+      )
+    }
+
+    if (isPrimary) {
+      selectVars.add(refVar)
+      selectVars.add(refNameVar)
+      // Promote each intermediate step variable so the service can read the
+      // bindings and assemble the per-row breadcrumb. The wildcard branch
+      // records no steps, so the plan stays undefined there.
       if (traceSteps.length > 0) {
         for (const step of traceSteps) selectVars.add(`?${step.variable}`)
         trace = { sourceVariable: 'asset', steps: traceSteps }
       }
+      projectedReference = true
     }
   }
 
@@ -1155,12 +1171,18 @@ function emitDataReferencePath(
   patterns: string[],
   registry: DomainRegistry,
   prefixDomains: Set<string>,
-  traceSteps?: TraceabilityStep[]
+  traceSteps?: TraceabilityStep[],
+  // Intermediate-variable prefix. Each reference in a multi-reference query
+  // MUST use a distinct prefix, otherwise the second reference's chain reuses
+  // the first's step variables and forces one manifest artifact to be two
+  // different asset types (an unsatisfiable JOIN). Defaults to `ref` so the
+  // single-reference output is unchanged.
+  stepPrefix: string = 'ref'
 ): void {
   let cursor = sourceVar
   for (let i = 0; i < edge.predicatePath.length; i++) {
     const isLast = i === edge.predicatePath.length - 1
-    const next = isLast ? refVar : `?ref_step_${i + 1}`
+    const next = isLast ? refVar : `?${stepPrefix}_step_${i + 1}`
     const predicate = edge.predicatePath[i]!
     // Mirror `emitReferenceChainTriples`: prefer the registered prefix
     // form when the predicate's namespace resolves, fall back to a full

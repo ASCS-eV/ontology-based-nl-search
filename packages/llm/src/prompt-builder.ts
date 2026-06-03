@@ -133,10 +133,15 @@ Use this when the user asks for assets that **reference or are connected to** an
 | \`domain\` | Domain of the referenced asset (use domain names from SHACL shapes) |
 | \`label\`  | (Optional) text filter on the referenced asset's label              |
 
+\`references\` is an ARRAY — one entry per referenced domain. When the user names
+several linked asset types, include them all; they are AND-combined (the asset
+must reference every one). A single object is also accepted for one reference.
+
 **When to use:**
 - When the user asks for one type of asset that links to or includes another type
-- E.g., "assets where you also have the associated X" → \`references: { domain: "x" }\`
-- E.g., "assets that reference a specific named resource" → \`references: { domain: "x", label: "name" }\`
+- E.g., "assets where you also have the associated X" → \`references: [{ domain: "x" }]\`
+- E.g., "assets that reference a specific named resource" → \`references: [{ domain: "x", label: "name" }]\`
+- E.g., "scenarios derived from traces with maps" → \`references: [{ domain: "trace-domain" }, { domain: "map-domain" }]\`
 
 **Do NOT use** for simple domain selection — only when the user explicitly wants assets that LINK to another asset type.
 
@@ -196,8 +201,9 @@ Procedure when you spot more than one asset-class concept in the query:
 
 Concretely: if the query mentions concept A and concept B, both are
 asset classes, and the SHACL declares a chain from A's shape that can
-reach a B-typed value, the slots are \`domains: [A], references: {
-domain: B }\`. **Do NOT** map B to a \`sh:in\` value of some other
+reach a B-typed value, the slots are \`domains: [A], references: [{
+domain: B }]\` (and add \`{ domain: C }\` to the array for each further
+referenced asset class the user names). **Do NOT** map B to a \`sh:in\` value of some other
 property on A — even if a value with B's local name happens to exist
 in that enum. The structural reading wins over the lexical one.
 

@@ -51,6 +51,7 @@ vi.mock('@ontology-search/search', () => ({
   getInitializedStore: vi.fn(),
   compileCountQuery: vi.fn(),
   getAssetDomains: vi.fn().mockResolvedValue(new Set(['hdmap', 'scenario'])),
+  normalizeReferences: (v: unknown) => (!v ? [] : Array.isArray(v) ? v : [v]),
 }))
 
 vi.mock('@ontology-search/ontology/domain-registry', () => ({

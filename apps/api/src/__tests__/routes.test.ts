@@ -20,6 +20,7 @@ vi.mock('@ontology-search/search', () => ({
   getInitializedStore: vi.fn(),
   compileCountQuery: vi.fn(),
   getAssetDomains: vi.fn().mockResolvedValue(new Set(['hdmap', 'scenario'])),
+  normalizeReferences: (v: unknown) => (!v ? [] : Array.isArray(v) ? v : [v]),
   exploreLineage: vi.fn(),
   DEFAULT_LINEAGE_DEPTH: 3,
   MAX_LINEAGE_DEPTH: 6,
@@ -254,7 +255,38 @@ describe('POST /search/refine', () => {
 
     expect(res.status).toBe(200)
     const lastCall = vi.mocked(searchRefine).mock.lastCall?.[0]
-    expect(lastCall?.slots.references).toEqual({ domain: 'hdmap', label: 'Munich' })
+    // The legacy single-object form is normalized to the array the compiler
+    // expects (multi-reference support).
+    expect(lastCall?.slots.references).toEqual([{ domain: 'hdmap', label: 'Munich' }])
+  })
+
+  it('forwards an ARRAY of `references` (multi-reference) through to the service', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(searchRefine).mockResolvedValue({
+      sparql: 'SELECT * WHERE { ?s ?p ?o }',
+      execution: { results: [], error: undefined },
+      meta: { matchCount: 0, executionTimeMs: 10 },
+    })
+
+    const res = await app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slots: {
+          domains: ['scenario'],
+          filters: {},
+          ranges: {},
+          references: [{ domain: 'ositrace' }, { domain: 'hdmap', label: 'Munich' }],
+        },
+      }),
+    })
+
+    expect(res.status).toBe(200)
+    const lastCall = vi.mocked(searchRefine).mock.lastCall?.[0]
+    expect(lastCall?.slots.references).toEqual([
+      { domain: 'ositrace' },
+      { domain: 'hdmap', label: 'Munich' },
+    ])
   })
 
   it('returns 422 for invalid slot shape', async () => {

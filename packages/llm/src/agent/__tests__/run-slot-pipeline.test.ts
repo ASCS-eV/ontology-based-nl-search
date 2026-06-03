@@ -114,7 +114,7 @@ describe('runSlotPipeline', () => {
     expect(response.gaps.some((g) => g.kind === 'limitation')).toBe(false)
   }, 120_000)
 
-  it('keeps one reference and reports the rest as limitation gaps when several are named', async () => {
+  it('applies ALL named references (AND-combined), no longer dropping the extras', async () => {
     const sw = new Stopwatch()
     const response = await runSlotPipeline({
       submission: {
@@ -142,12 +142,12 @@ describe('runSlotPipeline', () => {
       targetDomain: 'scenario',
       sw,
     })
-    // The chosen reference (ositrace) compiled; the extra one (hdmap) is a
-    // limitation gap, not silently lost and not mislabeled as unmapped.
+    // Multi-reference is now supported: BOTH the slot reference (ositrace) and
+    // the additionally-named one (hdmap) compile into JOINs, AND-combined.
     expect(response.sparql).toContain('ositrace:OSITrace')
-    const dropped = response.gaps.filter((g) => g.kind === 'limitation')
-    expect(dropped.length).toBeGreaterThan(0)
-    expect(dropped.some((g) => g.reason.includes('hdmap'))).toBe(true)
+    expect(response.sparql).toContain('hdmap:HdMap')
+    // Nothing is dropped → no limitation gap.
+    expect(response.gaps.some((g) => g.kind === 'limitation')).toBe(false)
   }, 120_000)
 
   it('classifies a gap whose term was successfully mapped as a recognized concept', async () => {
@@ -296,15 +296,13 @@ describe('runSlotPipeline', () => {
   }, 120_000)
 
   /**
-   * Honest dropped-reference report. `slots.references` is a single
-   * object, but the LLM's mappedTerms can carry several
-   * `references.domain` entries (one per asset class the user named).
-   * Without an explicit gap, the UI shows multiple chips while the
-   * SPARQL silently uses only one — leaving the user wondering why
-   * their second reference filtered nothing. Pipeline must emit a
-   * gap naming the dropped target so the interpretation stays honest.
+   * Multi-reference projects only the FIRST referenced asset (`?refAsset` +
+   * breadcrumb); additional references are filter-only JOINs (bound but not
+   * projected), so the asset must reference all of them while the result shape
+   * and breadcrumb stay single-reference. Displaying every referenced asset is
+   * a follow-up.
    */
-  it('emits a gap for each LLM-emitted references.domain that the single-slot schema dropped', async () => {
+  it('projects the first reference and applies the rest as filter-only JOINs', async () => {
     const sw = new Stopwatch()
     const response = await runSlotPipeline({
       submission: {
@@ -312,41 +310,24 @@ describe('runSlotPipeline', () => {
           domains: ['scenario'],
           filters: {},
           ranges: {},
-          // The LLM committed `ositrace` to the structured slot —
-          // but its interpretation also named `hdmap` as a second
-          // references target.
-          references: { domain: 'ositrace' },
+          references: [{ domain: 'ositrace' }, { domain: 'hdmap' }],
         },
-        interpretation: {
-          summary: 'mock submission',
-          mappedTerms: [
-            {
-              input: 'derived from traces',
-              mapped: 'ositrace',
-              confidence: 'high',
-              property: 'references.domain',
-            },
-            {
-              input: 'with maps',
-              mapped: 'hdmap',
-              confidence: 'low',
-              property: 'references.domain',
-            },
-          ],
-        },
+        interpretation: { summary: 'mock submission', mappedTerms: [] },
         gaps: [],
       },
       vocabulary,
       targetDomain: 'scenario',
       sw,
     })
-    // The chosen ositrace reference is gone-not-flagged (it survived).
-    expect(response.gaps.some((g) => g.term.includes('derived from traces'))).toBe(false)
-    // The dropped hdmap reference is surfaced.
-    const droppedGap = response.gaps.find((g) => g.term.includes('with maps'))
-    expect(droppedGap).toBeDefined()
-    expect(droppedGap?.reason).toMatch(/dropped/i)
-    expect(droppedGap?.reason).toContain('hdmap')
+    // Both references are AND-combined JOINs (both target classes present).
+    expect(response.sparql).toContain('ositrace:OSITrace')
+    expect(response.sparql).toContain('hdmap:HdMap')
+    // Exactly one projected referenced asset (?refAsset); the rest are suffixed
+    // filter-only vars that never reach the SELECT.
+    expect(response.sparql).toMatch(/SELECT[^\n]*\?refAsset\b/)
+    expect(response.sparql).not.toMatch(/SELECT[^\n]*\?refAsset1\b/)
+    // No dropping → no limitation gap.
+    expect(response.gaps.some((g) => g.kind === 'limitation')).toBe(false)
   }, 120_000)
 
   it('records "post-llm-validation" and "sparql-compile" stages on the stopwatch', async () => {

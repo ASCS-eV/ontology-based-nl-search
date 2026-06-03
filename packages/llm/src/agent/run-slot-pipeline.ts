@@ -30,7 +30,8 @@ import {
   getInitializedStore,
 } from '@ontology-search/search'
 import { compileSlotsWithTrace, resolveKnownDomains } from '@ontology-search/search/compiler'
-import type { SearchSlots } from '@ontology-search/search/slots'
+import type { ReferenceFilter, SearchSlots } from '@ontology-search/search/slots'
+import { normalizeReferences } from '@ontology-search/search/slots'
 
 import {
   correctDomains,
@@ -57,7 +58,9 @@ export interface SlotPipelineSubmission {
     domains?: string[]
     filters?: Record<string, string | string[]>
     ranges?: Record<string, { min?: number; max?: number }>
-    references?: { domain: string; label?: string }
+    // Accept the array form and the legacy single-object form; normalized to an
+    // array before compilation.
+    references?: { domain: string; label?: string } | { domain: string; label?: string }[]
   }
   interpretation: QueryInterpretation
   gaps: OntologyGap[]
@@ -122,74 +125,44 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   // honest about what was actually compiled.
   const knownDomains = await resolveKnownDomains(correctedDomains)
 
-  // 4c. `references.domain` is a cross-reference JOIN target (parent →
-  // child via the discovered SHACL reference chain), not a peer of the
-  // primary domain. When the LLM emits both `domains: [parent, child]`
-  // and `references: { domain: child }`, the compiler's peer-UNION path
-  // would silently ignore the references slot and emit two independent
-  // arms instead of a join. Canonicalize the reference domain and remove
-  // it from the peer set so the single-domain JOIN path is taken.
-  // Drop the references slot entirely when the named child isn't an
-  // asset domain — the compiler can't build a chain to a phantom.
-  let normalizedReferences = submission.slots.references
-  let primaryDomains = knownDomains
-  if (normalizedReferences?.domain) {
-    const [canonicalRef] = await resolveKnownDomains([normalizedReferences.domain])
-    if (canonicalRef) {
-      normalizedReferences = { ...normalizedReferences, domain: canonicalRef }
-      primaryDomains = knownDomains.filter((d) => d !== canonicalRef)
-    } else {
-      normalizedReferences = undefined
-    }
+  // 4c. references.* are cross-reference JOIN targets (parent → child via the
+  // discovered chain), not peers of the primary domain. Normalize to an array,
+  // promote any references the LLM named in its narrative but omitted from the
+  // structured slot (a real miss observed in testing — now ALL named ones are
+  // promoted, since multiple references are supported), then canonicalize each
+  // to a known asset domain, drop unknowns, dedupe, and remove them from the
+  // peer set so the single-domain JOIN path (not peer-UNION) is taken. The
+  // compiler AND-combines the resulting references.
+  const requestedRefs = normalizeReferences(
+    submission.slots.references as ReferenceFilter | ReferenceFilter[] | undefined
+  )
+  const slotRefDomains = new Set(requestedRefs.map((r) => r.domain))
+  for (const named of new Set(
+    (submission.interpretation.mappedTerms ?? [])
+      .filter((t) => t.property?.startsWith('references') && t.mapped?.trim())
+      .map((t) => t.mapped!.trim())
+  )) {
+    if (!slotRefDomains.has(named)) requestedRefs.push({ domain: named })
   }
 
-  // Promote a single under-filled reference. The LLM sometimes describes a
-  // cross-reference in its narrative (a `references.*` mappedTerm) but leaves
-  // the structured `references` slot empty — the legitimate single JOIN would
-  // then be reported as "dropped" and never compiled (a real miss observed in
-  // testing). When EXACTLY ONE such mapping names a known asset domain, fill
-  // the slot so the JOIN compiles. Multiple distinct reference targets are left
-  // to the dropped-reference report below — they genuinely need multi-reference
-  // support, which is a separate workstream.
-  if (!normalizedReferences?.domain) {
-    const namedReferences = [
-      ...new Set(
-        (submission.interpretation.mappedTerms ?? [])
-          .filter((t) => t.property?.startsWith('references') && t.mapped?.trim())
-          .map((t) => t.mapped!.trim())
-      ),
-    ]
-    if (namedReferences.length === 1) {
-      const [canonicalRef] = await resolveKnownDomains([namedReferences[0]!])
-      if (canonicalRef) {
-        normalizedReferences = { domain: canonicalRef }
-        primaryDomains = primaryDomains.filter((d) => d !== canonicalRef)
-      }
+  const normalizedReferences: ReferenceFilter[] = []
+  const referencedDomains = new Set<string>()
+  for (const ref of requestedRefs) {
+    const [canonical] = await resolveKnownDomains([ref.domain])
+    if (canonical && !referencedDomains.has(canonical)) {
+      referencedDomains.add(canonical)
+      normalizedReferences.push({ ...ref, domain: canonical })
     }
   }
+  const primaryDomains = knownDomains.filter((d) => !referencedDomains.has(d))
   endValidation()
 
   const slots: SearchSlots = {
     domains: primaryDomains,
     filters: shaclResult.filters,
     ranges: rangeResult.ranges,
-    references: normalizedReferences,
+    references: normalizedReferences.length > 0 ? normalizedReferences : undefined,
   }
-
-  // 4d. Honest dropped-reference report. The LLM's mappedTerms array
-  // can carry MORE than one `references.domain` entry (one per asset-
-  // class the user named), but `slots.references` is a single object —
-  // only one survives into the compiled SPARQL. Without an explicit
-  // gap, the UI shows multiple `references.domain:` chips but the
-  // SPARQL silently uses only one, leaving the user wondering why
-  // their second reference didn't filter anything. Emit a gap for
-  // each dropped entry so the interpretation panel is truthful about
-  // what was compiled vs ignored. N-hop reference chains are tracked
-  // as a separate workstream; when they land, this gap goes away.
-  const droppedReferenceGaps = collectDroppedReferenceGaps(
-    submission.interpretation.mappedTerms ?? [],
-    normalizedReferences?.domain
-  )
 
   // 5. Deterministic SPARQL compilation. Capture the traceability plan
   // so per-row breadcrumbs surface downstream in `ExecutionResult` —
@@ -208,55 +181,11 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
 
   const rawResponse: LlmStructuredResponse = {
     interpretation: enrichedInterpretation,
-    gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps, ...droppedReferenceGaps],
+    gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
     sparql,
     trace,
   }
 
   // 6. Final post-compile sanity / confidence-floor pass.
   return validateSlots(rawResponse, vocabulary)
-}
-
-/**
- * Inspect the LLM's `mappedTerms` for cross-reference mappings that
- * lost the slot race. `slots.references` is a single object — when
- * the LLM names more than one asset class as a reference target, only
- * the chosen one survives compilation. The others would otherwise
- * disappear silently between the interpretation panel and the SPARQL,
- * leaving the user with a "but I asked for X too" mystery.
- *
- * Returns one gap per dropped entry, deduplicating by the mapped
- * domain name so noise stays low.
- */
-function collectDroppedReferenceGaps(
-  mappedTerms: ReadonlyArray<{ input?: string; mapped?: string; property?: string }>,
-  chosenDomain: string | undefined
-): OntologyGap[] {
-  const droppedSeen = new Set<string>()
-  const out: OntologyGap[] = []
-  for (const term of mappedTerms) {
-    // Match the property naming the LLM tool schema uses for the
-    // references slot — anything starting with `references` (e.g.
-    // `references.domain`) is a candidate. We tolerate variants
-    // because the slot schema and the prompt examples both use it
-    // and the LLM occasionally truncates.
-    if (!term.property || !term.property.startsWith('references')) continue
-    const mappedDomain = term.mapped?.trim()
-    if (!mappedDomain) continue
-    if (chosenDomain && mappedDomain === chosenDomain) continue
-    if (droppedSeen.has(mappedDomain)) continue
-    droppedSeen.add(mappedDomain)
-    out.push({
-      term: term.input || mappedDomain,
-      reason: `Cross-reference to "${mappedDomain}" was dropped — only a single \`references\` slot is supported per query. Re-run the search asking for that link instead, or wait for multi-hop reference chains to ship.`,
-      // A current-engine limitation, not an unknown term — drives the UI to
-      // group this under "query limitations", not "not in ontology".
-      kind: 'limitation',
-      // Explicit empty array signals the gap-enricher to leave this
-      // alone — schema-limit gaps don't benefit from value-similarity
-      // "related concepts", which would just be noise here.
-      suggestions: [],
-    })
-  }
-  return out
 }
