@@ -1,3 +1,4 @@
+import type { TraceabilityResponse } from '@ontology-search/api-types'
 import { badRequest, internalError } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { DEFAULT_LINEAGE_DEPTH, exploreLineage } from '@ontology-search/search'
@@ -51,7 +52,7 @@ traceabilityRoutes.get('/', async (c) => {
       rootDomain: node.domain,
       directRefs: node.references.length,
     })
-    return c.json({ node }, 200, { [REQUEST_ID_HEADER]: requestId })
+    return c.json({ node } satisfies TraceabilityResponse, 200, { [REQUEST_ID_HEADER]: requestId })
   } catch (error) {
     logger.error('Traceability API error', error)
     const err = internalError('Failed to build lineage')

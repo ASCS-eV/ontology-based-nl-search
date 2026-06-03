@@ -10,12 +10,22 @@
  * 1. Full NL search: init → LLM interpret → compile → policy → execute → count
  * 2. Refine search: init → compile pre-filled slots → policy → execute
  */
+import type { TimingEntry } from '@ontology-search/core/logging'
 import { generateRequestId, RequestLogger } from '@ontology-search/core/logging'
 import type { PolicyResult } from '@ontology-search/sparql/policy'
 import type { SparqlBinding, SparqlStore } from '@ontology-search/sparql/types'
 
 import type { CompileResult, SearchSlots, TraceabilityPlan } from './slots.js'
-import type { LlmStructuredResponse } from './types.js'
+import type {
+  LlmStructuredResponse,
+  ResultRow,
+  ResultTraceStep,
+  SearchMeta as WireSearchMeta,
+} from './types.js'
+
+// Re-export the wire row/step types so any intra-package reference keeps
+// resolving from here, while the single declaration lives in api-types.
+export type { ResultRow, ResultTraceStep }
 
 // ─── Dependency Interfaces ───────────────────────────────────────────────────
 
@@ -52,22 +62,6 @@ export interface SearchDependencies {
 
 // ─── Result Types ────────────────────────────────────────────────────────────
 
-/** Flattened SPARQL binding row for API consumers */
-export type ResultRow = Record<string, string>
-
-/**
- * One row of a cross-reference traceability breadcrumb (WP3, task #18).
- * Aligned by index with `ExecutionResult.results`. Each `intermediate`
- * is the IRI / blank-node value bound to the corresponding step
- * variable; `predicate` is the edge the engine traversed to reach it.
- */
-export interface ResultTraceStep {
-  /** Full predicate IRI used to reach this step. */
-  predicate: string
-  /** Bound RDF term (IRI or blank-node identifier) at this step. */
-  intermediate: string
-}
-
 /** Result of executing a compiled SPARQL query */
 export interface ExecutionResult {
   results: ResultRow[]
@@ -98,13 +92,14 @@ export interface RefineResult {
   meta: SearchMeta
 }
 
-/** Metadata about a search execution */
-export interface SearchMeta {
-  requestId: string
-  totalDatasets: number
-  matchCount: number
-  executionTimeMs: number
-  timings: { stage: string; durationMs: number }[]
+/**
+ * Metadata about a search execution. Single-sourced from the wire
+ * {@link WireSearchMeta} (api-types) so the server and web client cannot drift;
+ * tightened only in that the server ALWAYS populates `timings` (optional on the
+ * wire). Assignable to the wire type, so route responses can `satisfies` it.
+ */
+export interface SearchMeta extends WireSearchMeta {
+  timings: TimingEntry[]
 }
 
 /** Progress event emitted during incremental search phases. */

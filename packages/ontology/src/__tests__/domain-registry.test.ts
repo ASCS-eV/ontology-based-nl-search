@@ -94,6 +94,69 @@ describe('DomainRegistry', () => {
     expect(prefixes).toContain('PREFIX georeference:')
   })
 
+  /**
+   * `domainForIri` is longest-prefix-match: an IRI under a more specific
+   * namespace must resolve to that domain, not a namespace that is a prefix of
+   * it. Untested before; the compiler relies on it to attribute IRIs to domains.
+   */
+  describe('domainForIri (longest-prefix match)', () => {
+    it('maps an IRI to the domain whose namespace it starts with', async () => {
+      const registry = await buildDomainRegistry()
+      const hdmap = registry.domains.get('hdmap')!
+      expect(registry.domainForIri(`${hdmap.namespace}HdMap`)).toBe('hdmap')
+    })
+
+    it('returns undefined for an IRI under no known namespace', async () => {
+      const registry = await buildDomainRegistry()
+      expect(registry.domainForIri('http://example.org/unknown/v1/Thing')).toBeUndefined()
+    })
+
+    it('prefers the longest matching namespace when one is a prefix of another', async () => {
+      const registry = await buildDomainRegistry()
+      // Find any two domains where one namespace is a string-prefix of another;
+      // the longer (more specific) one must win. If none exist in the workspace,
+      // the single-domain case above already covers the contract.
+      const nss = [...registry.domains.values()].map((d) => d.namespace)
+      const nested = nss.find((a) => nss.some((b) => b !== a && b.startsWith(a)))
+      if (nested) {
+        const longer = nss
+          .filter((b) => b !== nested && b.startsWith(nested))
+          .sort((a, b) => b.length - a.length)[0]!
+        const longerDomain = [...registry.domains.values()].find((d) => d.namespace === longer)!
+        expect(registry.domainForIri(`${longer}X`)).toBe(longerDomain.name)
+      }
+    })
+  })
+
+  /**
+   * `getAllNamespaces` is the source of the SPARQL policy prefix allowlist
+   * (warmup feeds it to registerPolicyNamespaces). An off-by-one here would
+   * silently widen or narrow what compiled queries may reference, so pin it.
+   */
+  describe('getAllNamespaces (SPARQL policy allowlist source)', () => {
+    it('includes every domain namespace and every declared-prefix namespace', async () => {
+      const registry = await buildDomainRegistry()
+      const all = registry.getAllNamespaces()
+
+      expect(all.size).toBeGreaterThan(0)
+      for (const desc of registry.domains.values()) {
+        expect(all.has(desc.namespace), `missing own namespace ${desc.namespace}`).toBe(true)
+        for (const ns of Object.values(desc.declaredPrefixes)) {
+          expect(all.has(ns), `missing declared-prefix namespace ${ns}`).toBe(true)
+        }
+      }
+    })
+
+    it('returns a Set (deduplicated across domains that share a prefix)', async () => {
+      const registry = await buildDomainRegistry()
+      const all = registry.getAllNamespaces()
+      expect(all).toBeInstanceOf(Set)
+      // Cross-domain shared prefixes (e.g. georeference imported by hdmap) must
+      // appear exactly once — a Set guarantees this structurally.
+      expect([...all].length).toBe(all.size)
+    })
+  })
+
   it('getDomain returns descriptor for valid domain', async () => {
     const domain = await getDomain('hdmap')
     expect(domain).toBeDefined()
