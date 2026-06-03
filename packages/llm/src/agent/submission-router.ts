@@ -28,10 +28,10 @@ export const submissionSchema = z.object({
       .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
       .optional(),
     references: z
-      .object({
-        domain: z.string(),
-        label: z.string().optional(),
-      })
+      .union([
+        z.object({ domain: z.string(), label: z.string().optional() }),
+        z.array(z.object({ domain: z.string(), label: z.string().optional() })),
+      ])
       .optional(),
   }),
   interpretation: z.object({

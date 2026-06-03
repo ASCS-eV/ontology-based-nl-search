@@ -3,6 +3,7 @@ import { getConfig } from '@ontology-search/core/config'
 import { badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
+import { normalizeReferences } from '@ontology-search/search'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { z } from 'zod'
@@ -25,7 +26,15 @@ const searchSlotsSchema = z.object({
   // can re-render `?refAsset`-carrying rows (and the per-row
   // traceability + lineage explorer that depend on them) without going
   // back through the LLM (WP3 tasks #18 / #19).
-  references: z.object({ domain: z.string(), label: z.string().optional() }).optional(),
+  // Accept an array (one entry per referenced domain, AND-combined) or the
+  // legacy single object, and normalize to the array form the compiler expects.
+  references: z
+    .union([
+      z.object({ domain: z.string(), label: z.string().optional() }),
+      z.array(z.object({ domain: z.string(), label: z.string().optional() })),
+    ])
+    .optional()
+    .transform(normalizeReferences),
 })
 
 export const searchRoutes = new Hono<AppEnv>()

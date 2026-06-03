@@ -347,4 +347,34 @@ describe('compileSlots — determinism + snapshot suite', () => {
     expect(sparql).toContain('country')
     expect(sparql).toMatchSnapshot()
   })
+
+  // ─── Cross-reference JOINs (deterministic + policy-clean) ──────────────
+
+  it('single reference → distinct-asset-limited JOIN', async () => {
+    const sparql = await assertDeterministic({
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'hdmap' }],
+    })
+    expect(sparql).toMatch(/SELECT DISTINCT \?asset WHERE \{/)
+    expect(sparql).toContain('hdmap:HdMap')
+    expect(sparql).toMatchSnapshot()
+  })
+
+  it('multiple references (ositrace + hdmap) → two AND-combined JOINs, first projected', async () => {
+    const sparql = await assertDeterministic({
+      domains: ['scenario'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'ositrace' }, { domain: 'hdmap' }],
+    })
+    // Both referenced asset classes appear (AND-combined JOINs).
+    expect(sparql).toContain('ositrace:OSITrace')
+    expect(sparql).toContain('hdmap:HdMap')
+    // Only the first reference is projected; the second is a filter-only var.
+    expect(sparql).toMatch(/SELECT[^\n]*\?refAsset\b/)
+    expect(sparql).not.toMatch(/SELECT[^\n]*\?refAsset1\b/)
+    expect(sparql).toMatchSnapshot()
+  })
 })

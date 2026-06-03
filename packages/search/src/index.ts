@@ -44,6 +44,7 @@ export type {
   TraceabilityPlan,
   TraceabilityStep,
 } from './slots.js'
+export { normalizeReferences } from './slots.js'
 export type { SparqlValidationIssue, SparqlValidationResult } from './sparql-validator.js'
 export { validateSparql } from './sparql-validator.js'
 export type { LineageOptions, TraceabilityEdge, TraceabilityNode } from './traceability.js'

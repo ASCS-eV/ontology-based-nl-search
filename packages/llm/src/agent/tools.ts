@@ -8,6 +8,13 @@ import { z } from 'zod'
  * The LLM fills property names matching the ontology local names
  * (from SHACL sh:path declarations) as documented in skill.md.
  */
+const referenceFilterSchema = z.object({
+  domain: z
+    .string()
+    .describe('Domain of the referenced asset (use domain names from the SHACL shapes)'),
+  label: z.string().optional().describe('Optional label filter on the referenced asset'),
+})
+
 const slotSubmissionSchema = z.object({
   slots: z
     .object({
@@ -23,15 +30,12 @@ const slotSubmissionSchema = z.object({
         .default({})
         .describe('Numeric ranges: localName → { min?, max? }'),
       references: z
-        .object({
-          domain: z
-            .string()
-            .describe('Domain of the referenced asset (use domain names from the SHACL shapes)'),
-          label: z.string().optional().describe('Optional label filter on the referenced asset'),
-        })
+        .union([referenceFilterSchema, z.array(referenceFilterSchema)])
         .optional()
         .describe(
-          'Cross-reference filter: find assets that reference another domain. Use when the user asks for assets connected to or referencing another asset type.'
+          'Cross-reference filter(s): find assets that reference one or more other domains. ' +
+            'Pass an ARRAY with one entry per referenced domain when the user names several ' +
+            '(AND-combined — the asset must reference all). A single object is also accepted.'
         ),
     })
     .describe('Search slots: fill only properties where the user expressed intent'),

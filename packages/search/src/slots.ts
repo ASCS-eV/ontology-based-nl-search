@@ -64,11 +64,30 @@ export interface SearchSlots {
   /** Numeric range filters: localName → { min?, max? } */
   ranges: Record<string, { min?: number; max?: number }>
   /**
-   * Cross-reference filter — find assets that reference another
-   * domain. Compiles to a SHACL-discovered chain (see
-   * `buildReferenceChains`) — no specific predicate path is assumed.
+   * Cross-reference filters — find assets that reference one or more other
+   * domains. Each entry compiles to a SHACL-discovered JOIN (see
+   * `buildReferenceChains`); multiple entries are AND-combined (the asset must
+   * reference all of them). The first entry's referenced asset is projected
+   * (and drives the per-row breadcrumb); additional entries are filter-only.
+   *
+   * Legacy callers may pass a single {@link ReferenceFilter} object instead of
+   * an array; `normalizeReferences` accepts both at the boundary.
    */
-  references?: ReferenceFilter
+  references?: ReferenceFilter[]
+}
+
+/**
+ * Normalize a references slot to an array. Accepts the current array form, the
+ * legacy single-object form, or `undefined`/empty — so an older LLM submission
+ * or refine client that still sends one object keeps working. Empty/blank
+ * domains are dropped.
+ */
+export function normalizeReferences(
+  input: ReferenceFilter | ReferenceFilter[] | undefined
+): ReferenceFilter[] {
+  if (!input) return []
+  const arr = Array.isArray(input) ? input : [input]
+  return arr.filter((r): r is ReferenceFilter => Boolean(r?.domain?.trim()))
 }
 
 /**
