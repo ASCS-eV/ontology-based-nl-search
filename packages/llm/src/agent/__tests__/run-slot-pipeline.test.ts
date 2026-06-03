@@ -83,6 +83,96 @@ describe('runSlotPipeline', () => {
     expect(response.gaps.some((g) => g.term === 'numberLanes')).toBe(true)
   }, 120_000)
 
+  it('promotes a single under-filled reference from mappedTerms into a compiled JOIN', async () => {
+    const sw = new Stopwatch()
+    // The LLM named a cross-reference in its narrative (mappedTerms) but left
+    // the structured `references` slot empty — the legitimate single JOIN must
+    // still compile (ositrace -> hdmap via the manifest chain), not be dropped.
+    const response = await runSlotPipeline({
+      submission: {
+        slots: { domains: ['ositrace'] },
+        interpretation: {
+          summary: 'test',
+          mappedTerms: [
+            {
+              input: 'with maps',
+              mapped: 'hdmap',
+              confidence: 'low',
+              property: 'references.domain',
+            },
+          ],
+        },
+        gaps: [],
+      },
+      vocabulary,
+      targetDomain: 'ositrace',
+      sw,
+    })
+    // The cross-domain JOIN to hdmap compiled (the reference target appears).
+    expect(response.sparql).toContain('hdmap:HdMap')
+    // And it was NOT reported as a dropped/limitation gap.
+    expect(response.gaps.some((g) => g.kind === 'limitation')).toBe(false)
+  }, 120_000)
+
+  it('keeps one reference and reports the rest as limitation gaps when several are named', async () => {
+    const sw = new Stopwatch()
+    const response = await runSlotPipeline({
+      submission: {
+        slots: { domains: ['scenario'], references: { domain: 'ositrace' } },
+        interpretation: {
+          summary: 'test',
+          mappedTerms: [
+            {
+              input: 'from traces',
+              mapped: 'ositrace',
+              confidence: 'low',
+              property: 'references.domain',
+            },
+            {
+              input: 'with maps',
+              mapped: 'hdmap',
+              confidence: 'low',
+              property: 'references.domain',
+            },
+          ],
+        },
+        gaps: [],
+      },
+      vocabulary,
+      targetDomain: 'scenario',
+      sw,
+    })
+    // The chosen reference (ositrace) compiled; the extra one (hdmap) is a
+    // limitation gap, not silently lost and not mislabeled as unmapped.
+    expect(response.sparql).toContain('ositrace:OSITrace')
+    const dropped = response.gaps.filter((g) => g.kind === 'limitation')
+    expect(dropped.length).toBeGreaterThan(0)
+    expect(dropped.some((g) => g.reason.includes('hdmap'))).toBe(true)
+  }, 120_000)
+
+  it('classifies a gap whose term was successfully mapped as a recognized concept', async () => {
+    const sw = new Stopwatch()
+    // The LLM emits a gap for "highways" but also mapped it to the roadTypes
+    // value "motorway". That is an interpretation note about a concept we DID
+    // understand — `recognized`, not `unmapped` (the old "Not in ontology").
+    const response = await runSlotPipeline({
+      submission: {
+        slots: { domains: ['hdmap'], filters: { roadTypes: 'motorway' } },
+        interpretation: {
+          summary: 'test',
+          mappedTerms: [
+            { input: 'highways', mapped: 'motorway', confidence: 'high', property: 'roadTypes' },
+          ],
+        },
+        gaps: [{ term: 'highways', reason: 'interpreted as the motorway road type' }],
+      },
+      vocabulary,
+      targetDomain: 'hdmap',
+      sw,
+    })
+    expect(response.gaps.find((g) => g.term === 'highways')?.kind).toBe('recognized')
+  }, 120_000)
+
   it('produces compilable SPARQL for the full filter + range + location combination', async () => {
     // Policy-gate coverage for combined slots lives in
     // packages/search/src/__tests__/compiler.snapshots.test.ts (task 04); here

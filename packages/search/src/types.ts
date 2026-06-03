@@ -13,6 +13,7 @@ import type { TimingEntry } from '@ontology-search/core/logging'
 import type { TraceabilityPlan } from './slots.js'
 
 export type {
+  GapKind,
   MappedTerm,
   OntologyGap,
   QueryInterpretation,

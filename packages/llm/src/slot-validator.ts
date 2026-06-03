@@ -25,7 +25,7 @@
 import type { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { OntologyVocabulary } from '@ontology-search/search'
 
-import type { LlmStructuredResponse, MappedTerm, OntologyGap } from './types.js'
+import type { GapKind, LlmStructuredResponse, MappedTerm, OntologyGap } from './types.js'
 
 /**
  * Minimum NORMALIZED similarity (0-1) for a fuzzy value match to be accepted.
@@ -344,6 +344,7 @@ export function validateSlots(
         validatedGaps.push({
           term: term.input,
           reason: `"${term.mapped}" is not a valid value for ${propertyName}`,
+          kind: 'unmapped',
           suggestions: suggestions.length > 0 ? suggestions : undefined,
         })
       }
@@ -383,11 +384,15 @@ export function validateSlots(
     }
   }
 
-  // Enrich existing gaps with vocabulary suggestions
+  // Inputs the LLM successfully mapped to an ontology property. Used to tell a
+  // "recognized concept" gap (an interpretation note about something we DID
+  // understand) apart from a genuinely unmapped term.
+  const mappedInputs = new Set(validatedTerms.filter((t) => t.property).map((t) => t.input))
+
+  // Enrich existing gaps with vocabulary suggestions and classify their kind.
   for (const gap of response.gaps) {
-    // Try to find suggestions across all enum properties
     const enrichedGap = enrichGapWithSuggestions(gap, allowedIndex)
-    validatedGaps.push(enrichedGap)
+    validatedGaps.push({ ...enrichedGap, kind: classifyGapKind(enrichedGap, mappedInputs) })
   }
 
   return {
@@ -465,6 +470,7 @@ export async function validateSlotsAgainstShacl(
       gaps.push({
         term: slotKey,
         reason: `"${slotKey}" is not a known property in the ontology — value(s) "${sample}" cannot be filtered.`,
+        kind: 'unmapped',
       })
       continue
     }
@@ -543,6 +549,7 @@ export function validateRangesAgainstShacl(
       gaps.push({
         term: slotKey,
         reason: `"${slotKey}" is not a known property in the ontology — range ${bound} cannot be filtered.`,
+        kind: 'unmapped',
       })
       continue
     }
@@ -587,6 +594,7 @@ async function checkAndAccumulate(
   gaps.push({
     term: value,
     reason: `"${value}" failed SHACL validation for ${slotKey} (${reasons})`,
+    kind: 'unmapped',
     suggestions: suggestions && suggestions.length > 0 ? suggestions : undefined,
   })
   return false
@@ -640,6 +648,7 @@ async function checkArrayAndAccumulate(
     gaps.push({
       term: value,
       reason: `"${value}" failed SHACL validation for ${slotKey} (${reasons})`,
+      kind: 'unmapped',
       suggestions: suggestions && suggestions.length > 0 ? suggestions : undefined,
     })
   }
@@ -797,6 +806,20 @@ export function correctDomains(
 
   // Merge required domains with existing
   return [...new Set([...domains, ...requiredDomains])]
+}
+
+/**
+ * Assign a {@link GapKind} to a gap that doesn't already carry one. Gaps our
+ * own code creates set `kind` explicitly (SHACL value/property rejections →
+ * `unmapped`; dropped cross-references → `limitation`); this classifies the
+ * LLM's own raw gaps. A gap whose term was ALSO successfully mapped to an
+ * ontology property is a recognized concept — an interpretation note about
+ * something we understood — not an unknown term.
+ */
+function classifyGapKind(gap: OntologyGap, mappedInputs: ReadonlySet<string>): GapKind {
+  if (gap.kind) return gap.kind
+  if (mappedInputs.has(gap.term)) return 'recognized'
+  return 'unmapped'
 }
 
 /** Enrich a gap with suggestions from the most relevant vocabulary properties */
