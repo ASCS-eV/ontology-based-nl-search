@@ -1,5 +1,6 @@
 {
   "name": "@ontology-search/eslint-config",
+  "description": "Shared ESLint flat config for the workspace.",
   "version": "0.0.0",
   "private": true,
   "type": "module",

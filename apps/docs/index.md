@@ -2,8 +2,8 @@
 layout: home
 hero:
   name: Ontology-Based NL Search
-  text: ENVITED-X Simulation Assets
-  tagline: Translating natural language into precise, ontology-grounded SPARQL queries — with full transparency about what the AI understood and what it couldn't.
+  text: Search any OWL + SHACL ontology
+  tagline: Translating natural language into precise, ontology-grounded SPARQL queries — with full transparency about what the AI understood and what it couldn't. Demonstrated on the ENVITED-X simulation-asset Data Space.
   actions:
     - theme: brand
       text: View Presentation →

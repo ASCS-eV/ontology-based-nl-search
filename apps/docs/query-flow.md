@@ -44,7 +44,7 @@ graph TD
 The **prompt builder** embeds the raw SHACL Turtle content directly into the system prompt, organized by domain:
 
 - Raw Turtle shapes per domain in fenced code blocks (the LLM reads `sh:in`, `sh:pattern`, `sh:datatype`, `sh:description` natively)
-- Location and license field instructions
+- Guidance for geography and license filters (kept in the generic `filters` map, not as dedicated slots)
 - Synonym resolution rules ("YOU are the synonym resolver")
 - Few-shot examples with expected `submit_slots` tool-call output
 
@@ -60,14 +60,14 @@ The LLM agent receives the user query + generated prompt and calls `submit_slots
     "domains": ["hdmap"],
     "filters": { "roadTypes": ["motorway"], "country": ["DE"] },
     "ranges": { "laneCount": { "min": 3 } },
-    "references": { "domain": "ositrace" }
+    "references": [{ "domain": "ositrace" }]
   },
   "interpretation": "German motorway HD maps with at least 3 lanes; cross-referenced to OSI traces",
   "gaps": [{ "term": "ADAS testing", "reason": "Not a defined ontology property" }]
 }
 ```
 
-The LLM resolves natural-language synonyms ("highway" → "motorway", "German" → "DE") grounded by the raw SHACL shapes. There are no top-level `location` or `license` slots: country, region, city and license all flow through the same `filters` map, keyed by SHACL leaf local name. The optional `references` slot binds one cross-domain JOIN to a SHACL-discovered asset class — when the LLM nominates more than one, the dropped references surface as honest `gaps` rather than disappearing.
+The LLM resolves natural-language synonyms ("highway" → "motorway", "German" → "DE") grounded by the raw SHACL shapes. There are no top-level `location` or `license` slots: country, region, city and license all flow through the same `filters` map, keyed by SHACL leaf local name. The optional `references` slot is a **list** of cross-domain JOINs, each bound to a SHACL-discovered asset class; they are AND-combined, so an asset must reference _all_ listed domains to match. A single object is still accepted and normalized to a one-element list for backward compatibility.
 
 The agent is configured with `toolChoice: { type: 'tool', toolName: 'submit_slots' }` — the LLM commits on step 1. Investigation tools remain available but are rarely needed because the full SHACL is already in the prompt.
 

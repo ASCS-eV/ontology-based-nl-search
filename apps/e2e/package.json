@@ -1,5 +1,6 @@
 {
   "name": "@ontology-search/e2e",
+  "description": "Playwright end-to-end tests for the search UI.",
   "version": "0.0.0",
   "private": true,
   "type": "module",

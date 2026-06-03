@@ -31,19 +31,19 @@ Contains the **ontology definitions** — OWL class hierarchies, SHACL shapes wi
 
 ### Default Graph (instance data)
 
-Contains **267 simulation assets** — the actual data that users search:
+Contains **358 simulation assets** — the actual data that users search (exact counts track the sample TTL files and may shift as they evolve):
 
 | Asset Type         | Count | Example Properties                                |
 | ------------------ | :---: | ------------------------------------------------- |
-| HD Maps            |  117  | roadTypes, laneCount, formatType, country, length |
+| HD Maps            |  165  | roadTypes, laneCount, formatType, country, length |
+| Environment Models |  70   | terrainType, vegetationType, weatherCondition     |
+| OSI Traces         |  53   | roadTypes, granularity, fileFormat, numberFrames  |
 | Scenarios          |  50   | scenarioCategory, weather, timeOfDay              |
-| OSI Traces         |  50   | roadTypes, granularity, fileFormat, numberFrames  |
-| Environment Models |  30   | terrainType, vegetationType, weatherCondition     |
 | Surface Models     |  20   | materialType, frictionCoefficient, textureFormat  |
 
 ## RDF Structure
 
-Each asset follows the ENVITED-X pattern:
+Each asset in the demo dataset follows the ENVITED-X pattern:
 
 ```turtle
 # An HD Map asset
@@ -79,13 +79,15 @@ Each asset follows the ENVITED-X pattern:
 
 ## Dataset Sources
 
-Ontology schema files are resolved from `ontology-sources.json`. Runtime sample instance data is loaded by `packages/search/src/data-loader.ts` from 5 TTL files in `packages/search/data/`:
+Ontology schema files are resolved from `ontology-sources.json`. Runtime sample instance data is loaded by `packages/search/src/data-loader.ts`, which **prefers JSON-LD** files and falls back to the equivalent Turtle, from `packages/search/data/`:
 
-- `sample-assets.ttl` — 117 HD maps
-- `sample-scenarios.ttl` — 50 scenarios
-- `sample-ositrace.ttl` — 50 OSI traces
-- `sample-environment-models.ttl` — 30 environment models
-- `sample-surface-models.ttl` — 20 surface models
+- `sample-hdmap.jsonld` — HD maps
+- `sample-scenarios.jsonld` — scenarios (each embedding the HD maps and environment models it references)
+- `sample-ositrace.jsonld` — OSI traces
+- `sample-environment-models.jsonld` — environment models
+- `sample-surface-models.jsonld` — surface models
+
+Because the scenario file embeds the assets it references, the loaded store reports more HD maps (165) and environment models (70) than the standalone HD-map and environment-model files contain. Parallel `.ttl` files are kept as a fallback for environments without JSON-LD support.
 
 ## SPARQL Store Abstraction
 

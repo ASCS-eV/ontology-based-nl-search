@@ -1,5 +1,6 @@
 {
   "name": "@ontology-search/typescript-config",
+  "description": "Shared TypeScript base configs for the workspace.",
   "version": "0.1.0",
   "private": true
 }

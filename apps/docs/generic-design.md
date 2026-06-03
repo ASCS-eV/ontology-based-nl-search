@@ -127,7 +127,7 @@ sequenceDiagram
     alt Simple query (the prompt's SHACL is enough — almost always the case)
         L->>SS: submit_slots(domains:[hdmap], filters:{roadTypes:[motorway], country:[FR]})
     else Cross-domain query
-        L->>SS: submit_slots(domains:[scenario], filters:{country:[FR]}, references:{domain:hdmap})
+        L->>SS: submit_slots(domains:[scenario], filters:{country:[FR]}, references:[{domain:hdmap}])
     end
 ```
 

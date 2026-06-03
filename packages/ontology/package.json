@@ -1,5 +1,6 @@
 {
   "name": "@ontology-search/ontology",
+  "description": "Ontology source resolution and graph-driven, ontology-agnostic schema discovery (domains, class hierarchy, SHACL validation).",
   "version": "0.1.0",
   "private": true,
   "type": "module",

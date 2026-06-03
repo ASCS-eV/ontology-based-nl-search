@@ -1,5 +1,6 @@
 {
   "name": "@ontology-search/search",
+  "description": "Search core — deterministic SPARQL compiler from structured slots, graph-driven schema metadata, and query orchestration.",
   "version": "0.1.0",
   "private": true,
   "type": "module",

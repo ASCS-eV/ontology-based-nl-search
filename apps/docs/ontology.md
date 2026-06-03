@@ -1,26 +1,34 @@
 # Ontology Model
 
-ENVITED-X: A modular ontology ecosystem for simulation asset metadata.
+The system is **ontology-agnostic**: it works with any OWL + SHACL ontology and
+discovers everything it needs at startup. The ENVITED-X simulation-asset
+ontologies are the **demonstration** ontology used throughout these docs as the
+running example — no production code path is specific to them (see
+[Generic Design](/generic-design)).
 
 ## What is an Ontology?
 
-In this context, an **ontology** is a formal description of the types, properties, and relationships of simulation assets. It defines:
+In this context, an **ontology** is a formal description of the types, properties, and relationships of the assets being searched. It defines:
 
-- **What types of assets exist** (HD maps, scenarios, environment models, ...)
-- **What properties they have** (road types, lane counts, formats, countries, ...)
-- **What values are allowed** (road types must be one of: motorway, urban, rural, ...)
-- **How they relate to each other** (a scenario references an HD map)
+- **What types of assets exist** (in the demo: HD maps, scenarios, environment models, …)
+- **What properties they have** (road types, lane counts, formats, countries, …)
+- **What values are allowed** (e.g. road types must be one of: motorway, urban, rural, …)
+- **How they relate to each other** (e.g. a scenario references an HD map)
 
-The ENVITED-X ontologies use two W3C standards:
+An ontology in this system uses two W3C standards:
 
-| Standard                               | Role                             | What it defines                                                         |
+| Standard                               | Role                             | What it defines (demo example)                                          |
 | -------------------------------------- | -------------------------------- | ----------------------------------------------------------------------- |
-| **OWL** (Web Ontology Language)        | Class and property definitions   | "An HDMap has properties roadTypes, laneCount, formatType"              |
+| **OWL** (Web Ontology Language)        | Class and property definitions   | "An HdMap has properties roadTypes, laneCount, formatType"              |
 | **SHACL** (Shapes Constraint Language) | Value constraints and validation | "roadTypes must be one of: motorway, urban, rural, interstate, highway" |
 
 ## Domain Structure
 
-Each simulation asset type has its own **domain ontology** following a consistent pattern:
+The system does not assume any particular asset structure — it walks whatever
+SHACL property paths the loaded ontology declares. The demo ENVITED-X ontologies
+happen to give each asset type its own **domain ontology** following a consistent
+pattern (shown below); a different ontology with a flatter or deeper shape would
+work without code changes:
 
 ```mermaid
 graph TD
@@ -39,7 +47,7 @@ graph TD
     style GR fill:#fef3c7,stroke:#f59e0b
 ```
 
-This pattern is uniform across all domains — the system discovers properties and values automatically from the SHACL shapes.
+In the demo ontology this pattern is uniform across all domains, but uniformity is not required — the system discovers properties and values automatically from the SHACL shapes regardless of how they are organized.
 
 ## Vocabulary Extraction
 
@@ -94,17 +102,17 @@ An earlier design used manually maintained SKOS vocabularies as an intermediate 
 
 ## Supported Domains
 
-The system auto-discovers **22 ontology domains** from the ontology source. Currently, **5 domains** have sample instance data:
+With the demo ENVITED-X ontologies loaded, the registry discovers **~20 domains** from the ontology source, of which **5 populated domains** carry sample instance data — **358 assets** in total:
 
 | Domain                | Instance Assets | Key Properties                                                          |
 | --------------------- | :-------------: | ----------------------------------------------------------------------- |
-| **HD Map**            |       117       | roadTypes, laneCount, speedLimit, formatType, country, trafficDirection |
+| **HD Map**            |       165       | roadTypes, laneCount, speedLimit, formatType, country, trafficDirection |
+| **Environment Model** |       70        | terrainType, vegetationType, weatherCondition                           |
+| **OSI Trace**         |       53        | roadTypes, granularity, fileFormat, numberFrames                        |
 | **Scenario**          |       50        | scenarioCategory, weather, timeOfDay, trafficDensity                    |
-| **OSI Trace**         |       50        | roadTypes, granularity, fileFormat, numberFrames                        |
-| **Environment Model** |       30        | terrainType, vegetationType, weatherCondition                           |
 | **Surface Model**     |       20        | materialType, frictionCoefficient, textureFormat                        |
 
-Additional ontology-only domains are still discovered at startup (for example automotive-simulator, simulation-model, openlabel, simulated-sensor, and vv-report).
+Exact counts track the sample TTL files and may shift as they evolve. The remaining discovered domains ship SHACL shapes without sample instances (for example automotive-simulator, simulation-model, openlabel, simulated-sensor, and vv-report).
 
 ## Cross-Domain Relationships
 

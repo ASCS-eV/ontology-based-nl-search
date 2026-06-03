@@ -69,8 +69,8 @@ ex:SimulationAsset rdfs:subClassOf rdfs:Resource .
 **Instance-of relationship:**
 
 ```turtle
-<asset123> rdf:type hdmap:HDMap .
-<asset123> rdf:type envited-x:SimulationAsset .
+<asset123> rdf:type ex:HDMap .
+<asset123> rdf:type ex:SimulationAsset .
 ```
 
 ## RDFS vs SHACL
@@ -95,16 +95,16 @@ ex:SimulationAsset rdfs:subClassOf rdfs:Resource .
 ### If we had RDFS domains:
 
 ```turtle
-hdmap:roadTypes rdfs:domain hdmap:HDMap .
-<asset> hdmap:roadTypes "motorway" .
-# Would infer: <asset> rdf:type hdmap:HDMap ✅
+ex:roadTypes rdfs:domain ex:HDMap .
+<asset> ex:roadTypes "motorway" .
+# Would infer: <asset> rdf:type ex:HDMap ✅
 ```
 
 ### But our ontology uses SHACL:
 
 ```turtle
-hdmap:HDMapShape sh:targetClass hdmap:HDMap ;
-  sh:property [ sh:path hdmap:roadTypes ; ... ] .
+ex:HDMapShape sh:targetClass ex:HDMap ;
+  sh:property [ sh:path ex:roadTypes ; ... ] .
 ```
 
 **SHACL shapes DON'T create RDFS domain assertions.** They're validation constraints, not inference rules!
@@ -117,7 +117,7 @@ hdmap:HDMapShape sh:targetClass hdmap:HDMap ;
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?subclass WHERE {
-  ?subclass rdfs:subClassOf+ envited-x:SimulationAsset .
+  ?subclass rdfs:subClassOf+ ex:SimulationAsset .
 }
 ```
 
@@ -127,11 +127,11 @@ SELECT ?subclass WHERE {
 
 ```sparql
 SELECT ?subclass WHERE {
-  ?subclass rdfs:subClassOf envited-x:SimulationAsset .
+  ?subclass rdfs:subClassOf ex:SimulationAsset .
   FILTER NOT EXISTS {
     ?subclass rdfs:subClassOf ?intermediate .
-    ?intermediate rdfs:subClassOf envited-x:SimulationAsset .
-    FILTER(?intermediate != envited-x:SimulationAsset)
+    ?intermediate rdfs:subClassOf ex:SimulationAsset .
+    FILTER(?intermediate != ex:SimulationAsset)
   }
 }
 ```
@@ -142,7 +142,7 @@ SELECT ?subclass WHERE {
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT DISTINCT ?domain WHERE {
-  ?assetClass rdfs:subClassOf envited-x:SimulationAsset .
+  ?assetClass rdfs:subClassOf ex:SimulationAsset .
   BIND(replace(str(?assetClass), ".*/([^/]+)/v[0-9]+/.*", "$1") AS ?domain)
 }
 ```
@@ -163,7 +163,7 @@ environment-model
 
 ### Use RDFS for:
 
-- ✅ Class hierarchies (`envited-x:SimulationAsset` → `hdmap:HDMap`)
+- ✅ Class hierarchies (`ex:SimulationAsset` → `ex:HDMap`)
 - ✅ Finding all asset types
 - ✅ Type assertions on assets
 
@@ -178,16 +178,16 @@ environment-model
 ```sparql
 # Find asset domains via RDFS
 SELECT DISTINCT ?domain WHERE {
-  ?assetClass rdfs:subClassOf envited-x:SimulationAsset .
-  BIND(localname(?assetClass) AS ?domain)
+  ?assetClass rdfs:subClassOf ex:SimulationAsset .
+  BIND(replace(str(?assetClass), ".*/([^/]+)/v[0-9]+/.*", "$1") AS ?domain)
 }
 
 # Find properties per domain via SHACL
 SELECT ?domain ?property WHERE {
   ?shape sh:targetClass ?assetClass .
   ?shape sh:property [ sh:path ?property ] .
-  ?assetClass rdfs:subClassOf envited-x:SimulationAsset .
-  BIND(localname(?assetClass) AS ?domain)
+  ?assetClass rdfs:subClassOf ex:SimulationAsset .
+  BIND(replace(str(?assetClass), ".*/([^/]+)/v[0-9]+/.*", "$1") AS ?domain)
 }
 ```
 
