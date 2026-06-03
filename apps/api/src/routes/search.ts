@@ -1,3 +1,5 @@
+import type { RefineResponse } from '@ontology-search/api-types'
+import { getConfig } from '@ontology-search/core/config'
 import { badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
@@ -69,6 +71,17 @@ searchRoutes.post('/stream', (c) => {
         await stream.writeSSE({
           event: SSE_EVENT.ERROR,
           data: JSON.stringify(badRequest('Missing or invalid "query" field').body),
+        })
+        return
+      }
+
+      const maxQueryChars = getConfig().API_MAX_QUERY_CHARS
+      if (query.length > maxQueryChars) {
+        await stream.writeSSE({
+          event: SSE_EVENT.ERROR,
+          data: JSON.stringify(
+            badRequest(`Query too long (${query.length} chars; max ${maxQueryChars}).`).body
+          ),
         })
         return
       }
@@ -205,7 +218,7 @@ searchRoutes.post('/refine', async (c) => {
         results: result.execution.results,
         traceability: result.execution.traceability,
         meta: result.meta,
-      },
+      } satisfies RefineResponse,
       200,
       { [REQUEST_ID_HEADER]: requestId }
     )

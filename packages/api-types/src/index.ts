@@ -136,6 +136,19 @@ export interface SearchResponse {
   meta: SearchMeta
 }
 
+/**
+ * Body of the synchronous `/search/refine` JSON response. A refine runs only
+ * the post-LLM half of the pipeline (compile pre-filled slots → execute), so —
+ * unlike {@link SearchResponse} — it carries no `interpretation` or `gaps`.
+ */
+export interface RefineResponse {
+  sparql: string
+  results: ResultRow[]
+  /** Per-row breadcrumb; present only when the query contained a JOIN. */
+  traceability?: ResultTraceStep[][]
+  meta: SearchMeta
+}
+
 /** Body of the `/stats` JSON response. */
 export interface StatsResponse {
   totalAssets: number

@@ -176,4 +176,21 @@ describe('POST /search/stream — SSE protocol', () => {
     expect(events[0]?.event).toBe(SSE_EVENT.ERROR)
     expect(events[0]?.data).toMatchObject({ code: 'BAD_REQUEST' })
   })
+
+  /**
+   * The query string is capped (API_MAX_QUERY_CHARS, default 2000) independently
+   * of the body-size limit — an over-long query is rejected BEFORE it reaches the
+   * LLM, so searchNl is never called.
+   */
+  it('rejects an over-long query before invoking the LLM', async () => {
+    const { searchNl } = await import('../search-factory.js')
+    const res = await postStream({ query: 'x'.repeat(2001) })
+    const events = await collectSSEEvents(res.body)
+
+    expect(events).toHaveLength(1)
+    expect(events[0]?.event).toBe(SSE_EVENT.ERROR)
+    expect(events[0]?.data).toMatchObject({ code: 'BAD_REQUEST' })
+    expect(JSON.stringify(events[0]?.data)).toMatch(/too long/i)
+    expect(searchNl).not.toHaveBeenCalled()
+  })
 })
