@@ -142,6 +142,31 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
       normalizedReferences = undefined
     }
   }
+
+  // Promote a single under-filled reference. The LLM sometimes describes a
+  // cross-reference in its narrative (a `references.*` mappedTerm) but leaves
+  // the structured `references` slot empty — the legitimate single JOIN would
+  // then be reported as "dropped" and never compiled (a real miss observed in
+  // testing). When EXACTLY ONE such mapping names a known asset domain, fill
+  // the slot so the JOIN compiles. Multiple distinct reference targets are left
+  // to the dropped-reference report below — they genuinely need multi-reference
+  // support, which is a separate workstream.
+  if (!normalizedReferences?.domain) {
+    const namedReferences = [
+      ...new Set(
+        (submission.interpretation.mappedTerms ?? [])
+          .filter((t) => t.property?.startsWith('references') && t.mapped?.trim())
+          .map((t) => t.mapped!.trim())
+      ),
+    ]
+    if (namedReferences.length === 1) {
+      const [canonicalRef] = await resolveKnownDomains([namedReferences[0]!])
+      if (canonicalRef) {
+        normalizedReferences = { domain: canonicalRef }
+        primaryDomains = primaryDomains.filter((d) => d !== canonicalRef)
+      }
+    }
+  }
   endValidation()
 
   const slots: SearchSlots = {
@@ -224,6 +249,9 @@ function collectDroppedReferenceGaps(
     out.push({
       term: term.input || mappedDomain,
       reason: `Cross-reference to "${mappedDomain}" was dropped — only a single \`references\` slot is supported per query. Re-run the search asking for that link instead, or wait for multi-hop reference chains to ship.`,
+      // A current-engine limitation, not an unknown term — drives the UI to
+      // group this under "query limitations", not "not in ontology".
+      kind: 'limitation',
       // Explicit empty array signals the gap-enricher to leave this
       // alone — schema-limit gaps don't benefit from value-similarity
       // "related concepts", which would just be noise here.

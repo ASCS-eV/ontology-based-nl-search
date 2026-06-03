@@ -31,12 +31,30 @@ export interface MappedTerm {
   property?: string
 }
 
-/** A concept the user mentioned that isn't in the ontology. */
+/**
+ * Why a part of the user's query was not turned into a filter. The `kind`
+ * separates genuinely-different situations the UI previously lumped under one
+ * "Not in ontology" heading:
+ *
+ *  - `unmapped`    — a term with no ontology counterpart (the original meaning).
+ *  - `recognized`  — a real ontology concept the system understood but couldn't
+ *                    apply as a filter (an interpretation note, not an error).
+ *  - `limitation`  — understood and valid, but dropped by a current engine
+ *                    limit (e.g. only one cross-reference per query).
+ */
+export type GapKind = 'unmapped' | 'recognized' | 'limitation'
+
+/** A part of the user's query that did not become a filter. */
 export interface OntologyGap {
   /** The unmapped user term. */
   term: string
   /** Why it could not be mapped. */
   reason: string
+  /**
+   * Category of the gap. Defaults to `unmapped` when absent (back-compat).
+   * Drives how the UI groups and labels the gap.
+   */
+  kind?: GapKind
   /** Nearest concepts in the ontology that might be relevant. */
   suggestions?: string[]
   /** Domain glossary definition if available. */

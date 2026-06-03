@@ -3,6 +3,7 @@
  * These types define the contract between the LLM and search layers.
  */
 export type {
+  GapKind,
   LlmStructuredResponse,
   MappedTerm,
   OntologyGap,

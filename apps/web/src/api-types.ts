@@ -12,6 +12,7 @@
  * re-introduce drift between the server and client type declarations.
  */
 export type {
+  GapKind,
   MappedTerm,
   OntologyGap,
   QueryInterpretation,
