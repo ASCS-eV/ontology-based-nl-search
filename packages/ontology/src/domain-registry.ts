@@ -14,9 +14,12 @@
 import { OntologySourcesError } from '@ontology-search/core/errors'
 import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
+import { Parser as N3Parser } from 'n3'
 import { join } from 'path'
 
 import { getArtifactRoots } from './sources.js'
+
+const RDFS_SUBCLASS_OF = `${RDF_PREFIXES.rdfs}subClassOf`
 
 /** Metadata for a single ontology domain (e.g., hdmap, scenario) */
 export interface DomainDescriptor {
@@ -177,38 +180,124 @@ function extractVersion(namespace: string): string {
 }
 
 /**
- * Determine the primary asset class for a domain.
- * Convention: The class named after the domain in PascalCase is the asset class.
- * E.g., hdmap → HdMap, scenario → Scenario, surface-model → SurfaceModel
+ * Extract `rdfs:subClassOf` edges between NAMED classes from a Turtle document,
+ * using a real RDF parser (n3) rather than a regex. Blank-node superclasses
+ * (`rdfs:subClassOf [ a owl:Restriction … ]`) are skipped — only named
+ * class-to-class edges carry the asset/sub-component signal.
+ *
+ * A real parser is required, not a regex: the upstream Gaia-X OWL
+ * (`gx.owl.ttl`) declares superclasses through deeply nested blank-node
+ * restrictions interleaved with named ones (e.g. `gx:VirtualResource` has both
+ * an `owl:Restriction` super AND a named `gx:Resource` super). A line-oriented
+ * regex misreads such a class as a bare root, which then mis-classifies it as a
+ * sub-component base. n3 resolves prefixes and blank nodes correctly.
  */
-function findPrimaryAssetClass(
-  targetClasses: { localName: string; iri: string }[],
-  domainName: string
-): { localName: string; iri: string } | null {
-  // Convert domain-name to PascalCase variants to match
-  const pascalCase = domainName
+function extractSubClassOfEdges(ttlContent: string): { sub: string; super: string }[] {
+  let quads
+  try {
+    quads = new N3Parser().parse(ttlContent)
+  } catch {
+    // A malformed OWL file shouldn't sink registry construction; the SHACL the
+    // registry actually compiles against is validated elsewhere. Skip its edges.
+    return []
+  }
+  const edges: { sub: string; super: string }[] = []
+  for (const q of quads) {
+    if (
+      q.predicate.value === RDFS_SUBCLASS_OF &&
+      q.subject.termType === 'NamedNode' &&
+      q.object.termType === 'NamedNode' &&
+      q.subject.value !== q.object.value
+    ) {
+      edges.push({ sub: q.subject.value, super: q.object.value })
+    }
+  }
+  return edges
+}
+
+/** Domain name → PascalCase (the conventional asset-class name). */
+function domainPascalCase(domainName: string): string {
+  return domainName
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join('')
+}
 
-  // Known domain specification sub-shapes to exclude
-  const subShapes = new Set([
-    'Content',
-    'Format',
-    'Quantity',
-    'Quality',
-    'DataSource',
-    'DomainSpecification',
-    'Georeference',
-  ])
+/**
+ * Identify the meta-model SUB-COMPONENT base classes structurally, with no
+ * ontology-specific names. A component-base is a class that
+ *
+ *   1. is the direct `rdfs:subClassOf` target of `sh:targetClass` classes from
+ *      **two or more domains** (a shared structural type the domains reuse), AND
+ *   2. **is a bare root** — it has no named superclass of its own.
+ *
+ * Condition 2 separates these reusable STRUCTURE bases (`envited-x:Content`,
+ * `Format`, `Quantity`, `Quality`, `DataSource`, `DomainSpecification`) from
+ * genuine asset bases like `envited-x:SimulationAsset → owl:Thing` or
+ * `gx:VirtualResource → gx:Resource`, which reach a higher upper-ontology root.
+ * This replaces the former hard-coded list of ENVITED-X sub-shape names: a class
+ * is a "sub-component" — and thus not a domain's primary asset — exactly when it
+ * is, or transitively subclasses, a component-base.
+ */
+function computeComponentBases(
+  subClassEdges: { sub: string; super: string }[],
+  targetClassDomain: Map<string, string>
+): Set<string> {
+  const hasSuper = new Set(subClassEdges.map((e) => e.sub))
+  const subDomainsOfSuper = new Map<string, Set<string>>()
+  for (const { sub, super: sup } of subClassEdges) {
+    const subDomain = targetClassDomain.get(sub)
+    if (!subDomain) continue // only count target classes, not intermediate types
+    if (!subDomainsOfSuper.has(sup)) subDomainsOfSuper.set(sup, new Set())
+    subDomainsOfSuper.get(sup)!.add(subDomain)
+  }
+  const bases = new Set<string>()
+  for (const [sup, domainsOfSup] of subDomainsOfSuper) {
+    if (domainsOfSup.size >= 2 && !hasSuper.has(sup)) bases.add(sup)
+  }
+  return bases
+}
 
-  // Prefer exact PascalCase match
-  const exact = targetClasses.find((tc) => tc.localName === pascalCase)
+/**
+ * Select a domain's primary asset class. Mirrors the historical algorithm —
+ * PascalCase-of-domain match wins first, otherwise the first declared target
+ * class that is not a sub-component — but derives "sub-component" structurally
+ * from {@link computeComponentBases} instead of a hard-coded ENVITED-X name
+ * list. A class is a sub-component when it is, or transitively subclasses, a
+ * component-base; an asset class (e.g. `hdmap:HdMap`, `tzip21:Asset`) subclasses
+ * an asset base instead, so it survives the filter even when not named after
+ * its domain. `targetClasses` keeps its SHACL declaration order so the
+ * first-non-sub-component fallback is deterministic and matches prior behavior.
+ */
+function selectPrimaryAssetClass(
+  targetClasses: { localName: string; iri: string }[],
+  domainName: string,
+  componentBases: Set<string>,
+  superOf: Map<string, Set<string>>
+): { localName: string; iri: string } | null {
+  if (targetClasses.length === 0) return null
+
+  const isSubComponent = (iri: string): boolean => {
+    if (componentBases.has(iri)) return true
+    const seen = new Set<string>()
+    const stack = [...(superOf.get(iri) ?? [])]
+    while (stack.length) {
+      const c = stack.pop()!
+      if (seen.has(c)) continue
+      seen.add(c)
+      if (componentBases.has(c)) return true
+      for (const s of superOf.get(c) ?? []) stack.push(s)
+    }
+    return false
+  }
+
+  // PascalCase-of-domain match wins first (e.g. hdmap → HdMap, manifest →
+  // Manifest), even if it is itself a component-base.
+  const exact = targetClasses.find((tc) => tc.localName === domainPascalCase(domainName))
   if (exact) return exact
 
-  // Fallback: first class that isn't a known sub-shape
-  const primary = targetClasses.find((tc) => !subShapes.has(tc.localName))
-  return primary || targetClasses[0] || null
+  // Otherwise the first declared non-sub-component target class.
+  return targetClasses.find((tc) => !isSubComponent(tc.iri)) ?? targetClasses[0] ?? null
 }
 
 /**
@@ -219,6 +308,23 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
 
   const roots = getArtifactRoots()
   const domains = new Map<string, DomainDescriptor>()
+
+  // Primary-asset-class selection is graph-driven and global: a domain's asset
+  // class is defined by what it subclasses across the WHOLE ontology (an asset
+  // base vs a shared sub-component base), so it cannot be decided one directory
+  // at a time. Pass 1 reads each domain's text into a raw record (target
+  // classes via regex — order-preserving — and rdfs:subClassOf edges via a real
+  // RDF parse); pass 2 classifies the component bases globally and assigns each
+  // domain's primary.
+  interface RawDomain {
+    entry: string
+    namespace: string
+    ttlPrefix: string
+    filePrefixes: Record<string, string>
+    targetClasses: { localName: string; iri: string }[]
+    subClassEdges: { sub: string; super: string }[]
+  }
+  const raw: RawDomain[] = []
 
   for (const root of roots) {
     if (!existsSync(root)) continue
@@ -270,24 +376,45 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
       const targetClasses = extractTargetClasses(shaclContent, namespace, ttlPrefix)
       if (targetClasses.length === 0) continue
 
-      // Find primary asset class
-      const primaryClass = findPrimaryAssetClass(targetClasses, entry)
-      if (!primaryClass) continue
+      // rdfs:subClassOf edges power the component-base signal. Parse both files
+      // (OWL carries the hierarchy; SHACL occasionally does too) with a real
+      // RDF parser so blank-node restrictions don't hide named superclasses.
+      const subClassEdges = [
+        ...extractSubClassOfEdges(owlContent),
+        ...extractSubClassOfEdges(shaclContent),
+      ]
 
-      const version = extractVersion(namespace)
-      const shapes = targetClasses.map((tc) => tc.localName)
-
-      domains.set(entry, {
-        name: entry,
-        namespace,
-        prefix: ttlPrefix,
-        targetClass: `${ttlPrefix}:${primaryClass.localName}`,
-        targetClassIri: primaryClass.iri,
-        version,
-        shapes,
-        declaredPrefixes: filePrefixes,
-      })
+      raw.push({ entry, namespace, ttlPrefix, filePrefixes, targetClasses, subClassEdges })
     }
+  }
+
+  // Pass 2: classify component bases across the whole ontology, then pick each
+  // domain's primary asset class structurally (no ontology-specific names).
+  const targetClassDomain = new Map<string, string>()
+  for (const d of raw) for (const tc of d.targetClasses) targetClassDomain.set(tc.iri, d.entry)
+
+  const allEdges = raw.flatMap((d) => d.subClassEdges)
+  const superOf = new Map<string, Set<string>>()
+  for (const { sub, super: sup } of allEdges) {
+    if (!superOf.has(sub)) superOf.set(sub, new Set())
+    superOf.get(sub)!.add(sup)
+  }
+  const componentBases = computeComponentBases(allEdges, targetClassDomain)
+
+  for (const d of raw) {
+    const primaryClass = selectPrimaryAssetClass(d.targetClasses, d.entry, componentBases, superOf)
+    if (!primaryClass) continue
+
+    domains.set(d.entry, {
+      name: d.entry,
+      namespace: d.namespace,
+      prefix: d.ttlPrefix,
+      targetClass: `${d.ttlPrefix}:${primaryClass.localName}`,
+      targetClassIri: primaryClass.iri,
+      version: extractVersion(d.namespace),
+      shapes: d.targetClasses.map((tc) => tc.localName),
+      declaredPrefixes: d.filePrefixes,
+    })
   }
 
   const domainNames = [...domains.keys()].sort()
