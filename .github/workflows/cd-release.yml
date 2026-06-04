@@ -1,0 +1,83 @@
+name: Release
+
+# Manual, tag-driven release. Dispatch with a version tag (or push a matching
+# tag) to cut a GitHub Release whose notes are generated from the Conventional
+# Commit history by git-cliff. Hosting is external — this pipeline only
+# publishes the release + notes; it does not deploy the application.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*-rc.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v0.2.0 or v0.2.0-rc.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so git-cliff can build the changelog
+
+      - name: Determine release tag
+        id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$INPUT_TAG"
+          else
+            TAG="$REF_NAME"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Validate tag format
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$'; then
+            echo "::error::Tag '$TAG' must be vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-rc.N"
+            exit 1
+          fi
+
+      - name: Ensure tag exists for changelog generation
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+            git tag "$TAG"
+            echo "Created lightweight tag $TAG at $(git rev-parse HEAD)"
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          body: ${{ steps.changelog.outputs.content }}
+          draft: false
+          prerelease: ${{ contains(steps.tag.outputs.tag, '-rc.') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
