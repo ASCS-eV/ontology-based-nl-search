@@ -92,6 +92,32 @@ describe('SearchService.searchNl', () => {
     expect(result.meta.requestId).toMatch(/^req_/)
   })
 
+  it('counts matchCount as DISTINCT primary assets, not fan-out rows', async () => {
+    // A cross-reference / nested-reference JOIN fans out: one row per referenced
+    // asset. Here 3 rows resolve to 2 distinct `?asset` — the UI groups to 2, so
+    // meta.matchCount must report 2, not 3.
+    const fanOut: SparqlResults = {
+      head: { vars: ['asset', 'name', 'refAsset'] },
+      results: {
+        bindings: [
+          { asset: { type: 'uri', value: 'urn:a:1' }, refAsset: { type: 'uri', value: 'urn:r:1' } },
+          { asset: { type: 'uri', value: 'urn:a:1' }, refAsset: { type: 'uri', value: 'urn:r:2' } },
+          { asset: { type: 'uri', value: 'urn:a:2' }, refAsset: { type: 'uri', value: 'urn:r:3' } },
+        ],
+      },
+    }
+    const store = { ...mockStore, query: vi.fn().mockResolvedValue(fanOut) }
+    const deps = createMockDeps({ getStore: vi.fn().mockResolvedValue(store) })
+    const service = new SearchService(deps)
+
+    const result = await service.searchNl({ query: 'scenarios with traces' })
+
+    // All fan-out rows still reach the client (the UI groups them)…
+    expect(result.execution.results).toHaveLength(3)
+    // …but the match count is distinct assets, matching the grouped UI count.
+    expect(result.meta.matchCount).toBe(2)
+  })
+
   it('returns error when SPARQL policy rejects the query', async () => {
     const deps = createMockDeps({
       enforcePolicy: vi.fn().mockReturnValue({

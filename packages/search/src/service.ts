@@ -218,7 +218,12 @@ export class SearchService {
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
-    const meta = this.buildMeta(requestId, execution.results.length, totalDatasets, logger)
+    const meta = this.buildMeta(
+      requestId,
+      this.countMatches(execution.results),
+      totalDatasets,
+      logger
+    )
     logger.info('Search completed', { matchCount: meta.matchCount, totalDatasets })
 
     return {
@@ -257,7 +262,7 @@ export class SearchService {
     // Execute
     const execution = await this.executeSparql(sparql, trace, logger, signal)
 
-    const meta = this.buildMeta(requestId, execution.results.length, 0, logger)
+    const meta = this.buildMeta(requestId, this.countMatches(execution.results), 0, logger)
     logger.info('Refine completed', { matchCount: meta.matchCount })
 
     return { sparql, execution, meta }
@@ -392,6 +397,26 @@ export class SearchService {
       logger.warn('Failed to count total datasets', { error: String(err) })
       return 0
     }
+  }
+
+  /**
+   * Count matches as DISTINCT primary assets, not result rows. A cross-reference
+   * JOIN fans out (one row per referenced asset / per nested chain), so
+   * `results.length` over-counts. The UI groups by `?asset` and the distinct-
+   * `?asset` LIMIT wrap bounds distinct assets, so `matchCount` must agree with
+   * both. Falls back to the row count when rows carry no `?asset` binding.
+   */
+  private countMatches(results: ResultRow[]): number {
+    const assets = new Set<string>()
+    let sawAsset = false
+    for (const row of results) {
+      const asset = row['asset']
+      if (asset) {
+        assets.add(asset)
+        sawAsset = true
+      }
+    }
+    return sawAsset ? assets.size : results.length
   }
 
   private buildMeta(
