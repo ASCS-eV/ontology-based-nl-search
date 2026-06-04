@@ -17,14 +17,25 @@ export interface SlotValue {
 }
 
 /**
- * Cross-reference filter — join this asset's manifest references
- * to another asset domain.
+ * Cross-reference filter — join this asset's manifest references to another
+ * asset domain. References nest: a filter may carry its own `references`,
+ * expressing a chain through the graph. "scenarios derived from traces with
+ * maps" → `[{ domain: 'ositrace', references: [{ domain: 'hdmap' }] }]`
+ * (scenario → trace → map), distinct from the flat two-reference form
+ * `[{ domain: 'ositrace' }, { domain: 'hdmap' }]` (scenario → trace AND
+ * scenario → map). Nested entries are AND-combined like their siblings: the
+ * parent must reference all of them.
  */
 export interface ReferenceFilter {
   /** Domain of the referenced asset (e.g., "hdmap") */
   domain: string
   /** Optional label filter on the referenced asset */
   label?: string
+  /**
+   * Further references the *referenced* asset must itself carry. Each is a
+   * chain one hop deeper (parent ref → this domain). Omitted/empty = leaf.
+   */
+  references?: ReferenceFilter[]
 }
 
 /**
@@ -87,7 +98,19 @@ export function normalizeReferences(
 ): ReferenceFilter[] {
   if (!input) return []
   const arr = Array.isArray(input) ? input : [input]
-  return arr.filter((r): r is ReferenceFilter => Boolean(r?.domain?.trim()))
+  return arr
+    .filter((r): r is ReferenceFilter => Boolean(r?.domain?.trim()))
+    .map((r) => {
+      const nested = normalizeReferences(r.references)
+      if (nested.length > 0) return { ...r, references: nested }
+      // No valid nested refs: strip an empty `references` key so leaf nodes
+      // stay exactly `{ domain, label? }` (keeps equality/snapshots stable).
+      if (r.references !== undefined) {
+        const { references: _drop, ...leaf } = r
+        return leaf
+      }
+      return r
+    })
 }
 
 /**

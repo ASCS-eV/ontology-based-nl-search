@@ -14,6 +14,21 @@
 
 import { z } from 'zod'
 
+/** Recursive shape: a reference may carry its own nested references (a chain). */
+interface ReferenceFilterInput {
+  domain: string
+  label?: string
+  references?: ReferenceFilterInput[]
+}
+
+const referenceFilterSchema: z.ZodType<ReferenceFilterInput> = z.lazy(() =>
+  z.object({
+    domain: z.string(),
+    label: z.string().optional(),
+    references: z.array(referenceFilterSchema).optional(),
+  })
+)
+
 /**
  * The shape received from the LLM via the `submit_slots` tool call.
  * `requestToken` is consumed by the router and stripped before the
@@ -27,12 +42,7 @@ export const submissionSchema = z.object({
     ranges: z
       .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
       .optional(),
-    references: z
-      .union([
-        z.object({ domain: z.string(), label: z.string().optional() }),
-        z.array(z.object({ domain: z.string(), label: z.string().optional() })),
-      ])
-      .optional(),
+    references: z.union([referenceFilterSchema, z.array(referenceFilterSchema)]).optional(),
   }),
   interpretation: z.object({
     summary: z.string(),

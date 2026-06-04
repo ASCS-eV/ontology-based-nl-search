@@ -139,6 +139,44 @@ describe('ResultsDisplay', () => {
     expect(screen.queryByText('refName1')).not.toBeInTheDocument()
   })
 
+  /**
+   * Nested references (scenario → trace → map): the compiler projects the map
+   * as `refAsset_0` under the trace `refAsset`. The UI must render the map as a
+   * child of the trace (not a sibling), and the map's breadcrumb roots at the
+   * trace, not the primary asset.
+   */
+  it('renders a nested reference as a child of its parent reference', () => {
+    const results = [
+      {
+        asset: 'urn:scenario:1',
+        name: 'Munich Scenario',
+        refAsset: 'urn:ositrace:7',
+        refName: 'Munich Trace',
+        refAsset_0: 'urn:hdmap:42',
+        refName_0: 'Munich HD Map',
+      },
+    ]
+    const traceability = [
+      {
+        refAsset: [{ predicate: 'https://example.org/scenario/v6/hasManifest', intermediate: 'a' }],
+        refAsset_0: [
+          { predicate: 'https://example.org/ositrace/v6/hasManifest', intermediate: 'b' },
+        ],
+      },
+    ]
+    render(<ResultsDisplay results={results} traceability={traceability} />)
+    // Both the trace and its nested map render, counted across all depths.
+    expect(screen.getByText('Munich HD Map')).toBeInTheDocument()
+    expect(screen.getByText('References (2)')).toBeInTheDocument()
+    // "Munich Trace" appears twice: as the trace pill AND as the root of the
+    // nested map's breadcrumb (the map's chain is rooted at the trace, not the
+    // primary asset) — that's the nesting made visible.
+    expect(screen.getAllByText('Munich Trace').length).toBeGreaterThanOrEqual(2)
+    // The suffixed nested columns must not leak into the property grid.
+    expect(screen.queryByText('refAsset_0')).not.toBeInTheDocument()
+    expect(screen.queryByText('refName_0')).not.toBeInTheDocument()
+  })
+
   it('deduplicates references within the same asset group', () => {
     const results = [
       {

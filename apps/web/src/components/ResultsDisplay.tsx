@@ -16,25 +16,35 @@ interface ResultsDisplayProps {
 }
 
 /**
- * Cross-reference columns the compiler projects. With multi-reference search
- * the first reference is `refAsset`/`refName`, the rest are suffixed
- * `refAsset1`/`refName1`, `refAsset2`/… — one pair per referenced domain.
- * These are hidden from the main column display and shown in the References
- * section instead.
+ * Cross-reference columns the compiler projects. Depth-0 references are
+ * `refAsset`/`refName`, then `refAsset1`/`refName1`, …; a NESTED reference (a
+ * chain — e.g. trace → map) appends `_<index>`: `refAsset_0`/`refName_0`,
+ * `refAsset_0_0`/…. These are hidden from the main column display and shown in
+ * the References section instead.
  */
-const REF_ASSET_RE = /^refAsset(\d*)$/
-const REF_NAME_RE = /^refName\d*$/
+const REF_ASSET_RE = /^refAsset(\d*(?:_\d+)*)$/
+const REF_NAME_RE = /^refName(\d*(?:_\d+)*)$/
 function isRefColumn(key: string): boolean {
   return REF_ASSET_RE.test(key) || REF_NAME_RE.test(key)
 }
 /**
- * Variables the compiler binds for traceability-step intermediates (primary
- * `ref_step_*` / `_refSlot_*`, and the suffixed `ref1_step_*` / `_refSlot1_*`
- * for additional references). These are infrastructure columns; the user sees
- * the predicate breadcrumb in the "References" section, not as plain columns
- * next to user-meaningful fields like `name` / `country`.
+ * The parent reference variable of a nested ref var, or `null` for a depth-0
+ * root. The compiler's path-suffix naming makes the parent the var with its
+ * trailing `_<index>` removed: `refAsset_0` → `refAsset`, `refAsset1_0` →
+ * `refAsset1`, `refAsset_0_0` → `refAsset_0`. Depth-0 siblings (`refAsset`,
+ * `refAsset1`) have no `_<index>` tail and are roots.
  */
-const TRACE_VAR_PREFIX_RE = /^(?:ref\d*_step_|_refSlot\d*_)/
+function parentRefVar(refVar: string): string | null {
+  const m = /^(.*)_\d+$/.exec(refVar)
+  return m ? m[1]! : null
+}
+/**
+ * Variables the compiler binds for traceability-step intermediates. Chain
+ * intermediates start with `_refSlot` (`_refSlot_0`, `_refSlot_0_1`, …);
+ * data-path intermediates end with `_step_<n>` (`ref_step_1`, `ref_0_step_2`,
+ * …). Both are infrastructure columns hidden from the property grid.
+ */
+const TRACE_VAR_PREFIX_RE = /(?:^_refSlot)|(?:_step_\d+$)/
 
 /** Check whether results contain cross-reference data */
 function hasReferences(results: Record<string, string>[]): boolean {
@@ -44,8 +54,15 @@ function hasReferences(results: Record<string, string>[]): boolean {
 interface GroupedReference {
   asset: string
   name: string
-  /** Predicate-IRI chain the SPARQL JOIN walked from the primary asset. */
+  /** Predicate-IRI chain the SPARQL JOIN walked from this ref's parent. */
   trace?: ResultTraceStep[]
+  /** Nested references the referenced asset itself carries (chain one hop deeper). */
+  children: GroupedReference[]
+}
+
+/** Total reference nodes across the tree (all depths). */
+function countReferences(refs: GroupedReference[]): number {
+  return refs.reduce((n, r) => n + 1 + countReferences(r.children), 0)
 }
 
 interface GroupedAsset {
@@ -89,52 +106,85 @@ function clusterReferencesByLabel(refs: GroupedReference[]): ReferenceLabelClust
   return [...byLabel.values()]
 }
 
-/** Group flat rows by primary asset, collecting references per group */
+interface GroupBuilder {
+  asset: string
+  name: string
+  properties: Record<string, string>
+  /** Reference nodes by their asset IRI (deduped across rows). */
+  nodes: Map<string, GroupedReference>
+  /** childIri → parentIri (null = depth-0 root), captured per row. */
+  parentOf: Map<string, string | null>
+}
+
+/**
+ * Group flat rows by primary asset and assemble the reference tree. Each ref
+ * column contributes a node; its parent is the value of its parent column in
+ * the SAME row (so a nested map attaches to the specific trace it hangs off,
+ * not to some other trace the scenario references).
+ */
 function groupByAsset(
   results: Record<string, string>[],
   traceability?: RowTraceability[] | null
 ): GroupedAsset[] {
-  const groups = new Map<string, GroupedAsset>()
+  const builders = new Map<string, GroupBuilder>()
 
   for (let i = 0; i < results.length; i++) {
     const row = results[i]!
     const rowTrace = traceability?.[i]
     const key = row['asset'] ?? ''
-    if (!groups.has(key)) {
+    let builder = builders.get(key)
+    if (!builder) {
       const properties: Record<string, string> = {}
       for (const [k, v] of Object.entries(row)) {
         if (isRefColumn(k) || k === 'asset' || k === 'name' || !v) continue
         if (TRACE_VAR_PREFIX_RE.test(k)) continue
         properties[k] = v
       }
-      groups.set(key, {
+      builder = {
         asset: key,
         name: row['name'] ?? key,
         properties,
-        references: [],
-      })
+        nodes: new Map(),
+        parentOf: new Map(),
+      }
+      builders.set(key, builder)
     }
-    const group = groups.get(key)!
-    // Collect every projected reference (refAsset/refName, refAsset1/refName1, …).
+    // Each projected ref column (refAsset, refAsset1, refAsset_0, …) → a node.
     for (const [k, v] of Object.entries(row)) {
       const match = REF_ASSET_RE.exec(k)
       if (!match || !v) continue
-      const suffix = match[1] // '' for the primary reference, '1','2',… for the rest
-      const name = row[`refName${suffix}`]
+      const name = row[`refName${match[1]}`]
       if (!name) continue
-      if (group.references.some((r) => r.asset === v)) continue
-      // Each reference's breadcrumb is keyed by its own column name (`refAsset`,
-      // `refAsset1`, …) in the row's trace map.
-      const steps = rowTrace?.[k]
-      group.references.push({
-        asset: v,
-        name,
-        trace: steps && steps.length > 0 ? steps : undefined,
-      })
+      if (!builder.nodes.has(v)) {
+        const steps = rowTrace?.[k] // breadcrumb keyed by this node's column
+        builder.nodes.set(v, {
+          asset: v,
+          name,
+          trace: steps && steps.length > 0 ? steps : undefined,
+          children: [],
+        })
+      }
+      if (!builder.parentOf.has(v)) {
+        const parentColumn = parentRefVar(k)
+        builder.parentOf.set(v, parentColumn ? (row[parentColumn] ?? null) : null)
+      }
     }
   }
 
-  return [...groups.values()]
+  // Link children to parents by IRI; depth-0 nodes become the group's roots.
+  return [...builders.values()].map((b) => {
+    const roots: GroupedReference[] = []
+    for (const [iri, node] of b.nodes) {
+      const parentIri = b.parentOf.get(iri) ?? null
+      const parent = parentIri ? b.nodes.get(parentIri) : undefined
+      if (parent && parent !== node) {
+        if (!parent.children.some((c) => c.asset === node.asset)) parent.children.push(node)
+      } else {
+        roots.push(node)
+      }
+    }
+    return { asset: b.asset, name: b.name, properties: b.properties, references: roots }
+  })
 }
 
 export function ResultsDisplay({ results, traceability }: ResultsDisplayProps) {
@@ -271,29 +321,9 @@ function AssetCard({ group }: { group: GroupedAsset }) {
         <div className="px-4 py-3 bg-blue-50/50 border-t border-gray-100">
           <p className="text-xs font-medium text-blue-700 mb-2 flex items-center gap-1">
             <LinkIcon />
-            References ({group.references.length})
+            References ({countReferences(group.references)})
           </p>
-          <div className="flex flex-col gap-2">
-            {clusterReferencesByLabel(group.references).map((cluster) => (
-              <div key={cluster.label} className="flex flex-col gap-1">
-                <span
-                  className="inline-flex self-start items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-blue-100 text-blue-800 border border-blue-200"
-                  title={cluster.assets.join('\n')}
-                >
-                  <MapIcon />
-                  {cluster.label}
-                  {cluster.assets.length > 1 && (
-                    <span className="text-[10px] text-blue-600/80 font-mono">
-                      ×{cluster.assets.length}
-                    </span>
-                  )}
-                </span>
-                {cluster.trace && cluster.trace.length > 0 && (
-                  <TraceabilityBreadcrumb steps={cluster.trace} />
-                )}
-              </div>
-            ))}
-          </div>
+          <ReferenceTree refs={group.references} rootLabel="asset" />
         </div>
       )}
 
@@ -303,14 +333,85 @@ function AssetCard({ group }: { group: GroupedAsset }) {
 }
 
 /**
- * Render the predicate-chain breadcrumb from the primary asset down to a
- * referenced child. Shows each predicate's localName; the full IRI is in
- * the `title` for hover inspection (WP3, task #18).
+ * Recursively render a reference tree. A flat level (no nesting) keeps the
+ * existing same-label clustering (map tiles collapse into one ×N pill). When a
+ * level has nested children, each node renders individually with its children
+ * indented under it, mirroring the graph chain (scenario → trace → map).
+ * `rootLabel` is the breadcrumb root for this level — the primary `asset` at
+ * the top, the parent reference's name one level down.
  */
-function TraceabilityBreadcrumb({ steps }: { steps: ResultTraceStep[] }) {
+function ReferenceTree({ refs, rootLabel }: { refs: GroupedReference[]; rootLabel: string }) {
+  const anyNested = refs.some((r) => r.children.length > 0)
+
+  if (!anyNested) {
+    return (
+      <div className="flex flex-col gap-2">
+        {clusterReferencesByLabel(refs).map((cluster) => (
+          <div key={cluster.label} className="flex flex-col gap-1">
+            <ReferencePill
+              label={cluster.label}
+              title={cluster.assets.join('\n')}
+              count={cluster.assets.length}
+            />
+            {cluster.trace && cluster.trace.length > 0 && (
+              <TraceabilityBreadcrumb steps={cluster.trace} rootLabel={rootLabel} />
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {refs.map((ref) => (
+        <div key={ref.asset} className="flex flex-col gap-1">
+          <ReferencePill label={ref.name} title={ref.asset} />
+          {ref.trace && ref.trace.length > 0 && (
+            <TraceabilityBreadcrumb steps={ref.trace} rootLabel={rootLabel} />
+          )}
+          {ref.children.length > 0 && (
+            <div className="ml-3 pl-3 border-l-2 border-blue-200/60">
+              <ReferenceTree refs={ref.children} rootLabel={ref.name} />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** A single reference badge, optionally annotated with an `×N` same-label count. */
+function ReferencePill({ label, title, count }: { label: string; title: string; count?: number }) {
+  return (
+    <span
+      className="inline-flex self-start items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-blue-100 text-blue-800 border border-blue-200"
+      title={title}
+    >
+      <MapIcon />
+      {label}
+      {count !== undefined && count > 1 && (
+        <span className="text-[10px] text-blue-600/80 font-mono">×{count}</span>
+      )}
+    </span>
+  )
+}
+
+/**
+ * Render the predicate-chain breadcrumb from `rootLabel` down to a referenced
+ * child. Shows each predicate's localName; the full IRI is in the `title` for
+ * hover inspection (WP3, task #18).
+ */
+function TraceabilityBreadcrumb({
+  steps,
+  rootLabel = 'asset',
+}: {
+  steps: ResultTraceStep[]
+  rootLabel?: string
+}) {
   return (
     <ol className="flex flex-wrap items-center gap-1 text-[10px] text-blue-700/80 font-mono">
-      <li className="px-1 py-0.5 rounded bg-white/60 border border-blue-100">asset</li>
+      <li className="px-1 py-0.5 rounded bg-white/60 border border-blue-100">{rootLabel}</li>
       {steps.map((step, i) => {
         const local = localName(step.predicate)
         return (

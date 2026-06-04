@@ -52,7 +52,13 @@ import {
   queryPropertyShapeGroups,
   queryRange2DProperties,
 } from './schema-queries.js'
-import type { CompileResult, SearchSlots, TraceabilityPlan, TraceabilityStep } from './slots.js'
+import type {
+  CompileResult,
+  ReferenceFilter,
+  SearchSlots,
+  TraceabilityPlan,
+  TraceabilityStep,
+} from './slots.js'
 import { normalizeReferences } from './slots.js'
 import { validateSparql } from './sparql-validator.js'
 
@@ -781,34 +787,48 @@ export async function compileSlotsWithTrace(
   //      instance-graph chain.
   //   3. Generic any-predicate property path `(!<urn:none>)+` — last
   //      resort when neither SHACL nor instance data declare a link.
-  // Each entry is AND-combined (the asset must reference all of them). Every
-  // entry is projected — `?refAsset`/`?refName`, then `?refAsset1`/`?refName1`,
-  // … — so the UI can display all referenced assets, and each entry with a
-  // resolved chain contributes its own breadcrumb plan (keyed by its projected
-  // variable). The distinct-asset wrap (assembleQuery) keeps the LIMIT counting
-  // primary assets despite the reference fan-out.
+  // Entries are AND-combined (the asset must reference all of them) and may
+  // NEST: a reference's own `references` chain one hop deeper (parent ref →
+  // child), so "traces with maps" becomes scenario → trace → map rather than
+  // scenario → trace AND scenario → map. Every node is projected and each with
+  // a resolved chain contributes its own breadcrumb plan. The distinct-asset
+  // wrap (assembleQuery) keeps the LIMIT counting primary assets despite the
+  // (now deeper) reference fan-out. See `emitReferenceNode`.
   const referenceSlots = normalizeReferences(slots.references)
-  let projectedReference = false
-  for (let i = 0; i < referenceSlots.length; i++) {
-    const ref = referenceSlots[i]!
+
+  /**
+   * Emit one reference node and recurse into its nested references.
+   *
+   * `parentVar`/`parentDomain` anchor the JOIN (the primary `?asset` at the
+   * top level, or an enclosing reference's var for a nested chain). `varBase`
+   * is the projected variable name (no `?`): depth-0 siblings are
+   * `refAsset`, `refAsset1`, …; a nested child appends `_<index>`
+   * (`refAsset_0`, `refAsset_0_0`). The breadcrumb plan is keyed by the node's
+   * var and roots at its parent, so the UI can attach each chain to the right
+   * (possibly nested) pill.
+   */
+  const emitReferenceNode = async (
+    ref: ReferenceFilter,
+    parentVar: string,
+    parentDomain: string,
+    varBase: string
+  ): Promise<void> => {
     const refDomain = registry.domains.get(ref.domain)
-    if (!refDomain) continue
+    if (!refDomain) return
     prefixDomains.add(ref.domain)
     hasReferenceJoin = true
 
-    // The first resolvable reference owns the projected `?refAsset`/`?refName`
-    // columns + breadcrumb; the rest get suffixed, unprojected vars.
-    const isPrimary = !projectedReference
-    const refVar = isPrimary ? '?refAsset' : `?refAsset${i}`
-    const refNameVar = isPrimary ? '?refName' : `?refName${i}`
-    const tag = isPrimary ? 'refSlot' : `refSlot${i}`
+    const refVar = `?${varBase}`
+    const refNameVar = `?${varBase.replace('refAsset', 'refName')}`
+    const tag = varBase.replace('refAsset', 'refSlot') // chain intermediate id-tag
+    const dataPrefix = varBase.replace('refAsset', 'ref') // data-path step prefix
     const traceSteps: TraceabilityStep[] = []
 
-    const chain = pickReferenceChain(vocabIndex, primaryDomain, ref.domain)
+    const chain = pickReferenceChain(vocabIndex, parentDomain, ref.domain)
     if (chain) {
       emitReferenceChainTriples(
         chain,
-        '?asset',
+        parentVar,
         refVar,
         refDomain.targetClass,
         registry,
@@ -821,21 +841,21 @@ export async function compileSlotsWithTrace(
       // Load the data-driven reference index lazily: only queries with a
       // references slot AND no SHACL chain consult it (cached / pre-warmed).
       const referenceIndex = await getReferenceIndex()
-      const dataPath = pickDataReferenceEdge(referenceIndex, primaryDomain, ref.domain)
+      const dataPath = pickDataReferenceEdge(referenceIndex, parentDomain, ref.domain)
       if (dataPath) {
         emitDataReferencePath(
           dataPath,
-          '?asset',
+          parentVar,
           refVar,
           patterns,
           registry,
           prefixDomains,
           traceSteps,
-          isPrimary ? 'ref' : `ref${i}`
+          dataPrefix
         )
         patterns.push(`${refVar} a ${refDomain.targetClass} .`)
         log.info('slots.references: emitting JOIN from data-driven reference index', {
-          parent: primaryDomain,
+          parent: parentDomain,
           child: ref.domain,
           hops: dataPath.predicatePath.length,
           samples: dataPath.sampleCount,
@@ -843,14 +863,11 @@ export async function compileSlotsWithTrace(
       } else {
         // Neither SHACL nor the data index found a connection. `(!<urn:none>)+`
         // is "any predicate, one or more hops" — a last-resort wildcard.
-        patterns.push(`?asset (!<urn:none>)+ ${refVar} .`)
+        patterns.push(`${parentVar} (!<urn:none>)+ ${refVar} .`)
         patterns.push(`${refVar} a ${refDomain.targetClass} .`)
         log.info(
           'slots.references: no SHACL chain or data path; emitting wildcard property-path JOIN',
-          {
-            parent: primaryDomain,
-            child: ref.domain,
-          }
+          { parent: parentDomain, child: ref.domain }
         )
       }
     }
@@ -864,19 +881,37 @@ export async function compileSlotsWithTrace(
       )
     }
 
-    // Project every reference's asset + name so the UI shows all of them.
+    // Project this reference's asset + name so the UI shows it.
     selectVars.add(refVar)
     selectVars.add(refNameVar)
 
-    // Each reference with a resolved chain contributes its own breadcrumb:
-    // promote its intermediate step variables so the service can read them per
-    // row, and record a plan keyed by this reference's projected variable. The
-    // wildcard branch records no steps, so it adds no plan.
+    // A resolved chain contributes a breadcrumb: promote its intermediate step
+    // variables so the service can read them per row, and record a plan keyed
+    // by this node's var, rooted at its parent. The wildcard branch records no
+    // steps, so it adds no plan.
     if (traceSteps.length > 0) {
       for (const step of traceSteps) selectVars.add(`?${step.variable}`)
-      traces.push({ sourceVariable: 'asset', targetVariable: refVar.slice(1), steps: traceSteps })
+      traces.push({
+        sourceVariable: parentVar.slice(1),
+        targetVariable: varBase,
+        steps: traceSteps,
+      })
     }
-    projectedReference = true
+
+    // Recurse: nested references hang off this node (parent → child chain).
+    const nested = ref.references ?? []
+    for (let j = 0; j < nested.length; j++) {
+      await emitReferenceNode(nested[j]!, refVar, ref.domain, `${varBase}_${j}`)
+    }
+  }
+
+  for (let i = 0; i < referenceSlots.length; i++) {
+    await emitReferenceNode(
+      referenceSlots[i]!,
+      '?asset',
+      primaryDomain,
+      i === 0 ? 'refAsset' : `refAsset${i}`
+    )
   }
 
   // Generate prefixes AFTER all pattern generation so all domains are included

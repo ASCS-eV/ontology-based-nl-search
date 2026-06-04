@@ -379,4 +379,27 @@ describe('compileSlots — determinism + snapshot suite', () => {
     expect(sparql).toMatch(/SELECT[^\n]*\?refName1\b/)
     expect(sparql).toMatchSnapshot()
   })
+
+  it('nested reference (scenario → trace → map) chains the JOIN through the trace', async () => {
+    const sparql = await assertDeterministic({
+      domains: ['scenario'],
+      filters: {},
+      ranges: {},
+      // "scenarios derived from traces with maps": the map hangs off the trace,
+      // not the scenario.
+      references: [{ domain: 'ositrace', references: [{ domain: 'hdmap' }] }],
+    })
+    expect(sparql).toContain('ositrace:OSITrace')
+    expect(sparql).toContain('hdmap:HdMap')
+    // The trace projects as ?refAsset; the nested map as ?refAsset_0/?refName_0.
+    expect(sparql).toMatch(/SELECT[^\n]*\?refAsset\b/)
+    expect(sparql).toMatch(/SELECT[^\n]*\?refAsset_0\b/)
+    expect(sparql).toMatch(/SELECT[^\n]*\?refName_0\b/)
+    // The map JOIN must start from the trace var (?refAsset …), not ?asset —
+    // that's what makes it a chain. The trace's class is bound, and a triple
+    // anchored at ?refAsset reaches the map.
+    expect(sparql).toMatch(/\?refAsset a ositrace:OSITrace/)
+    expect(sparql).toMatch(/\?refAsset_0 a hdmap:HdMap/)
+    expect(sparql).toMatchSnapshot()
+  })
 })
