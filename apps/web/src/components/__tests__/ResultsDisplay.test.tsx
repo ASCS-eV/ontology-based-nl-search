@@ -1,12 +1,14 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type { ExportAsset } from '../../lib/export-utils'
 import * as exportUtils from '../../lib/export-utils'
 import { ResultsDisplay } from '../ResultsDisplay'
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe('ResultsDisplay', () => {
@@ -67,12 +69,67 @@ describe('ResultsDisplay', () => {
 
     await user.click(screen.getByRole('button', { name: /export results as json-ld/i }))
 
-    expect(jsonLdSpy).toHaveBeenCalledWith(results)
+    // Now called with the structured export model, not raw rows.
+    expect(jsonLdSpy).toHaveBeenCalledWith([
+      { asset: 'urn:test:1', properties: {}, references: [] },
+    ])
     expect(downloadSpy).toHaveBeenCalledWith(
       JSON.stringify({ '@graph': [] }, null, 2),
       'search-results.jsonld',
       'application/ld+json'
     )
+  })
+
+  it('JSON-LD export attaches deduped lineage for reference results', async () => {
+    const jsonLdSpy = vi.spyOn(exportUtils, 'resultsToJsonLd').mockReturnValue({ '@graph': [] })
+    vi.spyOn(exportUtils, 'downloadFile').mockImplementation(() => {})
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            node: {
+              asset: 'did:web:x:Scenario:1',
+              name: 'S1',
+              type: 't',
+              domain: 'scenario',
+              truncated: false,
+              references: [
+                {
+                  predicatePath: ['https://example.org/manifest/v5/iri'],
+                  target: {
+                    asset: 'did:web:x:HdMap:9',
+                    name: 'Reachable Map',
+                    type: 't',
+                    domain: 'hdmap',
+                    truncated: false,
+                    references: [],
+                  },
+                },
+              ],
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+    )
+    const user = userEvent.setup()
+    // Reference result → grouped card → lineage is fetched + attached on export.
+    const results = [
+      {
+        asset: 'did:web:x:Scenario:1',
+        name: 'S1',
+        refAsset: 'did:web:x:OSITrace:1',
+        refName: 'T1',
+      },
+    ]
+    render(<ResultsDisplay results={results} />)
+
+    await user.click(screen.getByRole('button', { name: /export results as json-ld/i }))
+
+    await waitFor(() => expect(jsonLdSpy).toHaveBeenCalled())
+    const assets = jsonLdSpy.mock.calls[0]![0] as ExportAsset[]
+    expect(assets[0]!.lineage?.[0]?.asset).toBe('did:web:x:HdMap:9')
   })
 
   it('renders grouped card layout when results contain references', () => {

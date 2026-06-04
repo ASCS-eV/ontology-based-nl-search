@@ -1,8 +1,31 @@
 import { useState } from 'react'
 
 import type { ResultTraceStep, RowTraceability } from '../api-types'
-import { downloadFile, resultsToCsv, resultsToJsonLd } from '../lib/export-utils'
+import type { ExportAsset, ExportReference } from '../lib/export-utils'
+import {
+  downloadFile,
+  isInternalTraceColumn,
+  resultsToCsv,
+  resultsToJsonLd,
+} from '../lib/export-utils'
+import { dedupeLineage, fetchLineageTree, lineageToExportReferences } from '../lib/lineage'
 import { LineageExplorer } from './LineageExplorer'
+
+/** Bounded-concurrency lineage enrichment for export (best-effort per asset). */
+async function attachLineage(assets: ExportAsset[]): Promise<void> {
+  const CONCURRENCY = 6
+  let next = 0
+  const worker = async (): Promise<void> => {
+    while (next < assets.length) {
+      const asset = assets[next++]!
+      const node = await fetchLineageTree(asset.asset)
+      if (!node) continue
+      const refs = lineageToExportReferences(dedupeLineage(node).tree)
+      if (refs.length > 0) asset.lineage = refs
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, assets.length) }, worker))
+}
 
 interface ResultsDisplayProps {
   results: Record<string, string>[]
@@ -187,6 +210,36 @@ function groupByAsset(
   })
 }
 
+/** Map a grouped reference subtree to the export shape (recursive). */
+function toExportReference(ref: GroupedReference): ExportReference {
+  return { asset: ref.asset, name: ref.name, references: ref.children.map(toExportReference) }
+}
+
+/**
+ * Build the structured export model. When references are present we serialize
+ * the grouped tree (one node per primary asset, references nested); otherwise
+ * each flat row becomes one asset with its literal properties. Internal
+ * trace-step and reference columns never become plain properties.
+ */
+function toExportAssets(results: Record<string, string>[], grouped: GroupedAsset[]): ExportAsset[] {
+  if (grouped.length > 0) {
+    return grouped.map((g) => ({
+      asset: g.asset,
+      properties: { name: g.name, ...g.properties },
+      references: g.references.map(toExportReference),
+    }))
+  }
+  return results.map((row) => {
+    const properties: Record<string, string> = {}
+    for (const [k, v] of Object.entries(row)) {
+      if (k === 'asset' || !v) continue
+      if (isInternalTraceColumn(k) || isRefColumn(k)) continue
+      properties[k] = v
+    }
+    return { asset: row['asset'] ?? '', properties, references: [] }
+  })
+}
+
 export function ResultsDisplay({ results, traceability }: ResultsDisplayProps) {
   if (results.length === 0) {
     return (
@@ -203,20 +256,26 @@ export function ResultsDisplay({ results, traceability }: ResultsDisplayProps) {
     )
   }
 
-  const columns = Object.keys(results[0] ?? {})
+  // Drop compiler-internal breadcrumb-intermediate columns (blank-node IDs) from
+  // every surface — they're hidden in the UI and must not leak into exports.
+  const columns = Object.keys(results[0] ?? {}).filter((c) => !isInternalTraceColumn(c))
+
+  const showCards = hasReferences(results)
+  const grouped = showCards ? groupByAsset(results, traceability) : []
 
   const exportCsv = () => {
     const csv = resultsToCsv(results, columns)
     downloadFile(csv, 'search-results.csv', 'text/csv')
   }
 
-  const exportJsonLd = () => {
-    const jsonLd = resultsToJsonLd(results)
+  const exportJsonLd = async () => {
+    const assets = toExportAssets(results, grouped)
+    // Enrich with the deduped reachable lineage (best-effort) for reference
+    // results — mirrors the per-card "Explore lineage" affordance.
+    if (showCards) await attachLineage(assets)
+    const jsonLd = resultsToJsonLd(assets)
     downloadFile(JSON.stringify(jsonLd, null, 2), 'search-results.jsonld', 'application/ld+json')
   }
-
-  const showCards = hasReferences(results)
-  const grouped = showCards ? groupByAsset(results, traceability) : []
 
   return (
     <div className="w-full" role="region" aria-label="Search results">
@@ -319,9 +378,13 @@ function AssetCard({ group }: { group: GroupedAsset }) {
 
       {group.references.length > 0 && (
         <div className="px-4 py-3 bg-blue-50/50 border-t border-gray-100">
-          <p className="text-xs font-medium text-blue-700 mb-2 flex items-center gap-1">
+          <p className="text-xs font-medium text-blue-700 flex items-center gap-1">
             <LinkIcon />
             References ({countReferences(group.references)})
+          </p>
+          <p className="text-[10px] text-blue-700/60 mb-2">
+            Assets this result references to satisfy the query — the cross-reference JOINs the
+            search matched on.
           </p>
           <ReferenceTree refs={group.references} rootLabel="asset" />
         </div>
