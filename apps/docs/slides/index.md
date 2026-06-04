@@ -252,7 +252,7 @@ flowchart LR
 </Slide>
 
 <Slide :index="8">
-  <p class="eyebrow">WP3 / AP5.4 — Traceability layer</p>
+  <p class="eyebrow">Traceability layer</p>
   <h2>Every result row carries its full lineage back to source.</h2>
   <p class="lead">The compiler binds named intermediate variables along every cross-reference JOIN; the service walks them into a per-row predicate chain, and the UI renders that chain plus a multi-hop lineage explorer for any asset.</p>
   <div class="card-grid">
@@ -264,7 +264,7 @@ flowchart LR
     <div class="card">
       <div class="card-icon">🌳</div>
       <h3>Multi-hop lineage</h3>
-      <p>“Explore lineage” expands a nested tree of every outgoing <code>@id</code> reference per asset — verified end-to-end across <strong>scenario → ositrace → hdmap</strong> (3 asset classes, WP3 acceptance).</p>
+      <p>“Explore lineage” expands a nested tree of every outgoing <code>@id</code> reference per asset — verified end-to-end across <strong>scenario → ositrace → hdmap</strong> (3 asset classes).</p>
     </div>
     <div class="card">
       <div class="card-icon">📊</div>

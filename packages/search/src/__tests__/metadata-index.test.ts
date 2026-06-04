@@ -1,5 +1,5 @@
 /**
- * Metadata-index integration tests (WP3, task #20).
+ * Metadata-index integration tests.
  *
  * Asserts the generic facet contract: any property the SHACL shape
  * graph classifies into a group (`Content`, `Format`, `Quality`,

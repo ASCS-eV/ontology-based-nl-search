@@ -304,7 +304,7 @@ export async function warmupCompiler(): Promise<void> {
     getCompilerVocab(),
     getAssetDomains(),
     getDomainReferences(),
-    // Data-driven reference index for traceability (WP3, task #17): the
+    // Data-driven reference index for traceability: the
     // SHACL-discovered chains describe what *can* be linked; this index
     // records what *is* linked in the loaded instance data, including
     // multi-hop paths through blank-node manifest links.
@@ -593,7 +593,7 @@ export async function compileSlotsWithTrace(
 
   // Traceability plans accumulated when the query contains cross-reference
   // JOINs — one per projected reference. The service uses them to attach a
-  // per-row, per-reference breadcrumb (WP3, task #18). Stays empty for
+  // per-row, per-reference breadcrumb. Stays empty for
   // non-references queries.
   const traces: TraceabilityPlan[] = []
 

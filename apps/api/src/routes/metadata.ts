@@ -14,7 +14,7 @@ export const metadataRoutes = new Hono<AppEnv>()
  * Returns the per-asset facet snapshot — every literal property the
  * asset has, bucketed by the discovered SHACL shape group (Content,
  * Format, Quality, …). Generic in the facet name; "Quality" is one of
- * several groups the same endpoint surfaces (WP3 task #20).
+ * several groups the same endpoint surfaces.
  */
 metadataRoutes.get('/asset', async (c) => {
   const requestId = c.get('requestId') as string

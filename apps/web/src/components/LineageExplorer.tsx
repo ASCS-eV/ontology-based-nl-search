@@ -11,7 +11,7 @@ interface LineageExplorerProps {
 }
 
 /**
- * Per-row "Explore lineage" affordance (WP3, task #19).
+ * Per-row "Explore lineage" affordance.
  *
  * Fetches `GET /api/traceability?asset=<iri>&depth=N` and renders the
  * outgoing-reference tree as nested **blue reference pills** — the same

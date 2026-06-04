@@ -227,7 +227,7 @@ describe('SearchService — real pipeline integration', () => {
   }, 120_000)
 
   /**
-   * Traceability plumbing (WP3, task #18): the executor must populate
+   * Traceability plumbing: the executor must populate
    * `ExecutionResult.traceability` aligned by row index whenever the
    * compiled query carried a `TraceabilityPlan`. Each per-row entry
    * lists the predicate IRIs walked from `?asset` to `?refAsset`, with

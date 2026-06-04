@@ -33,7 +33,7 @@ interface ResultsDisplayProps {
    * Per-row traceability, aligned by index with `results`. Each entry maps a
    * referenced-asset variable (`refAsset`, `refAsset1`, …) to that reference's
    * predicate-chain breadcrumb, so every reference badge — not just the first —
-   * gets the graph path the JOIN walked (WP3, task #18).
+   * gets the graph path the JOIN walked.
    */
   traceability?: RowTraceability[] | null
 }
@@ -463,7 +463,7 @@ function ReferencePill({ label, title, count }: { label: string; title: string; 
 /**
  * Render the predicate-chain breadcrumb from `rootLabel` down to a referenced
  * child. Shows each predicate's localName; the full IRI is in the `title` for
- * hover inspection (WP3, task #18).
+ * hover inspection.
  */
 function TraceabilityBreadcrumb({
   steps,

@@ -1,5 +1,5 @@
 /**
- * Lineage explorer integration tests (WP3, task #19).
+ * Lineage explorer integration tests.
  *
  * Maps directly to acceptance criterion #2 — "prototype queries
  * demonstrate traceability between at least three asset classes
@@ -29,7 +29,7 @@ afterAll(() => {
 
 /**
  * Collect every distinct asset domain visited during a depth-first walk
- * of the lineage tree. Used to assert WP3 acceptance #2 generically —
+ * of the lineage tree. Used to assert traceability across ≥3 asset classes generically —
  * no specific domain name is hardcoded.
  */
 function collectDomains(node: TraceabilityNode, into: Set<string> = new Set()): Set<string> {
@@ -108,7 +108,7 @@ describe('exploreLineage — outgoing reference walk', () => {
 
   it('emits at least one outgoing reference for an asset that has them', async () => {
     // Asserts the walker actually finds and emits an edge — the
-    // motivating WP3 case. `findAssetWithMultiClassLineage` already
+    // motivating case. `findAssetWithMultiClassLineage` already
     // filters to an asset whose path bind concretely against the data
     // (not just the class-level signature), so a zero-edges outcome
     // would mean the walker is broken, not the fixture.
@@ -119,7 +119,7 @@ describe('exploreLineage — outgoing reference walk', () => {
   }, 120_000)
 
   /**
-   * WP3 acceptance #2 — traceability between ≥3 asset classes. The
+   * Traceability between ≥3 asset classes. The
    * **schema-level** assertion ("the system can link ≥3 asset
    * classes") lives in `reference-index.test.ts` (`covers at least
    * three distinct asset domains across the link graph`). Here we

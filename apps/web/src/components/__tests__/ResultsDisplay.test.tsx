@@ -303,7 +303,7 @@ describe('ResultsDisplay', () => {
   /**
    * Traceability breadcrumb: when the per-row `traceability` array is
    * supplied alongside `results`, the reference must carry an inline
-   * predicate-chain breadcrumb (WP3, task #18). Each step renders its
+   * predicate-chain breadcrumb. Each step renders its
    * IRI's local name with the full IRI in `title` for hover inspection.
    */
   it('renders a traceability breadcrumb under each reference when trace data is supplied', () => {

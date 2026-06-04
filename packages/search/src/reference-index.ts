@@ -16,7 +16,7 @@
  * paths doesn't surface as a typed leaf.
  *
  * Used by the SPARQL compiler to emit precise JOIN patterns when
- * `slots.references` is set, and by the traceability layer (WP3) to
+ * `slots.references` is set, and by the traceability layer to
  * expose the actual chain to the user.
  *
  * Ontology-agnostic: discovers the link graph empirically from typed

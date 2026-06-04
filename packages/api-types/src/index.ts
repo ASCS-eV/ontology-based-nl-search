@@ -109,7 +109,7 @@ export type ResultRow = Record<string, string>
 /**
  * One step in a per-row traceability breadcrumb. The web client uses
  * these to render the asset → … → joined-asset path the SPARQL engine
- * walked, so users can see *why* a row matched (WP3, task #18).
+ * walked, so users can see *why* a row matched.
  */
 export interface ResultTraceStep {
   /** Full predicate IRI used to reach this step. */
@@ -178,7 +178,7 @@ export interface TraceabilityEdge {
 }
 
 /**
- * One node in a lineage tree (WP3, task #19). Returned by
+ * One node in a lineage tree. Returned by
  * `GET /traceability` per asset, recursively expanded up to the depth
  * budget. `truncated` is `true` when the walker stopped at this node
  * because depth was exhausted — UI may offer a "load more" affordance.
@@ -208,8 +208,7 @@ export interface FacetValue {
 }
 
 /**
- * Per-asset facet snapshot returned by `GET /metadata/asset` (WP3
- * task #20). `groups` is keyed by the discovered SHACL shape-group
+ * Per-asset facet snapshot returned by `GET /metadata/asset`. `groups` is keyed by the discovered SHACL shape-group
  * name (Content, Format, Quality, …). The endpoint treats all groups
  * uniformly — Quality is one facet, not a special case.
  */

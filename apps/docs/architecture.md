@@ -4,7 +4,7 @@
 
 The system converts natural language queries into precise SPARQL queries grounded in OWL + SHACL domain ontologies. The pipeline is designed around one core principle: **the LLM fills structured slots — it never writes SPARQL**. Compiler metadata is derived from the schema graph via `schema-queries.ts`, which builds a `CompilerVocab` with property/domain mappings, shape groups, and Range2D properties.
 
-A second pipeline runs alongside the compiler: at warmup, `reference-index.ts` discovers every cross-asset reference signature `(sourceClass, predicatePath, targetClass)` by BFS over typed instances; `metadata-index.ts` snapshots the per-asset shape-group facets and computes per-domain aggregates. Together they back the WP3 traceability layer — per-row predicate-chain breadcrumbs, the multi-hop `/traceability` lineage endpoint, and the `/metadata/{asset,aggregate}` facet endpoints.
+A second pipeline runs alongside the compiler: at warmup, `reference-index.ts` discovers every cross-asset reference signature `(sourceClass, predicatePath, targetClass)` by BFS over typed instances; `metadata-index.ts` snapshots the per-asset shape-group facets and computes per-domain aggregates. Together they back the traceability layer — per-row predicate-chain breadcrumbs, the multi-hop `/traceability` lineage endpoint, and the `/metadata/{asset,aggregate}` facet endpoints.
 
 ```mermaid
 graph TD
@@ -88,8 +88,8 @@ graph LR
 |                             | `schema-queries.ts`            | Graph-driven SPARQL helpers for domains, references, and shape groups                                         |
 |                             | `property-paths.ts`            | Discovers predicate chains from SHACL (ontology-agnostic)                                                     |
 |                             | `vocabulary-extractor.ts`      | SPARQL-based extraction of `sh:in` enums + numeric props                                                      |
-|                             | `reference-index.ts`           | WP3: BFS-discovered `(source, predicate, target)` reference signatures                                        |
-|                             | `metadata-index.ts`            | WP3: per-asset facet snapshot + per-domain aggregate distribution                                             |
+|                             | `reference-index.ts`           | BFS-discovered `(source, predicate, target)` reference signatures                                             |
+|                             | `metadata-index.ts`            | per-asset facet snapshot + per-domain aggregate distribution                                                  |
 |                             | `compiler.ts`                  | `compileSlots` + `compileSlotsWithTrace` (the trace variant binds intermediate JOIN vars for per-row lineage) |
 |                             | `sparql-validator.ts`          | Post-compilation SPARQL syntax validation                                                                     |
 |                             | `service.ts`                   | Orchestrates init → interpret → compile → execute                                                             |
@@ -106,8 +106,8 @@ graph LR
 |                             | `agent/tools.ts`               | `submit_slots` tool definition                                                                                |
 |                             | `agent/investigation-tools.ts` | 5 schema discovery tools (kept available; rarely used now)                                                    |
 | `@ontology-search/api`      | `routes/search.ts`             | Hono SSE streaming endpoint (search + refine)                                                                 |
-|                             | `routes/traceability.ts`       | WP3: `GET /traceability?asset=<iri>&depth=N` — multi-hop lineage walk                                         |
-|                             | `routes/metadata.ts`           | WP3: `GET /metadata/asset` (per-asset facets) and `/metadata/aggregate` (per-domain stats)                    |
+|                             | `routes/traceability.ts`       | `GET /traceability?asset=<iri>&depth=N` — multi-hop lineage walk                                              |
+|                             | `routes/metadata.ts`           | `GET /metadata/asset` (per-asset facets) and `/metadata/aggregate` (per-domain stats)                         |
 |                             | `routes/stats.ts`              | Statistics endpoint                                                                                           |
 |                             | `warmup.ts`                    | Startup orchestration (load ontology, init store, warm reference + metadata indices)                          |
 | `@ontology-search/testing`  | `helpers/`                     | Shared test utilities (mock logger, fixtures)                                                                 |

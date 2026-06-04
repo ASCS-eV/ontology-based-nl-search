@@ -16,7 +16,7 @@ export const traceabilityRoutes = new Hono<AppEnv>()
  * hops (default {@link DEFAULT_LINEAGE_DEPTH}; the walker clamps to
  * its own hard upper bound internally). Returns the lineage as a
  * typed tree so the UI can render the validation chain without
- * forcing the user to express it as a search filter (WP3 task #19).
+ * forcing the user to express it as a search filter.
  *
  * Asset IRIs frequently contain reserved characters (`:`, `/`); using
  * a query parameter avoids the routing fragility of an IRI-in-path.
