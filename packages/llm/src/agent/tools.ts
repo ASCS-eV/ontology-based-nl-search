@@ -8,12 +8,31 @@ import { z } from 'zod'
  * The LLM fills property names matching the ontology local names
  * (from SHACL sh:path declarations) as documented in skill.md.
  */
-const referenceFilterSchema = z.object({
-  domain: z
-    .string()
-    .describe('Domain of the referenced asset (use domain names from the SHACL shapes)'),
-  label: z.string().optional().describe('Optional label filter on the referenced asset'),
-})
+/** Recursive shape: a reference may carry its own nested references (a chain). */
+interface ReferenceFilterInput {
+  domain: string
+  label?: string
+  references?: ReferenceFilterInput[]
+}
+
+const referenceFilterSchema: z.ZodType<ReferenceFilterInput> = z.lazy(() =>
+  z.object({
+    domain: z
+      .string()
+      .describe('Domain of the referenced asset (use domain names from the SHACL shapes)'),
+    label: z.string().optional().describe('Optional label filter on the referenced asset'),
+    references: z
+      .array(referenceFilterSchema)
+      .optional()
+      .describe(
+        'Nested references the REFERENCED asset must itself carry — a chain one hop deeper. ' +
+          'Use for "X with/containing Y" or "X derived from Y with Z": e.g. "traces with maps" ' +
+          'nests hdmap INSIDE the ositrace entry (scenario → trace → map), which is different ' +
+          'from listing them as siblings (scenario → trace AND scenario → map). Omit for a ' +
+          'direct reference.'
+      ),
+  })
+)
 
 const slotSubmissionSchema = z.object({
   slots: z
@@ -35,7 +54,8 @@ const slotSubmissionSchema = z.object({
         .describe(
           'Cross-reference filter(s): find assets that reference one or more other domains. ' +
             'Pass an ARRAY with one entry per referenced domain when the user names several ' +
-            '(AND-combined — the asset must reference all). A single object is also accepted.'
+            '(AND-combined — the asset must reference all). A single object is also accepted. ' +
+            'Each entry may nest its own `references` to express a chain (see that field).'
         ),
     })
     .describe('Search slots: fill only properties where the user expressed intent'),

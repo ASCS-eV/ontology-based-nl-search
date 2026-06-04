@@ -128,20 +128,30 @@ license-bearing leaf, emit it as a filter keyed by that local name
 
 Use this when the user asks for assets that **reference or are connected to** another asset type.
 
-| Field    | Description                                                         |
-| -------- | ------------------------------------------------------------------- |
-| \`domain\` | Domain of the referenced asset (use domain names from SHACL shapes) |
-| \`label\`  | (Optional) text filter on the referenced asset's label              |
+| Field        | Description                                                                  |
+| ------------ | ---------------------------------------------------------------------------- |
+| \`domain\`     | Domain of the referenced asset (use domain names from SHACL shapes)          |
+| \`label\`      | (Optional) text filter on the referenced asset's label                       |
+| \`references\` | (Optional) NESTED references the referenced asset must itself carry (a chain) |
 
-\`references\` is an ARRAY — one entry per referenced domain. When the user names
-several linked asset types, include them all; they are AND-combined (the asset
-must reference every one). A single object is also accepted for one reference.
+\`references\` is an ARRAY — one entry per referenced domain. They are
+AND-combined (the asset must reference every one). A single object is also
+accepted for one reference.
+
+**Flat (siblings) vs nested (chain) — read the user's phrasing carefully:**
+- Siblings: the PRIMARY asset references several types *directly*. "scenarios
+  that reference a trace AND a map" → \`[{ domain: "trace" }, { domain: "map" }]\`.
+- Nested: a referenced asset itself references another — a chain. The giveaway
+  is "X **with/containing** Y" or "X derived **from** Y **with** Z", where Z
+  belongs to Y, not to the primary. "scenarios derived from traces **with maps**"
+  → the map hangs off the trace → \`[{ domain: "trace", references: [{ domain: "map" }] }]\`
+  (scenario → trace → map), NOT two flat siblings.
 
 **When to use:**
 - When the user asks for one type of asset that links to or includes another type
 - E.g., "assets where you also have the associated X" → \`references: [{ domain: "x" }]\`
 - E.g., "assets that reference a specific named resource" → \`references: [{ domain: "x", label: "name" }]\`
-- E.g., "scenarios derived from traces with maps" → \`references: [{ domain: "trace-domain" }, { domain: "map-domain" }]\`
+- Nest only when the deeper asset clearly belongs to the intermediate one; when unsure, prefer siblings and note the ambiguity in \`interpretation\`.
 
 **Do NOT use** for simple domain selection — only when the user explicitly wants assets that LINK to another asset type.
 
