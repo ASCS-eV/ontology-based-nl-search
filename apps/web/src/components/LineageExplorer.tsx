@@ -88,25 +88,58 @@ export function LineageExplorer({ asset, depth }: LineageExplorerProps) {
       </div>
     )
   }
-  const clusters = clusterEdgesByLabel(node.references)
+  // Deduplicate by IRI so each distinct asset appears once (at its shallowest
+  // path) and the count reflects distinct reachable assets — the raw tree is a
+  // DAG flattened with repetition, which otherwise shows the same asset under
+  // several paths with confusing ×N counts.
+  const { tree, distinct } = dedupeLineage(node)
+  const clusters = clusterEdgesByLabel(tree.references)
   return (
     <div className="px-4 py-3 bg-blue-50/50 border-t border-gray-100">
-      <p className="text-xs font-medium text-blue-700 mb-2 flex items-center gap-1">
+      <p className="text-xs font-medium text-blue-700 flex items-center gap-1">
         <LinkIcon />
-        Lineage ({countReferences(node)} reachable)
+        Lineage ({distinct} distinct {distinct === 1 ? 'asset' : 'assets'} reachable)
+      </p>
+      <p className="text-[10px] text-blue-700/60 mb-2">
+        Everything reachable by following references outward — deeper than the direct References
+        above, each asset shown once at its shortest path.
       </p>
       <div className="flex flex-col gap-2">
         {clusters.map((cluster, i) => (
           <LineageBranch
-            key={`${node.asset}-${i}-${cluster.label}`}
+            key={`${tree.asset}-${i}-${cluster.label}`}
             cluster={cluster}
             depth={1}
-            parentName={node.name || 'asset'}
+            parentName={tree.name || 'asset'}
           />
         ))}
       </div>
     </div>
   )
+}
+
+/**
+ * Collapse the lineage DAG (returned as a tree with repeated nodes) so each
+ * distinct asset IRI appears exactly once, at its SHALLOWEST path (BFS — a
+ * directly-referenced asset wins over the same asset reached via an
+ * intermediate). Returns the pruned tree plus the distinct reachable count.
+ */
+function dedupeLineage(root: TraceabilityNode): { tree: TraceabilityNode; distinct: number } {
+  const seen = new Set<string>([root.asset])
+  const prunedRoot: TraceabilityNode = { ...root, references: [] }
+  const queue: Array<[TraceabilityNode, TraceabilityNode]> = [[root, prunedRoot]]
+  while (queue.length > 0) {
+    const [orig, pruned] = queue.shift()!
+    for (const edge of orig.references) {
+      const iri = edge.target.asset
+      if (seen.has(iri)) continue
+      seen.add(iri)
+      const prunedChild: TraceabilityNode = { ...edge.target, references: [] }
+      pruned.references.push({ predicatePath: edge.predicatePath, target: prunedChild })
+      queue.push([edge.target, prunedChild])
+    }
+  }
+  return { tree: prunedRoot, distinct: seen.size - 1 } // exclude the root asset itself
 }
 
 /**
@@ -243,14 +276,6 @@ function LineageBreadcrumb({ predicatePath }: { predicatePath: string[] }) {
       ))}
     </ol>
   )
-}
-
-function countReferences(node: TraceabilityNode): number {
-  let n = 0
-  for (const edge of node.references) {
-    n += 1 + countReferences(edge.target)
-  }
-  return n
 }
 
 function predicateLocalName(iri: string): string {

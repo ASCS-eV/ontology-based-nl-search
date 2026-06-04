@@ -319,9 +319,13 @@ function AssetCard({ group }: { group: GroupedAsset }) {
 
       {group.references.length > 0 && (
         <div className="px-4 py-3 bg-blue-50/50 border-t border-gray-100">
-          <p className="text-xs font-medium text-blue-700 mb-2 flex items-center gap-1">
+          <p className="text-xs font-medium text-blue-700 flex items-center gap-1">
             <LinkIcon />
             References ({countReferences(group.references)})
+          </p>
+          <p className="text-[10px] text-blue-700/60 mb-2">
+            Assets this result references to satisfy the query — the cross-reference JOINs the
+            search matched on.
           </p>
           <ReferenceTree refs={group.references} rootLabel="asset" />
         </div>

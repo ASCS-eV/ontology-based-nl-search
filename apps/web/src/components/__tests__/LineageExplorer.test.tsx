@@ -64,6 +64,58 @@ describe('LineageExplorer', () => {
     expect(screen.getByText('iri')).toBeInTheDocument()
   })
 
+  it('deduplicates an asset reachable via two paths and counts distinct assets', async () => {
+    // HD Map 1 is reachable BOTH directly from the scenario AND via OSI Trace 1.
+    // The raw DAG-as-tree lists it twice; the explorer must show it once (at its
+    // shallowest path = direct) and report 2 DISTINCT reachable assets, not 3.
+    const p = (...path: string[]) => ({ predicatePath: path })
+    const hdmap1 = {
+      asset: 'did:web:example:hdmap-1',
+      name: 'HD Map 1',
+      type: 'https://example.org/hdmap/HdMap',
+      domain: 'hdmap',
+      truncated: false,
+      references: [],
+    }
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          node: {
+            asset: 'did:web:example:scenario-1',
+            name: 'Scenario 1',
+            type: 'https://example.org/scenario/Scenario',
+            domain: 'scenario',
+            truncated: false,
+            references: [
+              // Direct edge to HD Map 1 (depth 1 — should win).
+              { ...p('https://example.org/manifest/v5/iri'), target: hdmap1 },
+              // OSI Trace 1, which ALSO references HD Map 1 (depth 2 — pruned).
+              {
+                ...p('https://example.org/manifest/v5/iri'),
+                target: {
+                  asset: 'did:web:example:ositrace-1',
+                  name: 'OSI Trace 1',
+                  type: 'https://example.org/ositrace/OsiTrace',
+                  domain: 'ositrace',
+                  truncated: false,
+                  references: [{ ...p('https://example.org/manifest/v5/iri'), target: hdmap1 }],
+                },
+              },
+            ],
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    )
+
+    render(<LineageExplorer asset="did:web:example:scenario-1" />)
+    // HD Map 1 appears exactly once (getByText throws on duplicates).
+    expect(await screen.findByText('HD Map 1')).toBeInTheDocument()
+    expect(screen.getByText('OSI Trace 1')).toBeInTheDocument()
+    // 2 distinct assets reachable (scenario excluded), not 3 tree positions.
+    expect(screen.getByText(/2 distinct assets reachable/i)).toBeInTheDocument()
+  })
+
   it('collapses siblings sharing a label into one pill with ×N count', async () => {
     // The "Cologne Motorway HD Map" ×8 case in real fixture: many
     // distinct IRIs, one label. Should render as ONE pill in the
