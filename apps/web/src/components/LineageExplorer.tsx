@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import type { TraceabilityNode, TraceabilityResponse } from '../api-types'
+import { dedupeLineage } from '../lib/lineage'
 
 interface LineageExplorerProps {
   /** Asset IRI to root the lineage walk at. */
@@ -116,30 +117,6 @@ export function LineageExplorer({ asset, depth }: LineageExplorerProps) {
       </div>
     </div>
   )
-}
-
-/**
- * Collapse the lineage DAG (returned as a tree with repeated nodes) so each
- * distinct asset IRI appears exactly once, at its SHALLOWEST path (BFS — a
- * directly-referenced asset wins over the same asset reached via an
- * intermediate). Returns the pruned tree plus the distinct reachable count.
- */
-function dedupeLineage(root: TraceabilityNode): { tree: TraceabilityNode; distinct: number } {
-  const seen = new Set<string>([root.asset])
-  const prunedRoot: TraceabilityNode = { ...root, references: [] }
-  const queue: Array<[TraceabilityNode, TraceabilityNode]> = [[root, prunedRoot]]
-  while (queue.length > 0) {
-    const [orig, pruned] = queue.shift()!
-    for (const edge of orig.references) {
-      const iri = edge.target.asset
-      if (seen.has(iri)) continue
-      seen.add(iri)
-      const prunedChild: TraceabilityNode = { ...edge.target, references: [] }
-      pruned.references.push({ predicatePath: edge.predicatePath, target: prunedChild })
-      queue.push([edge.target, prunedChild])
-    }
-  }
-  return { tree: prunedRoot, distinct: seen.size - 1 } // exclude the root asset itself
 }
 
 /**
