@@ -404,6 +404,9 @@ export function validateSlots(
     },
     gaps: validatedGaps,
     sparql: response.sparql,
+    // Preserve the compiler's traceability plans — this final validation pass
+    // must not strip them, or per-row reference breadcrumbs never reach the UI.
+    trace: response.trace,
   }
 }
 

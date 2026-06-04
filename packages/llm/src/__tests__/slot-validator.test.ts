@@ -132,6 +132,26 @@ describe('validateSlots', () => {
     expect(result.interpretation.mappedTerms[0]!.mapped).toBe('motorway')
   })
 
+  it('preserves the compiler traceability plans (per-row breadcrumbs reach the UI)', () => {
+    const response: LlmStructuredResponse = {
+      interpretation: { summary: 'test', mappedTerms: [] },
+      gaps: [],
+      sparql: 'SELECT * WHERE { }',
+      trace: [
+        {
+          sourceVariable: 'asset',
+          targetVariable: 'refAsset',
+          steps: [{ variable: 'ref_step_1', predicate: 'https://example.org/onto#hasManifest' }],
+        },
+      ],
+    }
+
+    const result = validateSlots(response, testVocabulary)
+    // The final validation pass must not strip `trace`, or breadcrumbs vanish
+    // end-to-end (the bug the integration test's mocked LLM masked).
+    expect(result.trace).toEqual(response.trace)
+  })
+
   it('corrects fuzzy matches and sets confidence to medium', () => {
     const response: LlmStructuredResponse = {
       interpretation: {
