@@ -14,7 +14,7 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | upper_first }}
 {% for commit in commits %}\
-- {{ commit.message | upper_first }}{% if commit.id %} ({{ commit.id | truncate(length=7, end="") }}){% endif %}
+- {{ commit.message | split(pat="\n") | first | trim | upper_first }}{% if commit.id %} ({{ commit.id | truncate(length=7, end="") }}){% endif %}
 {% endfor %}\
 {% endfor %}\n
 """
@@ -23,7 +23,12 @@ footer = ""
 
 [git]
 conventional_commits = true
-filter_unconventional = true
+# Keep non-conventional commits rather than silently dropping them: PRs are
+# squash-merged by title, and a title that misses the conventional prefix (it
+# happens — commitlint guards commits, not squash titles) would otherwise
+# vanish from the notes. The skip rules below drop genuine noise; everything
+# else falls through to "Other".
+filter_unconventional = false
 split_commits = false
 protect_breaking_commits = true
 filter_commits = false
@@ -31,6 +36,8 @@ tag_pattern = "v[0-9]+\\.[0-9]+\\.[0-9]+(-rc\\.[0-9]+)?"
 topo_order = false
 sort_commits = "newest"
 commit_parsers = [
+  { message = "^Merge ", skip = true },
+  { message = "^Initial commit", skip = true },
   { message = "^feat", group = "Features" },
   { message = "^fix", group = "Bug Fixes" },
   { message = "^perf", group = "Performance" },
