@@ -142,6 +142,15 @@ const envSchema = z.object({
    * `Authorization: Bearer <key>` or `x-api-key: <key>`; mismatches get 401.
    */
   API_KEY: z.string().optional(),
+  /**
+   * Explicit acknowledgement that the API may run WITHOUT authentication in
+   * production (e.g. it sits behind a gateway / trusted network that
+   * authenticates upstream). Required to start in production when `API_KEY`
+   * is empty — see the cross-field guard below. Default `false` so an open
+   * public deployment can't happen by accident (fail-safe, mirroring the
+   * `CORS_ALLOWED_ORIGINS="*"` production guard).
+   */
+  API_ALLOW_UNAUTHENTICATED: z.coerce.boolean().default(false),
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).optional(),
@@ -187,7 +196,6 @@ export function getConfig(): AppConfig {
       'CORS_ALLOWED_ORIGINS="*" is unsafe in production. Set it to a comma-separated list of exact frontend origins (e.g. "https://app.example.com").'
     )
   }
-
   // Only enforce API key requirements outside of test environment
   if (result.data.NODE_ENV !== 'test') {
     if (result.data.AI_PROVIDER === 'openai' && !result.data.OPENAI_API_KEY) {
@@ -195,6 +203,22 @@ export function getConfig(): AppConfig {
     }
     if (result.data.AI_PROVIDER === 'anthropic' && !result.data.ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY is required when AI_PROVIDER is "anthropic"')
+    }
+    // Fail-safe auth posture: a production API must not be left open by accident.
+    // Require either an API key, or an explicit opt-out for deployments that
+    // authenticate upstream (gateway / trusted network). Runs after the
+    // provider-key checks so their more specific error surfaces first.
+    if (
+      result.data.NODE_ENV === 'production' &&
+      !result.data.API_KEY &&
+      !result.data.API_ALLOW_UNAUTHENTICATED
+    ) {
+      throw new Error(
+        'No API authentication configured in production. Set API_KEY to require a key, ' +
+          'or set API_ALLOW_UNAUTHENTICATED=true to run open deliberately (e.g. behind a ' +
+          'gateway that authenticates). /search invokes an LLM per request, so an ' +
+          'unauthenticated public endpoint is a cost/abuse risk.'
+      )
     }
   }
 

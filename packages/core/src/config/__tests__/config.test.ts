@@ -178,8 +178,49 @@ describe('config', () => {
       process.env.AI_PROVIDER = 'ollama'
       process.env.NODE_ENV = 'production'
       process.env.CORS_ALLOWED_ORIGINS = 'https://app.example.com,https://staging.example.com'
+      process.env.API_KEY = 'k' // satisfy the production auth guard
       resetConfig()
       expect(getConfig().CORS_ALLOWED_ORIGINS).toContain('https://app.example.com')
+    })
+  })
+
+  describe('production auth posture', () => {
+    /** In production an open API must be a deliberate, acknowledged choice. */
+    function prodEnv() {
+      process.env.AI_PROVIDER = 'ollama' // keyless provider, isolates the auth guard
+      process.env.NODE_ENV = 'production'
+      process.env.CORS_ALLOWED_ORIGINS = 'https://app.example.com'
+      delete process.env.API_KEY
+      delete process.env.API_ALLOW_UNAUTHENTICATED
+    }
+
+    it('refuses to start in production with no API_KEY and no explicit opt-out', () => {
+      prodEnv()
+      resetConfig()
+      expect(() => getConfig()).toThrow(/No API authentication configured in production/)
+    })
+
+    it('starts in production when API_KEY is set', () => {
+      prodEnv()
+      process.env.API_KEY = 'secret'
+      resetConfig()
+      expect(() => getConfig()).not.toThrow()
+    })
+
+    it('starts in production when unauthenticated access is explicitly allowed', () => {
+      prodEnv()
+      process.env.API_ALLOW_UNAUTHENTICATED = 'true'
+      resetConfig()
+      expect(getConfig().API_ALLOW_UNAUTHENTICATED).toBe(true)
+    })
+
+    it('does not require auth outside production (dev/test stay open)', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      process.env.NODE_ENV = 'development'
+      delete process.env.API_KEY
+      delete process.env.API_ALLOW_UNAUTHENTICATED
+      resetConfig()
+      expect(() => getConfig()).not.toThrow()
     })
 
     it('defaults to "*" in development and test', () => {
