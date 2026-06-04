@@ -51,6 +51,39 @@ const DEFAULT_GRACE_MS = 5_000
  *   3. exit 0.
  * A watchdog timer force-exits (code 1) if either async step stalls.
  */
+export interface ListenErrorDeps {
+  /** The port we tried to bind — surfaced in the EADDRINUSE message. */
+  port: number
+  log: ShutdownLogger
+  /** Process exit — injectable so tests don't kill the runner. */
+  exit: (code: number) => void
+}
+
+/**
+ * Handle a fatal HTTP-server `error` event. The common case is `EADDRINUSE`
+ * (the port is already taken — usually a stale or duplicate instance): surface
+ * a clear, actionable message and exit non-zero, instead of letting the
+ * unhandled `error` event crash the process with a raw stack trace. Returned as
+ * a handler so it can be attached to the server `serve()` returns and
+ * unit-tested without binding a real socket.
+ */
+export function createListenErrorHandler(
+  deps: ListenErrorDeps
+): (err: NodeJS.ErrnoException) => void {
+  return (err) => {
+    if (err.code === 'EADDRINUSE') {
+      deps.log.error(
+        `Port ${deps.port} is already in use — another instance may be running. ` +
+          `Free it (e.g. \`node scripts/clean-ports.mjs ${deps.port}\`) or set API_PORT to a different port.`,
+        err
+      )
+    } else {
+      deps.log.error('HTTP server error', err)
+    }
+    deps.exit(1)
+  }
+}
+
 export function createShutdownHandler(deps: ShutdownDeps): (signal: string) => Promise<void> {
   const graceMs = deps.graceMs ?? DEFAULT_GRACE_MS
   let shuttingDown = false

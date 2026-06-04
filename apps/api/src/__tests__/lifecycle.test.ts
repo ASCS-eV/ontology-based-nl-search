@@ -11,7 +11,11 @@
 import type { ServerType } from '@hono/node-server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createShutdownHandler, type ShutdownLogger } from '../lifecycle.js'
+import {
+  createListenErrorHandler,
+  createShutdownHandler,
+  type ShutdownLogger,
+} from '../lifecycle.js'
 
 function fakeLogger(): ShutdownLogger {
   return { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
@@ -131,6 +135,29 @@ describe('createShutdownHandler', () => {
     })
 
     await handler('SIGTERM')
+    expect(exit).toHaveBeenCalledWith(1)
+  })
+})
+
+describe('createListenErrorHandler', () => {
+  it('reports EADDRINUSE with an actionable message and exits non-zero', () => {
+    const log = fakeLogger()
+    const exit = vi.fn()
+    const handler = createListenErrorHandler({ port: 3003, log, exit })
+
+    handler(Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' }))
+
+    expect(exit).toHaveBeenCalledWith(1)
+    const msg = vi.mocked(log.error).mock.calls[0]?.[0] as string
+    expect(msg).toContain('3003')
+    expect(msg).toMatch(/in use/i)
+    expect(msg).toMatch(/clean-ports|API_PORT/) // actionable guidance
+  })
+
+  it('exits non-zero on a generic (non-EADDRINUSE) server error', () => {
+    const log = fakeLogger()
+    const exit = vi.fn()
+    createListenErrorHandler({ port: 3003, log, exit })(new Error('boom'))
     expect(exit).toHaveBeenCalledWith(1)
   })
 })
