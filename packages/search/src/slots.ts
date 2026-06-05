@@ -134,7 +134,7 @@ export interface TraceabilityStep {
  * Compile-time plan describing one cross-reference JOIN the compiler emitted.
  * The service uses it to reconstruct a per-row traceability chain from the
  * bound variables — turning a flat result set into an ordered breadcrumb the
- * UI can render (WP3). A multi-reference query yields one plan per reference.
+ * UI can render. A multi-reference query yields one plan per reference.
  */
 export interface TraceabilityPlan {
   /** SPARQL variable name (no `?`) anchoring the chain — typically `"asset"`. */

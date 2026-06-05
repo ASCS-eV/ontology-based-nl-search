@@ -229,8 +229,7 @@ describe('POST /search/refine', () => {
    * path can reach the cross-reference JOIN compiler — without it,
    * `references: { domain: 'hdmap' }` was silently stripped, the
    * response had no `?refAsset` rows, and the AssetCard / lineage UI
-   * never rendered. Verified end-to-end in the browser during the WP3
-   * test pass.
+   * never rendered. Verified end-to-end in the browser during manual end-to-end verification.
    */
   it('forwards a `references` slot through to the service', async () => {
     const { searchRefine } = await import('../search-factory.js')

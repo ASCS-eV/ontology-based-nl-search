@@ -40,7 +40,7 @@ export interface LlmStructuredResponse {
    * Traceability plans emitted by the compiler when the SPARQL contains
    * cross-reference JOINs — one per projected reference. The service uses
    * them to attach per-row, per-reference breadcrumbs in
-   * `ExecutionResult.traceability` (WP3, task #18).
+   * `ExecutionResult.traceability`.
    */
   trace?: TraceabilityPlan[]
   /** Per-stage timings within the LLM pipeline. */

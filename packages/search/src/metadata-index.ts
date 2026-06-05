@@ -1,5 +1,5 @@
 /**
- * Metadata / shape-group facet index (WP3, task #20).
+ * Metadata / shape-group facet index.
  *
  * Discovers facets generically from the SHACL `shapeGroups` index that
  * `getCompilerVocab` already builds: any property whose target shape

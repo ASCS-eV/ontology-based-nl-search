@@ -1,5 +1,5 @@
 /**
- * Reference-index integration tests (WP3, task #17).
+ * Reference-index integration tests.
  *
  * The index must:
  *   1. Discover every link between two typed asset classes that exists
@@ -81,7 +81,7 @@ describe('reference index — data-driven discovery', () => {
   }, 120_000)
 
   /**
-   * Regression: the WP3 motivating case. The data has 50/53 ositraces
+   * Regression: the motivating case. The data has 50/53 ositraces
    * with `manifest:hasReferencedArtifacts` pointing to hdmap IRIs;
    * the SHACL doesn't declare this chain inline on ositrace (it
    * inherits it via the shared manifest:ManifestShape), so the

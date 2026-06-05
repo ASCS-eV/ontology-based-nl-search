@@ -1,5 +1,5 @@
 /**
- * Traceability explorer (WP3, task #19).
+ * Traceability explorer.
  *
  * Given an asset IRI, walks the outgoing `@id` references already present
  * in the instance graph and returns the lineage as a typed tree. Where
@@ -31,7 +31,7 @@ import {
 
 const log = createComponentLogger('traceability')
 
-/** Default depth for lineage exploration — three hops covers the WP3 case. */
+/** Default depth for lineage exploration — three hops covers the deepest reference chain in the sample data. */
 export const DEFAULT_LINEAGE_DEPTH = 3
 /** Hard cap on recursion depth to bound work per request. */
 export const MAX_LINEAGE_DEPTH = 6

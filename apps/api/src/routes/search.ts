@@ -25,7 +25,7 @@ const searchSlotsSchema = z.object({
   // Cross-reference JOIN target. Required by the refine path so the UI
   // can re-render `?refAsset`-carrying rows (and the per-row
   // traceability + lineage explorer that depend on them) without going
-  // back through the LLM (WP3 tasks #18 / #19).
+  // back through the LLM.
   // Accept an array (one entry per referenced domain, AND-combined) or the
   // legacy single object, and normalize to the array form the compiler expects.
   references: z
