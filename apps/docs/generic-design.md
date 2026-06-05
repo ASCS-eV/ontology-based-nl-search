@@ -126,10 +126,14 @@ sequenceDiagram
 
     alt Simple query (the prompt's SHACL is enough — almost always the case)
         L->>SS: submit_slots(domains:[hdmap], filters:{roadTypes:[motorway], country:[FR]})
-    else Cross-domain query
+    else Cross-domain query (references is a list, AND-combined)
         L->>SS: submit_slots(domains:[scenario], filters:{country:[FR]}, references:[{domain:hdmap}])
+    else Chained / nested reference ("traces with maps")
+        L->>SS: submit_slots(domains:[scenario], references:[{domain:ositrace, references:[{domain:hdmap}]}])
     end
 ```
+
+The two cross-domain branches are distinct claims: flat siblings `[{ositrace}, {hdmap}]` mean the scenario references a trace **and** (independently) a map; the nested form `[{ositrace, references:[{hdmap}]}]` means scenario → trace → map (the map belongs to the trace). Both compile deterministically from discovered SHACL paths.
 
 The key insight: **the LLM can reason about ontology structure using the same SPARQL engine that executes user queries**. The schema graph is both the source of truth for the compiler AND an explorable knowledge base for the agent.
 

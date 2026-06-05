@@ -33,7 +33,7 @@ ex:author rdfs:domain ex:Document .
 # Then inferred: <book1> rdf:type ex:Document
 ```
 
-**Multiple domains = intersection:**
+**Multiple domains each independently infer a type** (RDFS only _infers_, never _constrains_ — the subject is entailed to be an instance of every declared domain class):
 
 ```turtle
 ex:property rdfs:domain ex:ClassA .

@@ -4,7 +4,8 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 export default withMermaid(
   defineConfig({
     title: 'Ontology NL Search',
-    description: 'Natural language search for ENVITED-X simulation assets',
+    description:
+      'Natural language search over any OWL + SHACL ontology (demonstrated on ENVITED-X simulation assets)',
     base: process.env.VITEPRESS_BASE || '/docs/',
     appearance: false,
     themeConfig: {

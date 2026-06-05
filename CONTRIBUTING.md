@@ -60,8 +60,10 @@ fix or surface it within the PR's scope, do not bundle.
 
 6. **Layering is enforced.** `core` has zero workspace deps; `sparql` and
    `ontology` depend only on `core`; `search` depends only on
-   `core`/`sparql`/`ontology`; `llm` depends only on the above; apps depend
-   on packages — packages never depend on apps. No upward import. CI gate:
+   `core`/`sparql`/`ontology`/`api-types`; `llm` depends only on the above;
+   apps depend on packages — packages never depend on apps. (`api-types` is a
+   zero-dependency, browser-safe leaf any layer may import.) No upward import.
+   CI gate:
    `madge --circular --extensions ts packages` plus an ESLint boundaries rule.
 7. **Apps never own reusable logic.** If a file in `apps/api/src` or
    `apps/web/src` could be imported by another app, it belongs in a package.
@@ -134,9 +136,12 @@ fix or surface it within the PR's scope, do not bundle.
     `escapeSparqlLiteral`** from `@ontology-search/sparql/escape`, which
     covers `\\`, `"`, `'`, `\n`, `\r`, `\t`, and ` -`. IRIs are
     validated by a full RFC 3987 / W3C IRI regex, not a prefix check.
-26. **API exposes CORS allowlist, rate limit, and request-body cap** loaded
-    from config. No wildcard CORS in production builds; `check:prod-config`
-    fails fast if mis-set.
+26. **API exposes CORS allowlist, rate limit, request-body cap, and optional
+    API-key auth** loaded from config. The Zod config loader
+    (`packages/core/src/config`) fails fast at startup when production is
+    mis-set: wildcard CORS is rejected, and an unauthenticated start requires
+    an explicit `API_ALLOW_UNAUTHENTICATED=true` opt-out (otherwise `API_KEY`
+    must be set).
 27. **Credentials files are stat-checked for permissions** before being read.
 
 ### Process
@@ -162,6 +167,17 @@ ci: add caching to CI workflow
 ```
 
 Always sign commits: `git commit -s -S`
+
+Conventional commits also feed release notes (see Releases below).
+
+### Releases
+
+Releases are cut manually from `main` via the **Release** GitHub Actions
+workflow (`.github/workflows/cd-release.yml`): run it with a version tag
+(e.g. `v0.2.0`, or `v0.2.0-rc.1` for a prerelease), or push a matching
+`v*.*.*` tag. The workflow generates the changelog from the Conventional
+Commit history with [git-cliff](https://git-cliff.org) (`cliff.toml`) and
+publishes a GitHub Release. It does not deploy the app — hosting is external.
 
 ## Monorepo Architecture
 
@@ -210,7 +226,7 @@ packages/
 │   ├── service.ts              # Orchestrates init → interpret → compile → execute
 │   ├── factory.ts              # Service factory and dependency wiring
 │   ├── slots.ts                # SearchSlots type definitions
-│   ├── data-loader.ts          # Loads 5 sample TTL files (267 dev/test assets)
+│   ├── data-loader.ts          # Loads sample data (prefers JSON-LD, falls back to TTL) — 358 dev/test assets
 │   ├── init.ts                 # Initialization sequence
 │   └── types.ts                # Shared types
 ├── llm/                    # LLM integration
@@ -231,7 +247,7 @@ packages/
 - **`core`** has zero internal workspace dependencies — it is the foundation
 - **`sparql`** depends only on `core`
 - **`ontology`** depends only on `core`
-- **`search`** depends on `core`, `sparql`, and `ontology`
+- **`search`** depends on `core`, `sparql`, `ontology`, and `api-types`
 - **`llm`** depends on `core`, `ontology`, and `search`
 - **Apps** (`api`, `web`) depend on packages — packages never depend on apps
 - **`testing`** provides shared test utilities — not used in production code
@@ -264,7 +280,7 @@ packages/
 Copy `.env.example` to `.env.local` and configure:
 
 - `SPARQL_MODE`: `memory` (dev) or `remote` (production)
-- `AI_PROVIDER`: `ollama` (default, free), `openai`, or `copilot`
+- `AI_PROVIDER`: one of `openai` (schema default), `ollama`, `anthropic`, `claude-cli`, `vibe-cli` (Mistral), `copilot` — `.env.example` ships `ollama` for zero-config local use
 - `AI_MODEL`: Model identifier (e.g., `qwen3:8b`, `gpt-4o`)
 - `OPENAI_API_KEY`: Your API key (for OpenAI provider)
 - `OLLAMA_BASE_URL`: Ollama server URL (default: `http://localhost:11434/v1`)

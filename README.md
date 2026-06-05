@@ -6,17 +6,17 @@ A locally running TypeScript web application with a Google-style search bar that
 
 ## Tech Stack
 
-| Layer                   | Technology                                                                |
-| ----------------------- | ------------------------------------------------------------------------- |
-| **Frontend**            | Vite, React 19, TanStack Router, Tailwind 4                               |
-| **API**                 | Hono (SSE streaming)                                                      |
-| **LLM Integration**     | Vercel AI SDK (OpenAI, Ollama, Anthropic, Claude CLI), GitHub Copilot SDK |
-| **SPARQL Store (dev)**  | Oxigraph WASM (in-memory, zero setup)                                     |
-| **SPARQL Store (prod)** | Apache Jena Fuseki (remote endpoint)                                      |
-| **Ontology Source**     | Fetched & cached from ontology-management-base                            |
-| **Testing**             | Vitest (unit/integration), Playwright (E2E)                               |
-| **Monorepo**            | pnpm workspaces, Turborepo                                                |
-| **Quality**             | ESLint, Prettier, Husky, lint-staged, GitHub Actions CI                   |
+| Layer                   | Technology                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| **Frontend**            | Vite, React 19, TanStack Router, Tailwind 4                                                 |
+| **API**                 | Hono (SSE streaming)                                                                        |
+| **LLM Integration**     | Vercel AI SDK (OpenAI, Ollama, Anthropic, Claude CLI, vibe-cli/Mistral), GitHub Copilot SDK |
+| **SPARQL Store (dev)**  | Oxigraph WASM (in-memory, zero setup)                                                       |
+| **SPARQL Store (prod)** | Apache Jena Fuseki (remote endpoint)                                                        |
+| **Ontology Source**     | Fetched & cached from ontology-management-base                                              |
+| **Testing**             | Vitest (unit/integration), Playwright (E2E)                                                 |
+| **Monorepo**            | pnpm workspaces, Turborepo                                                                  |
+| **Quality**             | ESLint, Prettier, Husky, lint-staged, GitHub Actions CI                                     |
 
 ## Quick Start
 
@@ -50,6 +50,7 @@ cp .env.example .env.local
 # - "openai"     (requires OPENAI_API_KEY)
 # - "anthropic"  (requires ANTHROPIC_API_KEY)
 # - "claude-cli" (uses ~/.claude/.credentials.json; run `claude` once to log in)
+# - "vibe-cli"   (Mistral; reuses the key the Mistral `vibe` CLI stored)
 # - "copilot"    (requires GitHub Copilot Enterprise)
 ```
 
@@ -113,7 +114,7 @@ User Query ("German highways with 3 lanes")
     └─────────┬─────────┘
               │
     ┌─────────▼─────────┐
-    │  LLM Agent         │◄── Configurable provider (OpenAI, Ollama, Anthropic, Claude CLI, Copilot)
+    │  LLM Agent         │◄── Configurable provider (OpenAI, Ollama, Anthropic, Claude CLI, vibe-cli, Copilot)
     │  NL → SearchSlots  │    Fills structured slots, never writes SPARQL
     └─────────┬─────────┘
               │
@@ -149,7 +150,7 @@ apps/
 packages/
 ├── core/       # Config (Zod-validated), Logging, Errors
 ├── sparql/     # Oxigraph WASM, Remote, Cached store implementations
-├── ontology/   # Ontology source resolution, vocabulary indexing
+├── ontology/   # Ontology source resolution, domain registry, SHACL validation
 ├── search/     # Schema loader, schema queries, compiler, service
 ├── llm/        # Prompt builder, slot validator, LLM agents
 └── testing/    # Shared test helpers and fixtures
@@ -190,18 +191,22 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 ## Configuration
 
-| Variable            | Description                                                                       | Default                            |
-| ------------------- | --------------------------------------------------------------------------------- | ---------------------------------- |
-| `SPARQL_MODE`       | `memory` (Oxigraph WASM) or `remote` (Fuseki)                                     | `memory`                           |
-| `SPARQL_ENDPOINT`   | Remote SPARQL endpoint URL                                                        | —                                  |
-| `AI_PROVIDER`       | LLM provider: `openai`, `ollama`, `anthropic`, `claude-cli`, `copilot`            | `ollama`                           |
-| `AI_MODEL`          | Model identifier (see `.env.example` for per-provider model lists)                | `qwen3:8b`                         |
-| `OPENAI_API_KEY`    | OpenAI API key (when `AI_PROVIDER=openai`)                                        | —                                  |
-| `ANTHROPIC_API_KEY` | Anthropic API key (when `AI_PROVIDER=anthropic`; `claude-cli` uses OAuth instead) | —                                  |
-| `OLLAMA_BASE_URL`   | Ollama server URL                                                                 | `http://localhost:11434/v1`        |
-| `ONTOLOGY_REPO`     | GitHub repo for ontologies (fallback)                                             | `ASCS-eV/ontology-management-base` |
-| `ONTOLOGY_BRANCH`   | Branch to fetch ontologies from (fallback)                                        | `main`                             |
+| Variable                    | Description                                                                                                                 | Default                                  |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `SPARQL_MODE`               | `memory` (Oxigraph WASM) or `remote` (Fuseki)                                                                               | `memory`                                 |
+| `SPARQL_ENDPOINT`           | Remote SPARQL endpoint URL                                                                                                  | —                                        |
+| `AI_PROVIDER`               | LLM provider: `openai`, `ollama`, `anthropic`, `claude-cli`, `vibe-cli`, `copilot`                                          | `openai` (`.env.example` ships `ollama`) |
+| `AI_MODEL`                  | Model identifier (see `.env.example` for per-provider model lists)                                                          | `qwen3:8b`                               |
+| `OPENAI_API_KEY`            | OpenAI API key (when `AI_PROVIDER=openai`)                                                                                  | —                                        |
+| `ANTHROPIC_API_KEY`         | Anthropic API key (when `AI_PROVIDER=anthropic`; `claude-cli` uses OAuth instead)                                           | —                                        |
+| `OLLAMA_BASE_URL`           | Ollama server URL                                                                                                           | `http://localhost:11434/v1`              |
+| `API_KEY`                   | Optional API key; when set, every route except `/health` must present it                                                    | — (open)                                 |
+| `API_ALLOW_UNAUTHENTICATED` | Explicit opt-out to run open in production (e.g. behind an authenticating gateway); otherwise production requires `API_KEY` | `false`                                  |
+| `CORS_ALLOWED_ORIGINS`      | Comma-separated allowed origins; wildcard `*` is rejected in production                                                     | `*`                                      |
+| `RATE_LIMIT_RPS`            | Token-bucket rate limit (requests/sec); `0` disables                                                                        | `0`                                      |
+| `ONTOLOGY_REPO`             | GitHub repo for ontologies (fallback)                                                                                       | `ASCS-eV/ontology-management-base`       |
+| `ONTOLOGY_BRANCH`           | Branch to fetch ontologies from (fallback)                                                                                  | `main`                                   |
 
 ## License
 
-See [LICENSE](./LICENSE).
+Licensed under the Apache License 2.0 — see [LICENSE](./LICENSE).

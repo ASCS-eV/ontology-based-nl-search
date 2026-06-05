@@ -229,3 +229,7 @@ Every filter value is validated against `sh:in` vocabulary from the ontology. Un
 ::: tip Zod Validation
 All API inputs are validated with Zod schemas. Configuration is validated at startup. No untyped data flows through the system.
 :::
+
+::: warning HTTP Boundary & Auth
+The API enforces a CORS allowlist (wildcard `*` is rejected in production), a request-body / query-length cap, and an optional token-bucket rate limiter. Authentication is an optional API key (`API_KEY`) on every route except `/health`; in production the server refuses to start unless a key is set **or** `API_ALLOW_UNAUTHENTICATED=true` is set explicitly (e.g. behind a gateway that authenticates upstream). See [`SECURITY.md`](https://github.com/ASCS-eV/ontology-based-nl-search/blob/main/SECURITY.md).
+:::

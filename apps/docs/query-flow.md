@@ -67,7 +67,7 @@ The LLM agent receives the user query + generated prompt and calls `submit_slots
 }
 ```
 
-The LLM resolves natural-language synonyms ("highway" → "motorway", "German" → "DE") grounded by the raw SHACL shapes. There are no top-level `location` or `license` slots: country, region, city and license all flow through the same `filters` map, keyed by SHACL leaf local name. The optional `references` slot is a **list** of cross-domain JOINs, each bound to a SHACL-discovered asset class; they are AND-combined, so an asset must reference _all_ listed domains to match. A single object is still accepted and normalized to a one-element list for backward compatibility.
+The LLM resolves natural-language synonyms ("highway" → "motorway", "German" → "DE") grounded by the raw SHACL shapes. There are no top-level `location` or `license` slots: country, region, city and license all flow through the same `filters` map, keyed by SHACL leaf local name. The optional `references` slot is a **list** of cross-domain JOINs, each bound to a SHACL-discovered asset class; they are AND-combined, so an asset must reference _all_ listed domains to match. Each entry may itself nest `references` to express a **chain** (scenario → trace → map) rather than flat siblings (scenario → trace AND scenario → map). A single object is still accepted and normalized to a one-element list for backward compatibility.
 
 The agent is configured with `toolChoice: { type: 'tool', toolName: 'submit_slots' }` — the LLM commits on step 1. Investigation tools remain available but are rarely needed because the full SHACL is already in the prompt.
 
@@ -148,5 +148,7 @@ Results are sent as **Server-Sent Events** (SSE) — the UI updates progressivel
 | `results`        | `{ results: [...] }`              | Query results              |
 | `meta`           | `{ matchCount, executionTimeMs }` | Timing stats               |
 | `done`           | `{}`                              | Pipeline complete          |
+
+`matchCount` is the number of **distinct primary assets**, not result rows — a cross-reference JOIN fans out to one row per referenced asset, so the UI groups rows by `?asset` and the count reflects assets (rows ≥ matches). When the query contains a reference JOIN, the `results` payload also carries a per-row, per-reference `traceability` breadcrumb.
 
 Users see the interpretation immediately while SPARQL execution happens in the background — perceived latency is dramatically reduced.
