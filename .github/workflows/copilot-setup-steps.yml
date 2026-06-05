@@ -34,4 +34,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        # Playwright lives in apps/e2e/node_modules/.bin in the pnpm workspace,
+        # so a bare `npx playwright` does not resolve. Mirror the CI e2e job.
+        run: pnpm --filter @ontology-search/e2e exec playwright install --with-deps chromium
