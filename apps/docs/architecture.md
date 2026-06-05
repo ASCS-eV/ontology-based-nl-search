@@ -36,7 +36,7 @@ graph TD
 The application is a **pnpm monorepo** with Turborepo orchestration. Each package has a single responsibility and clear dependency direction.
 
 ```mermaid
-graph LR
+graph TD
     subgraph "Apps"
       API["api<br/>(Hono)"]
       WEB["web<br/>(Vite + React)"]

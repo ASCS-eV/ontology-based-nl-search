@@ -62,7 +62,7 @@ The agent runs with `toolChoice: { type: 'tool', toolName: 'submit_slots' }` —
 The system prompt is **auto-generated from raw SHACL shapes** at startup. The LLM reads native Turtle directly:
 
 ```mermaid
-graph LR
+graph TD
     SHACL["SHACL files<br/>(all domains)"] --> PB["Prompt Builder"]
     PB --> SP["System Prompt"]
     SP --> S1["Raw Turtle Shapes"]

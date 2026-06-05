@@ -13,7 +13,7 @@ Replace the ENVITED-X automotive simulation ontologies with a retail product ont
 Instead of hardcoding knowledge about the ontology structure, every component queries the SHACL schema graph dynamically:
 
 ```mermaid
-graph TD
+graph LR
     SCHEMA["Schema Graph<br/>‹urn:graph:schema›<br/>(OWL + SHACL)"]
 
     SCHEMA --> PD["Property Path Discovery<br/>(asset → leaf predicate chains)"]
