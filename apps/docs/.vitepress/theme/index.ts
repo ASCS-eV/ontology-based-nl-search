@@ -5,6 +5,7 @@ import Slide from './components/Slide.vue'
 import SlideControls from './components/SlideControls.vue'
 import SlideDeck from './components/SlideDeck.vue'
 import SlideProvider from './components/SlideProvider.vue'
+import { installMermaidFit } from './mermaid-fit'
 
 import './custom.css'
 
@@ -15,5 +16,6 @@ export default {
     app.component('SlideDeck', SlideDeck)
     app.component('Slide', Slide)
     app.component('SlideControls', SlideControls)
+    installMermaidFit()
   },
 } satisfies Theme

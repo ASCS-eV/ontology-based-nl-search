@@ -31,7 +31,7 @@ pattern (shown below); a different ontology with a flatter or deeper shape would
 work without code changes:
 
 ```mermaid
-graph TD
+graph LR
     A["Asset<br/>(e.g., HDMap, Scenario)"] --> DS["hasDomainSpecification"]
     DS --> C["hasContent<br/>(road types, lanes, ...)"]
     DS --> F["hasFormat<br/>(OpenDRIVE, lanelet2, ...)"]
@@ -54,7 +54,7 @@ In the demo ontology this pattern is uniform across all domains, but uniformity 
 The system does **not** use a manually maintained vocabulary. Instead, at startup:
 
 ```mermaid
-graph LR
+graph TD
     SHACL["SHACL Shapes<br/>(sh:in lists)"] -->|"SPARQL extraction"| VOCAB["OntologyVocabulary"]
     VOCAB --> ENUM["Enum Properties<br/>roadTypes → [motorway, urban, ...]<br/>formatType → [OpenDRIVE, lanelet2, ...]"]
     VOCAB --> NUM["Numeric Properties<br/>laneCount → integer<br/>length → float (km)"]
@@ -119,7 +119,7 @@ Exact counts track the sample TTL files and may shift as they evolve. The remain
 Domains reference each other through SHACL property paths. The compiler discovers these cross-references at runtime — no predicate name is hardcoded in production code:
 
 ```mermaid
-graph LR
+graph TD
     SC["Scenario"] -->|"cross-reference (SHACL-discovered)"| HD["HD Map"]
     SC -->|"cross-reference (SHACL-discovered)"| EM["Environment Model"]
     HD -->|"shared shape group"| GEO["Georeference<br/>(shared)"]

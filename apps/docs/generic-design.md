@@ -13,7 +13,7 @@ Replace the ENVITED-X automotive simulation ontologies with a retail product ont
 Instead of hardcoding knowledge about the ontology structure, every component queries the SHACL schema graph dynamically:
 
 ```mermaid
-graph TD
+graph LR
     SCHEMA["Schema Graph<br/>‹urn:graph:schema›<br/>(OWL + SHACL)"]
 
     SCHEMA --> PD["Property Path Discovery<br/>(asset → leaf predicate chains)"]
@@ -48,7 +48,7 @@ graph TD
 The compiler needs to know the predicate chain from an asset to each leaf property. Instead of hardcoding paths like `hasDomainSpecification → hasContent → roadTypes`, the system walks SHACL shapes:
 
 ```mermaid
-graph LR
+graph TD
     subgraph "SHACL Declaration"
       NS["NodeShape<br/>sh:targetClass hdmap:HdMap"]
       PS1["PropertyShape<br/>sh:path hdmap:hasDomainSpecification"]
@@ -124,12 +124,12 @@ sequenceDiagram
     U->>L: "French motorways"
     Note over L: Prompt has SHACL shapes for context
 
-    alt Simple query (the prompt's SHACL is enough — almost always the case)
-        L->>SS: submit_slots(domains:[hdmap], filters:{roadTypes:[motorway], country:[FR]})
-    else Cross-domain query (references is a list, AND-combined)
-        L->>SS: submit_slots(domains:[scenario], filters:{country:[FR]}, references:[{domain:hdmap}])
-    else Chained / nested reference ("traces with maps")
-        L->>SS: submit_slots(domains:[scenario], references:[{domain:ositrace, references:[{domain:hdmap}]}])
+    alt Simple query (usual case)
+        L->>SS: submit_slots(domains:[hdmap],<br/>filters:{roadTypes:[motorway], country:[FR]})
+    else Cross-domain (references list, AND-combined)
+        L->>SS: submit_slots(domains:[scenario], filters:{country:[FR]},<br/>references:[{domain:hdmap}])
+    else Chained / nested reference
+        L->>SS: submit_slots(domains:[scenario],<br/>references:[{domain:ositrace, references:[{domain:hdmap}]}])
     end
 ```
 

@@ -150,14 +150,22 @@ body {
   font-size: 1.05rem;
 }
 
+/* Anchor the heading box so the # pill can sit in the left gutter. */
+.vp-doc :is(h2, h3, h4) {
+  position: relative;
+}
+
 .vp-doc :is(h2, h3, h4) .header-anchor {
-  margin-left: 0.45rem;
+  position: absolute;
+  top: 50%;
+  right: 100%; /* place the pill to the LEFT of the heading text */
+  margin: 0 0.4rem 0 0; /* gap between pill and heading */
   padding: 0.1rem 0.4rem;
   border-radius: 999px;
   color: rgba(37, 99, 235, 0.72);
   background: rgba(37, 99, 235, 0.08);
   opacity: 0;
-  transform: translateY(2px);
+  transform: translate(4px, -50%);
   transition:
     opacity 180ms ease,
     transform 180ms ease,
@@ -167,7 +175,7 @@ body {
 .vp-doc :is(h2, h3, h4):hover .header-anchor,
 .vp-doc :is(h2, h3, h4) .header-anchor:focus {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(0, -50%);
 }
 
 .vp-doc p,
