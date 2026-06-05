@@ -1,8 +1,10 @@
 # ontology-based-nl-search
 
-Natural language search interface for ontology-management-base knowledge graphs, built with TypeScript.
+Natural-language search over **any** OWL + SHACL ontology. The ontology is the single source of truth — it drives LLM prompt generation, slot validation, and query compilation — so the same engine answers plain-language questions over a knowledge graph in any domain, with no code changes when you swap ontologies.
 
-A locally running TypeScript web application with a Google-style search bar that allows for natural language search of [EVES-003](https://github.com/ASCS-eV/EVES/) Simulation Assets zip files according to their ENVITED-X:SimulationAsset metadata from the [Ontology Management Base](https://github.com/ASCS-eV/ontology-management-base) repository which are created with the help of the [sl-5-8-asset-tools](https://github.com/openMSL/sl-5-8-asset-tools). The ontologies are used as a language translation reference for a LLM which translates natural language queries (e.g. "show me all German highways with 3 lanes") into structured search slots that are validated and compiled into graph-driven SPARQL queries, then executed against a graph containing simulation asset metadata. The LLM never writes SPARQL directly — a deterministic compiler queries the SHACL schema graph to generate verified queries from validated slots.
+This repository ships a working reference deployment built on the **ENVITED-X** simulation-asset ontologies from ASCS e.V.'s [Ontology Management Base](https://github.com/ASCS-eV/ontology-management-base) (OMB). In the demo, the indexed assets are [EVES-003](https://github.com/ASCS-eV/EVES/) Simulation Asset packages described by `ENVITED-X:SimulationAsset` metadata and produced with [sl-5-8-asset-tools](https://github.com/openMSL/sl-5-8-asset-tools). Point the engine at a different OWL + SHACL ontology and natural-language search works the same way.
+
+Concretely: a user types a query like _"show me all German highways with 3 lanes"_; an LLM uses the ontology as a translation reference to fill structured search slots (it never writes SPARQL); the slots are validated against the SHACL vocabulary; a deterministic compiler queries the SHACL schema graph to generate verified SPARQL; the query executes against the asset-metadata graph. Because the compiler is deterministic and graph-driven, no prompt injection can produce an arbitrary query.
 
 ## Tech Stack
 
