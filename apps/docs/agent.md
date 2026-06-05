@@ -19,8 +19,8 @@ sequenceDiagram
         L->>IT: discover_properties / discover_values / ...
         IT-->>L: Schema structure (from Oxigraph)
     end
-    L->>SS: submit_slots({ slots: { domains, filters, ranges, references }, interpretation, gaps })
-    SS-->>V: Validated SearchSlots → SPARQL → Results
+    L->>SS: submit_slots({ slots: { domains, filters, ranges, references },<br/>interpretation, gaps })
+    SS-->>V: Validated SearchSlots →<br/>SPARQL → Results
 ```
 
 ### submit_slots Schema
@@ -89,7 +89,7 @@ No properties can be missed because the LLM sees the full shapes. The investigat
 Three corrections run after the LLM submits slots:
 
 ```mermaid
-graph LR
+graph TD
     RAW["LLM Output"] --> FC["Filter Correction<br/>(fuzzy match)"]
     FC --> DC["Domain Correction<br/>(property→domain map)"]
     DC --> CC["Confidence Recompute"]

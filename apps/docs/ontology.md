@@ -31,7 +31,7 @@ pattern (shown below); a different ontology with a flatter or deeper shape would
 work without code changes:
 
 ```mermaid
-graph TD
+graph LR
     A["Asset<br/>(e.g., HDMap, Scenario)"] --> DS["hasDomainSpecification"]
     DS --> C["hasContent<br/>(road types, lanes, ...)"]
     DS --> F["hasFormat<br/>(OpenDRIVE, lanelet2, ...)"]

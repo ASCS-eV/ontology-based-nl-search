@@ -76,7 +76,7 @@ The agent is configured with `toolChoice: { type: 'tool', toolName: 'submit_slot
 The **slot validator** applies three corrections to catch LLM mistakes:
 
 ```mermaid
-graph LR
+graph TD
     RAW["Raw LLM Output"] --> FC["Filter Correction"]
     FC --> DC["Domain Correction"]
     DC --> VS["Confidence Recompute"]
