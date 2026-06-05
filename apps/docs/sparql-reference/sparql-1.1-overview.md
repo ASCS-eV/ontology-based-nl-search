@@ -72,14 +72,14 @@ SELECT ?item WHERE {
 
 SPARQL 1.1 property paths let one pattern traverse multiple edges.
 
-| Syntax              | Meaning      |
-| ------------------- | ------------ | ----------- |
-| `ex:parent/ex:name` | sequence     |
-| `ex:parent          | ex:guardian` | alternative |
-| `^ex:parent`        | inverse path |
-| `ex:child*`         | zero or more |
-| `ex:child+`         | one or more  |
-| `ex:child?`         | zero or one  |
+| Syntax                   | Meaning      |
+| ------------------------ | ------------ |
+| `ex:parent/ex:name`      | sequence     |
+| `ex:parent\|ex:guardian` | alternative  |
+| `^ex:parent`             | inverse path |
+| `ex:child*`              | zero or more |
+| `ex:child+`              | one or more  |
+| `ex:child?`              | zero or one  |
 
 ```sparql
 PREFIX ex: <http://example.org/>

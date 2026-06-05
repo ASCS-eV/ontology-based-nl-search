@@ -18,7 +18,7 @@ title: Presentation
       <span>OWL + SHACL files loaded into the schema graph</span>
     </div>
     <div class="metric">
-      <strong>22</strong>
+      <strong>20+</strong>
       <span>Ontology domains discoverable through one search interface</span>
     </div>
     <div class="metric">

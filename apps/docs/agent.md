@@ -19,7 +19,7 @@ sequenceDiagram
         L->>IT: discover_properties / discover_values / ...
         IT-->>L: Schema structure (from Oxigraph)
     end
-    L->>SS: submit_slots({ domains, filters, ranges, gaps })
+    L->>SS: submit_slots({ slots: { domains, filters, ranges, references }, interpretation, gaps })
     SS-->>V: Validated SearchSlots → SPARQL → Results
 ```
 
@@ -35,17 +35,23 @@ submit_slots({
                                                               //   leaf local name, no special-case
                                                               //   `location` or `license` slots)
     ranges: Record<string, { min?: number; max?: number }>,  // Numeric ranges
-    references?: { domain: string }                          // Cross-domain JOIN to another
-                                                              //   asset class (SHACL-discovered)
+    references?: Reference | Reference[]                     // Cross-domain JOIN(s) to other
+                                                              //   asset classes (SHACL-discovered).
+                                                              //   An array is AND-combined; each
+                                                              //   Reference may nest its own
+                                                              //   `references` to express a chain.
   },
   interpretation: string,                                    // Human-readable summary
   gaps: [{ term, reason, suggestions? }]                     // Unresolvable terms; suggestions
                                                               //   come from tokenised match
                                                               //   against the real vocabulary
 })
+
+// A cross-domain reference, recursive so it can express a chain.
+type Reference = { domain: string; label?: string; references?: Reference[] }
 ```
 
-Slot shape changed in the 2026-05-26 audit: there are no longer top-level `location` or `license` objects — both flow through `filters` keyed by the SHACL leaf local name (e.g. `country`, `region`, `license`). The new `references` slot binds one cross-domain JOIN whose target is a SHACL-discovered asset class. When the LLM nominates multiple cross-domain references, the dropped ones surface as honest `OntologyGap`s explaining the single-slot constraint.
+Slot shape: there are no top-level `location` or `license` objects — both flow through `filters` keyed by the SHACL leaf local name (e.g. `country`, `region`, `license`). The `references` slot is a **list** of cross-domain JOINs whose targets are SHACL-discovered asset classes; entries are **AND-combined** (the asset must reference all of them). Each entry may **nest** its own `references` to express a chain — "scenarios derived from traces with maps" → `[{ domain: 'ositrace', references: [{ domain: 'hdmap' }] }]` (scenario → trace → map), as opposed to flat siblings `[{ ositrace }, { hdmap }]` (scenario → trace AND scenario → map). A single object is still accepted and normalized to a one-element list.
 
 ### Forced tool choice
 

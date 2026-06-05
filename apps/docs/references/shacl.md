@@ -61,7 +61,7 @@ sh:property [
 
 ```turtle
 sh:property [
-  sh:path georeference:country ;
+  sh:path ex:country ;
   sh:pattern "^[A-Z]{2}$" ;  # ISO 3166-1 alpha-2
 ]
 ```
