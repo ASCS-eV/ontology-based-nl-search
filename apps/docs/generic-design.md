@@ -98,31 +98,18 @@ flowchart TD
     style DROP fill:#fef2f2,stroke:#ef4444
 ```
 
-## RDF Reasoning via Investigation Tools
+## Single-Tool Forced Choice
 
-The LLM has access to **5 investigation tools** that query the schema graph at runtime. This gives the LLM a form of "on-demand RDF reasoning" — it can explore ontology structure beyond what's in the static prompt.
-
-### Tool Capabilities
-
-| Tool                   | Purpose                                 | SPARQL Pattern                             |
-| ---------------------- | --------------------------------------- | ------------------------------------------ |
-| `discover_domains`     | List all searchable asset types         | `sh:targetClass` + `rdfs:subClassOf`       |
-| `discover_properties`  | List filterable properties for a domain | `sh:property` / `sh:path` / `sh:datatype`  |
-| `discover_values`      | Get allowed enum values                 | `sh:in` RDF lists                          |
-| `discover_connections` | Find cross-domain references            | `sh:class` linking to other target classes |
-| `investigate_schema`   | Run arbitrary SPARQL SELECT on schema   | Full schema exploration                    |
-
-### How the LLM Uses Reasoning
+The agent exposes only `submit_slots` with forced tool choice. The LLM receives the full SHACL vocabulary in its system prompt and commits to structured output in a single round-trip:
 
 ```mermaid
 sequenceDiagram
     participant U as User
     participant L as LLM
-    participant IT as Investigation Tools
-    participant SS as submit_slots
+    participant SS as submit_slots (forced)
 
     U->>L: "French motorways"
-    Note over L: Prompt has SHACL shapes for context
+    Note over L: Prompt has full SHACL shapes
 
     alt Simple query (usual case)
         L->>SS: submit_slots(domains:[hdmap],<br/>filters:{roadTypes:[motorway], country:[FR]})
@@ -135,28 +122,7 @@ sequenceDiagram
 
 The two cross-domain branches are distinct claims: flat siblings `[{ositrace}, {hdmap}]` mean the scenario references a trace **and** (independently) a map; the nested form `[{ositrace, references:[{hdmap}]}]` means scenario → trace → map (the map belongs to the trace). Both compile deterministically from discovered SHACL paths.
 
-The key insight: **the LLM can reason about ontology structure using the same SPARQL engine that executes user queries**. The schema graph is both the source of truth for the compiler AND an explorable knowledge base for the agent.
-
-### `investigate_schema` — Full Schema Reasoning
-
-The most powerful tool allows the LLM to write arbitrary SPARQL SELECT queries against the schema graph. This enables:
-
-- Checking if a concept exists before attempting a filter
-- Exploring property hierarchies and inheritance
-- Understanding complex shape structures
-- Verifying cross-domain relationships
-
-```sparql
--- Example: LLM checks what weather-related properties exist
-PREFIX sh: <http://www.w3.org/ns/shacl#>
-SELECT ?prop ?domain WHERE {
-  ?shape sh:targetClass ?cls .
-  ?shape (sh:property/sh:node?)*/sh:property ?ps .
-  ?ps sh:path ?prop .
-  FILTER(CONTAINS(LCASE(STR(?prop)), "weather"))
-  BIND(REPLACE(STR(?cls), "^.*/([^/]+)/v[0-9]+/.*$", "$1") AS ?domain)
-}
-```
+The key insight: **the system prompt embeds the full SHACL ontology** — the LLM has complete knowledge of domains, properties, allowed values, and cross-domain relationships without needing runtime exploration tools.
 
 ## Multi-Domain Query Architecture
 

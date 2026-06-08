@@ -37,7 +37,7 @@ graph TD
     style VOCAB fill:#fef3c7,stroke:#f59e0b
 ```
 
-**Output:** Raw SHACL Turtle for prompt injection + `OntologyVocabulary` for validation + schema graph for compiler queries and investigation tools.
+**Output:** Raw SHACL Turtle for prompt injection + `OntologyVocabulary` for validation + schema graph for compiler queries.
 
 ## Stage 2: Prompt Generation
 

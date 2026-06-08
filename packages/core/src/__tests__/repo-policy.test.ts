@@ -220,11 +220,6 @@ const W3C_IRI_EXEMPT_FILES = new Set([
   // not namespace constants used in logic.
   join(ROOT, 'packages/search/src/data-loader.ts'),
   join(ROOT, 'packages/sparql/src/capability-probe.ts'),
-  // TODO(agent-tools dedup): the discover_* SPARQL builders inline PREFIX lines
-  // and are slated for consolidation; remove these two exemptions when that
-  // refactor routes them through sparqlPrefix().
-  join(ROOT, 'packages/llm/src/agent/copilot-agent.ts'),
-  join(ROOT, 'packages/llm/src/agent/investigation-tools.ts'),
 ])
 
 describe('repo-policy: C3 — no inline W3C namespace IRI outside core/rdf/prefixes', () => {
