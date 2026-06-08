@@ -9,14 +9,13 @@
  * @see https://www.w3.org/TR/shacl/#InConstraintComponent
  * @see https://www.w3.org/TR/skos-reference/
  */
+import { extractDomain, extractLocalName } from '@ontology-search/core/rdf/iri'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
 import {
-  extractDomain,
-  extractLocalName,
   queryInstanceValueDistribution,
   querySkosConcepts,
   querySubClassEdges,
@@ -182,7 +181,7 @@ async function extractEnumProperties(
     if (!iri || !value) continue
 
     const localName = extractLocalName(iri)
-    const domain = extractDomain(iri, registry)
+    const domain = extractDomain(iri, (i) => registry.domainForIri(i))
 
     if (!propertyMap.has(iri)) {
       propertyMap.set(iri, {
@@ -245,7 +244,7 @@ async function extractNumericProperties(
       label: row['name']?.value ?? extractLocalName(iri),
       description: row['description']?.value ?? '',
       datatype,
-      domain: extractDomain(iri, registry),
+      domain: extractDomain(iri, (i) => registry.domainForIri(i)),
     })
   }
 

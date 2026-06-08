@@ -8,6 +8,7 @@ import type {
   RowTraceability,
   SearchMeta,
 } from '../api-types'
+import { apiPost, apiPostStream, isAbortError } from '../lib/api-client'
 import { parseSSEBuffer } from '../lib/sse-parser'
 
 export type SearchPhase = 'idle' | 'interpreting' | 'executing' | 'done'
@@ -87,17 +88,13 @@ export function useSearchExecution(_availableDomains?: string[]) {
     })
 
     try {
-      const res = await fetch('/api/search/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: naturalLanguageQuery }),
-        signal: controller.signal,
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Search failed')
-      }
+      const res = await apiPostStream(
+        '/api/search/stream',
+        { query: naturalLanguageQuery },
+        {
+          signal: controller.signal,
+        }
+      )
 
       const reader = res.body?.getReader()
       if (!reader) throw new Error('No response stream')
@@ -156,7 +153,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
         }
       }
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') return
+      if (isAbortError(err)) return
       setState((s) => ({
         ...s,
         error: err instanceof Error ? err.message : 'An unexpected error occurred',
@@ -205,18 +202,13 @@ export function useSearchExecution(_availableDomains?: string[]) {
         ranges,
       }
 
-      const res = await fetch('/api/search/refine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slots }),
-      })
+      const data = await apiPost<{
+        sparql: string
+        results: Record<string, string>[]
+        traceability?: RowTraceability[]
+        meta: SearchMeta
+      }>('/api/search/refine', { slots })
 
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Refine failed')
-      }
-
-      const data = await res.json()
       setState((s) => ({
         ...s,
         sparql: data.sparql,

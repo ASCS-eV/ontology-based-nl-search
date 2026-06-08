@@ -4,6 +4,7 @@
  * surfaces can't drift.
  */
 import type { TraceabilityNode, TraceabilityResponse } from '../api-types'
+import { apiGet, isAbortError } from './api-client'
 import type { ExportReference } from './export-utils'
 
 /**
@@ -46,11 +47,15 @@ export async function fetchLineageTree(
   try {
     const params = new URLSearchParams({ asset })
     if (depth !== undefined) params.set('depth', String(depth))
-    const res = await fetch(`/api/traceability?${params.toString()}`, signal ? { signal } : {})
-    if (!res.ok) return null
-    const body = (await res.json()) as TraceabilityResponse
+    const body = await apiGet<TraceabilityResponse>(
+      `/api/traceability?${params.toString()}`,
+      signal
+    )
     return body.node ?? null
-  } catch {
+  } catch (err: unknown) {
+    if (isAbortError(err)) return null
+
+    console.warn('[lineage] Failed to fetch lineage tree', { asset, error: String(err) })
     return null
   }
 }

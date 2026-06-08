@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import type { TraceabilityNode, TraceabilityResponse } from '../api-types'
+import { apiGet, isAbortError } from '../lib/api-client'
 import { dedupeLineage } from '../lib/lineage'
 
 interface LineageExplorerProps {
@@ -40,23 +41,13 @@ export function LineageExplorer({ asset, depth }: LineageExplorerProps) {
     const params = new URLSearchParams({ asset })
     if (depth !== undefined) params.set('depth', String(depth))
 
-    fetch(`/api/traceability?${params.toString()}`, { signal: controller.signal })
-      .then(async (res) => {
-        if (!res.ok) {
-          const body = (await res.json().catch(() => null)) as {
-            error?: string
-            message?: string
-          } | null
-          throw new Error(body?.error ?? body?.message ?? `HTTP ${res.status}`)
-        }
-        return (await res.json()) as TraceabilityResponse
-      })
+    apiGet<TraceabilityResponse>(`/api/traceability?${params.toString()}`, controller.signal)
       .then((body) => {
         setNode(body.node)
         setLoading(false)
       })
       .catch((err: unknown) => {
-        if (err instanceof Error && err.name === 'AbortError') return
+        if (isAbortError(err)) return
         setError(err instanceof Error ? err.message : 'Failed to load lineage')
         setLoading(false)
       })

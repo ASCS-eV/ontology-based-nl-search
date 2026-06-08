@@ -26,6 +26,7 @@
  * @see https://www.w3.org/TR/shacl/#PropertyShape — SHACL PropertyShape
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { extractDomain, extractLocalName } from '@ontology-search/core/rdf/iri'
 import { iri, sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
@@ -92,19 +93,9 @@ export interface PropertyPath {
   leafKind: LeafKind
 }
 
-/** Local-name extraction (after last `/` or `#`). */
-function extractLocalName(iri: string): string {
-  const idx = Math.max(iri.lastIndexOf('#'), iri.lastIndexOf('/'))
-  return idx >= 0 ? iri.substring(idx + 1) : iri
-}
-
 /** Extract the domain name for an IRI using registry or path convention. */
-function extractDomain(iri: string, registry?: DomainRegistry): string {
-  if (registry) {
-    return registry.domainForIri(iri) ?? ''
-  }
-  const match = iri.match(new RegExp('/([^/]+)/v\\d+/'))
-  return match?.[1] ?? ''
+function extractDomainFromRegistry(iri: string, registry?: DomainRegistry): string {
+  return extractDomain(iri, registry ? (i) => registry.domainForIri(i) : undefined)
 }
 
 /** Resolved edge: parent class → predicate → child class (target classes, not shapes). */
@@ -496,7 +487,7 @@ export async function buildPropertyPaths(
       const steps = pathStepsTo(owningClass, predecessors, propertyIri)
       if (!steps) continue
       out.push({
-        domain: extractDomain(assetClass, registry),
+        domain: extractDomainFromRegistry(assetClass, registry),
         propertyName: extractLocalName(propertyIri),
         propertyIri,
         assetClass,
@@ -592,7 +583,7 @@ export function buildReferenceChains(
   const out: ReferenceChain[] = []
   for (const path of paths) {
     if (path.leafKind === 'literal') continue
-    const parentDomain = path.domain || extractDomain(path.assetClass, registry)
+    const parentDomain = path.domain || extractDomainFromRegistry(path.assetClass, registry)
     if (!parentDomain) continue
 
     if (path.leafKind === 'iri') {
@@ -609,7 +600,7 @@ export function buildReferenceChains(
     const childClass = path.leafKind.slice('class:'.length)
     if (!childClass) continue
     if (knownAssetClasses && !knownAssetClasses.has(childClass)) continue
-    const childDomain = extractDomain(childClass, registry)
+    const childDomain = extractDomainFromRegistry(childClass, registry)
     if (!childDomain) continue
 
     out.push({

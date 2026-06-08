@@ -54,6 +54,7 @@ const CONSOLE_EXEMPT_FILES = new Set([
   join(ROOT, 'packages/core/src/sse/parser.ts'),
   join(ROOT, 'apps/web/src/components/ErrorBoundary.tsx'),
   join(ROOT, 'apps/web/src/hooks/useSearchHistory.ts'),
+  join(ROOT, 'apps/web/src/lib/lineage.ts'),
 ])
 
 interface SourceFile {

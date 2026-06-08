@@ -24,6 +24,7 @@
  *
  * @see https://www.w3.org/TR/skos-reference/#semantic-relations
  */
+import { extractLocalName } from '@ontology-search/core/rdf/iri'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
@@ -46,12 +47,6 @@ interface ConceptNode {
  * filter value that's already a concrete member is left untouched.
  */
 export type ConceptExpansionIndex = Map<string, string[]>
-
-/** Local-name extraction (after last `/` or `#`). */
-function extractLocalName(iri: string): string {
-  const idx = Math.max(iri.lastIndexOf('#'), iri.lastIndexOf('/'))
-  return idx >= 0 ? iri.substring(idx + 1) : iri
-}
 
 /**
  * Query every SKOS concept's labels + notation, and the direct

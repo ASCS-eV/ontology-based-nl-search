@@ -75,8 +75,8 @@ importers:
         specifier: ^4.12.21
         version: 4.12.23
       zod:
-        specifier: ^3.24.0
-        version: 3.25.76
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@ontology-search/typescript-config':
         specifier: workspace:*
