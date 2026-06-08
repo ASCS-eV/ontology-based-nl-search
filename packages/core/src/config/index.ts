@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { ConfigError } from '../errors/index.js'
+
 /**
  * Centralized, validated application configuration.
  *
@@ -168,7 +170,7 @@ let cachedConfig: AppConfig | null = null
  * Parse and validate environment variables into a typed config object.
  * Cached after first successful parse.
  *
- * @throws {Error} with detailed validation messages on invalid config
+ * @throws {ConfigError} with detailed validation messages on invalid config
  */
 export function getConfig(): AppConfig {
   if (cachedConfig) return cachedConfig
@@ -179,30 +181,30 @@ export function getConfig(): AppConfig {
     const formatted = result.error.issues
       .map((issue) => `  ${issue.path.join('.')}: ${issue.message}`)
       .join('\n')
-    throw new Error(`Invalid environment configuration:\n${formatted}`)
+    throw new ConfigError(`Invalid environment configuration:\n${formatted}`)
   }
 
   // Validate cross-field constraints
   if (result.data.SPARQL_MODE === 'remote' && !result.data.SPARQL_ENDPOINT) {
-    throw new Error('SPARQL_ENDPOINT is required when SPARQL_MODE is "remote"')
+    throw new ConfigError('SPARQL_ENDPOINT is required when SPARQL_MODE is "remote"')
   }
   if (result.data.SPARQL_DEFAULT_LIMIT > result.data.SPARQL_MAX_LIMIT) {
-    throw new Error(
+    throw new ConfigError(
       `SPARQL_DEFAULT_LIMIT (${result.data.SPARQL_DEFAULT_LIMIT}) must be ≤ SPARQL_MAX_LIMIT (${result.data.SPARQL_MAX_LIMIT}); the compiler default would be rejected by the policy gate.`
     )
   }
   if (result.data.NODE_ENV === 'production' && result.data.CORS_ALLOWED_ORIGINS.trim() === '*') {
-    throw new Error(
+    throw new ConfigError(
       'CORS_ALLOWED_ORIGINS="*" is unsafe in production. Set it to a comma-separated list of exact frontend origins (e.g. "https://app.example.com").'
     )
   }
   // Only enforce API key requirements outside of test environment
   if (result.data.NODE_ENV !== 'test') {
     if (result.data.AI_PROVIDER === 'openai' && !result.data.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is required when AI_PROVIDER is "openai"')
+      throw new ConfigError('OPENAI_API_KEY is required when AI_PROVIDER is "openai"')
     }
     if (result.data.AI_PROVIDER === 'anthropic' && !result.data.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY is required when AI_PROVIDER is "anthropic"')
+      throw new ConfigError('ANTHROPIC_API_KEY is required when AI_PROVIDER is "anthropic"')
     }
     // Fail-safe auth posture: a production API must not be left open by accident.
     // Require either an API key, or an explicit opt-out for deployments that
@@ -213,7 +215,7 @@ export function getConfig(): AppConfig {
       !result.data.API_KEY &&
       !result.data.API_ALLOW_UNAUTHENTICATED
     ) {
-      throw new Error(
+      throw new ConfigError(
         'No API authentication configured in production. Set API_KEY to require a key, ' +
           'or set API_ALLOW_UNAUTHENTICATED=true to run open deliberately (e.g. behind a ' +
           'gateway that authenticates). /search invokes an LLM per request, so an ' +

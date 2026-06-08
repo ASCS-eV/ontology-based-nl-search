@@ -11,7 +11,7 @@
  * so we verify behaviour against actual SHACL constraints (e.g.
  * georeference:country carries `sh:pattern "^[a-zA-Z]{2}$"`).
  */
-import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
+import { ShaclValidator } from '@ontology-search/search'
 import { describe, expect, it } from 'vitest'
 
 import { validateRangesAgainstShacl, validateSlotsAgainstShacl } from '../slot-validator.js'

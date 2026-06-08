@@ -22,8 +22,7 @@
  * Suggestions for gaps come from the same vocabulary the LLM saw, using
  * string distance.
  */
-import type { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
-import type { OntologyVocabulary } from '@ontology-search/search'
+import type { OntologyVocabulary, ShaclValidator } from '@ontology-search/search'
 
 import type { GapKind, LlmStructuredResponse, MappedTerm, OntologyGap } from './types.js'
 

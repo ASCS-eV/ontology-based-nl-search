@@ -89,6 +89,18 @@ export class StoreUnavailableError extends AppError {
 }
 
 /**
+ * Environment configuration is invalid — missing required variables,
+ * cross-field constraint violations, or malformed values. Thrown at
+ * startup to prevent the server from running in a misconfigured state.
+ * Maps to 503 because the API process itself is healthy but cannot
+ * serve requests without valid configuration.
+ */
+export class ConfigError extends AppError {
+  readonly code = ERROR_CODE.SERVICE_UNAVAILABLE
+  readonly httpStatus = 503
+}
+
+/**
  * LLM session unusable — missing credentials, expired token, unsupported
  * provider. Surfaces as 503 so clients can retry once the operator has
  * fixed the configuration; the API process itself is still running.

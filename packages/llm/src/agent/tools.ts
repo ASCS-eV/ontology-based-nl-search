@@ -1,3 +1,8 @@
+import {
+  gapsWireSchema,
+  interpretationWireSchema,
+  referenceFilterWireSchema,
+} from '@ontology-search/search/slot-wire-schema'
 import { tool } from 'ai'
 import { z } from 'zod'
 
@@ -8,31 +13,6 @@ import { z } from 'zod'
  * The LLM fills property names matching the ontology local names
  * (from SHACL sh:path declarations) as documented in skill.md.
  */
-/** Recursive shape: a reference may carry its own nested references (a chain). */
-interface ReferenceFilterInput {
-  domain: string
-  label?: string
-  references?: ReferenceFilterInput[]
-}
-
-const referenceFilterSchema: z.ZodType<ReferenceFilterInput> = z.lazy(() =>
-  z.object({
-    domain: z
-      .string()
-      .describe('Domain of the referenced asset (use domain names from the SHACL shapes)'),
-    label: z.string().optional().describe('Optional label filter on the referenced asset'),
-    references: z
-      .array(referenceFilterSchema)
-      .optional()
-      .describe(
-        'Nested references the REFERENCED asset must itself carry — a chain one hop deeper. ' +
-          'Use for "X with/containing Y" or "X derived from Y with Z": e.g. "traces with maps" ' +
-          'nests hdmap INSIDE the ositrace entry (scenario → trace → map), which is different ' +
-          'from listing them as siblings (scenario → trace AND scenario → map). Omit for a ' +
-          'direct reference.'
-      ),
-  })
-)
 
 const slotSubmissionSchema = z.object({
   slots: z
@@ -49,7 +29,7 @@ const slotSubmissionSchema = z.object({
         .default({})
         .describe('Numeric ranges: localName → { min?, max? }'),
       references: z
-        .union([referenceFilterSchema, z.array(referenceFilterSchema)])
+        .union([referenceFilterWireSchema, z.array(referenceFilterWireSchema)])
         .optional()
         .describe(
           'Cross-reference filter(s): find assets that reference one or more other domains. ' +
@@ -59,7 +39,7 @@ const slotSubmissionSchema = z.object({
         ),
     })
     .describe('Search slots: fill only properties where the user expressed intent'),
-  interpretation: z.object({
+  interpretation: interpretationWireSchema.extend({
     summary: z.string().describe('Human-readable summary of what was understood'),
     mappedTerms: z.array(
       z.object({
@@ -70,13 +50,13 @@ const slotSubmissionSchema = z.object({
       })
     ),
   }),
-  gaps: z.array(
-    z.object({
+  gaps: gapsWireSchema.element
+    .extend({
       term: z.string().describe('Unmapped user term'),
       reason: z.string().describe('Why it could not be mapped to a slot'),
       suggestions: z.array(z.string()).optional().describe('Nearest slot values'),
     })
-  ),
+    .array(),
 })
 
 export type SlotSubmissionParams = z.infer<typeof slotSubmissionSchema>

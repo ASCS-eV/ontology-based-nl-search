@@ -12,22 +12,12 @@
  * @see packages/llm/src/agent/copilot-agent.ts — consumer
  */
 
+import {
+  gapsWireSchema,
+  interpretationWireSchema,
+  referenceFilterWireSchema,
+} from '@ontology-search/search/slot-wire-schema'
 import { z } from 'zod'
-
-/** Recursive shape: a reference may carry its own nested references (a chain). */
-interface ReferenceFilterInput {
-  domain: string
-  label?: string
-  references?: ReferenceFilterInput[]
-}
-
-const referenceFilterSchema: z.ZodType<ReferenceFilterInput> = z.lazy(() =>
-  z.object({
-    domain: z.string(),
-    label: z.string().optional(),
-    references: z.array(referenceFilterSchema).optional(),
-  })
-)
 
 /**
  * The shape received from the LLM via the `submit_slots` tool call.
@@ -42,26 +32,10 @@ export const submissionSchema = z.object({
     ranges: z
       .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
       .optional(),
-    references: z.union([referenceFilterSchema, z.array(referenceFilterSchema)]).optional(),
+    references: z.union([referenceFilterWireSchema, z.array(referenceFilterWireSchema)]).optional(),
   }),
-  interpretation: z.object({
-    summary: z.string(),
-    mappedTerms: z.array(
-      z.object({
-        input: z.string(),
-        mapped: z.string(),
-        confidence: z.enum(['high', 'medium', 'low']),
-        property: z.string().optional(),
-      })
-    ),
-  }),
-  gaps: z.array(
-    z.object({
-      term: z.string(),
-      reason: z.string(),
-      suggestions: z.array(z.string()).optional(),
-    })
-  ),
+  interpretation: interpretationWireSchema,
+  gaps: gapsWireSchema,
 })
 
 type ParsedSubmission = z.infer<typeof submissionSchema>

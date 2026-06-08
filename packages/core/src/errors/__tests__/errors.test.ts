@@ -3,6 +3,7 @@ import {
   AppError,
   badRequest,
   CompileError,
+  ConfigError,
   ERROR_CODE,
   extractErrorMessage,
   internalError,
@@ -64,6 +65,7 @@ describe('API error utilities', () => {
       [() => new StoreUnavailableError('boom'), 503, ERROR_CODE.SERVICE_UNAVAILABLE],
       [() => new AgentError('boom'), 503, ERROR_CODE.SERVICE_UNAVAILABLE],
       [() => new OntologySourcesError('boom'), 503, ERROR_CODE.SERVICE_UNAVAILABLE],
+      [() => new ConfigError('boom'), 503, ERROR_CODE.SERVICE_UNAVAILABLE],
     ] as const)('subclass exposes a stable code and httpStatus', (make, status, code) => {
       const err = make()
       expect(err).toBeInstanceOf(AppError)

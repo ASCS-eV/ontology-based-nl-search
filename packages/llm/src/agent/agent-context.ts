@@ -16,9 +16,9 @@ import {
   extractVocabulary,
   getInitializedStore,
   type OntologyVocabulary,
+  type SparqlStore,
 } from '@ontology-search/search'
 import { getShaclContent } from '@ontology-search/search/shacl-reader'
-import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
 

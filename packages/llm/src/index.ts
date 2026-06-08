@@ -13,7 +13,7 @@
  * breaking downstream packages.
  */
 import { getConfig } from '@ontology-search/core/config'
-import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
+import { getPrimaryDomain } from '@ontology-search/search'
 
 import { getPersistentSession, runCopilotAgent } from './agent/copilot-agent.js'
 import { runSparqlAgent, warmupAgentPrompt } from './agent/index.js'

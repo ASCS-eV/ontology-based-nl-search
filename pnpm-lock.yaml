@@ -269,15 +269,9 @@ importers:
       '@ontology-search/core':
         specifier: workspace:*
         version: link:../core
-      '@ontology-search/ontology':
-        specifier: workspace:*
-        version: link:../ontology
       '@ontology-search/search':
         specifier: workspace:*
         version: link:../search
-      '@ontology-search/sparql':
-        specifier: workspace:*
-        version: link:../sparql
       ai:
         specifier: ^5.0.185
         version: 5.0.185(zod@4.4.3)
