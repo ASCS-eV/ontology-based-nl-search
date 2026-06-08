@@ -34,6 +34,11 @@
       "types": "./src/types.ts",
       "import": "./dist/types.js",
       "default": "./dist/types.js"
+    },
+    "./slot-wire-schema": {
+      "types": "./src/slot-wire-schema.ts",
+      "import": "./dist/slot-wire-schema.js",
+      "default": "./dist/slot-wire-schema.js"
     }
   },
   "scripts": {

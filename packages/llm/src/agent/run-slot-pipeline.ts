@@ -22,12 +22,12 @@
  */
 
 import type { Stopwatch } from '@ontology-search/core/logging'
-import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { OntologyVocabulary } from '@ontology-search/search'
 import {
   expandFilterConcepts,
   getConceptExpansionIndex,
   getInitializedStore,
+  ShaclValidator,
 } from '@ontology-search/search'
 import { compileSlotsWithTrace, resolveKnownDomains } from '@ontology-search/search/compiler'
 import type { ReferenceFilter, SearchSlots } from '@ontology-search/search/slots'

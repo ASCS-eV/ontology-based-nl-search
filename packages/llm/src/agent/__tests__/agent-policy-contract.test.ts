@@ -61,7 +61,10 @@ vi.mock('../agent-context.js', () => ({
   warmupAgentContext: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@ontology-search/ontology/domain-registry', () => ({
+vi.mock('@ontology-search/search', () => ({
+  getInitializedStore: vi.fn().mockResolvedValue({}),
+  extractVocabulary: vi.fn().mockReturnValue({ domains: [] }),
+  SCHEMA_GRAPH: 'urn:graph:schema',
   getPrimaryDomain: vi.fn().mockResolvedValue('hdmap'),
 }))
 
@@ -74,12 +77,6 @@ vi.mock('@ontology-search/core/config', () => ({
     LLM_THINKING_BUDGET: 0,
     LLM_MAX_AGENT_STEPS: 3,
   }),
-}))
-
-vi.mock('@ontology-search/search', () => ({
-  getInitializedStore: vi.fn().mockResolvedValue({}),
-  extractVocabulary: vi.fn().mockReturnValue({ domains: [] }),
-  SCHEMA_GRAPH: 'urn:graph:schema',
 }))
 
 vi.mock('@ontology-search/search/shacl-reader', () => ({

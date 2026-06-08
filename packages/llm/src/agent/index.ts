@@ -10,7 +10,7 @@
  */
 
 import { createComponentLogger, Stopwatch } from '@ontology-search/core/logging'
-import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
+import { getPrimaryDomain } from '@ontology-search/search'
 import { generateText, stepCountIs } from 'ai'
 
 import { getModel } from '../provider.js'

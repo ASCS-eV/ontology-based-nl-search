@@ -56,15 +56,13 @@ vi.mock('@ontology-search/search', () => ({
   getInitializedStore: vi.fn().mockResolvedValue({}),
   extractVocabulary: vi.fn().mockReturnValue({ domains: [] }),
   SCHEMA_GRAPH: 'urn:graph:schema',
+  getPrimaryDomain: vi.fn().mockResolvedValue('hdmap'),
 }))
 vi.mock('@ontology-search/search/shacl-reader', () => ({
   getShaclContent: vi.fn().mockReturnValue(''),
 }))
 vi.mock('../../prompt-builder.js', () => ({
   buildSystemPrompt: vi.fn().mockReturnValue('system prompt'),
-}))
-vi.mock('@ontology-search/ontology/domain-registry', () => ({
-  getPrimaryDomain: vi.fn().mockResolvedValue('hdmap'),
 }))
 vi.mock('@ontology-search/core/config', () => ({
   getConfig: vi.fn().mockReturnValue({ AI_MODEL: 'test-model', GITHUB_TOKEN: undefined }),

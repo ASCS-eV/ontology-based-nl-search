@@ -58,3 +58,12 @@ export type {
 } from './types.js'
 export type { EnumProperty, NumericProperty, OntologyVocabulary } from './vocabulary-extractor.js'
 export { extractVocabulary, resetVocabulary } from './vocabulary-extractor.js'
+
+// Re-exports from lower layers so upper layers (llm) can depend on search alone.
+export { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
+export type {
+  ShaclValidationResult,
+  ShaclViolation,
+} from '@ontology-search/ontology/shacl-validator'
+export { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
+export type { SparqlStore } from '@ontology-search/sparql/types'

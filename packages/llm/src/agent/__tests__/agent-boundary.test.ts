@@ -62,6 +62,7 @@ vi.mock('@ontology-search/search', () => ({
     .fn()
     .mockResolvedValue({ properties: new Map(), valueToProperty: new Map(), domains: [] }),
   getInitializedStore: vi.fn().mockResolvedValue({}),
+  getPrimaryDomain: vi.fn().mockResolvedValue('hdmap'),
 }))
 
 vi.mock('@ontology-search/search/shacl-reader', () => ({

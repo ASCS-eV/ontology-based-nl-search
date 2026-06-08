@@ -20,7 +20,7 @@ import { randomUUID } from 'node:crypto'
 import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
-import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
+import { getPrimaryDomain } from '@ontology-search/search'
 
 import type { LlmStructuredResponse } from '../types.js'
 import { getAgentContext } from './agent-context.js'

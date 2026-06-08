@@ -26,11 +26,8 @@ export function getSparqlStore(): SparqlStore {
 
   let inner: SparqlStore
   if (config.SPARQL_MODE === 'remote') {
-    const endpoint = config.SPARQL_ENDPOINT
-    if (!endpoint) {
-      throw new Error('SPARQL_ENDPOINT is required when SPARQL_MODE is "remote"')
-    }
-    inner = new RemoteSparqlStore(endpoint)
+    // Config validation (core/config) guarantees SPARQL_ENDPOINT is set when mode is "remote".
+    inner = new RemoteSparqlStore(config.SPARQL_ENDPOINT!)
   } else {
     inner = new WorkerOxigraphStore()
   }
