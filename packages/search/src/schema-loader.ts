@@ -45,8 +45,19 @@ export async function loadSchemaGraph(
       domains.add(domain)
       fileCount++
     } catch (err) {
-      log.warn('Failed to load schema file', { file: basename(filePath), error: String(err) })
+      log.error('Failed to load schema file — schema graph is incomplete', {
+        file: basename(filePath),
+        domain,
+        error: String(err),
+      })
     }
+  }
+
+  if (fileCount === 0) {
+    throw new Error(
+      'Schema loading failed: no ontology files could be loaded into the schema graph. ' +
+        'Check file permissions and ontology source integrity.'
+    )
   }
 
   log.info('Loaded schema files', {

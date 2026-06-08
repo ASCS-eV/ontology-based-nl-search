@@ -26,6 +26,7 @@
  * @see https://www.w3.org/TR/shacl/
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { extractDomain, extractLocalName } from '@ontology-search/core/rdf/iri'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { isIri } from '@ontology-search/sparql/escape'
@@ -91,25 +92,11 @@ export interface Range2DPropertyInfo {
 /**
  * Extract domain name from IRI using the domain registry.
  *
- * Delegates to `registry.domainForIri()` for longest-prefix matching
- * against known domain namespaces. Falls back to the IRI path-segment
- * convention (`/domain/vN/`) when no registry is provided.
+ * Delegates to the shared `extractDomain` from core, passing the
+ * registry's resolver function when available.
  */
-export function extractDomain(iri: string, registry?: DomainRegistry): string {
-  if (registry) {
-    return registry.domainForIri(iri) ?? ''
-  }
-  // Fallback: IRI path-segment convention (e.g., ".../hdmap/v6/HdMap" → "hdmap")
-  const match = iri.match(/\/([^/]+)\/v\d+\//)
-  return match?.[1] ?? ''
-}
-
-/** Extract local name from IRI (after last / or #) */
-export function extractLocalName(iri: string): string {
-  const hashIdx = iri.lastIndexOf('#')
-  const slashIdx = iri.lastIndexOf('/')
-  const idx = Math.max(hashIdx, slashIdx)
-  return idx >= 0 ? iri.substring(idx + 1) : iri
+function extractDomainFromRegistry(iri: string, registry?: DomainRegistry): string {
+  return extractDomain(iri, registry ? (i) => registry.domainForIri(i) : undefined)
 }
 
 /**
@@ -147,7 +134,7 @@ export async function queryPropertyDomains(
     if (!iri || !targetClass) continue
 
     const localName = extractLocalName(iri)
-    const domain = extractDomain(targetClass, registry)
+    const domain = extractDomainFromRegistry(targetClass, registry)
     const key = `${localName}:${domain}`
 
     if (localName && domain && !seen.has(key)) {
@@ -201,8 +188,8 @@ export async function queryAssetDomains(
     const superClass = row['superClass']?.value
     if (!subClass || !superClass) continue
 
-    const subDomain = extractDomain(subClass, registry)
-    const superDomain = extractDomain(superClass, registry)
+    const subDomain = extractDomainFromRegistry(subClass, registry)
+    const superDomain = extractDomainFromRegistry(superClass, registry)
 
     // Cross-domain inheritance: subclass is in a different domain than superclass
     // AND the subclass must be the primary target class for its domain
@@ -300,8 +287,8 @@ export async function queryDomainReferences(
   const seen = new Set<string>()
 
   const addReference = (parentClass: string, childClass: string): void => {
-    const parentDomain = extractDomain(parentClass, registry)
-    const childDomain = extractDomain(childClass, registry)
+    const parentDomain = extractDomainFromRegistry(parentClass, registry)
+    const childDomain = extractDomainFromRegistry(childClass, registry)
     const key = `${parentDomain}:${childDomain}`
     if (parentDomain && childDomain && parentDomain !== childDomain && !seen.has(key)) {
       seen.add(key)
@@ -522,8 +509,8 @@ export async function queryPropertyShapeGroups(
     if (!propIri || !targetClass || !superclass) continue
 
     const localName = extractLocalName(propIri)
-    const domain = extractDomain(targetClass, registry)
-    const superDomain = extractDomain(superclass, registry)
+    const domain = extractDomainFromRegistry(targetClass, registry)
+    const superDomain = extractDomainFromRegistry(superclass, registry)
     const shapeGroup = extractLocalName(superclass)
     const key = `${localName}:${domain}`
 
@@ -596,7 +583,7 @@ export async function queryRange2DProperties(
     if (!propIri || !minPredicate || !maxPredicate) continue
 
     const localName = extractLocalName(propIri)
-    const domain = extractDomain(propIri, registry)
+    const domain = extractDomainFromRegistry(propIri, registry)
 
     if (localName && domain) {
       properties.push({ localName, domain, minPredicate, maxPredicate })

@@ -22,7 +22,7 @@
     "@ontology-search/search": "workspace:*",
     "@ontology-search/sparql": "workspace:*",
     "hono": "^4.12.21",
-    "zod": "^3.24.0"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",

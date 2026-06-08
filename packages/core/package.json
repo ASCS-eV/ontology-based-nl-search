@@ -25,6 +25,11 @@
       "import": "./dist/rdf/prefixes.js",
       "default": "./dist/rdf/prefixes.js"
     },
+    "./rdf/iri": {
+      "types": "./src/rdf/iri.ts",
+      "import": "./dist/rdf/iri.js",
+      "default": "./dist/rdf/iri.js"
+    },
     "./http/mime": {
       "types": "./src/http/mime.ts",
       "import": "./dist/http/mime.js",

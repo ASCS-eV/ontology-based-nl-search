@@ -4,6 +4,7 @@ import { badRequest, internalError, unprocessable } from '@ontology-search/core/
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { normalizeReferences } from '@ontology-search/search'
+import { referenceFilterWireSchema } from '@ontology-search/search/slot-wire-schema'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { z } from 'zod'
@@ -13,26 +14,12 @@ import type { AppEnv } from '../types.js'
 
 const searchSlotsSchema = z.object({
   domains: z.array(z.string()).default([]),
-  // Filters keyed by SHACL leaf local name. Geographic constraints
-  // (country, state, region, city), license, and every other leaf
-  // live here — there is no dedicated `location` / `license`
-  // sub-object at the wire level (task 21d-flat). The compiler walks
-  // the SHACL-discovered property path for each key to emit SPARQL.
   filters: z.record(z.string(), z.union([z.string(), z.array(z.string())])).default({}),
   ranges: z
     .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
     .default({}),
-  // Cross-reference JOIN target. Required by the refine path so the UI
-  // can re-render `?refAsset`-carrying rows (and the per-row
-  // traceability + lineage explorer that depend on them) without going
-  // back through the LLM.
-  // Accept an array (one entry per referenced domain, AND-combined) or the
-  // legacy single object, and normalize to the array form the compiler expects.
   references: z
-    .union([
-      z.object({ domain: z.string(), label: z.string().optional() }),
-      z.array(z.object({ domain: z.string(), label: z.string().optional() })),
-    ])
+    .union([referenceFilterWireSchema, z.array(referenceFilterWireSchema)])
     .optional()
     .transform(normalizeReferences),
 })

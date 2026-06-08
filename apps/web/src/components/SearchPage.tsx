@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { StatsResponse } from '../api-types'
 import { useSearchExecution } from '../hooks/useSearchExecution'
 import { useSearchHistory } from '../hooks/useSearchHistory'
+import { apiGet } from '../lib/api-client'
 import { InterpretationDisplay } from './InterpretationDisplay'
 import { OntologyGapsDisplay } from './OntologyGapsDisplay'
 import { QueryRefinement } from './QueryRefinement'
@@ -18,11 +19,7 @@ export function SearchPage() {
     isLoading: apiLoading,
   } = useQuery<StatsResponse>({
     queryKey: ['stats'],
-    queryFn: async () => {
-      const res = await fetch('/api/stats')
-      if (!res.ok) throw new Error('Failed to load stats')
-      return res.json()
-    },
+    queryFn: () => apiGet<StatsResponse>('/api/stats'),
     retry: true,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
   })
