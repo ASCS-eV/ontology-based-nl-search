@@ -36,7 +36,7 @@ const h = vi.hoisted(() => ({
   // sendAndWait per case. Captured tools let the stub invoke the REAL
   // submit_slots handler (which routes through the real SubmissionRouter).
   capturedTools: [] as Array<{ name: string; handler?: (p: unknown) => unknown }>,
-  session: { sendAndWait: vi.fn() },
+  session: { sendAndWait: vi.fn(), disconnect: vi.fn().mockResolvedValue(undefined) },
 }))
 
 vi.mock('@github/copilot-sdk', () => ({

@@ -1,9 +1,14 @@
 /**
- * Copilot SDK Adapter — LLM slot-filling via GitHub Copilot SDK with session pooling.
+ * Copilot SDK Adapter — stateless slot-filling with pre-warmed session pool.
  *
- * Reads the shared AgentPolicy for model, reasoning effort, and forced tool
- * choice — no local policy decisions. Only SDK-specific transport concerns
- * (session pooling, token routing, abort-racing) live here.
+ * Each request gets a FRESH session (no context pollution), but sessions are
+ * pre-created in a pool so the ~5.8s creation cost is paid in the background,
+ * not on the request path. After use, a session is discarded and a replacement
+ * is queued for background creation.
+ *
+ * This gives the best of both worlds:
+ * - Same result quality as the stateless Vercel/claude-cli path
+ * - No warmup latency on the request path (amortized via pool)
  *
  * @see ./agent-policy.ts — Single source of truth for agent behaviour
  * @see ./agent-context.ts — Shared prompt/vocabulary/store caching
@@ -25,28 +30,9 @@ import type { AgentOptions } from './index.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
 import { renderTokenDirective, type Submission, SubmissionRouter } from './submission-router.js'
 
-// ─── Persistent Session Pool ─────────────────────────────────────────────────
-
-// ─── Persistent Session Pool ─────────────────────────────────────────────────
+// ─── Client Singleton ────────────────────────────────────────────────────────
 
 let client: CopilotClient | null = null
-
-/**
- * Routes each `submit_slots` tool call to its in-flight request callback by
- * exact `requestToken` — never by recency. The Copilot SDK exposes a single
- * global tool handler per session, so without the token a concurrent search
- * would silently resolve another request's promise.
- */
-const submissionRouter = new SubmissionRouter()
-
-/** Pool of persistent sessions, reused round-robin across search requests. */
-const sessionPool: CopilotSession[] = []
-/** Number of sessions to create. Small pool sufficient for typical concurrency. */
-const POOL_SIZE = 3
-/** Round-robin index into the session pool. */
-let nextSessionIndex = 0
-/** Promise that resolves when the pool is fully initialized (prevents races). */
-let poolInitPromise: Promise<void> | null = null
 
 async function getClient(): Promise<CopilotClient> {
   if (client) return client
@@ -59,10 +45,19 @@ async function getClient(): Promise<CopilotClient> {
 }
 
 /**
- * Build the submit_slots tool with a persistent handler.
+ * Per-request submission router. Each concurrent request gets a unique token;
+ * the single `submit_slots` handler routes tool-call replies by token so
+ * concurrent searches can't interfere.
+ */
+const submissionRouter = new SubmissionRouter()
+
+// ─── Tool Definition ─────────────────────────────────────────────────────────
+
+/**
+ * Build the submit_slots tool for a session.
  * The handler routes to whichever request is currently active via callback.
  */
-function buildPersistentSubmitSlotsTool() {
+function buildSubmitSlotsTool() {
   return defineTool('submit_slots', {
     description:
       'Submit the structured search result with filled slots, interpretation, and gaps. ' +
@@ -97,11 +92,6 @@ function buildPersistentSubmitSlotsTool() {
                 },
               },
             },
-            // Geographic, license, and other "well-known" constraints all
-            // live inside `filters` keyed by the SHACL leaf local name
-            // (task 21d-flat). The compiler walks the discovered SHACL
-            // chain from the asset class to each leaf; no dedicated
-            // `location` / `license` sub-object exists at the slot level.
           },
         },
         interpretation: {
@@ -150,11 +140,92 @@ function buildPersistentSubmitSlotsTool() {
   })
 }
 
+// ─── Single-Use Session Pool ─────────────────────────────────────────────────
+
+/** Pre-warmed sessions ready for use. Each session is consumed once and discarded. */
+const readyPool: CopilotSession[] = []
+/** Target pool size — sessions are replenished in the background after consumption. */
+const POOL_SIZE = 3
+/** Prevents concurrent replenishment storms. */
+let replenishing = false
+
+/**
+ * Create a fresh session. No `infiniteSessions` — each session is used
+ * exactly once so no history accumulates.
+ */
+async function createSession(prompt: string): Promise<CopilotSession> {
+  const c = await getClient()
+  const policy = getAgentPolicy()
+
+  return c.createSession({
+    model: policy.model,
+    ...(policy.reasoningEffort ? { reasoningEffort: policy.reasoningEffort } : {}),
+    onPermissionRequest: approveAll,
+    systemMessage: { mode: 'replace', content: prompt },
+    tools: [buildSubmitSlotsTool()],
+    availableTools: [policy.forcedTool],
+  })
+}
+
+/**
+ * Fill the pool up to POOL_SIZE. Called at startup (warmup) and after
+ * each session is consumed. Runs in the background — never blocks requests.
+ * Creates sessions in parallel for faster filling.
+ */
+async function replenishPool(): Promise<void> {
+  if (replenishing) return
+  replenishing = true
+  try {
+    const { prompt } = await getAgentContext()
+    const needed = POOL_SIZE - readyPool.length
+    if (needed <= 0) return
+    const sessions = await Promise.all(Array.from({ length: needed }, () => createSession(prompt)))
+    readyPool.push(...sessions)
+  } catch {
+    // intentional: pool creation may fail (network issues, proxy down).
+    // Requests will create sessions inline as fallback.
+  } finally {
+    replenishing = false
+  }
+}
+
+/**
+ * Take a pre-warmed session from the pool. If the pool is empty (burst
+ * traffic), create one on-the-fly (pays the ~5.8s cost inline).
+ * After taking, trigger background replenishment.
+ */
+async function acquireSession(): Promise<CopilotSession> {
+  const session = readyPool.shift()
+  // Fire-and-forget replenishment — don't block the request
+  void replenishPool()
+  if (session) return session
+  // Pool exhausted — create inline (rare, only under burst)
+  const { prompt } = await getAgentContext()
+  return createSession(prompt)
+}
+
+/**
+ * Exported for warmup — kicks off pool replenishment in the background.
+ * Does NOT await completion — the server starts immediately. The pool
+ * fills asynchronously; first requests that arrive before it's ready
+ * create sessions inline.
+ */
+export async function getPersistentSession(): Promise<CopilotSession> {
+  // Only ensure the client is started (fast) — pool fills in background
+  await getClient()
+  void replenishPool()
+  // Return a placeholder — warmup doesn't actually need a session reference,
+  // it just triggers background creation.
+  if (readyPool.length > 0) return readyPool[0]!
+  const { prompt } = await getAgentContext()
+  return createSession(prompt)
+}
+
+// ─── Abort Helper ────────────────────────────────────────────────────────────
+
 /**
  * Resolve when `promise` settles or reject with `AbortError` when `signal`
- * fires — whichever happens first. The original promise is not cancelled
- * (the Copilot SDK has no abort surface for sendAndWait); we just stop
- * awaiting it, and any late tool-call reply is dropped by the router.
+ * fires — whichever happens first.
  */
 function raceWithSignal<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -180,132 +251,14 @@ function raceWithSignal<T>(promise: Promise<T>, signal: AbortSignal): Promise<T>
   })
 }
 
-// ─── Session Creation ────────────────────────────────────────────────────────
+// ─── Main Entry Point ────────────────────────────────────────────────────────
 
 /**
- * Create a single Copilot session with the given system prompt.
+ * Run the slot-filling agent via the Copilot SDK — single-use sessions.
  *
- * Only `submit_slots` is exposed — the policy's `forcedTool` dictates this.
- * The LLM has no other option, achieving the same forced-tool-choice
- * behaviour as the Vercel AI SDK path.
- */
-async function createSession(prompt: string): Promise<CopilotSession> {
-  const c = await getClient()
-  const policy = getAgentPolicy()
-
-  return c.createSession({
-    model: policy.model,
-    ...(policy.reasoningEffort ? { reasoningEffort: policy.reasoningEffort } : {}),
-    onPermissionRequest: approveAll,
-    systemMessage: { mode: 'replace', content: prompt },
-    tools: [buildPersistentSubmitSlotsTool()],
-    availableTools: [policy.forcedTool],
-    infiniteSessions: { enabled: true },
-  })
-}
-
-/**
- * Initialize the session pool. Creates POOL_SIZE sessions in parallel.
- * Called once — subsequent calls return the cached promise.
- *
- * Exported so it can be called during server warmup to pre-pay
- * the session creation cost before any user request arrives.
- */
-export async function getPersistentSession(): Promise<CopilotSession> {
-  await initSessionPool()
-  return acquireSession()
-}
-
-/**
- * Initialize the full session pool. Idempotent — the first call creates
- * all sessions, subsequent calls are no-ops.
- */
-async function initSessionPool(): Promise<void> {
-  if (sessionPool.length >= POOL_SIZE) return
-  if (poolInitPromise) return poolInitPromise
-
-  poolInitPromise = (async () => {
-    const { prompt } = await getAgentContext()
-
-    // Only create the deficit — never exceed POOL_SIZE
-    const needed = POOL_SIZE - sessionPool.length
-    if (needed <= 0) {
-      poolInitPromise = null
-      return
-    }
-
-    const sessions = await Promise.all(Array.from({ length: needed }, () => createSession(prompt)))
-
-    sessionPool.push(...sessions)
-    poolInitPromise = null
-  })()
-
-  return poolInitPromise
-}
-
-/**
- * Acquire a session from the pool via round-robin.
- * Each session is independent — concurrent requests on different sessions
- * cannot interfere with each other's context windows.
- *
- * Takes a snapshot of the pool length to protect against concurrent
- * `invalidateSession` calls that `splice()` the array.
- */
-function acquireSession(): CopilotSession {
-  const len = sessionPool.length
-  if (len === 0) {
-    throw new Error('Copilot session pool exhausted — all sessions failed')
-  }
-  const idx = nextSessionIndex % len
-  const session = sessionPool[idx]
-  if (!session) {
-    // Pool mutated between length check and index access — use first available
-    const fallback = sessionPool[0]
-    if (!fallback) throw new Error('Copilot session pool exhausted — all sessions failed')
-    return fallback
-  }
-  nextSessionIndex = (nextSessionIndex + 1) % len
-  return session
-}
-
-/**
- * Invalidate a specific session from the pool (e.g., on error) and
- * replace it with a fresh one so the pool stays at full capacity.
- */
-async function invalidateSession(session: CopilotSession): Promise<void> {
-  const idx = sessionPool.indexOf(session)
-  if (idx === -1) return // Already removed
-
-  // Remove the dead session
-  sessionPool.splice(idx, 1)
-
-  // Best-effort disconnect
-  try {
-    await session.disconnect()
-  } catch {
-    // intentional: best-effort cleanup — the session may already be
-    // closed by the server or the network may be unavailable
-  }
-
-  // Replenish the pool with a fresh session
-  try {
-    const { prompt } = await getAgentContext()
-    const replacement = await createSession(prompt)
-    sessionPool.push(replacement)
-  } catch {
-    // Pool temporarily reduced — next request will still work with
-    // remaining sessions. The pool will heal on the next init call
-    // if it falls below POOL_SIZE.
-  }
-}
-
-/**
- * Run the slot-filling agent via the Copilot SDK's native tool calling.
- *
- * Uses a persistent session that is created once and reused across requests.
- * This eliminates the ~5.8s session-create overhead on every search.
- * The SDK's infiniteSessions feature handles context compaction automatically
- * when conversation history grows too large.
+ * Each request takes a pre-warmed session from the pool (no warmup cost),
+ * uses it once (no context pollution), and discards it. A replacement is
+ * created in the background immediately.
  */
 export async function runCopilotAgent(
   naturalLanguageQuery: string,
@@ -318,20 +271,12 @@ export async function runCopilotAgent(
   const { vocabulary } = await getAgentContext()
   endSetup()
 
-  // Get or create persistent session (first call pays ~5.8s, subsequent ~0ms)
+  // Acquire a fresh, pre-warmed session (pool replenishes in background)
   const endSession = sw.time('session-acquire')
-  let session: CopilotSession
-  try {
-    session = await getPersistentSession()
-  } catch (err) {
-    // Pool creation failed — propagate (nothing to invalidate yet)
-    throw err
-  }
+  const session = await acquireSession()
   endSession()
 
-  // Per-request callback registration: the router pairs the tool-call reply
-  // to this exact request by token, so concurrent searches cannot resolve each
-  // other's promises (the old LIFO lookup did exactly that).
+  // Register callback for this request's token
   const requestToken = randomUUID()
   const submissionRef: { value: Submission | null } = { value: null }
   const unregister = submissionRouter.register(requestToken, (submission) => {
@@ -339,12 +284,6 @@ export async function runCopilotAgent(
   })
 
   const promptWithToken = `${naturalLanguageQuery}\n\n${renderTokenDirective(requestToken)}`
-
-  // The Copilot SDK does not accept an AbortSignal on sendAndWait, and the
-  // session is shared across requests, so we cannot call session.abort()
-  // without harming other in-flight callers. Best effort: race the call
-  // against the signal and stop awaiting on abort. The router rejects any
-  // late tool call for this request because unregister() runs in finally.
   const signal = options?.signal
 
   try {
@@ -357,15 +296,12 @@ export async function runCopilotAgent(
       await session.sendAndWait({ prompt: promptWithToken })
     }
     endLlmCall()
-  } catch (err) {
-    // Aborts propagate cleanly without invalidating the session — other
-    // in-flight requests still need it.
-    if (err instanceof DOMException && err.name === 'AbortError') throw err
-    // Session may have died — invalidate so pool replaces it
-    await invalidateSession(session)
-    throw err
   } finally {
     unregister()
+    // Discard the used session — don't reuse (prevents context accumulation)
+    session.disconnect().catch(() => {
+      // intentional: best-effort cleanup
+    })
   }
 
   if (submissionRef.value) {
@@ -378,8 +314,7 @@ export async function runCopilotAgent(
     return { ...response, timings: sw.getTimings() }
   }
 
-  // Fallback: LLM didn't call submit_slots — shared with the Vercel agent so
-  // the cross-domain query and vocabulary-derived hint stay identical.
+  // Fallback: LLM didn't call submit_slots
   const fallback = await buildEmptyFallbackResponse(naturalLanguageQuery, vocabulary)
   return { ...fallback, timings: sw.getTimings() }
 }
