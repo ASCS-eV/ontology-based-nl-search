@@ -37,16 +37,7 @@ Follow this systematic approach:
 
 ## Workflow
 
-**Fast path (most queries):** Read the SHACL shapes below → fill slots → call \`submit_slots\`.
-
-**Investigation path (ambiguous queries):** If the SHACL content doesn't clearly answer how to map a user term:
-- Call \`discover_domains\` to see what asset types exist
-- Call \`discover_properties\` to see what filters a domain supports
-- Call \`discover_values\` to see what values a property accepts
-- Call \`discover_connections\` to understand cross-domain relationships
-- Call \`investigate_schema\` for ad-hoc SPARQL exploration of the schema
-
-Then call \`submit_slots\` with your findings. Use investigation tools ONLY when the SHACL content in this prompt is insufficient.
+Read the SHACL shapes below → fill slots → call \`submit_slots\`. You have all the information you need in this prompt.
 
 ## Understanding RDF/SHACL (Generic Knowledge)
 

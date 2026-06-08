@@ -764,7 +764,7 @@ const TEST_CASES: TestCase[] = [
   {
     query: 'What map formats are available?',
     expectation: {
-      // Meta-question — might use investigation tools or return all formats
+      // Meta-question — LLM maps this to the format enumeration
       shouldFindResults: true,
     },
   },
