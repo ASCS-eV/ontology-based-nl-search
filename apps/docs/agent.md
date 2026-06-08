@@ -1,25 +1,20 @@
 # Agent Design
 
-Multi-tool agent with constrained output and runtime schema reasoning.
+Single-tool agent with forced structured output. The LLM never writes SPARQL — it fills structured slots via exactly one tool call.
 
 ## Tool Architecture
 
-The agent has **6 tools**: one output tool (`submit_slots`) and five investigation tools for runtime ontology exploration. The LLM never writes SPARQL — it fills structured slots or queries the schema graph.
+The agent exposes a **single tool** (`submit_slots`) with forced tool choice. The LLM receives the full SHACL vocabulary in its system prompt and directly fills search slots in one round-trip.
 
 ```mermaid
 sequenceDiagram
     participant U as User
     participant L as LLM Agent
-    participant IT as Investigation Tools
-    participant SS as submit_slots
+    participant SS as submit_slots (forced)
     participant V as Validator + Compiler
 
     U->>L: Query + system prompt (raw SHACL)
-    alt Complex or unfamiliar query
-        L->>IT: discover_properties / discover_values / ...
-        IT-->>L: Schema structure (from Oxigraph)
-    end
-    L->>SS: submit_slots({ slots: { domains, filters, ranges, references },<br/>interpretation, gaps })
+    L->>SS: submit_slots({ slots, interpretation, gaps })
     SS-->>V: Validated SearchSlots →<br/>SPARQL → Results
 ```
 
@@ -55,7 +50,37 @@ Slot shape: there are no top-level `location` or `license` objects — both flow
 
 ### Forced tool choice
 
-The agent runs with `toolChoice: { type: 'tool', toolName: 'submit_slots' }` — the LLM commits to structured output on step 1. The five investigation tools are still wired in (the prompt mentions them) but are no longer the path of least resistance: the full SHACL is embedded in the system prompt, so investigation calls are typically redundant. Forcing the choice eliminated a class of failures where cautious models (Haiku, in particular) exhausted `LLM_MAX_AGENT_STEPS` on `discover_*` calls and never reached `submit_slots`.
+The agent runs with `toolChoice: { type: 'tool', toolName: 'submit_slots' }` (Vercel AI SDK) or `availableTools: ['submit_slots']` (Copilot SDK) — the LLM has no alternative and commits to structured output on step 1. Both adapters read this constraint from the shared `AgentPolicy` module, ensuring they can never diverge.
+
+## Architecture: SDK Adapter Pattern
+
+Both adapters share a single policy and context layer:
+
+```
+┌─────────────────────────────────┐
+│  agent-policy.ts                │  ← Single source of truth
+│  (forcedTool, temperature,      │     (tool choice, reasoning, steps)
+│   thinking, reasoningEffort,    │
+│   maxSteps, model)              │
+├─────────────────────────────────┤
+│  agent-context.ts               │  ← Shared caching
+│  (system prompt, vocabulary,    │     (deduplicated across adapters)
+│   SparqlStore)                  │
+├────────────────┬────────────────┤
+│ Vercel Adapter │ Copilot Adapter│  ← SDK-specific transport only
+│ (index.ts)     │ (copilot-      │
+│                │  agent.ts)     │
+├────────────────┴────────────────┤
+│  run-slot-pipeline.ts           │  ← Shared post-LLM pipeline
+│  (validation + SPARQL compile)  │
+└─────────────────────────────────┘
+```
+
+A contract test (`agent-policy-contract.test.ts`) pins that both adapters:
+
+- Register only `submit_slots` (no investigation tools)
+- Use the policy's temperature, model, and forced tool choice
+- Cannot import the deleted `investigation-tools` module
 
 ## Context Engineering
 
@@ -82,8 +107,6 @@ The LLM natively understands SHACL constraint vocabulary:
 - **`sh:datatype xsd:integer`** → range queries
 - **`sh:description`** — semantic context for disambiguation
 
-No properties can be missed because the LLM sees the full shapes. The investigation tools supplement this with on-demand exploration for edge cases.
-
 ## Post-LLM Validation
 
 Three corrections run after the LLM submits slots:
@@ -105,22 +128,6 @@ graph TD
 | **Filter**     | Exact → case-insensitive → substring → edit-distance ≤ 4 → gap | `"motoway"` → `"motorway"`              |
 | **Domain**     | Property→domain map; add missing, keep valid                   | `scenario` + `roadTypes` → adds `hdmap` |
 | **Confidence** | Recompute from match quality, not LLM self-assessment          | Exact = high, fuzzy = medium            |
-
-## Investigation Tools (RDF Reasoning)
-
-Five tools query the schema graph (`<urn:graph:schema>`) at runtime, giving the LLM on-demand ontology exploration:
-
-| Tool                   | Purpose                               | Returns                            |
-| ---------------------- | ------------------------------------- | ---------------------------------- |
-| `discover_domains`     | List searchable asset types           | `[{domain, classIri}]`             |
-| `discover_properties`  | Filterable properties for a domain    | `[{localName, datatype, hasEnum}]` |
-| `discover_values`      | Allowed `sh:in` values for a property | `["motorway", "rural", ...]`       |
-| `discover_connections` | Cross-domain references               | `[{from, to}]`                     |
-| `investigate_schema`   | Arbitrary SPARQL SELECT on schema     | `[{var1, var2, ...}]`              |
-
-**Safety:** Read-only, SELECT-only, 50-row cap, no interactive permissions.
-
-**When used:** Most queries resolve from the static prompt alone. Tools activate for niche properties, unfamiliar concepts, or complex cross-domain exploration.
 
 ## Provider Flexibility
 

@@ -1,36 +1,13 @@
 /**
- * Copilot Agent — LLM slot-filling via GitHub Copilot SDK with session pooling.
+ * Copilot SDK Adapter — LLM slot-filling via GitHub Copilot SDK with session pooling.
  *
- * Size note: this file owns three interleaved responsibilities that
- * each pull in SDK-specific types — session pool, per-request
- * submission, and tool callback routing — and cannot be cleanly split
- * without exposing the SDK's persistent-session lifecycle as a
- * separate public surface. The token-keyed callback router was
- * already extracted to `submission-router.ts`; the remaining
- * session-management and per-request orchestration stay together so
- * the SDK boundary lives in one module.
+ * Reads the shared AgentPolicy for model, reasoning effort, and forced tool
+ * choice — no local policy decisions. Only SDK-specific transport concerns
+ * (session pooling, token routing, abort-racing) live here.
  *
- * **Architecture:**
- * - Maintains a pool of persistent CopilotSessions (default 3), reused
- *   round-robin across all search requests
- * - Eliminates ~5.8s session-create overhead on every search
- * - Relies on SDK's infiniteSessions feature for automatic context compaction
- * - System prompt cached in memory (generated once from 22 SHACL files, 298 KB)
- * - Tool-based structured output: submit_slots is the only tool exposed to LLM
- *
- * **Why Session Pooling:**
- * - Single session funnelled all concurrent requests through one context window
- * - Pool of N sessions allows N concurrent LLM calls without interference
- * - Round-robin distribution keeps sessions evenly loaded
- * - Failed sessions are replaced transparently
- *
- * **Post-LLM Pipeline:**
- * - LLM reads raw SHACL Turtle → fills slots
- * - Validator fuzzy-matches invalid values → fixes mistakes
- * - Compiler generates domain-agnostic SPARQL from corrected slots
- *
- * @see packages/llm/src/prompt-builder.ts — Generates system prompt from raw SHACL
- * @see packages/llm/src/slot-validator.ts — Post-LLM validation and correction
+ * @see ./agent-policy.ts — Single source of truth for agent behaviour
+ * @see ./agent-context.ts — Shared prompt/vocabulary/store caching
+ * @see ./submission-router.ts — Token-keyed callback routing for concurrent requests
  */
 
 import { randomUUID } from 'node:crypto'
@@ -39,16 +16,10 @@ import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@git
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
 import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
-import {
-  extractVocabulary,
-  getInitializedStore,
-  type OntologyVocabulary,
-} from '@ontology-search/search'
-import { getShaclContent } from '@ontology-search/search/shacl-reader'
-import type { SparqlStore } from '@ontology-search/sparql/types'
 
-import { buildSystemPrompt } from '../prompt-builder.js'
 import type { LlmStructuredResponse } from '../types.js'
+import { getAgentContext } from './agent-context.js'
+import { getAgentPolicy } from './agent-policy.js'
 import { buildEmptyFallbackResponse } from './empty-fallback.js'
 import type { AgentOptions } from './index.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
@@ -56,9 +27,8 @@ import { renderTokenDirective, type Submission, SubmissionRouter } from './submi
 
 // ─── Persistent Session Pool ─────────────────────────────────────────────────
 
-let cachedSystemPrompt: string | null = null
-let cachedVocabulary: OntologyVocabulary | null = null
-let cachedStore: SparqlStore | null = null
+// ─── Persistent Session Pool ─────────────────────────────────────────────────
+
 let client: CopilotClient | null = null
 
 /**
@@ -77,27 +47,6 @@ const POOL_SIZE = 3
 let nextSessionIndex = 0
 /** Promise that resolves when the pool is fully initialized (prevents races). */
 let poolInitPromise: Promise<void> | null = null
-
-async function getSystemPrompt(): Promise<{
-  prompt: string
-  vocabulary: OntologyVocabulary
-  store: SparqlStore
-}> {
-  if (cachedSystemPrompt && cachedVocabulary && cachedStore) {
-    return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary, store: cachedStore }
-  }
-
-  // Read raw SHACL files for the system prompt (LLM reads native Turtle)
-  const shaclContent = getShaclContent()
-  cachedSystemPrompt = buildSystemPrompt(shaclContent)
-
-  // Extract vocabulary separately — still needed for post-LLM slot validation
-  const store = await getInitializedStore()
-  cachedVocabulary = await extractVocabulary(store)
-  cachedStore = store
-
-  return { prompt: cachedSystemPrompt, vocabulary: cachedVocabulary, store }
-}
 
 async function getClient(): Promise<CopilotClient> {
   if (client) return client
@@ -236,28 +185,21 @@ function raceWithSignal<T>(promise: Promise<T>, signal: AbortSignal): Promise<T>
 /**
  * Create a single Copilot session with the given system prompt.
  *
- * Only `submit_slots` is exposed as a tool — the LLM has no other option,
- * achieving the same forced-tool-choice behaviour as the Vercel AI SDK path
- * (`toolChoice: { type: 'tool', toolName: 'submit_slots' }`). The system
- * prompt already embeds the full SHACL vocabulary, so investigation tools
- * added latency without improving accuracy (each extra tool call was another
- * round-trip through GitHub's proxy).
+ * Only `submit_slots` is exposed — the policy's `forcedTool` dictates this.
+ * The LLM has no other option, achieving the same forced-tool-choice
+ * behaviour as the Vercel AI SDK path.
  */
-async function createSession(prompt: string, _store: SparqlStore): Promise<CopilotSession> {
+async function createSession(prompt: string): Promise<CopilotSession> {
   const c = await getClient()
-  const config = getConfig()
-
-  // reasoningEffort is only supported by certain models (e.g. claude-sonnet-4.6).
-  // Models that don't support it will reject the session.create call.
-  const supportsReasoning = config.AI_MODEL.includes('4.6') || config.AI_MODEL.includes('opus')
+  const policy = getAgentPolicy()
 
   return c.createSession({
-    model: config.AI_MODEL,
-    ...(supportsReasoning ? { reasoningEffort: 'low' } : {}),
+    model: policy.model,
+    ...(policy.reasoningEffort ? { reasoningEffort: policy.reasoningEffort } : {}),
     onPermissionRequest: approveAll,
     systemMessage: { mode: 'replace', content: prompt },
     tools: [buildPersistentSubmitSlotsTool()],
-    availableTools: ['submit_slots'],
+    availableTools: [policy.forcedTool],
     infiniteSessions: { enabled: true },
   })
 }
@@ -283,7 +225,7 @@ async function initSessionPool(): Promise<void> {
   if (poolInitPromise) return poolInitPromise
 
   poolInitPromise = (async () => {
-    const { prompt, store } = await getSystemPrompt()
+    const { prompt } = await getAgentContext()
 
     // Only create the deficit — never exceed POOL_SIZE
     const needed = POOL_SIZE - sessionPool.length
@@ -292,9 +234,7 @@ async function initSessionPool(): Promise<void> {
       return
     }
 
-    const sessions = await Promise.all(
-      Array.from({ length: needed }, () => createSession(prompt, store))
-    )
+    const sessions = await Promise.all(Array.from({ length: needed }, () => createSession(prompt)))
 
     sessionPool.push(...sessions)
     poolInitPromise = null
@@ -349,8 +289,8 @@ async function invalidateSession(session: CopilotSession): Promise<void> {
 
   // Replenish the pool with a fresh session
   try {
-    const { prompt, store } = await getSystemPrompt()
-    const replacement = await createSession(prompt, store)
+    const { prompt } = await getAgentContext()
+    const replacement = await createSession(prompt)
     sessionPool.push(replacement)
   } catch {
     // Pool temporarily reduced — next request will still work with
@@ -375,7 +315,7 @@ export async function runCopilotAgent(
   const targetDomain = options?.domain ?? (await getPrimaryDomain())
 
   const endSetup = sw.time('setup')
-  const { vocabulary } = await getSystemPrompt()
+  const { vocabulary } = await getAgentContext()
   endSetup()
 
   // Get or create persistent session (first call pays ~5.8s, subsequent ~0ms)
