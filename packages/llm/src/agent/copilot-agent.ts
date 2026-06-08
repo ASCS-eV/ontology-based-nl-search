@@ -43,11 +43,8 @@ import {
   extractVocabulary,
   getInitializedStore,
   type OntologyVocabulary,
-  SCHEMA_GRAPH,
 } from '@ontology-search/search'
 import { getShaclContent } from '@ontology-search/search/shacl-reader'
-import { escapeSparqlLiteral } from '@ontology-search/sparql/escape'
-import { validateSchemaQuery } from '@ontology-search/sparql/policy'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { buildSystemPrompt } from '../prompt-builder.js'
@@ -234,233 +231,19 @@ function raceWithSignal<T>(promise: Promise<T>, signal: AbortSignal): Promise<T>
   })
 }
 
-// ─── Investigation Tools (Copilot SDK format) ───────────────────────────────
-
-/**
- * Build investigation tools for the Copilot SDK session.
- * These mirror the Vercel AI SDK investigation tools but use `defineTool` format.
- */
-function buildInvestigationTools(store: SparqlStore) {
-  return [
-    defineTool('discover_domains', {
-      description:
-        'List all available asset domains (types of searchable resources). ' +
-        'Returns domain names and their RDF class IRIs.',
-      skipPermission: true,
-      parameters: { type: 'object', properties: {} },
-      handler: async () => {
-        const query = `
-          PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-          PREFIX sh: <http://www.w3.org/ns/shacl#>
-          SELECT DISTINCT ?domain ?classIri WHERE {
-            GRAPH <${SCHEMA_GRAPH}> {
-              ?shape a sh:NodeShape ;
-                     sh:targetClass ?classIri .
-              ?classIri rdfs:subClassOf ?superClass .
-            }
-            BIND(REPLACE(STR(?classIri), "^.*/([^/]+)/v[0-9]+/.*$", "$1") AS ?domain)
-            FILTER(?domain != STR(?classIri))
-          }
-          ORDER BY ?domain
-        `
-        const results = await store.query(query)
-        const domains = results.results.bindings.map((b) => ({
-          domain: b['domain']?.value ?? '',
-          classIri: b['classIri']?.value ?? '',
-        }))
-        return { domains, count: domains.length }
-      },
-    }),
-
-    defineTool('discover_properties', {
-      description:
-        'List all filterable properties for a specific domain. ' +
-        'Returns property local names, data types, and whether they have enumerated values.',
-      skipPermission: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          domain: { type: 'string', description: 'Domain name to inspect' },
-        },
-        required: ['domain'],
-      },
-      handler: async (params: { domain: string }) => {
-        const query = `
-          PREFIX sh: <http://www.w3.org/ns/shacl#>
-          PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-          SELECT ?localName ?path ?datatype ?name ?description ?hasEnum WHERE {
-            GRAPH <${SCHEMA_GRAPH}> {
-              ?shape a sh:NodeShape ;
-                     sh:targetClass ?cls .
-              ?shape (sh:property/sh:node?)*/sh:property ?propShape .
-              ?propShape sh:path ?path .
-              OPTIONAL { ?propShape sh:datatype ?datatype }
-              OPTIONAL { ?propShape sh:name ?name }
-              OPTIONAL { ?propShape sh:description ?description }
-              BIND(EXISTS { ?propShape sh:in ?list } AS ?hasEnum)
-            }
-            FILTER(CONTAINS(LCASE(STR(?cls)), "${escapeSparqlLiteral(params.domain.toLowerCase())}"))
-            BIND(REPLACE(STR(?path), "^.*/", "") AS ?localName)
-          }
-          ORDER BY ?localName
-        `
-        const results = await store.query(query)
-        const properties = results.results.bindings.map((b) => ({
-          localName: b['localName']?.value ?? '',
-          path: b['path']?.value ?? '',
-          datatype: b['datatype']?.value?.replace(/.*#/, '') ?? 'unknown',
-          name: b['name']?.value ?? '',
-          description: b['description']?.value ?? '',
-          hasEnumeratedValues: b['hasEnum']?.value === 'true',
-        }))
-        return { domain: params.domain, properties, count: properties.length }
-      },
-    }),
-
-    defineTool('discover_values', {
-      description:
-        'Get the allowed values (sh:in enumeration) for a specific property. ' +
-        'Only works for properties with sh:in constraints.',
-      skipPermission: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          propertyName: { type: 'string', description: 'Property local name' },
-          domain: {
-            type: 'string',
-            description: 'Domain to narrow search (empty string for all)',
-          },
-        },
-        required: ['propertyName', 'domain'],
-      },
-      handler: async (params: { propertyName: string; domain: string }) => {
-        const domainFilter = params.domain
-          ? `FILTER(CONTAINS(LCASE(STR(?cls)), "${escapeSparqlLiteral(params.domain.toLowerCase())}"))`
-          : ''
-        const query = `
-          PREFIX sh: <http://www.w3.org/ns/shacl#>
-          PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-          SELECT ?value WHERE {
-            GRAPH <${SCHEMA_GRAPH}> {
-              ?shape a sh:NodeShape ;
-                     sh:targetClass ?cls .
-              ?shape (sh:property/sh:node?)*/sh:property ?propShape .
-              ?propShape sh:path ?path .
-              ?propShape sh:in ?list .
-              ?list rdf:rest*/rdf:first ?value .
-            }
-            ${domainFilter}
-            FILTER(STRENDS(STR(?path), "/${escapeSparqlLiteral(params.propertyName)}") || STRENDS(STR(?path), "#${escapeSparqlLiteral(params.propertyName)}"))
-          }
-          ORDER BY ?value
-        `
-        const results = await store.query(query)
-        const values = results.results.bindings.map((b) => b['value']?.value ?? '')
-        return {
-          propertyName: params.propertyName,
-          domain: params.domain || 'all',
-          values,
-          count: values.length,
-        }
-      },
-    }),
-
-    defineTool('discover_connections', {
-      description:
-        'Find cross-domain reference relationships. ' +
-        'Shows which domains reference other domains via manifest artifacts.',
-      skipPermission: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          domain: {
-            type: 'string',
-            description: 'Filter connections for a specific domain (empty string for all)',
-          },
-        },
-        required: ['domain'],
-      },
-      handler: async (params: { domain: string }) => {
-        const domainFilter = params.domain
-          ? `FILTER(CONTAINS(LCASE(STR(?parentClass)), "${escapeSparqlLiteral(params.domain.toLowerCase())}") || CONTAINS(LCASE(STR(?childClass)), "${escapeSparqlLiteral(params.domain.toLowerCase())}"))`
-          : ''
-        const query = `
-          PREFIX sh: <http://www.w3.org/ns/shacl#>
-          PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-          SELECT DISTINCT ?parentDomain ?childDomain ?parentClass ?childClass WHERE {
-            GRAPH <${SCHEMA_GRAPH}> {
-              ?parentShape a sh:NodeShape ;
-                           sh:targetClass ?parentClass .
-              ?parentShape (sh:property/sh:node?)*/sh:property ?refProp .
-              ?refProp sh:node ?refNode .
-              ?refNode sh:property ?innerProp .
-              ?innerProp sh:class ?childClass .
-              ?childClass rdfs:subClassOf ?super .
-            }
-            ${domainFilter}
-            BIND(REPLACE(STR(?parentClass), "^.*/([^/]+)/v[0-9]+/.*$", "$1") AS ?parentDomain)
-            BIND(REPLACE(STR(?childClass), "^.*/([^/]+)/v[0-9]+/.*$", "$1") AS ?childDomain)
-            FILTER(?parentDomain != ?childDomain)
-          }
-          ORDER BY ?parentDomain ?childDomain
-        `
-        const results = await store.query(query)
-        const connections = results.results.bindings.map((b) => ({
-          from: b['parentDomain']?.value ?? '',
-          to: b['childDomain']?.value ?? '',
-          fromClass: b['parentClass']?.value ?? '',
-          toClass: b['childClass']?.value ?? '',
-        }))
-        return { connections, count: connections.length }
-      },
-    }),
-
-    defineTool('investigate_schema', {
-      description:
-        'Run a custom read-only SPARQL SELECT on the schema graph. ' +
-        'Only SELECT queries allowed. Results limited to 50 rows.',
-      skipPermission: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          sparql: {
-            type: 'string',
-            description: 'A SPARQL SELECT query against the schema graph.',
-          },
-        },
-        required: ['sparql'],
-      },
-      handler: async (params: { sparql: string }) => {
-        const validation = validateSchemaQuery(params.sparql, SCHEMA_GRAPH)
-        if (!validation.allowed) {
-          return { error: validation.violations.join('; '), results: [] }
-        }
-
-        try {
-          const results = await store.query(validation.query)
-          const bindings = results.results.bindings.slice(0, 50).map((b) => {
-            const row: Record<string, string> = {}
-            for (const [key, val] of Object.entries(b)) {
-              row[key] = val.value
-            }
-            return row
-          })
-          return { variables: results.head.vars, results: bindings, count: bindings.length }
-        } catch {
-          return {
-            error: 'Query execution failed — check syntax and try a simpler query',
-            results: [],
-          }
-        }
-      },
-    }),
-  ]
-}
+// ─── Session Creation ────────────────────────────────────────────────────────
 
 /**
  * Create a single Copilot session with the given system prompt.
+ *
+ * Only `submit_slots` is exposed as a tool — the LLM has no other option,
+ * achieving the same forced-tool-choice behaviour as the Vercel AI SDK path
+ * (`toolChoice: { type: 'tool', toolName: 'submit_slots' }`). The system
+ * prompt already embeds the full SHACL vocabulary, so investigation tools
+ * added latency without improving accuracy (each extra tool call was another
+ * round-trip through GitHub's proxy).
  */
-async function createSession(prompt: string, store: SparqlStore): Promise<CopilotSession> {
+async function createSession(prompt: string, _store: SparqlStore): Promise<CopilotSession> {
   const c = await getClient()
   const config = getConfig()
 
@@ -468,22 +251,13 @@ async function createSession(prompt: string, store: SparqlStore): Promise<Copilo
   // Models that don't support it will reject the session.create call.
   const supportsReasoning = config.AI_MODEL.includes('4.6') || config.AI_MODEL.includes('opus')
 
-  const investigationTools = buildInvestigationTools(store)
-
   return c.createSession({
     model: config.AI_MODEL,
     ...(supportsReasoning ? { reasoningEffort: 'low' } : {}),
     onPermissionRequest: approveAll,
     systemMessage: { mode: 'replace', content: prompt },
-    tools: [buildPersistentSubmitSlotsTool(), ...investigationTools],
-    availableTools: [
-      'submit_slots',
-      'discover_domains',
-      'discover_properties',
-      'discover_values',
-      'discover_connections',
-      'investigate_schema',
-    ],
+    tools: [buildPersistentSubmitSlotsTool()],
+    availableTools: ['submit_slots'],
     infiniteSessions: { enabled: true },
   })
 }
