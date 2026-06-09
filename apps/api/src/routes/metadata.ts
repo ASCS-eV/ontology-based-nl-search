@@ -1,10 +1,10 @@
 import type { AssetMetadata, DomainGroupAggregate } from '@ontology-search/api-types'
-import { badRequest, internalError } from '@ontology-search/core/errors'
-import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
+import { badRequest } from '@ontology-search/core/errors'
 import { getAssetMetadata, getDomainMetadataAggregate } from '@ontology-search/search'
 import { Hono } from 'hono'
 
 import type { AppEnv } from '../types.js'
+import { handleRoute } from './handler.js'
 
 export const metadataRoutes = new Hono<AppEnv>()
 
@@ -16,32 +16,28 @@ export const metadataRoutes = new Hono<AppEnv>()
  * Format, Quality, …). Generic in the facet name; "Quality" is one of
  * several groups the same endpoint surfaces.
  */
-metadataRoutes.get('/asset', async (c) => {
-  const requestId = c.get('requestId') as string
-  const logger = new RequestLogger({ requestId })
+metadataRoutes.get('/asset', (c) =>
+  handleRoute<AssetMetadata>(c, {
+    label: 'Metadata asset',
+    errorMessage: 'Failed to load asset metadata',
+    handler: async (ctx, logger) => {
+      const iri = ctx.req.query('iri')
+      if (!iri || iri.trim().length === 0) {
+        logger.warn('Metadata asset request missing iri parameter')
+        return badRequest('Missing required query parameter "iri"')
+      }
 
-  const iri = c.req.query('iri')
-  if (!iri || iri.trim().length === 0) {
-    logger.warn('Metadata asset request missing iri parameter')
-    const err = badRequest('Missing required query parameter "iri"')
-    return c.json(err.body, err.status)
-  }
-
-  try {
-    logger.info('Metadata asset request started', { iri })
-    const metadata = await getAssetMetadata(iri)
-    logger.info('Metadata asset request completed', {
-      iri,
-      domain: metadata.domain,
-      groups: Object.keys(metadata.groups).length,
-    })
-    return c.json(metadata satisfies AssetMetadata, 200, { [REQUEST_ID_HEADER]: requestId })
-  } catch (error) {
-    logger.error('Metadata asset API error', error)
-    const err = internalError('Failed to load asset metadata')
-    return c.json(err.body, err.status)
-  }
-})
+      logger.info('Metadata asset request started', { iri })
+      const metadata = await getAssetMetadata(iri)
+      logger.info('Metadata asset request completed', {
+        iri,
+        domain: metadata.domain,
+        groups: Object.keys(metadata.groups).length,
+      })
+      return metadata
+    },
+  })
+)
 
 /**
  * `GET /metadata/aggregate?domain=<name>&group=<group>`
@@ -50,34 +46,29 @@ metadataRoutes.get('/asset', async (c) => {
  * instance of the requested domain. Use cases: domain-level quality
  * dashboard, property-value histograms, range bars.
  */
-metadataRoutes.get('/aggregate', async (c) => {
-  const requestId = c.get('requestId') as string
-  const logger = new RequestLogger({ requestId })
+metadataRoutes.get('/aggregate', (c) =>
+  handleRoute<DomainGroupAggregate>(c, {
+    label: 'Metadata aggregate',
+    errorMessage: 'Failed to compute aggregate metadata',
+    handler: async (ctx, logger) => {
+      const domain = ctx.req.query('domain')
+      const group = ctx.req.query('group')
+      if (!domain || domain.trim().length === 0) {
+        return badRequest('Missing required query parameter "domain"')
+      }
+      if (!group || group.trim().length === 0) {
+        return badRequest('Missing required query parameter "group"')
+      }
 
-  const domain = c.req.query('domain')
-  const group = c.req.query('group')
-  if (!domain || domain.trim().length === 0) {
-    const err = badRequest('Missing required query parameter "domain"')
-    return c.json(err.body, err.status)
-  }
-  if (!group || group.trim().length === 0) {
-    const err = badRequest('Missing required query parameter "group"')
-    return c.json(err.body, err.status)
-  }
-
-  try {
-    logger.info('Metadata aggregate request started', { domain, group })
-    const aggregate = await getDomainMetadataAggregate(domain, group)
-    logger.info('Metadata aggregate request completed', {
-      domain,
-      group,
-      assets: aggregate.assetCount,
-      properties: aggregate.properties.length,
-    })
-    return c.json(aggregate satisfies DomainGroupAggregate, 200, { [REQUEST_ID_HEADER]: requestId })
-  } catch (error) {
-    logger.error('Metadata aggregate API error', error)
-    const err = internalError('Failed to compute aggregate metadata')
-    return c.json(err.body, err.status)
-  }
-})
+      logger.info('Metadata aggregate request started', { domain, group })
+      const aggregate = await getDomainMetadataAggregate(domain, group)
+      logger.info('Metadata aggregate request completed', {
+        domain,
+        group,
+        assets: aggregate.assetCount,
+        properties: aggregate.properties.length,
+      })
+      return aggregate
+    },
+  })
+)

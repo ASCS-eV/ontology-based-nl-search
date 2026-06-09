@@ -1,29 +1,24 @@
 import type { StatsResponse } from '@ontology-search/api-types'
-import { internalError } from '@ontology-search/core/errors'
-import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { Hono } from 'hono'
 
 import { countAssets } from '../services/count-assets.js'
 import type { AppEnv } from '../types.js'
+import { handleRoute } from './handler.js'
 
 export const statsRoutes = new Hono<AppEnv>()
 
-statsRoutes.get('/', async (c) => {
-  const requestId = c.get('requestId') as string
-  const logger = new RequestLogger({ requestId })
-
-  try {
-    logger.info('Stats request started')
-    const { counts, totalAssets, availableDomains } = await countAssets(logger)
-
-    logger.info('Stats request completed', { totalAssets, domainCount: Object.keys(counts).length })
-
-    return c.json({ totalAssets, domains: counts, availableDomains } satisfies StatsResponse, 200, {
-      [REQUEST_ID_HEADER]: requestId,
-    })
-  } catch (error) {
-    logger.error('Stats API error', error)
-    const err = internalError('Failed to retrieve statistics')
-    return c.json(err.body, err.status)
-  }
-})
+statsRoutes.get('/', (c) =>
+  handleRoute<StatsResponse>(c, {
+    label: 'Stats',
+    errorMessage: 'Failed to retrieve statistics',
+    handler: async (_c, logger) => {
+      logger.info('Stats request started')
+      const { counts, totalAssets, availableDomains } = await countAssets(logger)
+      logger.info('Stats request completed', {
+        totalAssets,
+        domainCount: Object.keys(counts).length,
+      })
+      return { totalAssets, domains: counts, availableDomains }
+    },
+  })
+)

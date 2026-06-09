@@ -414,6 +414,15 @@ importers:
 
   packages/testing:
     devDependencies:
+      '@ontology-search/ontology':
+        specifier: workspace:*
+        version: link:../ontology
+      '@ontology-search/search':
+        specifier: workspace:*
+        version: link:../search
+      '@ontology-search/sparql':
+        specifier: workspace:*
+        version: link:../sparql
       '@types/node':
         specifier: ^25.7.0
         version: 25.7.0

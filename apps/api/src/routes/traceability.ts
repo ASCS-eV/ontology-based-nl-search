@@ -1,10 +1,10 @@
 import type { TraceabilityResponse } from '@ontology-search/api-types'
-import { badRequest, internalError } from '@ontology-search/core/errors'
-import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
+import { badRequest } from '@ontology-search/core/errors'
 import { DEFAULT_LINEAGE_DEPTH, exploreLineage } from '@ontology-search/search'
 import { Hono } from 'hono'
 
 import type { AppEnv } from '../types.js'
+import { handleRoute } from './handler.js'
 
 export const traceabilityRoutes = new Hono<AppEnv>()
 
@@ -21,41 +21,36 @@ export const traceabilityRoutes = new Hono<AppEnv>()
  * Asset IRIs frequently contain reserved characters (`:`, `/`); using
  * a query parameter avoids the routing fragility of an IRI-in-path.
  */
-traceabilityRoutes.get('/', async (c) => {
-  const requestId = c.get('requestId') as string
-  const logger = new RequestLogger({ requestId })
+traceabilityRoutes.get('/', (c) =>
+  handleRoute<TraceabilityResponse>(c, {
+    label: 'Traceability',
+    errorMessage: 'Failed to build lineage',
+    handler: async (ctx, logger) => {
+      const asset = ctx.req.query('asset')
+      if (!asset || asset.trim().length === 0) {
+        logger.warn('Traceability request missing asset parameter')
+        return badRequest('Missing required query parameter "asset"')
+      }
 
-  const asset = c.req.query('asset')
-  if (!asset || asset.trim().length === 0) {
-    logger.warn('Traceability request missing asset parameter')
-    const err = badRequest('Missing required query parameter "asset"')
-    return c.json(err.body, err.status)
-  }
+      const depthParam = ctx.req.query('depth')
+      let depth: number | undefined
+      if (depthParam !== undefined) {
+        const parsed = Number(depthParam)
+        if (!Number.isFinite(parsed) || parsed < 1) {
+          logger.warn('Traceability request with invalid depth', { depthParam })
+          return badRequest('"depth" must be a positive integer')
+        }
+        depth = parsed
+      }
 
-  const depthParam = c.req.query('depth')
-  let depth: number | undefined
-  if (depthParam !== undefined) {
-    const parsed = Number(depthParam)
-    if (!Number.isFinite(parsed) || parsed < 1) {
-      logger.warn('Traceability request with invalid depth', { depthParam })
-      const err = badRequest('"depth" must be a positive integer')
-      return c.json(err.body, err.status)
-    }
-    depth = parsed
-  }
-
-  try {
-    logger.info('Traceability request started', { asset, depth: depth ?? DEFAULT_LINEAGE_DEPTH })
-    const node = await exploreLineage(asset, { depth })
-    logger.info('Traceability request completed', {
-      asset,
-      rootDomain: node.domain,
-      directRefs: node.references.length,
-    })
-    return c.json({ node } satisfies TraceabilityResponse, 200, { [REQUEST_ID_HEADER]: requestId })
-  } catch (error) {
-    logger.error('Traceability API error', error)
-    const err = internalError('Failed to build lineage')
-    return c.json(err.body, err.status)
-  }
-})
+      logger.info('Traceability request started', { asset, depth: depth ?? DEFAULT_LINEAGE_DEPTH })
+      const node = await exploreLineage(asset, { depth })
+      logger.info('Traceability request completed', {
+        asset,
+        rootDomain: node.domain,
+        directRefs: node.references.length,
+      })
+      return { node }
+    },
+  })
+)

@@ -12,6 +12,9 @@
     }
   },
   "devDependencies": {
+    "@ontology-search/ontology": "workspace:*",
+    "@ontology-search/search": "workspace:*",
+    "@ontology-search/sparql": "workspace:*",
     "@types/node": "^25.7.0"
   }
 }
