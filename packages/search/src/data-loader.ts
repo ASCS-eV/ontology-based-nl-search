@@ -36,22 +36,18 @@ const FALLBACK_TURTLE = `
 # Empty graph — load sample data files for populated results
 `
 
-/** Built-in sample data shipped with the search package (OMB demo data). */
-const BUILTIN_JSONLD = [
-  'sample-hdmap.jsonld',
-  'sample-scenarios.jsonld',
-  'sample-ositrace.jsonld',
-  'sample-environment-models.jsonld',
-  'sample-surface-models.jsonld',
-]
-
-const BUILTIN_TTL = [
-  'sample-assets.ttl',
-  'sample-scenarios.ttl',
-  'sample-ositrace.ttl',
-  'sample-environment-models.ttl',
-  'sample-surface-models.ttl',
-]
+/**
+ * Discover built-in sample data files from the package's data/ directory.
+ * No hardcoded filenames — any .jsonld, .json, or .ttl files present are loaded.
+ */
+function discoverBuiltinDataFiles(): { jsonld: string[]; ttl: string[] } {
+  if (!existsSync(DATA_DIR)) return { jsonld: [], ttl: [] }
+  const files = readdirSync(DATA_DIR)
+  return {
+    jsonld: files.filter((f) => f.endsWith('.jsonld') || f.endsWith('.json')),
+    ttl: files.filter((f) => f.endsWith('.ttl')),
+  }
+}
 
 /**
  * Find all *.context.jsonld files in an artifacts directory tree and build
@@ -187,28 +183,32 @@ export async function loadSampleData(store: SparqlStore): Promise<void> {
     return
   }
 
-  // Fallback: built-in sample data (OMB demo assets).
-  log.info('No data sources in manifest — loading built-in sample data')
+  // Fallback: built-in sample data from the package's data/ directory.
+  log.info('No data sources in manifest — loading built-in sample data from data/')
   let loaded = 0
+  const builtin = discoverBuiltinDataFiles()
 
-  for (const file of BUILTIN_JSONLD) {
+  for (const file of builtin.jsonld) {
     const data = loadDataFile(join(DATA_DIR, file))
     if (data) {
       await store.loadJsonLd(data)
       loaded++
+      log.debug('Loaded built-in data file', { file })
     }
   }
 
   if (loaded === 0) {
-    for (const file of BUILTIN_TTL) {
+    for (const file of builtin.ttl) {
       const data = loadDataFile(join(DATA_DIR, file))
       if (data) {
         await store.loadTurtle(data)
         loaded++
+        log.debug('Loaded built-in data file', { file })
       }
     }
   }
 
+  log.info('Built-in data loading complete', { fileCount: loaded })
   if (loaded === 0) {
     await store.loadTurtle(FALLBACK_TURTLE)
   }
