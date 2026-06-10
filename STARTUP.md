@@ -160,7 +160,8 @@ git submodule update --init --recursive
 ```
 
 If you keep your ontology elsewhere, point `ONTOLOGY_ARTIFACTS_PATH` at it or
-declare it in `ontology-sources.json` instead of using the submodule.
+create an `ontology-sources.json` (see `ontology-sources.example.json` as template)
+instead of using the submodule.
 
 ### Note: sample instance data
 
