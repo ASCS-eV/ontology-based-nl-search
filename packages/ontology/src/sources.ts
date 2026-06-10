@@ -58,6 +58,15 @@ export interface OntologySource {
    * directories instead of built-in sample data.
    */
   data?: string
+  /**
+   * Optional allowlist of domain subdirectory names to load from this root.
+   * When set, only these domains are loaded; all other subdirectories are
+   * ignored. When absent, all domain subdirectories are loaded (default).
+   *
+   * Use this when a source root (e.g. OMB `artifacts/`) contains many
+   * domains but only a subset is needed.
+   */
+  domains?: string[]
 }
 
 /** Parsed contents of the manifest. */
@@ -123,6 +132,17 @@ export function loadOntologySourcesManifest(): OntologySourcesManifest | null {
   return { sources: sources as readonly OntologySource[] }
 }
 
+/** A resolved artifact root with optional domain allowlist. */
+export interface ArtifactRoot {
+  /** Absolute path to the artifacts directory. */
+  path: string
+  /**
+   * When set, only load domain subdirectories whose names appear in this set.
+   * When absent, load all domain subdirectories.
+   */
+  domainAllowlist?: ReadonlySet<string>
+}
+
 /**
  * Resolve the absolute directory paths to search for ontology artifacts.
  *
@@ -131,17 +151,20 @@ export function loadOntologySourcesManifest(): OntologySourcesManifest | null {
  * 2. `ONTOLOGY_ARTIFACTS_PATH` from the Zod-validated config (single path)
  * 3. The default {@link DEFAULT_OMB_SUBMODULE_PATH} chain inside the workspace
  */
-export function getArtifactRoots(): string[] {
+export function getArtifactRoots(): ArtifactRoot[] {
   const root = getWorkspaceRoot()
   const manifest = loadOntologySourcesManifest()
   if (manifest && manifest.sources.length > 0) {
-    return manifest.sources.map((s) => join(root, s.path))
+    return manifest.sources.map((s) => ({
+      path: join(root, s.path),
+      domainAllowlist: s.domains ? new Set(s.domains) : undefined,
+    }))
   }
 
   const override = getConfig().ONTOLOGY_ARTIFACTS_PATH
-  if (override) return [override]
+  if (override) return [{ path: override }]
 
-  return [join(root, ...DEFAULT_OMB_SUBMODULE_PATH)]
+  return [{ path: join(root, ...DEFAULT_OMB_SUBMODULE_PATH) }]
 }
 
 /**
@@ -199,16 +222,17 @@ export interface OntologySourcesDiagnostics {
  */
 export function diagnoseOntologySources(): OntologySourcesDiagnostics {
   const roots = getArtifactRoots().map((root): OntologyRootDiagnostic => {
-    if (!existsSync(root)) return { path: root, exists: false, shapeFileCount: 0 }
+    if (!existsSync(root.path)) return { path: root.path, exists: false, shapeFileCount: 0 }
     let shapeFileCount = 0
-    for (const entry of readdirSync(root)) {
-      const domainDir = join(root, entry)
+    for (const entry of readdirSync(root.path)) {
+      if (root.domainAllowlist && !root.domainAllowlist.has(entry)) continue
+      const domainDir = join(root.path, entry)
       if (!statSync(domainDir).isDirectory()) continue
       for (const file of readdirSync(domainDir)) {
         if (file.endsWith('.shacl.ttl')) shapeFileCount++
       }
     }
-    return { path: root, exists: true, shapeFileCount }
+    return { path: root.path, exists: true, shapeFileCount }
   })
   const totalShapeFiles = roots.reduce((sum, r) => sum + r.shapeFileCount, 0)
   return { roots, totalShapeFiles }
@@ -290,6 +314,9 @@ export interface DiscoverShapeFilesOptions {
  * `.shacl.ttl` (and optionally `.owl.ttl`) file inside. Roots that do not
  * exist are silently skipped — that matches the prior callers' behaviour
  * and lets the dev workspace coexist with selectively-cloned submodules.
+ *
+ * When a root declares a `domainAllowlist`, only those domain subdirectories
+ * are loaded — all others are skipped.
  */
 export function discoverShapeFiles(options: DiscoverShapeFilesOptions = {}): ShapeFile[] {
   const includeOwl = options.includeOwl ?? false
@@ -297,10 +324,11 @@ export function discoverShapeFiles(options: DiscoverShapeFilesOptions = {}): Sha
   const results: ShapeFile[] = []
 
   for (const root of getArtifactRoots()) {
-    if (!existsSync(root)) continue
-    for (const entry of readdirSync(root)) {
+    if (!existsSync(root.path)) continue
+    for (const entry of readdirSync(root.path)) {
       if (exclude.has(entry)) continue
-      const domainDir = join(root, entry)
+      if (root.domainAllowlist && !root.domainAllowlist.has(entry)) continue
+      const domainDir = join(root.path, entry)
       if (!statSync(domainDir).isDirectory()) continue
       for (const file of readdirSync(domainDir)) {
         if (file.endsWith('.shacl.ttl') || (includeOwl && file.endsWith('.owl.ttl'))) {

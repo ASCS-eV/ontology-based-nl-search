@@ -1426,17 +1426,66 @@ function buildDomainPatterns(
     }
   }
 
+  // Group shallow filter entries AND range entries by their classified
+  // shape group, discovered from the SHACL graph at runtime (see
+  // `queryPropertyShapeGroups`). There is no enumerated allow-list and no
+  // privileged group — any shape group declared in the ontology is
+  // handled uniformly, and each property's range is routed to the group
+  // the SHACL graph actually puts it in. Pre-refactor the compiler had a
+  // four-case switch over Content/Format/Quantity/DataSource that
+  // silently dropped properties in other groups, and ranges were
+  // unconditionally linked under `hasQuantity` regardless of where the
+  // property actually lives.
+  const filterPropsByGroup = new Map<string, [string, string | string[]][]>()
+  const rangePropsByGroup = new Map<string, [string, { min?: number; max?: number }][]>()
+  // Properties whose domain has no shape groups at all — emitted directly
+  // on the asset variable (flat ontology pattern).
+  const directFallbackFilters: [string, string | string[]][] = []
+  const directFallbackRanges: [string, { min?: number; max?: number }][] = []
+
+  for (const [propName, value] of shapeGroupFilterEntries) {
+    const shape = classifyProperty(propName, domainName, vocabIndex)
+    if (shape === null) {
+      directFallbackFilters.push([propName, value])
+      continue
+    }
+    let bucket = filterPropsByGroup.get(shape)
+    if (!bucket) {
+      bucket = []
+      filterPropsByGroup.set(shape, bucket)
+    }
+    bucket.push([propName, value])
+  }
+
+  for (const [propName, range] of shapeGroupRangeEntries) {
+    const shape = classifyProperty(propName, domainName, vocabIndex)
+    if (shape === null) {
+      directFallbackRanges.push([propName, range])
+      continue
+    }
+    let bucket = rangePropsByGroup.get(shape)
+    if (!bucket) {
+      bucket = []
+      rangePropsByGroup.set(shape, bucket)
+    }
+    bucket.push([propName, range])
+  }
+
   // The asset → DomainSpecification hop is needed only by the shape-group and
   // deep strategies (both route through `specVar`); direct properties walk
   // straight from the asset, so a purely-flat domain emits no spec hop at all.
   const needsSpecHop =
-    shapeGroupFilterEntries.length > 0 ||
-    shapeGroupRangeEntries.length > 0 ||
-    deepFilterEntries.length > 0
+    filterPropsByGroup.size > 0 || rangePropsByGroup.size > 0 || deepFilterEntries.length > 0
   const hasAnyEntry =
-    needsSpecHop || directFilterEntries.length > 0 || directRangeEntries.length > 0
+    needsSpecHop ||
+    directFilterEntries.length > 0 ||
+    directRangeEntries.length > 0 ||
+    directFallbackFilters.length > 0 ||
+    directFallbackRanges.length > 0
 
   if (!hasAnyEntry) return foreignDomains
+
+  const suffix = assetVar === '?asset' ? '' : `_${domainName.replace(/-/g, '_')}`
 
   if (needsSpecHop) {
     // First hop: asset → DomainSpecification. The predicate is discovered
@@ -1454,44 +1503,6 @@ function buildDomainPatterns(
     patterns.push(`${assetVar} ${assetToSpecPredicate} ${specVar} .`)
   }
 
-  // Group shallow filter entries AND range entries by their classified
-  // shape group, discovered from the SHACL graph at runtime (see
-  // `queryPropertyShapeGroups`). There is no enumerated allow-list and no
-  // privileged group — any shape group declared in the ontology is
-  // handled uniformly, and each property's range is routed to the group
-  // the SHACL graph actually puts it in. Pre-refactor the compiler had a
-  // four-case switch over Content/Format/Quantity/DataSource that
-  // silently dropped properties in other groups, and ranges were
-  // unconditionally linked under `hasQuantity` regardless of where the
-  // property actually lives.
-  const filterPropsByGroup = new Map<string, [string, string | string[]][]>()
-  const rangePropsByGroup = new Map<string, [string, { min?: number; max?: number }][]>()
-
-  for (const [propName, value] of shapeGroupFilterEntries) {
-    const shape = classifyProperty(propName, domainName, vocabIndex)
-    let bucket = filterPropsByGroup.get(shape)
-    if (!bucket) {
-      bucket = []
-      filterPropsByGroup.set(shape, bucket)
-    }
-    bucket.push([propName, value])
-  }
-
-  for (const [propName, range] of shapeGroupRangeEntries) {
-    const shape = classifyProperty(propName, domainName, vocabIndex)
-    let bucket = rangePropsByGroup.get(shape)
-    if (!bucket) {
-      bucket = []
-      rangePropsByGroup.set(shape, bucket)
-    }
-    bucket.push([propName, range])
-  }
-
-  const suffix = assetVar === '?asset' ? '' : `_${domainName.replace(/-/g, '_')}`
-
-  // Emit every shape group that has at least one filter or range. Sort for
-  // deterministic SPARQL output — the compiler-determinism snapshot suite
-  // relies on this ordering.
   const groupsToEmit = new Set<string>([...filterPropsByGroup.keys(), ...rangePropsByGroup.keys()])
 
   for (const group of [...groupsToEmit].sort()) {
@@ -1653,6 +1664,29 @@ function buildDomainPatterns(
       registry,
       vocabIndex
     )
+  }
+
+  // Emit direct-fallback properties: those with no discovered path AND no
+  // shape group (flat ontology, unknown property). Walk directly from the
+  // asset using the domain prefix convention: `prefix:propName`.
+  if (directFallbackFilters.length > 0 || directFallbackRanges.length > 0) {
+    for (const [propName, value] of directFallbackFilters) {
+      const varName = `?${propName}${suffix}`
+      patterns.push(`${assetVar} ${domain.prefix}:${propName} ${varName} .`)
+      addEnumFilter(patterns, filters, varName, value)
+      selectVars.add(varName)
+    }
+    for (const [propName, range] of directFallbackRanges) {
+      const varName = `?${propName}${suffix}`
+      patterns.push(`${assetVar} ${domain.prefix}:${propName} ${varName} .`)
+      if (range.min !== undefined) {
+        filters.push(`FILTER(${varName} >= ${range.min})`)
+      }
+      if (range.max !== undefined) {
+        filters.push(`FILTER(${varName} <= ${range.max})`)
+      }
+      selectVars.add(varName)
+    }
   }
 
   return foreignDomains
@@ -2060,12 +2094,15 @@ function buildPrefixes(
  * as a last resort. Logs a warning when the fallback is used so that missing
  * shape group data is surfaced during development.
  */
-function classifyProperty(propName: string, domainName: string, vocabIndex: CompilerVocab): string {
+function classifyProperty(
+  propName: string,
+  domainName: string,
+  vocabIndex: CompilerVocab
+): string | null {
   const shapeGroup = vocabIndex.shapeGroups.get(`${propName}:${domainName}`)
   if (shapeGroup) return shapeGroup
 
-  // Fallback: find any shape group used by this domain to avoid
-  // hardcoding "Content" as a default.
+  // Fallback: find any shape group used by this domain.
   for (const [key, group] of vocabIndex.shapeGroups) {
     if (key.endsWith(`:${domainName}`)) {
       log.warn('No shape group found for property — falling back to first group for domain', {
@@ -2077,14 +2114,15 @@ function classifyProperty(propName: string, domainName: string, vocabIndex: Comp
     }
   }
 
-  // Last-resort default. The literal here is the SHACL shape-group
-  // *category name* that the ENVITED-X meta-model happens to use first
-  // alphabetically; for any other ontology it acts as a no-op label that
-  // routes the property under a `has${group}` predicate that won't match
-  // (a discoverable miss surfaces as an empty result rather than a silent
-  // misclassification). Tracked under task 21 capstone.
-  log.warn('No shape group data for domain — defaulting to "Content"', { domain: domainName })
-  return 'Content'
+  // No shape groups exist for this domain at all — the ontology uses a flat
+  // structure where properties live directly on the asset class (no
+  // DomainSpecification→Content hierarchy). Return null so the caller can
+  // emit the property as a direct triple on the asset variable.
+  log.debug('No shape groups for domain — property will be emitted as direct', {
+    property: propName,
+    domain: domainName,
+  })
+  return null
 }
 
 /**

@@ -44,6 +44,7 @@ export async function loadSchemaGraph(
       await store.loadTurtle(ttl, SCHEMA_GRAPH)
       domains.add(domain)
       fileCount++
+      log.debug('Loaded schema file', { domain, file: basename(filePath) })
     } catch (err) {
       log.error('Failed to load schema file — schema graph is incomplete', {
         file: basename(filePath),
@@ -63,6 +64,7 @@ export async function loadSchemaGraph(
   log.info('Loaded schema files', {
     fileCount,
     domainCount: domains.size,
+    domains: [...domains].sort(),
     graph: SCHEMA_GRAPH,
   })
 

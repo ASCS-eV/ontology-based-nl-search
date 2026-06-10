@@ -74,9 +74,11 @@ export function readShaclFiles(): ShaclDomainContent[] {
   results.sort((a, b) => a.domain.localeCompare(b.domain))
 
   const totalSize = results.reduce((sum, r) => sum + r.sizeBytes, 0)
+  const domainNames = [...new Set(results.map((r) => r.domain))].sort()
   log.info('Read SHACL files', {
     fileCount: results.length,
-    domainCount: new Set(results.map((r) => r.domain)).size,
+    domainCount: domainNames.length,
+    domains: domainNames,
     totalKb: Math.round(totalSize / 1024),
   })
 

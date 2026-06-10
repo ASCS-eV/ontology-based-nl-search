@@ -1,8 +1,11 @@
+import { createComponentLogger } from '@ontology-search/core/logging'
 import { getDataSources } from '@ontology-search/ontology/sources'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 import { existsSync, readdirSync, readFileSync } from 'fs'
-import { dirname, join } from 'path'
+import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
+
+const log = createComponentLogger('data-loader')
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -33,22 +36,18 @@ const FALLBACK_TURTLE = `
 # Empty graph — load sample data files for populated results
 `
 
-/** Built-in sample data shipped with the search package (OMB demo data). */
-const BUILTIN_JSONLD = [
-  'sample-hdmap.jsonld',
-  'sample-scenarios.jsonld',
-  'sample-ositrace.jsonld',
-  'sample-environment-models.jsonld',
-  'sample-surface-models.jsonld',
-]
-
-const BUILTIN_TTL = [
-  'sample-assets.ttl',
-  'sample-scenarios.ttl',
-  'sample-ositrace.ttl',
-  'sample-environment-models.ttl',
-  'sample-surface-models.ttl',
-]
+/**
+ * Discover built-in sample data files from the package's data/ directory.
+ * No hardcoded filenames — any .jsonld, .json, or .ttl files present are loaded.
+ */
+function discoverBuiltinDataFiles(): { jsonld: string[]; ttl: string[] } {
+  if (!existsSync(DATA_DIR)) return { jsonld: [], ttl: [] }
+  const files = readdirSync(DATA_DIR)
+  return {
+    jsonld: files.filter((f) => f.endsWith('.jsonld') || f.endsWith('.json')),
+    ttl: files.filter((f) => f.endsWith('.ttl')),
+  }
+}
 
 /**
  * Find all *.context.jsonld files in an artifacts directory tree and build
@@ -139,6 +138,7 @@ async function loadFromDataSources(
     if (!existsSync(dataDir)) continue
     const contextMap = buildContextMap(artifactsDir)
     const files = readdirSync(dataDir)
+    const sourceName = basename(dataDir)
     for (const file of files) {
       const path = join(dataDir, file)
       const content = loadDataFile(path)
@@ -147,9 +147,11 @@ async function loadFromDataSources(
         const resolved = resolveLocalContext(content, contextMap)
         await store.loadJsonLd(resolved)
         loaded++
+        log.debug('Loaded data file', { source: sourceName, file })
       } else if (file.endsWith('.ttl')) {
         await store.loadTurtle(content)
         loaded++
+        log.debug('Loaded data file', { source: sourceName, file })
       }
     }
   }
@@ -169,34 +171,44 @@ export async function loadSampleData(store: SparqlStore): Promise<void> {
 
   // When explicit data directories are declared, use ONLY those.
   if (dataSources.length > 0) {
+    log.info('Loading data from declared sources', {
+      sourceCount: dataSources.length,
+      directories: dataSources.map((s) => basename(s.dataDir)),
+    })
     const loaded = await loadFromDataSources(store, dataSources)
+    log.info('Data loading complete', { fileCount: loaded, mode: 'manifest' })
     if (loaded === 0) {
       await store.loadTurtle(FALLBACK_TURTLE)
     }
     return
   }
 
-  // Fallback: built-in sample data (OMB demo assets).
+  // Fallback: built-in sample data from the package's data/ directory.
+  log.info('No data sources in manifest — loading built-in sample data from data/')
   let loaded = 0
+  const builtin = discoverBuiltinDataFiles()
 
-  for (const file of BUILTIN_JSONLD) {
+  for (const file of builtin.jsonld) {
     const data = loadDataFile(join(DATA_DIR, file))
     if (data) {
       await store.loadJsonLd(data)
       loaded++
+      log.debug('Loaded built-in data file', { file })
     }
   }
 
   if (loaded === 0) {
-    for (const file of BUILTIN_TTL) {
+    for (const file of builtin.ttl) {
       const data = loadDataFile(join(DATA_DIR, file))
       if (data) {
         await store.loadTurtle(data)
         loaded++
+        log.debug('Loaded built-in data file', { file })
       }
     }
   }
 
+  log.info('Built-in data loading complete', { fileCount: loaded })
   if (loaded === 0) {
     await store.loadTurtle(FALLBACK_TURTLE)
   }
