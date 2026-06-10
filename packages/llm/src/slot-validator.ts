@@ -191,8 +191,28 @@ function similarity(a: string, b: string): number {
 }
 
 /**
+ * Extract the local name from a value that might be an IRI.
+ * Returns the part after the last `/` or `#`, or the original value if it
+ * doesn't look like an IRI. This enables matching LLM-proposed local names
+ * (e.g., "KeepLaneAndDistance") against full IRI enum values from sh:in
+ * (e.g., "https://w3id.org/.../KeepLaneAndDistance").
+ */
+function iriLocalName(value: string): string {
+  if (!value.includes('/') && !value.includes('#')) return value
+  const hashIdx = value.lastIndexOf('#')
+  if (hashIdx >= 0) return value.slice(hashIdx + 1)
+  const slashIdx = value.lastIndexOf('/')
+  if (slashIdx >= 0) return value.slice(slashIdx + 1)
+  return value
+}
+
+/**
  * Find the best fuzzy match for a value in a list of allowed values.
  * Returns null if no match within threshold.
+ *
+ * When allowed values are IRIs (from `@type: @vocab` enums), the LLM
+ * typically proposes just the local name. This function compares against
+ * both the full value AND its IRI local name to bridge the representation gap.
  */
 function findBestMatch(
   value: string,
@@ -201,24 +221,27 @@ function findBestMatch(
   if (!value) return null
   const normalizedValue = value.toLowerCase().trim()
 
-  // Rank every candidate by NORMALIZED similarity (length-aware), not a raw
-  // edit-distance count. The previous substring special-case synthesized a
-  // pseudo-distance from the length difference and raced it against the same
-  // absolute threshold as true edit distance, so a short value contained
-  // anywhere in a longer one was accepted as if it were a high-quality match.
   let best: { match: string; distance: number; similarity: number } | null = null
   for (const allowed of allowedValues) {
     const normalizedAllowed = allowed.toLowerCase().trim()
+    const normalizedLocalName = iriLocalName(allowed).toLowerCase().trim()
 
-    // Exact match (case-insensitive).
-    if (normalizedValue === normalizedAllowed) {
+    // Exact match (case-insensitive) — full value or local name.
+    if (normalizedValue === normalizedAllowed || normalizedValue === normalizedLocalName) {
       return { match: allowed, distance: 0, similarity: 1 }
     }
 
-    const distance = editDistance(normalizedValue, normalizedAllowed)
-    const sim = similarity(normalizedValue, normalizedAllowed)
-    if (best === null || sim > best.similarity) {
-      best = { match: allowed, distance, similarity: sim }
+    // Compare against both full value and local name, take better score.
+    const simFull = similarity(normalizedValue, normalizedAllowed)
+    const simLocal = similarity(normalizedValue, normalizedLocalName)
+    const bestSim = Math.max(simFull, simLocal)
+    const bestDist =
+      simFull >= simLocal
+        ? editDistance(normalizedValue, normalizedAllowed)
+        : editDistance(normalizedValue, normalizedLocalName)
+
+    if (best === null || bestSim > best.similarity) {
+      best = { match: allowed, distance: bestDist, similarity: bestSim }
     }
   }
 
@@ -230,6 +253,7 @@ function findBestMatch(
 
 /**
  * Get top-N suggestions from a property's allowed values, ranked by similarity.
+ * Uses local-name matching for IRI-valued entries.
  */
 function getSuggestions(
   value: string,
@@ -240,7 +264,13 @@ function getSuggestions(
   const normalizedValue = value.toLowerCase().trim()
 
   return allowedValues
-    .map((v) => ({ value: v, score: similarity(normalizedValue, v.toLowerCase()) }))
+    .map((v) => ({
+      value: v,
+      score: Math.max(
+        similarity(normalizedValue, v.toLowerCase()),
+        similarity(normalizedValue, iriLocalName(v).toLowerCase())
+      ),
+    }))
     .filter((s) => s.score >= MIN_SUGGESTION_SIMILARITY)
     .sort((a, b) => b.score - a.score)
     .slice(0, max)
