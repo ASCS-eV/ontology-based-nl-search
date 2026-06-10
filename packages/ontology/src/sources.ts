@@ -48,8 +48,16 @@ export const DEFAULT_OMB_SUBMODULE_PATH = [
 
 /** A single declared source in `ontology-sources.json`. */
 export interface OntologySource {
+  /** Human-readable name (typically the domain name). */
+  name?: string
   /** Workspace-relative path to a directory containing domain subdirectories. */
   path: string
+  /**
+   * Optional workspace-relative path to a directory containing instance data
+   * files (JSON-LD or Turtle). When present, the data-loader uses ONLY these
+   * directories instead of built-in sample data.
+   */
+  data?: string
 }
 
 /** Parsed contents of the manifest. */
@@ -134,6 +142,37 @@ export function getArtifactRoots(): string[] {
   if (override) return [override]
 
   return [join(root, ...DEFAULT_OMB_SUBMODULE_PATH)]
+}
+
+/**
+ * Resolve data sources from `ontology-sources.json`, pairing each `data`
+ * directory with its corresponding `path` (artifacts) directory so the
+ * loader can resolve remote @context URLs to local context files.
+ */
+export function getDataSources(): { dataDir: string; artifactsDir: string }[] {
+  const root = getWorkspaceRoot()
+  const manifest = loadOntologySourcesManifest()
+  if (!manifest) return []
+  return manifest.sources
+    .filter((s): s is OntologySource & { data: string } => typeof s.data === 'string')
+    .map((s) => ({
+      dataDir: join(root, s.data),
+      artifactsDir: join(root, s.path),
+    }))
+}
+
+/**
+ * Return the names of sources that declare instance data. These domains
+ * are implicitly "asset domains" — the user explicitly provided data for
+ * them and expects them to be searchable, regardless of whether they
+ * participate in cross-domain rdfs:subClassOf hierarchies.
+ */
+export function getDataDomainNames(): string[] {
+  const manifest = loadOntologySourcesManifest()
+  if (!manifest) return []
+  return manifest.sources
+    .filter((s) => typeof s.data === 'string' && typeof s.name === 'string')
+    .map((s) => s.name!)
 }
 
 /** Per-root view of what the source resolver found on disk. */

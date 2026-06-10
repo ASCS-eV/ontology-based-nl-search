@@ -12,6 +12,7 @@
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
+import { getDataDomainNames } from '@ontology-search/ontology/sources'
 
 import { getInitializedStore } from './init.js'
 import { queryAssetDomains } from './schema-queries.js'
@@ -39,6 +40,19 @@ async function buildAssetDomains(): Promise<Set<string>> {
   const registry = await buildDomainRegistry()
   const domainInfos = await queryAssetDomains(store, registry)
   const assetDomains = new Set(domainInfos.map((d) => d.domainName))
+
+  // Promote domains that have explicitly declared instance data in
+  // ontology-sources.json. These are always searchable regardless of
+  // whether they participate in a cross-domain rdfs:subClassOf hierarchy.
+  for (const name of getDataDomainNames()) {
+    if (registry.domains.has(name) && !assetDomains.has(name)) {
+      const desc = registry.domains.get(name)!
+      if (desc.targetClassIri) {
+        assetDomains.add(name)
+        log.info('Promoted data-backed domain to asset domain', { domain: name })
+      }
+    }
+  }
 
   if (assetDomains.size === 0) {
     log.warn('No asset domains found via rdfs:subClassOf — check ontology loading')
