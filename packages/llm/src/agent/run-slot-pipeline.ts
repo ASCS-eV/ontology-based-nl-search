@@ -168,8 +168,16 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   // so per-row breadcrumbs surface downstream in `ExecutionResult` —
   // the trace is `undefined` for plain queries (no cross-reference JOIN).
   const endCompile = sw.time('sparql-compile')
-  const { sparql, trace } = await compileSlotsWithTrace(slots)
+  const { sparql, trace, droppedReferences } = await compileSlotsWithTrace(slots)
   endCompile()
+
+  // Convert dropped references into user-visible limitation gaps so the
+  // user knows which cross-reference JOINs were skipped.
+  const compileGaps: OntologyGap[] = (droppedReferences ?? []).map((domain) => ({
+    term: domain,
+    reason: `No known path from ${slots.domains[0] ?? 'primary domain'} to ${domain} — cross-reference skipped`,
+    kind: 'limitation' as const,
+  }))
 
   // Enrich interpretation with the final domains and applied filters
   // so the user can see exactly what was compiled.
@@ -181,7 +189,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
 
   const rawResponse: LlmStructuredResponse = {
     interpretation: enrichedInterpretation,
-    gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps],
+    gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps, ...compileGaps],
     sparql,
     trace,
   }
