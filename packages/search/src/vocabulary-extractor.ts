@@ -12,6 +12,7 @@
 import { extractDomain, extractLocalName } from '@ontology-search/core/rdf/iri'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
+import { isIri } from '@ontology-search/sparql/escape'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
@@ -125,10 +126,12 @@ export async function extractVocabulary(store: SparqlStore): Promise<OntologyVoc
   // Eager instance-value distribution for every known property IRI — this
   // is the data source for Phase 4 gap suggestions. Restricted to known
   // properties so the query stays bounded on large stores.
+  // Filter to valid IRIs only — SHACL property path sequences (blank nodes)
+  // may slip through as Skolemized hex strings that aren't valid in SPARQL.
   const knownPropertyIris = [
     ...enumProperties.map((p) => p.iri),
     ...numericProperties.map((p) => p.iri),
-  ]
+  ].filter(isIri)
   const distributions = await queryInstanceValueDistribution(store, knownPropertyIris)
   const instanceValues = new Map<string, string[]>()
   for (const d of distributions) instanceValues.set(d.property, d.values)
@@ -164,6 +167,7 @@ async function extractEnumProperties(
     WHERE {
       ?shape sh:property ?propShape .
       ?propShape sh:path ?path .
+      FILTER(isIRI(?path))
       ?propShape sh:in ?list .
       ?list rdf:rest*/rdf:first ?value .
       OPTIONAL { ?propShape sh:name ?name }
@@ -218,6 +222,7 @@ async function extractNumericProperties(
     WHERE {
       ?shape sh:property ?propShape .
       ?propShape sh:path ?path .
+      FILTER(isIRI(?path))
       ?propShape sh:datatype ?datatype .
       OPTIONAL { ?propShape sh:name ?name }
       OPTIONAL { ?propShape sh:description ?description }
