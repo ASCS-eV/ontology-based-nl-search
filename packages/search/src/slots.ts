@@ -159,6 +159,12 @@ export interface TraceabilityPlan {
 export interface CompileResult {
   sparql: string
   trace?: TraceabilityPlan[]
+  /**
+   * Reference domains that could not be compiled because no traversal
+   * path (SHACL chain, data-driven edge, or sibling edge) was found.
+   * Callers can surface these as user-visible gaps/limitations.
+   */
+  droppedReferences?: string[]
 }
 
 /** Create empty slots targeting a specific domain */

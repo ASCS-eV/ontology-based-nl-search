@@ -597,6 +597,10 @@ export async function compileSlotsWithTrace(
   // non-references queries.
   const traces: TraceabilityPlan[] = []
 
+  // References that could not be compiled (no SHACL chain, no data edge,
+  // no sibling path). Reported back to the caller so it can surface a gap.
+  const droppedReferences: string[] = []
+
   // Normalize domain names so downstream registry lookups and prefix
   // resolution see the directory-name convention regardless of how the LLM
   // capitalized or spaced them.
@@ -815,8 +819,6 @@ export async function compileSlotsWithTrace(
   ): Promise<void> => {
     const refDomain = registry.domains.get(ref.domain)
     if (!refDomain) return
-    prefixDomains.add(ref.domain)
-    hasReferenceJoin = true
 
     const refVar = `?${varBase}`
     const refNameVar = `?${varBase.replace('refAsset', 'refName')}`
@@ -861,16 +863,45 @@ export async function compileSlotsWithTrace(
           samples: dataPath.sampleCount,
         })
       } else {
-        // Neither SHACL nor the data index found a connection. `(!<urn:none>)+`
-        // is "any predicate, one or more hops" — a last-resort wildcard.
-        patterns.push(`${parentVar} (!<urn:none>)+ ${refVar} .`)
-        patterns.push(`${refVar} a ${refDomain.targetClass} .`)
-        log.info(
-          'slots.references: no SHACL chain or data path; emitting wildcard property-path JOIN',
-          { parent: parentDomain, child: ref.domain }
-        )
+        // No exact match in the data index. Fall back to a sibling edge
+        // from the same parent — the manifest IRI endpoint is generic and
+        // can reach any asset type via the same predicate path.
+        const siblingPath = pickSiblingDataEdge(referenceIndex, parentDomain)
+        if (siblingPath) {
+          emitDataReferencePath(
+            siblingPath,
+            parentVar,
+            refVar,
+            patterns,
+            registry,
+            prefixDomains,
+            traceSteps,
+            dataPrefix
+          )
+          patterns.push(`${refVar} a ${refDomain.targetClass} .`)
+          log.info('slots.references: emitting JOIN from sibling data edge (no exact match)', {
+            parent: parentDomain,
+            child: ref.domain,
+            siblingTarget: siblingPath.targetDomain,
+            hops: siblingPath.predicatePath.length,
+          })
+        } else {
+          // No path discoverable from SHACL, data, or siblings. Skip this
+          // reference — emitting a wildcard property-path is too expensive
+          // and semantically incorrect (no evidence the link exists).
+          log.warn(
+            'slots.references: no SHACL chain, data path, or sibling edge; skipping reference',
+            { parent: parentDomain, child: ref.domain }
+          )
+          droppedReferences.push(ref.domain)
+          return
+        }
       }
     }
+
+    // Chain resolution succeeded — mark this reference as emitted.
+    prefixDomains.add(ref.domain)
+    hasReferenceJoin = true
 
     // Bind a label for every reference so each referenced asset can be
     // displayed (and so a label filter can apply to any of them).
@@ -929,6 +960,7 @@ export async function compileSlotsWithTrace(
       hasReferenceJoin ? '?asset' : undefined
     ),
     trace: traces.length > 0 ? traces : undefined,
+    droppedReferences: droppedReferences.length > 0 ? droppedReferences : undefined,
   }
 }
 
@@ -1186,6 +1218,51 @@ function pickDataReferenceEdge(
       (e.predicatePath.length === best.predicatePath.length && e.sampleCount > best.sampleCount)
     ) {
       best = e
+    }
+  }
+  return best
+}
+
+/**
+ * Fallback for {@link pickDataReferenceEdge}: when no exact target match
+ * exists, pick any sibling edge from the same parent domain. The manifest
+ * IRI pattern is generic — `hasManifest → hasReferencedArtifacts → iri`
+ * can point to any asset type. If the data index observed the parent
+ * reaching *some* other domain via that path, the same path is valid for
+ * the requested target (the caller adds the type constraint separately).
+ *
+ * Returns the shortest, highest-sample sibling edge, or null if the parent
+ * has no outgoing edges at all.
+ */
+function pickSiblingDataEdge(
+  index: ReferenceIndex,
+  parentDomain: string,
+  excludeDomain?: string
+): DataReferenceEdge | null {
+  const edges = index.get(parentDomain)
+  if (!edges) return null
+  let best: DataReferenceEdge | null = null
+  for (const e of edges) {
+    if (excludeDomain && e.targetDomain === excludeDomain) continue
+    if (
+      !best ||
+      e.predicatePath.length < best.predicatePath.length ||
+      (e.predicatePath.length === best.predicatePath.length && e.sampleCount > best.sampleCount)
+    ) {
+      best = e
+    }
+  }
+  // If nothing remained after excluding, pick from ALL edges (the excluded
+  // domain's path is still the right structural template).
+  if (!best) {
+    for (const e of edges) {
+      if (
+        !best ||
+        e.predicatePath.length < best.predicatePath.length ||
+        (e.predicatePath.length === best.predicatePath.length && e.sampleCount > best.sampleCount)
+      ) {
+        best = e
+      }
     }
   }
   return best

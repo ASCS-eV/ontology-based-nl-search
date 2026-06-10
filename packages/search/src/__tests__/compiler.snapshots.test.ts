@@ -27,7 +27,7 @@
 import { enforceSparqlPolicy, registerPolicyNamespaces } from '@ontology-search/sparql/policy'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { compileSlots } from '../compiler.js'
+import { compileSlots, compileSlotsWithTrace } from '../compiler.js'
 import { getInitializedStore } from '../init.js'
 import type { SearchSlots } from '../slots.js'
 
@@ -401,5 +401,48 @@ describe('compileSlots — determinism + snapshot suite', () => {
     expect(sparql).toMatch(/\?refAsset a ositrace:OSITrace/)
     expect(sparql).toMatch(/\?refAsset_0 a hdmap:HdMap/)
     expect(sparql).toMatchSnapshot()
+  })
+
+  it('sibling-edge fallback: ositrace referencing environment-model reuses manifest path', async () => {
+    // The data index has ositrace → hdmap via manifest but NOT ositrace →
+    // environment-model. The sibling-edge fallback should reuse the manifest
+    // path with a different type constraint — no wildcard `(!<urn:none>)+`.
+    const slots: SearchSlots = {
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'environment-model' }],
+    }
+    const result = await compileSlotsWithTrace(slots)
+    // Must NOT contain the wildcard property-path pattern.
+    expect(result.sparql).not.toContain('(!<urn:none>)+')
+    // Must use the manifest path (sibling reuse).
+    expect(result.sparql).toContain('hasManifest')
+    expect(result.sparql).toContain('hasReferencedArtifacts')
+    // Must type-constrain the referenced asset.
+    expect(result.sparql).toContain('EnvironmentModel')
+    // No dropped references — sibling fallback succeeded.
+    expect(result.droppedReferences).toBeUndefined()
+    // Policy-clean.
+    const policy = enforceSparqlPolicy(result.sparql)
+    expect(policy.allowed, `policy violations: ${policy.violations.join('; ')}`).toBe(true)
+  })
+
+  it('never emits wildcard property-path for unreachable references', async () => {
+    // A domain with no data edges to the requested reference target.
+    // The compiler must never emit `(!<urn:none>)+` — it either reuses
+    // a sibling edge, uses a SHACL chain, or drops the reference.
+    const slots: SearchSlots = {
+      domains: ['tzip21'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'ositrace' }],
+    }
+    const result = await compileSlotsWithTrace(slots)
+    // The critical invariant: wildcard must never appear.
+    expect(result.sparql).not.toContain('(!<urn:none>)+')
+    // Policy-clean.
+    const policy = enforceSparqlPolicy(result.sparql)
+    expect(policy.allowed, `policy violations: ${policy.violations.join('; ')}`).toBe(true)
   })
 })
