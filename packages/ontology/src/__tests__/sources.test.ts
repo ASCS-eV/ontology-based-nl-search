@@ -125,19 +125,21 @@ describe('ontology source-tree discovery (sources.ts)', () => {
         JSON.stringify({ sources: [{ path: 'custom-roots/a' }, { path: 'custom-roots/b' }] })
       )
       expect(getArtifactRoots()).toEqual([
-        join(workspaceRoot, 'custom-roots/a'),
-        join(workspaceRoot, 'custom-roots/b'),
+        { path: join(workspaceRoot, 'custom-roots/a'), domainAllowlist: undefined },
+        { path: join(workspaceRoot, 'custom-roots/b'), domainAllowlist: undefined },
       ])
     })
 
     it('falls back to ONTOLOGY_ARTIFACTS_PATH when no manifest is present', () => {
       process.env['ONTOLOGY_ARTIFACTS_PATH'] = '/srv/artifacts'
       resetConfig()
-      expect(getArtifactRoots()).toEqual(['/srv/artifacts'])
+      expect(getArtifactRoots()).toEqual([{ path: '/srv/artifacts' }])
     })
 
     it('falls back to the DEFAULT_OMB_SUBMODULE_PATH chain as last resort', () => {
-      expect(getArtifactRoots()).toEqual([join(workspaceRoot, ...DEFAULT_OMB_SUBMODULE_PATH)])
+      expect(getArtifactRoots()).toEqual([
+        { path: join(workspaceRoot, ...DEFAULT_OMB_SUBMODULE_PATH) },
+      ])
     })
 
     it('manifest takes priority over ONTOLOGY_ARTIFACTS_PATH', () => {
@@ -147,7 +149,22 @@ describe('ontology source-tree discovery (sources.ts)', () => {
       )
       process.env['ONTOLOGY_ARTIFACTS_PATH'] = '/srv/should-be-ignored'
       resetConfig()
-      expect(getArtifactRoots()).toEqual([join(workspaceRoot, 'manifest-root')])
+      expect(getArtifactRoots()).toEqual([
+        { path: join(workspaceRoot, 'manifest-root'), domainAllowlist: undefined },
+      ])
+    })
+
+    it('passes domains allowlist from manifest', () => {
+      writeFileSync(
+        join(workspaceRoot, 'ontology-sources.json'),
+        JSON.stringify({
+          sources: [{ path: 'omb-root', domains: ['hdmap', 'scenario'] }],
+        })
+      )
+      const roots = getArtifactRoots()
+      expect(roots).toHaveLength(1)
+      expect(roots[0].path).toBe(join(workspaceRoot, 'omb-root'))
+      expect(roots[0].domainAllowlist).toEqual(new Set(['hdmap', 'scenario']))
     })
   })
 

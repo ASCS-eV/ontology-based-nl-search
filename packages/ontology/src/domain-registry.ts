@@ -336,18 +336,19 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
   const raw: RawDomain[] = []
 
   for (const root of roots) {
-    if (!existsSync(root)) continue
+    if (!existsSync(root.path)) continue
 
     let entries: string[]
     try {
-      entries = readdirSync(root)
+      entries = readdirSync(root.path)
     } catch {
       // intentional: root directory unreadable — skip silently, other roots may work
       continue
     }
 
     for (const entry of entries) {
-      const domainDir = join(root, entry)
+      if (root.domainAllowlist && !root.domainAllowlist.has(entry)) continue
+      const domainDir = join(root.path, entry)
       // statSync and the inner readdirSync/readFileSync here are NOT wrapped
       // in try/catch on purpose: every call sits inside an artifact-root walk
       // we just listed, so a failure indicates a real environment problem

@@ -1,8 +1,11 @@
+import { createComponentLogger } from '@ontology-search/core/logging'
 import { getDataSources } from '@ontology-search/ontology/sources'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 import { existsSync, readdirSync, readFileSync } from 'fs'
-import { dirname, join } from 'path'
+import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
+
+const log = createComponentLogger('data-loader')
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -139,6 +142,7 @@ async function loadFromDataSources(
     if (!existsSync(dataDir)) continue
     const contextMap = buildContextMap(artifactsDir)
     const files = readdirSync(dataDir)
+    const sourceName = basename(dataDir)
     for (const file of files) {
       const path = join(dataDir, file)
       const content = loadDataFile(path)
@@ -147,9 +151,11 @@ async function loadFromDataSources(
         const resolved = resolveLocalContext(content, contextMap)
         await store.loadJsonLd(resolved)
         loaded++
+        log.debug('Loaded data file', { source: sourceName, file })
       } else if (file.endsWith('.ttl')) {
         await store.loadTurtle(content)
         loaded++
+        log.debug('Loaded data file', { source: sourceName, file })
       }
     }
   }
@@ -169,7 +175,12 @@ export async function loadSampleData(store: SparqlStore): Promise<void> {
 
   // When explicit data directories are declared, use ONLY those.
   if (dataSources.length > 0) {
+    log.info('Loading data from declared sources', {
+      sourceCount: dataSources.length,
+      directories: dataSources.map((s) => basename(s.dataDir)),
+    })
     const loaded = await loadFromDataSources(store, dataSources)
+    log.info('Data loading complete', { fileCount: loaded, mode: 'manifest' })
     if (loaded === 0) {
       await store.loadTurtle(FALLBACK_TURTLE)
     }
@@ -177,6 +188,7 @@ export async function loadSampleData(store: SparqlStore): Promise<void> {
   }
 
   // Fallback: built-in sample data (OMB demo assets).
+  log.info('No data sources in manifest — loading built-in sample data')
   let loaded = 0
 
   for (const file of BUILTIN_JSONLD) {
