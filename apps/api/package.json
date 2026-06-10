@@ -8,20 +8,20 @@
     "build": "tsc --build",
     "dev": "tsx watch --env-file=../../.env.local src/index.ts",
     "dev:clean": "node ../../scripts/clean-ports.mjs 3003 && tsx watch --env-file=../../.env.local src/index.ts",
-    "start": "node --env-file=.env.local dist/index.js",
+    "start": "node --max-old-space-size=8192 --env-file=.env.local dist/index.js",
     "test": "vitest run",
     "check-types": "tsc --noEmit",
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@hono/node-server": "^1.13.0",
+    "@hono/node-server": "^2.0.4",
     "@ontology-search/api-types": "workspace:*",
     "@ontology-search/core": "workspace:*",
     "@ontology-search/llm": "workspace:*",
     "@ontology-search/ontology": "workspace:*",
     "@ontology-search/search": "workspace:*",
     "@ontology-search/sparql": "workspace:*",
-    "hono": "^4.12.21",
+    "hono": "^4.12.25",
     "zod": "^4.4.3"
   },
   "devDependencies": {

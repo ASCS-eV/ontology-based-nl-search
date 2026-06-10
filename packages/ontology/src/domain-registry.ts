@@ -139,9 +139,18 @@ function extractNamespace(ttlContent: string, domainName: string): string | null
 function findPrefixAlias(
   declaredPrefixes: Record<string, string>,
   namespace: string
-): string | null {
+): { alias: string; resolvedNs: string } | null {
+  // Exact match first
   for (const [alias, ns] of Object.entries(declaredPrefixes)) {
-    if (ns === namespace) return alias
+    if (ns === namespace) return { alias, resolvedNs: ns }
+  }
+  // Trailing-slash/hash normalization: owl:Ontology IRIs often omit the
+  // separator that the @prefix declaration includes (e.g., ontology IRI
+  // ".../scenario-metadata" vs prefix ".../scenario-metadata/").
+  const withSlash = namespace.endsWith('/') || namespace.endsWith('#') ? null : namespace + '/'
+  const withHash = namespace.endsWith('/') || namespace.endsWith('#') ? null : namespace + '#'
+  for (const [alias, ns] of Object.entries(declaredPrefixes)) {
+    if (ns === withSlash || ns === withHash) return { alias, resolvedNs: ns }
   }
   return null
 }
@@ -370,10 +379,13 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
 
       // Resolve the actual TTL prefix alias (may differ from directory name,
       // e.g., directory "openlabel-v2" uses TTL prefix "openlabel_v2").
-      const ttlPrefix = findPrefixAlias(filePrefixes, namespace) ?? entry
+      const prefixMatch = findPrefixAlias(filePrefixes, namespace)
+      const ttlPrefix = prefixMatch?.alias ?? entry
+      // Use the resolved namespace (with separator) when the prefix was found
+      const resolvedNamespace = prefixMatch?.resolvedNs ?? namespace
 
       // Extract target classes using the actual TTL prefix
-      const targetClasses = extractTargetClasses(shaclContent, namespace, ttlPrefix)
+      const targetClasses = extractTargetClasses(shaclContent, resolvedNamespace, ttlPrefix)
       if (targetClasses.length === 0) continue
 
       // rdfs:subClassOf edges power the component-base signal. Parse both files
@@ -384,7 +396,14 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
         ...extractSubClassOfEdges(shaclContent),
       ]
 
-      raw.push({ entry, namespace, ttlPrefix, filePrefixes, targetClasses, subClassEdges })
+      raw.push({
+        entry,
+        namespace: resolvedNamespace,
+        ttlPrefix,
+        filePrefixes,
+        targetClasses,
+        subClassEdges,
+      })
     }
   }
 

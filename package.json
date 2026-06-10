@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
-  "packageManager": "pnpm@11.1.2+sha512.415a1cc25974731e75455c1468371be74c5aa5fb7621b50d4056d222451609f11412f23fd602e6169f1e060466641f798597e1be961a10688836a67b16569499",
+  "packageManager": "pnpm@11.5.2",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "node scripts/clean-ports.mjs && turbo run dev",
+    "dev": "node scripts/clean-ports.mjs && node scripts/dev.mjs",
     "dev:api": "node scripts/clean-ports.mjs 3003 && pnpm run build && pnpm --filter @ontology-search/api dev",
     "dev:web": "node scripts/clean-ports.mjs 5174 && turbo run dev --filter=@ontology-search/web",
     "test": "turbo run test --concurrency=2",
