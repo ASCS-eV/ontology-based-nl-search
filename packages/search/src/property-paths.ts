@@ -172,6 +172,26 @@ async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEdge[]> {
     }
   `
 
+  // Step 1c: edges via sh:class (LinkML-generated SHACL uses sh:class
+  // rather than sh:node to reference nested shapes). The value is the
+  // class IRI directly, so these produce edges without needing
+  // shapeTarget resolution.
+  const classEdgeSparql = `
+    ${sparqlPrefixes('sh')}
+
+    SELECT DISTINCT ?parentClass ?predicate ?childClass WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        ?parentShape sh:targetClass ?parentClass .
+        ?parentShape sh:property ?propShape .
+        ?propShape sh:path ?predicate .
+        FILTER(isIRI(?predicate))
+        ?propShape sh:class ?childClass .
+        FILTER(isIRI(?childClass))
+        ?childShape sh:targetClass ?childClass .
+      }
+    }
+  `
+
   // Step 2a: shapes that declare a target class directly.
   const directTargetSparql = `
     ${sparqlPrefixes('sh')}
@@ -199,9 +219,10 @@ async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEdge[]> {
     }
   `
 
-  const [directEdges, orEdges, directTargets, orTargets] = await Promise.all([
+  const [directEdges, orEdges, classEdges, directTargets, orTargets] = await Promise.all([
     store.query(directEdgeSparql),
     store.query(orEdgeSparql),
+    store.query(classEdgeSparql),
     store.query(directTargetSparql),
     store.query(orTargetSparql),
   ])
@@ -233,6 +254,18 @@ async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEdge[]> {
       seen.add(key)
       edges.push({ parentClass, predicate, childClass })
     }
+  }
+
+  // sh:class edges already carry the resolved class (no shapeTargets lookup).
+  for (const row of classEdges.results.bindings) {
+    const parentClass = row['parentClass']?.value
+    const predicate = row['predicate']?.value
+    const childClass = row['childClass']?.value
+    if (!parentClass || !predicate || !childClass) continue
+    const key = `${parentClass}|${predicate}|${childClass}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    edges.push({ parentClass, predicate, childClass })
   }
 
   // Sort deterministically. The downstream BFS reconstructs ONE path per
