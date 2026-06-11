@@ -1796,6 +1796,176 @@ function buildDomainPatterns(
 }
 
 /**
+ * Phase 3: Merged multi-path UNION emission.
+ *
+ * When multiple multi-path entries (e.g., lateral + beginsAtSeconds) have
+ * alternative paths that share the same first-hop predicate from the asset,
+ * they are CO-LOCATED: emitted in a single UNION branch where all constraints
+ * bind through the same intermediate variable. This gives correct co-location
+ * semantics ("find a PHASE where lateral=KeepLane AND begins>=5") rather than
+ * the weaker cross-product ("find assets where SOME phase has KeepLane AND
+ * SOME interval >= 5").
+ *
+ * Entries whose paths don't overlap with any other entry fall back to
+ * independent UNION emission (Phase 2 behaviour).
+ */
+function emitMergedMultiPathUnion(
+  multiPathEntries: (
+    | { kind: 'filter'; name: string; value: string | string[]; path: PropertyPath }
+    | { kind: 'range'; name: string; range: { min?: number; max?: number }; path: PropertyPath }
+  )[],
+  domainName: string,
+  assetVar: string,
+  suffix: string,
+  patterns: string[],
+  filters: string[],
+  selectVars: Set<string>,
+  vocabIndex: CompilerVocab,
+  emitPredicate: (iri: string) => string
+): void {
+  if (multiPathEntries.length === 0) return
+
+  type Entry = (typeof multiPathEntries)[number]
+
+  // For each entry, build a map: firstStepPredicate → altPath[]
+  type PathByFirstHop = { entry: Entry; altPath: PropertyPath }
+  const firstHopIndex = new Map<string, PathByFirstHop[]>()
+  for (const entry of multiPathEntries) {
+    const altPaths = vocabIndex.allPaths.get(`${domainName}:${entry.name}`) ?? [entry.path]
+    for (const altPath of altPaths) {
+      if (altPath.steps.length < 2) continue // direct leaf, no intermediate
+      const firstPred = altPath.steps[0]!.predicate
+      const group = firstHopIndex.get(firstPred) ?? []
+      group.push({ entry, altPath })
+      firstHopIndex.set(firstPred, group)
+    }
+  }
+
+  // Identify which first-hops have entries from MULTIPLE distinct properties
+  // (those are the merge candidates).
+  const mergeableHops = new Map<string, PathByFirstHop[]>()
+  const standaloneHops = new Map<string, PathByFirstHop[]>()
+  for (const [hop, items] of firstHopIndex) {
+    const distinctProps = new Set(items.map((i) => i.entry.name))
+    if (distinctProps.size > 1) {
+      mergeableHops.set(hop, items)
+    } else {
+      standaloneHops.set(hop, items)
+    }
+  }
+
+  // Track which entries have been fully handled by merge groups
+  const mergedEntryNames = new Set<string>()
+
+  // Emit merged UNION: one block whose branches correspond to the shared
+  // first-hop predicates. Each branch walks all entries' chains from the
+  // shared intermediate.
+  if (mergeableHops.size > 0) {
+    // Register leaf variables for all entries participating in the merge
+    const participatingEntries = new Map<string, Entry>()
+    for (const [, items] of mergeableHops) {
+      for (const { entry } of items) {
+        participatingEntries.set(entry.name, entry)
+        mergedEntryNames.add(entry.name)
+      }
+    }
+    for (const entry of participatingEntries.values()) {
+      selectVars.add(`?${entry.name}${suffix}`)
+    }
+
+    // Build UNION branches — one per mergeable first-hop predicate
+    const branches: string[] = []
+    for (const [, items] of [...mergeableHops].sort(([a], [b]) => a.localeCompare(b))) {
+      const branchLines: string[] = []
+      // Walk the shared first hop (all items agree on this predicate)
+      const firstStep = items[0]!.altPath.steps[0]!
+      const sharedIntVar = `?_mp0${suffix}`
+      branchLines.push(`${assetVar} ${emitPredicate(firstStep.predicate)} ${sharedIntVar} .`)
+
+      // For each unique entry in this branch, walk remaining steps to its leaf
+      const seenProps = new Set<string>()
+      for (const { entry, altPath } of items) {
+        if (seenProps.has(entry.name)) continue
+        seenProps.add(entry.name)
+        const leafVarName = `?${entry.name}${suffix}`
+        let cursor = sharedIntVar
+        // Walk steps[1..n-2] (remaining intermediates after the shared first hop)
+        for (let i = 1; i < altPath.steps.length - 1; i++) {
+          const step = altPath.steps[i]!
+          const intVar = `?_mp${i}_${entry.name}${suffix}`
+          branchLines.push(`${cursor} ${emitPredicate(step.predicate)} ${intVar} .`)
+          cursor = intVar
+        }
+        // Walk final leaf step
+        const leafStep = altPath.steps[altPath.steps.length - 1]!
+        branchLines.push(`${cursor} ${emitPredicate(leafStep.predicate)} ${leafVarName} .`)
+      }
+      branches.push(`{ ${branchLines.join('\n    ')} }`)
+    }
+    patterns.push(branches.join('\n  UNION\n  '))
+
+    // Emit FILTERs for all participating entries
+    for (const entry of participatingEntries.values()) {
+      const leafVarName = `?${entry.name}${suffix}`
+      if (entry.kind === 'filter') {
+        if (entry.path.leafKind === 'literal') {
+          addEnumFilter(patterns, filters, leafVarName, entry.value)
+        } else {
+          addLocationFilter(filters, leafVarName, entry.value)
+        }
+      } else {
+        if (entry.range.min !== undefined) {
+          filters.push(`FILTER(xsd:float(${leafVarName}) >= ${entry.range.min})`)
+        }
+        if (entry.range.max !== undefined) {
+          filters.push(`FILTER(xsd:float(${leafVarName}) <= ${entry.range.max})`)
+        }
+      }
+    }
+  }
+
+  // Emit standalone entries (not merged with anything) as independent UNIONs
+  for (const entry of multiPathEntries) {
+    if (mergedEntryNames.has(entry.name)) continue
+    const altPaths = vocabIndex.allPaths.get(`${domainName}:${entry.name}`) ?? [entry.path]
+    const leafVarName = `?${entry.name}${suffix}`
+    selectVars.add(leafVarName)
+
+    const branches: string[] = []
+    for (let pathIdx = 0; pathIdx < altPaths.length; pathIdx++) {
+      const altPath = altPaths[pathIdx]!
+      const branchLines: string[] = []
+      let cursor = assetVar
+      for (let i = 0; i < altPath.steps.length - 1; i++) {
+        const step = altPath.steps[i]!
+        const intVar = `?_up${pathIdx}_${i}${suffix}`
+        branchLines.push(`${cursor} ${emitPredicate(step.predicate)} ${intVar} .`)
+        cursor = intVar
+      }
+      const leafStep = altPath.steps[altPath.steps.length - 1]!
+      branchLines.push(`${cursor} ${emitPredicate(leafStep.predicate)} ${leafVarName} .`)
+      branches.push(`{ ${branchLines.join('\n    ')} }`)
+    }
+    patterns.push(branches.join('\n  UNION\n  '))
+
+    if (entry.kind === 'filter') {
+      if (entry.path.leafKind === 'literal') {
+        addEnumFilter(patterns, filters, leafVarName, entry.value)
+      } else {
+        addLocationFilter(filters, leafVarName, entry.value)
+      }
+    } else {
+      if (entry.range.min !== undefined) {
+        filters.push(`FILTER(xsd:float(${leafVarName}) >= ${entry.range.min})`)
+      }
+      if (entry.range.max !== undefined) {
+        filters.push(`FILTER(xsd:float(${leafVarName}) <= ${entry.range.max})`)
+      }
+    }
+  }
+}
+
+/**
  * Emit MANDATORY patterns for "direct" properties — those with a discovered
  * path but NO shape group anywhere (a flat ontology's `asset → leaf`, or any
  * schema not shaped like the ENVITED-X DomainSpecification meta-model).
@@ -1836,10 +2006,10 @@ function emitDirectPathFilters(
     return desc ? prefixedPredicate(predicateIri, desc) : `<${predicateIri}>`
   }
 
-  // Phase 2: for each entry, check if allPaths has multiple routes.
-  // If so, emit a UNION of all alternative path patterns so that data
-  // reachable through ANY route is found (ontology-agnostic).
-  // Entries with a single path are emitted normally (no UNION).
+  // Phase 2+3: for each entry, check if allPaths has multiple routes.
+  // Phase 3 MERGES entries that share intermediate steps into a single
+  // UNION (avoids cross-product duplicates and ensures co-location
+  // semantics: constraints bind through the SAME intermediate node).
   const singlePathEntries: Entry[] = []
   const multiPathEntries: Entry[] = []
   for (const entry of all) {
@@ -1851,67 +2021,21 @@ function emitDirectPathFilters(
     }
   }
 
-  // Emit multi-path entries with UNION: each alternative path becomes a
-  // UNION branch binding the same leaf variable, so the FILTER clause
-  // applies uniformly regardless of which route matched.
-  for (const entry of multiPathEntries) {
-    const altPaths = vocabIndex.allPaths.get(`${domainName}:${entry.name}`) ?? [entry.path]
-    const leafVarName = `?${entry.name}${suffix}`
-    selectVars.add(leafVarName)
-
-    const branches: string[] = []
-    for (let pathIdx = 0; pathIdx < altPaths.length; pathIdx++) {
-      const altPath = altPaths[pathIdx]!
-      const branchLines: string[] = []
-      let cursor = assetVar
-      for (let i = 0; i < altPath.steps.length - 1; i++) {
-        const step = altPath.steps[i]!
-        const intVar = `?_up${pathIdx}_${i}${suffix}`
-        branchLines.push(`${cursor} ${emitPredicate(step.predicate)} ${intVar} .`)
-        cursor = intVar
-      }
-      const leafStep = altPath.steps[altPath.steps.length - 1]!
-      branchLines.push(`${cursor} ${emitPredicate(leafStep.predicate)} ${leafVarName} .`)
-      branches.push(`{ ${branchLines.join('\n    ')} }`)
-    }
-    patterns.push(branches.join('\n  UNION\n  '))
-
-    // Emit FILTER for the leaf variable (shared across all UNION branches)
-    if (entry.kind === 'filter') {
-      if (entry.path.leafKind === 'literal') {
-        addEnumFilter(patterns, filters, leafVarName, entry.value)
-      } else {
-        addLocationFilter(filters, leafVarName, entry.value)
-      }
-    } else {
-      const range2D = vocabIndex.range2DProperties.get(entry.name)
-      if (range2D) {
-        // Range2D with UNION: the leaf variable binds the range node
-        // (the UNION already resolved the path to it).
-        patterns.push(
-          `${leafVarName} ${emitPredicate(range2D.minPredicate)} ?${entry.name}Min${suffix} .`
-        )
-        patterns.push(
-          `${leafVarName} ${emitPredicate(range2D.maxPredicate)} ?${entry.name}Max${suffix} .`
-        )
-        if (entry.range.min !== undefined) {
-          filters.push(`FILTER(xsd:float(?${entry.name}Max${suffix}) >= ${entry.range.min})`)
-          selectVars.add(`?${entry.name}Max${suffix}`)
-        }
-        if (entry.range.max !== undefined) {
-          filters.push(`FILTER(xsd:float(?${entry.name}Min${suffix}) <= ${entry.range.max})`)
-          selectVars.add(`?${entry.name}Min${suffix}`)
-        }
-      } else {
-        if (entry.range.min !== undefined) {
-          filters.push(`FILTER(xsd:float(${leafVarName}) >= ${entry.range.min})`)
-        }
-        if (entry.range.max !== undefined) {
-          filters.push(`FILTER(xsd:float(${leafVarName}) <= ${entry.range.max})`)
-        }
-      }
-    }
-  }
+  // Phase 3: Merge multi-path entries that share the same first-hop
+  // predicate into a single UNION block. This ensures co-location:
+  // "find a phase where lateral=KeepLane AND begins>=5" rather than
+  // "find assets where SOME phase has KeepLane AND SOME interval>=5".
+  emitMergedMultiPathUnion(
+    multiPathEntries,
+    domainName,
+    assetVar,
+    suffix,
+    patterns,
+    filters,
+    selectVars,
+    vocabIndex,
+    emitPredicate
+  )
 
   // Emit single-path entries normally (original bucket-by-prefix logic).
   if (singlePathEntries.length === 0) return
