@@ -185,7 +185,7 @@ export function getModel(): LanguageModel {
         baseURL: config.OLLAMA_BASE_URL,
         apiKey: 'ollama',
       })
-      return ollama(modelId)
+      return ollama.chat(modelId)
     }
 
     case 'anthropic': {
