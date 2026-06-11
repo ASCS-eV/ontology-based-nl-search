@@ -18,6 +18,7 @@ const searchSlotsSchema = z.object({
   ranges: z
     .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
     .default({}),
+  exists: z.array(z.string()).optional(),
   references: z
     .union([referenceFilterWireSchema, z.array(referenceFilterWireSchema)])
     .optional()

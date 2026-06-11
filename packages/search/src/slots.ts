@@ -75,6 +75,15 @@ export interface SearchSlots {
   /** Numeric range filters: localName → { min?, max? } */
   ranges: Record<string, { min?: number; max?: number }>
   /**
+   * Existence checks — property names whose mere presence is required.
+   * Compiles to `FILTER EXISTS { <path-to-property> }` using the
+   * discovered SHACL property path. No value constraint — just tests
+   * that the property chain is populated on the asset.
+   *
+   * Phase 4: ontology-agnostic existence test using discovered paths.
+   */
+  exists?: string[]
+  /**
    * Cross-reference filters — find assets that reference one or more other
    * domains. Each entry compiles to a SHACL-discovered JOIN (see
    * `buildReferenceChains`); multiple entries are AND-combined (the asset must

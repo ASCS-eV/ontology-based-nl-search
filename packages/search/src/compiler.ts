@@ -971,6 +971,12 @@ export async function compileSlotsWithTrace(
     )
   }
 
+  // Phase 4: Existence slot — emit FILTER EXISTS for each property name
+  // in `slots.exists`. Uses discovered paths (multi-path UNION inside EXISTS).
+  if (slots.exists && slots.exists.length > 0) {
+    emitExistenceFilters(slots.exists, primaryDomain, '?asset', filters, vocabIndex, registry)
+  }
+
   // Generate prefixes AFTER all pattern generation so all domains are included
   const prefixes = buildPrefixes(registry, [...prefixDomains])
 
@@ -1793,6 +1799,67 @@ function buildDomainPatterns(
   }
 
   return foreignDomains
+}
+
+/**
+ * Phase 4: Emit FILTER EXISTS clauses for existence checks.
+ *
+ * For each property name in `exists`, looks up its discovered paths
+ * and emits `FILTER EXISTS { <path-chain> }`. When multiple routes
+ * exist (multi-path property), uses a UNION inside EXISTS so any
+ * populated route satisfies the check.
+ *
+ * Ontology-agnostic: driven entirely by the discovered property paths.
+ */
+function emitExistenceFilters(
+  exists: string[],
+  domainName: string,
+  assetVar: string,
+  filters: string[],
+  vocabIndex: CompilerVocab,
+  registry: DomainRegistry
+): void {
+  for (const propName of [...exists].sort()) {
+    const altPaths = vocabIndex.allPaths.get(`${domainName}:${propName}`)
+    const primaryPath = vocabIndex.paths.get(`${domainName}:${propName}`)
+    const pathsToUse = altPaths && altPaths.length > 0 ? altPaths : primaryPath ? [primaryPath] : []
+    if (pathsToUse.length === 0) continue
+
+    const emitPred = (iri: string): string => {
+      const desc = findDomainForIri(iri, registry)
+      return desc ? prefixedPredicate(iri, desc) : `<${iri}>`
+    }
+
+    if (pathsToUse.length === 1) {
+      // Single path: simple EXISTS
+      const path = pathsToUse[0]!
+      const lines: string[] = []
+      let cursor = assetVar
+      for (let i = 0; i < path.steps.length; i++) {
+        const step = path.steps[i]!
+        const nextVar = `?_ex_${propName}_${i}`
+        lines.push(`${cursor} ${emitPred(step.predicate)} ${nextVar} .`)
+        cursor = nextVar
+      }
+      filters.push(`FILTER EXISTS { ${lines.join(' ')} }`)
+    } else {
+      // Multi-path: UNION inside EXISTS
+      const branches: string[] = []
+      for (let pIdx = 0; pIdx < pathsToUse.length; pIdx++) {
+        const path = pathsToUse[pIdx]!
+        const lines: string[] = []
+        let cursor = assetVar
+        for (let i = 0; i < path.steps.length; i++) {
+          const step = path.steps[i]!
+          const nextVar = `?_ex${pIdx}_${i}`
+          lines.push(`${cursor} ${emitPred(step.predicate)} ${nextVar} .`)
+          cursor = nextVar
+        }
+        branches.push(`{ ${lines.join(' ')} }`)
+      }
+      filters.push(`FILTER EXISTS { ${branches.join(' UNION ')} }`)
+    }
+  }
 }
 
 /**
