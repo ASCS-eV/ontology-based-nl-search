@@ -403,57 +403,57 @@ async function enrichLeafKinds(
   return out
 }
 
-interface PredecessorLink {
-  parent: string
-  predicate: string
-}
-
 /**
- * BFS from `assetClass` through the edge graph; return predecessor
- * links keyed by reached target class. Used to reconstruct a path
- * by walking predecessors in reverse from a leaf's owning class.
+ * DFS from `assetClass` through the edge graph; returns ALL non-cyclic
+ * paths to each reachable class. Each path is a list of intermediate
+ * steps (predicate + target class).
+ *
+ * Bounded by `maxDepth` (prevents explosion on deep schemas) and
+ * `maxPathsPerTarget` (caps memory for highly-connected intermediate
+ * classes). Paths for each target are sorted shortest-first so that
+ * index [0] matches the previous BFS-shortest behaviour.
+ *
+ * Phase 2: enables the compiler to consider multiple routes to the
+ * same leaf property — prerequisite for Phase 3 path merging.
  */
-function bfsFromAsset(
+function allPathsFromAsset(
   assetClass: string,
-  forwardEdges: Map<string, { predicate: string; child: string }[]>
-): Map<string, PredecessorLink> {
-  const visited = new Map<string, PredecessorLink>()
-  // The asset itself has no predecessor; mark it visited with a
-  // sentinel so the BFS doesn't loop back.
-  visited.set(assetClass, { parent: '', predicate: '' })
-  const queue: string[] = [assetClass]
-  while (queue.length > 0) {
-    const current = queue.shift()!
+  forwardEdges: Map<string, { predicate: string; child: string }[]>,
+  maxDepth = 8,
+  maxPathsPerTarget = 5
+): Map<string, PathStep[][]> {
+  const result = new Map<string, PathStep[][]>()
+
+  function dfs(current: string, visited: Set<string>, path: PathStep[]): void {
+    if (current !== assetClass) {
+      const existing = result.get(current) ?? []
+      if (existing.length < maxPathsPerTarget) {
+        existing.push([...path])
+        result.set(current, existing)
+      }
+    }
+
+    if (path.length >= maxDepth) return
+
     const edges = forwardEdges.get(current) ?? []
     for (const { predicate, child } of edges) {
       if (visited.has(child)) continue
-      visited.set(child, { parent: current, predicate })
-      queue.push(child)
+      visited.add(child)
+      path.push({ predicate, intermediate: child })
+      dfs(child, visited, path)
+      path.pop()
+      visited.delete(child)
     }
   }
-  return visited
-}
 
-function pathStepsTo(
-  target: string,
-  predecessors: Map<string, PredecessorLink>,
-  leafPredicate: string
-): PathStep[] | null {
-  // Walk back from `target` to the asset, collecting (predicate, parent)
-  // pairs. If `target` is the asset itself the path has zero
-  // intermediate hops and just the leaf step.
-  if (!predecessors.has(target)) return null
-  const intermediates: PathStep[] = []
-  let cursor = target
-  while (true) {
-    const link = predecessors.get(cursor)
-    // Reached the root: link.parent === '' (the sentinel).
-    if (!link || link.parent === '') break
-    intermediates.unshift({ predicate: link.predicate, intermediate: cursor })
-    cursor = link.parent
+  const visited = new Set([assetClass])
+  dfs(assetClass, visited, [])
+
+  // Sort paths shortest-first per target for deterministic ordering.
+  for (const [, paths] of result) {
+    paths.sort((a, b) => a.length - b.length)
   }
-  intermediates.push({ predicate: leafPredicate })
-  return intermediates
+  return result
 }
 
 /**
@@ -510,23 +510,39 @@ export async function buildPropertyPaths(
     forwardEdges.set(parentClass, list)
   }
 
-  // For each asset class, walk forward and emit one PropertyPath per leaf
-  // whose owning class is reachable.
+  // For each asset class, find ALL non-cyclic paths to each reachable
+  // class and emit one PropertyPath per (asset, route, leaf) triple.
+  // Phase 2: emit every route so the compiler can choose the best at
+  // compile-time (Phase 3).
   const bfsEnd = log.time('property-paths/bfs')
   const out: PropertyPath[] = []
   for (const assetClass of assetClasses) {
-    const predecessors = bfsFromAsset(assetClass, forwardEdges)
+    const allPaths = allPathsFromAsset(assetClass, forwardEdges)
     for (const { owningClass, propertyIri, leafKind } of leaves) {
-      const steps = pathStepsTo(owningClass, predecessors, propertyIri)
-      if (!steps) continue
-      out.push({
-        domain: extractDomainFromRegistry(assetClass, registry),
-        propertyName: extractLocalName(propertyIri),
-        propertyIri,
-        assetClass,
-        steps,
-        leafKind,
-      })
+      if (owningClass === assetClass) {
+        // Direct leaf on the asset class (0 intermediate hops)
+        out.push({
+          domain: extractDomainFromRegistry(assetClass, registry),
+          propertyName: extractLocalName(propertyIri),
+          propertyIri,
+          assetClass,
+          steps: [{ predicate: propertyIri }],
+          leafKind,
+        })
+        continue
+      }
+      const routes = allPaths.get(owningClass)
+      if (!routes || routes.length === 0) continue
+      for (const route of routes) {
+        out.push({
+          domain: extractDomainFromRegistry(assetClass, registry),
+          propertyName: extractLocalName(propertyIri),
+          propertyIri,
+          assetClass,
+          steps: [...route, { predicate: propertyIri }],
+          leafKind,
+        })
+      }
     }
   }
   bfsEnd()

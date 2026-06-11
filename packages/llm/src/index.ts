@@ -25,7 +25,11 @@ import type { LlmStructuredResponse } from './types.js'
 // same gate in its /refine composition root without depending on internal
 // modules.
 export type { ShaclSlotValidationResult } from './slot-validator.js'
-export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-validator.js'
+export {
+  correctFilters,
+  validateRangesAgainstShacl,
+  validateSlotsAgainstShacl,
+} from './slot-validator.js'
 
 export interface SearchOptions {
   domain?: string

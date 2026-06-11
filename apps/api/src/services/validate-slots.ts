@@ -9,7 +9,11 @@
  * is wiring-level (not a reusable service), but substantial enough to
  * warrant its own module.
  */
-import { validateRangesAgainstShacl, validateSlotsAgainstShacl } from '@ontology-search/llm'
+import {
+  correctFilters,
+  validateRangesAgainstShacl,
+  validateSlotsAgainstShacl,
+} from '@ontology-search/llm'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { SearchSlots } from '@ontology-search/search'
 import { extractVocabulary, getInitializedStore } from '@ontology-search/search'
@@ -23,7 +27,13 @@ export async function validateSlots(slots: SearchSlots): Promise<SearchSlots> {
   const store = await getInitializedStore()
   const vocabulary = await extractVocabulary(store)
 
-  const result = await validateSlotsAgainstShacl(slots.filters ?? {}, shacl, vocabulary)
+  // Phase 1: Resolve plain-string values to canonical IRIs using the
+  // shape's own sh:in vocabulary (ontology-agnostic fuzzy matching).
+  // Without this, strings like "Munich" are rejected by the SHACL gate
+  // because it expects full IRIs.
+  const correctedFilters = correctFilters(slots.filters ?? {}, vocabulary)
+
+  const result = await validateSlotsAgainstShacl(correctedFilters, shacl, vocabulary)
 
   // Drop ranges with property names not in the schema
   const rangeResult = validateRangesAgainstShacl(slots.ranges ?? {}, shacl)

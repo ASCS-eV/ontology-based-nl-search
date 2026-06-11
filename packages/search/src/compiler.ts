@@ -88,10 +88,22 @@ interface CompilerVocab {
    * value — the compiler reads predicates from these instead of
    * hard-coding `hasDomainSpecification` and `has${Group}` literals.
    *
+   * Contains the SHORTEST path per key (backward-compatible with pre-
+   * Phase 2 behaviour). For access to ALL discovered routes, see
+   * {@link allPaths}.
+   *
    * Sourced from `buildPropertyPaths` (task 21a) so the ENVITED-X
    * meta-model is no longer a compile-time assumption.
    */
   paths: Map<string, PropertyPath>
+  /**
+   * ALL discovered property paths per `${domain}:${propertyLocalName}`
+   * key, sorted shortest-first. A leaf reachable via N intermediate
+   * routes produces N entries. Phase 3 uses this for intelligent path
+   * selection and merging when multiple active filters share
+   * intermediate shapes.
+   */
+  allPaths: Map<string, PropertyPath[]>
   /**
    * Discovered cross-domain reference chains keyed by parent domain.
    * Each chain lists the predicate hops from a parent asset class to
@@ -249,9 +261,22 @@ export async function buildCompilerVocabFrom(
   // when emitting triples. A property may legitimately appear in multiple
   // asset domains (e.g., roadTypes in both hdmap and ositrace); each
   // domain gets its own path.
-  const paths = new Map<string, PropertyPath>()
+  //
+  // Phase 2: `allPaths` stores every discovered route (sorted shortest-
+  // first per key). `paths` retains only the shortest per key for
+  // backward-compatible single-path lookup.
+  const allPaths = new Map<string, PropertyPath[]>()
   for (const path of propertyPaths) {
-    paths.set(`${path.domain}:${path.propertyName}`, path)
+    const key = `${path.domain}:${path.propertyName}`
+    const list = allPaths.get(key) ?? []
+    list.push(path)
+    allPaths.set(key, list)
+  }
+  // Sort each bucket shortest-first, then pick [0] for the primary index.
+  const paths = new Map<string, PropertyPath>()
+  for (const [key, bucket] of allPaths) {
+    bucket.sort((a, b) => a.steps.length - b.steps.length)
+    if (bucket[0]) paths.set(key, bucket[0])
   }
 
   // Discover cross-domain reference chains from the property paths.
@@ -283,6 +308,7 @@ export async function buildCompilerVocabFrom(
     shapeGroupPropertyNames,
     range2DProperties,
     paths,
+    allPaths,
     referenceChains,
   }
 }
@@ -1810,10 +1836,90 @@ function emitDirectPathFilters(
     return desc ? prefixedPredicate(predicateIri, desc) : `<${predicateIri}>`
   }
 
+  // Phase 2: for each entry, check if allPaths has multiple routes.
+  // If so, emit a UNION of all alternative path patterns so that data
+  // reachable through ANY route is found (ontology-agnostic).
+  // Entries with a single path are emitted normally (no UNION).
+  const singlePathEntries: Entry[] = []
+  const multiPathEntries: Entry[] = []
+  for (const entry of all) {
+    const altPaths = vocabIndex.allPaths.get(`${domainName}:${entry.name}`)
+    if (altPaths && altPaths.length > 1) {
+      multiPathEntries.push(entry)
+    } else {
+      singlePathEntries.push(entry)
+    }
+  }
+
+  // Emit multi-path entries with UNION: each alternative path becomes a
+  // UNION branch binding the same leaf variable, so the FILTER clause
+  // applies uniformly regardless of which route matched.
+  for (const entry of multiPathEntries) {
+    const altPaths = vocabIndex.allPaths.get(`${domainName}:${entry.name}`) ?? [entry.path]
+    const leafVarName = `?${entry.name}${suffix}`
+    selectVars.add(leafVarName)
+
+    const branches: string[] = []
+    for (let pathIdx = 0; pathIdx < altPaths.length; pathIdx++) {
+      const altPath = altPaths[pathIdx]!
+      const branchLines: string[] = []
+      let cursor = assetVar
+      for (let i = 0; i < altPath.steps.length - 1; i++) {
+        const step = altPath.steps[i]!
+        const intVar = `?_up${pathIdx}_${i}${suffix}`
+        branchLines.push(`${cursor} ${emitPredicate(step.predicate)} ${intVar} .`)
+        cursor = intVar
+      }
+      const leafStep = altPath.steps[altPath.steps.length - 1]!
+      branchLines.push(`${cursor} ${emitPredicate(leafStep.predicate)} ${leafVarName} .`)
+      branches.push(`{ ${branchLines.join('\n    ')} }`)
+    }
+    patterns.push(branches.join('\n  UNION\n  '))
+
+    // Emit FILTER for the leaf variable (shared across all UNION branches)
+    if (entry.kind === 'filter') {
+      if (entry.path.leafKind === 'literal') {
+        addEnumFilter(patterns, filters, leafVarName, entry.value)
+      } else {
+        addLocationFilter(filters, leafVarName, entry.value)
+      }
+    } else {
+      const range2D = vocabIndex.range2DProperties.get(entry.name)
+      if (range2D) {
+        // Range2D with UNION: the leaf variable binds the range node
+        // (the UNION already resolved the path to it).
+        patterns.push(
+          `${leafVarName} ${emitPredicate(range2D.minPredicate)} ?${entry.name}Min${suffix} .`
+        )
+        patterns.push(
+          `${leafVarName} ${emitPredicate(range2D.maxPredicate)} ?${entry.name}Max${suffix} .`
+        )
+        if (entry.range.min !== undefined) {
+          filters.push(`FILTER(xsd:float(?${entry.name}Max${suffix}) >= ${entry.range.min})`)
+          selectVars.add(`?${entry.name}Max${suffix}`)
+        }
+        if (entry.range.max !== undefined) {
+          filters.push(`FILTER(xsd:float(?${entry.name}Min${suffix}) <= ${entry.range.max})`)
+          selectVars.add(`?${entry.name}Min${suffix}`)
+        }
+      } else {
+        if (entry.range.min !== undefined) {
+          filters.push(`FILTER(xsd:float(${leafVarName}) >= ${entry.range.min})`)
+        }
+        if (entry.range.max !== undefined) {
+          filters.push(`FILTER(xsd:float(${leafVarName}) <= ${entry.range.max})`)
+        }
+      }
+    }
+  }
+
+  // Emit single-path entries normally (original bucket-by-prefix logic).
+  if (singlePathEntries.length === 0) return
+
   // Bucket by shared path-prefix (every step except the leaf) so siblings
   // reuse intermediates. Sorted keys keep the emitted SPARQL deterministic.
   const buckets = new Map<string, { referencePath: PropertyPath; entries: Entry[] }>()
-  for (const entry of all) {
+  for (const entry of singlePathEntries) {
     const prefixKey = entry.path.steps
       .slice(0, -1)
       .map((s) => s.predicate)
