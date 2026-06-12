@@ -6,15 +6,16 @@ This guide explains how to configure service ports for the ontology-based NL sea
 
 The application consists of three main services, each with a configurable port:
 
-| Service | Default Port | Environment Variable | Purpose |
-|---------|------|------------------------|---------|
-| **API** | 3003 | `API_PORT` | Backend SPARQL query service |
-| **Web UI** | 5174 | `WEB_PORT` | Frontend React application |
-| **Docs** | 5173 | `DOCS_PORT` | VitePress documentation site |
+| Service    | Default Port | Environment Variable | Purpose                      |
+| ---------- | ------------ | -------------------- | ---------------------------- |
+| **API**    | 3003         | `API_PORT`           | Backend SPARQL query service |
+| **Web UI** | 5174         | `WEB_PORT`           | Frontend React application   |
+| **Docs**   | 5173         | `DOCS_PORT`          | VitePress documentation site |
 
 ## Default Configuration
 
 By default, services run on these ports:
+
 - API: http://localhost:3003
 - Web: http://localhost:5174
 - Docs: http://localhost:5173
@@ -35,6 +36,7 @@ DOCS_PORT=5173
 ```
 
 Then restart your dev server:
+
 ```bash
 pnpm dev
 ```
@@ -44,6 +46,7 @@ pnpm dev
 You can set environment variables directly in your terminal:
 
 **On Linux/Mac:**
+
 ```bash
 export API_PORT=4000
 export WEB_PORT=8080
@@ -52,6 +55,7 @@ pnpm dev
 ```
 
 **On Windows (PowerShell):**
+
 ```powershell
 $env:API_PORT = "4000"
 $env:WEB_PORT = "8080"
@@ -60,6 +64,7 @@ pnpm dev
 ```
 
 **On Windows (Command Prompt):**
+
 ```cmd
 set API_PORT=4000
 set WEB_PORT=8080
@@ -78,6 +83,7 @@ API_PORT=4000 WEB_PORT=8080 DOCS_PORT=8081 pnpm dev
 ### Hyper-V Port Conflicts
 
 Hyper-V reserves certain port ranges on Windows, which can block your dev servers. Common blocked ranges:
+
 - `49152–65535` (Hyper-V reserved range)
 
 **Solution:** Use ports outside the reserved range:
@@ -96,6 +102,7 @@ These ports are outside Hyper-V's reserved range and should work fine.
 If you need to run multiple instances of the application (e.g., for different branches), configure different ports:
 
 **Instance 1 (.env.local):**
+
 ```bash
 API_PORT=3003
 WEB_PORT=5174
@@ -103,6 +110,7 @@ DOCS_PORT=5173
 ```
 
 **Instance 2 (environment variables):**
+
 ```bash
 API_PORT=4000 WEB_PORT=8080 DOCS_PORT=8081 pnpm dev
 ```
@@ -119,6 +127,7 @@ DOCS_PORT=3001
 ```
 
 Then restart:
+
 ```bash
 pnpm dev
 ```
@@ -131,7 +140,7 @@ pnpm dev
 
 - **Default:** 3003
 - **Type:** Integer
-- **Configuration:** 
+- **Configuration:**
   - Via `.env.local`: `API_PORT=3003`
   - Backend server (`apps/api/src/index.ts`) reads this at startup
 - **Usage:** All backend queries, health checks, stats
@@ -140,7 +149,7 @@ pnpm dev
 
 - **Default:** 5174
 - **Type:** Integer
-- **Configuration:** 
+- **Configuration:**
   - Via `.env.local`: `WEB_PORT=5174`
   - Vite config (`apps/web/vite.config.ts`) reads this at dev startup
 - **Usage:** Frontend React application
@@ -150,7 +159,7 @@ pnpm dev
 
 - **Default:** 5173
 - **Type:** Integer
-- **Configuration:** 
+- **Configuration:**
   - Via `.env.local`: `DOCS_PORT=5173`
   - VitePress config (`apps/docs/.vitepress/config.ts`) reads this at dev startup
 - **Usage:** Documentation site
@@ -231,24 +240,27 @@ env:
 **Solutions:**
 
 1. **Check what's using the port:**
+
    ```bash
    # Windows
    netstat -ano | findstr :5174
-   
+
    # Linux/Mac
    lsof -i :5174
    ```
 
 2. **Change the port in `.env.local`:**
+
    ```bash
    WEB_PORT=5175
    ```
 
 3. **Kill the process using the port:**
+
    ```bash
    # Windows PowerShell (replace PID)
    Get-Process | Where-Object {$_.Id -eq 1234} | Stop-Process -Force
-   
+
    # Linux/Mac
    kill -9 1234
    ```
@@ -265,6 +277,7 @@ env:
 **Solutions:**
 
 1. **Use ports outside the reserved range** (recommended):
+
    ```bash
    # .env.local — these ports are safe
    API_PORT=3003
@@ -285,16 +298,19 @@ env:
 **Debugging steps:**
 
 1. Check `.env.local` is saved:
+
    ```bash
    cat .env.local | grep PORT
    ```
 
 2. Verify no old processes are using the old ports:
+
    ```bash
    pnpm run clean:ports
    ```
 
 3. Rebuild and restart:
+
    ```bash
    pnpm run build
    pnpm dev
