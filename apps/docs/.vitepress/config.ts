@@ -8,12 +8,12 @@ export default withMermaid(
       'Natural language search over any OWL + SHACL ontology (demonstrated on ENVITED-X simulation assets)',
     base: process.env.VITEPRESS_BASE || '/docs/',
     appearance: false,
-    markdown: {
-      linkChecker: {
-        // Skip localhost links in development/docs (only external links)
-        ignore: [/^http:\/\/localhost/],
-      },
-    },
+    ignoreDeadLinks: [
+      // localhost links are valid in dev but don't exist at build time
+      /^http:\/\/localhost/,
+      // PORT_CONFIGURATION.md is at repo root, not under /docs/ base
+      /^\/PORT_CONFIGURATION/,
+    ],
     vite: {
       server: {
         port: parseInt(process.env.DOCS_PORT ?? '5173', 10),
