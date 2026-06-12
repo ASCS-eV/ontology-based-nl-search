@@ -8,6 +8,9 @@
  * Usage:
  *   node scripts/clean-ports.mjs
  *   node scripts/clean-ports.mjs 3003 5174 5173
+ *
+ * Ports can be configured via environment variables:
+ *   API_PORT, WEB_PORT, DOCS_PORT
  */
 
 import { exec } from 'node:child_process'
@@ -16,9 +19,9 @@ import { promisify } from 'node:util'
 const execAsync = promisify(exec)
 
 const DEFAULT_PORTS = [
-  3003, // API
-  5173, // Docs
-  5174, // Web
+  parseInt(process.env.API_PORT ?? '3003', 10), // API
+  parseInt(process.env.DOCS_PORT ?? '5173', 10), // Docs
+  parseInt(process.env.WEB_PORT ?? '5174', 10), // Web
 ]
 
 const PORTS_TO_CLEAN = process.argv.slice(2).map(Number).filter(Boolean)

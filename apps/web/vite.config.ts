@@ -6,7 +6,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [TanStackRouterVite({ routesDirectory: './src/routes' }), react(), tailwindcss()],
   server: {
-    port: 5174,
+    port: parseInt(process.env.WEB_PORT ?? '5174', 10),
     proxy: {
       '/api': {
         target: 'http://localhost:3003',

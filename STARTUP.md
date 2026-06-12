@@ -101,7 +101,7 @@ pnpm run --filter @ontology-search/docs dev
 
 ### Issue: "Port already in use"
 
-**Cause**: Previous dev server wasn't shut down properly.
+**Cause**: Previous dev server wasn't shut down properly, or another application is using one of the ports (e.g., Hyper-V reserves certain ports on Windows).
 
 **Solution**:
 
@@ -115,6 +115,8 @@ node scripts/clean-ports.mjs 3003 5174 5173
 # Then restart services
 pnpm dev
 ```
+
+**If ports are reserved by Hyper-V or another service:** See [PORT_CONFIGURATION.md](./PORT_CONFIGURATION.md) for how to change ports to avoid conflicts (e.g., use `API_PORT=3003 WEB_PORT=5174 DOCS_PORT=5173` in `.env.local`).
 
 ### Issue: "API not responding"
 
