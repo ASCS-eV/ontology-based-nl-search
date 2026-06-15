@@ -19,7 +19,7 @@ Or in `.env.local`:
 DOCS_PORT=8081
 ```
 
-For more details, see [PORT_CONFIGURATION.md](../../PORT_CONFIGURATION.md).
+For more details, see [PORT_CONFIGURATION.md](/PORT_CONFIGURATION.md).
 
 ## Scripts
 

@@ -23,7 +23,7 @@ Or in `.env.local`:
 WEB_PORT=8080
 ```
 
-For more details, see [PORT_CONFIGURATION.md](../../PORT_CONFIGURATION.md).
+For more details, see [PORT_CONFIGURATION.md](/PORT_CONFIGURATION.md).
 
 ## Scripts
 
