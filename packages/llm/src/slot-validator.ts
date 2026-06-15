@@ -436,6 +436,8 @@ export function validateSlots(
     // Preserve the compiler's traceability plans — this final validation pass
     // must not strip them, or per-row reference breadcrumbs never reach the UI.
     trace: response.trace,
+    // Preserve validated slots for downstream serialization (e.g. GraphQL layer).
+    slots: response.slots,
   }
 }
 
