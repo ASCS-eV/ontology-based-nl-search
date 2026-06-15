@@ -29,8 +29,8 @@ describe('PipelineStepper', () => {
     const steps = makeSteps()
     render(<PipelineStepper steps={steps} activeStep={0} />)
 
-    expect(screen.getByText('Content 1')).toBeInTheDocument()
-    expect(screen.queryByText('Content 2')).not.toBeInTheDocument()
+    expect(screen.getByText('Content 1')).toBeVisible()
+    expect(screen.getByText('Content 2')).not.toBeVisible()
   })
 
   it('allows manual toggle of steps', async () => {
@@ -39,15 +39,15 @@ describe('PipelineStepper', () => {
     render(<PipelineStepper steps={steps} activeStep={0} />)
 
     // Content 2 is not shown (not active step)
-    expect(screen.queryByText('Content 2')).not.toBeInTheDocument()
+    expect(screen.getByText('Content 2')).not.toBeVisible()
 
     // Click on Step Two header to expand it
     await user.click(screen.getByText('Step Two'))
-    expect(screen.getByText('Content 2')).toBeInTheDocument()
+    expect(screen.getByText('Content 2')).toBeVisible()
 
     // Click again to collapse
     await user.click(screen.getByText('Step Two'))
-    expect(screen.queryByText('Content 2')).not.toBeInTheDocument()
+    expect(screen.getByText('Content 2')).not.toBeVisible()
   })
 
   it('shows summary when step is collapsed', () => {

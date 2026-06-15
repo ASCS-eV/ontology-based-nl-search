@@ -134,12 +134,14 @@ export function PipelineStepper({
                 </span>
               </button>
 
-              {/* Step content */}
-              {expanded && (
-                <div id={`step-content-${step.id}`} className="px-4 pb-4 pt-1">
-                  {step.content}
-                </div>
-              )}
+              {/* Step content — hidden via CSS to preserve internal state */}
+              <div
+                id={`step-content-${step.id}`}
+                className="px-4 pb-4 pt-1"
+                style={expanded ? undefined : { display: 'none' }}
+              >
+                {step.content}
+              </div>
             </div>
           )
         })}
