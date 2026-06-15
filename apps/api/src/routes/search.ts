@@ -3,7 +3,7 @@ import { getConfig } from '@ontology-search/core/config'
 import { badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
-import { normalizeReferences } from '@ontology-search/search'
+import { normalizeReferences, slotsToGraphQL } from '@ontology-search/search'
 import { referenceFilterWireSchema } from '@ontology-search/search/slot-wire-schema'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
@@ -113,6 +113,19 @@ searchRoutes.post('/stream', (c) => {
                     event: SSE_EVENT.SPARQL,
                     data: JSON.stringify(progress.data.sparql),
                   })
+                  // Emit GraphQL intermediate representation when feature is enabled
+                  if (getConfig().FEATURE_GRAPHQL_LAYER && progress.data.interpretation) {
+                    const interp = progress.data.interpretation
+                    const graphql = slotsToGraphQL({
+                      domains: interp.domains ?? [],
+                      filters: interp.appliedFilters ?? {},
+                      ranges: {},
+                    })
+                    await stream.writeSSE({
+                      event: SSE_EVENT.GRAPHQL,
+                      data: JSON.stringify(graphql),
+                    })
+                  }
                 }
                 break
               case 'executing':
@@ -208,16 +221,19 @@ searchRoutes.post('/refine', async (c) => {
 
     logger.info('Refine search completed', { matchCount: result.meta.matchCount })
 
-    return c.json(
-      {
-        sparql: result.sparql,
-        results: result.execution.results,
-        traceability: result.execution.traceability,
-        meta: result.meta,
-      } satisfies RefineResponse,
-      200,
-      { [REQUEST_ID_HEADER]: requestId }
-    )
+    const response: RefineResponse = {
+      sparql: result.sparql,
+      results: result.execution.results,
+      traceability: result.execution.traceability,
+      meta: result.meta,
+    }
+
+    // Include GraphQL intermediate representation when feature is enabled
+    if (getConfig().FEATURE_GRAPHQL_LAYER) {
+      response.graphql = slotsToGraphQL(parseResult.data)
+    }
+
+    return c.json(response, 200, { [REQUEST_ID_HEADER]: requestId })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       // The client closed the connection mid-flight. The response body is

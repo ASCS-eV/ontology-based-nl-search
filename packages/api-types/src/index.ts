@@ -136,6 +136,8 @@ export interface SearchResponse {
   interpretation: QueryInterpretation
   gaps: OntologyGap[]
   sparql: string
+  /** GraphQL intermediate representation (when FEATURE_GRAPHQL_LAYER is enabled). */
+  graphql?: string
   results: ResultRow[]
   /**
    * Optional per-row traceability, aligned by index with `results`. Present
@@ -153,6 +155,8 @@ export interface SearchResponse {
  */
 export interface RefineResponse {
   sparql: string
+  /** GraphQL intermediate representation (when FEATURE_GRAPHQL_LAYER is enabled). */
+  graphql?: string
   results: ResultRow[]
   /** Per-row, per-reference breadcrumbs; present only when the query had a JOIN. */
   traceability?: RowTraceability[]
@@ -164,6 +168,11 @@ export interface StatsResponse {
   totalAssets: number
   domains: Record<string, number>
   availableDomains: string[]
+  /** Feature flags exposed to the client. */
+  features?: {
+    /** Whether the GraphQL intermediate layer is enabled. */
+    graphqlLayer?: boolean
+  }
 }
 
 /**

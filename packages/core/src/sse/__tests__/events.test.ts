@@ -16,6 +16,7 @@ describe('SSE_EVENT', () => {
       INTERPRETATION: 'interpretation',
       GAPS: 'gaps',
       SPARQL: 'sparql',
+      GRAPHQL: 'graphql',
       RESULTS: 'results',
       META: 'meta',
       DONE: 'done',
@@ -25,6 +26,6 @@ describe('SSE_EVENT', () => {
 
   it('has a type that admits every value', () => {
     const values: SseEventName[] = Object.values(SSE_EVENT)
-    expect(values).toHaveLength(8)
+    expect(values).toHaveLength(9)
   })
 })
