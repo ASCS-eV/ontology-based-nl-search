@@ -1,4 +1,5 @@
 import type { StatsResponse } from '@ontology-search/api-types'
+import { getConfig } from '@ontology-search/core/config'
 import { Hono } from 'hono'
 
 import { countAssets } from '../services/count-assets.js'
@@ -18,7 +19,14 @@ statsRoutes.get('/', (c) =>
         totalAssets,
         domainCount: Object.keys(counts).length,
       })
-      return { totalAssets, domains: counts, availableDomains }
+      return {
+        totalAssets,
+        domains: counts,
+        availableDomains,
+        features: {
+          graphqlLayer: getConfig().FEATURE_GRAPHQL_LAYER,
+        },
+      }
     },
   })
 )

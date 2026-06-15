@@ -146,7 +146,7 @@ export function SearchPage() {
         label: 'SPARQL Query',
         summary: sparql ? 'Generated' : undefined,
         hasContent: !!sparql,
-        content: sparql ? <SparqlPreview sparql={sparql} /> : null,
+        content: sparql ? <SparqlPreview sparql={sparql} inline /> : null,
       },
     ],
     [
