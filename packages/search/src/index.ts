@@ -15,6 +15,8 @@ export {
   getConceptExpansionIndex,
   resetConceptExpansionIndex,
 } from './concept-expansion.js'
+export type { GraphQLParseError, GraphQLParseResult } from './graphql-parser.js'
+export { parseGraphQLToSlots } from './graphql-parser.js'
 export { slotsToGraphQL } from './graphql-serializer.js'
 export type { GraphQLValidationIssue, GraphQLValidationResult } from './graphql-validator.js'
 export { validateGraphQL, validateGraphQLCompleteness } from './graphql-validator.js'

@@ -6,6 +6,8 @@ interface GraphQLEditorProps {
   value: string
   /** Called when user wants to reset to the auto-generated value */
   onReset?: () => void
+  /** Called when user clicks "Run" with the edited GraphQL query */
+  onExecute?: (graphql: string) => void
   /** Whether the editor is read-only (display mode) */
   readOnly?: boolean
 }
@@ -14,11 +16,10 @@ interface GraphQLEditorProps {
 const COPY_FEEDBACK_MS = 2000
 
 /**
- * Inline GraphQL editor with syntax highlighting.
- * Phase 1: display + copy. Editing is visual-only (no round-trip yet).
- * Phase 2 will add: schema-aware autocomplete, edit→run, GraphQL→Slots parsing.
+ * Inline GraphQL editor with syntax highlighting and edit→run support.
+ * Users can modify the query and click "Run" to re-execute with their changes.
  */
-export function GraphQLEditor({ value, onReset, readOnly = false }: GraphQLEditorProps) {
+export function GraphQLEditor({ value, onReset, onExecute, readOnly = false }: GraphQLEditorProps) {
   const [localValue, setLocalValue] = useState(value)
   const [copied, setCopied] = useState(false)
   const [isEdited, setIsEdited] = useState(false)
@@ -57,6 +58,10 @@ export function GraphQLEditor({ value, onReset, readOnly = false }: GraphQLEdito
     onReset?.()
   }, [value, onReset])
 
+  const handleRun = useCallback(() => {
+    onExecute?.(localValue)
+  }, [localValue, onExecute])
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-2">
@@ -65,12 +70,22 @@ export function GraphQLEditor({ value, onReset, readOnly = false }: GraphQLEdito
         </h3>
         <div className="flex items-center gap-2">
           {isEdited && (
-            <button
-              onClick={handleReset}
-              className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded hover:bg-amber-100 transition-colors"
-            >
-              Reset
-            </button>
+            <>
+              <button
+                onClick={handleReset}
+                className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded hover:bg-amber-100 transition-colors"
+              >
+                Reset
+              </button>
+              {onExecute && (
+                <button
+                  onClick={handleRun}
+                  className="text-xs px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100 transition-colors font-medium"
+                >
+                  ▶ Run
+                </button>
+              )}
+            </>
           )}
           <button
             onClick={handleCopy}
@@ -101,7 +116,7 @@ export function GraphQLEditor({ value, onReset, readOnly = false }: GraphQLEdito
         />
       </div>
 
-      {isEdited && (
+      {isEdited && !onExecute && (
         <p className="mt-1 text-xs text-amber-600">
           Modified — editing will be fully supported in the next release.
         </p>

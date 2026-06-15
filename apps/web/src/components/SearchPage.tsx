@@ -43,6 +43,7 @@ export function SearchPage() {
     error,
     handleSearch: executeSearch,
     handleRefine,
+    handleGraphQLRun,
   } = useSearchExecution(stats?.availableDomains ?? [])
 
   const [graphQLEntryMode, setGraphQLEntryMode] = useState(false)
@@ -138,7 +139,11 @@ export function SearchPage() {
         hasContent: !!(graphql || graphQLEntryMode),
         content:
           graphql || graphQLEntryMode ? (
-            <GraphQLEditor value={graphql ?? 'query {\n  \n}'} readOnly={false} />
+            <GraphQLEditor
+              value={graphql ?? 'query {\n  \n}'}
+              readOnly={false}
+              onExecute={handleGraphQLRun}
+            />
           ) : null,
       },
       {
@@ -162,6 +167,7 @@ export function SearchPage() {
       graphQLEntryMode,
       handleSearch,
       handleRefine,
+      handleGraphQLRun,
     ]
   )
 

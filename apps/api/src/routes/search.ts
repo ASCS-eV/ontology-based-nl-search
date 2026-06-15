@@ -3,7 +3,7 @@ import { getConfig } from '@ontology-search/core/config'
 import { badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
-import { normalizeReferences, slotsToGraphQL } from '@ontology-search/search'
+import { normalizeReferences, parseGraphQLToSlots, slotsToGraphQL } from '@ontology-search/search'
 import { referenceFilterWireSchema } from '@ontology-search/search/slot-wire-schema'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
@@ -238,6 +238,79 @@ searchRoutes.post('/refine', async (c) => {
       return c.body(null, 408)
     }
     logger.error('Refine search failed', error)
+    const err = internalError()
+    return c.json(err.body, err.status)
+  }
+})
+
+/**
+ * Refine-from-GraphQL endpoint: parse user-edited GraphQL → slots → compile → execute.
+ */
+searchRoutes.post('/refine-graphql', async (c) => {
+  const requestId = c.get('requestId')
+  const logger = new RequestLogger({ requestId })
+
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    const err = badRequest('Invalid JSON body')
+    return c.json(err.body, err.status)
+  }
+
+  if (!body || typeof body !== 'object' || !('graphql' in body)) {
+    const err = badRequest('Missing "graphql" field in request body')
+    return c.json(err.body, err.status)
+  }
+
+  const graphqlQuery = (body as { graphql: unknown }).graphql
+  if (typeof graphqlQuery !== 'string' || graphqlQuery.trim().length === 0) {
+    const err = badRequest('The "graphql" field must be a non-empty string')
+    return c.json(err.body, err.status)
+  }
+
+  // Parse GraphQL → SearchSlots
+  const parseResult = parseGraphQLToSlots(graphqlQuery)
+  if (!parseResult.success) {
+    const err = unprocessable(`GraphQL parse error: ${parseResult.error}`)
+    return c.json(err.body, err.status)
+  }
+
+  try {
+    logger.info('Refine-from-GraphQL started', { slots: parseResult.slots })
+    const result = await searchRefine({
+      slots: parseResult.slots,
+      signal: c.req.raw.signal,
+      requestId,
+    })
+
+    if (result.execution.error) {
+      logger.warn('Refine-from-GraphQL query failed', { error: result.execution.error })
+      const err = unprocessable('Query could not be executed')
+      return c.json(err.body, err.status)
+    }
+
+    logger.info('Refine-from-GraphQL completed', { matchCount: result.meta.matchCount })
+
+    const response: RefineResponse = {
+      sparql: result.sparql,
+      results: result.execution.results,
+      traceability: result.execution.traceability,
+      meta: result.meta,
+    }
+
+    // Re-serialize from the parsed slots (normalized form)
+    if (getConfig().FEATURE_GRAPHQL_LAYER) {
+      response.graphql = slotsToGraphQL(parseResult.slots)
+    }
+
+    return c.json(response, 200, { [REQUEST_ID_HEADER]: requestId })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      logger.info('Refine-from-GraphQL aborted by client')
+      return c.body(null, 408)
+    }
+    logger.error('Refine-from-GraphQL failed', error)
     const err = internalError()
     return c.json(err.body, err.status)
   }
