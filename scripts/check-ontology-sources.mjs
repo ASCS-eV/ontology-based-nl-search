@@ -34,6 +34,20 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
  * submodule remediation below is still reached because the committed manifest
  * path lives under a `submodules/` segment.
  */
+/**
+ * Default submodule path segments — mirrors DEFAULT_OMB_SUBMODULE_PATH in
+ * packages/ontology/src/sources.ts so the preflight check matches runtime.
+ */
+const DEFAULT_SUBMODULE_SEGMENTS = [
+  'submodules',
+  'hd-map-asset-example',
+  'submodules',
+  'sl-5-8-asset-tools',
+  'submodules',
+  'ontology-management-base',
+  'artifacts',
+]
+
 function resolveArtifactRoots() {
   const manifestPath = join(root, 'ontology-sources.json')
   if (existsSync(manifestPath)) {
@@ -51,7 +65,8 @@ function resolveArtifactRoots() {
   }
   const envOverride = process.env.ONTOLOGY_ARTIFACTS_PATH
   if (envOverride) return [envOverride]
-  return []
+  // Last resort: the default submodule chain (matches runtime fallback)
+  return [join(root, ...DEFAULT_SUBMODULE_SEGMENTS)]
 }
 
 /** Count `*.shacl.ttl` files in the domain subdirectories of a root. */
