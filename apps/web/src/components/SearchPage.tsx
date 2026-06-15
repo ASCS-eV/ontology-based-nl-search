@@ -60,15 +60,15 @@ export function SearchPage() {
   const hasResponse = interpretation || gaps || sparql || results
   const showGraphQLFeature = stats?.features?.graphqlLayer !== false
 
-  // Determine which step is currently active
-  const activeStep = useMemo(() => {
-    if (graphQLEntryMode) return 4 // Jump to GraphQL editor
-    if (!hasResponse) return 0 // NL search
-    if (phase === 'interpreting' && !interpretation) return 1
-    if (interpretation && !sparql) return 2
-    if (sparql && !results) return 3
-    if (results) return 5 // All done, focus results area
-    return 0
+  // Determine which step is currently active (by step ID)
+  const activeStepId = useMemo(() => {
+    if (graphQLEntryMode) return 'graphql'
+    if (!hasResponse) return 'nl-search'
+    if (phase === 'interpreting' && !interpretation) return 'interpretation'
+    if (interpretation && !sparql) return 'filters'
+    if (sparql && !results) return 'graphql'
+    if (results) return 'sparql'
+    return 'nl-search'
   }, [graphQLEntryMode, hasResponse, phase, interpretation, sparql, results])
 
   // Build pipeline steps
@@ -189,7 +189,7 @@ export function SearchPage() {
       {showGraphQLFeature ? (
         <PipelineStepper
           steps={steps}
-          activeStep={activeStep}
+          activeStepId={activeStepId}
           onSkipToGraphQL={handleSkipToGraphQL}
           showGraphQLEntry={!hasResponse}
         />

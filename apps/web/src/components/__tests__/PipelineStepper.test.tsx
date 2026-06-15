@@ -17,7 +17,7 @@ function makeSteps(overrides: Partial<PipelineStep>[] = []): PipelineStep[] {
 describe('PipelineStepper', () => {
   it('renders visible steps (those with hasContent or content)', () => {
     const steps = makeSteps()
-    render(<PipelineStepper steps={steps} activeStep={0} />)
+    render(<PipelineStepper steps={steps} activeStepId="step-1" />)
 
     expect(screen.getByText('Step One')).toBeInTheDocument()
     expect(screen.getByText('Step Two')).toBeInTheDocument()
@@ -27,7 +27,7 @@ describe('PipelineStepper', () => {
 
   it('auto-expands the active step', () => {
     const steps = makeSteps()
-    render(<PipelineStepper steps={steps} activeStep={0} />)
+    render(<PipelineStepper steps={steps} activeStepId="step-1" />)
 
     expect(screen.getByText('Content 1')).toBeVisible()
     expect(screen.getByText('Content 2')).not.toBeVisible()
@@ -36,7 +36,7 @@ describe('PipelineStepper', () => {
   it('allows manual toggle of steps', async () => {
     const user = userEvent.setup()
     const steps = makeSteps()
-    render(<PipelineStepper steps={steps} activeStep={0} />)
+    render(<PipelineStepper steps={steps} activeStepId="step-1" />)
 
     // Content 2 is not shown (not active step)
     expect(screen.getByText('Content 2')).not.toBeVisible()
@@ -52,7 +52,7 @@ describe('PipelineStepper', () => {
 
   it('shows summary when step is collapsed', () => {
     const steps = makeSteps([{ summary: 'Query submitted' }])
-    render(<PipelineStepper steps={steps} activeStep={1} />)
+    render(<PipelineStepper steps={steps} activeStepId="step-2" />)
 
     // Step 1 is not the active step and should show summary
     expect(screen.getByText('Query submitted')).toBeInTheDocument()
@@ -63,7 +63,12 @@ describe('PipelineStepper', () => {
     const onSkip = vi.fn()
     const steps = makeSteps()
     render(
-      <PipelineStepper steps={steps} activeStep={0} onSkipToGraphQL={onSkip} showGraphQLEntry />
+      <PipelineStepper
+        steps={steps}
+        activeStepId="step-1"
+        onSkipToGraphQL={onSkip}
+        showGraphQLEntry
+      />
     )
 
     const btn = screen.getByRole('button', { name: /start with graphql/i })
@@ -78,7 +83,7 @@ describe('PipelineStepper', () => {
     render(
       <PipelineStepper
         steps={steps}
-        activeStep={0}
+        activeStepId="step-1"
         onSkipToGraphQL={vi.fn()}
         showGraphQLEntry={false}
       />
@@ -89,9 +94,9 @@ describe('PipelineStepper', () => {
 
   it('shows checkmark for completed steps', () => {
     const steps = makeSteps([{ hasContent: true }, { hasContent: true }])
-    render(<PipelineStepper steps={steps} activeStep={1} />)
+    render(<PipelineStepper steps={steps} activeStepId="step-2" />)
 
-    // Step 1 (index 0) is before activeStep, so it should show ✓
+    // Step 1 (id step-1) is before activeStep, so it should show ✓
     expect(screen.getByText('✓')).toBeInTheDocument()
   })
 })

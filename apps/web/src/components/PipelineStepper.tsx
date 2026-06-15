@@ -16,8 +16,8 @@ export interface PipelineStep {
 
 interface PipelineStepperProps {
   steps: PipelineStep[]
-  /** Currently active step index (auto-expands this step) */
-  activeStep: number
+  /** ID of the currently active step */
+  activeStepId: string
   /** Called when user clicks "Start with GraphQL" */
   onSkipToGraphQL?: () => void
   /** Whether to show the "Start with GraphQL" entry point */
@@ -31,7 +31,7 @@ interface PipelineStepperProps {
  */
 export function PipelineStepper({
   steps,
-  activeStep,
+  activeStepId,
   onSkipToGraphQL,
   showGraphQLEntry = true,
 }: PipelineStepperProps) {
@@ -45,17 +45,24 @@ export function PipelineStepper({
     }))
   }, [])
 
+  // Map step IDs to their original index in the full steps array for ordering
+  const stepOrder = useMemo(() => {
+    const map = new Map<string, number>()
+    steps.forEach((s, i) => map.set(s.id, i))
+    return map
+  }, [steps])
+
+  const activeOriginalIndex = stepOrder.get(activeStepId) ?? 0
+
   const isExpanded = useCallback(
-    (step: PipelineStep, index: number): boolean => {
-      // If user manually toggled, respect that
+    (step: PipelineStep): boolean => {
       const override = manualOverrides[step.id]
       if (override !== undefined) {
         return override
       }
-      // Auto-expand if it's the active step and has content
-      return index === activeStep && step.hasContent
+      return step.id === activeStepId && step.hasContent
     },
-    [manualOverrides, activeStep]
+    [manualOverrides, activeStepId]
   )
 
   const visibleSteps = useMemo(() => steps.filter((s) => s.hasContent || s.content), [steps])
@@ -74,10 +81,11 @@ export function PipelineStepper({
       )}
 
       <div className="space-y-2">
-        {visibleSteps.map((step, index) => {
-          const expanded = isExpanded(step, index)
-          const isCompleted = index < activeStep && step.hasContent
-          const isActive = index === activeStep
+        {visibleSteps.map((step, displayIndex) => {
+          const expanded = isExpanded(step)
+          const originalIndex = stepOrder.get(step.id) ?? displayIndex
+          const isCompleted = originalIndex < activeOriginalIndex && step.hasContent
+          const isActive = step.id === activeStepId
 
           return (
             <div
@@ -107,7 +115,7 @@ export function PipelineStepper({
                         : 'bg-gray-100 text-gray-400'
                   }`}
                 >
-                  {isCompleted ? '✓' : index + 1}
+                  {isCompleted ? '✓' : originalIndex + 1}
                 </span>
 
                 {/* Label */}
