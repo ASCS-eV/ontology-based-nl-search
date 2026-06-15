@@ -121,13 +121,29 @@ export function GraphQLEditor({
       const depth = openBraces - closeBraces
 
       if (depth >= 2) {
-        // Inside a domain block — suggest property names
-        // Find which domain we're in
-        const domainMatch = beforePos.match(/(\w+)\s*(?:\([^)]*\))?\s*\{[^}]*$/s)
-        const currentDomain = domainMatch?.[1]
+        // Inside a domain block — find which domain we're in by walking
+        // backwards through the text to find the nearest unmatched `{`
+        // preceded by a word (the domain name)
+        let braceCount = 0
+        let currentDomain: string | undefined
+        for (let i = beforePos.length - 1; i >= 0; i--) {
+          if (beforePos[i] === '}') braceCount++
+          if (beforePos[i] === '{') {
+            if (braceCount > 0) {
+              braceCount--
+            } else {
+              // Found our enclosing `{` — extract the word before it
+              const preceding = beforePos.slice(0, i).trimEnd()
+              const domainNameMatch = preceding.match(/(\w+)\s*(?:\([^)]*\))?\s*$/)
+              currentDomain = domainNameMatch?.[1]
+              break
+            }
+          }
+        }
 
+        // Suggest properties — show all if domain unknown
         const props = vocabulary.properties
-          .filter((p) => !currentDomain || p.domain === currentDomain || currentDomain === '_empty')
+          .filter((p) => !currentDomain || p.domain === currentDomain)
           .filter((p) => p.name.toLowerCase().startsWith(word.text.toLowerCase()))
           .slice(0, 30)
           .map((p) => ({

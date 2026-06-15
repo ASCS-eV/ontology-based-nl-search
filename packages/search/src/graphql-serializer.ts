@@ -35,8 +35,12 @@
  * @see validateGraphQL in ./graphql-validator.ts — post-serialize validation
  */
 
+import { createComponentLogger } from '@ontology-search/core/logging'
+
 import { validateGraphQL } from './graphql-validator.js'
 import type { ReferenceFilter, SearchSlots } from './slots.js'
+
+const logger = createComponentLogger('graphql-serializer')
 
 /**
  * Convert SearchSlots into a human-readable GraphQL query string.
@@ -86,7 +90,8 @@ export function slotsToGraphQL(slots: SearchSlots): string {
   if (!validation.valid) {
     // Log but don't throw — the UI should still show the (potentially invalid)
     // query for debugging. This indicates a serializer bug, not a user error.
-    console.error('[graphql-serializer] Generated invalid GraphQL:', validation.errors.join('; '), {
+    logger.error('Generated invalid GraphQL', {
+      errors: validation.errors.join('; '),
       query,
     })
   }
