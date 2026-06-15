@@ -16,6 +16,8 @@ export {
   resetConceptExpansionIndex,
 } from './concept-expansion.js'
 export { slotsToGraphQL } from './graphql-serializer.js'
+export type { GraphQLValidationIssue, GraphQLValidationResult } from './graphql-validator.js'
+export { validateGraphQL, validateGraphQLCompleteness } from './graphql-validator.js'
 export { getInitializedStore } from './init.js'
 export type {
   AssetMetadata,

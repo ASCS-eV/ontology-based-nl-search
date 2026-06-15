@@ -125,10 +125,10 @@ describe('slotsToGraphQL', () => {
 
     const result = slotsToGraphQL(slots)
 
-    expect(result).toBe('query {\n  # No domain selected\n}')
+    expect(result).toBe('query {\n  _empty\n}')
   })
 
-  it('handles domain with no filters (shows comment)', () => {
+  it('handles domain with no filters', () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],
       filters: {},
@@ -137,7 +137,7 @@ describe('slotsToGraphQL', () => {
 
     const result = slotsToGraphQL(slots)
 
-    expect(result).toContain('# All assets in this domain')
+    expect(result).toContain('_all')
   })
 
   it('escapes special characters in string values', () => {

@@ -361,6 +361,9 @@ importers:
       '@ontology-search/sparql':
         specifier: workspace:*
         version: link:../sparql
+      graphql:
+        specifier: ^16.14.2
+        version: 16.14.2
       sparqljs:
         specifier: ^3.7.4
         version: 3.7.4

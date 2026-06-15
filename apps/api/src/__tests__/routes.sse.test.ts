@@ -39,6 +39,7 @@ function mockSearchNlWithProgress(result: typeof HAPPY_PATH_RESULT) {
           interpretation: result.interpretation,
           gaps: result.gaps,
           sparql: result.sparql,
+          slots: { domains: ['hdmap'], filters: {}, ranges: {} },
         },
       })
       await opts.onProgress({ phase: 'executing' })

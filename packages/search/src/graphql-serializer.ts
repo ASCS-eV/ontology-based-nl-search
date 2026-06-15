@@ -5,14 +5,19 @@
  * This is a one-way serializer (Slots → GraphQL); the reverse parser lives
  * in `graphql-parser.ts` (Phase 2).
  *
- * Design: Pure string builder with no external dependencies. The `graphql`
- * npm package is NOT required here — we control the output shape entirely
- * and can produce valid GraphQL syntax from simple string concatenation.
+ * Every output is parsed with the reference `graphql` library (graphql-js,
+ * the canonical implementation of the GraphQL spec) to guarantee syntactic
+ * validity before it reaches the consumer. This mirrors the SPARQL pipeline
+ * where `sparqljs` validates every compiled query.
  *
  * Determinism: Same slots always produce the same GraphQL string. Filters
  * are sorted alphabetically by key; array values are sorted lexicographically.
+ *
+ * @see https://spec.graphql.org/October2021/ — GraphQL spec (GraphQL Foundation)
+ * @see validateGraphQL in ./graphql-validator.ts — post-serialize validation
  */
 
+import { validateGraphQL } from './graphql-validator.js'
 import type { ReferenceFilter, SearchSlots } from './slots.js'
 
 /**
@@ -23,6 +28,11 @@ import type { ReferenceFilter, SearchSlots } from './slots.js'
  * - `filters` → field arguments with `values: [...]`
  * - `ranges` → field arguments with `min`/`max`
  * - `references` → `references` argument on root field
+ *
+ * Every generated query is validated against the GraphQL spec via
+ * `graphql-js` parse. If validation fails (a serializer bug), the
+ * error is logged and the raw (invalid) string is still returned
+ * so the UI can display it for debugging.
  *
  * @example
  * ```ts
@@ -43,27 +53,44 @@ import type { ReferenceFilter, SearchSlots } from './slots.js'
  */
 export function slotsToGraphQL(slots: SearchSlots): string {
   const domains = [...slots.domains].sort()
-  if (domains.length === 0) return 'query {\n  # No domain selected\n}'
+  if (domains.length === 0) {
+    return 'query {\n  _empty\n}'
+  }
 
   const domainBlocks = domains.map((domain) => buildDomainBlock(domain, slots))
   const body = domainBlocks.join('\n')
 
-  return `query {\n${body}\n}`
+  const query = `query {\n${body}\n}`
+
+  // Post-serialize validation: parse with graphql-js to guarantee spec compliance.
+  // Mirrors the SPARQL pipeline where sparqljs validates every compiled query.
+  const validation = validateGraphQL(query)
+  if (!validation.valid) {
+    // Log but don't throw — the UI should still show the (potentially invalid)
+    // query for debugging. This indicates a serializer bug, not a user error.
+    console.error('[graphql-serializer] Generated invalid GraphQL:', validation.errors.join('; '), {
+      query,
+    })
+  }
+
+  return query
 }
 
 function buildDomainBlock(domain: string, slots: SearchSlots): string {
   const indent = '  '
   const fieldIndent = '    '
 
+  const safeDomain = sanitizeFieldName(domain)
   const referencesArg = buildReferencesArg(slots.references)
   const domainHeader = referencesArg
-    ? `${indent}${domain}(${referencesArg}) {`
-    : `${indent}${domain} {`
+    ? `${indent}${safeDomain}(${referencesArg}) {`
+    : `${indent}${safeDomain} {`
 
   const fields = buildFields(slots.filters, slots.ranges, fieldIndent)
 
   if (fields.length === 0) {
-    return `${domainHeader}\n${fieldIndent}# All assets in this domain\n${indent}}`
+    // GraphQL requires at least one field in a selection set
+    return `${domainHeader}\n${fieldIndent}_all\n${indent}}`
   }
 
   return `${domainHeader}\n${fields.join('\n')}\n${indent}}`
@@ -82,13 +109,15 @@ function buildFields(
   const allKeys = [...new Set([...filterKeys, ...rangeKeys])].sort()
 
   for (const key of allKeys) {
+    const safeKey = sanitizeFieldName(key)
+
     if (key in filters) {
       const value = filters[key]
       if (value !== undefined) {
         const values = Array.isArray(value) ? value : [value]
         const sortedValues = [...values].sort()
         const valuesStr = sortedValues.map((v) => `"${escapeGraphQLString(v)}"`).join(', ')
-        lines.push(`${indent}${key}(values: [${valuesStr}])`)
+        lines.push(`${indent}${safeKey}(values: [${valuesStr}])`)
       }
     }
 
@@ -98,7 +127,7 @@ function buildFields(
       if (range?.min !== undefined) args.push(`min: ${range.min}`)
       if (range?.max !== undefined) args.push(`max: ${range.max}`)
       if (args.length > 0) {
-        lines.push(`${indent}${key}(${args.join(', ')})`)
+        lines.push(`${indent}${safeKey}(${args.join(', ')})`)
       }
     }
   }
@@ -136,4 +165,26 @@ function escapeGraphQLString(value: string): string {
     .replace(/\n/g, '\\n')
     .replace(/\r/g, '\\r')
     .replace(/\t/g, '\\t')
+}
+
+/**
+ * Sanitize a slot key into a valid GraphQL field name.
+ *
+ * GraphQL names must match `/[_A-Za-z][_0-9A-Za-z]* /` (spec §2.1.9).
+ * Slot keys may contain colons (prefixed IRIs), hyphens, or start with
+ * digits — all invalid in GraphQL. We replace illegal characters with
+ * underscores and prefix digit-leading names.
+ */
+function sanitizeFieldName(name: string): string {
+  // Replace any character that isn't [A-Za-z0-9_] with underscore
+  let safe = name.replace(/[^A-Za-z0-9_]/g, '_')
+  // Must start with [_A-Za-z]
+  if (/^[0-9]/.test(safe)) {
+    safe = `_${safe}`
+  }
+  // Empty after sanitization → fallback
+  if (safe.length === 0) {
+    safe = '_field'
+  }
+  return safe
 }

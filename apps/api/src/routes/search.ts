@@ -114,13 +114,8 @@ searchRoutes.post('/stream', (c) => {
                     data: JSON.stringify(progress.data.sparql),
                   })
                   // Emit GraphQL intermediate representation when feature is enabled
-                  if (getConfig().FEATURE_GRAPHQL_LAYER && progress.data.interpretation) {
-                    const interp = progress.data.interpretation
-                    const graphql = slotsToGraphQL({
-                      domains: interp.domains ?? [],
-                      filters: interp.appliedFilters ?? {},
-                      ranges: {},
-                    })
+                  if (getConfig().FEATURE_GRAPHQL_LAYER && progress.data.slots) {
+                    const graphql = slotsToGraphQL(progress.data.slots)
                     await stream.writeSSE({
                       event: SSE_EVENT.GRAPHQL,
                       data: JSON.stringify(graphql),
