@@ -82,7 +82,7 @@ export function PipelineStepper({
           return (
             <div
               key={step.id}
-              className={`border rounded-lg overflow-hidden transition-all ${
+              className={`border rounded-lg transition-all ${
                 isActive
                   ? 'border-blue-200 bg-blue-50/30'
                   : isCompleted
