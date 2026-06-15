@@ -1,5 +1,12 @@
+import {
+  autocompletion,
+  type CompletionContext,
+  type CompletionResult,
+} from '@codemirror/autocomplete'
 import CodeMirror from '@uiw/react-codemirror'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import type { VocabProperty } from '../hooks/useVocabulary'
 
 interface GraphQLEditorProps {
   /** The auto-generated GraphQL query from slots */
@@ -8,6 +15,8 @@ interface GraphQLEditorProps {
   onReset?: () => void
   /** Called when user clicks "Run" with the edited GraphQL query */
   onExecute?: (graphql: string) => void
+  /** Vocabulary data for autocomplete suggestions */
+  vocabulary?: { domains: string[]; properties: VocabProperty[] } | null
   /** Whether the editor is read-only (display mode) */
   readOnly?: boolean
 }
@@ -16,10 +25,16 @@ interface GraphQLEditorProps {
 const COPY_FEEDBACK_MS = 2000
 
 /**
- * Inline GraphQL editor with syntax highlighting and edit→run support.
- * Users can modify the query and click "Run" to re-execute with their changes.
+ * Inline GraphQL editor with syntax highlighting, autocomplete, and edit→run.
+ * Autocomplete suggests domain names, property names, and allowed values.
  */
-export function GraphQLEditor({ value, onReset, onExecute, readOnly = false }: GraphQLEditorProps) {
+export function GraphQLEditor({
+  value,
+  onReset,
+  onExecute,
+  vocabulary,
+  readOnly = false,
+}: GraphQLEditorProps) {
   const [localValue, setLocalValue] = useState(value)
   const [copied, setCopied] = useState(false)
   const [isEdited, setIsEdited] = useState(false)
@@ -62,6 +77,91 @@ export function GraphQLEditor({ value, onReset, onExecute, readOnly = false }: G
     onExecute?.(localValue)
   }, [localValue, onExecute])
 
+  // Build CodeMirror autocomplete extension from vocabulary
+  const extensions = useMemo(() => {
+    if (!vocabulary || readOnly) return []
+
+    const completionSource = (context: CompletionContext): CompletionResult | null => {
+      // Get the text before cursor to determine context
+      const line = context.state.doc.lineAt(context.pos)
+      const textBefore = line.text.slice(0, context.pos - line.from)
+
+      // Inside values: [...] — suggest allowed values
+      const valuesMatch = textBefore.match(/values:\s*\[([^\]]*?)(?:"([^"]*))$/)
+      if (valuesMatch) {
+        // Find which field we're in
+        const fieldMatch = textBefore.match(/^\s*(\w+)\s*\(/)
+        const fieldName = fieldMatch?.[1]
+        const partial = valuesMatch[2] ?? ''
+
+        if (fieldName) {
+          const prop = vocabulary.properties.find((p) => p.name === fieldName)
+          if (prop?.allowedValues) {
+            const options = prop.allowedValues
+              .filter((v) => v.toLowerCase().startsWith(partial.toLowerCase()))
+              .slice(0, 20)
+              .map((v) => ({ label: v, type: 'value' as const }))
+            if (options.length > 0) {
+              return { from: context.pos - partial.length, options }
+            }
+          }
+        }
+        return null
+      }
+
+      // At field level inside a domain block — suggest property names
+      const word = context.matchBefore(/\w*/)
+      if (!word || (word.from === word.to && !context.explicit)) return null
+
+      // Check if we're inside a domain block (indented, after a `{`)
+      const docText = context.state.doc.toString()
+      const beforePos = docText.slice(0, context.pos)
+      const openBraces = (beforePos.match(/\{/g) ?? []).length
+      const closeBraces = (beforePos.match(/\}/g) ?? []).length
+      const depth = openBraces - closeBraces
+
+      if (depth >= 2) {
+        // Inside a domain block — suggest property names
+        // Find which domain we're in
+        const domainMatch = beforePos.match(/(\w+)\s*(?:\([^)]*\))?\s*\{[^}]*$/s)
+        const currentDomain = domainMatch?.[1]
+
+        const props = vocabulary.properties
+          .filter((p) => !currentDomain || p.domain === currentDomain || currentDomain === '_empty')
+          .filter((p) => p.name.toLowerCase().startsWith(word.text.toLowerCase()))
+          .slice(0, 30)
+          .map((p) => ({
+            label: p.name,
+            type: (p.type === 'enum' ? 'property' : 'variable') as string,
+            detail: p.type === 'enum' ? `[${p.allowedValues?.length ?? 0} values]` : p.datatype,
+            info: p.label || p.description || undefined,
+            apply: p.type === 'enum' ? `${p.name}(values: [""])` : `${p.name}(min: )`,
+          }))
+
+        if (props.length > 0) {
+          return { from: word.from, options: props }
+        }
+      } else if (depth === 1) {
+        // At root level inside query {} — suggest domain names
+        const options = vocabulary.domains
+          .filter((d) => d.toLowerCase().startsWith(word.text.toLowerCase()))
+          .map((d) => ({
+            label: d,
+            type: 'class' as const,
+            apply: `${d} {\n    \n  }`,
+          }))
+
+        if (options.length > 0) {
+          return { from: word.from, options }
+        }
+      }
+
+      return null
+    }
+
+    return [autocompletion({ override: [completionSource], activateOnTyping: true })]
+  }, [vocabulary, readOnly])
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-2">
@@ -102,6 +202,7 @@ export function GraphQLEditor({ value, onReset, onExecute, readOnly = false }: G
           value={localValue}
           onChange={handleChange}
           readOnly={readOnly}
+          extensions={extensions}
           basicSetup={{
             lineNumbers: true,
             foldGutter: false,

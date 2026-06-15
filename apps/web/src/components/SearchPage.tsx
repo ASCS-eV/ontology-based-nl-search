@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { StatsResponse } from '../api-types'
 import { useSearchExecution } from '../hooks/useSearchExecution'
 import { useSearchHistory } from '../hooks/useSearchHistory'
+import { useVocabulary } from '../hooks/useVocabulary'
 import { apiGet } from '../lib/api-client'
 import { GraphQLEditor } from './GraphQLEditor'
 import { InterpretationDisplay } from './InterpretationDisplay'
@@ -29,6 +30,7 @@ export function SearchPage() {
   })
 
   const { history, addToHistory } = useSearchHistory()
+  const vocabulary = useVocabulary()
 
   const {
     interpretation,
@@ -143,6 +145,7 @@ export function SearchPage() {
               value={graphql ?? 'query {\n  \n}'}
               readOnly={false}
               onExecute={handleGraphQLRun}
+              vocabulary={vocabulary}
             />
           ) : null,
       },
@@ -168,6 +171,7 @@ export function SearchPage() {
       handleSearch,
       handleRefine,
       handleGraphQLRun,
+      vocabulary,
     ]
   )
 

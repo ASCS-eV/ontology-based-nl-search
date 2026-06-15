@@ -14,6 +14,7 @@ import { metadataRoutes } from './routes/metadata.js'
 import { searchRoutes } from './routes/search.js'
 import { statsRoutes } from './routes/stats.js'
 import { traceabilityRoutes } from './routes/traceability.js'
+import { vocabularyRoutes } from './routes/vocabulary.js'
 import type { AppEnv } from './types.js'
 
 const config = getConfig()
@@ -74,5 +75,6 @@ app.route('/metadata', metadataRoutes)
 app.route('/search', searchRoutes)
 app.route('/stats', statsRoutes)
 app.route('/traceability', traceabilityRoutes)
+app.route('/vocabulary', vocabularyRoutes)
 
 export { app }
