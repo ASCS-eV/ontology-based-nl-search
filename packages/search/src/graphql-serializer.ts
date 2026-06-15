@@ -1,19 +1,37 @@
 /**
  * GraphQL Serializer — deterministic SearchSlots → GraphQL query string.
  *
- * Produces a readable, valid GraphQL query from the structured search slots.
- * This is a one-way serializer (Slots → GraphQL); the reverse parser lives
- * in `graphql-parser.ts` (Phase 2).
+ * Produces a readable, spec-valid GraphQL query from the structured search
+ * slots. This is a one-way serializer (Slots → GraphQL); the reverse parser
+ * lives in `graphql-parser.ts`.
  *
- * Every output is parsed with the reference `graphql` library (graphql-js,
- * the canonical implementation of the GraphQL spec) to guarantee syntactic
- * validity before it reaches the consumer. This mirrors the SPARQL pipeline
- * where `sparqljs` validates every compiled query.
+ * ## Spec mapping (SearchSlots → GraphQL)
+ *
+ * Our intermediate representation maps to the GraphQL Language specification
+ * (September 2025, GraphQL Foundation / Linux Foundation) as follows:
+ *
+ * | Slot concept     | GraphQL construct         | Spec section |
+ * |------------------|---------------------------|--------------|
+ * | Query root       | OperationDefinition       | §2.3         |
+ * | Domain           | Field (top-level)         | §2.5         |
+ * | Domain block     | SelectionSet              | §2.4         |
+ * | Filter property  | Field (nested)            | §2.5         |
+ * | Filter values    | Argument `values: [...]`  | §2.6         |
+ * | Range min/max    | Arguments `min:` / `max:` | §2.6         |
+ * | References       | Argument `references:`    | §2.6         |
+ * | Field names      | Name token                | §2.1.9       |
+ * | String values    | StringValue               | §2.9.4       |
+ *
+ * Every output is parsed with the reference `graphql-js` library (the
+ * canonical implementation maintained by the GraphQL Foundation) to
+ * guarantee syntactic validity. This mirrors the SPARQL pipeline where
+ * `sparqljs` validates every compiled query.
  *
  * Determinism: Same slots always produce the same GraphQL string. Filters
  * are sorted alphabetically by key; array values are sorted lexicographically.
  *
- * @see https://spec.graphql.org/October2021/ — GraphQL spec (GraphQL Foundation)
+ * @see https://spec.graphql.org/September2025/ — GraphQL Language Specification
+ * @see https://github.com/graphql/graphql-js — Reference implementation (parse gate)
  * @see validateGraphQL in ./graphql-validator.ts — post-serialize validation
  */
 
@@ -157,7 +175,10 @@ function serializeReference(ref: ReferenceFilter): string {
   return `{ ${parts.join(', ')} }`
 }
 
-/** Escape special characters in a GraphQL string literal. */
+/**
+ * Escape special characters in a GraphQL string literal.
+ * @see https://spec.graphql.org/September2025/#sec-String-Value — §2.9.4
+ */
 function escapeGraphQLString(value: string): string {
   return value
     .replace(/\\/g, '\\\\')
@@ -170,7 +191,9 @@ function escapeGraphQLString(value: string): string {
 /**
  * Sanitize a slot key into a valid GraphQL field name.
  *
- * GraphQL names must match `/[_A-Za-z][_0-9A-Za-z]* /` (spec §2.1.9).
+ * GraphQL spec §2.1.9 (Name): `[_A-Za-z][_0-9A-Za-z]*`
+ * @see https://spec.graphql.org/September2025/#sec-Names
+ *
  * Slot keys may contain colons (prefixed IRIs), hyphens, or start with
  * digits — all invalid in GraphQL. We replace illegal characters with
  * underscores and prefix digit-leading names.

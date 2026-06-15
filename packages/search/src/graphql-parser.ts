@@ -5,9 +5,26 @@
  * back into SearchSlots so that user edits in the GraphQL editor can
  * drive a new SPARQL compilation + execution round-trip.
  *
- * Uses `graphql-js` parse for robust AST traversal rather than regex.
+ * Uses `graphql-js` `parse()` (the reference implementation's parser,
+ * which implements the full §2 Language grammar) for robust AST traversal
+ * rather than fragile regex.
  *
+ * ## AST mapping (GraphQL → SearchSlots)
+ *
+ * | GraphQL AST node            | Slot concept    | Spec section |
+ * |-----------------------------|-----------------|--------------|
+ * | OperationDefinition (query) | query root      | §2.3         |
+ * | Top-level Field             | domain          | §2.5         |
+ * | Nested Field                | filter/range    | §2.5         |
+ * | Argument (values: [...])    | filter values   | §2.6         |
+ * | Argument (min/max: N)       | range bounds    | §2.6         |
+ * | ListValue                   | array values    | §2.9.7       |
+ * | StringValue                 | literal value   | §2.9.4       |
+ * | IntValue / FloatValue       | numeric bounds  | §2.9.1–2.9.2 |
+ *
+ * @see https://spec.graphql.org/September2025/ — GraphQL Language Specification
  * @see slotsToGraphQL in ./graphql-serializer.ts — the forward path
+ * @see https://github.com/graphql/graphql-js — reference implementation (parser)
  */
 
 import { parse } from 'graphql'
