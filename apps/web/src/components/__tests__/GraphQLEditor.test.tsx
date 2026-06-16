@@ -1,7 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
+import type { VocabProperty } from '../../hooks/useVocabulary'
+import { renderWithDesignSystem as render } from '../../test-utils'
 import { GraphQLEditor } from '../GraphQLEditor'
 
 const SAMPLE_QUERY = `query {
@@ -10,6 +12,13 @@ const SAMPLE_QUERY = `query {
     numberOfLanes(min: 3)
   }
 }`
+
+const VOCABULARY: { domains: string[]; properties: VocabProperty[] } = {
+  domains: ['hdmap'],
+  properties: [
+    { name: 'laneChange', label: 'Lane change', description: '', domain: 'hdmap', type: 'enum', allowedValues: ['left', 'right'] }, // prettier-ignore
+  ],
+}
 
 describe('GraphQLEditor', () => {
   it('renders the provided GraphQL value', () => {
@@ -40,5 +49,17 @@ describe('GraphQLEditor', () => {
     render(<GraphQLEditor value={SAMPLE_QUERY} />)
 
     expect(screen.getByText('GraphQL Query')).toBeInTheDocument()
+  })
+
+  it('mounts with vocabulary (autocomplete wired) and shows the discovery tip', () => {
+    render(<GraphQLEditor value={SAMPLE_QUERY} vocabulary={VOCABULARY} />)
+
+    expect(screen.getByText(/list all available fields/i)).toBeInTheDocument()
+  })
+
+  it('hides the discovery tip in read-only mode', () => {
+    render(<GraphQLEditor value={SAMPLE_QUERY} vocabulary={VOCABULARY} readOnly />)
+
+    expect(screen.queryByText(/list all available fields/i)).not.toBeInTheDocument()
   })
 })

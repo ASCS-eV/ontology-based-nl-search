@@ -1,13 +1,15 @@
+import { useDesignSystem } from '@ontology-search/design-system'
 import { Link } from '@tanstack/react-router'
 
 export function Header() {
+  const { brand } = useDesignSystem()
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/logos/envited-x-colour.png" alt="ENVITED-X" className="h-9 w-auto" />
+          <img src={brand.headerLogo.src} alt={brand.headerLogo.alt} className="h-9 w-auto" />
           <span className="hidden sm:inline-block text-sm font-medium text-gray-500 border-l border-gray-300 pl-3">
-            Ontology NL Search
+            {brand.appTagline}
           </span>
         </Link>
 

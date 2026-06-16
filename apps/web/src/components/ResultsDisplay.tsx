@@ -1,3 +1,4 @@
+import { Alert, Button, Heading, Pill } from '@ontology-search/design-system'
 import { useState } from 'react'
 
 import type { ResultTraceStep, RowTraceability } from '../api-types'
@@ -243,16 +244,13 @@ function toExportAssets(results: Record<string, string>[], grouped: GroupedAsset
 export function ResultsDisplay({ results, traceability }: ResultsDisplayProps) {
   if (results.length === 0) {
     return (
-      <div
-        className="p-6 bg-gray-50 border border-gray-200 rounded-lg w-full text-center"
-        role="status"
-      >
-        <p className="text-gray-700 font-medium">No results found for your query.</p>
+      <Alert tone="neutral" role="status" className="w-full text-center">
+        <p className="font-medium text-gray-700">No results found for your query.</p>
         <p className="text-sm text-gray-500 mt-2">
           Try broadening your search — use fewer filters or more general terms. Check the
           interpretation above to see how your query was understood.
         </p>
-      </div>
+      </Alert>
     )
   }
 
@@ -280,25 +278,27 @@ export function ResultsDisplay({ results, traceability }: ResultsDisplayProps) {
   return (
     <div className="w-full" role="region" aria-label="Search results">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-gray-900">
+        <Heading level={2}>
           {showCards ? grouped.length : results.length}{' '}
           {(showCards ? grouped.length : results.length) === 1 ? 'match' : 'matches'}
-        </h2>
+        </Heading>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={exportCsv}
-            className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            aria-label="Export results as CSV"
+            variant="secondary"
+            size="sm"
+            ariaLabel="Export results as CSV"
           >
             ↓ CSV
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={exportJsonLd}
-            className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            aria-label="Export results as JSON-LD"
+            variant="secondary"
+            size="sm"
+            ariaLabel="Export results as JSON-LD"
           >
             ↓ JSON-LD
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -365,13 +365,9 @@ function AssetCard({ group }: { group: GroupedAsset }) {
       {propertyEntries.length > 0 && (
         <div className="px-4 py-2 flex flex-wrap gap-2">
           {propertyEntries.map(([key, value]) => (
-            <span
-              key={key}
-              className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600"
-            >
-              <span className="font-medium text-gray-500">{key}:</span>
-              {formatValue(value)}
-            </span>
+            <Pill key={key} tone="neutral">
+              <span className="font-medium text-gray-500">{key}:</span> {formatValue(value)}
+            </Pill>
           ))}
         </div>
       )}

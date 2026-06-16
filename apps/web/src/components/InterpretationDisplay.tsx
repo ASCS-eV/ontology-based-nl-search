@@ -1,34 +1,31 @@
+import { Heading, Pill, type Tone } from '@ontology-search/design-system'
+
 import type { MappedTerm, QueryInterpretation } from '../api-types'
 
 interface InterpretationDisplayProps {
   interpretation: QueryInterpretation
 }
 
+const CONFIDENCE_TONE: Record<MappedTerm['confidence'], Tone> = {
+  high: 'success',
+  medium: 'info',
+  low: 'warning',
+}
+
 function confidenceBadge(confidence: MappedTerm['confidence']) {
-  const styles = {
-    high: 'bg-green-50 text-green-700 border-green-200',
-    medium: 'bg-blue-50 text-blue-900 border-blue-100',
-    low: 'bg-red-50 text-red-700 border-red-200',
-  }
-
-  const icons = { high: '✓', medium: '~', low: '?' }
-
   return (
-    <span
-      className={`inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-medium rounded-full border ${styles[confidence]}`}
-      title={`Confidence: ${confidence}`}
-    >
-      {icons[confidence]} {confidence}
-    </span>
+    <Pill tone={CONFIDENCE_TONE[confidence]} title={`Confidence: ${confidence}`}>
+      {confidence}
+    </Pill>
   )
 }
 
 export function InterpretationDisplay({ interpretation }: InterpretationDisplayProps) {
   return (
     <div className="w-full" role="region" aria-label="Query interpretation" aria-live="polite">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+      <Heading level={4} className="mb-2">
         Interpreted as
-      </h2>
+      </Heading>
       <p className="text-base text-gray-800 mb-3">{interpretation.summary}</p>
 
       {interpretation.mappedTerms.length > 0 && (

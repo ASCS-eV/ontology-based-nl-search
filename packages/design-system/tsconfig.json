@@ -1,0 +1,4 @@
+{
+  "extends": "@ontology-search/typescript-config/react.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vitest.config.ts", "vitest.setup.ts"]
+}

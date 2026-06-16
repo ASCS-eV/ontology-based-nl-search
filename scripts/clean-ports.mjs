@@ -4,6 +4,7 @@
  *
  * Prevents port conflicts when old dev servers weren't shut down properly.
  * Run this before starting dev servers to ensure clean port assignment.
+ * Cross-platform: PowerShell + taskkill on Windows, lsof + kill elsewhere.
  *
  * Usage:
  *   node scripts/clean-ports.mjs
@@ -17,6 +18,7 @@ import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 
 const execAsync = promisify(exec)
+const isWindows = process.platform === 'win32'
 
 const DEFAULT_PORTS = [
   parseInt(process.env.API_PORT ?? '3003', 10), // API
@@ -29,40 +31,69 @@ const ports = PORTS_TO_CLEAN.length > 0 ? PORTS_TO_CLEAN : DEFAULT_PORTS
 
 console.log(`[clean-ports] Cleaning ports: ${ports.join(', ')}`)
 
-async function getProcessOnPort(port) {
-  try {
+/** Parse command stdout into a de-duplicated list of numeric PIDs. */
+function parsePids(stdout) {
+  return [...new Set(stdout.split(/\s+/).map(Number).filter(Boolean))]
+}
+
+/**
+ * Return the PIDs LISTENING on `port`. Cross-platform: PowerShell on
+ * Windows, lsof elsewhere. Throws when the discovery tool itself fails
+ * (e.g. not installed) so the failure is LOUD — the previous version
+ * swallowed the Windows-only `powershell`/`taskkill` "command not found"
+ * errors on Linux/macOS and reported every port "free", making cleanup a
+ * silent no-op.
+ */
+async function getListeningPids(port) {
+  if (isWindows) {
     const { stdout } = await execAsync(
-      `powershell -Command "Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess"`
+      `powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique"`
     )
-    const pid = stdout.trim()
-    return pid ? parseInt(pid, 10) : null
-  } catch {
-    return null
+    return parsePids(stdout)
+  }
+  try {
+    const { stdout } = await execAsync(`lsof -ti tcp:${port} -sTCP:LISTEN`)
+    return parsePids(stdout)
+  } catch (err) {
+    // lsof exits 1 when nothing holds the port — that's "free", not an error.
+    if (err?.code === 1) return []
+    throw err
   }
 }
 
-async function killProcess(pid) {
-  try {
+async function killPid(pid) {
+  if (isWindows) {
     await execAsync(`taskkill /F /PID ${pid}`)
-    return true
-  } catch {
-    return false
+  } else {
+    await execAsync(`kill -9 ${pid}`)
   }
 }
 
 async function cleanPort(port) {
-  const pid = await getProcessOnPort(port)
-  if (!pid) {
+  let pids
+  try {
+    pids = await getListeningPids(port)
+  } catch (err) {
+    console.warn(`[clean-ports] ⚠ Could not inspect port ${port}: ${err?.message ?? err}`)
+    return
+  }
+
+  if (pids.length === 0) {
     console.log(`[clean-ports] Port ${port} is free`)
     return
   }
 
-  console.log(`[clean-ports] Killing process ${pid} on port ${port}`)
-  const killed = await killProcess(pid)
-  if (killed) {
-    console.log(`[clean-ports] ✓ Port ${port} cleaned`)
-  } else {
-    console.log(`[clean-ports] ✗ Failed to kill process ${pid} on port ${port}`)
+  for (const pid of pids) {
+    if (pid === process.pid) continue
+    console.log(`[clean-ports] Killing process ${pid} on port ${port}`)
+    try {
+      await killPid(pid)
+      console.log(`[clean-ports] ✓ Port ${port} cleaned (pid ${pid})`)
+    } catch (err) {
+      console.log(
+        `[clean-ports] ✗ Failed to kill process ${pid} on port ${port}: ${err?.message ?? err}`
+      )
+    }
   }
 }
 

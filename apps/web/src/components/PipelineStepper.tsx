@@ -1,3 +1,4 @@
+import { Button } from '@ontology-search/design-system'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
 
 /** A single step in the pipeline */
@@ -87,12 +88,9 @@ export function PipelineStepper({
     <div className="w-full max-w-4xl mx-auto">
       {showGraphQLEntry && onSkipToGraphQL && (
         <div className="mb-4 flex justify-end">
-          <button
-            onClick={onSkipToGraphQL}
-            className="text-xs px-3 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-full hover:bg-purple-100 transition-colors font-medium"
-          >
+          <Button onClick={onSkipToGraphQL} variant="secondary" size="sm">
             ⚡ Start with GraphQL
-          </button>
+          </Button>
         </div>
       )}
 
