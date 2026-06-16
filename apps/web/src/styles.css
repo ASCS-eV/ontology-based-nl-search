@@ -1,1 +1,5 @@
 @import 'tailwindcss';
+
+/* Scan the design-system package so its utility classes are generated even
+   though it resolves through node_modules (which Tailwind ignores by default). */
+@source '../../../packages/design-system/src';

@@ -1,3 +1,4 @@
+import { Button } from '@ontology-search/design-system'
 import { useEffect, useState } from 'react'
 
 import type { MappedTerm } from '../api-types'
@@ -181,14 +182,15 @@ export function QueryRefinement({
           ))}
 
         {hasChanges && (
-          <button
+          <Button
             onClick={handleRerun}
             disabled={loading || terms.length === 0}
-            className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 transition-colors"
-            aria-label="Re-run with modified filters"
+            variant="primary"
+            size="sm"
+            ariaLabel="Re-run with modified filters"
           >
             {loading ? 'Running…' : 'Re-run'}
-          </button>
+          </Button>
         )}
       </div>
     </div>

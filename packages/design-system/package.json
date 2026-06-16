@@ -1,0 +1,42 @@
+{
+  "name": "@ontology-search/design-system",
+  "description": "Swappable design-system contract: primitive component interfaces, provider/registry, a brand-neutral loader for plugging in external design systems via config, and the default ENVITED-X implementation.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./tokens.css": "./src/tokens.css",
+    "./envited": {
+      "types": "./src/themes/envited/index.ts",
+      "default": "./src/themes/envited/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint .",
+    "clean": "rimraf tsconfig.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@ontology-search/typescript-config": "workspace:*",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.1.4",
+    "@vitejs/plugin-react-swc": "^4.3.0",
+    "@types/react-dom": "^19.1.5",
+    "jsdom": "^26.1.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "rimraf": "^6.0.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.0"
+  }
+}

@@ -1,0 +1,39 @@
+/*
+ * Design-system semantic tone tokens (defaults).
+ *
+ * Pill and Alert read these CSS variables instead of hard-coded colours, so a
+ * design system can re-tone status colours per theme by overriding them under
+ * its `[data-theme]` selector (see each theme's tokens.css). These defaults are
+ * the ENVITED-X palette and apply whenever no theme overrides them.
+ *
+ *   -bg        solid chip background (Pill)
+ *   -bg-subtle faint background (Alert)
+ *   -fg        foreground / text
+ *   -border    border (Alert)
+ */
+:root {
+  --ds-tone-neutral-bg: #f3f4f6;
+  --ds-tone-neutral-bg-subtle: #f9fafb;
+  --ds-tone-neutral-fg: #374151;
+  --ds-tone-neutral-border: #e5e7eb;
+
+  --ds-tone-info-bg: #dbeafe;
+  --ds-tone-info-bg-subtle: #eff6ff;
+  --ds-tone-info-fg: #1d4ed8;
+  --ds-tone-info-border: #bfdbfe;
+
+  --ds-tone-success-bg: #dcfce7;
+  --ds-tone-success-bg-subtle: #f0fdf4;
+  --ds-tone-success-fg: #15803d;
+  --ds-tone-success-border: #bbf7d0;
+
+  --ds-tone-warning-bg: #fef3c7;
+  --ds-tone-warning-bg-subtle: #fffbeb;
+  --ds-tone-warning-fg: #b45309;
+  --ds-tone-warning-border: #fde68a;
+
+  --ds-tone-danger-bg: #fee2e2;
+  --ds-tone-danger-bg-subtle: #fef2f2;
+  --ds-tone-danger-fg: #b91c1c;
+  --ds-tone-danger-border: #fecaca;
+}

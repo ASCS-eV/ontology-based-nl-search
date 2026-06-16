@@ -1,3 +1,4 @@
+import { Alert } from '@ontology-search/design-system'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 
@@ -191,11 +192,10 @@ export function SearchPage() {
       </div>
 
       {error && !results && (
-        <div
-          className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 max-w-2xl w-full"
-          role="alert"
-        >
-          {error}
+        <div className="mb-6 max-w-2xl w-full">
+          <Alert tone="danger" role="alert">
+            {error}
+          </Alert>
         </div>
       )}
 

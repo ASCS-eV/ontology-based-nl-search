@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { MappedTerm } from '../../api-types'
+import { renderWithDesignSystem as render } from '../../test-utils'
 import { QueryRefinement } from '../QueryRefinement'
 
 const baseTerms: MappedTerm[] = [

@@ -1,9 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { ExportAsset } from '../../lib/export-utils'
 import * as exportUtils from '../../lib/export-utils'
+import { renderWithDesignSystem as render } from '../../test-utils'
 import { ResultsDisplay } from '../ResultsDisplay'
 
 afterEach(() => {

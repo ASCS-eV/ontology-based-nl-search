@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import { renderWithDesignSystem as render } from '../../test-utils'
 import type { PipelineStep } from '../PipelineStepper'
 import { PipelineStepper } from '../PipelineStepper'
 

@@ -17,6 +17,7 @@
     "@codemirror/lang-javascript": "^6.2.5",
     "@ontology-search/api-types": "workspace:*",
     "@ontology-search/core": "workspace:*",
+    "@ontology-search/design-system": "workspace:*",
     "@tanstack/react-query": "^5.75.5",
     "@tanstack/react-router": "^1.120.3",
     "@uiw/react-codemirror": "^4.25.10",

@@ -1,3 +1,5 @@
+import { Pill } from '@ontology-search/design-system'
+
 import type { GapKind, OntologyGap } from '../api-types'
 
 interface OntologyGapsDisplayProps {
@@ -92,11 +94,7 @@ export function OntologyGapsDisplay({ gaps }: OntologyGapsDisplayProps) {
                 <div key={i} className={`px-4 py-3 border rounded-lg ${section.card}`}>
                   <div className="flex items-start gap-2">
                     <span className={`font-medium ${section.term}`}>&ldquo;{gap.term}&rdquo;</span>
-                    {gap.isDomainConcept && (
-                      <span className="inline-flex px-1.5 py-0.5 text-xs bg-amber-100 text-amber-700 rounded font-medium">
-                        Domain concept
-                      </span>
-                    )}
+                    {gap.isDomainConcept && <Pill tone="warning">Domain concept</Pill>}
                     <span className={`text-sm ${section.text}`}>— {gap.reason}</span>
                   </div>
                   {gap.definition && (
