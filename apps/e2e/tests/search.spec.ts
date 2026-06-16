@@ -179,7 +179,9 @@ test.describe('Search Page', () => {
 
     // Interpretation section
     await expect(
-      page.getByText('Looking for HD maps in Germany with motorway road type')
+      page
+        .getByLabel('Query interpretation')
+        .getByText('Looking for HD maps in Germany with motorway road type')
     ).toBeVisible()
     await expect(page.getByText('German', { exact: true }).first()).toBeVisible()
     await expect(page.getByText('country code DE').first()).toBeVisible()
