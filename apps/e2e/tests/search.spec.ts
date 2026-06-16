@@ -29,7 +29,11 @@ test.describe('Search Page', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ totalAssets: 8, ontology: 'hdmap v6' }),
+        body: JSON.stringify({
+          totalAssets: 8,
+          ontology: 'hdmap v6',
+          features: { graphqlLayer: true },
+        }),
       })
     })
 
@@ -41,28 +45,50 @@ test.describe('Search Page', () => {
     // Dataset count badge
     await expect(page.getByText('8 assets in graph')).toBeVisible()
 
-    // Search bar is present and empty
+    // Search bar is present and empty (inside stepper step 1)
     const searchInput = page.getByLabel('Natural language search query')
     await expect(searchInput).toBeVisible()
     await expect(searchInput).toHaveValue('')
 
     // Search button is present
-    await expect(page.getByRole('button', { name: /search/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^search$/i })).toBeVisible()
   })
 
   test('should show search button disabled when input is empty', async ({ page }) => {
+    await page.route('/api/stats', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          totalAssets: 8,
+          features: { graphqlLayer: true },
+        }),
+      })
+    })
+
     await page.goto('/')
-    const button = page.getByRole('button', { name: /search/i })
+    const button = page.getByRole('button', { name: /^search$/i })
     await expect(button).toBeDisabled()
   })
 
   test('should enable search button when text is entered', async ({ page }) => {
+    await page.route('/api/stats', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          totalAssets: 8,
+          features: { graphqlLayer: true },
+        }),
+      })
+    })
+
     await page.goto('/')
 
     const searchInput = page.getByLabel('Natural language search query')
     await searchInput.fill('German highways')
 
-    const button = page.getByRole('button', { name: /search/i })
+    const button = page.getByRole('button', { name: /^search$/i })
     await expect(button).toBeEnabled()
   })
 
@@ -88,6 +114,17 @@ test.describe('Search Page', () => {
   test('should display interpretation, gaps, and results on successful search', async ({
     page,
   }) => {
+    await page.route('/api/stats', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          totalAssets: 8,
+          features: { graphqlLayer: true },
+        }),
+      })
+    })
+
     await page.route('/api/search/stream', (route) => {
       const body = buildSSE({
         interpretation: {
@@ -142,7 +179,9 @@ test.describe('Search Page', () => {
 
     // Interpretation section
     await expect(
-      page.getByText('Looking for HD maps in Germany with motorway road type')
+      page
+        .getByLabel('Query interpretation')
+        .getByText('Looking for HD maps in Germany with motorway road type')
     ).toBeVisible()
     await expect(page.getByText('German', { exact: true }).first()).toBeVisible()
     await expect(page.getByText('country code DE').first()).toBeVisible()
@@ -166,6 +205,17 @@ test.describe('Search Page', () => {
   })
 
   test('should show and hide SPARQL preview', async ({ page }) => {
+    await page.route('/api/stats', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          totalAssets: 8,
+          features: { graphqlLayer: true },
+        }),
+      })
+    })
+
     await page.route('/api/search/stream', (route) => {
       const body = buildSSE({
         interpretation: { summary: 'Test query', mappedTerms: [] },
@@ -189,16 +239,17 @@ test.describe('Search Page', () => {
     await searchInput.fill('anything')
     await searchInput.press('Enter')
 
-    // SPARQL preview toggle should appear
-    const toggle = page.getByText(/show generated sparql/i)
-    await expect(toggle).toBeVisible()
+    // In the stepper, SPARQL is rendered inline inside the "SPARQL Query" step.
+    // Click the step header to expand it.
+    const sparqlStep = page.getByText('SPARQL Query')
+    await expect(sparqlStep).toBeVisible()
+    await sparqlStep.click()
 
-    // Click to expand
-    await toggle.click()
+    // SPARQL content should now be visible (inline mode, no nested toggle)
     await expect(page.getByText('PREFIX envx:')).toBeVisible()
 
-    // Click to collapse
-    await page.getByText(/hide generated sparql/i).click()
+    // Click the step header again to collapse it
+    await sparqlStep.click()
     await expect(page.getByText('PREFIX envx:')).not.toBeVisible()
   })
 

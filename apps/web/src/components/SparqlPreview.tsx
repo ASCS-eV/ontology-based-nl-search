@@ -2,12 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface SparqlPreviewProps {
   sparql: string
+  /** When true, renders the query body directly without a disclosure toggle.
+   *  Used inside the PipelineStepper where the step itself handles expand/collapse. */
+  inline?: boolean
 }
 
 /** Duration to show "Copied" feedback before reverting to "Copy" */
 const COPY_FEEDBACK_MS = 2000
 
-export function SparqlPreview({ sparql }: SparqlPreviewProps) {
+export function SparqlPreview({ sparql, inline = false }: SparqlPreviewProps) {
   const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -24,6 +27,24 @@ export function SparqlPreview({ sparql }: SparqlPreviewProps) {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => setCopied(false), COPY_FEEDBACK_MS)
   }, [sparql])
+
+  // Inline mode: render the query body directly without a disclosure toggle
+  if (inline) {
+    return (
+      <div className="w-full relative">
+        <button
+          onClick={handleCopy}
+          className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+          aria-label="Copy SPARQL query"
+        >
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+        <pre className="p-4 bg-gray-900 text-green-300 rounded-lg text-sm overflow-x-auto font-mono leading-relaxed">
+          {sparql}
+        </pre>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-4 w-full">

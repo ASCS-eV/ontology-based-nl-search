@@ -26,6 +26,7 @@ vi.mock('@ontology-search/search', () => ({
   MAX_LINEAGE_DEPTH: 6,
   getAssetMetadata: vi.fn(),
   getDomainMetadataAggregate: vi.fn(),
+  slotsToGraphQL: () => 'query { }',
 }))
 
 vi.mock('@ontology-search/ontology/domain-registry', () => ({

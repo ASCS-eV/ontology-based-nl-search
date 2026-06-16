@@ -39,6 +39,7 @@ function mockSearchNlWithProgress(result: typeof HAPPY_PATH_RESULT) {
           interpretation: result.interpretation,
           gaps: result.gaps,
           sparql: result.sparql,
+          slots: { domains: ['hdmap'], filters: {}, ranges: {} },
         },
       })
       await opts.onProgress({ phase: 'executing' })
@@ -52,6 +53,7 @@ vi.mock('@ontology-search/search', () => ({
   compileCountQuery: vi.fn(),
   getAssetDomains: vi.fn().mockResolvedValue(new Set(['hdmap', 'scenario'])),
   normalizeReferences: (v: unknown) => (!v ? [] : Array.isArray(v) ? v : [v]),
+  slotsToGraphQL: () => 'query { }',
 }))
 
 vi.mock('@ontology-search/ontology/domain-registry', () => ({
@@ -100,6 +102,7 @@ describe('POST /search/stream — SSE protocol', () => {
       SSE_EVENT.INTERPRETATION,
       SSE_EVENT.GAPS,
       SSE_EVENT.SPARQL,
+      SSE_EVENT.GRAPHQL,
       SSE_EVENT.STATUS,
       SSE_EVENT.RESULTS,
       SSE_EVENT.META,
@@ -139,6 +142,7 @@ describe('POST /search/stream — SSE protocol', () => {
     })
     expect(byEvent.get(SSE_EVENT.GAPS)).toEqual([])
     expect(typeof byEvent.get(SSE_EVENT.SPARQL)).toBe('string')
+    expect(typeof byEvent.get(SSE_EVENT.GRAPHQL)).toBe('string')
     expect(byEvent.get(SSE_EVENT.RESULTS)).toMatchObject({ results: expect.any(Array) })
     expect(byEvent.get(SSE_EVENT.META)).toMatchObject({ matchCount: expect.any(Number) })
   })

@@ -17,6 +17,8 @@ export const SSE_EVENT = {
   GAPS: 'gaps',
   /** The compiled SPARQL query string (echoed for transparency). */
   SPARQL: 'sparql',
+  /** The generated GraphQL query string (intermediate representation). */
+  GRAPHQL: 'graphql',
   /** Result rows from the SPARQL store. */
   RESULTS: 'results',
   /** Final metadata: match count, request id, timings. */

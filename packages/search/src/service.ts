@@ -108,7 +108,10 @@ export interface SearchMeta extends WireSearchMeta {
 export interface SearchProgress {
   phase: 'store-ready' | 'interpreting' | 'interpreted' | 'executing' | 'done'
   /** Partial result data available at this phase. */
-  data?: Partial<Pick<SearchResult, 'interpretation' | 'gaps' | 'sparql'>>
+  data?: Partial<Pick<SearchResult, 'interpretation' | 'gaps' | 'sparql'>> & {
+    /** Raw validated slots (for GraphQL serialization). */
+    slots?: SearchSlots
+  }
 }
 
 /** Options for a full NL search */
@@ -202,6 +205,7 @@ export class SearchService {
         interpretation: structured.interpretation,
         gaps: structured.gaps,
         sparql: structured.sparql,
+        slots: structured.slots,
       },
     })
 

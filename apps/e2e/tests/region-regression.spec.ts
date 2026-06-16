@@ -105,8 +105,8 @@ test.describe('Multi-country region regression (R6)', () => {
     await expect(page.getByText('Paris HD Map')).toBeVisible()
     await expect(page.getByText('Milan HD Map')).toBeVisible()
 
-    // R6.2 — SPARQL panel renders the IN-clause verbatim (after expanding it).
-    await page.getByText(/show generated sparql/i).click()
+    // R6.2 — SPARQL panel renders the IN-clause verbatim (expand the SPARQL step).
+    await page.getByText('SPARQL Query').click()
     const sparqlPanel = page.getByText(/FILTER\(\?country IN \(/i)
     await expect(sparqlPanel).toBeVisible()
     // R6.3 — Must contain multiple ISO codes (proof it's not single-country).

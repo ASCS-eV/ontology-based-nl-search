@@ -157,6 +157,16 @@ const envSchema = z.object({
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).optional(),
 
+  // Feature flags
+  /**
+   * Enable the GraphQL intermediate layer: schema endpoint, GraphQL
+   * serialization in SSE stream, and the inline editor in the web UI.
+   * Defaults to `true` in development for immediate visibility; set to
+   * `false` to hide the feature entirely (endpoints return 404, SSE
+   * omits the `graphql` event, UI hides the editor step).
+   */
+  FEATURE_GRAPHQL_LAYER: z.coerce.boolean().default(true),
+
   // Runtime (set by Next.js)
   NEXT_RUNTIME: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

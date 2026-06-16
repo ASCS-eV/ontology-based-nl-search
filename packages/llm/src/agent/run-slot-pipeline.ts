@@ -191,6 +191,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     interpretation: enrichedInterpretation,
     gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps, ...compileGaps],
     sparql,
+    slots,
     trace,
   }
 

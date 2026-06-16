@@ -53,6 +53,7 @@
     "@ontology-search/core": "workspace:*",
     "@ontology-search/ontology": "workspace:*",
     "@ontology-search/sparql": "workspace:*",
+    "graphql": "^16.14.2",
     "sparqljs": "^3.7.4",
     "zod": "^4.4.3"
   },

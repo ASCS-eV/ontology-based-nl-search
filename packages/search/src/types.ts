@@ -11,6 +11,7 @@
 import type { TimingEntry } from '@ontology-search/core/logging'
 
 import type { TraceabilityPlan } from './slots.js'
+import type { SearchSlots } from './slots.js'
 
 export type {
   GapKind,
@@ -36,6 +37,11 @@ export interface LlmStructuredResponse {
   interpretation: QueryInterpretation
   gaps: OntologyGap[]
   sparql: string
+  /**
+   * The validated SearchSlots that produced this SPARQL. Available for
+   * downstream serialization (e.g. GraphQL intermediate representation).
+   */
+  slots?: SearchSlots
   /**
    * Traceability plans emitted by the compiler when the SPARQL contains
    * cross-reference JOINs — one per projected reference. The service uses

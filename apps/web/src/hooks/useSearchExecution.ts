@@ -17,6 +17,7 @@ export interface SearchState {
   interpretation: QueryInterpretation | null
   gaps: OntologyGap[] | null
   sparql: string | null
+  graphql: string | null
   results: Record<string, string>[] | null
   /**
    * Per-row traceability, aligned by index with `results`. Present when the
@@ -60,6 +61,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
     interpretation: null,
     gaps: null,
     sparql: null,
+    graphql: null,
     results: null,
     traceability: null,
     meta: null,
@@ -79,6 +81,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
       interpretation: null,
       gaps: null,
       sparql: null,
+      graphql: null,
       results: null,
       traceability: null,
       meta: null,
@@ -125,6 +128,9 @@ export function useSearchExecution(_availableDomains?: string[]) {
               break
             case SSE_EVENT.SPARQL:
               setState((s) => ({ ...s, sparql: data as string }))
+              break
+            case SSE_EVENT.GRAPHQL:
+              setState((s) => ({ ...s, graphql: data as string }))
               break
             case SSE_EVENT.RESULTS: {
               const resultData = data as {
@@ -204,6 +210,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
 
       const data = await apiPost<{
         sparql: string
+        graphql?: string
         results: Record<string, string>[]
         traceability?: RowTraceability[]
         meta: SearchMeta
@@ -212,6 +219,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
       setState((s) => ({
         ...s,
         sparql: data.sparql,
+        graphql: data.graphql ?? null,
         results: data.results,
         traceability: data.traceability ?? null,
         meta: data.meta,
@@ -227,5 +235,45 @@ export function useSearchExecution(_availableDomains?: string[]) {
     }
   }, [])
 
-  return { ...state, handleSearch, handleRefine }
+  const handleGraphQLRun = useCallback(async (graphqlQuery: string) => {
+    setState((s) => ({
+      ...s,
+      loading: true,
+      error: null,
+      results: null,
+      traceability: null,
+      meta: null,
+      phase: 'executing',
+    }))
+
+    try {
+      // Parse GraphQL back to slots via the API
+      const data = await apiPost<{
+        sparql: string
+        graphql?: string
+        results: Record<string, string>[]
+        traceability?: RowTraceability[]
+        meta: SearchMeta
+      }>('/api/search/refine-graphql', { graphql: graphqlQuery })
+
+      setState((s) => ({
+        ...s,
+        sparql: data.sparql,
+        graphql: data.graphql ?? graphqlQuery,
+        results: data.results,
+        traceability: data.traceability ?? null,
+        meta: data.meta,
+        phase: 'done',
+      }))
+    } catch (err) {
+      setState((s) => ({
+        ...s,
+        error: err instanceof Error ? err.message : 'GraphQL execution failed',
+      }))
+    } finally {
+      setState((s) => ({ ...s, loading: false, phase: 'done' }))
+    }
+  }, [])
+
+  return { ...state, handleSearch, handleRefine, handleGraphQLRun }
 }
