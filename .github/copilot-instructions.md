@@ -30,6 +30,29 @@ The `@' ... '@` here-string syntax avoids all interpolation.
 - Follow the project's ESLint and Prettier configuration.
 - Use TypeScript strict mode — avoid `any` unless explicitly justified.
 
+## Standards Compliance (verify against the spec)
+
+Every interface in this repo maps to a recognized standard whose **full
+normative text** is stored under `docs/specs/references/` (with a
+license-attributed `README.md` index). The "slots mechanism" is **not** a W3C
+standard — it is the NLU "slot-filling" pattern, and its on-the-wire contract is
+**JSON Schema 2020-12** (the LLM tool call). Do **not** add a LinkML model; the
+discipline is documentation + citation + verification, not codegen.
+
+When you add or modify an interface (a wire field, an SSE event, a SPARQL or
+GraphQL construct, a JSON-LD/Turtle data shape, an ontology construct):
+
+1. **Consult the standard** in `docs/specs/references/` (add it — full text +
+   attribution header + README row — if missing).
+2. **Verify** the change against the relevant normative section.
+3. **Cite it inline** with a `[TAG] §x` comment at the interface (pattern:
+   `slot-wire-schema.ts`, `compiler.ts`, `core/src/sse/events.ts`,
+   `graphql-serializer.ts`).
+4. A reviewer must be able to check the cited section against the behavior.
+
+This is criterion 31 in `CONTRIBUTING.md`. Full inventory and rationale (incl.
+why LinkML was rejected): `apps/docs/standards-audit.md`.
+
 ## Pre-Push / Pre-PR Validation
 
 **Always** run `pnpm run validate` before pushing commits or creating pull requests. The pre-commit hook only runs lint + format — it does **not** run tests or type-checking. CI will reject PRs that fail validation, so catch issues locally first:

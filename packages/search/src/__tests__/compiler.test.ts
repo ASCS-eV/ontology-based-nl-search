@@ -578,6 +578,42 @@ describe('compileSlots', () => {
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
   })
+
+  it('applies reference-scoped filters and ranges to the referenced asset, not the primary', async () => {
+    // Regression for the cross-domain anchoring bug: "OSI traces referencing
+    // HD maps in Germany with at least one intersection". country + intersection
+    // describe the MAP, so they must bind to the reference variable — not the
+    // OSI trace. Before the fix these partitioned to the top level and bound to
+    // the wrong domain, so the query returned nothing.
+    const slots: SearchSlots = {
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [
+        {
+          domain: 'hdmap',
+          filters: { country: 'DE' },
+          ranges: { numberIntersections: { min: 1 } },
+        },
+      ],
+    }
+    const sparql = await compileSlots(slots)
+    // The cross-reference join is still emitted.
+    expect(sparql).toContain('?refAsset a hdmap:HdMap')
+    // Reference-scoped constraints anchor on the REFERENCED asset's own spec
+    // variable — the core proof. Absent entirely before the fix.
+    expect(sparql).toContain('?refAsset_spec')
+    // numberIntersections range is applied to the referenced map.
+    expect(sparql).toContain('numberIntersections')
+    expect(sparql).toContain('>= 1')
+    // country constraint is applied to the referenced map (georeference leaf).
+    expect(sparql).toContain('georeference:country')
+    // numberIntersections is an hdmap-only metric: it must hang off the
+    // referenced map's spec var, never the primary OSI trace's spec var.
+    expect(sparql).toMatch(/\?refAsset_spec[\s\S]*numberIntersections/)
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
 })
 
 describe('peer-domain UNION queries', () => {

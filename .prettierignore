@@ -7,5 +7,9 @@ coverage
 playwright-report
 submodules
 
+# Third-party specification copies — verbatim normative text, never reformatted.
+# See docs/specs/references/README.md for provenance and refresh procedure.
+docs/specs/references/
+
 # Generated lockfile — managed by pnpm, never hand-/prettier-formatted
 pnpm-lock.yaml

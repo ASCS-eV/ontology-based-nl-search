@@ -17,6 +17,14 @@
  *
  * These are wire-format types, not ontology-specific identifiers.
  * Criterion 9b (ontology-name budget) does not apply.
+ *
+ * STANDARDS — these shapes are exchanged as:
+ *   [RFC8259] JSON — docs/specs/references/rfc8259-json.md
+ *             https://www.rfc-editor.org/rfc/rfc8259 (all JSON bodies / SSE `data:` payloads)
+ *   [SSE]     Server-Sent Events — docs/specs/references/eventsource.md
+ *             https://www.w3.org/TR/eventsource/ (the `/search/stream` frames carrying these)
+ *   [RFC9110] HTTP Semantics — docs/specs/references/rfc9110-http.md
+ *             https://www.rfc-editor.org/rfc/rfc9110 (methods, status, content negotiation)
  */
 
 /** A single term mapped from user input to an ontology concept. */

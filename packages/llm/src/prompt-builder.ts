@@ -123,11 +123,23 @@ Use this when the user asks for assets that **reference or are connected to** an
 | ------------ | ---------------------------------------------------------------------------- |
 | \`domain\`     | Domain of the referenced asset (use domain names from SHACL shapes)          |
 | \`label\`      | (Optional) text filter on the referenced asset's label                       |
+| \`filters\`    | (Optional) property filters on the REFERENCED asset, keyed by SHACL leaf local name (same shape as top-level \`filters\`) |
+| \`ranges\`     | (Optional) numeric ranges on the REFERENCED asset (same shape as top-level \`ranges\`) |
 | \`references\` | (Optional) NESTED references the referenced asset must itself carry (a chain) |
 
 \`references\` is an ARRAY — one entry per referenced domain. They are
 AND-combined (the asset must reference every one). A single object is also
 accepted for one reference.
+
+**Put constraints on the referenced asset INSIDE its reference entry — not at
+the top level.** When the user constrains the thing being referenced ("traces
+that reference **maps in Germany with at least one intersection**"), the
+country/intersection constraints describe the MAP, so they belong in that
+reference's \`filters\`/\`ranges\`:
+\`references: [{ domain: "map", filters: { country: "DE" }, ranges: { numberIntersections: { min: 1 } } }]\`.
+Top-level \`filters\`/\`ranges\` only ever describe the PRIMARY asset. A
+reference-scoped constraint placed at the top level binds to the wrong asset
+and the query returns nothing.
 
 **Flat (siblings) vs nested (chain) — read the user's phrasing carefully:**
 - Siblings: the PRIMARY asset references several types *directly*. "scenarios

@@ -32,6 +32,23 @@ export interface ReferenceFilter {
   /** Optional label filter on the referenced asset */
   label?: string
   /**
+   * Property filters that constrain the REFERENCED asset itself (not the
+   * parent). Keyed by SHACL leaf local name — same shape as
+   * {@link SearchSlots.filters}. Example: "OSI traces referencing HD maps in
+   * Germany" → `{ domain: 'hdmap', filters: { country: 'DE' } }`. The compiler
+   * applies these to the reference's own variable, so the constraint binds to
+   * the HD map, not the trace. Without this, a reference-scoped constraint
+   * partitions to the top level and binds to the wrong domain. Omitted/empty
+   * = no property constraint.
+   */
+  filters?: Record<string, string | string[]>
+  /**
+   * Numeric range filters that constrain the referenced asset — same shape as
+   * {@link SearchSlots.ranges}. Example: HD maps "with at least one
+   * intersection" → `{ ranges: { numberIntersections: { min: 1 } } }`.
+   */
+  ranges?: Record<string, { min?: number; max?: number }>
+  /**
    * Further references the *referenced* asset must itself carry. Each is a
    * chain one hop deeper (parent ref → this domain). Omitted/empty = leaf.
    */

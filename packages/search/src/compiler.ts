@@ -17,7 +17,12 @@
  * hasQuantity, hasQuality, hasDataSource, hasGeoreference).
  * This compiler exploits that regularity.
  *
- * @see https://www.w3.org/TR/sparql11-query/
+ * STANDARDS — the emitted query string conforms to:
+ *   [SPARQL11] SPARQL 1.1 Query Language — docs/specs/references/sparql11-query.md
+ *              https://www.w3.org/TR/sparql11-query/
+ * Reference-scoped filters/ranges (see `emitReferenceNode`) bind to the
+ * referenced asset's variable, so a constraint on a referenced asset compiles
+ * to a basic graph pattern rooted at that asset — [SPARQL11] §5 (BGP).
  */
 import { getConfig } from '@ontology-search/core/config'
 import { CompileError } from '@ontology-search/core/errors'
@@ -915,6 +920,33 @@ export async function compileSlotsWithTrace(
     // Project this reference's asset + name so the UI shows it.
     selectVars.add(refVar)
     selectVars.add(refNameVar)
+
+    // Reference-scoped constraints: `filters`/`ranges` that describe the
+    // REFERENCED asset (e.g. "maps in Germany with >= 1 intersection") are
+    // applied to THIS reference's variable, so they constrain the referenced
+    // asset — not the primary one. Without this, such constraints partition to
+    // the top level and bind to the wrong domain (the cross-domain anchoring
+    // bug). Reuses the same SHACL-path machinery as the primary domain; the
+    // chain emission above already bound `${refVar} a <targetClass>`.
+    const refOwnFilters = ref.filters ?? {}
+    const refOwnRanges = ref.ranges ?? {}
+    if (Object.keys(refOwnFilters).length > 0 || Object.keys(refOwnRanges).length > 0) {
+      const refForeign = buildDomainPatterns(
+        ref.domain,
+        refDomain,
+        refOwnFilters,
+        refOwnRanges,
+        patterns,
+        filters,
+        optionals,
+        selectVars,
+        vocabIndex,
+        registry,
+        refVar,
+        `${refVar}_spec`
+      )
+      for (const fd of refForeign) prefixDomains.add(fd)
+    }
 
     // A resolved chain contributes a breadcrumb: promote its intermediate step
     // variables so the service can read them per row, and record a plan keyed

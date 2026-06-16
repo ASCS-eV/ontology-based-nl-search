@@ -227,6 +227,48 @@ describe('SearchService — real pipeline integration', () => {
   }, 120_000)
 
   /**
+   * Cross-domain anchoring fix: "OSI traces referencing HD maps in Germany
+   * with at least one intersection." `country` + `numberIntersections`
+   * describe the REFERENCED map and are carried inside the reference entry.
+   * Before the fix these partitioned to the top level and bound to the OSI
+   * trace — which has neither property — so the real query returned 0 rows
+   * ("no example data"). The fixture has OSI traces referencing German HD maps
+   * with numberIntersections >= 1 (e.g. dresden-urban-corridor-003: DE, 7), so
+   * the corrected query must return a non-empty, narrowed result set.
+   */
+  it('applies reference-scoped country + range to the referenced HD map (anchoring fix)', async () => {
+    const unfiltered = await realServiceWithMockedLlm({
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'hdmap' }],
+    }).searchNl({ query: 'OSI traces that reference HD maps' })
+
+    const filtered = await realServiceWithMockedLlm({
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [
+        {
+          domain: 'hdmap',
+          filters: { country: 'DE' },
+          ranges: { numberIntersections: { min: 1 } },
+        },
+      ],
+    }).searchNl({ query: 'OSI traces referencing German HD maps with at least one intersection' })
+
+    expect(filtered.execution.error).toBeUndefined()
+    // The constraints bind to the referenced map, not the OSI trace.
+    expect(filtered.sparql).toContain('?refAsset_spec')
+    expect(filtered.sparql).toContain('georeference:country')
+    expect(filtered.sparql).toContain('numberIntersections')
+    // There IS example data for this request once compiled correctly …
+    expect(filtered.meta.matchCount).toBeGreaterThan(0)
+    // … and the reference-scoped constraint actually narrows the map set.
+    expect(filtered.meta.matchCount).toBeLessThanOrEqual(unfiltered.meta.matchCount)
+  }, 120_000)
+
+  /**
    * Traceability plumbing: the executor must populate
    * `ExecutionResult.traceability` aligned by row index whenever the
    * compiled query carried a `TraceabilityPlan`. Each per-row entry

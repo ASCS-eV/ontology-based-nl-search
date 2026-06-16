@@ -35,7 +35,9 @@ const slotSubmissionSchema = z.object({
           'Cross-reference filter(s): find assets that reference one or more other domains. ' +
             'Pass an ARRAY with one entry per referenced domain when the user names several ' +
             '(AND-combined — the asset must reference all). A single object is also accepted. ' +
-            'Each entry may nest its own `references` to express a chain (see that field).'
+            'Put constraints that describe the REFERENCED asset inside that entry via its ' +
+            '`filters`/`ranges` (e.g. referenced maps in a country, or with >= N intersections) — ' +
+            'NOT in the top-level slots. Each entry may also nest its own `references` for a chain.'
         ),
     })
     .describe('Search slots: fill only properties where the user expressed intent'),
