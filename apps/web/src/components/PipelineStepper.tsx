@@ -22,6 +22,8 @@ interface PipelineStepperProps {
   onSkipToGraphQL?: () => void
   /** Whether to show the "Start with GraphQL" entry point */
   showGraphQLEntry?: boolean
+  /** Step IDs that default to collapsed (user can expand manually) */
+  defaultCollapsed?: Set<string>
 }
 
 /**
@@ -34,16 +36,25 @@ export function PipelineStepper({
   activeStepId,
   onSkipToGraphQL,
   showGraphQLEntry = true,
+  defaultCollapsed,
 }: PipelineStepperProps) {
   // Track which steps are manually expanded/collapsed by the user
   const [manualOverrides, setManualOverrides] = useState<Record<string, boolean>>({})
 
-  const toggleStep = useCallback((stepId: string) => {
-    setManualOverrides((prev) => ({
-      ...prev,
-      [stepId]: !prev[stepId],
-    }))
-  }, [])
+  const toggleStep = useCallback(
+    (stepId: string) => {
+      setManualOverrides((prev) => {
+        const currentOverride = prev[stepId]
+        if (currentOverride !== undefined) {
+          return { ...prev, [stepId]: !currentOverride }
+        }
+        // No override yet — determine current visual state and flip it
+        const isCurrentlyExpanded = defaultCollapsed?.has(stepId) ? false : true
+        return { ...prev, [stepId]: !isCurrentlyExpanded }
+      })
+    },
+    [defaultCollapsed]
+  )
 
   // Map step IDs to their original index in the full steps array for ordering
   const stepOrder = useMemo(() => {
@@ -60,9 +71,14 @@ export function PipelineStepper({
       if (override !== undefined) {
         return override
       }
-      return step.id === activeStepId && step.hasContent
+      // Steps in the defaultCollapsed set stay collapsed unless manually opened
+      if (defaultCollapsed?.has(step.id)) {
+        return false
+      }
+      // All other steps with content auto-expand
+      return step.hasContent
     },
-    [manualOverrides, activeStepId]
+    [manualOverrides, defaultCollapsed]
   )
 
   const visibleSteps = useMemo(() => steps.filter((s) => s.hasContent || s.content), [steps])

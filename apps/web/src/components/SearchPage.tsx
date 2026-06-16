@@ -17,6 +17,9 @@ import { SearchBar } from './SearchBar'
 import { SparqlPreview } from './SparqlPreview'
 import { TypewriterText } from './TypewriterText'
 
+/** Steps that start collapsed — the user can expand them manually. */
+const COLLAPSED_STEPS = new Set(['sparql'])
+
 export function SearchPage() {
   const {
     data: stats,
@@ -70,7 +73,7 @@ export function SearchPage() {
     if (phase === 'interpreting' && !interpretation) return 'interpretation'
     if (interpretation && !sparql) return 'filters'
     if (sparql && !results) return 'graphql'
-    if (results) return 'sparql'
+    if (results) return 'graphql'
     return 'nl-search'
   }, [graphQLEntryMode, hasResponse, phase, interpretation, sparql, results])
 
@@ -152,7 +155,7 @@ export function SearchPage() {
       {
         id: 'sparql',
         label: 'SPARQL Query',
-        summary: sparql ? 'Generated' : undefined,
+        summary: sparql ? `${sparql.split('\n').length} lines` : undefined,
         hasContent: !!sparql,
         content: sparql ? <SparqlPreview sparql={sparql} inline /> : null,
       },
@@ -202,6 +205,7 @@ export function SearchPage() {
           activeStepId={activeStepId}
           onSkipToGraphQL={handleSkipToGraphQL}
           showGraphQLEntry={!hasResponse}
+          defaultCollapsed={COLLAPSED_STEPS}
         />
       ) : (
         /* Fallback: original layout without stepper (feature flag off) */

@@ -25,9 +25,19 @@ describe('PipelineStepper', () => {
     expect(screen.queryByText('Step Three')).not.toBeInTheDocument()
   })
 
-  it('auto-expands the active step', () => {
+  it('auto-expands all steps with content by default', () => {
     const steps = makeSteps()
     render(<PipelineStepper steps={steps} activeStepId="step-1" />)
+
+    expect(screen.getByText('Content 1')).toBeVisible()
+    expect(screen.getByText('Content 2')).toBeVisible()
+  })
+
+  it('keeps defaultCollapsed steps collapsed', () => {
+    const steps = makeSteps()
+    render(
+      <PipelineStepper steps={steps} activeStepId="step-1" defaultCollapsed={new Set(['step-2'])} />
+    )
 
     expect(screen.getByText('Content 1')).toBeVisible()
     expect(screen.getByText('Content 2')).not.toBeVisible()
@@ -36,9 +46,11 @@ describe('PipelineStepper', () => {
   it('allows manual toggle of steps', async () => {
     const user = userEvent.setup()
     const steps = makeSteps()
-    render(<PipelineStepper steps={steps} activeStepId="step-1" />)
+    render(
+      <PipelineStepper steps={steps} activeStepId="step-1" defaultCollapsed={new Set(['step-2'])} />
+    )
 
-    // Content 2 is not shown (not active step)
+    // Content 2 is collapsed by default (in defaultCollapsed)
     expect(screen.getByText('Content 2')).not.toBeVisible()
 
     // Click on Step Two header to expand it
@@ -52,9 +64,11 @@ describe('PipelineStepper', () => {
 
   it('shows summary when step is collapsed', () => {
     const steps = makeSteps([{ summary: 'Query submitted' }])
-    render(<PipelineStepper steps={steps} activeStepId="step-2" />)
+    render(
+      <PipelineStepper steps={steps} activeStepId="step-2" defaultCollapsed={new Set(['step-1'])} />
+    )
 
-    // Step 1 is not the active step and should show summary
+    // Step 1 is in defaultCollapsed and should show summary
     expect(screen.getByText('Query submitted')).toBeInTheDocument()
   })
 
