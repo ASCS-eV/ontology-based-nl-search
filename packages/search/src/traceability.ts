@@ -2,11 +2,10 @@
  * Traceability explorer.
  *
  * Given an asset IRI, walks the outgoing `@id` references already present
- * in the instance graph and returns the lineage as a typed tree. Where
- * task #18 surfaces the one hop a JOIN walked, this module surfaces
- * *every* hop reachable from a result row — so users can navigate the
- * full validation chain (e.g. `scenario → ositrace → hdmap`) without
- * needing to express the chain as a query filter.
+ * in the instance graph and returns the lineage as a typed tree. The module
+ * surfaces every hop reachable from a result row — so users can navigate the
+ * full validation chain without needing to express the chain as a query
+ * filter.
  *
  * Powered by the cached {@link ReferenceIndex}: each typed-source asset
  * already has its outgoing class-level edge signatures recorded
@@ -48,9 +47,9 @@ export interface TraceabilityNode {
   asset: string
   /** `rdfs:label` if present, else the asset IRI. */
   name: string
-  /** Asset class IRI (e.g. `.../ositrace/v6/OSITrace`). */
+  /** Asset class IRI (e.g. `.../<domain>/<version>/<Class>`). */
   type: string
-  /** Owning domain name (e.g. `ositrace`). Empty when the type doesn't resolve. */
+  /** Owning domain name. Empty when the type doesn't resolve. */
   domain: string
   /**
    * Outgoing references. Empty when the depth budget is exhausted OR
@@ -75,8 +74,8 @@ export interface LineageOptions {
  *
  * Cycle-safe: tracks visited IRIs along the current path so the same
  * asset never appears twice in one branch. Different branches may
- * legitimately revisit (e.g. a shared HD map referenced from multiple
- * scenarios), so the guard is per-path, not global.
+ * legitimately revisit a shared referenced asset, so the guard is per-path,
+ * not global.
  */
 export async function exploreLineage(
   assetIri: string,

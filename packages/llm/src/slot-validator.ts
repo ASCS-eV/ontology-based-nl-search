@@ -110,8 +110,8 @@ const SUGGESTION_STOPWORDS = new Set([
  * across two channels:
  *   1. Substring containment (case-insensitive) — the gap word lives
  *      inside the candidate (or vice versa for long gap words). This
- *      catches the most common shape: user says "maps", candidate is
- *      `hdmap` / `HdMap` / `HighDefinitionMap`.
+ *      catches the most common shape: user says a plural or shortened term,
+ *      candidate is the canonical schema label.
  *   2. Levenshtein similarity on the single token vs the candidate.
  *      Catches typo'd or stemmed variants ("europa" → "europe").
  *
@@ -280,7 +280,7 @@ function getSuggestions(
 /**
  * Build a lookup of property name → allowed values from vocabulary.
  * Merges allowed values from all domains when the same localName appears
- * in multiple domains (e.g., hdmap:formatType and tzip21:formatType).
+ * in multiple domains.
  */
 function buildAllowedValuesIndex(
   vocabulary: OntologyVocabulary
@@ -447,9 +447,8 @@ export function validateSlots(
  * Returns the cleansed `filters` map plus any gaps for values that failed
  * SHACL constraints. The caller composes these into a SearchSlots object.
  *
- * Task 21d folded the previous typed `location` / `license` fields into
- * `filters` keyed by SHACL leaf local names — every constraint flows
- * through one generic surface.
+ * All constraints flow through one generic surface: `filters` keyed by SHACL
+ * leaf local names.
  */
 export interface ShaclSlotValidationResult {
   filters: Record<string, string | string[]>
@@ -471,8 +470,7 @@ export interface ShaclSlotValidationResult {
  * SHACL is the final gate — nothing reaches the SPARQL compiler unless every
  * declared constraint on the property is satisfied.
  *
- * Task 21d removed the typed `location` / `license` parameters: every
- * constraint now lives in `filters` keyed by the SHACL leaf local name,
+ * Every constraint lives in `filters` keyed by the SHACL leaf local name,
  * and the same validation loop handles geography, license, and any
  * other leaf the schema declares.
  */

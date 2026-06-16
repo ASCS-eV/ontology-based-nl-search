@@ -8,44 +8,44 @@
 
 /** A single filter value with its ontology context */
 export interface SlotValue {
-  /** The actual value (e.g., "motorway", "ASAM OpenDRIVE") */
+  /** The actual value (e.g. an enum value or literal) */
   value: string
-  /** Domain this property belongs to (e.g., "hdmap", "scenario") */
+  /** Domain this property belongs to (the SHACL domain name) */
   domain: string
   /** Full IRI of the property */
   propertyIri: string
 }
 
 /**
- * Cross-reference filter — join this asset's manifest references to another
- * asset domain. References nest: a filter may carry its own `references`,
- * expressing a chain through the graph. "scenarios derived from traces with
- * maps" → `[{ domain: 'ositrace', references: [{ domain: 'hdmap' }] }]`
- * (scenario → trace → map), distinct from the flat two-reference form
- * `[{ domain: 'ositrace' }, { domain: 'hdmap' }]` (scenario → trace AND
- * scenario → map). Nested entries are AND-combined like their siblings: the
- * parent must reference all of them.
+ * Cross-reference filter — join this asset's references to another asset
+ * domain. References nest: a filter may carry its own `references`, expressing
+ * a chain through the graph. A nested form `[{ domain: 'child', references: [{
+ * domain: 'grandchild' }] }]` (parent → child → grandchild) is distinct from
+ * the flat two-reference form `[{ domain: 'child' }, { domain: 'grandchild' }]`
+ * (parent → child AND parent → grandchild). Nested entries are AND-combined
+ * like their siblings: the parent must reference all of them.
  */
 export interface ReferenceFilter {
-  /** Domain of the referenced asset (e.g., "hdmap") */
+  /** Domain of the referenced asset */
   domain: string
   /** Optional label filter on the referenced asset */
   label?: string
   /**
    * Property filters that constrain the REFERENCED asset itself (not the
    * parent). Keyed by SHACL leaf local name — same shape as
-   * {@link SearchSlots.filters}. Example: "OSI traces referencing HD maps in
-   * Germany" → `{ domain: 'hdmap', filters: { country: 'DE' } }`. The compiler
+   * {@link SearchSlots.filters}. Example: a parent referencing child assets
+   * constrained by a property value →
+   * `{ domain: 'child', filters: { '<property>': '<value>' } }`. The compiler
    * applies these to the reference's own variable, so the constraint binds to
-   * the HD map, not the trace. Without this, a reference-scoped constraint
-   * partitions to the top level and binds to the wrong domain. Omitted/empty
-   * = no property constraint.
+   * the referenced asset, not the parent. Without this, a reference-scoped
+   * constraint partitions to the top level and binds to the wrong domain.
+   * Omitted/empty = no property constraint.
    */
   filters?: Record<string, string | string[]>
   /**
    * Numeric range filters that constrain the referenced asset — same shape as
-   * {@link SearchSlots.ranges}. Example: HD maps "with at least one
-   * intersection" → `{ ranges: { numberIntersections: { min: 1 } } }`.
+   * {@link SearchSlots.ranges}. Example: referenced assets meeting a numeric
+   * threshold → `{ ranges: { '<numericProperty>': { min: 1 } } }`.
    */
   ranges?: Record<string, { min?: number; max?: number }>
   /**
@@ -70,23 +70,15 @@ export interface ReferenceFilter {
  * Numeric properties go through `ranges` with `min`/`max` bounds.
  * IRI-valued properties (`sh:nodeKind sh:IRI`) accept either bare
  * IRI strings or literals, depending on the data.
- *
- * Historical note: prior versions carried a typed `location: {
- * country, state, region, city }` shape. Task 21d-flat removed it —
- * those field names were inherently ontology-specific (they only
- * exist in ontologies that import the ENVITED-X georeference shape).
- * Callers now place country/state/region/city under `filters` keyed
- * by the exact SHACL property local name, and the compiler discovers
- * the chain to each leaf.
  */
 export interface SearchSlots {
-  /** Target domain(s) for the search (e.g., ["hdmap"] or ["scenario"]) */
+  /** Target domain(s) for the search (the SHACL domain name(s)) */
   domains: string[]
   /**
    * Property filters keyed by SHACL property local name. Values are
    * literal strings (or arrays for `IN (…)` semantics). Works for any
-   * leaf in the schema — including geography, license, and other
-   * fields that used to live in a typed sub-shape.
+   * leaf in the schema — including geography, license, and any other
+   * leaf the ontology declares.
    */
   filters: Record<string, string | string[]>
   /** Numeric range filters: localName → { min?, max? } */
@@ -98,16 +90,16 @@ export interface SearchSlots {
    * reference all of them). The first entry's referenced asset is projected
    * (and drives the per-row breadcrumb); additional entries are filter-only.
    *
-   * Legacy callers may pass a single {@link ReferenceFilter} object instead of
+   * Callers may pass a single {@link ReferenceFilter} object instead of
    * an array; `normalizeReferences` accepts both at the boundary.
    */
   references?: ReferenceFilter[]
 }
 
 /**
- * Normalize a references slot to an array. Accepts the current array form, the
- * legacy single-object form, or `undefined`/empty — so an older LLM submission
- * or refine client that still sends one object keeps working. Empty/blank
+ * Normalize a references slot to an array. Accepts the array form, the
+ * single-object form, or `undefined`/empty — so a submission or refine client
+ * that sends one object keeps working. Empty/blank
  * domains are dropped.
  */
 export function normalizeReferences(

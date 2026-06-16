@@ -59,13 +59,13 @@ const logger = createComponentLogger('graphql-serializer')
  * @example
  * ```ts
  * slotsToGraphQL({
- *   domains: ['hdmap'],
+ *   domains: ['assetDomain'],
  *   filters: { country: 'Germany', roadType: 'motorway' },
  *   ranges: { numberOfLanes: { min: 3 } },
  * })
  * // Returns:
  * // query {
- * //   hdmap {
+ * //   assetDomain {
  * //     country(values: ["Germany"])
  * //     numberOfLanes(min: 3)
  * //     roadType(values: ["motorway"])

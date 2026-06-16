@@ -1,8 +1,8 @@
 /**
  * Post-LLM slot validation + compilation pipeline shared by every agent.
  *
- * Both the Vercel-SDK agent and the Copilot agent ran the same six steps
- * after the LLM produced a slot submission:
+ * The pipeline performs the same six steps for every provider after the LLM
+ * produces a slot submission:
  *
  *   1. Fuzzy-match enum values (case / typo correction against `sh:in`).
  *   2. SHACL filter validation — drop values that violate any Core constraint.
@@ -11,11 +11,8 @@
  *   5. `compileSlots` — deterministic SPARQL emission.
  *   6. `validateSlots` — final post-compile sanity / confidence-floor pass.
  *
- * Until this module those steps were copy-pasted across the two agents.
- * A bug fix in one provider was not in the other; testing the pipeline at
- * the unit level required two parallel suites. Pulling the steps out makes
- * the post-LLM contract a single, directly-testable function regardless of
- * which provider supplied the submission.
+ * This keeps the post-LLM contract a single, directly-testable function
+ * regardless of which provider supplied the submission.
  *
  * @see packages/llm/src/agent/index.ts — Vercel-SDK caller
  * @see packages/llm/src/agent/copilot-agent.ts — Copilot-SDK caller
@@ -58,7 +55,7 @@ export interface SlotPipelineSubmission {
     domains?: string[]
     filters?: Record<string, string | string[]>
     ranges?: Record<string, { min?: number; max?: number }>
-    // Accept the array form and the legacy single-object form; normalized to an
+    // Accept the array form and the single-object form; normalized to an
     // array before compilation. References may carry their own reference-scoped
     // `filters`/`ranges` (constraints on the referenced asset).
     references?: ReferenceFilter | ReferenceFilter[]

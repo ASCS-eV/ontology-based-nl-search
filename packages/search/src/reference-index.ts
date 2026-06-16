@@ -36,8 +36,7 @@ const log = createComponentLogger('reference-index')
 /**
  * Maximum predicate hops to traverse from a typed source before
  * stopping. Generous bound: the deepest reference chains observed in
- * practice (the JSON-LD `manifest:Link` indirection) reach 4 hops
- * (`hasManifest → hasReferencedArtifacts → Link → iri`). 6 leaves
+ * practice (a JSON-LD link indirection) reach 4 hops. 6 leaves
  * headroom for future ontologies without making the BFS combinatorial.
  */
 const MAX_DEPTH = 6
@@ -50,9 +49,9 @@ const RDF_TYPE = iri('rdf', 'type')
  * to a class-level signature with a sample-count.
  */
 export interface DataReferenceEdge {
-  /** Source asset class IRI (e.g. ".../ositrace/v6/OSITrace"). */
+  /** Source asset class IRI (e.g. ".../<domain>/<version>/<Class>"). */
   sourceClass: string
-  /** Source domain name (e.g. "ositrace"). */
+  /** Source domain name. */
   sourceDomain: string
   /** Target asset class IRI. */
   targetClass: string

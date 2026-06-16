@@ -8,14 +8,15 @@
  * `CompilerVocab` caches three graph-derived indexes for compilation:
  * properties, shapeGroups, and range2DProperties.
  *
- * Cross-domain support: When filters span multiple ontology domains (e.g.,
- * scenario + hdmap), the compiler identifies the primary domain (the one that
- * references others via manifest:hasReferencedArtifacts) and builds a join.
+ * Cross-domain support: When filters span multiple ontology domains, the
+ * compiler identifies the primary domain (the one that references others
+ * through the discovered reference-predicate chain) and builds a join.
  *
- * Architecture pattern: All ENVITED-X ontology domains follow a consistent
- * structure: Asset → hasDomainSpecification → (hasContent, hasFormat,
- * hasQuantity, hasQuality, hasDataSource, hasGeoreference).
- * This compiler exploits that regularity.
+ * Meta-model: many ontologies group an asset's leaf properties under
+ * intermediate shape nodes (asset → specification → group → leaf). The
+ * compiler discovers this structure from the SHACL graph at runtime rather
+ * than assuming any fixed predicate names, so it also works on flat ontologies
+ * that attach leaves directly to the asset.
  *
  * STANDARDS — the emitted query string conforms to:
  *   [SPARQL11] SPARQL 1.1 Query Language — docs/specs/references/sparql11-query.md
@@ -69,7 +70,7 @@ import { validateSparql } from './sparql-validator.js'
 
 /** Property info from ontology - supports properties existing in multiple domains */
 interface CompilerProperty {
-  /** All domains that define this property (e.g., roadTypes in both hdmap and ositrace) */
+  /** All domains that define this property (a property local name shared by more than one domain) */
   domains: Set<string>
   /** Map from domain → IRI for this property in that domain */
   iris: Map<string, string>
@@ -91,10 +92,10 @@ interface CompilerVocab {
    * Discovered property paths keyed by `${domain}:${propertyLocalName}`.
    * Each path lists the predicate hops from an asset class to the leaf
    * value — the compiler reads predicates from these instead of
-   * hard-coding `hasDomainSpecification` and `has${Group}` literals.
+   * hard-coding any specification/group predicate literals.
    *
-   * Sourced from `buildPropertyPaths` (task 21a) so the ENVITED-X
-   * meta-model is no longer a compile-time assumption.
+   * Sourced from `buildPropertyPaths`, so the meta-model structure is
+   * discovered from the schema graph, not assumed at compile time.
    */
   paths: Map<string, PropertyPath>
   /**
@@ -102,9 +103,9 @@ interface CompilerVocab {
    * Each chain lists the predicate hops from a parent asset class to
    * an IRI-typed leaf that the compiler can bind to a child asset.
    *
-   * Sourced from `buildReferenceChains` (task 21c). Drives the
-   * generic cross-reference SPARQL emission that replaced the
-   * literal `hasManifest → hasReferencedArtifacts → iri` chain.
+   * Sourced from `buildReferenceChains`. Drives the generic
+   * cross-reference SPARQL emission, with the chain of reference
+   * predicates discovered from the schema rather than hard-coded.
    *
    * Values are the chains for that parent — multiple variants are
    * possible (e.g. `manifest:iri` chain plus a direct
@@ -205,7 +206,7 @@ async function buildCompilerVocab(): Promise<CompilerVocab> {
 /**
  * Build the compiler vocabulary from an explicit store + registry. Extracted
  * from {@link buildCompilerVocab} so tests can build a vocab against a fixture
- * graph (a non-ENVITED-X schema) without the global store/registry singletons —
+ * graph (an arbitrary schema) without the global store/registry singletons —
  * the seam the flat-ontology compile test needs to drive {@link compileSlots}.
  */
 export async function buildCompilerVocabFrom(
@@ -251,17 +252,16 @@ export async function buildCompilerVocabFrom(
   }
 
   // Index property paths by (domain, propertyLocalName) for O(1) lookup
-  // when emitting triples. A property may legitimately appear in multiple
-  // asset domains (e.g., roadTypes in both hdmap and ositrace); each
-  // domain gets its own path.
+  // when emitting triples. A property local name may legitimately appear in
+  // multiple asset domains; each domain gets its own path.
   const paths = new Map<string, PropertyPath>()
   for (const path of propertyPaths) {
     paths.set(`${path.domain}:${path.propertyName}`, path)
   }
 
-  // Discover cross-domain reference chains from the property paths.
-  // Used to emit cross-references without hard-coding `hasManifest →
-  // hasReferencedArtifacts → iri` (task 21c).
+  // Discover cross-domain reference chains from the property paths, so
+  // cross-references are emitted without hard-coding any reference-predicate
+  // chain.
   const assetClassIris = new Set<string>()
   for (const desc of registry.domains.values()) {
     assetClassIris.add(desc.targetClassIri)
@@ -363,7 +363,7 @@ async function buildDomainReferences(): Promise<Map<string, Set<string>>> {
 
 /**
  * Detect whether the given domains have a parent-child referencing
- * relationship (e.g., scenario references hdmap). Returns true only when
+ * relationship (one asset domain references another). Returns true only when
  * at least one domain in the set references another domain in the set.
  */
 function detectHierarchy(domains: string[], domainRefs: Map<string, Set<string>>): boolean {
@@ -380,7 +380,8 @@ function detectHierarchy(domains: string[], domainRefs: Map<string, Set<string>>
 
 /**
  * Compile a UNION query for peer domains — independent asset types that
- * share similar properties (e.g., hdmap + ositrace both have roadTypes).
+ * share similar properties (the same property local name in more than one
+ * domain).
  *
  * Generates one UNION arm per domain, each with the domain-specific
  * patterns, filters, and location constraints. Shared FILTER clauses
@@ -469,10 +470,10 @@ async function compilePeerDomainUnion(
     unionArms.push(`  {\n${armBody}\n  }`)
   }
 
-  // License — task 21d folded license into normal `filters` keyed by
-  // the SHACL leaf local name. License chains are emitted by the
-  // generic deep-filter machinery inside `buildDomainPatterns` (one
-  // chain per UNION arm). No outer license OPTIONAL block needed.
+  // License is handled as a normal `filters` entry keyed by the SHACL leaf
+  // local name. License chains are emitted by the generic deep-filter
+  // machinery inside `buildDomainPatterns` (one chain per UNION arm). No
+  // outer license OPTIONAL block needed.
 
   // Build the UNION body
   const unionBody = unionArms.join('\n  UNION\n')
@@ -493,9 +494,9 @@ async function compilePeerDomainUnion(
  * When multiple peer domains are selected (no parent-child reference),
  * generates a UNION query searching all domains independently.
  *
- * When filters span domains with a referencing hierarchy (e.g.,
- * scenario referencing hdmap), identifies the primary (composite)
- * domain and generates a join via manifest:hasReferencedArtifacts.
+ * When filters span domains with a referencing hierarchy (one asset
+ * domain referencing another), identifies the primary (composite)
+ * domain and generates a join through the discovered reference chain.
  *
  * When no domain is specified and no filters exist, searches across ALL
  * asset types using discovered asset domain classes.
@@ -568,7 +569,7 @@ export async function compileSlots(slots: SearchSlots): Promise<string> {
  *
  * Production callers pass nothing — the global disk-derived registry and the
  * cached global vocab are used. Tests inject a fixture-built registry + vocab
- * to drive the compiler against a non-ENVITED-X schema (the seam the
+ * to drive the compiler against an arbitrary schema (the seam the
  * flat-ontology compile test needs). Only the deps a single-domain compile
  * reads are overridable; cross-domain / references paths still consult the
  * global asset-domain and reference indexes.
@@ -630,7 +631,7 @@ export async function compileSlotsWithTrace(
 
   // Determine whether the domains are peers (no parent-child relationship)
   // or have a referencing hierarchy. Peer domains get a UNION query; parent-child
-  // domains get a JOIN via manifest:hasReferencedArtifacts.
+  // domains get a JOIN through the discovered reference chain.
   // Only multi-domain queries can have a parent-child hierarchy, so the
   // (global) reference index is consulted only then — a single-domain compile
   // stays free of the cross-domain discovery dependency.
@@ -662,8 +663,8 @@ export async function compileSlotsWithTrace(
   }
 
   // Collect initial prefix domains (will be augmented with foreign domains
-  // discovered during pattern generation, e.g., openlabel-v2 properties
-  // used inside an hdmap query).
+  // discovered during pattern generation, e.g., a foreign domain's properties
+  // used inside another domain's query).
   const prefixDomains = new Set([primaryDomain])
   for (const d of Object.keys(filtersByDomain)) {
     prefixDomains.add(d)
@@ -711,10 +712,10 @@ export async function compileSlotsWithTrace(
   // Build cross-domain joins for referenced domains. Only include
   // domains that have actual filters or ranges — domains selected by
   // the LLM but without constraints are skipped to avoid mandatory
-  // JOINs that would eliminate results. (Task 21d removed the special-
-  // case "delegate location to referenced domain" logic — location
-  // fields now flow through `slots.filters` and partition naturally
-  // to whichever domain owns the matching property path.)
+  // JOINs that would eliminate results. (Location and other geographic
+  // fields flow through `slots.filters` and partition naturally to
+  // whichever domain owns the matching property path — there is no
+  // special-case delegation to a referenced domain.)
   const allReferencedDomains = new Set([
     ...Object.keys(filtersByDomain).filter((d) => d !== primaryDomain),
     ...Object.keys(rangesByDomain).filter((d) => d !== primaryDomain),
@@ -734,8 +735,8 @@ export async function compileSlotsWithTrace(
       Object.keys(refFilters).length > 0 || Object.keys(refRanges).length > 0
     if (!hasRefConstraints) continue
 
-    // Join via the discovered cross-reference chain (task 21c). No
-    // ENVITED-X meta-model predicates are baked in here — the chain
+    // Join via the discovered cross-reference chain. No meta-model
+    // predicates are baked in here — the chain
     // comes from `vocabIndex.referenceChains` populated by
     // `buildReferenceChains` from SHACL leaf properties whose binding
     // shape allows an IRI value (`sh:nodeKind sh:IRI` or `sh:class`).
@@ -781,10 +782,10 @@ export async function compileSlotsWithTrace(
     hasReferenceJoin = true
   }
 
-  // License — task 21d folded `license` into regular `slots.filters`
-  // keyed by the SHACL leaf local name. The chain is emitted by the
-  // generic deep-filter machinery in buildDomainPatterns, so no
-  // license-specific OPTIONAL block is needed here.
+  // License is handled as a regular `slots.filters` entry keyed by the
+  // SHACL leaf local name. The chain is emitted by the generic deep-filter
+  // machinery in buildDomainPatterns, so no license-specific OPTIONAL block
+  // is needed here.
 
   // Cross-reference join driven by the explicit `slots.references` slot.
   // Resolution precedence (most precise first):
@@ -798,8 +799,9 @@ export async function compileSlotsWithTrace(
   //      resort when neither SHACL nor instance data declare a link.
   // Entries are AND-combined (the asset must reference all of them) and may
   // NEST: a reference's own `references` chain one hop deeper (parent ref →
-  // child), so "traces with maps" becomes scenario → trace → map rather than
-  // scenario → trace AND scenario → map. Every node is projected and each with
+  // child), so a nested reference becomes parent → child → grandchild rather
+  // than two flat siblings (parent → child AND parent → grandchild). Every
+  // node is projected and each with
   // a resolved chain contributes its own breadcrumb plan. The distinct-asset
   // wrap (assembleQuery) keeps the LIMIT counting primary assets despite the
   // (now deeper) reference fan-out. See `emitReferenceNode`.
@@ -1054,8 +1056,8 @@ function compileCrossDomainQuery(
     patterns.push('  rdfs:label ?name .')
   }
 
-  // Generic filter emission — task 21d folded location and license
-  // into `slots.filters` keyed by their SHACL leaf local names. For
+  // Generic filter emission — location and license are ordinary
+  // `slots.filters` entries keyed by their SHACL leaf local names. For
   // cross-domain queries (no specific domain selected) each filter
   // emits as an OPTIONAL chain walking whatever property path the
   // schema graph discovers for that leaf in any registered domain.
@@ -1182,11 +1184,11 @@ function emitCrossDomainFilters(
 /**
  * Compress a full predicate IRI to a `prefix:localName` form when the
  * predicate lives in the given domain's namespace. Falls back to an
- * angle-bracketed full IRI so cross-namespace predicates (e.g. the
- * `georeference:` chain) still parse.
+ * angle-bracketed full IRI so cross-namespace predicates (those in another
+ * domain's namespace) still parse.
  *
- * Used by 21b's path-driven emission to keep the wire output stable
- * with the previous literal-string emission (`hdmap:hasContent` etc.).
+ * Used by the path-driven emission to keep the wire output stable as
+ * `prefix:localName` strings.
  */
 function prefixedPredicate(predicateIri: string, domain: DomainDescriptor): string {
   if (predicateIri.startsWith(domain.namespace)) {
@@ -1197,8 +1199,8 @@ function prefixedPredicate(predicateIri: string, domain: DomainDescriptor): stri
 
 /**
  * Find the DomainDescriptor whose namespace matches a predicate IRI.
- * Used to resolve cross-domain predicates (e.g., georeference:country)
- * to their prefix for SPARQL emission.
+ * Used to resolve cross-domain predicates (a predicate IRI whose namespace
+ * differs from the primary domain's) to their prefix for SPARQL emission.
  */
 function findDomainForIri(iri: string, registry: DomainRegistry): DomainDescriptor | undefined {
   let bestDesc: DomainDescriptor | undefined
@@ -1257,8 +1259,8 @@ function pickDataReferenceEdge(
 
 /**
  * Fallback for {@link pickDataReferenceEdge}: when no exact target match
- * exists, pick any sibling edge from the same parent domain. The manifest
- * IRI pattern is generic — `hasManifest → hasReferencedArtifacts → iri`
+ * exists, pick any sibling edge from the same parent domain. The reference
+ * IRI edge is generic — the discovered chain
  * can point to any asset type. If the data index observed the parent
  * reaching *some* other domain via that path, the same path is valid for
  * the requested target (the caller adds the type constraint separately).
@@ -1411,7 +1413,7 @@ function emitReferenceChainTriples(
 /**
  * Pick the step-N predicate to emit for the path of ANY property in the
  * given (domain, group) — used to discover the asset→spec and spec→group
- * predicates without hard-coding `hasDomainSpecification` / `has${Group}`.
+ * predicates without hard-coding any specification/group predicate names.
  *
  * All filter/range properties classified into the same shape group share
  * the same step-N predicate (they live behind the same intermediate
@@ -1440,10 +1442,10 @@ function lookupStepPredicate(
  * shape-group machinery.
  *
  * The shape-group emission assumes the canonical 3-hop shape
- * `asset → spec → group → leaf` — exactly the depth produced by the
- * ENVITED-X domain-specification meta-model. Paths longer than that
- * (e.g. ENVITED-X location: `asset → spec → georef → loc → country`)
- * would route to a misclassified `hasGroup` predicate. Generic deep
+ * `asset → spec → group → leaf` — the depth produced by a
+ * domain-specification meta-model. Paths longer than that
+ * (e.g. a location leaf reached via `asset → spec → georef → loc → leaf`)
+ * would route to a misclassified group predicate. Generic deep
  * emission walks the actual SHACL-discovered chain instead.
  */
 const SHALLOW_PATH_MAX_STEPS = 3
@@ -1463,12 +1465,11 @@ const SHALLOW_PATH_MAX_STEPS = 3
  *   - **Deep** (path > 3 steps): emitted by walking the full
  *     SHACL-discovered chain via {@link emitDeepFilters}, grouped by
  *     shared path prefix so multiple deep filters under the same
- *     intermediate (e.g. `country` + `city`, both under `loc`) reuse
- *     the same chain emission.
+ *     intermediate (e.g. two leaves under the same intermediate node)
+ *     reuse the same chain emission.
  *
  * No ontology-specific field names are referenced. The compiler reads
- * which filters are "deep" purely from the SHACL graph at runtime
- * (task 21d).
+ * which filters are "deep" purely from the SHACL graph at runtime.
  */
 function buildDomainPatterns(
   domainName: string,
@@ -1497,15 +1498,15 @@ function buildDomainPatterns(
   // Partition entries into three emission strategies, all driven by the
   // SHACL-discovered property path:
   //   - SHAPE-GROUP: a property classified into a discovered shape group
-  //     (the ENVITED-X `asset → DomainSpecification → has${Group} → leaf`
-  //     meta-model). Emitted by the shape-group machinery below.
+  //     (the `asset → specification → group → leaf` meta-model). Emitted
+  //     by the shape-group machinery below.
   //   - DEEP: a path longer than the shape-group standard — walked from the
   //     spec variable via emitDeepFilters.
   //   - DIRECT: a property with NO shape group anywhere (a flat ontology's
   //     `asset → leaf`, or any non-meta-model schema). Walked straight from
-  //     the asset variable — no fabricated `hasDomainSpecification` /
-  //     `has${Group}` hops. This is what makes the compiler work on a schema
-  //     that is not shaped like the ENVITED-X meta-model.
+  //     the asset variable — no fabricated specification/group hops. This is
+  //     what makes the compiler work on a schema that is not shaped like the
+  //     specification meta-model.
   // Empty values are dropped (a dangling triple with no FILTER returns zero
   // rows silently); a property with no discoverable path is left to the
   // shape-group fallback rather than walked.
@@ -1540,11 +1541,7 @@ function buildDomainPatterns(
   // `queryPropertyShapeGroups`). There is no enumerated allow-list and no
   // privileged group — any shape group declared in the ontology is
   // handled uniformly, and each property's range is routed to the group
-  // the SHACL graph actually puts it in. Pre-refactor the compiler had a
-  // four-case switch over Content/Format/Quantity/DataSource that
-  // silently dropped properties in other groups, and ranges were
-  // unconditionally linked under `hasQuantity` regardless of where the
-  // property actually lives.
+  // the SHACL graph actually puts it in.
   const filterPropsByGroup = new Map<string, [string, string | string[]][]>()
   const rangePropsByGroup = new Map<string, [string, { min?: number; max?: number }][]>()
   // Properties whose domain has no shape groups at all — emitted directly
@@ -1617,8 +1614,8 @@ function buildDomainPatterns(
   for (const group of [...groupsToEmit].sort()) {
     // Pre-resolve all property prefixes and sub-group by prefix.
     // Properties from different ontology domains may live on separate RDF
-    // nodes even when they share the same shape group (e.g., hdmap:Content
-    // and openlabel_v2:Odd are both reachable via hasContent). Binding them
+    // nodes even when they share the same shape group (two domains' group
+    // nodes reachable via the same group predicate). Binding them
     // to the same SPARQL variable would produce an unsatisfiable pattern.
     // Sub-grouping by prefix ensures each type-disjoint node gets its own
     // variable and its own `hasGroup` triple.
@@ -1739,8 +1736,8 @@ function buildDomainPatterns(
 
   // Deep filters — paths longer than the shape-group standard. Emit
   // by walking each filter's discovered chain. Filters sharing a path
-  // prefix (e.g. ENVITED-X country + city, both under
-  // hasGeoreference → hasProjectLocation) reuse the same intermediate
+  // prefix (e.g. two location leaves under the same intermediate node)
+  // reuse the same intermediate
   // variables for a compact query.
   if (deepFilterEntries.length > 0) {
     emitDeepFilters(
@@ -1804,15 +1801,15 @@ function buildDomainPatterns(
 /**
  * Emit MANDATORY patterns for "direct" properties — those with a discovered
  * path but NO shape group anywhere (a flat ontology's `asset → leaf`, or any
- * schema not shaped like the ENVITED-X DomainSpecification meta-model).
+ * schema not shaped like the specification meta-model).
  *
  * Each property's discovered path is walked straight from the asset variable;
  * properties that share a path prefix reuse the intermediate variables for a
  * compact query. Every emitted predicate comes from a discovered PathStep —
- * no `hasDomainSpecification` / `has${Group}` predicate is fabricated. This is
+ * no specification/group predicate is fabricated. This is
  * the emission path that makes the compiler genuinely ontology-agnostic; the
- * shape-group machinery above stays the path for ENVITED-X-shaped domains so
- * their output (and the determinism snapshots) are unchanged.
+ * shape-group machinery above stays the path for specification-shaped domains
+ * so their output (and the determinism snapshots) are unchanged.
  */
 function emitDirectPathFilters(
   domainName: string,
@@ -2042,8 +2039,8 @@ function partitionFiltersByDomain(
   }
 
   // Multi-domain: find which detected domain owns each property. A
-  // property may exist in MULTIPLE domains (e.g., roadTypes in both
-  // hdmap and ositrace). Assign it to ALL matching domains so UNION
+  // property local name may exist in MULTIPLE domains. Assign it to ALL
+  // matching domains so UNION
   // queries work. Deep-chain leaves (which appear in `vocabIndex.paths`
   // but not in `vocabIndex.properties` because their owning shape's
   // target class lives in a different domain) are matched via the path
@@ -2066,8 +2063,8 @@ function partitionFiltersByDomain(
  * Domains that "own" a given property local name — i.e. the set of
  * detected-domain candidates a multi-domain query partition should
  * consider. Combines the `queryPropertyDomains` index with the
- * property-path BFS so deep-chain leaves (country, license, …) are
- * matched the same way as shallow leaves (roadTypes, …).
+ * property-path BFS so deep-chain leaves are matched the same way as
+ * shallow leaves.
  */
 function ownersOf(propName: string, vocabIndex: CompilerVocab): Set<string> {
   const owners = new Set<string>()
@@ -2126,8 +2123,8 @@ function partitionRangesByDomain(
 
 /**
  * Determine the primary domain — the composite one that references others.
- * E.g., if we have both 'scenario' and 'hdmap' filters, scenario is primary
- * because scenarios reference hdmaps.
+ * E.g., if two domains' filters are present and one references the other,
+ * the referencing domain is primary.
  */
 async function resolvePrimaryDomain(
   detectedDomains: string[],
@@ -2249,11 +2246,11 @@ function groupVariableName(group: string): string {
 }
 
 /**
- * The `hasGroup` predicate linking the DomainSpecification to a shape's
- * sub-resource: `Content → hasContent`, `Quantity → hasQuantity`, …
+ * The `hasGroup` predicate linking the specification node to a shape's
+ * sub-resource (e.g. group `Content` → predicate `hasContent`).
  *
- * The ENVITED-X SHACL convention is consistent across every domain, so the
- * predicate is derivable from the group localName — no hand-maintained map.
+ * Many SHACL conventions name the predicate `has<Group>`, so it is derivable
+ * from the group localName — no hand-maintained map.
  */
 function groupPredicate(group: string): string {
   return `has${group}`
@@ -2262,13 +2259,14 @@ function groupPredicate(group: string): string {
 /**
  * Resolve which SPARQL prefix should be used for a property.
  *
- * Strategy: Properties can exist in multiple domains (e.g., roadTypes in both hdmap and ositrace).
+ * Strategy: Properties can exist in multiple domains (the same property local
+ * name in more than one domain).
  * We use the target domain's prefix if the property exists there, otherwise find the correct
  * registry entry by matching the property's full IRI namespace against registered domains.
  *
- * Returns the SPARQL prefix alias (e.g., "hdmap", "openlabel_v2") that correctly
+ * Returns the SPARQL prefix alias (a domain's short prefix) that correctly
  * expands to the property's namespace. This may differ from the domain name used
- * in the vocabulary index (e.g., IRI-derived "openlabel" maps to prefix "openlabel_v2").
+ * in the vocabulary index (e.g., an IRI-derived domain name maps to a registered prefix).
  */
 function resolvePropertyPrefix(
   propName: string,
@@ -2351,10 +2349,10 @@ function isNonEmpty(value: string | string[] | undefined): value is string | str
  * unknown keys never reach SPARQL compilation.
  *
  * The `paths` index check catches deep-chain leaf properties (e.g.
- * ENVITED-X country / state / region / city, which live behind the
- * georeference chain and don't appear in `queryPropertyDomains` with a
- * domain-specific target class — they're owned by a sub-shape whose
- * `sh:targetClass` is `georeference:ProjectLocation`). Without this gate
+ * location leaves that live behind a shared chain and don't appear in
+ * `queryPropertyDomains` with a domain-specific target class — they're owned
+ * by a sub-shape whose `sh:targetClass` is a shared intermediate type).
+ * Without this gate
  * deep-chain filters would be dropped by `partitionFiltersByDomain`
  * before reaching the compiler.
  */
@@ -2370,7 +2368,7 @@ function isKnownProperty(propName: string, vocabIndex: CompilerVocab): boolean {
 
 /**
  * Emit a FILTER clause for a location field that may be a single string or
- * an array. Generic — used for every georeference:* literal slot.
+ * an array. Generic — used for every location-style literal slot.
  *
  *  - **Array**: `FILTER(?v IN ("DE","FR","IT"))` — exact equality over a set,
  *    so a region expressed as a list of codes filters precisely.

@@ -50,15 +50,15 @@ export const referenceFilterWireSchema: z.ZodType<ReferenceFilterInput> = z.lazy
       .optional()
       .describe(
         'Property filters on THIS referenced asset (keyed by SHACL leaf local name), ' +
-          'e.g. { "country": ["DE","FR"] } for "referenced maps in Germany or France". ' +
+          'i.e. a property of the referenced asset constrained to one or more values. ' +
           'Put constraints that describe the referenced asset here, NOT in the top-level slots.'
       ),
     ranges: z
       .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
       .optional()
       .describe(
-        'Numeric range filters on THIS referenced asset, e.g. ' +
-          '{ "numberIntersections": { "min": 1 } } for "referenced maps with at least one intersection".'
+        'Numeric range filters on THIS referenced asset — a numeric property of the ' +
+          'referenced asset constrained to a minimum and/or maximum.'
       ),
     references: z.array(referenceFilterWireSchema).optional(),
   })

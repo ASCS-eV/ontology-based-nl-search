@@ -37,7 +37,7 @@ function loadDataFile(filePath: string): string {
 /**
  * Empty fallback data. If sample data files are missing, the store loads
  * an empty graph. This ensures the system works with any ontology — no
- * hardcoded domain names or ENVITED-X assumptions.
+ * hardcoded domain assumptions.
  *
  * Production systems should always have sample files present, so this
  * fallback is primarily for development/troubleshooting.

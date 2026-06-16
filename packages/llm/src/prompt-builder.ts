@@ -132,23 +132,23 @@ AND-combined (the asset must reference every one). A single object is also
 accepted for one reference.
 
 **Put constraints on the referenced asset INSIDE its reference entry — not at
-the top level.** When the user constrains the thing being referenced ("traces
-that reference **maps in Germany with at least one intersection**"), the
-country/intersection constraints describe the MAP, so they belong in that
-reference's \`filters\`/\`ranges\`:
-\`references: [{ domain: "map", filters: { country: "DE" }, ranges: { numberIntersections: { min: 1 } } }]\`.
+the top level.** When the user constrains the referenced asset itself ("traces
+that reference **maps having some property value and meeting a numeric
+threshold**"), those constraints describe the referenced asset, so they belong
+in that reference's \`filters\`/\`ranges\`:
+\`references: [{ domain: "map", filters: { "<property>": "<value>" }, ranges: { "<numericProperty>": { "min": 1 } } }]\`.
 Top-level \`filters\`/\`ranges\` only ever describe the PRIMARY asset. A
 reference-scoped constraint placed at the top level binds to the wrong asset
 and the query returns nothing.
 
 **Flat (siblings) vs nested (chain) — read the user's phrasing carefully:**
-- Siblings: the PRIMARY asset references several types *directly*. "scenarios
-  that reference a trace AND a map" → \`[{ domain: "trace" }, { domain: "map" }]\`.
+- Siblings: the PRIMARY asset references several types *directly*. "a parent
+  that references a child AND a grandchild" → \`[{ domain: "child" }, { domain: "grandchild" }]\`.
 - Nested: a referenced asset itself references another — a chain. The giveaway
   is "X **with/containing** Y" or "X derived **from** Y **with** Z", where Z
-  belongs to Y, not to the primary. "scenarios derived from traces **with maps**"
-  → the map hangs off the trace → \`[{ domain: "trace", references: [{ domain: "map" }] }]\`
-  (scenario → trace → map), NOT two flat siblings.
+  belongs to Y, not to the primary. "parents derived from children **with grandchildren**"
+  → the grandchild hangs off the child → \`[{ domain: "child", references: [{ domain: "grandchild" }] }]\`
+  (parent → child → grandchild), NOT two flat siblings.
 
 **When to use:**
 - When the user asks for one type of asset that links to or includes another type

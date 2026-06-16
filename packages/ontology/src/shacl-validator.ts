@@ -304,7 +304,7 @@ export class ShaclValidator {
    *
    * The performance win: rdf-validate-shacl's `validate()` walks the entire
    * shapes graph each call. A 27-element array under sequential validation
-   * pays that cost 27 times (~80s on the ENVITED-X ontology). Batching pays
+   * pays that cost 27 times (~80s on a large ontology). Batching pays
    * it once (~3s).
    *
    * Semantics match `validateValue`: a value conforms iff it conforms under
@@ -434,12 +434,12 @@ export class ShaclValidator {
   }
 
   /**
-   * Resolve a slot key (the local name used in SearchSlots, e.g. "country" or
-   * "roadTypes") to the full property IRI(s) declared in the shapes graph.
+   * Resolve a slot key (the local name used in SearchSlots, e.g. a leaf local
+   * name) to the full property IRI(s) declared in the shapes graph.
    *
    * Returns every IRI whose local name matches — properties can appear in
-   * multiple domains (e.g. roadTypes in hdmap and ositrace). Callers can pick
-   * by domain or validate against every match.
+   * multiple domains (the same local name in more than one domain). Callers can
+   * pick by domain or validate against every match.
    */
   resolveSlotIris(slotKey: string): string[] {
     const lookup = this.cachedSlotLookup ?? this.buildSlotLookup()
@@ -476,7 +476,7 @@ export class ShaclValidator {
     if (iris.length === 0) return { conforms: true, violations: [], resolvedIris: [] }
 
     // Validate all resolved IRIs in parallel — each is independent and the
-    // engine calls dominate wall-clock time (~3s each on the ENVITED-X graph).
+    // engine calls dominate wall-clock time (~3s each on a large graph).
     const results = await Promise.all(iris.map((iri) => this.validateValue(iri, value)))
 
     const allViolations: ShaclViolation[] = []

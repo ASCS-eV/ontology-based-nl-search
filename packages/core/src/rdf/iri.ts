@@ -12,8 +12,8 @@
  * Extract the local name (fragment or last path segment) from a full IRI.
  *
  * Examples:
- * - `http://example.org/ontology#HdMap` → `"HdMap"`
- * - `https://w3id.org/ascs-ev/envited-x/hdmap/v6/hasFormat` → `"hasFormat"`
+ * - `http://example.org/ontology#AssetClass` → `"AssetClass"`
+ * - `http://example.org/ontology/v1/hasFormat` → `"hasFormat"`
  */
 export function extractLocalName(iri: string): string {
   const idx = Math.max(iri.lastIndexOf('#'), iri.lastIndexOf('/'))
@@ -27,7 +27,7 @@ export function extractLocalName(iri: string): string {
  * 1. If a `domainForIri` resolver is provided, use longest-prefix matching
  *    against known domain namespaces (most accurate).
  * 2. Fallback: extract the path segment before `/vN/` by convention
- *    (e.g., `".../hdmap/v6/HdMap"` → `"hdmap"`).
+ *    (e.g., `".../asset-domain/v1/AssetClass"` → `"asset-domain"`).
  *
  * Returns empty string when neither strategy matches.
  */

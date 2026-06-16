@@ -112,10 +112,8 @@ export class AgentError extends AppError {
 
 /**
  * `ontology-sources.json` manifest is present but unreadable or malformed.
- * The five duplicate source-discovery implementations previously consumed
- * these errors via silent `catch {}` blocks and fell back to the default
- * submodule path — making misconfigurations invisible. Surfacing as 503
- * because the API can't serve meaningful results without a valid manifest.
+ * Surfacing as 503 because the API can't serve meaningful results without a
+ * valid manifest.
  */
 export class OntologySourcesError extends AppError {
   readonly code = ERROR_CODE.SERVICE_UNAVAILABLE

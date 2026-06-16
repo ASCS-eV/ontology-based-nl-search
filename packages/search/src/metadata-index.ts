@@ -69,9 +69,9 @@ export interface FacetValue {
 
 export interface AssetMetadata {
   asset: string
-  /** Asset class IRI (e.g. `.../hdmap/v6/HdMap`). */
+  /** Asset class IRI (e.g. `.../<domain>/<version>/<Class>`). */
   type: string
-  /** Owning domain name (e.g. `hdmap`). Empty when unresolved. */
+  /** Owning domain name. Empty when unresolved. */
   domain: string
   /** Facets keyed by discovered group name (`Quality`, `Content`, …). */
   groups: Record<string, FacetValue[]>

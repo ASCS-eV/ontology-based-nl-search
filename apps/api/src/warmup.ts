@@ -89,9 +89,8 @@ export async function warmup(): Promise<WarmupResult> {
 
   // [3/6] Pre-build the LLM system prompt + vocabulary into the agent's
   // module-private cache so the first user request sees a hot cache.
-  // Previously this step called `buildSystemPrompt(getShaclContent())`
-  // into a discarded local — the agent then rebuilt on the first request,
-  // showing up as ~14s of `prompt-build` on the first query trace.
+  // Without this warmup the agent rebuilds on the first request, adding
+  // ~14s of `prompt-build` to the first query trace.
   const vocabMs = await runStep(3, 'LLM system prompt build', warmupAgentPrompt, errors)
 
   // [4/6] Compiler vocabulary — property-path BFS + leaf-kind enrichment
