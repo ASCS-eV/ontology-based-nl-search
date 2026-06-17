@@ -15,6 +15,7 @@
  */
 
 import { exec } from 'node:child_process'
+import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 
 const execAsync = promisify(exec)
@@ -29,30 +30,45 @@ const DEFAULT_PORTS = [
 const PORTS_TO_CLEAN = process.argv.slice(2).map(Number).filter(Boolean)
 const ports = PORTS_TO_CLEAN.length > 0 ? PORTS_TO_CLEAN : DEFAULT_PORTS
 
-console.log(`[clean-ports] Cleaning ports: ${ports.join(', ')}`)
-
 /** Parse command stdout into a de-duplicated list of numeric PIDs. */
-function parsePids(stdout) {
+export function parsePids(stdout) {
   return [...new Set(stdout.split(/\s+/).map(Number).filter(Boolean))]
 }
 
 /**
- * Return the PIDs LISTENING on `port`. Cross-platform: PowerShell on
- * Windows, lsof elsewhere. Throws when the discovery tool itself fails
- * (e.g. not installed) so the failure is LOUD — the previous version
+ * Build the platform-specific command that prints the PIDs LISTENING on
+ * `port`, one per line (PowerShell on Windows, lsof elsewhere).
+ *
+ * Windows note: the obvious `Get-NetTCPConnection -LocalPort <port> -State
+ * Listen` form raises a non-terminating "no matching objects found" error
+ * whenever the port is FREE. `-ErrorAction SilentlyContinue` hides the
+ * message but still leaves powershell's exit code at 1, which
+ * `child_process.exec` turns into a rejected promise — so a free port (the
+ * normal case) looked like an inspection failure and emitted a bogus warning.
+ * Listing every listener and filtering in the pipeline never raises that
+ * error: a free port exits 0 with empty output.
+ */
+export function buildListPidsCommand(port, platform = process.platform) {
+  if (platform === 'win32') {
+    return `powershell -NoProfile -Command "Get-NetTCPConnection -State Listen | Where-Object LocalPort -eq ${port} | Select-Object -ExpandProperty OwningProcess -Unique"`
+  }
+  return `lsof -ti tcp:${port} -sTCP:LISTEN`
+}
+
+/**
+ * Return the PIDs LISTENING on `port`. Throws when the discovery tool itself
+ * fails (e.g. not installed) so the failure is LOUD — the previous version
  * swallowed the Windows-only `powershell`/`taskkill` "command not found"
  * errors on Linux/macOS and reported every port "free", making cleanup a
  * silent no-op.
  */
-async function getListeningPids(port) {
+export async function getListeningPids(port) {
   if (isWindows) {
-    const { stdout } = await execAsync(
-      `powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique"`
-    )
+    const { stdout } = await execAsync(buildListPidsCommand(port, 'win32'))
     return parsePids(stdout)
   }
   try {
-    const { stdout } = await execAsync(`lsof -ti tcp:${port} -sTCP:LISTEN`)
+    const { stdout } = await execAsync(buildListPidsCommand(port, process.platform))
     return parsePids(stdout)
   } catch (err) {
     // lsof exits 1 when nothing holds the port — that's "free", not an error.
@@ -98,6 +114,8 @@ async function cleanPort(port) {
 }
 
 async function main() {
+  console.log(`[clean-ports] Cleaning ports: ${ports.join(', ')}`)
+
   for (const port of ports) {
     await cleanPort(port)
   }
@@ -107,7 +125,14 @@ async function main() {
   console.log('[clean-ports] Done')
 }
 
-main().catch((err) => {
-  console.error('[clean-ports] Error:', err)
-  process.exit(1)
-})
+// Only run when executed directly (`node scripts/clean-ports.mjs`), so the
+// helpers above can be imported by tests without killing anyone's ports.
+const invokedDirectly =
+  Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (invokedDirectly) {
+  main().catch((err) => {
+    console.error('[clean-ports] Error:', err)
+    process.exit(1)
+  })
+}

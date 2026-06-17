@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
-  "packageManager": "pnpm@11.5.2",
+  "packageManager": "pnpm@11.7.0",
   "engines": {
     "node": ">=22"
   },
@@ -13,12 +13,13 @@
     "dev:api": "node scripts/clean-ports.mjs 3003 && pnpm run build && pnpm --filter @ontology-search/api dev",
     "dev:web": "node scripts/clean-ports.mjs 5174 && turbo run dev --filter=@ontology-search/web",
     "test": "turbo run test --concurrency=2",
+    "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "test:e2e": "turbo run test:e2e",
     "check-types": "turbo run check-types",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "validate": "turbo run check-types && turbo run test --concurrency=2 && pnpm run lint && pnpm run format:check",
+    "validate": "turbo run check-types && turbo run test --concurrency=2 && pnpm run test:scripts && pnpm run lint && pnpm run format:check",
     "clean": "turbo run clean",
     "clean:ports": "node scripts/clean-ports.mjs",
     "check:setup": "node scripts/check-ontology-sources.mjs --strict",
