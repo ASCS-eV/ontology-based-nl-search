@@ -18,6 +18,7 @@ import {
   type GraphQLFieldConfigMap,
   GraphQLFloat,
   GraphQLInputObjectType,
+  GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -148,12 +149,18 @@ export function buildGraphQLSchema(vocab: Vocabulary): GraphQLSchema {
         for (const property of props) {
           const fieldName = sanitizeName(property.name)
           if (property.type === 'numeric') {
+            // Type the bounds by the real datatype so the editor shows Int vs
+            // Float and rejects 1.5 on an integer field; surface the datatype in
+            // the argument description too (cm6-graphql renders the description,
+            // not the argument type, in its completion info panel).
+            const boundType = property.datatype === 'integer' ? GraphQLInt : GraphQLFloat
+            const datatype = property.datatype ?? 'number'
             fields[fieldName] = {
               type: RangeScalar,
               description: describeProperty(property),
               args: {
-                min: { type: GraphQLFloat, description: 'Lower bound (inclusive).' },
-                max: { type: GraphQLFloat, description: 'Upper bound (inclusive).' },
+                min: { type: boundType, description: `Lower bound, inclusive (${datatype}).` },
+                max: { type: boundType, description: `Upper bound, inclusive (${datatype}).` },
               },
             }
           } else {

@@ -67,6 +67,13 @@ describe('buildGraphQLSchema (editor query contract from discovery)', () => {
     expect(String(fields['roadTypes']?.type)).toBe('Filter')
   })
 
+  it('types numeric bound arguments by datatype (integer -> Int) and documents it', () => {
+    const hdmap = schema.getType('hdmap_Result') as GraphQLObjectType
+    const minArg = hdmap.getFields()['numberIntersections']?.args.find((a) => a.name === 'min')
+    expect(String(minArg?.type)).toBe('Int')
+    expect(minArg?.description).toContain('integer')
+  })
+
   it('surfaces enum allowed values in the field description for autocomplete', () => {
     const hdmap = schema.getType('hdmap_Result') as GraphQLObjectType
     const roadTypes = hdmap.getFields()['roadTypes']
