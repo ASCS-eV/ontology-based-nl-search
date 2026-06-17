@@ -75,12 +75,22 @@ const logger = createComponentLogger('graphql-serializer')
  * ```
  */
 export function slotsToGraphQL(slots: SearchSlots): string {
-  const domains = [...slots.domains].sort()
-  if (domains.length === 0) {
+  // Exhaustiveness guard: destructuring every SearchSlots field means adding a
+  // new field without handling it here makes `rest` non-empty, which fails the
+  // `Record<string, never>` assignment at compile time. This turns silent
+  // GraphQL↔SPARQL drift (a new slot the GraphQL codec forgets) into a build
+  // error. No runtime effect.
+  const { domains, filters, ranges, references, ...rest } = slots
+  const _exhaustive: Record<string, never> = rest
+
+  const sortedDomains = [...domains].sort()
+  if (sortedDomains.length === 0) {
     return 'query {\n  _empty\n}'
   }
 
-  const domainBlocks = domains.map((domain) => buildDomainBlock(domain, slots))
+  const domainBlocks = sortedDomains.map((domain) =>
+    buildDomainBlock(domain, filters, ranges, references)
+  )
   const body = domainBlocks.join('\n')
 
   const query = `query {\n${body}\n}`
@@ -100,17 +110,22 @@ export function slotsToGraphQL(slots: SearchSlots): string {
   return query
 }
 
-function buildDomainBlock(domain: string, slots: SearchSlots): string {
+function buildDomainBlock(
+  domain: string,
+  filters: SearchSlots['filters'],
+  ranges: SearchSlots['ranges'],
+  references: SearchSlots['references']
+): string {
   const indent = '  '
   const fieldIndent = '    '
 
   const safeDomain = sanitizeFieldName(domain)
-  const referencesArg = buildReferencesArg(slots.references)
+  const referencesArg = buildReferencesArg(references)
   const domainHeader = referencesArg
     ? `${indent}${safeDomain}(${referencesArg}) {`
     : `${indent}${safeDomain} {`
 
-  const fields = buildFields(slots.filters, slots.ranges, fieldIndent)
+  const fields = buildFields(filters, ranges, fieldIndent)
 
   if (fields.length === 0) {
     // GraphQL requires at least one field in a selection set
@@ -167,24 +182,30 @@ function buildReferencesArg(references: ReferenceFilter[] | undefined): string {
 }
 
 function serializeReference(ref: ReferenceFilter): string {
-  const parts: string[] = [`domain: "${escapeGraphQLString(ref.domain)}"`]
+  // Exhaustiveness guard (see slotsToGraphQL): a new ReferenceFilter field must
+  // be handled here, or the build fails — preventing silent drift from the
+  // compiler, which consumes the same fields.
+  const { domain, label, filters, ranges, references, ...rest } = ref
+  const _exhaustive: Record<string, never> = rest
 
-  if (ref.label) {
-    parts.push(`label: "${escapeGraphQLString(ref.label)}"`)
+  const parts: string[] = [`domain: "${escapeGraphQLString(domain)}"`]
+
+  if (label) {
+    parts.push(`label: "${escapeGraphQLString(label)}"`)
   }
 
   // Reference-scoped constraints describe the REFERENCED asset (e.g. referenced
   // maps in a country, or with a numeric threshold). They are emitted as nested
   // object-value arguments so the GraphQL stays equivalent to the compiled
   // SPARQL, which binds them to the referenced asset's variable.
-  const filtersObj = serializeRefFilters(ref.filters)
+  const filtersObj = serializeRefFilters(filters)
   if (filtersObj) parts.push(`filters: ${filtersObj}`)
 
-  const rangesObj = serializeRefRanges(ref.ranges)
+  const rangesObj = serializeRefRanges(ranges)
   if (rangesObj) parts.push(`ranges: ${rangesObj}`)
 
-  if (ref.references && ref.references.length > 0) {
-    const nested = ref.references.map(serializeReference)
+  if (references && references.length > 0) {
+    const nested = references.map(serializeReference)
     parts.push(`references: [${nested.join(', ')}]`)
   }
 
