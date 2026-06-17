@@ -108,8 +108,8 @@ interface CompilerVocab {
    * predicates discovered from the schema rather than hard-coded.
    *
    * Values are the chains for that parent — multiple variants are
-   * possible (e.g. `manifest:iri` chain plus a direct
-   * `references` chain) and the compiler picks deterministically.
+   * possible (e.g. an IRI-leaf chain plus a direct typed-reference
+   * chain) and the compiler picks deterministically.
    */
   referenceChains: Map<string, ReferenceChain[]>
 }
@@ -1437,6 +1437,23 @@ function lookupStepPredicate(
 }
 
 /**
+ * The asset → specification predicate (the first hop) for a domain, derived
+ * from any of its shape-group properties' discovered paths. Every shape-group
+ * property in a domain nests under the same specification node, so they all
+ * share this first hop — any one with a discovered path is a valid
+ * representative. Used as a generic fallback when the specific properties in a
+ * query have no path of their own, so the predicate is never hard-coded.
+ * Returns null only when the domain declares no shape-group property with a
+ * discovered path at all.
+ */
+function lookupDomainSpecPredicate(
+  vocabIndex: CompilerVocab,
+  domain: DomainDescriptor
+): string | null {
+  return lookupStepPredicate(vocabIndex, domain, [...vocabIndex.shapeGroupPropertyNames], 0)
+}
+
+/**
  * Threshold (in path steps) above which a filter property is treated as
  * "deep" and emitted via {@link emitDeepFilters} rather than the
  * shape-group machinery.
@@ -1594,10 +1611,11 @@ function buildDomainPatterns(
   const suffix = assetVar === '?asset' ? '' : `_${domainName.replace(/-/g, '_')}`
 
   if (needsSpecHop) {
-    // First hop: asset → DomainSpecification. The predicate is discovered
-    // from any shape-group/deep property's path (every such property in this
-    // domain shares the first step), falling back to a literal only for the
-    // corner case of a domain whose discovery returned nothing.
+    // First hop: asset → specification node. The predicate is discovered from
+    // any shape-group/deep property's path (every such property in this domain
+    // shares the first step). When the specific properties in this query have
+    // no path of their own, fall back to any shape-group property in the same
+    // domain — never to a hard-coded predicate name.
     const candidatePropertyNames = [
       ...shapeGroupFilterEntries.map(([n]) => n),
       ...deepFilterEntries.map(([n]) => n),
@@ -1605,7 +1623,14 @@ function buildDomainPatterns(
     ]
     const assetToSpecPredicate =
       lookupStepPredicate(vocabIndex, domain, candidatePropertyNames, 0) ??
-      `${domain.prefix}:hasDomainSpecification`
+      lookupDomainSpecPredicate(vocabIndex, domain)
+    if (!assetToSpecPredicate) {
+      throw new CompileError(
+        `Cannot determine the asset→specification predicate for domain "${domainName}": ` +
+          `no shape-group property has a discovered SHACL path. The schema declares shape ` +
+          `groups whose property paths could not be resolved.`
+      )
+    }
     patterns.push(`${assetVar} ${assetToSpecPredicate} ${specVar} .`)
   }
 
