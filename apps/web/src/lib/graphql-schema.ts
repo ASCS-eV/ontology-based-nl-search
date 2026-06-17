@@ -13,7 +13,6 @@
  */
 import {
   GraphQLBoolean,
-  type GraphQLFieldConfigArgumentMap,
   type GraphQLFieldConfigMap,
   GraphQLFloat,
   GraphQLInputObjectType,
@@ -35,6 +34,23 @@ function sanitizeName(name: string): string {
 }
 
 /**
+ * Leaf scalars whose NAMES make the editor's autocomplete self-describing:
+ * instead of every constraint showing as ": Boolean", a categorical property
+ * reads as ": Filter" and a numeric one as ": Range". They are leaf types (the
+ * query never selects into them) — only the displayed type name differs.
+ */
+const FilterScalar = new GraphQLScalarType({
+  name: 'Filter',
+  description: 'A categorical constraint — supply matching value(s) via `values: [...]`.',
+  serialize: (value) => value,
+})
+const RangeScalar = new GraphQLScalarType({
+  name: 'Range',
+  description: 'A numeric constraint — supply bounds via `min:` and/or `max:`.',
+  serialize: (value) => value,
+})
+
+/**
  * Permissive scalar for reference-scoped `filters`/`ranges`, whose keys are
  * property names and therefore cannot be modelled as strict GraphQL input
  * fields. Accepts any literal (ADR 0001, open follow-up).
@@ -46,15 +62,37 @@ const JSONScalar = new GraphQLScalarType({
   parseLiteral: () => null,
 })
 
+/** Human-readable field description from the discovered vocabulary. */
+function describeProperty(property: VocabProperty): string {
+  const base = (property.description ?? '').trim() || (property.label ?? '').trim() || property.name
+  if (property.type === 'numeric' && property.datatype) {
+    return `${base} (${property.datatype})`
+  }
+  return base
+}
+
 export function buildGraphQLSchema(vocab: Vocabulary): GraphQLSchema {
   const referenceInput: GraphQLInputObjectType = new GraphQLInputObjectType({
     name: 'ReferenceInput',
+    description:
+      "Constrain assets by a referenced asset (e.g. a trace's referenced map). " +
+      '`filters`/`ranges` apply to the referenced asset, not the parent.',
     fields: () => ({
-      domain: { type: new GraphQLNonNull(GraphQLString) },
-      label: { type: GraphQLString },
-      filters: { type: JSONScalar },
-      ranges: { type: JSONScalar },
-      references: { type: new GraphQLList(referenceInput) },
+      domain: {
+        type: new GraphQLNonNull(GraphQLString),
+        description: 'Domain of the referenced asset.',
+      },
+      label: { type: GraphQLString, description: 'Optional label to bind the referenced asset.' },
+      filters: {
+        type: JSONScalar,
+        description: 'Categorical constraints on the referenced asset, e.g. `{ country: ["DE"] }`.',
+      },
+      ranges: {
+        type: JSONScalar,
+        description:
+          'Numeric constraints on the referenced asset, e.g. `{ numberIntersections: { min: 1 } }`.',
+      },
+      references: { type: new GraphQLList(referenceInput), description: 'Nested references.' },
     }),
   })
 
@@ -71,16 +109,39 @@ export function buildGraphQLSchema(vocab: Vocabulary): GraphQLSchema {
     const props = propsByDomain.get(domain) ?? []
     const domainType = new GraphQLObjectType({
       name: `${sanitizeName(domain)}_Result`,
+      description: `Constraints on "${domain}" assets. List a field to constrain that property; an asset matches when all listed constraints hold.`,
       fields: () => {
         const fields: GraphQLFieldConfigMap<unknown, unknown> = {
-          _all: { type: GraphQLBoolean },
+          _all: {
+            type: GraphQLBoolean,
+            description: `Match every "${domain}" asset (no property constraints).`,
+          },
         }
         for (const property of props) {
-          const args: GraphQLFieldConfigArgumentMap =
-            property.type === 'numeric'
-              ? { min: { type: GraphQLFloat }, max: { type: GraphQLFloat } }
-              : { values: { type: new GraphQLList(GraphQLString) } }
-          fields[sanitizeName(property.name)] = { type: GraphQLBoolean, args }
+          const fieldName = sanitizeName(property.name)
+          if (property.type === 'numeric') {
+            fields[fieldName] = {
+              type: RangeScalar,
+              description: describeProperty(property),
+              args: {
+                min: { type: GraphQLFloat, description: 'Lower bound (inclusive).' },
+                max: { type: GraphQLFloat, description: 'Upper bound (inclusive).' },
+              },
+            }
+          } else {
+            const allowed = property.allowedValues ?? []
+            const hint = allowed.length > 0 ? ` Allowed: ${allowed.join(', ')}.` : ''
+            fields[fieldName] = {
+              type: FilterScalar,
+              description: describeProperty(property) + hint,
+              args: {
+                values: {
+                  type: new GraphQLList(GraphQLString),
+                  description: `Value(s) to match.${hint}`,
+                },
+              },
+            }
+          }
         }
         return fields
       },
@@ -88,7 +149,13 @@ export function buildGraphQLSchema(vocab: Vocabulary): GraphQLSchema {
 
     queryFields[sanitizeName(domain)] = {
       type: domainType,
-      args: { references: { type: new GraphQLList(referenceInput) } },
+      description: `Search "${domain}" assets.`,
+      args: {
+        references: {
+          type: new GraphQLList(referenceInput),
+          description: 'Constrain by referenced assets (e.g. a referenced map).',
+        },
+      },
     }
   }
 
@@ -98,6 +165,12 @@ export function buildGraphQLSchema(vocab: Vocabulary): GraphQLSchema {
   }
 
   return new GraphQLSchema({
-    query: new GraphQLObjectType({ name: 'Query', fields: queryFields }),
+    query: new GraphQLObjectType({
+      name: 'Query',
+      description:
+        'Ontology-driven asset search. Each top-level field is a discovered asset domain; ' +
+        'nested fields are its discovered properties.',
+      fields: queryFields,
+    }),
   })
 }

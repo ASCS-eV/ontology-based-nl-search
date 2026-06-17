@@ -1,4 +1,4 @@
-import { parse, validate } from 'graphql'
+import { GraphQLObjectType, parse, validate } from 'graphql'
 import { describe, expect, it } from 'vitest'
 
 import type { Vocabulary } from '../hooks/useVocabulary'
@@ -56,5 +56,21 @@ describe('buildGraphQLSchema (editor query contract from discovery)', () => {
 
   it('always exposes every discovered domain as a query field', () => {
     expect(errorsFor('query { ositrace { _all } }')).toHaveLength(0)
+  })
+
+  it('types numeric fields as Range and categorical fields as Filter (not Boolean)', () => {
+    // Regression: every property field was typed Boolean, so the editor's
+    // autocomplete showed ": Boolean" everywhere and conveyed no structure.
+    const hdmap = schema.getType('hdmap_Result') as GraphQLObjectType
+    const fields = hdmap.getFields()
+    expect(String(fields['numberIntersections']?.type)).toBe('Range')
+    expect(String(fields['roadTypes']?.type)).toBe('Filter')
+  })
+
+  it('surfaces enum allowed values in the field description for autocomplete', () => {
+    const hdmap = schema.getType('hdmap_Result') as GraphQLObjectType
+    const roadTypes = hdmap.getFields()['roadTypes']
+    expect(roadTypes?.description).toContain('motorway')
+    expect(roadTypes?.description).toContain('urban')
   })
 })
