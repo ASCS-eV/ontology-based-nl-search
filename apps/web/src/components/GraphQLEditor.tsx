@@ -127,8 +127,9 @@ export function GraphQLEditor({
 
       {!readOnly && (
         <p className="mt-1 text-xs text-gray-400">
-          Tip: start a new line or press <kbd className="font-sans">Ctrl</kbd>+
-          <kbd className="font-sans">Space</kbd> to list all available fields.
+          Tip: suggestions open as you type — fields, arguments, and (unquoted) values inside{' '}
+          <code>[ ]</code>. Press <kbd className="font-sans">Ctrl</kbd>+
+          <kbd className="font-sans">Space</kbd> to reopen them.
         </p>
       )}
 

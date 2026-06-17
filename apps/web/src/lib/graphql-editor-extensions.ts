@@ -21,17 +21,21 @@ import { buildGraphQLSchema } from './graphql-schema'
 export function buildEditorExtensions(vocabulary: Vocabulary): Extension[] {
   const schema = buildGraphQLSchema(vocabulary)
 
-  // Open the field list when the user opens a new line inside a block, so all
-  // fields are visible without typing a character first. Dispatching from
-  // inside an update listener is illegal, so defer to the next microtask.
-  const autoOpenOnNewline = EditorView.updateListener.of((update) => {
+  // Auto-open the completion popup in the positions where the user is about to
+  // type a field, an argument name, or a value — a new line inside a block, or
+  // just after `(`, `[`, or `,`. cm6-graphql only auto-triggers on word
+  // characters, so argument/value positions (e.g. inside `values: [...]`, where
+  // enum values are suggested) would otherwise stay empty until the user typed
+  // a letter or pressed Ctrl-Space. Dispatching from inside an update listener
+  // is illegal, so defer the (explicit) startCompletion to the next microtask.
+  const autoOpenInContext = EditorView.updateListener.of((update) => {
     if (!update.docChanged) return
     if (!update.transactions.some((tr) => tr.isUserEvent('input'))) return
-    let insertedNewline = false
+    let trigger = false
     update.changes.iterChanges((_fromA, _toA, _fromB, _toB, inserted) => {
-      if (inserted.toString().includes('\n')) insertedNewline = true
+      if (/[([,\n]/.test(inserted.toString())) trigger = true
     })
-    if (insertedNewline) queueMicrotask(() => startCompletion(update.view))
+    if (trigger) queueMicrotask(() => startCompletion(update.view))
   })
 
   return [
@@ -41,6 +45,6 @@ export function buildEditorExtensions(vocabulary: Vocabulary): Extension[] {
     Prec.highest(keymap.of(completionKeymap)),
     autocompletion({ activateOnTyping: true }),
     ...graphql(schema),
-    autoOpenOnNewline,
+    autoOpenInContext,
   ]
 }
