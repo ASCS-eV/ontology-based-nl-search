@@ -103,11 +103,11 @@ review-checklist rules.
   rather than bundling.
 - **Every fix carries a regression test** that would have failed before the
   fix (criterion #30). No test = no fix.
-- **Verify interfaces against their standard** (criterion #31). The full
-  normative specs are in `docs/specs/references/`; cite them inline with a
-  `[TAG] §x` comment when you add or change a wire/query/data/ontology
-  interface. The slot IR is held to JSON Schema 2020-12, not an invented
-  contract; do not add a LinkML model. See `apps/docs/standards-audit.md`.
+- **Adhere to and reference each interface's standard** (criterion #31). The
+  full normative specs are in `docs/specs/references/`; cite them inline with a
+  `[TAG] §x` comment when you add or change a function/parameter schema,
+  API/wire field, query, data, or ontology interface. The slot IR is held to
+  JSON Schema 2020-12. See `apps/docs/standards-audit.md`.
 
 ## Working with local scratch
 

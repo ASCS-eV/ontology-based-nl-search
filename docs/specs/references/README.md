@@ -53,8 +53,8 @@ NLU "intent + slot-filling" pattern. Its **only normative on-the-wire
 grounding is JSON Schema** (`json-schema-core.md` / `json-schema-validation.md`),
 because the LLM tool call that fills the slots is a JSON-Schema-typed function
 call. That is the standard the slot interface is held to. See the
-[architecture audit](../../../apps/docs/standards-audit.md) for the full
-reasoning, including why LinkML was intentionally **not** adopted.
+[standards page](../../../apps/docs/standards-audit.md) for the full interface
+inventory and the citation convention.
 
 ## Retrieval
 

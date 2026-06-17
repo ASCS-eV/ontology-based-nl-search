@@ -30,28 +30,28 @@ The `@' ... '@` here-string syntax avoids all interpolation.
 - Follow the project's ESLint and Prettier configuration.
 - Use TypeScript strict mode — avoid `any` unless explicitly justified.
 
-## Standards Compliance (verify against the spec)
+## Standards Compliance (adhere to and reference the spec)
 
-Every interface in this repo maps to a recognized standard whose **full
-normative text** is stored under `docs/specs/references/` (with a
-license-attributed `README.md` index). The "slots mechanism" is **not** a W3C
-standard — it is the NLU "slot-filling" pattern, and its on-the-wire contract is
-**JSON Schema 2020-12** (the LLM tool call). Do **not** add a LinkML model; the
-discipline is documentation + citation + verification, not codegen.
+Function and parameter definitions / schemas, APIs, and data formats in this
+repo adhere to and leverage a recognized standard, whose **full normative text**
+is stored under `docs/specs/references/` (with a license-attributed `README.md`
+index). The slot intermediate representation is grounded on **JSON Schema
+2020-12** (the LLM tool-call contract).
 
-When you add or modify an interface (a wire field, an SSE event, a SPARQL or
-GraphQL construct, a JSON-LD/Turtle data shape, an ontology construct):
+When you add or modify an interface (a function/parameter schema, an API or wire
+field, an SSE event, a SPARQL or GraphQL construct, a JSON-LD/Turtle data shape,
+an ontology construct):
 
-1. **Consult the standard** in `docs/specs/references/` (add it — full text +
+1. **Adhere to the standard** in `docs/specs/references/` (add it — full text +
    attribution header + README row — if missing).
 2. **Verify** the change against the relevant normative section.
-3. **Cite it inline** with a `[TAG] §x` comment at the interface (pattern:
-   `slot-wire-schema.ts`, `compiler.ts`, `core/src/sse/events.ts`,
-   `graphql-serializer.ts`).
+3. **Reference it inline**, the same way everywhere: a `[TAG] §x` comment at the
+   interface (pattern: `slot-wire-schema.ts`, `compiler.ts`,
+   `core/src/sse/events.ts`, `graphql-serializer.ts`).
 4. A reviewer must be able to check the cited section against the behavior.
 
-This is criterion 31 in `CONTRIBUTING.md`. Full inventory and rationale (incl.
-why LinkML was rejected): `apps/docs/standards-audit.md`.
+This is criterion 31 in `CONTRIBUTING.md`. Full inventory:
+`apps/docs/standards-audit.md`.
 
 ## Pre-Push / Pre-PR Validation
 
