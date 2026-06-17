@@ -1,6 +1,12 @@
 /**
  * Concept-hierarchy expansion — generic SKOS-driven value broadening.
  *
+ * STANDARDS — the concept hierarchy is read per
+ *   [SKOS] SKOS Reference — docs/specs/references/skos-reference.md
+ *          https://www.w3.org/TR/skos-reference/
+ * using `skos:Concept`, `skos:broader`/`skos:narrower` ([SKOS] §8) to expand a
+ * broad filter value to its transitive narrower members.
+ *
  * A user often expresses a *broad* concept ("Europe", "Scandinavia",
  * "passenger vehicles") that the instance data stores as the set of
  * *narrow* members it covers ("DE", "FR", "IT"; "sedan", "hatchback").

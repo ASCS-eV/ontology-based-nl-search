@@ -19,6 +19,7 @@
  * | Filter values    | Argument `values: [...]`  | §2.6         |
  * | Range min/max    | Arguments `min:` / `max:` | §2.6         |
  * | References       | Argument `references:`    | §2.6         |
+ * | Ref filters/ranges | `references: [{ filters, ranges }]` (object value) | §2.9.8 |
  * | Field names      | Name token                | §2.1.9       |
  * | String values    | StringValue               | §2.9.4       |
  *
@@ -59,13 +60,13 @@ const logger = createComponentLogger('graphql-serializer')
  * @example
  * ```ts
  * slotsToGraphQL({
- *   domains: ['hdmap'],
+ *   domains: ['assetDomain'],
  *   filters: { country: 'Germany', roadType: 'motorway' },
  *   ranges: { numberOfLanes: { min: 3 } },
  * })
  * // Returns:
  * // query {
- * //   hdmap {
+ * //   assetDomain {
  * //     country(values: ["Germany"])
  * //     numberOfLanes(min: 3)
  * //     roadType(values: ["motorway"])
@@ -74,12 +75,22 @@ const logger = createComponentLogger('graphql-serializer')
  * ```
  */
 export function slotsToGraphQL(slots: SearchSlots): string {
-  const domains = [...slots.domains].sort()
-  if (domains.length === 0) {
+  // Exhaustiveness guard: destructuring every SearchSlots field means adding a
+  // new field without handling it here makes `rest` non-empty, which fails the
+  // `Record<string, never>` assignment at compile time. This turns silent
+  // GraphQL↔SPARQL drift (a new slot the GraphQL codec forgets) into a build
+  // error. No runtime effect.
+  const { domains, filters, ranges, references, ...rest } = slots
+  const _exhaustive: Record<string, never> = rest
+
+  const sortedDomains = [...domains].sort()
+  if (sortedDomains.length === 0) {
     return 'query {\n  _empty\n}'
   }
 
-  const domainBlocks = domains.map((domain) => buildDomainBlock(domain, slots))
+  const domainBlocks = sortedDomains.map((domain) =>
+    buildDomainBlock(domain, filters, ranges, references)
+  )
   const body = domainBlocks.join('\n')
 
   const query = `query {\n${body}\n}`
@@ -99,17 +110,22 @@ export function slotsToGraphQL(slots: SearchSlots): string {
   return query
 }
 
-function buildDomainBlock(domain: string, slots: SearchSlots): string {
+function buildDomainBlock(
+  domain: string,
+  filters: SearchSlots['filters'],
+  ranges: SearchSlots['ranges'],
+  references: SearchSlots['references']
+): string {
   const indent = '  '
   const fieldIndent = '    '
 
   const safeDomain = sanitizeFieldName(domain)
-  const referencesArg = buildReferencesArg(slots.references)
+  const referencesArg = buildReferencesArg(references)
   const domainHeader = referencesArg
     ? `${indent}${safeDomain}(${referencesArg}) {`
     : `${indent}${safeDomain} {`
 
-  const fields = buildFields(slots.filters, slots.ranges, fieldIndent)
+  const fields = buildFields(filters, ranges, fieldIndent)
 
   if (fields.length === 0) {
     // GraphQL requires at least one field in a selection set
@@ -166,18 +182,78 @@ function buildReferencesArg(references: ReferenceFilter[] | undefined): string {
 }
 
 function serializeReference(ref: ReferenceFilter): string {
-  const parts: string[] = [`domain: "${escapeGraphQLString(ref.domain)}"`]
+  // Exhaustiveness guard (see slotsToGraphQL): a new ReferenceFilter field must
+  // be handled here, or the build fails — preventing silent drift from the
+  // compiler, which consumes the same fields.
+  const { domain, label, filters, ranges, references, ...rest } = ref
+  const _exhaustive: Record<string, never> = rest
 
-  if (ref.label) {
-    parts.push(`label: "${escapeGraphQLString(ref.label)}"`)
+  const parts: string[] = [`domain: "${escapeGraphQLString(domain)}"`]
+
+  if (label) {
+    parts.push(`label: "${escapeGraphQLString(label)}"`)
   }
 
-  if (ref.references && ref.references.length > 0) {
-    const nested = ref.references.map(serializeReference)
+  // Reference-scoped constraints describe the REFERENCED asset (e.g. referenced
+  // maps in a country, or with a numeric threshold). They are emitted as nested
+  // object-value arguments so the GraphQL stays equivalent to the compiled
+  // SPARQL, which binds them to the referenced asset's variable.
+  const filtersObj = serializeRefFilters(filters)
+  if (filtersObj) parts.push(`filters: ${filtersObj}`)
+
+  const rangesObj = serializeRefRanges(ranges)
+  if (rangesObj) parts.push(`ranges: ${rangesObj}`)
+
+  if (references && references.length > 0) {
+    const nested = references.map(serializeReference)
     parts.push(`references: [${nested.join(', ')}]`)
   }
 
   return `{ ${parts.join(', ')} }`
+}
+
+/**
+ * Serialize reference-scoped property filters as a GraphQL object value
+ * (`{ key: ["v1", "v2"], … }`), mirroring the top-level `values: [...]` filters.
+ * @see https://spec.graphql.org/September2025/#sec-Object-Value — §2.9.8
+ */
+function serializeRefFilters(
+  filters: Record<string, string | string[]> | undefined
+): string | null {
+  if (!filters) return null
+  const fields: string[] = []
+  for (const key of Object.keys(filters).sort()) {
+    const value = filters[key]
+    if (value === undefined) continue
+    const values = (Array.isArray(value) ? value : [value]).filter((v) => v.length > 0)
+    if (values.length === 0) continue
+    const valuesStr = [...values]
+      .sort()
+      .map((v) => `"${escapeGraphQLString(v)}"`)
+      .join(', ')
+    fields.push(`${sanitizeFieldName(key)}: [${valuesStr}]`)
+  }
+  return fields.length > 0 ? `{ ${fields.join(', ')} }` : null
+}
+
+/**
+ * Serialize reference-scoped numeric ranges as a GraphQL object value
+ * (`{ key: { min: 1, max: 4 }, … }`).
+ * @see https://spec.graphql.org/September2025/#sec-Object-Value — §2.9.8
+ */
+function serializeRefRanges(
+  ranges: Record<string, { min?: number; max?: number }> | undefined
+): string | null {
+  if (!ranges) return null
+  const fields: string[] = []
+  for (const key of Object.keys(ranges).sort()) {
+    const range = ranges[key]
+    const args: string[] = []
+    if (range?.min !== undefined) args.push(`min: ${range.min}`)
+    if (range?.max !== undefined) args.push(`max: ${range.max}`)
+    if (args.length > 0) fields.push(`${sanitizeFieldName(key)}: { ${args.join(', ')} }`)
+  }
+  return fields.length > 0 ? `{ ${fields.join(', ')} }` : null
 }
 
 /**

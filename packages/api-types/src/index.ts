@@ -17,6 +17,14 @@
  *
  * These are wire-format types, not ontology-specific identifiers.
  * Criterion 9b (ontology-name budget) does not apply.
+ *
+ * STANDARDS — these shapes are exchanged as:
+ *   [RFC8259] JSON — docs/specs/references/rfc8259-json.md
+ *             https://www.rfc-editor.org/rfc/rfc8259 (all JSON bodies / SSE `data:` payloads)
+ *   [SSE]     Server-Sent Events — docs/specs/references/eventsource.md
+ *             https://www.w3.org/TR/eventsource/ (the `/search/stream` frames carrying these)
+ *   [RFC9110] HTTP Semantics — docs/specs/references/rfc9110-http.md
+ *             https://www.rfc-editor.org/rfc/rfc9110 (methods, status, content negotiation)
  */
 
 /** A single term mapped from user input to an ontology concept. */
@@ -33,7 +41,7 @@ export interface MappedTerm {
 
 /**
  * Why a part of the user's query was not turned into a filter. The `kind`
- * separates genuinely-different situations the UI previously lumped under one
+ * separates genuinely-different situations rather than lumping them under one
  * "Not in ontology" heading:
  *
  *  - `unmapped`    — a term with no ontology counterpart (the original meaning).
@@ -71,14 +79,13 @@ export interface QueryInterpretation {
   summary: string
   /** Individual term mappings with confidence. */
   mappedTerms: MappedTerm[]
-  /** Domain(s) selected for this search (e.g., ["hdmap", "scenario"]). */
+  /** Domain(s) selected for this search (the SHACL domain name(s)). */
   domains?: string[]
   /**
    * Filters that actually made it into the compiled SPARQL. Includes
    * every leaf constraint — geography (country, state, city, …),
    * license, and any other SHACL-discovered leaf the user expressed.
-   * Task 21d-flat unified these under a single map; the previous
-   * `appliedLocation` field is gone.
+   * All leaf constraints live in this single map.
    */
   appliedFilters?: Record<string, string | string[]>
 }

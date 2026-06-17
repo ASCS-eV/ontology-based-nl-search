@@ -39,6 +39,7 @@ export default withMermaid(
             { text: 'IRIs vs Literals', link: '/sparql-reference/iri-vs-literals' },
             { text: 'RDF Schema (RDFS)', link: '/references/rdfs' },
             { text: 'SHACL', link: '/references/shacl' },
+            { text: 'Standards Compliance', link: '/standards-audit' },
             { text: 'Roadmap', link: '/roadmap' },
           ],
         },
@@ -80,6 +81,10 @@ export default withMermaid(
             { text: 'RDF Schema (RDFS)', link: '/references/rdfs' },
             { text: 'SHACL', link: '/references/shacl' },
           ],
+        },
+        {
+          text: 'Standards & Compliance',
+          items: [{ text: 'Standards Compliance', link: '/standards-audit' }],
         },
         {
           text: 'Project',

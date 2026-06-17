@@ -30,6 +30,29 @@ The `@' ... '@` here-string syntax avoids all interpolation.
 - Follow the project's ESLint and Prettier configuration.
 - Use TypeScript strict mode — avoid `any` unless explicitly justified.
 
+## Standards Compliance (adhere to and reference the spec)
+
+Function and parameter definitions / schemas, APIs, and data formats in this
+repo adhere to and leverage a recognized standard, whose **full normative text**
+is stored under `docs/specs/references/` (with a license-attributed `README.md`
+index). The slot intermediate representation is grounded on **JSON Schema
+2020-12** (the LLM tool-call contract).
+
+When you add or modify an interface (a function/parameter schema, an API or wire
+field, an SSE event, a SPARQL or GraphQL construct, a JSON-LD/Turtle data shape,
+an ontology construct):
+
+1. **Adhere to the standard** in `docs/specs/references/` (add it — full text +
+   attribution header + README row — if missing).
+2. **Verify** the change against the relevant normative section.
+3. **Reference it inline**, the same way everywhere: a `[TAG] §x` comment at the
+   interface (pattern: `slot-wire-schema.ts`, `compiler.ts`,
+   `core/src/sse/events.ts`, `graphql-serializer.ts`).
+4. A reviewer must be able to check the cited section against the behavior.
+
+This is criterion 31 in `CONTRIBUTING.md`. Full inventory:
+`apps/docs/standards-audit.md`.
+
 ## Pre-Push / Pre-PR Validation
 
 **Always** run `pnpm run validate` before pushing commits or creating pull requests. The pre-commit hook only runs lint + format — it does **not** run tests or type-checking. CI will reject PRs that fail validation, so catch issues locally first:

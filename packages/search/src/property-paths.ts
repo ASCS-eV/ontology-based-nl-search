@@ -4,23 +4,22 @@
  * For every leaf property declared in the schema graph, computes the
  * chain of predicates that connects the property to its owning asset
  * class. This is the data the compiler needs to emit triples without
- * hard-coding any ENVITED-X meta-model predicates
- * (`hasDomainSpecification`, `hasContent`, …).
+ * hard-coding any meta-model predicates.
  *
- * Example, with the workspace ontology:
+ * Example, for an asset class that nests its leaves under a
+ * specification node:
  *
- *     hdmap:HdMap
- *       --hdmap:hasDomainSpecification--> hdmap:DomainSpecification
- *       --hdmap:hasContent--> hdmap:Content
- *       --hdmap:roadTypes--> "motorway" (leaf value)
+ *     <AssetClass>
+ *       --<hasSpecification>--> <Specification>
+ *       --<hasGroup>--> <Group>
+ *       --<leafProperty>--> "value" (leaf value)
  *
  * `buildPropertyPaths()` returns one `PropertyPath` per
  * (asset-class, leaf-property) pair, with `steps` listing the
  * predicates in walk order including the leaf predicate.
  *
- * This module is purely additive in 21a — task 21b will rewire the
- * compiler to consume the paths instead of emitting literal
- * meta-model predicates.
+ * The compiler consumes these paths instead of emitting literal
+ * meta-model predicates, so it works against any SHACL shape depth.
  *
  * @see https://www.w3.org/TR/shacl/#NodeShape — SHACL NodeShape
  * @see https://www.w3.org/TR/shacl/#PropertyShape — SHACL PropertyShape
@@ -66,13 +65,13 @@ export type LeafKind = 'iri' | 'literal' | `class:${string}`
 
 /**
  * A discovered path from an asset class to one of its leaf properties.
- * Independent of the ENVITED-X meta-model: every literal predicate
+ * Independent of any meta-model: every literal predicate
  * comes from `sh:path` declarations in the schema graph.
  */
 export interface PropertyPath {
-  /** Domain of the leaf property (`hdmap`, `scenario`, …). */
+  /** Domain of the leaf property. */
   domain: string
-  /** Local name of the leaf property (`roadTypes`, `formatType`, …). */
+  /** Local name of the leaf property. */
   propertyName: string
   /** Full IRI of the leaf property. */
   propertyIri: string
@@ -554,9 +553,7 @@ export async function buildPropertyPaths(
 /**
  * A discovered cross-domain reference chain.
  *
- * Replaces the hard-coded `?asset domain:hasManifest ?m ; ?m
- * manifest:hasReferencedArtifacts ?link ; ?link manifest:iri ?refAsset`
- * pattern. For any ontology that expresses cross-asset references
+ * For any ontology that expresses cross-asset references
  * declaratively in SHACL — whether via a manifest pattern, a direct
  * `references` property, or some other structure — the compiler reads
  * the actual predicate chain from this set.
@@ -567,7 +564,7 @@ export async function buildPropertyPaths(
  *                       compiler can pair the chain with a runtime
  *                       `?refAsset a <ChildClass>` constraint to
  *                       address any child asset domain via this path.
- *                       (ENVITED-X manifest pattern uses this shape.)
+ *                       (a manifest-style reference uses this shape.)
  *   - `kind: 'class'` — the leaf binds an IRI typed as the named
  *                       child asset class. The chain is the join to
  *                       exactly that child domain; no extra type
@@ -576,7 +573,7 @@ export async function buildPropertyPaths(
 export interface ReferenceChain {
   /** Parent asset class IRI at the root of the chain. */
   parentClass: string
-  /** Parent domain name (e.g. `hdmap`). */
+  /** Parent domain name. */
   parentDomain: string
   /** Predicates to walk from the parent variable to the bound IRI. */
   steps: PathStep[]
@@ -606,7 +603,7 @@ export interface ReferenceChain {
  *
  * Ontology-agnostic: works against any SHACL that declares cross-
  * references via `sh:nodeKind sh:IRI` or `sh:class`, regardless of
- * whether the predicate naming follows the ENVITED-X manifest pattern.
+ * whether the predicate naming follows a manifest pattern.
  */
 export function buildReferenceChains(
   paths: PropertyPath[],

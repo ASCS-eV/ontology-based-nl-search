@@ -5,9 +5,7 @@
  * cold model, or a payload Zod rejected). Emits the broadest cross-domain
  * query and a gap that nudges the user toward concrete property names — drawn
  * from the LIVE vocabulary so the hint never names a property absent from the
- * loaded ontology. The literal `roadTypes`/`scenarioCategory` it replaced only
- * existed in the ENVITED-X demo ontology, so the old message was meaningless
- * (and misleading) on any other schema.
+ * loaded ontology.
  *
  * Shared so the message cannot drift between the Vercel-SDK and Copilot agents.
  *

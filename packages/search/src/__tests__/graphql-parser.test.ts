@@ -56,6 +56,52 @@ describe('parseGraphQLToSlots', () => {
     }
   })
 
+  it('round-trips reference-scoped filters and ranges', () => {
+    const slots: SearchSlots = {
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [
+        {
+          domain: 'hdmap',
+          filters: { country: 'DE' },
+          ranges: { numberIntersections: { min: 1 } },
+        },
+      ],
+    }
+
+    const result = parseGraphQLToSlots(slotsToGraphQL(slots))
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.slots.references).toEqual([
+        {
+          domain: 'hdmap',
+          filters: { country: 'DE' },
+          ranges: { numberIntersections: { min: 1 } },
+        },
+      ])
+    }
+  })
+
+  it('round-trips nested references', () => {
+    const slots: SearchSlots = {
+      domains: ['scenario'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'ositrace', references: [{ domain: 'hdmap' }] }],
+    }
+
+    const result = parseGraphQLToSlots(slotsToGraphQL(slots))
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.slots.references).toEqual([
+        { domain: 'ositrace', references: [{ domain: 'hdmap' }] },
+      ])
+    }
+  })
+
   it('handles empty domains (_empty placeholder)', () => {
     const slots: SearchSlots = {
       domains: [],

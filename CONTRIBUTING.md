@@ -34,7 +34,7 @@ pnpm run validate
 
 ## Code Quality Criteria
 
-These 30 criteria are the repository's reviewable contract. Every PR must
+These 31 criteria are the repository's reviewable contract. Every PR must
 uphold them; CI gates several and the rest are review-checklist rules.
 Opening a new violation in unrelated code is grounds to request changes —
 fix or surface it within the PR's scope, do not bundle.
@@ -151,6 +151,20 @@ fix or surface it within the PR's scope, do not bundle.
     `test:e2e` + `madge --circular`.
 30. **Each refactor PR carries a regression test that would have failed
     before the fix.** No test = no fix.
+
+### Standards compliance
+
+31. **Every interface conforms to a documented standard, cited in code.** Wire
+    schemas, SPARQL/GraphQL output, the SSE stream, JSON / JSON-LD payloads, and
+    ontology constructs each map to a normative specification stored in full
+    under `docs/specs/references/` (see its `README.md`). When you add or change
+    an interface: read the governing spec, keep the change conformant, and cite
+    it inline with a `[TAG] §x` comment (see `slot-wire-schema.ts`,
+    `compiler.ts`, `graphql-serializer.ts`). The slot IR is **not** a standard
+    of its own — it is held to **JSON Schema 2020-12** (the LLM tool-call
+    contract). If an interface's standard is not yet in `docs/specs/references/`,
+    add it (attribution header + README row) before relying on it. Rationale and
+    the full interface inventory: [Standards Audit](apps/docs/standards-audit.md).
 
 ### Commit Conventions
 

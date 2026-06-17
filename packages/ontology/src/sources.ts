@@ -20,10 +20,10 @@ import { join } from 'path'
 import { getProjectRoot } from './paths.js'
 
 /**
- * Re-exported from `@ontology-search/core/errors` so legacy callers that
- * imported it from this module continue to compile. The canonical
- * declaration lives in core so the API tier can map it to HTTP status by
- * `instanceof` without depending on the ontology package.
+ * Re-exported from `@ontology-search/core/errors` so callers can import it
+ * from this module. The canonical declaration lives in core so the API tier
+ * can map it to HTTP status by `instanceof` without depending on the
+ * ontology package.
  */
 export { OntologySourcesError }
 

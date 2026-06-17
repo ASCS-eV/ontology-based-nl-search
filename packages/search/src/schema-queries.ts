@@ -41,47 +41,47 @@ const warnedDomainMismatches = new Set<string>()
 
 /** Property-domain association from SHACL shapes */
 export interface PropertyDomainInfo {
-  /** Property local name (e.g., "roadTypes") */
+  /** Property local name */
   localName: string
-  /** Full property IRI (e.g., "https://w3id.org/.../hdmap/v6/roadTypes") */
+  /** Full property IRI */
   iri: string
-  /** Domain that defines this property (e.g., "hdmap") */
+  /** Domain that defines this property */
   domain: string
-  /** Target class IRI (e.g., "https://w3id.org/.../hdmap/v6/HDMap") */
+  /** Target class IRI */
   targetClass: string
 }
 
 /** Asset domain discovered from rdfs:subClassOf hierarchy */
 export interface AssetDomainInfo {
-  /** Domain name (e.g., "hdmap", "scenario") */
+  /** Domain name */
   domainName: string
-  /** Asset class IRI (e.g., "https://w3id.org/.../hdmap/v6/HDMap") */
+  /** Asset class IRI */
   assetClass: string
 }
 
 /** A discovered cross-domain reference: a parent asset domain that links to a child asset domain. */
 export interface DomainReferenceInfo {
-  /** Parent domain that references others (e.g., "scenario") */
+  /** Parent domain that references others */
   parentDomain: string
-  /** Child domain being referenced (e.g., "hdmap") */
+  /** Child domain being referenced */
   childDomain: string
 }
 
 /** Property shape group classification from SHACL nesting structure */
 export interface PropertyShapeGroupInfo {
-  /** Property local name (e.g., "roadTypes") */
+  /** Property local name */
   localName: string
-  /** Domain that defines this property (e.g., "hdmap") */
+  /** Domain that defines this property */
   domain: string
-  /** Shape group from rdfs:subClassOf hierarchy (e.g., "Content", "Format", "Quantity") */
+  /** Shape group from rdfs:subClassOf hierarchy (e.g. a "Content" / "Format" / "Quantity" sub-shape) */
   shapeGroup: string
 }
 
 /** Property that uses a Range2D structure (min/max sub-properties) */
 export interface Range2DPropertyInfo {
-  /** Property local name (e.g., "speedLimit") */
+  /** Property local name */
   localName: string
-  /** Domain that defines this property (e.g., "hdmap") */
+  /** Domain that defines this property */
   domain: string
   /** Full IRI of the lower-bound sub-predicate (the leaf bearing sh:lessThanOrEquals). */
   minPredicate: string
@@ -103,7 +103,7 @@ function extractDomainFromRegistry(iri: string, registry?: DomainRegistry): stri
  * Query SHACL shapes for all property-domain associations.
  *
  * Returns one row per (property, domain) pair. Properties that exist in
- * multiple domains (e.g., roadTypes in both hdmap and ositrace) will have
+ * multiple domains (the same local name in more than one domain) will have
  * multiple rows.
  */
 export async function queryPropertyDomains(
@@ -206,17 +206,16 @@ export async function queryAssetDomains(
     }
   }
 
-  // Genericity hook (task 21e): when the registry declares domains
+  // Genericity hook: when the registry declares domains
   // but ZERO were discovered via `rdfs:subClassOf` — the signature of
   // a flat ontology with no shared asset superclass — surface every
   // registry-declared primary class. This lets a single-domain or
   // self-rooted ontology (no shared base type) work without forcing
-  // it to add an ENVITED-X-style superclass hierarchy.
+  // it to add a shared superclass hierarchy.
   //
   // The fallback is gated on `discoveredDomains.size === 0` so it
-  // does NOT inflate the result for multi-domain ontologies (like
-  // ENVITED-X) where supporting domains (georeference, manifest)
-  // intentionally are not asset classes.
+  // does NOT inflate the result for multi-domain ontologies where
+  // supporting domains intentionally are not asset classes.
   if (registry && registry.domains.size > 0) {
     if (domains.length === 0) {
       for (const [name, desc] of registry.domains) {
@@ -258,8 +257,8 @@ export async function queryAssetDomains(
  *
  * Ontology-agnostic: a cross-domain reference is ANY property shape whose value
  * resolves to a **known asset class in a different domain** — there is no
- * dependency on a "manifest" domain or a `hasReferencedArtifacts` predicate
- * name. The asset-class + different-domain filters are what identify a genuine
+ * dependency on any specific reference domain or predicate name. The
+ * asset-class + different-domain filters are what identify a genuine
  * reference; the predicate carrying it is irrelevant. Two SHACL value-shapes
  * are recognized:
  *

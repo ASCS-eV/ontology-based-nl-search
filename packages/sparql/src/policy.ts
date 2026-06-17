@@ -16,8 +16,7 @@ const BASE_ALLOWED_PREFIXES = new Set<string>(Object.values(RDF_PREFIXES))
 
 /**
  * Ontology namespace IRIs registered at startup from the domain registry.
- * Replaces the former hardcoded ENVITED-X regex pattern — any ontology
- * loaded via the registry is automatically allowed.
+ * Any ontology loaded via the registry is automatically allowed.
  */
 let registeredNamespaces = new Set<string>()
 

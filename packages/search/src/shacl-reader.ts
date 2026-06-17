@@ -19,7 +19,7 @@ const log = createComponentLogger('shacl-reader')
 
 /** A single SHACL file's content with its domain metadata */
 export interface ShaclDomainContent {
-  /** Domain name (e.g., "hdmap", "scenario") */
+  /** Domain name (the SHACL domain name) */
   domain: string
   /** Raw Turtle content of the .shacl.ttl file */
   content: string

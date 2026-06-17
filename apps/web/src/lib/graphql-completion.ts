@@ -37,8 +37,8 @@ const MAX_DOMAIN_OPTIONS = 50
  *
  * When completion is triggered with no word prefix — Ctrl-Space or the
  * auto-open-on-newline listener both set `context.explicit` — it returns ALL
- * options for the current element, so the user sees e.g. every `hdmap` field
- * without typing a letter to filter. While typing, results narrow by prefix.
+ * options for the current element, so the user sees e.g. every field of the
+ * current type without typing a letter to filter. While typing, results narrow by prefix.
  */
 export function buildCompletionSource(vocabulary: CompletionVocabulary): SyncCompletionSource {
   return (context: CompletionContext): CompletionResult | null => {

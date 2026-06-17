@@ -12,6 +12,8 @@ import {
   escapeSparqlLiteral,
   normalizeDomainName,
 } from '../compiler.js'
+import { parseGraphQLToSlots } from '../graphql-parser.js'
+import { slotsToGraphQL } from '../graphql-serializer.js'
 import type { SearchSlots } from '../slots.js'
 
 // Register ontology namespaces so compiled queries pass policy validation
@@ -578,6 +580,42 @@ describe('compileSlots', () => {
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
   })
+
+  it('applies reference-scoped filters and ranges to the referenced asset, not the primary', async () => {
+    // Regression for the cross-domain anchoring bug: "OSI traces referencing
+    // HD maps in Germany with at least one intersection". country + intersection
+    // describe the MAP, so they must bind to the reference variable — not the
+    // OSI trace. Before the fix these partitioned to the top level and bound to
+    // the wrong domain, so the query returned nothing.
+    const slots: SearchSlots = {
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [
+        {
+          domain: 'hdmap',
+          filters: { country: 'DE' },
+          ranges: { numberIntersections: { min: 1 } },
+        },
+      ],
+    }
+    const sparql = await compileSlots(slots)
+    // The cross-reference join is still emitted.
+    expect(sparql).toContain('?refAsset a hdmap:HdMap')
+    // Reference-scoped constraints anchor on the REFERENCED asset's own spec
+    // variable — the core proof. Absent entirely before the fix.
+    expect(sparql).toContain('?refAsset_spec')
+    // numberIntersections range is applied to the referenced map.
+    expect(sparql).toContain('numberIntersections')
+    expect(sparql).toContain('>= 1')
+    // country constraint is applied to the referenced map (georeference leaf).
+    expect(sparql).toContain('georeference:country')
+    // numberIntersections is an hdmap-only metric: it must hang off the
+    // referenced map's spec var, never the primary OSI trace's spec var.
+    expect(sparql).toMatch(/\?refAsset_spec[\s\S]*numberIntersections/)
+    const policy = enforceSparqlPolicy(sparql)
+    expect(policy.allowed).toBe(true)
+  })
 })
 
 describe('peer-domain UNION queries', () => {
@@ -770,4 +808,75 @@ describe('normalizeDomainName', () => {
     expect(normalizeDomainName('hdmap')).toBe('hdmap')
     expect(normalizeDomainName('openlabel-v2')).toBe('openlabel-v2')
   })
+})
+
+describe('GraphQL ↔ SPARQL equivalence (no-drift guard)', () => {
+  // Each representative slot set must (a) round-trip through the GraphQL codec
+  // unchanged and (b) compile to the SAME SPARQL after round-tripping. If the
+  // GraphQL serializer/parser drops any field the compiler reads, one of these
+  // assertions fails — catching drift structurally. Complements the
+  // compile-time exhaustiveness guard in graphql-serializer.ts.
+  const cases: { name: string; slots: SearchSlots }[] = [
+    {
+      name: 'single filter',
+      slots: { domains: ['hdmap'], filters: { roadTypes: 'motorway' }, ranges: {} },
+    },
+    {
+      name: 'numeric range',
+      slots: { domains: ['hdmap'], filters: {}, ranges: { numberIntersections: { min: 1 } } },
+    },
+    {
+      name: 'array filter (IN)',
+      slots: { domains: ['hdmap'], filters: { country: ['DE', 'FR'] }, ranges: {} },
+    },
+    {
+      name: 'reference (domain only)',
+      slots: { domains: ['ositrace'], filters: {}, ranges: {}, references: [{ domain: 'hdmap' }] },
+    },
+    {
+      name: 'reference-scoped filters + ranges',
+      slots: {
+        domains: ['ositrace'],
+        filters: {},
+        ranges: {},
+        references: [
+          {
+            domain: 'hdmap',
+            filters: { country: 'DE' },
+            ranges: { numberIntersections: { min: 1 } },
+          },
+        ],
+      },
+    },
+    {
+      name: 'reference with label',
+      slots: {
+        domains: ['ositrace'],
+        filters: {},
+        ranges: {},
+        references: [{ domain: 'hdmap', label: 'Karlsruhe' }],
+      },
+    },
+    {
+      name: 'nested references',
+      slots: {
+        domains: ['scenario'],
+        filters: {},
+        ranges: {},
+        references: [{ domain: 'ositrace', references: [{ domain: 'hdmap' }] }],
+      },
+    },
+  ]
+
+  for (const { name, slots } of cases) {
+    it(`preserves slots and compiled SPARQL across the GraphQL round-trip: ${name}`, async () => {
+      const parsed = parseGraphQLToSlots(slotsToGraphQL(slots))
+      expect(parsed.success).toBe(true)
+      if (!parsed.success) return
+      // (a) The GraphQL codec preserves every slot field.
+      expect(parsed.slots).toEqual(slots)
+      // (b) The round-trip does not change the compiled SPARQL.
+      expect(await compileSlots(parsed.slots)).toBe(await compileSlots(slots))
+    })
+  }
 })

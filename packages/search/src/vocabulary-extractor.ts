@@ -26,9 +26,9 @@ import {
 
 /** A property with enumerated allowed values (from sh:in) */
 export interface EnumProperty {
-  /** Full IRI of the property (e.g., "https://...hdmap/v6/roadTypes") */
+  /** Full IRI of the property (e.g., "http://example.org/ontology/v1/propertyName") */
   iri: string
-  /** Local name (e.g., "roadTypes") */
+  /** Local name (e.g., "propertyName") */
   localName: string
   /** Human-readable label from sh:name (e.g., "road types") */
   label: string
@@ -36,7 +36,7 @@ export interface EnumProperty {
   description: string
   /** Enumerated allowed values from sh:in */
   allowedValues: string[]
-  /** Ontology domain (e.g., "hdmap", "scenario") */
+  /** Ontology domain (the SHACL domain name) */
   domain: string
 }
 

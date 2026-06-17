@@ -6,6 +6,12 @@
  * this map so the wire contract cannot drift between sides.
  *
  * The names are wire-format constants, not ontology-specific terms.
+ *
+ * STANDARDS — the stream is a `text/event-stream` per
+ *   [SSE] Server-Sent Events — docs/specs/references/eventsource.md
+ *         https://www.w3.org/TR/eventsource/
+ * Each frame uses the `event:` / `data:` field grammar of [SSE] §9 (the
+ * `event stream` format); these constants are the `event:` field values.
  */
 
 export const SSE_EVENT = {

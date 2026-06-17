@@ -102,6 +102,27 @@ describe('slotsToGraphQL', () => {
     expect(result).toContain('domain: "hdmap", label: "German highways"')
   })
 
+  it('serializes reference-scoped filters and ranges', () => {
+    const slots: SearchSlots = {
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [
+        {
+          domain: 'hdmap',
+          filters: { country: 'DE' },
+          ranges: { numberIntersections: { min: 1 } },
+        },
+      ],
+    }
+
+    const result = slotsToGraphQL(slots)
+
+    expect(result).toContain(
+      'references: [{ domain: "hdmap", filters: { country: ["DE"] }, ranges: { numberIntersections: { min: 1 } } }]'
+    )
+  })
+
   it('sorts domains alphabetically', () => {
     const slots: SearchSlots = {
       domains: ['scenario', 'hdmap'],

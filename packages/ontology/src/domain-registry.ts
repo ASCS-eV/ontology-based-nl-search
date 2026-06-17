@@ -21,15 +21,15 @@ import { getArtifactRoots } from './sources.js'
 
 const RDFS_SUBCLASS_OF = `${RDF_PREFIXES.rdfs}subClassOf`
 
-/** Metadata for a single ontology domain (e.g., hdmap, scenario) */
+/** Metadata for a single ontology domain */
 export interface DomainDescriptor {
-  /** Short domain name (directory name, e.g., "hdmap") */
+  /** Short domain name (directory name) */
   name: string
-  /** Full namespace IRI (e.g., "https://w3id.org/ascs-ev/envited-x/hdmap/v6/") */
+  /** Full namespace IRI (e.g. ".../<domain>/<version>/") */
   namespace: string
-  /** SPARQL prefix alias (e.g., "hdmap") */
+  /** SPARQL prefix alias */
   prefix: string
-  /** OWL target class for assets (e.g., "hdmap:HdMap") */
+  /** OWL target class for assets (e.g. "<prefix>:<Class>") */
   targetClass: string
   /** Full IRI of the target class */
   targetClassIri: string
@@ -145,8 +145,8 @@ function findPrefixAlias(
     if (ns === namespace) return { alias, resolvedNs: ns }
   }
   // Trailing-slash/hash normalization: owl:Ontology IRIs often omit the
-  // separator that the @prefix declaration includes (e.g., ontology IRI
-  // ".../scenario-metadata" vs prefix ".../scenario-metadata/").
+  // separator that the @prefix declaration includes (e.g. an ontology IRI
+  // without a trailing slash vs a prefix that ends in one).
   const withSlash = namespace.endsWith('/') || namespace.endsWith('#') ? null : namespace + '/'
   const withHash = namespace.endsWith('/') || namespace.endsWith('#') ? null : namespace + '#'
   for (const [alias, ns] of Object.entries(declaredPrefixes)) {
@@ -181,7 +181,7 @@ function extractTargetClasses(
 }
 
 /**
- * Extract version from namespace IRI (e.g., "v6" from ".../hdmap/v6/")
+ * Extract version from namespace IRI (e.g. "v6" from ".../<domain>/v6/")
  */
 function extractVersion(namespace: string): string {
   const match = namespace.match(/\/(v\d+)\/?$/)
@@ -240,13 +240,12 @@ function domainPascalCase(domainName: string): string {
  *      **two or more domains** (a shared structural type the domains reuse), AND
  *   2. **is a bare root** — it has no named superclass of its own.
  *
- * Condition 2 separates these reusable STRUCTURE bases (`envited-x:Content`,
- * `Format`, `Quantity`, `Quality`, `DataSource`, `DomainSpecification`) from
- * genuine asset bases like `envited-x:SimulationAsset → owl:Thing` or
- * `gx:VirtualResource → gx:Resource`, which reach a higher upper-ontology root.
- * This replaces the former hard-coded list of ENVITED-X sub-shape names: a class
- * is a "sub-component" — and thus not a domain's primary asset — exactly when it
- * is, or transitively subclasses, a component-base.
+ * Condition 2 separates these reusable STRUCTURE bases (shared component types
+ * that several domains reuse) from genuine asset bases (which reach a higher
+ * upper-ontology root, e.g. `owl:Thing` or a framework resource class). The
+ * set is derived structurally instead of from a hard-coded list of sub-shape
+ * names: a class is a "sub-component" — and thus not a domain's primary asset
+ * — exactly when it is, or transitively subclasses, a component-base.
  */
 function computeComponentBases(
   subClassEdges: { sub: string; super: string }[],
@@ -268,14 +267,14 @@ function computeComponentBases(
 }
 
 /**
- * Select a domain's primary asset class. Mirrors the historical algorithm —
- * PascalCase-of-domain match wins first, otherwise the first declared target
- * class that is not a sub-component — but derives "sub-component" structurally
- * from {@link computeComponentBases} instead of a hard-coded ENVITED-X name
- * list. A class is a sub-component when it is, or transitively subclasses, a
- * component-base; an asset class (e.g. `hdmap:HdMap`, `tzip21:Asset`) subclasses
- * an asset base instead, so it survives the filter even when not named after
- * its domain. `targetClasses` keeps its SHACL declaration order so the
+ * Select a domain's primary asset class. PascalCase-of-domain match wins
+ * first, otherwise the first declared target class that is not a sub-component
+ * — with "sub-component" derived structurally from
+ * {@link computeComponentBases} instead of a hard-coded name list. A class is
+ * a sub-component when it is, or transitively subclasses, a component-base; an
+ * asset class (e.g. `<prefix>:<Class>`) subclasses an asset base instead, so
+ * it survives the filter even when not named after its domain. `targetClasses`
+ * keeps its SHACL declaration order so the
  * first-non-sub-component fallback is deterministic and matches prior behavior.
  */
 function selectPrimaryAssetClass(
@@ -300,8 +299,8 @@ function selectPrimaryAssetClass(
     return false
   }
 
-  // PascalCase-of-domain match wins first (e.g. hdmap → HdMap, manifest →
-  // Manifest), even if it is itself a component-base.
+  // PascalCase-of-domain match wins first (a domain name maps to its
+  // PascalCase class), even if it is itself a component-base.
   const exact = targetClasses.find((tc) => tc.localName === domainPascalCase(domainName))
   if (exact) return exact
 
@@ -447,7 +446,8 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
       if (!desc) return ''
 
       // Combine standard prefixes with all prefixes declared in this domain's files.
-      // This naturally includes cross-domain imports (e.g., georeference in hdmap)
+      // This naturally includes cross-domain imports (a supporting domain's
+      // prefix used inside another domain's files)
       // without hard-coding any specific prefix names.
       const prefixes: Record<string, string> = {
         ...STANDARD_PREFIXES,
@@ -485,7 +485,7 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
       // Longest-prefix match: among all domain namespaces that are a
       // prefix of the IRI, pick the one with the longest namespace.
       // This avoids misclassification when one namespace is a prefix
-      // of another (e.g., `/envited-x/` vs `/envited-x/hdmap/`).
+      // of another (e.g. a base namespace vs a nested sub-namespace).
       let bestName: string | undefined
       let bestLen = 0
       for (const [name, desc] of domains) {
@@ -539,9 +539,7 @@ export async function listDomains(): Promise<string[]> {
  *
  * The registry's `domainNames` is sorted lexicographically at build time,
  * so the choice is deterministic and ontology-agnostic — it never names
- * a specific domain in source. This deliberately replaces the legacy
- * `?? 'hdmap'` literal fallbacks that pinned the project to a single
- * ontology in production code paths.
+ * a specific domain in source.
  *
  * Throws `OntologySourcesError` when the registry exposes zero domains:
  * that condition is always a misconfiguration (missing artifacts, broken

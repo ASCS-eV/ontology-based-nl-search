@@ -79,9 +79,8 @@ function getClaudeCliToken(): string {
 /**
  * Parse the Claude CLI OAuth access token out of a raw credentials-file
  * string. Pure (no filesystem) so the parse/validation contract is unit-
- * testable. Every failure path throws the typed {@link AgentError} — including
- * malformed JSON, which previously surfaced as a raw `SyntaxError` outside the
- * error hierarchy the API layer maps by `instanceof`.
+ * testable. Every failure path throws the typed {@link AgentError}, including
+ * malformed JSON, so the API layer can map failures by `instanceof`.
  */
 export function parseClaudeOAuthToken(raw: string, credPath: string): string {
   let parsed: unknown

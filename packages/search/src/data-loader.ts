@@ -1,3 +1,14 @@
+/**
+ * Built-in / declared instance-data loader.
+ *
+ * STANDARDS — the loaded files conform to:
+ *   [JSON-LD11] JSON-LD 1.1 — docs/specs/references/json-ld11.md
+ *               https://www.w3.org/TR/json-ld11/  (`*.jsonld`, `@context` resolution)
+ *   [TURTLE]    RDF 1.1 Turtle — docs/specs/references/turtle.md
+ *               https://www.w3.org/TR/turtle/      (`*.ttl` instance + fallback data)
+ * `@context` URLs are resolved to local context files before `loadJsonLd`, per
+ * [JSON-LD11] §3.1 (the Context).
+ */
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { getDataSources } from '@ontology-search/ontology/sources'
 import type { SparqlStore } from '@ontology-search/sparql/types'
@@ -26,7 +37,7 @@ function loadDataFile(filePath: string): string {
 /**
  * Empty fallback data. If sample data files are missing, the store loads
  * an empty graph. This ensures the system works with any ontology — no
- * hardcoded domain names or ENVITED-X assumptions.
+ * hardcoded domain assumptions.
  *
  * Production systems should always have sample files present, so this
  * fallback is primarily for development/troubleshooting.

@@ -7,9 +7,8 @@
  *   2. The ontology vocabulary (for post-LLM slot validation)
  *   3. A SparqlStore reference (for running post-LLM SHACL validation)
  *
- * Previously each adapter had its own `getSystemPrompt()` + module-private
- * singletons — a bug here was always fixed in one and forgotten in the other.
- * This module is the single owner of that cache.
+ * This module is the single owner of that cache, so the two adapters cannot
+ * drift — a bug fixed here is fixed for both.
  */
 
 import {

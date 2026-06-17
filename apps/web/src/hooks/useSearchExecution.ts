@@ -184,7 +184,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
       const filters: Record<string, string> = {}
       const ranges: Record<string, { min?: number; max?: number }> = {}
 
-      // Task 21d-flat: every mapped term — geography, license, plain
+      // Every mapped term — geography, license, plain
       // enums — flows through the same `filters` map keyed by SHACL
       // leaf local name. The compiler walks the discovered property
       // path for each key; no client-side knowledge of which fields

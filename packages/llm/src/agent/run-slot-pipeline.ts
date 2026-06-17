@@ -1,8 +1,8 @@
 /**
  * Post-LLM slot validation + compilation pipeline shared by every agent.
  *
- * Both the Vercel-SDK agent and the Copilot agent ran the same six steps
- * after the LLM produced a slot submission:
+ * The pipeline performs the same six steps for every provider after the LLM
+ * produces a slot submission:
  *
  *   1. Fuzzy-match enum values (case / typo correction against `sh:in`).
  *   2. SHACL filter validation — drop values that violate any Core constraint.
@@ -11,11 +11,8 @@
  *   5. `compileSlots` — deterministic SPARQL emission.
  *   6. `validateSlots` — final post-compile sanity / confidence-floor pass.
  *
- * Until this module those steps were copy-pasted across the two agents.
- * A bug fix in one provider was not in the other; testing the pipeline at
- * the unit level required two parallel suites. Pulling the steps out makes
- * the post-LLM contract a single, directly-testable function regardless of
- * which provider supplied the submission.
+ * This keeps the post-LLM contract a single, directly-testable function
+ * regardless of which provider supplied the submission.
  *
  * @see packages/llm/src/agent/index.ts — Vercel-SDK caller
  * @see packages/llm/src/agent/copilot-agent.ts — Copilot-SDK caller
@@ -58,9 +55,10 @@ export interface SlotPipelineSubmission {
     domains?: string[]
     filters?: Record<string, string | string[]>
     ranges?: Record<string, { min?: number; max?: number }>
-    // Accept the array form and the legacy single-object form; normalized to an
-    // array before compilation.
-    references?: { domain: string; label?: string } | { domain: string; label?: string }[]
+    // Accept the array form and the single-object form; normalized to an
+    // array before compilation. References may carry their own reference-scoped
+    // `filters`/`ranges` (constraints on the referenced asset).
+    references?: ReferenceFilter | ReferenceFilter[]
   }
   interpretation: QueryInterpretation
   gaps: OntologyGap[]
@@ -78,6 +76,56 @@ export interface SlotPipelineInput {
    * its return value via `sw.getTimings()`.
    */
   sw: Stopwatch
+}
+
+/**
+ * Validate reference-scoped `filters`/`ranges` with the SAME gates as the
+ * top-level slots: fuzzy-match against `sh:in`, SKOS concept expansion, and
+ * SHACL Core validation for filters; known-key + numeric validation for
+ * ranges. Recurses into nested references. Values that fail are dropped and
+ * accumulated into `gaps`, so a reference-scoped constraint is held to the
+ * exact same correctness bar as a primary one.
+ */
+async function validateReferenceTree(
+  refs: ReferenceFilter[],
+  vocabulary: OntologyVocabulary,
+  conceptIndex: Awaited<ReturnType<typeof getConceptExpansionIndex>>,
+  shacl: ShaclValidator,
+  gaps: OntologyGap[]
+): Promise<ReferenceFilter[]> {
+  const out: ReferenceFilter[] = []
+  for (const ref of refs) {
+    const cleaned: ReferenceFilter = { ...ref }
+
+    if (ref.filters && Object.keys(ref.filters).length > 0) {
+      const fuzzed = correctFilters(ref.filters, vocabulary)
+      const expanded = expandFilterConcepts(fuzzed, conceptIndex)
+      const res = await validateSlotsAgainstShacl(expanded, shacl, vocabulary)
+      for (const g of res.gaps) gaps.push(g)
+      if (Object.keys(res.filters).length > 0) cleaned.filters = res.filters
+      else delete cleaned.filters
+    }
+
+    if (ref.ranges && Object.keys(ref.ranges).length > 0) {
+      const res = validateRangesAgainstShacl(ref.ranges, shacl)
+      for (const g of res.gaps) gaps.push(g)
+      if (Object.keys(res.ranges).length > 0) cleaned.ranges = res.ranges
+      else delete cleaned.ranges
+    }
+
+    if (ref.references && ref.references.length > 0) {
+      cleaned.references = await validateReferenceTree(
+        ref.references,
+        vocabulary,
+        conceptIndex,
+        shacl,
+        gaps
+      )
+    }
+
+    out.push(cleaned)
+  }
+  return out
 }
 
 /**
@@ -155,13 +203,25 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     }
   }
   const primaryDomains = knownDomains.filter((d) => !referencedDomains.has(d))
+
+  // Validate reference-scoped filters/ranges with the same gates as the
+  // top-level slots (fuzzy-match, SKOS expansion, SHACL). Gaps surface to the
+  // user just like primary-slot gaps.
+  const referenceGaps: OntologyGap[] = []
+  const validatedReferences = await validateReferenceTree(
+    normalizedReferences,
+    vocabulary,
+    conceptIndex,
+    shacl,
+    referenceGaps
+  )
   endValidation()
 
   const slots: SearchSlots = {
     domains: primaryDomains,
     filters: shaclResult.filters,
     ranges: rangeResult.ranges,
-    references: normalizedReferences.length > 0 ? normalizedReferences : undefined,
+    references: validatedReferences.length > 0 ? validatedReferences : undefined,
   }
 
   // 5. Deterministic SPARQL compilation. Capture the traceability plan
@@ -189,7 +249,13 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
 
   const rawResponse: LlmStructuredResponse = {
     interpretation: enrichedInterpretation,
-    gaps: [...submission.gaps, ...shaclResult.gaps, ...rangeResult.gaps, ...compileGaps],
+    gaps: [
+      ...submission.gaps,
+      ...shaclResult.gaps,
+      ...rangeResult.gaps,
+      ...referenceGaps,
+      ...compileGaps,
+    ],
     sparql,
     slots,
     trace,
