@@ -1,11 +1,9 @@
-import { completionKeymap } from '@codemirror/autocomplete'
 import { Button, Heading } from '@ontology-search/design-system'
-import CodeMirror, { keymap, Prec } from '@uiw/react-codemirror'
-import { graphql } from 'cm6-graphql'
+import CodeMirror from '@uiw/react-codemirror'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { VocabProperty } from '../hooks/useVocabulary'
-import { buildGraphQLSchema } from '../lib/graphql-schema'
+import { buildEditorExtensions } from '../lib/graphql-editor-extensions'
 
 interface GraphQLEditorProps {
   /** The auto-generated GraphQL query from slots */
@@ -76,15 +74,13 @@ export function GraphQLEditor({
     onExecute?.(localValue)
   }, [localValue, onExecute])
 
-  // Schema-aware GraphQL editing — autocomplete, lint/validation, and hover —
-  // via cm6-graphql, driven by a GraphQLSchema built from the discovered
-  // vocabulary (the same discovery that drives the SPARQL compiler). Replaces
-  // the previous hand-rolled completion source. See ADR 0001.
-  const extensions = useMemo(() => {
-    if (!vocabulary || readOnly) return []
-    const schema = buildGraphQLSchema(vocabulary)
-    return [Prec.highest(keymap.of(completionKeymap)), ...graphql(schema)]
-  }, [vocabulary, readOnly])
+  // Schema-aware GraphQL editing (autocomplete + lint/validation + hover) via
+  // cm6-graphql, driven by a GraphQLSchema built from the discovered vocabulary
+  // — the same discovery that drives the SPARQL compiler. See ADR 0001.
+  const extensions = useMemo(
+    () => (!vocabulary || readOnly ? [] : buildEditorExtensions(vocabulary)),
+    [vocabulary, readOnly]
+  )
 
   return (
     <div className="w-full">
