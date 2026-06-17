@@ -11,8 +11,10 @@
  * Field names mirror the serializer's sanitization so the queries
  * `slotsToGraphQL` produces validate against this schema.
  */
+import { enumPropertyMembers } from '@ontology-search/core/graphql/enum'
 import {
   GraphQLBoolean,
+  GraphQLEnumType,
   type GraphQLFieldConfigMap,
   GraphQLFloat,
   GraphQLInputObjectType,
@@ -71,6 +73,13 @@ function describeProperty(property: VocabProperty): string {
   return base
 }
 
+/** Build a GraphQL enum-value config map (member name === original value). */
+function toEnumValueConfig(values: string[]): Record<string, { value: string }> {
+  const out: Record<string, { value: string }> = {}
+  for (const value of values) out[value] = { value }
+  return out
+}
+
 export function buildGraphQLSchema(vocab: Vocabulary): GraphQLSchema {
   const referenceInput: GraphQLInputObjectType = new GraphQLInputObjectType({
     name: 'ReferenceInput',
@@ -103,6 +112,25 @@ export function buildGraphQLSchema(vocab: Vocabulary): GraphQLSchema {
     propsByDomain.set(property.domain, list)
   }
 
+  // Shared, per-NAME enum types for enum-encodable categorical properties. The
+  // decision is global per name (not per domain) because the serializer keys
+  // filters by name only; both sides derive it from `enumPropertyMembers`, so
+  // the schema types exactly the names the serializer emits as enum literals.
+  const enumMembersByName = enumPropertyMembers(
+    vocab.properties.filter((property) => property.type === 'enum')
+  )
+  const enumTypeByName = new Map<string, GraphQLEnumType>()
+  for (const [name, members] of enumMembersByName) {
+    enumTypeByName.set(
+      name,
+      new GraphQLEnumType({
+        name: `${sanitizeName(name)}_Enum`,
+        description: `Allowed values for ${name}.`,
+        values: toEnumValueConfig(members),
+      })
+    )
+  }
+
   const queryFields: GraphQLFieldConfigMap<unknown, unknown> = {}
 
   for (const domain of vocab.domains) {
@@ -131,13 +159,21 @@ export function buildGraphQLSchema(vocab: Vocabulary): GraphQLSchema {
           } else {
             const allowed = property.allowedValues ?? []
             const hint = allowed.length > 0 ? ` Allowed: ${allowed.join(', ')}.` : ''
+            // Enum-encodable categorical properties use a shared per-name enum
+            // so cm6-graphql suggests each value; the serializer (same decision
+            // via enumPropertyMembers) emits matching enum literals, so the
+            // prefilled query validates and round-trips. Others stay strings.
+            const enumType = enumTypeByName.get(property.name)
+            const valueType = enumType ?? GraphQLString
             fields[fieldName] = {
               type: FilterScalar,
               description: describeProperty(property) + hint,
               args: {
                 values: {
-                  type: new GraphQLList(GraphQLString),
-                  description: `Value(s) to match.${hint}`,
+                  type: new GraphQLList(valueType),
+                  description: enumType
+                    ? 'Value(s) to match — pick from the suggested values.'
+                    : `Value(s) to match.${hint}`,
                 },
               },
             }

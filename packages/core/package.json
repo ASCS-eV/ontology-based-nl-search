@@ -20,6 +20,11 @@
       "import": "./dist/errors/index.js",
       "default": "./dist/errors/index.js"
     },
+    "./graphql/enum": {
+      "types": "./src/graphql/enum.ts",
+      "import": "./dist/graphql/enum.js",
+      "default": "./dist/graphql/enum.js"
+    },
     "./rdf/prefixes": {
       "types": "./src/rdf/prefixes.ts",
       "import": "./dist/rdf/prefixes.js",

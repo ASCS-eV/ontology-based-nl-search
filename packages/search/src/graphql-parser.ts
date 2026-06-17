@@ -118,13 +118,11 @@ export function parseGraphQLToSlots(query: string): GraphQLParseResult | GraphQL
 
       for (const arg of field.arguments) {
         if (arg.name.value === 'values' && arg.value.kind === 'ListValue') {
-          // Filter: values: ["a", "b"]
+          // Filter: values: ["a", "b"] (strings) or values: [a, b] (enum
+          // literals, for properties the editor schema models as GraphQL enums)
           const values = arg.value.values
-            .filter((v) => v.kind === 'StringValue')
-            .map((v) => {
-              if (v.kind === 'StringValue') return v.value
-              return ''
-            })
+            .filter((v) => v.kind === 'StringValue' || v.kind === 'EnumValue')
+            .map((v) => (v.kind === 'StringValue' || v.kind === 'EnumValue' ? v.value : ''))
             .filter((v) => v.length > 0)
 
           if (values.length === 1) {
@@ -208,12 +206,15 @@ function parseRefFilters(obj: ObjectValueNode): Record<string, string | string[]
     const value = field.value
     if (value.kind === 'ListValue') {
       const values = value.values
-        .filter((v) => v.kind === 'StringValue')
-        .map((v) => (v.kind === 'StringValue' ? v.value : ''))
+        .filter((v) => v.kind === 'StringValue' || v.kind === 'EnumValue')
+        .map((v) => (v.kind === 'StringValue' || v.kind === 'EnumValue' ? v.value : ''))
         .filter((v) => v.length > 0)
       if (values.length === 1) out[key] = values[0]!
       else if (values.length > 1) out[key] = values
-    } else if (value.kind === 'StringValue' && value.value.length > 0) {
+    } else if (
+      (value.kind === 'StringValue' || value.kind === 'EnumValue') &&
+      value.value.length > 0
+    ) {
       out[key] = value.value
     }
   }

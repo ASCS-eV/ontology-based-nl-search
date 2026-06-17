@@ -1,4 +1,4 @@
-import { GraphQLObjectType, parse, validate } from 'graphql'
+import { GraphQLEnumType, GraphQLObjectType, parse, validate } from 'graphql'
 import { describe, expect, it } from 'vitest'
 
 import type { Vocabulary } from '../hooks/useVocabulary'
@@ -33,7 +33,7 @@ describe('buildGraphQLSchema (editor query contract from discovery)', () => {
   it('accepts a valid query: domain + enum filter + numeric range + _all', () => {
     expect(
       errorsFor(
-        'query { hdmap { roadTypes(values: ["motorway"]) numberIntersections(min: 1) _all } }'
+        'query { hdmap { roadTypes(values: [motorway]) numberIntersections(min: 1) _all } }'
       )
     ).toHaveLength(0)
   })
@@ -72,5 +72,18 @@ describe('buildGraphQLSchema (editor query contract from discovery)', () => {
     const roadTypes = hdmap.getFields()['roadTypes']
     expect(roadTypes?.description).toContain('motorway')
     expect(roadTypes?.description).toContain('urban')
+  })
+
+  it('models enum-encodable filter values as a GraphQL enum (for value autocomplete)', () => {
+    const hdmap = schema.getType('hdmap_Result') as GraphQLObjectType
+    const valuesArg = hdmap.getFields()['roadTypes']?.args.find((a) => a.name === 'values')
+    expect(String(valuesArg?.type)).toBe('[roadTypes_Enum]')
+    const enumType = schema.getType('roadTypes_Enum') as GraphQLEnumType
+    expect(enumType.getValues().map((v) => v.name)).toEqual(['motorway', 'urban'])
+  })
+
+  it('accepts enum-literal filter values (the serializer form) and rejects unknown ones', () => {
+    expect(errorsFor('query { hdmap { roadTypes(values: [motorway]) } }')).toHaveLength(0)
+    expect(errorsFor('query { hdmap { roadTypes(values: [bogus]) } }').length).toBeGreaterThan(0)
   })
 })

@@ -22,6 +22,23 @@ describe('parseGraphQLToSlots', () => {
     }
   })
 
+  it('round-trips enum-literal filter values back to strings', () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: { country: ['DE', 'AT'] },
+      ranges: {},
+    }
+
+    const graphql = slotsToGraphQL(slots, { enumProperties: new Set(['country']) })
+    expect(graphql).toContain('country(values: [AT, DE])') // unquoted enum literals
+
+    const result = parseGraphQLToSlots(graphql)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.slots.filters).toEqual({ country: ['AT', 'DE'] })
+    }
+  })
+
   it('round-trips a query with ranges', () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],

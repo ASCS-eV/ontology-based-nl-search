@@ -25,6 +25,44 @@ describe('slotsToGraphQL', () => {
     )
   })
 
+  it('emits enum literals (unquoted) for enum-encoded properties', () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: { country: ['DE', 'AT'], roadType: 'motorway' },
+      ranges: {},
+    }
+
+    const result = slotsToGraphQL(slots, { enumProperties: new Set(['country', 'roadType']) })
+
+    expect(result).toContain('country(values: [AT, DE])')
+    expect(result).toContain('roadType(values: [motorway])')
+  })
+
+  it('keeps non-enum properties as quoted strings', () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: { country: 'DE', name: 'A19' },
+      ranges: {},
+    }
+
+    const result = slotsToGraphQL(slots, { enumProperties: new Set(['country']) })
+
+    expect(result).toContain('country(values: [DE])')
+    expect(result).toContain('name(values: ["A19"])')
+  })
+
+  it('falls back to a quoted string when an enum-encoded value is not a valid enum name', () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: { region: 'A/B' },
+      ranges: {},
+    }
+
+    const result = slotsToGraphQL(slots, { enumProperties: new Set(['region']) })
+
+    expect(result).toContain('region(values: ["A/B"])')
+  })
+
   it('handles array filter values (sorted)', () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],

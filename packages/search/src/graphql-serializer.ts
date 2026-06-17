@@ -36,12 +36,26 @@
  * @see validateGraphQL in ./graphql-validator.ts — post-serialize validation
  */
 
+import { isGraphQLEnumName } from '@ontology-search/core/graphql/enum'
 import { createComponentLogger } from '@ontology-search/core/logging'
 
 import { validateGraphQL } from './graphql-validator.js'
 import type { ReferenceFilter, SearchSlots } from './slots.js'
 
 const logger = createComponentLogger('graphql-serializer')
+
+/** Options controlling how slots are rendered to GraphQL. */
+export interface GraphQLSerializeOptions {
+  /**
+   * Property names whose filter values should be emitted as GraphQL enum
+   * literals (unquoted) instead of strings, enabling value autocomplete in the
+   * editor. Must match the editor schema's enum-typed properties: both derive
+   * the set from the same discovered vocabulary via `enumEncodableValues`.
+   */
+  enumProperties?: ReadonlySet<string>
+}
+
+const EMPTY_SET: ReadonlySet<string> = new Set()
 
 /**
  * Convert SearchSlots into a human-readable GraphQL query string.
@@ -74,7 +88,7 @@ const logger = createComponentLogger('graphql-serializer')
  * // }
  * ```
  */
-export function slotsToGraphQL(slots: SearchSlots): string {
+export function slotsToGraphQL(slots: SearchSlots, options: GraphQLSerializeOptions = {}): string {
   // Exhaustiveness guard: destructuring every SearchSlots field means adding a
   // new field without handling it here makes `rest` non-empty, which fails the
   // `Record<string, never>` assignment at compile time. This turns silent
@@ -83,13 +97,15 @@ export function slotsToGraphQL(slots: SearchSlots): string {
   const { domains, filters, ranges, references, ...rest } = slots
   const _exhaustive: Record<string, never> = rest
 
+  const enumProperties = options.enumProperties ?? EMPTY_SET
+
   const sortedDomains = [...domains].sort()
   if (sortedDomains.length === 0) {
     return 'query {\n  _empty\n}'
   }
 
   const domainBlocks = sortedDomains.map((domain) =>
-    buildDomainBlock(domain, filters, ranges, references)
+    buildDomainBlock(domain, filters, ranges, references, enumProperties)
   )
   const body = domainBlocks.join('\n')
 
@@ -114,7 +130,8 @@ function buildDomainBlock(
   domain: string,
   filters: SearchSlots['filters'],
   ranges: SearchSlots['ranges'],
-  references: SearchSlots['references']
+  references: SearchSlots['references'],
+  enumProperties: ReadonlySet<string>
 ): string {
   const indent = '  '
   const fieldIndent = '    '
@@ -125,7 +142,7 @@ function buildDomainBlock(
     ? `${indent}${safeDomain}(${referencesArg}) {`
     : `${indent}${safeDomain} {`
 
-  const fields = buildFields(filters, ranges, fieldIndent)
+  const fields = buildFields(filters, ranges, fieldIndent, enumProperties)
 
   if (fields.length === 0) {
     // GraphQL requires at least one field in a selection set
@@ -138,7 +155,8 @@ function buildDomainBlock(
 function buildFields(
   filters: Record<string, string | string[]>,
   ranges: Record<string, { min?: number; max?: number }>,
-  indent: string
+  indent: string,
+  enumProperties: ReadonlySet<string>
 ): string[] {
   const lines: string[] = []
 
@@ -155,7 +173,14 @@ function buildFields(
       if (value !== undefined) {
         const values = Array.isArray(value) ? value : [value]
         const sortedValues = [...values].sort()
-        const valuesStr = sortedValues.map((v) => `"${escapeGraphQLString(v)}"`).join(', ')
+        // Enum-encoded properties emit unquoted enum literals (which the editor
+        // schema types as enums, so each value autocompletes); everything else
+        // stays a quoted string. A value that is unexpectedly not a valid enum
+        // name falls back to a string so the output is always syntactically valid.
+        const asEnum = enumProperties.has(key)
+        const valuesStr = sortedValues
+          .map((v) => (asEnum && isGraphQLEnumName(v) ? v : `"${escapeGraphQLString(v)}"`))
+          .join(', ')
         lines.push(`${indent}${safeKey}(values: [${valuesStr}])`)
       }
     }
