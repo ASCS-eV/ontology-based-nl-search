@@ -60,10 +60,12 @@ Two tempting-but-wrong options were raised:
   **unavoidable** piece: no off-the-shelf tool generates a query/filter GraphQL
   API from an ontology. The **data model**, by contrast, is **not** invented —
   it comes from LinkML/SHACL.
-- **Open follow-up:** reference-scoped `filters`/`ranges` use arbitrary property
-  keys, which strict GraphQL input objects cannot express. The spike uses a
-  permissive `JSON` scalar there; a later decision can tighten this (per-domain
-  input types) or adjust the DSL.
+- **Open follow-up (RESOLVED by [ADR 0002](./0002-field-based-recursive-references.md)):**
+  reference-scoped `filters`/`ranges` use arbitrary property keys, which strict
+  GraphQL input objects cannot express. The spike used a permissive `JSON` scalar
+  there; ADR 0002 replaces the reference _argument_ with recursive reference
+  _fields_ (reusing the per-domain result type), which removes the `JSON` scalar
+  and restores full typing/autocomplete inside references.
 
 ## Alternatives considered
 

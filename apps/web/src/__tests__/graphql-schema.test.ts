@@ -38,12 +38,39 @@ describe('buildGraphQLSchema (editor query contract from discovery)', () => {
     ).toHaveLength(0)
   })
 
-  it('accepts a reference query with reference-scoped ranges', () => {
+  it('accepts a field-based reference query with enum + range (the dead zone is gone)', () => {
     expect(
       errorsFor(
-        'query { ositrace(references: [{ domain: "hdmap", ranges: { numberIntersections: { min: 1 } } }]) { _all } }'
+        'query { ositrace { references { hdmap(label: "x") { roadTypes(values: [motorway]) numberIntersections(min: 1) } } } }'
       )
     ).toHaveLength(0)
+  })
+
+  it('accepts a nested reference (reference of a reference)', () => {
+    expect(
+      errorsFor('query { ositrace { references { hdmap { references { ositrace { _all } } } } } }')
+    ).toHaveLength(0)
+  })
+
+  it('rejects an unknown referenced domain', () => {
+    expect(
+      errorsFor('query { ositrace { references { nosuchDomain { _all } } } }').length
+    ).toBeGreaterThan(0)
+  })
+
+  it('rejects an unknown field on a referenced domain (references are now typed)', () => {
+    expect(
+      errorsFor('query { ositrace { references { hdmap { bogusField } } } }').length
+    ).toBeGreaterThan(0)
+  })
+
+  it('exposes `references` as a field whose targets are the discovered domains', () => {
+    const refs = schema.getType('References') as GraphQLObjectType
+    expect(Object.keys(refs.getFields()).sort()).toEqual(['hdmap', 'ositrace'])
+    // each target returns that domain's result type and accepts an optional label
+    const hdmapRef = refs.getFields()['hdmap']
+    expect(String(hdmapRef?.type)).toBe('hdmap_Result')
+    expect(hdmapRef?.args.find((a) => a.name === 'label')).toBeDefined()
   })
 
   it('rejects an unknown domain (schema-aware validation, not just syntax)', () => {

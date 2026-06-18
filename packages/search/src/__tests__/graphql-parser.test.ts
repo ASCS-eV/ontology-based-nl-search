@@ -119,6 +119,41 @@ describe('parseGraphQLToSlots', () => {
     }
   })
 
+  it('round-trips a reference with an enum filter, a range, a label, and a nested reference', () => {
+    const slots: SearchSlots = {
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [
+        {
+          domain: 'hdmap',
+          label: 'German highways',
+          filters: { roadType: 'motorway' },
+          ranges: { numberIntersections: { min: 1, max: 4 } },
+          references: [{ domain: 'scenario' }],
+        },
+      ],
+    }
+
+    // Enum literals (unquoted) must parse back to the same string values.
+    const result = parseGraphQLToSlots(
+      slotsToGraphQL(slots, { enumProperties: new Set(['roadType']) })
+    )
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.slots.references).toEqual([
+        {
+          domain: 'hdmap',
+          label: 'German highways',
+          filters: { roadType: 'motorway' },
+          ranges: { numberIntersections: { min: 1, max: 4 } },
+          references: [{ domain: 'scenario' }],
+        },
+      ])
+    }
+  })
+
   it('handles empty domains (_empty placeholder)', () => {
     const slots: SearchSlots = {
       domains: [],
