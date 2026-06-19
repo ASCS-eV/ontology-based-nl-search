@@ -2,8 +2,7 @@ import { Button, Heading } from '@ontology-search/design-system'
 import CodeMirror from '@uiw/react-codemirror'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import type { VocabProperty } from '../hooks/useVocabulary'
-import { buildEditorExtensions } from '../lib/graphql-editor-extensions'
+import { buildEditorExtensions, type EditorVocabulary } from '../lib/graphql-autocomplete'
 
 interface GraphQLEditorProps {
   /** The auto-generated GraphQL query from slots */
@@ -13,7 +12,7 @@ interface GraphQLEditorProps {
   /** Called when user clicks "Run" with the edited GraphQL query */
   onExecute?: (graphql: string) => void
   /** Vocabulary data for autocomplete suggestions */
-  vocabulary?: { domains: string[]; properties: VocabProperty[] } | null
+  vocabulary?: EditorVocabulary | null
   /** Whether the editor is read-only (display mode) */
   readOnly?: boolean
 }

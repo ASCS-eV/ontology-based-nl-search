@@ -2,8 +2,8 @@ import { autocompletion, completionKeymap, startCompletion } from '@codemirror/a
 import { EditorView, type Extension, keymap, Prec } from '@uiw/react-codemirror'
 import { graphql } from 'cm6-graphql'
 
-import type { Vocabulary } from '../hooks/useVocabulary'
-import { buildGraphQLSchema } from './graphql-schema'
+import { buildGraphQLSchema } from './schema'
+import type { EditorVocabulary } from './types'
 
 /**
  * CodeMirror extensions for the GraphQL editor.
@@ -18,7 +18,7 @@ import { buildGraphQLSchema } from './graphql-schema'
  * discovered vocabulary, so the editor cannot drift from the compiler. See
  * `docs/adr/0001-graphql-editor-schema-from-discovery.md`.
  */
-export function buildEditorExtensions(vocabulary: Vocabulary): Extension[] {
+export function buildEditorExtensions(vocabulary: EditorVocabulary): Extension[] {
   const schema = buildGraphQLSchema(vocabulary)
 
   // Auto-open the completion popup in the positions where the user is about to

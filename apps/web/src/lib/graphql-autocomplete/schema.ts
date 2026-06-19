@@ -32,7 +32,7 @@ import {
   GraphQLString,
 } from 'graphql'
 
-import type { VocabProperty, Vocabulary } from '../hooks/useVocabulary'
+import type { EditorVocabulary, VocabProperty } from './types'
 
 /** GraphQL Names match `[_A-Za-z][_0-9A-Za-z]*` — mirror the serializer's sanitizer. */
 function sanitizeName(name: string): string {
@@ -74,7 +74,7 @@ function toEnumValueConfig(values: string[]): Record<string, { value: string }> 
   return out
 }
 
-export function buildGraphQLSchema(vocab: Vocabulary): GraphQLSchema {
+export function buildGraphQLSchema(vocab: EditorVocabulary): GraphQLSchema {
   const propsByDomain = new Map<string, VocabProperty[]>()
   for (const property of vocab.properties) {
     const list = propsByDomain.get(property.domain) ?? []

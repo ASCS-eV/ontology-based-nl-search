@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
-import type { VocabProperty } from '../../hooks/useVocabulary'
+import type { EditorVocabulary } from '../../lib/graphql-autocomplete'
 import { renderWithDesignSystem as render } from '../../test-utils'
 import { GraphQLEditor } from '../GraphQLEditor'
 
@@ -13,7 +13,7 @@ const SAMPLE_QUERY = `query {
   }
 }`
 
-const VOCABULARY: { domains: string[]; properties: VocabProperty[] } = {
+const VOCABULARY: EditorVocabulary = {
   domains: ['hdmap'],
   properties: [
     { name: 'laneChange', label: 'Lane change', description: '', domain: 'hdmap', type: 'enum', allowedValues: ['left', 'right'] }, // prettier-ignore
