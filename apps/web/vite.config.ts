@@ -22,8 +22,11 @@ export default defineConfig(({ mode }) => {
     envDir,
     // The external design system may live outside node_modules (a sibling
     // checkout) and carry no React of its own — dedupe so its JSX resolves to
-    // the app's single React copy.
-    resolve: { dedupe: ['react', 'react-dom'] },
+    // the app's single React copy. graphql is deduped too: cm6-graphql's
+    // language service does instanceof checks against the GraphQLSchema the
+    // editor builds, which fail if graphql resolves to two instances (its CJS
+    // and ESM builds) — "Cannot use GraphQLObjectType from another realm".
+    resolve: { dedupe: ['react', 'react-dom', 'graphql'] },
     plugins: [
       activeDesignSystemPlugin(env.DESIGN_SYSTEM_MODULE, envDir),
       TanStackRouterVite({ routesDirectory: './src/routes' }),

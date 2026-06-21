@@ -18,8 +18,9 @@
  * | Filter property  | Field (nested)            | §2.5         |
  * | Filter values    | Argument `values: [...]`  | §2.6         |
  * | Range min/max    | Arguments `min:` / `max:` | §2.6         |
- * | References       | Argument `references:`    | §2.6         |
- * | Ref filters/ranges | `references: [{ filters, ranges }]` (object value) | §2.9.8 |
+ * | References       | `references` field (nested) | §2.5       |
+ * | Referenced asset | Field under `references`  | §2.5         |
+ * | Reference label  | Argument `label:`         | §2.6         |
  * | Field names      | Name token                | §2.1.9       |
  * | String values    | StringValue               | §2.9.4       |
  *
@@ -36,12 +37,26 @@
  * @see validateGraphQL in ./graphql-validator.ts — post-serialize validation
  */
 
+import { isGraphQLEnumName } from '@ontology-search/core/graphql/enum'
 import { createComponentLogger } from '@ontology-search/core/logging'
 
 import { validateGraphQL } from './graphql-validator.js'
 import type { ReferenceFilter, SearchSlots } from './slots.js'
 
 const logger = createComponentLogger('graphql-serializer')
+
+/** Options controlling how slots are rendered to GraphQL. */
+export interface GraphQLSerializeOptions {
+  /**
+   * Property names whose filter values should be emitted as GraphQL enum
+   * literals (unquoted) instead of strings, enabling value autocomplete in the
+   * editor. Must match the editor schema's enum-typed properties: both derive
+   * the set from the same discovered vocabulary via `enumEncodableValues`.
+   */
+  enumProperties?: ReadonlySet<string>
+}
+
+const EMPTY_SET: ReadonlySet<string> = new Set()
 
 /**
  * Convert SearchSlots into a human-readable GraphQL query string.
@@ -50,7 +65,7 @@ const logger = createComponentLogger('graphql-serializer')
  * - `domains` → root query field(s)
  * - `filters` → field arguments with `values: [...]`
  * - `ranges` → field arguments with `min`/`max`
- * - `references` → `references` argument on root field
+ * - `references` → nested `references { <domain> { … } }` selection
  *
  * Every generated query is validated against the GraphQL spec via
  * `graphql-js` parse. If validation fails (a serializer bug), the
@@ -74,7 +89,7 @@ const logger = createComponentLogger('graphql-serializer')
  * // }
  * ```
  */
-export function slotsToGraphQL(slots: SearchSlots): string {
+export function slotsToGraphQL(slots: SearchSlots, options: GraphQLSerializeOptions = {}): string {
   // Exhaustiveness guard: destructuring every SearchSlots field means adding a
   // new field without handling it here makes `rest` non-empty, which fails the
   // `Record<string, never>` assignment at compile time. This turns silent
@@ -83,13 +98,15 @@ export function slotsToGraphQL(slots: SearchSlots): string {
   const { domains, filters, ranges, references, ...rest } = slots
   const _exhaustive: Record<string, never> = rest
 
+  const enumProperties = options.enumProperties ?? EMPTY_SET
+
   const sortedDomains = [...domains].sort()
   if (sortedDomains.length === 0) {
     return 'query {\n  _empty\n}'
   }
 
   const domainBlocks = sortedDomains.map((domain) =>
-    buildDomainBlock(domain, filters, ranges, references)
+    buildBlock(domain, undefined, filters, ranges, references, enumProperties, 1)
   )
   const body = domainBlocks.join('\n')
 
@@ -110,35 +127,75 @@ export function slotsToGraphQL(slots: SearchSlots): string {
   return query
 }
 
-function buildDomainBlock(
-  domain: string,
+/**
+ * Render one asset block (a top-level domain or a referenced asset) and its
+ * nested references, recursively. A referenced asset is the same shape as a
+ * domain — property fields plus its own `references` — so one routine renders
+ * both, mirroring the editor schema where references are typed fields, not an
+ * argument. `depth` is the indentation level (top-level domain = 1).
+ * @see https://spec.graphql.org/September2025/#sec-Selection-Sets — §2.4
+ */
+function buildBlock(
+  name: string,
+  label: string | undefined,
   filters: SearchSlots['filters'],
   ranges: SearchSlots['ranges'],
-  references: SearchSlots['references']
+  references: SearchSlots['references'],
+  enumProperties: ReadonlySet<string>,
+  depth: number
 ): string {
-  const indent = '  '
-  const fieldIndent = '    '
+  const indent = '  '.repeat(depth)
+  const fieldIndent = '  '.repeat(depth + 1)
 
-  const safeDomain = sanitizeFieldName(domain)
-  const referencesArg = buildReferencesArg(references)
-  const domainHeader = referencesArg
-    ? `${indent}${safeDomain}(${referencesArg}) {`
-    : `${indent}${safeDomain} {`
+  const labelArg = label ? `(label: "${escapeGraphQLString(label)}")` : ''
+  const header = `${indent}${sanitizeFieldName(name)}${labelArg} {`
 
-  const fields = buildFields(filters, ranges, fieldIndent)
+  const lines = buildFields(filters, ranges, fieldIndent, enumProperties)
+  lines.push(...buildReferencesBlock(references, fieldIndent, enumProperties, depth + 1))
 
-  if (fields.length === 0) {
-    // GraphQL requires at least one field in a selection set
-    return `${domainHeader}\n${fieldIndent}_all\n${indent}}`
+  // GraphQL requires a non-empty selection set.
+  if (lines.length === 0) {
+    lines.push(`${fieldIndent}_all`)
   }
 
-  return `${domainHeader}\n${fields.join('\n')}\n${indent}}`
+  return `${header}\n${lines.join('\n')}\n${indent}}`
+}
+
+/**
+ * Render the `references { … }` selection. Each reference becomes a nested asset
+ * block keyed by its domain (with an optional `label` argument), constraining
+ * the parent to assets that reference such an asset. Sorted by domain then label
+ * for determinism. Returns an empty array when there are no references.
+ */
+function buildReferencesBlock(
+  references: ReferenceFilter[] | undefined,
+  indent: string,
+  enumProperties: ReadonlySet<string>,
+  depth: number
+): string[] {
+  if (!references || references.length === 0) return []
+
+  const sorted = [...references].sort(
+    (a, b) => a.domain.localeCompare(b.domain) || (a.label ?? '').localeCompare(b.label ?? '')
+  )
+  const blocks = sorted.map((ref) => {
+    // Exhaustiveness guard (see slotsToGraphQL): a new ReferenceFilter field must
+    // be handled here, or the build fails — preventing silent drift from the
+    // compiler, which consumes the same fields.
+    const { domain, label, filters, ranges, references: nested, ...rest } = ref
+    const _exhaustive: Record<string, never> = rest
+    void _exhaustive
+    return buildBlock(domain, label, filters ?? {}, ranges ?? {}, nested, enumProperties, depth + 1)
+  })
+
+  return [`${indent}references {`, ...blocks, `${indent}}`]
 }
 
 function buildFields(
   filters: Record<string, string | string[]>,
   ranges: Record<string, { min?: number; max?: number }>,
-  indent: string
+  indent: string,
+  enumProperties: ReadonlySet<string>
 ): string[] {
   const lines: string[] = []
 
@@ -155,7 +212,14 @@ function buildFields(
       if (value !== undefined) {
         const values = Array.isArray(value) ? value : [value]
         const sortedValues = [...values].sort()
-        const valuesStr = sortedValues.map((v) => `"${escapeGraphQLString(v)}"`).join(', ')
+        // Enum-encoded properties emit unquoted enum literals (which the editor
+        // schema types as enums, so each value autocompletes); everything else
+        // stays a quoted string. A value that is unexpectedly not a valid enum
+        // name falls back to a string so the output is always syntactically valid.
+        const asEnum = enumProperties.has(key)
+        const valuesStr = sortedValues
+          .map((v) => (asEnum && isGraphQLEnumName(v) ? v : `"${escapeGraphQLString(v)}"`))
+          .join(', ')
         lines.push(`${indent}${safeKey}(values: [${valuesStr}])`)
       }
     }
@@ -172,88 +236,6 @@ function buildFields(
   }
 
   return lines
-}
-
-function buildReferencesArg(references: ReferenceFilter[] | undefined): string {
-  if (!references || references.length === 0) return ''
-
-  const refObjects = references.map(serializeReference)
-  return `references: [${refObjects.join(', ')}]`
-}
-
-function serializeReference(ref: ReferenceFilter): string {
-  // Exhaustiveness guard (see slotsToGraphQL): a new ReferenceFilter field must
-  // be handled here, or the build fails — preventing silent drift from the
-  // compiler, which consumes the same fields.
-  const { domain, label, filters, ranges, references, ...rest } = ref
-  const _exhaustive: Record<string, never> = rest
-
-  const parts: string[] = [`domain: "${escapeGraphQLString(domain)}"`]
-
-  if (label) {
-    parts.push(`label: "${escapeGraphQLString(label)}"`)
-  }
-
-  // Reference-scoped constraints describe the REFERENCED asset (e.g. referenced
-  // maps in a country, or with a numeric threshold). They are emitted as nested
-  // object-value arguments so the GraphQL stays equivalent to the compiled
-  // SPARQL, which binds them to the referenced asset's variable.
-  const filtersObj = serializeRefFilters(filters)
-  if (filtersObj) parts.push(`filters: ${filtersObj}`)
-
-  const rangesObj = serializeRefRanges(ranges)
-  if (rangesObj) parts.push(`ranges: ${rangesObj}`)
-
-  if (references && references.length > 0) {
-    const nested = references.map(serializeReference)
-    parts.push(`references: [${nested.join(', ')}]`)
-  }
-
-  return `{ ${parts.join(', ')} }`
-}
-
-/**
- * Serialize reference-scoped property filters as a GraphQL object value
- * (`{ key: ["v1", "v2"], … }`), mirroring the top-level `values: [...]` filters.
- * @see https://spec.graphql.org/September2025/#sec-Object-Value — §2.9.8
- */
-function serializeRefFilters(
-  filters: Record<string, string | string[]> | undefined
-): string | null {
-  if (!filters) return null
-  const fields: string[] = []
-  for (const key of Object.keys(filters).sort()) {
-    const value = filters[key]
-    if (value === undefined) continue
-    const values = (Array.isArray(value) ? value : [value]).filter((v) => v.length > 0)
-    if (values.length === 0) continue
-    const valuesStr = [...values]
-      .sort()
-      .map((v) => `"${escapeGraphQLString(v)}"`)
-      .join(', ')
-    fields.push(`${sanitizeFieldName(key)}: [${valuesStr}]`)
-  }
-  return fields.length > 0 ? `{ ${fields.join(', ')} }` : null
-}
-
-/**
- * Serialize reference-scoped numeric ranges as a GraphQL object value
- * (`{ key: { min: 1, max: 4 }, … }`).
- * @see https://spec.graphql.org/September2025/#sec-Object-Value — §2.9.8
- */
-function serializeRefRanges(
-  ranges: Record<string, { min?: number; max?: number }> | undefined
-): string | null {
-  if (!ranges) return null
-  const fields: string[] = []
-  for (const key of Object.keys(ranges).sort()) {
-    const range = ranges[key]
-    const args: string[] = []
-    if (range?.min !== undefined) args.push(`min: ${range.min}`)
-    if (range?.max !== undefined) args.push(`max: ${range.max}`)
-    if (args.length > 0) fields.push(`${sanitizeFieldName(key)}: { ${args.join(', ')} }`)
-  }
-  return fields.length > 0 ? `{ ${fields.join(', ')} }` : null
 }
 
 /**

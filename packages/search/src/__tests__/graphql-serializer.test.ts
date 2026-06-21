@@ -25,6 +25,44 @@ describe('slotsToGraphQL', () => {
     )
   })
 
+  it('emits enum literals (unquoted) for enum-encoded properties', () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: { country: ['DE', 'AT'], roadType: 'motorway' },
+      ranges: {},
+    }
+
+    const result = slotsToGraphQL(slots, { enumProperties: new Set(['country', 'roadType']) })
+
+    expect(result).toContain('country(values: [AT, DE])')
+    expect(result).toContain('roadType(values: [motorway])')
+  })
+
+  it('keeps non-enum properties as quoted strings', () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: { country: 'DE', name: 'A19' },
+      ranges: {},
+    }
+
+    const result = slotsToGraphQL(slots, { enumProperties: new Set(['country']) })
+
+    expect(result).toContain('country(values: [DE])')
+    expect(result).toContain('name(values: ["A19"])')
+  })
+
+  it('falls back to a quoted string when an enum-encoded value is not a valid enum name', () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: { region: 'A/B' },
+      ranges: {},
+    }
+
+    const result = slotsToGraphQL(slots, { enumProperties: new Set(['region']) })
+
+    expect(result).toContain('region(values: ["A/B"])')
+  })
+
   it('handles array filter values (sorted)', () => {
     const slots: SearchSlots = {
       domains: ['hdmap'],
@@ -61,7 +99,7 @@ describe('slotsToGraphQL', () => {
     expect(result).toContain('numberOfLanes(min: 2, max: 5)')
   })
 
-  it('handles references', () => {
+  it('handles references as a nested field block', () => {
     const slots: SearchSlots = {
       domains: ['scenario'],
       filters: {},
@@ -71,10 +109,15 @@ describe('slotsToGraphQL', () => {
 
     const result = slotsToGraphQL(slots)
 
-    expect(result).toContain('scenario(references: [{ domain: "hdmap" }])')
+    // A reference with no constraints renders as `<domain> { _all }` under a
+    // `references` field — not an argument.
+    expect(result).toContain('references {')
+    expect(result).toContain('hdmap {')
+    expect(result).toContain('_all')
+    expect(result).not.toContain('references: [')
   })
 
-  it('handles nested references', () => {
+  it('handles nested references (reference of a reference)', () => {
     const slots: SearchSlots = {
       domains: ['scenario'],
       filters: {},
@@ -84,12 +127,13 @@ describe('slotsToGraphQL', () => {
 
     const result = slotsToGraphQL(slots)
 
-    expect(result).toContain(
-      'references: [{ domain: "ositrace", references: [{ domain: "hdmap" }] }]'
-    )
+    // ositrace block carries its own `references { hdmap { _all } }`.
+    expect(result).toContain('ositrace {')
+    expect(result.match(/references \{/g)?.length).toBe(2)
+    expect(result).toContain('hdmap {')
   })
 
-  it('handles references with label', () => {
+  it('emits a reference label as an argument on the referenced-domain field', () => {
     const slots: SearchSlots = {
       domains: ['scenario'],
       filters: {},
@@ -99,10 +143,10 @@ describe('slotsToGraphQL', () => {
 
     const result = slotsToGraphQL(slots)
 
-    expect(result).toContain('domain: "hdmap", label: "German highways"')
+    expect(result).toContain('hdmap(label: "German highways") {')
   })
 
-  it('serializes reference-scoped filters and ranges', () => {
+  it('serializes reference-scoped filters and ranges as nested fields', () => {
     const slots: SearchSlots = {
       domains: ['ositrace'],
       filters: {},
@@ -118,9 +162,24 @@ describe('slotsToGraphQL', () => {
 
     const result = slotsToGraphQL(slots)
 
-    expect(result).toContain(
-      'references: [{ domain: "hdmap", filters: { country: ["DE"] }, ranges: { numberIntersections: { min: 1 } } }]'
-    )
+    expect(result).toContain('country(values: ["DE"])')
+    expect(result).toContain('numberIntersections(min: 1)')
+  })
+
+  it('emits enum literals for enum-encoded reference filter values', () => {
+    const slots: SearchSlots = {
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'hdmap', filters: { roadType: 'motorway' } }],
+    }
+
+    const result = slotsToGraphQL(slots, { enumProperties: new Set(['roadType']) })
+
+    // Unquoted enum literal (so the editor schema's per-name enum suggests it),
+    // exactly as top-level filters do — references reuse the same rendering.
+    expect(result).toContain('roadType(values: [motorway])')
+    expect(result).not.toContain('roadType(values: ["motorway"])')
   })
 
   it('sorts domains alphabetically', () => {

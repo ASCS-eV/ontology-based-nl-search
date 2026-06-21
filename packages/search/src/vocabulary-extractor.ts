@@ -9,12 +9,12 @@
  * @see https://www.w3.org/TR/shacl/#InConstraintComponent
  * @see https://www.w3.org/TR/skos-reference/
  */
-import { extractDomain, extractLocalName } from '@ontology-search/core/rdf/iri'
+import { extractLocalName } from '@ontology-search/core/rdf/iri'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
-import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { isIri } from '@ontology-search/sparql/escape'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
+import { getCompilerVocab } from './compiler.js'
 import { SCHEMA_GRAPH } from './schema-loader.js'
 import {
   queryInstanceValueDistribution,
@@ -94,23 +94,37 @@ let cachedVocabulary: OntologyVocabulary | null = null
 export async function extractVocabulary(store: SparqlStore): Promise<OntologyVocabulary> {
   if (cachedVocabulary) return cachedVocabulary
 
-  // Attribute every property to its owning domain via the registry's
-  // longest-prefix matching — the same mechanism schema-queries uses —
-  // rather than a fragile `/vN/` path-segment regex that returned the
-  // literal "unknown" for any IRI not matching that convention (gx:,
-  // fragment IRIs, …). The registry is a cached singleton, so this is cheap.
-  const registry = await buildDomainRegistry()
+  // Attribute every property to its owning domain(s) by SHACL shape membership —
+  // the SAME discovered property paths the compiler resolves filters against
+  // (`getCompilerVocab` is cached; the compiler builds it once at warmup). A
+  // property is owned by the domain whose asset-class shape declares it,
+  // regardless of the property's own IRI namespace. The previous
+  // property-IRI-prefix heuristic orphaned shared-vocabulary leaves — e.g. a
+  // `vcard:`/`dcterms:`/`schema:` property used inside a domain's shape resolved
+  // to the empty domain and vanished from the editor, even though the compiler
+  // could filter it. Deriving attribution from the compiler's path index
+  // guarantees the editor exposes exactly the properties that compile, per
+  // domain — no parallel heuristic to drift. A property reachable from several
+  // domains is attributed to each (matching the compiler's multi-domain paths).
+  const compilerVocab = await getCompilerVocab()
+  const domainsByPropertyIri = new Map<string, Set<string>>()
+  for (const path of compilerVocab.paths.values()) {
+    if (!path.domain) continue
+    const set = domainsByPropertyIri.get(path.propertyIri) ?? new Set<string>()
+    set.add(path.domain)
+    domainsByPropertyIri.set(path.propertyIri, set)
+  }
 
   const [enumProperties, numericProperties, skosConcepts, subClassEdges] = await Promise.all([
-    extractEnumProperties(store, registry),
-    extractNumericProperties(store, registry),
+    extractEnumProperties(store, domainsByPropertyIri),
+    extractNumericProperties(store, domainsByPropertyIri),
     querySkosConcepts(store),
     querySubClassEdges(store),
   ])
 
-  // Drop the empty-string sentinel `extractDomain` returns for an
-  // unresolvable IRI — it is not a searchable domain and must never reach
-  // the interpretation or the compiler.
+  // Searchable domains are exactly those that own at least one discovered
+  // property (the empty sentinel can no longer appear: unattributable
+  // properties are dropped at extraction, not surfaced with a blank domain).
   const domains = [
     ...new Set([...enumProperties.map((p) => p.domain), ...numericProperties.map((p) => p.domain)]),
   ].filter((d) => d.length > 0)
@@ -157,7 +171,7 @@ export function resetVocabulary(): void {
  */
 async function extractEnumProperties(
   store: SparqlStore,
-  registry: DomainRegistry
+  domainsByPropertyIri: Map<string, Set<string>>
 ): Promise<EnumProperty[]> {
   const sparql = `
     ${sparqlPrefixes('sh', 'rdf')}
@@ -177,7 +191,18 @@ async function extractEnumProperties(
   `
 
   const results = await store.query(sparql)
-  const propertyMap = new Map<string, EnumProperty>()
+
+  // Accumulate the sh:in values per property IRI first; domain attribution is
+  // applied afterwards so a property reachable from several domains expands to
+  // one entry per domain (sharing the same allowed-value set).
+  interface EnumBase {
+    iri: string
+    localName: string
+    label: string
+    description: string
+    allowedValues: string[]
+  }
+  const byIri = new Map<string, EnumBase>()
 
   for (const row of results.results.bindings) {
     const iri = row['path']?.value
@@ -185,26 +210,27 @@ async function extractEnumProperties(
     if (!iri || !value) continue
 
     const localName = extractLocalName(iri)
-    const domain = extractDomain(iri, (i) => registry.domainForIri(i))
-
-    if (!propertyMap.has(iri)) {
-      propertyMap.set(iri, {
+    let base = byIri.get(iri)
+    if (!base) {
+      base = {
         iri,
         localName,
         label: row['name']?.value ?? localName,
         description: row['description']?.value ?? '',
         allowedValues: [],
-        domain,
-      })
+      }
+      byIri.set(iri, base)
     }
-
-    const prop = propertyMap.get(iri)!
-    if (!prop.allowedValues.includes(value)) {
-      prop.allowedValues.push(value)
-    }
+    if (!base.allowedValues.includes(value)) base.allowedValues.push(value)
   }
 
-  return [...propertyMap.values()]
+  return [...byIri.values()].flatMap((base) =>
+    [...(domainsByPropertyIri.get(base.iri) ?? [])].map((domain) => ({
+      ...base,
+      allowedValues: [...base.allowedValues],
+      domain,
+    }))
+  )
 }
 
 /**
@@ -212,7 +238,7 @@ async function extractEnumProperties(
  */
 async function extractNumericProperties(
   store: SparqlStore,
-  registry: DomainRegistry
+  domainsByPropertyIri: Map<string, Set<string>>
 ): Promise<NumericProperty[]> {
   const sparql = `
     ${sparqlPrefixes('sh', 'xsd')}
@@ -242,15 +268,15 @@ async function extractNumericProperties(
 
     const datatypeIri = row['datatype']?.value ?? ''
     const datatype = datatypeIri.includes('integer') ? 'integer' : 'float'
+    const localName = extractLocalName(iri)
+    const label = row['name']?.value ?? localName
+    const description = row['description']?.value ?? ''
 
-    properties.push({
-      iri,
-      localName: extractLocalName(iri),
-      label: row['name']?.value ?? extractLocalName(iri),
-      description: row['description']?.value ?? '',
-      datatype,
-      domain: extractDomain(iri, (i) => registry.domainForIri(i)),
-    })
+    // One entry per owning domain (SHACL shape membership); drop properties no
+    // domain can resolve — the compiler could not filter them either.
+    for (const domain of domainsByPropertyIri.get(iri) ?? []) {
+      properties.push({ iri, localName, label, description, datatype, domain })
+    }
   }
 
   return properties

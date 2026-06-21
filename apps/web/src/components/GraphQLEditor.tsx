@@ -1,10 +1,8 @@
-import { autocompletion, completionKeymap, startCompletion } from '@codemirror/autocomplete'
 import { Button, Heading } from '@ontology-search/design-system'
-import CodeMirror, { EditorView, keymap, Prec } from '@uiw/react-codemirror'
+import CodeMirror from '@uiw/react-codemirror'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import type { VocabProperty } from '../hooks/useVocabulary'
-import { buildCompletionSource, shouldAutoOpenAfterChange } from '../lib/graphql-completion'
+import { buildEditorExtensions, type EditorVocabulary } from '../lib/graphql-autocomplete'
 
 interface GraphQLEditorProps {
   /** The auto-generated GraphQL query from slots */
@@ -14,7 +12,7 @@ interface GraphQLEditorProps {
   /** Called when user clicks "Run" with the edited GraphQL query */
   onExecute?: (graphql: string) => void
   /** Vocabulary data for autocomplete suggestions */
-  vocabulary?: { domains: string[]; properties: VocabProperty[] } | null
+  vocabulary?: EditorVocabulary | null
   /** Whether the editor is read-only (display mode) */
   readOnly?: boolean
 }
@@ -75,34 +73,13 @@ export function GraphQLEditor({
     onExecute?.(localValue)
   }, [localValue, onExecute])
 
-  // Build CodeMirror autocomplete extension from vocabulary
-  const extensions = useMemo(() => {
-    if (!vocabulary || readOnly) return []
-
-    const completionSource = buildCompletionSource(vocabulary)
-
-    // Auto-open the popup when the user opens a new line inside a block, so
-    // all fields show up without typing a letter to filter. Dispatching from
-    // inside an update listener is illegal, so defer to the next microtask.
-    const autoOpenOnNewline = EditorView.updateListener.of((update) => {
-      if (!update.docChanged) return
-      // Only react to real user input (Enter/typing), not programmatic value
-      // replacement (a new search result, or Reset) which also rewrites the doc.
-      if (!update.transactions.some((tr) => tr.isUserEvent('input'))) return
-      if (!shouldAutoOpenAfterChange(update.state, update.changes)) return
-      queueMicrotask(() => startCompletion(update.view))
-    })
-
-    return [
-      // basicSetup's completion keymap is disabled below, so add it back:
-      // Ctrl-Space opens the full list, arrows/Enter navigate and accept.
-      // Highest precedence so Enter accepts the highlighted option when the
-      // popup is open instead of inserting a newline.
-      Prec.highest(keymap.of(completionKeymap)),
-      autocompletion({ override: [completionSource], activateOnTyping: true }),
-      autoOpenOnNewline,
-    ]
-  }, [vocabulary, readOnly])
+  // Schema-aware GraphQL editing (autocomplete + lint/validation + hover) via
+  // cm6-graphql, driven by a GraphQLSchema built from the discovered vocabulary
+  // — the same discovery that drives the SPARQL compiler. See ADR 0001.
+  const extensions = useMemo(
+    () => (!vocabulary || readOnly ? [] : buildEditorExtensions(vocabulary)),
+    [vocabulary, readOnly]
+  )
 
   return (
     <div className="w-full">
@@ -149,8 +126,9 @@ export function GraphQLEditor({
 
       {!readOnly && (
         <p className="mt-1 text-xs text-gray-400">
-          Tip: start a new line or press <kbd className="font-sans">Ctrl</kbd>+
-          <kbd className="font-sans">Space</kbd> to list all available fields.
+          Tip: suggestions open as you type — fields, arguments, and (unquoted) values inside{' '}
+          <code>[ ]</code>. Press <kbd className="font-sans">Ctrl</kbd>+
+          <kbd className="font-sans">Space</kbd> to reopen them.
         </p>
       )}
 

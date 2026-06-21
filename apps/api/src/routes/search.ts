@@ -1,9 +1,20 @@
 import type { RefineResponse } from '@ontology-search/api-types'
 import { getConfig } from '@ontology-search/core/config'
 import { badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
-import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
+import { enumPropertyMembers } from '@ontology-search/core/graphql/enum'
+import {
+  createComponentLogger,
+  REQUEST_ID_HEADER,
+  RequestLogger,
+} from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
-import { normalizeReferences, parseGraphQLToSlots, slotsToGraphQL } from '@ontology-search/search'
+import {
+  extractVocabulary,
+  getInitializedStore,
+  normalizeReferences,
+  parseGraphQLToSlots,
+  slotsToGraphQL,
+} from '@ontology-search/search'
 import { referenceFilterWireSchema } from '@ontology-search/search/slot-wire-schema'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
@@ -11,6 +22,37 @@ import { z } from 'zod'
 
 import { searchNl, searchRefine } from '../search-factory.js'
 import type { AppEnv } from '../types.js'
+
+/**
+ * Property names whose filter values the GraphQL serializer should emit as enum
+ * literals (so the editor schema can suggest each value). Derived once from the
+ * discovered vocabulary via the same `enumPropertyMembers` the editor schema
+ * uses, so the two stay in lockstep. Cached for the process — the vocabulary is
+ * static per loaded ontology.
+ */
+const routeLogger = createComponentLogger('search-route')
+
+let enumPropertyNamesCache: ReadonlySet<string> | null = null
+async function getEnumPropertyNames(): Promise<ReadonlySet<string>> {
+  if (enumPropertyNamesCache) return enumPropertyNamesCache
+  try {
+    const store = await getInitializedStore()
+    const vocab = await extractVocabulary(store)
+    const members = enumPropertyMembers(
+      vocab.enumProperties.map((p) => ({ name: p.localName, allowedValues: p.allowedValues }))
+    )
+    enumPropertyNamesCache = new Set(members.keys())
+    return enumPropertyNamesCache
+  } catch (error) {
+    // Vocabulary unavailable (e.g. the store is not initialized in a unit test)
+    // — fall back to plain-string serialization. Not cached, so a later call
+    // retries once the store is ready.
+    routeLogger.warn('Enum-property set unavailable; serializing filter values as strings', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return new Set()
+  }
+}
 
 const searchSlotsSchema = z.object({
   domains: z.array(z.string()).default([]),
@@ -115,7 +157,8 @@ searchRoutes.post('/stream', (c) => {
                   })
                   // Emit GraphQL intermediate representation when feature is enabled
                   if (getConfig().FEATURE_GRAPHQL_LAYER && progress.data.slots) {
-                    const graphql = slotsToGraphQL(progress.data.slots)
+                    const enumProperties = await getEnumPropertyNames()
+                    const graphql = slotsToGraphQL(progress.data.slots, { enumProperties })
                     await stream.writeSSE({
                       event: SSE_EVENT.GRAPHQL,
                       data: JSON.stringify(graphql),
@@ -225,7 +268,9 @@ searchRoutes.post('/refine', async (c) => {
 
     // Include GraphQL intermediate representation when feature is enabled
     if (getConfig().FEATURE_GRAPHQL_LAYER) {
-      response.graphql = slotsToGraphQL(parseResult.data)
+      response.graphql = slotsToGraphQL(parseResult.data, {
+        enumProperties: await getEnumPropertyNames(),
+      })
     }
 
     return c.json(response, 200, { [REQUEST_ID_HEADER]: requestId })
@@ -301,7 +346,9 @@ searchRoutes.post('/refine-graphql', async (c) => {
 
     // Re-serialize from the parsed slots (normalized form)
     if (getConfig().FEATURE_GRAPHQL_LAYER) {
-      response.graphql = slotsToGraphQL(parseResult.slots)
+      response.graphql = slotsToGraphQL(parseResult.slots, {
+        enumProperties: await getEnumPropertyNames(),
+      })
     }
 
     return c.json(response, 200, { [REQUEST_ID_HEADER]: requestId })

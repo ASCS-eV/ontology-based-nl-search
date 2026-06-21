@@ -75,6 +75,34 @@ describe('buildPropertyPaths', () => {
   }, 120_000)
 
   /**
+   * Inheritance: a SHACL shape targeting a superclass constrains the
+   * subclass's instances (RDFS/SHACL semantics), so an asset class must
+   * inherit its superclasses' property shapes. `tzip21:Asset` is
+   * `rdfs:subClassOf gx:VirtualResource`, whose shape declares
+   * `gx:resourcePolicy` directly — so it surfaces as a direct (single-hop)
+   * property of the tzip21 domain. This path is reachable ONLY via
+   * subClassOf, not via any composition (sh:node/sh:class) edge, so it
+   * would not exist without inheritance-aware discovery.
+   */
+  it('inherits a superclass property shape via rdfs:subClassOf', async () => {
+    const store = await getInitializedStore()
+    const registry = await buildDomainRegistry()
+    const paths = await buildPropertyPaths(store, registry)
+
+    const GX_RESOURCE_POLICY = 'https://w3id.org/gaia-x/development#resourcePolicy'
+    const inherited = paths.find(
+      (p) => p.domain === 'tzip21' && p.propertyIri === GX_RESOURCE_POLICY
+    )
+    expect(
+      inherited,
+      'tzip21 (rdfs:subClassOf gx:VirtualResource) must inherit gx:resourcePolicy'
+    ).toBeDefined()
+    // Declared directly on the superclass shape → a direct, single-hop property.
+    expect(inherited!.steps).toHaveLength(1)
+    expect(inherited!.steps[0]?.predicate).toBe(GX_RESOURCE_POLICY)
+  }, 120_000)
+
+  /**
    * Reachability check: every leaf property the compiler currently
    * emits should be reachable from at least one asset class. Without
    * this, the 21b rewire would silently drop properties that the

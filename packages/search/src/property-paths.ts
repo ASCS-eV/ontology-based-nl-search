@@ -31,7 +31,7 @@ import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
-import { queryAssetDomains } from './schema-queries.js'
+import { queryAssetDomains, querySubClassEdges } from './schema-queries.js'
 
 const log = createComponentLogger('property-paths')
 
@@ -408,19 +408,60 @@ interface PredecessorLink {
 }
 
 /**
- * BFS from `assetClass` through the edge graph; return predecessor
- * links keyed by reached target class. Used to reconstruct a path
- * by walking predecessors in reverse from a leaf's owning class.
+ * Build a memoized `class -> {class} ∪ transitive rdfs:subClassOf ancestors`
+ * resolver from the discovered subclass edges. Self-referential and cyclic
+ * `subClassOf` declarations are tolerated (the result set is seeded before
+ * recursing, so a cycle terminates).
  */
-function bfsFromAsset(
-  assetClass: string,
+function buildAncestorClosure(
+  edges: { sub: string; super: string }[]
+): (cls: string) => Set<string> {
+  const parents = new Map<string, Set<string>>()
+  for (const { sub, super: sup } of edges) {
+    if (!sub || !sup || sub === sup) continue
+    const set = parents.get(sub) ?? new Set<string>()
+    set.add(sup)
+    parents.set(sub, set)
+  }
+  const memo = new Map<string, Set<string>>()
+  const resolve = (cls: string): Set<string> => {
+    const cached = memo.get(cls)
+    if (cached) return cached
+    const acc = new Set<string>([cls])
+    memo.set(cls, acc) // seed before recursing so cycles terminate
+    for (const parent of parents.get(cls) ?? []) {
+      for (const ancestor of resolve(parent)) acc.add(ancestor)
+    }
+    return acc
+  }
+  return resolve
+}
+
+/**
+ * BFS from a set of `roots` through the edge graph; return predecessor
+ * links keyed by reached target class. Used to reconstruct a path by
+ * walking predecessors in reverse from a leaf's owning class.
+ *
+ * The roots are the asset class **and all its `rdfs:subClassOf`
+ * ancestors**: by SHACL/RDFS semantics a shape targeting a superclass
+ * constrains the subclass's instances, so the superclass's leaves are
+ * direct properties of the asset (zero intermediate hops) and the
+ * superclass's composition edges are inherited too. Seeding every
+ * ancestor as a zero-hop root makes both fall out of the same BFS.
+ */
+function bfsFromRoots(
+  roots: Iterable<string>,
   forwardEdges: Map<string, { predicate: string; child: string }[]>
 ): Map<string, PredecessorLink> {
   const visited = new Map<string, PredecessorLink>()
-  // The asset itself has no predecessor; mark it visited with a
-  // sentinel so the BFS doesn't loop back.
-  visited.set(assetClass, { parent: '', predicate: '' })
-  const queue: string[] = [assetClass]
+  const queue: string[] = []
+  // Each root has no predecessor; mark it visited with a sentinel so the
+  // BFS doesn't loop back. A leaf owned by any root yields a direct path.
+  for (const root of roots) {
+    if (visited.has(root)) continue
+    visited.set(root, { parent: '', predicate: '' })
+    queue.push(root)
+  }
   while (queue.length > 0) {
     const current = queue.shift()!
     const edges = forwardEdges.get(current) ?? []
@@ -479,7 +520,8 @@ export async function buildPropertyPaths(
   const edgesEnd = log.time('property-paths/resolved-edges')
   const leavesEnd = log.time('property-paths/leaf-properties')
   const assetsEnd = log.time('property-paths/asset-domains')
-  const [resolvedEdges, leaves, assetDomainRows] = await Promise.all([
+  const subClassEnd = log.time('property-paths/subclass-edges')
+  const [resolvedEdges, leaves, assetDomainRows, subClassEdges] = await Promise.all([
     queryResolvedEdges(store).then((r) => {
       edgesEnd()
       return r
@@ -492,8 +534,16 @@ export async function buildPropertyPaths(
       assetsEnd()
       return r
     }),
+    querySubClassEdges(store).then((r) => {
+      subClassEnd()
+      return r
+    }),
   ])
   const assetClasses = assetDomainRows.map((row) => row.assetClass)
+  // An asset inherits the SHACL constraints of its superclasses (RDFS/SHACL
+  // semantics), so each asset class's path search is seeded from itself plus
+  // its transitive rdfs:subClassOf ancestors.
+  const ancestorsOf = buildAncestorClosure(subClassEdges)
   log.debug('Property-path inputs discovered', {
     edges: resolvedEdges.length,
     leaves: leaves.length,
@@ -514,7 +564,7 @@ export async function buildPropertyPaths(
   const bfsEnd = log.time('property-paths/bfs')
   const out: PropertyPath[] = []
   for (const assetClass of assetClasses) {
-    const predecessors = bfsFromAsset(assetClass, forwardEdges)
+    const predecessors = bfsFromRoots(ancestorsOf(assetClass), forwardEdges)
     for (const { owningClass, propertyIri, leafKind } of leaves) {
       const steps = pathStepsTo(owningClass, predecessors, propertyIri)
       if (!steps) continue

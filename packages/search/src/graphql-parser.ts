@@ -18,18 +18,25 @@
  * | Nested Field                | filter/range    | §2.5         |
  * | Argument (values: [...])    | filter values   | §2.6         |
  * | Argument (min/max: N)       | range bounds    | §2.6         |
- * | Argument (references: [...]) | references     | §2.6         |
- * | ObjectValue                 | reference entry / ref filters / ref ranges | §2.9.8 |
+ * | Field `references`          | references container | §2.5    |
+ * | Field under `references`    | reference entry | §2.5         |
+ * | Argument (label: "...")     | reference label | §2.6         |
  * | ListValue                   | array values    | §2.9.7       |
  * | StringValue                 | literal value   | §2.9.4       |
+ * | EnumValue                   | enum filter value | §2.9.6     |
  * | IntValue / FloatValue       | numeric bounds  | §2.9.1–2.9.2 |
+ *
+ * References are modelled as recursive *fields* (`references { <domain> { … } }`),
+ * not an argument — parsing a referenced asset's selection set is the same
+ * routine as parsing a domain's, applied recursively. See
+ * `docs/adr/0002-field-based-recursive-references.md`.
  *
  * @see https://spec.graphql.org/September2025/ — GraphQL Language Specification
  * @see slotsToGraphQL in ./graphql-serializer.ts — the forward path
  * @see https://github.com/graphql/graphql-js — reference implementation (parser)
  */
 
-import { type ObjectValueNode, parse } from 'graphql'
+import { type FieldNode, parse, type SelectionSetNode } from 'graphql'
 
 import type { ReferenceFilter, SearchSlots } from './slots.js'
 
@@ -43,6 +50,13 @@ export interface GraphQLParseError {
   error: string
 }
 
+/** The constraints a selection set carries: property filters, ranges, references. */
+interface ParsedSelection {
+  filters: Record<string, string | string[]>
+  ranges: Record<string, { min?: number; max?: number }>
+  references: ReferenceFilter[]
+}
+
 /**
  * Parse a GraphQL query string (in our structured format) into SearchSlots.
  *
@@ -52,6 +66,9 @@ export interface GraphQLParseError {
  *   domainName {
  *     filterField(values: ["a", "b"])
  *     rangeField(min: 1, max: 10)
+ *     references {
+ *       otherDomain(label: "x") { someField(values: ["v"]) }
+ *     }
  *   }
  * }
  * ```
@@ -78,77 +95,23 @@ export function parseGraphQLToSlots(query: string): GraphQLParseResult | GraphQL
   const ranges: Record<string, { min?: number; max?: number }> = {}
   const references: ReferenceFilter[] = []
 
-  // Each top-level field in the query = a domain
+  // Each top-level field in the query = a domain. Its selection set carries the
+  // same shape as a referenced asset's, so one routine parses both.
   for (const selection of opDef.selectionSet.selections) {
     if (selection.kind !== 'Field') continue
 
     const domainName = selection.name.value
-
-    // Skip placeholder fields
-    if (domainName === '_empty') continue
+    if (domainName === '_empty') continue // placeholder
 
     domains.push(domainName)
 
-    // The `references:` argument on the domain field carries cross-domain joins
-    // (each entry may carry its own reference-scoped filters/ranges).
-    for (const arg of selection.arguments ?? []) {
-      if (arg.name.value === 'references' && arg.value.kind === 'ListValue') {
-        for (const item of arg.value.values) {
-          if (item.kind === 'ObjectValue') {
-            const ref = parseReferenceObject(item)
-            if (ref) references.push(ref)
-          }
-        }
-      }
-    }
-
-    // Process fields within the domain's selection set
     if (!selection.selectionSet) continue
-
-    for (const field of selection.selectionSet.selections) {
-      if (field.kind !== 'Field') continue
-
-      const fieldName = field.name.value
-
-      // Skip placeholder fields
-      if (fieldName === '_all') continue
-
-      // Check arguments for values/min/max
-      if (!field.arguments || field.arguments.length === 0) continue
-
-      for (const arg of field.arguments) {
-        if (arg.name.value === 'values' && arg.value.kind === 'ListValue') {
-          // Filter: values: ["a", "b"]
-          const values = arg.value.values
-            .filter((v) => v.kind === 'StringValue')
-            .map((v) => {
-              if (v.kind === 'StringValue') return v.value
-              return ''
-            })
-            .filter((v) => v.length > 0)
-
-          if (values.length === 1) {
-            filters[fieldName] = values[0]!
-          } else if (values.length > 1) {
-            filters[fieldName] = values
-          }
-        } else if (arg.name.value === 'min' || arg.name.value === 'max') {
-          // Range: min/max
-          if (!ranges[fieldName]) {
-            ranges[fieldName] = {}
-          }
-          const numValue =
-            arg.value.kind === 'IntValue'
-              ? parseInt(arg.value.value, 10)
-              : arg.value.kind === 'FloatValue'
-                ? parseFloat(arg.value.value)
-                : undefined
-          if (numValue !== undefined) {
-            ranges[fieldName]![arg.name.value] = numValue
-          }
-        }
-      }
-    }
+    const parsed = parseSelectionSet(selection.selectionSet)
+    // Top-level filters/ranges are flat in the slot model, so merge across
+    // domains; references accumulate into the single top-level list.
+    Object.assign(filters, parsed.filters)
+    Object.assign(ranges, parsed.ranges)
+    references.push(...parsed.references)
   }
 
   const slots: SearchSlots = { domains, filters, ranges }
@@ -157,87 +120,97 @@ export function parseGraphQLToSlots(query: string): GraphQLParseResult | GraphQL
 }
 
 /**
- * Parse a `{ domain, label?, filters?, ranges?, references? }` object value into
- * a {@link ReferenceFilter}. Recurses into nested references. Returns null when
- * no `domain` is present.
+ * Parse a selection set into the constraints it expresses: property fields
+ * become filters/ranges, and the reserved `references` field's sub-fields become
+ * {@link ReferenceFilter}s (recursively). `_all`/`__typename` are skipped.
  */
-function parseReferenceObject(obj: ObjectValueNode): ReferenceFilter | null {
-  let domain: string | undefined
-  let label: string | undefined
-  let filters: Record<string, string | string[]> | undefined
-  let ranges: Record<string, { min?: number; max?: number }> | undefined
-  let nested: ReferenceFilter[] | undefined
+function parseSelectionSet(selectionSet: SelectionSetNode): ParsedSelection {
+  const filters: Record<string, string | string[]> = {}
+  const ranges: Record<string, { min?: number; max?: number }> = {}
+  const references: ReferenceFilter[] = []
 
-  for (const field of obj.fields) {
+  for (const field of selectionSet.selections) {
+    if (field.kind !== 'Field') continue
     const name = field.name.value
-    const value = field.value
-    if (name === 'domain' && value.kind === 'StringValue') {
-      domain = value.value
-    } else if (name === 'label' && value.kind === 'StringValue') {
-      label = value.value
-    } else if (name === 'filters' && value.kind === 'ObjectValue') {
-      filters = parseRefFilters(value)
-    } else if (name === 'ranges' && value.kind === 'ObjectValue') {
-      ranges = parseRefRanges(value)
-    } else if (name === 'references' && value.kind === 'ListValue') {
-      const arr: ReferenceFilter[] = []
-      for (const item of value.values) {
-        if (item.kind === 'ObjectValue') {
-          const ref = parseReferenceObject(item)
-          if (ref) arr.push(ref)
+
+    if (name === '_all' || name === '__typename') continue
+
+    if (name === 'references') {
+      // Reserved container field: each sub-field is a referenced asset.
+      if (field.selectionSet) {
+        for (const refField of field.selectionSet.selections) {
+          if (refField.kind !== 'Field') continue
+          references.push(parseReferenceField(refField))
         }
       }
-      if (arr.length > 0) nested = arr
+      continue
+    }
+
+    extractFilterOrRange(field, filters, ranges)
+  }
+
+  return { filters, ranges, references }
+}
+
+/**
+ * Parse a referenced-asset field (`<domain>(label: "…") { … }`) into a
+ * {@link ReferenceFilter}, recursing into its own `references`.
+ */
+function parseReferenceField(field: FieldNode): ReferenceFilter {
+  const ref: ReferenceFilter = { domain: field.name.value }
+
+  for (const arg of field.arguments ?? []) {
+    if (arg.name.value === 'label' && arg.value.kind === 'StringValue') {
+      ref.label = arg.value.value
     }
   }
 
-  if (!domain) return null
-  const ref: ReferenceFilter = { domain }
-  if (label) ref.label = label
-  if (filters && Object.keys(filters).length > 0) ref.filters = filters
-  if (ranges && Object.keys(ranges).length > 0) ref.ranges = ranges
-  if (nested && nested.length > 0) ref.references = nested
+  if (field.selectionSet) {
+    const inner = parseSelectionSet(field.selectionSet)
+    if (Object.keys(inner.filters).length > 0) ref.filters = inner.filters
+    if (Object.keys(inner.ranges).length > 0) ref.ranges = inner.ranges
+    if (inner.references.length > 0) ref.references = inner.references
+  }
+
   return ref
 }
 
-/** Parse a `{ key: ["v1", "v2"], … }` object value into a filters record. */
-function parseRefFilters(obj: ObjectValueNode): Record<string, string | string[]> {
-  const out: Record<string, string | string[]> = {}
-  for (const field of obj.fields) {
-    const key = field.name.value
-    const value = field.value
-    if (value.kind === 'ListValue') {
-      const values = value.values
-        .filter((v) => v.kind === 'StringValue')
-        .map((v) => (v.kind === 'StringValue' ? v.value : ''))
-        .filter((v) => v.length > 0)
-      if (values.length === 1) out[key] = values[0]!
-      else if (values.length > 1) out[key] = values
-    } else if (value.kind === 'StringValue' && value.value.length > 0) {
-      out[key] = value.value
-    }
-  }
-  return out
-}
+/**
+ * Read a property field's arguments into `filters` (`values: [...]`) or `ranges`
+ * (`min`/`max`). Filter values may be StringValues or EnumValues (the editor
+ * schema models enum-encodable properties as GraphQL enums).
+ */
+function extractFilterOrRange(
+  field: FieldNode,
+  filters: Record<string, string | string[]>,
+  ranges: Record<string, { min?: number; max?: number }>
+): void {
+  const fieldName = field.name.value
+  if (!field.arguments || field.arguments.length === 0) return
 
-/** Parse a `{ key: { min: 1, max: 4 }, … }` object value into a ranges record. */
-function parseRefRanges(obj: ObjectValueNode): Record<string, { min?: number; max?: number }> {
-  const out: Record<string, { min?: number; max?: number }> = {}
-  for (const field of obj.fields) {
-    const key = field.name.value
-    if (field.value.kind !== 'ObjectValue') continue
-    const bound: { min?: number; max?: number } = {}
-    for (const b of field.value.fields) {
-      if (b.name.value !== 'min' && b.name.value !== 'max') continue
-      const n =
-        b.value.kind === 'IntValue'
-          ? parseInt(b.value.value, 10)
-          : b.value.kind === 'FloatValue'
-            ? parseFloat(b.value.value)
+  for (const arg of field.arguments) {
+    if (arg.name.value === 'values' && arg.value.kind === 'ListValue') {
+      const values = arg.value.values
+        .filter((v) => v.kind === 'StringValue' || v.kind === 'EnumValue')
+        .map((v) => (v.kind === 'StringValue' || v.kind === 'EnumValue' ? v.value : ''))
+        .filter((v) => v.length > 0)
+
+      if (values.length === 1) {
+        filters[fieldName] = values[0]!
+      } else if (values.length > 1) {
+        filters[fieldName] = values
+      }
+    } else if (arg.name.value === 'min' || arg.name.value === 'max') {
+      if (!ranges[fieldName]) ranges[fieldName] = {}
+      const numValue =
+        arg.value.kind === 'IntValue'
+          ? parseInt(arg.value.value, 10)
+          : arg.value.kind === 'FloatValue'
+            ? parseFloat(arg.value.value)
             : undefined
-      if (n !== undefined) bound[b.name.value] = n
+      if (numValue !== undefined) {
+        ranges[fieldName]![arg.name.value] = numValue
+      }
     }
-    if (bound.min !== undefined || bound.max !== undefined) out[key] = bound
   }
-  return out
 }
