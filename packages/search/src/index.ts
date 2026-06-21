@@ -15,11 +15,6 @@ export {
   getConceptExpansionIndex,
   resetConceptExpansionIndex,
 } from './concept-expansion.js'
-export type { GraphQLParseError, GraphQLParseResult } from './graphql-parser.js'
-export { parseGraphQLToSlots } from './graphql-parser.js'
-export { slotsToGraphQL } from './graphql-serializer.js'
-export type { GraphQLValidationIssue, GraphQLValidationResult } from './graphql-validator.js'
-export { validateGraphQL, validateGraphQLCompleteness } from './graphql-validator.js'
 export { getInitializedStore } from './init.js'
 export type {
   AssetMetadata,
@@ -63,6 +58,22 @@ export type {
 } from './types.js'
 export type { EnumProperty, NumericProperty, OntologyVocabulary } from './vocabulary-extractor.js'
 export { extractVocabulary, resetVocabulary } from './vocabulary-extractor.js'
+// Slot↔GraphQL codec re-exported for back-compat: it moved to its own package
+// `@ontology-search/graphql-ir` (ADR 0003, decomposition step 3). Consumers may
+// import from there directly; the root `@ontology-search/search` surface is
+// unchanged.
+export type {
+  GraphQLParseError,
+  GraphQLParseResult,
+  GraphQLValidationIssue,
+  GraphQLValidationResult,
+} from '@ontology-search/graphql-ir'
+export {
+  parseGraphQLToSlots,
+  slotsToGraphQL,
+  validateGraphQL,
+  validateGraphQLCompleteness,
+} from '@ontology-search/graphql-ir'
 
 // Re-exports from lower layers so upper layers (llm) can depend on search alone.
 export { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'

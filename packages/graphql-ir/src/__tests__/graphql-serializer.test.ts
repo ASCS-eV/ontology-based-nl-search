@@ -1,7 +1,7 @@
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { describe, expect, it } from 'vitest'
 
 import { slotsToGraphQL } from '../graphql-serializer.js'
-import type { SearchSlots } from '../slots.js'
 
 describe('slotsToGraphQL', () => {
   it('produces a query with single domain and filters', () => {

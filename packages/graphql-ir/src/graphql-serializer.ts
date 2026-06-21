@@ -39,9 +39,9 @@
 
 import { isGraphQLEnumName } from '@ontology-search/core/graphql/enum'
 import { createComponentLogger } from '@ontology-search/core/logging'
+import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
 
 import { validateGraphQL } from './graphql-validator.js'
-import type { ReferenceFilter, SearchSlots } from './slots.js'
 
 const logger = createComponentLogger('graphql-serializer')
 

@@ -1,8 +1,8 @@
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { describe, expect, it } from 'vitest'
 
 import { parseGraphQLToSlots } from '../graphql-parser'
 import { slotsToGraphQL } from '../graphql-serializer'
-import type { SearchSlots } from '../slots'
 
 describe('parseGraphQLToSlots', () => {
   it('round-trips a basic query with filters', () => {
