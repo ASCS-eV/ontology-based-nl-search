@@ -1,0 +1,10 @@
+{
+  "extends": "@ontology-search/typescript-config/node.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "types": []
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/__tests__/**"]
+}
