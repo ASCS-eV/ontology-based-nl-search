@@ -4,6 +4,7 @@
  * Returns domain names, property names (enum + numeric), and allowed values
  * from the SHACL vocabulary. This powers the GraphQL editor's autocomplete.
  */
+import type { VocabProperty, VocabularyResponse } from '@ontology-search/api-types'
 import { extractVocabulary, getInitializedStore } from '@ontology-search/search'
 import { Hono } from 'hono'
 
@@ -11,22 +12,6 @@ import type { AppEnv } from '../types.js'
 import { handleRoute } from './handler.js'
 
 export const vocabularyRoutes = new Hono<AppEnv>()
-
-/** Serializable property info for the frontend */
-interface VocabProperty {
-  name: string
-  label: string
-  description: string
-  domain: string
-  type: 'enum' | 'numeric'
-  allowedValues?: string[]
-  datatype?: 'integer' | 'float'
-}
-
-export interface VocabularyResponse {
-  domains: string[]
-  properties: VocabProperty[]
-}
 
 vocabularyRoutes.get('/', (c) =>
   handleRoute<VocabularyResponse>(c, {

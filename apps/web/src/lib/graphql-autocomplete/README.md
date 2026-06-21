@@ -4,9 +4,10 @@
 > from the discovered ontology vocabulary.
 
 **Layer:** web-internal module. Depends on `graphql`, `cm6-graphql`,
-`@codemirror/autocomplete`, `@uiw/react-codemirror`, and
-`@ontology-search/core/graphql/enum`. No React, no app state, no network — it is
-a pure function of its input vocabulary.
+`@codemirror/autocomplete`, `@uiw/react-codemirror`,
+`@ontology-search/core/graphql/enum`, and the `@ontology-search/api-types`
+`/vocabulary` type (its input contract). No React, no app state, no network — it
+is a pure function of its input vocabulary.
 
 ## Purpose
 
@@ -20,11 +21,11 @@ compile (ADR 0001). References are modelled as recursive typed fields (ADR 0002)
 
 Import from the module root (`../lib/graphql-autocomplete`):
 
-| Export                              | Signature                                    | Purpose                                                            |
-| ----------------------------------- | -------------------------------------------- | ------------------------------------------------------------------ |
-| `buildEditorExtensions`             | `(vocab: EditorVocabulary) => Extension[]`   | CodeMirror extensions: schema-aware completion + lint + hover      |
-| `buildGraphQLSchema`                | `(vocab: EditorVocabulary) => GraphQLSchema` | The editor's query schema (also used to validate authored queries) |
-| `EditorVocabulary`, `VocabProperty` | types                                        | The module's **input contract** (the discovered vocabulary)        |
+| Export                              | Signature                                    | Purpose                                                                                                          |
+| ----------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `buildEditorExtensions`             | `(vocab: EditorVocabulary) => Extension[]`   | CodeMirror extensions: schema-aware completion + lint + hover                                                    |
+| `buildGraphQLSchema`                | `(vocab: EditorVocabulary) => GraphQLSchema` | The editor's query schema (also used to validate authored queries)                                               |
+| `EditorVocabulary`, `VocabProperty` | types                                        | The module's **input contract**, single-sourced from `@ontology-search/api-types` (the `/vocabulary` wire shape) |
 
 ```ts
 import { buildEditorExtensions } from '../lib/graphql-autocomplete'

@@ -22,10 +22,23 @@ Turns the structured `SearchSlots` IR (produced upstream by the LLM) into a SPAR
 
 ## Requirements & invariants
 
-- **The compiler is deterministic** — the same slots always produce the same SPARQL query. This is the security model: the LLM never writes SPARQL, so no prompt injection can produce an arbitrary query. The guarantee is pinned by `src/__tests__/compiler.snapshots.test.ts`.
-- Schema metadata (domains, properties, shape groups, paths, cross-references) is **discovered from the SHACL graph at runtime — never hardcoded**.
-- The slot wire format is held to **JSON Schema 2020-12**: the Zod schemas in `./slot-wire-schema` are serialized to JSON Schema for the `submit_slots` tool call.
-- Callers must provide an initialized SPARQL store and a domain registry built from the loaded ontology before invoking the service.
+Each contract below is guarded by a named test (mirroring the requirements-driven
+style of the `graphql-autocomplete` module). The security model rests on the first
+two: the LLM only fills slots, and the compiler is the sole, deterministic SPARQL
+author — so no prompt injection can produce an arbitrary query.
+
+| #   | Requirement                                                                                         | Guarded by                                                                         |
+| --- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| S1  | **Deterministic compilation** — identical slots always produce byte-identical SPARQL                | `src/__tests__/compiler.snapshots.test.ts`                                         |
+| S2  | **GraphQL ↔ SPARQL no-drift** — the GraphQL projection and the compiled SPARQL stay equivalent      | `src/__tests__/compiler.test.ts` ("GraphQL ↔ SPARQL equivalence (no-drift guard)") |
+| S3  | **Slot ↔ GraphQL round-trip** — `slots → slotsToGraphQL → parseGraphQLToSlots` preserves slots      | `src/__tests__/graphql-parser.test.ts`                                             |
+| S4  | **Compiled SPARQL is spec-valid** — every query parses under SPARQL 1.1 before execution            | `src/__tests__/sparql-validator.test.ts` (`./sparql-validator`)                    |
+| S5  | **Schema metadata is SHACL-discovered, never hardcoded** — incl. inheritance over `rdfs:subClassOf` | `src/__tests__/property-paths.test.ts`                                             |
+
+- The slot wire format is held to **JSON Schema 2020-12**: the Zod schemas in
+  `./slot-wire-schema` are serialized to JSON Schema for the `submit_slots` tool call.
+- Callers must provide an initialized SPARQL store and a domain registry built from
+  the loaded ontology before invoking the service.
 
 ## How to interface
 
