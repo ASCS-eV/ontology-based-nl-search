@@ -1,3 +1,4 @@
+import type { VocabularyResponse } from '@ontology-search/api-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '../app.js'
@@ -27,6 +28,7 @@ vi.mock('@ontology-search/search', () => ({
   getAssetMetadata: vi.fn(),
   getDomainMetadataAggregate: vi.fn(),
   slotsToGraphQL: () => 'query { }',
+  extractVocabulary: vi.fn(),
 }))
 
 vi.mock('@ontology-search/ontology/domain-registry', () => ({
@@ -487,6 +489,60 @@ describe('GET /stats', () => {
     const json = await res.json()
     expect(json.totalAssets).toBeGreaterThan(0)
     expect(json.availableDomains).toContain('hdmap')
+  })
+})
+
+describe('GET /vocabulary', () => {
+  // Contract test (F2/F3): the route maps the extractor's per-domain
+  // enum/numeric properties (keyed by `localName`) into the api-types
+  // `VocabularyResponse` shape (`name` = localName) that the web editor consumes.
+  it('emits a conforming VocabularyResponse, mapping localName -> name', async () => {
+    const { extractVocabulary, getInitializedStore } = await import('@ontology-search/search')
+    vi.mocked(getInitializedStore).mockResolvedValue({} as never)
+    vi.mocked(extractVocabulary).mockResolvedValue({
+      domains: ['hdmap'],
+      enumProperties: [
+        {
+          iri: 'urn:p:roadTypes',
+          localName: 'roadTypes',
+          label: 'Road types',
+          description: '',
+          domain: 'hdmap',
+          allowedValues: ['motorway', 'urban'],
+        },
+      ],
+      numericProperties: [
+        {
+          iri: 'urn:p:numberOfLanes',
+          localName: 'numberOfLanes',
+          label: 'Lanes',
+          description: '',
+          domain: 'hdmap',
+          datatype: 'integer',
+        },
+      ],
+      conceptSchemes: new Map(),
+      classHierarchy: [],
+      instanceValues: new Map(),
+    } as never)
+
+    const res = await app.request('/vocabulary')
+    expect(res.status).toBe(200)
+    const json = (await res.json()) as VocabularyResponse
+
+    expect(json.domains).toEqual(['hdmap'])
+    expect(json.properties.find((p) => p.name === 'roadTypes')).toMatchObject({
+      name: 'roadTypes',
+      label: 'Road types',
+      domain: 'hdmap',
+      type: 'enum',
+      allowedValues: ['motorway', 'urban'],
+    })
+    expect(json.properties.find((p) => p.name === 'numberOfLanes')).toMatchObject({
+      name: 'numberOfLanes',
+      type: 'numeric',
+      datatype: 'integer',
+    })
   })
 })
 
