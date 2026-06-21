@@ -15,6 +15,16 @@
       "import": "./dist/slots.js",
       "default": "./dist/slots.js"
     },
+    "./discovery": {
+      "types": "./src/discovery.ts",
+      "import": "./dist/discovery.js",
+      "default": "./dist/discovery.js"
+    },
+    "./lineage": {
+      "types": "./src/lineage.ts",
+      "import": "./dist/lineage.js",
+      "default": "./dist/lineage.js"
+    },
     "./compiler": {
       "types": "./src/compiler.ts",
       "import": "./dist/compiler.js",
