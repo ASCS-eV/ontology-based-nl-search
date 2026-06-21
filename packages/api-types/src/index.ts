@@ -183,6 +183,38 @@ export interface StatsResponse {
 }
 
 /**
+ * One filterable property in the `/vocabulary` response — a property the editor
+ * can offer as a query constraint, discovered from the SHACL vocabulary.
+ */
+export interface VocabProperty {
+  /** Local name (the field name in the editor). */
+  name: string
+  /** Human-readable label (`sh:name`); falls back to `name`. */
+  label: string
+  /** Description (`sh:description`); may be empty. */
+  description: string
+  /** Owning asset domain. */
+  domain: string
+  /** `enum` = closed `sh:in` vocabulary; `numeric` = `min`/`max` range. */
+  type: 'enum' | 'numeric'
+  /** For `enum`: the allowed values (`sh:in`). */
+  allowedValues?: string[]
+  /** For `numeric`: the bound datatype. */
+  datatype?: 'integer' | 'float'
+}
+
+/**
+ * Body of the `/vocabulary` JSON response — the discovered asset domains and
+ * their filterable properties. Powers the GraphQL editor's autocomplete; the
+ * single source of truth for the shape shared by the API route and the web
+ * editor module.
+ */
+export interface VocabularyResponse {
+  domains: string[]
+  properties: VocabProperty[]
+}
+
+/**
  * One outgoing reference in a lineage tree. The predicate chain is the
  * full path the SPARQL engine traversed from the parent to `target` —
  * UI renders the leaf predicate's local name as the edge label and
