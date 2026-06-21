@@ -26,11 +26,30 @@ pnpm run validate
 
 ### Testing Requirements
 
-| Type        | Tool       | Coverage Target    | When     |
-| ----------- | ---------- | ------------------ | -------- |
-| Unit        | Vitest     | 70% branches/lines | Every PR |
-| Integration | Vitest     | Key flows          | Every PR |
-| E2E         | Playwright | Critical paths     | Every PR |
+| Type        | Tool       | What is enforced                                  | When     |
+| ----------- | ---------- | ------------------------------------------------- | -------- |
+| Unit        | Vitest     | Per-package coverage floors (below) on pure units | Every PR |
+| Integration | Vitest     | Key flows (behavior tests, not a coverage %)      | Every PR |
+| E2E         | Playwright | Critical paths                                    | Every PR |
+
+**Coverage is measured and gated per package, not globally** (`pnpm run coverage`,
+wired into the Unit Tests CI job). A global threshold would wobble run-to-run: the
+heaviest code paths — `compiler-vocab`, `property-paths`, `schema-queries` — are
+exercised only by the oxigraph-WASM cold-start integration tests, and coverage
+instrumentation measurably worsens their documented cold-start timeout. So the gate
+covers the **pure, fast, instrumentation-safe** packages, and the oxigraph
+cold-start packages are deliberately excluded (guarded by their behavior tests, not
+by a percentage).
+
+Enforced floors (in each package's `vitest.config.ts`; **ratchet up, never down**):
+
+| Package                       | Lines | Statements | Functions | Branches |
+| ----------------------------- | ----- | ---------- | --------- | -------- |
+| `@ontology-search/slots`      | 95    | 95         | 95        | 90       |
+| `@ontology-search/graphql-ir` | 90    | 90         | 95        | 80       |
+
+`@ontology-search/api-types` is type-only (zero runtime), so there is nothing to
+instrument. New pure packages should add a floor here as they gain logic.
 
 ## Code Quality Criteria
 

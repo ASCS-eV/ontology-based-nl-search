@@ -100,6 +100,14 @@ jobs:
       - name: Run tests
         run: pnpm run test
 
+      # Enforced per-package coverage floors on the pure, fast, instrumentation-
+      # safe units (slots, graphql-ir). The oxigraph cold-start packages are
+      # deliberately excluded — they are guarded by behavior tests, and coverage
+      # instrumentation worsens their documented cold-start timeout (ADR 0003
+      # step 5). Floors live in each package's vitest.config.ts; ratchet up.
+      - name: Check coverage floors
+        run: pnpm run coverage
+
   build:
     name: Build
     runs-on: ubuntu-latest

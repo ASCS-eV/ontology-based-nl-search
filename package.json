@@ -13,6 +13,7 @@
     "dev:api": "node scripts/clean-ports.mjs 3003 && pnpm run build && pnpm --filter @ontology-search/api dev",
     "dev:web": "node scripts/clean-ports.mjs 5174 && turbo run dev --filter=@ontology-search/web",
     "test": "turbo run test --concurrency=2",
+    "coverage": "turbo run coverage",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "test:e2e": "turbo run test:e2e",
     "check-types": "turbo run check-types",
