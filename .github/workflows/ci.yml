@@ -63,6 +63,16 @@ jobs:
       - name: Type check
         run: pnpm run check-types
 
+      - name: Layer-boundary gate
+        # Enforces the dependency layering (acyclic + strictly downward) from the
+        # declared workspace deps. See scripts/check-layers.mjs and CONTRIBUTING §6.
+        run: pnpm run check:layers
+
+      - name: Script tests
+        # Repo-tooling tests (scripts/*.test.mjs), incl. the layer-gate regression
+        # tests — these don't run under the turbo `test` task.
+        run: pnpm run test:scripts
+
       - name: Lint
         run: pnpm run lint
 

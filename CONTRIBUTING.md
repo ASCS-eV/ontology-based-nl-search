@@ -63,8 +63,12 @@ fix or surface it within the PR's scope, do not bundle.
    `core`/`sparql`/`ontology`/`api-types`; `llm` depends only on the above;
    apps depend on packages — packages never depend on apps. (`api-types` is a
    zero-dependency, browser-safe leaf any layer may import.) No upward import.
-   CI gate:
-   `madge --circular --extensions ts packages` plus an ESLint boundaries rule.
+   CI gate: `pnpm run check:layers` (`scripts/check-layers.mjs`) asserts the
+   declared workspace-dependency graph is acyclic and strictly downward against a
+   layer-rank map; its regression tests live in `scripts/check-layers.test.mjs`.
+   (`madge --circular` cannot enforce this — `exports`-subpath imports with no
+   tsconfig `paths` are unresolvable to its source resolver, so it would pass
+   vacuously.)
 7. **Apps never own reusable logic.** If a file in `apps/api/src` or
    `apps/web/src` could be imported by another app, it belongs in a package.
 8. **Types crossing the HTTP boundary live in `@ontology-search/api-types`.**
@@ -147,8 +151,9 @@ fix or surface it within the PR's scope, do not bundle.
 ### Process
 
 28. **Conventional commits, signed (`-s -S`)**, no AI co-author attribution.
-29. **`pnpm run validate` is green** before push; CI runs `validate` +
-    `test:e2e` + `madge --circular`.
+29. **`pnpm run validate` is green** before push (it runs `check:layers`,
+    typecheck, all tests, script tests, lint, and format). CI mirrors these as
+    separate steps and adds `test:e2e`.
 30. **Each refactor PR carries a regression test that would have failed
     before the fix.** No test = no fix.
 
