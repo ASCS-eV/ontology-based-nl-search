@@ -26,13 +26,15 @@
     "dev": "tsc --build --watch",
     "test": "vitest run",
     "check-types": "tsc --noEmit",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",
+    "@vitest/coverage-v8": "3.2.4",
     "rimraf": "^6.0.0",
     "typescript": "~5.9.3",
     "vitest": "^3.2.0"
