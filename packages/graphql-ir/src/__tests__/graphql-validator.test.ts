@@ -8,11 +8,11 @@
  * slot key appears in the generated GraphQL — the same class of bug can
  * never ship again.
  */
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { describe, expect, it } from 'vitest'
 
 import { slotsToGraphQL } from '../graphql-serializer.js'
 import { validateGraphQL, validateGraphQLCompleteness } from '../graphql-validator.js'
-import type { SearchSlots } from '../slots.js'
 
 describe('validateGraphQL — syntax gate', () => {
   it('accepts a valid query', () => {

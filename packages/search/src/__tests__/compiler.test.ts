@@ -1,3 +1,4 @@
+import { parseGraphQLToSlots, slotsToGraphQL } from '@ontology-search/graphql-ir'
 import {
   enforceSparqlPolicy,
   registerPolicyNamespaces,
@@ -12,8 +13,6 @@ import {
   escapeSparqlLiteral,
   normalizeDomainName,
 } from '../compiler.js'
-import { parseGraphQLToSlots } from '../graphql-parser.js'
-import { slotsToGraphQL } from '../graphql-serializer.js'
 import type { SearchSlots } from '../slots.js'
 
 // Register ontology namespaces so compiled queries pass policy validation

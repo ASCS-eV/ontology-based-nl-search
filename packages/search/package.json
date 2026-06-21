@@ -51,10 +51,10 @@
   "dependencies": {
     "@ontology-search/api-types": "workspace:*",
     "@ontology-search/core": "workspace:*",
+    "@ontology-search/graphql-ir": "workspace:*",
     "@ontology-search/ontology": "workspace:*",
     "@ontology-search/slots": "workspace:*",
     "@ontology-search/sparql": "workspace:*",
-    "graphql": "^16.14.2",
     "sparqljs": "^3.7.4"
   },
   "devDependencies": {

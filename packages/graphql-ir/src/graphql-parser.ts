@@ -36,9 +36,8 @@
  * @see https://github.com/graphql/graphql-js — reference implementation (parser)
  */
 
+import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
 import { type FieldNode, parse, type SelectionSetNode } from 'graphql'
-
-import type { ReferenceFilter, SearchSlots } from './slots.js'
 
 export interface GraphQLParseResult {
   success: true

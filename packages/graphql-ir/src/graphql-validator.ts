@@ -18,6 +18,7 @@
  * @see https://github.com/graphql/graphql-js — reference implementation (parse gate)
  */
 
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import {
   type DocumentNode,
   type FieldNode,
@@ -26,8 +27,6 @@ import {
   type SelectionSetNode,
   visit,
 } from 'graphql'
-
-import type { SearchSlots } from './slots.js'
 
 export interface GraphQLValidationIssue {
   severity: 'error' | 'warning'

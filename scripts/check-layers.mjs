@@ -41,6 +41,7 @@ export const RANKS = {
   '@ontology-search/core': 1,
   '@ontology-search/sparql': 2,
   '@ontology-search/ontology': 2,
+  '@ontology-search/graphql-ir': 2,
   '@ontology-search/search': 3,
   '@ontology-search/llm': 4,
   '@ontology-search/testing': 5,
