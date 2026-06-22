@@ -14,7 +14,7 @@ import { z } from 'zod'
  * (from SHACL sh:path declarations) as documented in skill.md.
  */
 
-const slotSubmissionSchema = z.object({
+export const slotSubmissionSchema = z.object({
   slots: z
     .object({
       domains: z.array(z.string()).default([]).describe('Target domain(s)'),
