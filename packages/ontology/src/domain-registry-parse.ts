@@ -1,51 +1,97 @@
 /**
- * Domain-registry TTL parsers (ADR 0003) — pure string/RDF parsing helpers that
- * extract prefixes, namespaces, target classes, versions, subclass edges, and
+ * Domain-registry TTL parsers (ADR 0003) — pure RDF parsing helpers that extract
+ * prefixes, namespaces, target classes, versions, subclass edges, and
  * primary-asset-class selection from ontology Turtle. No registry/IO state;
  * consumed by `buildDomainRegistry` in `./domain-registry.js`.
+ *
+ * Every Turtle structure here is read through a real RDF/JS parse (n3), never a
+ * regex over the source text [RDF11-TURTLE]. `parseTtl` parses each file once
+ * into a `{ quads, prefixes }` view; the extractors below traverse that view by
+ * resolved IRI, so comments, arbitrary whitespace, and alternate prefix aliases
+ * for the same namespace are all handled correctly. Only `extractVersion`
+ * operates on a string — and it parses a version token out of an already-
+ * resolved namespace IRI, not out of Turtle syntax.
  */
 import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
+import type { Quad } from '@rdfjs/types'
 import { Parser as N3Parser } from 'n3'
 
+const RDF_TYPE = `${RDF_PREFIXES.rdf}type`
+const OWL_ONTOLOGY = `${RDF_PREFIXES.owl}Ontology`
 const RDFS_SUBCLASS_OF = `${RDF_PREFIXES.rdfs}subClassOf`
+const SH_TARGET_CLASS = `${RDF_PREFIXES.sh}targetClass`
+
+/** A parsed Turtle document: resolved quads plus its declared prefix map. */
+export interface ParsedTtl {
+  quads: Quad[]
+  /** Prefix alias → namespace IRI, exactly as declared via `@prefix`/`PREFIX`. */
+  prefixes: Record<string, string>
+}
+
+const EMPTY_PARSE: ParsedTtl = { quads: [], prefixes: {} }
 
 /**
- * Extract all @prefix declarations from a TTL file.
- * Returns a map of prefix → namespace IRI.
+ * Parse a Turtle document once with a real RDF parser, returning both its quads
+ * and its declared prefixes [RDF11-TURTLE §2.4].
+ *
+ * A real parser is required, not a regex: the upstream Gaia-X OWL
+ * (`gx.owl.ttl`) declares superclasses through deeply nested blank-node
+ * `owl:Restriction`s interleaved with named ones; n3 resolves prefixes and
+ * blank nodes correctly where a line-oriented regex misreads them. A malformed
+ * file must not sink registry construction — the SHACL the registry actually
+ * compiles against is validated elsewhere — so a parse failure degrades to the
+ * empty view (no quads, no prefixes) rather than throwing.
  */
-export function extractPrefixes(ttlContent: string): Record<string, string> {
-  const result: Record<string, string> = {}
-  const regex = /@prefix\s+([\w-]+):\s*<([^>]+)>/g
-  let match: RegExpExecArray | null
-  while ((match = regex.exec(ttlContent)) !== null) {
-    if (match[1] && match[2]) {
-      result[match[1]] = match[2]
-    }
+export function parseTtl(ttlContent: string): ParsedTtl {
+  if (ttlContent.length === 0) return EMPTY_PARSE
+  const prefixes: Record<string, string> = {}
+  try {
+    const quads = new N3Parser().parse(ttlContent, null, (prefix, iri) => {
+      prefixes[prefix] = typeof iri === 'string' ? iri : iri.value
+    })
+    return { quads, prefixes }
+  } catch {
+    return { quads: [], prefixes: {} }
   }
-  return result
 }
 
 /**
- * Extract namespace IRI from an OWL or SHACL TTL file by finding the ontology declaration
- * or the dominant @prefix with the directory name.
+ * Case-insensitive prefix lookup. Prefix aliases are case-sensitive in Turtle,
+ * but directory names occasionally differ in case from the alias used in the
+ * file, so the lookup tolerates a case mismatch (matching the prior behavior).
  */
-export function extractNamespace(ttlContent: string, domainName: string): string | null {
-  // Look for @prefix with the domain name
-  const prefixRegex = new RegExp(`@prefix\\s+${domainName}:\\s*<([^>]+)>`, 'i')
-  const match = ttlContent.match(prefixRegex)
-  if (match && match[1]) return match[1]
+function lookupPrefix(prefixes: Record<string, string>, alias: string): string | null {
+  const lower = alias.toLowerCase()
+  for (const [declared, ns] of Object.entries(prefixes)) {
+    if (declared.toLowerCase() === lower) return ns
+  }
+  return null
+}
 
-  // Fallback: try underscore variant (e.g., directory "openlabel-v2" → TTL prefix "openlabel_v2")
+/**
+ * Resolve a domain's namespace IRI: the namespace bound to the domain-name
+ * prefix wins, then its underscore variant (directory "openlabel-v2" → TTL
+ * prefix "openlabel_v2"), then the subject of the file's `owl:Ontology`
+ * declaration.
+ */
+export function extractNamespace(parsed: ParsedTtl, domainName: string): string | null {
+  const direct = lookupPrefix(parsed.prefixes, domainName)
+  if (direct) return direct
+
   if (domainName.includes('-')) {
-    const underscoreVariant = domainName.replace(/-/g, '_')
-    const underscoreRegex = new RegExp(`@prefix\\s+${underscoreVariant}:\\s*<([^>]+)>`, 'i')
-    const underscoreMatch = ttlContent.match(underscoreRegex)
-    if (underscoreMatch && underscoreMatch[1]) return underscoreMatch[1]
+    const underscore = lookupPrefix(parsed.prefixes, domainName.replace(/-/g, '_'))
+    if (underscore) return underscore
   }
 
-  // Fallback: look for owl:Ontology IRI
-  const ontologyMatch = ttlContent.match(/<([^>]+)>\s+a\s+owl:Ontology/)
-  if (ontologyMatch && ontologyMatch[1]) return ontologyMatch[1]
+  for (const q of parsed.quads) {
+    if (
+      q.predicate.value === RDF_TYPE &&
+      q.object.value === OWL_ONTOLOGY &&
+      q.subject.termType === 'NamedNode'
+    ) {
+      return q.subject.value
+    }
+  }
 
   return null
 }
@@ -76,27 +122,29 @@ export function findPrefixAlias(
 }
 
 /**
- * Extract target classes from SHACL file using regex (fast, no SPARQL needed).
- * Pattern: `sh:targetClass domain:ClassName`
+ * Extract target classes declared via `sh:targetClass` whose IRI sits directly
+ * in the given namespace [SHACL §2.1.3.3]. Matching by resolved IRI (not by a
+ * prefix alias in the source text) means a class written with any alias that
+ * binds to this namespace is found. The local name is restricted to a bare
+ * NCName-like token (`\w+`) directly under the namespace, preserving the prior
+ * regex's `<prefix>:(\w+)` shape so deeper or punctuated IRIs are ignored as
+ * before. Document order is preserved (n3 yields quads in parse order), which
+ * `selectPrimaryAssetClass`'s first-declared fallback depends on.
  */
 export function extractTargetClasses(
-  ttlContent: string,
-  namespace: string,
-  prefix: string
+  parsed: ParsedTtl,
+  namespace: string
 ): { localName: string; iri: string }[] {
   const results: { localName: string; iri: string }[] = []
-  const regex = new RegExp(`sh:targetClass\\s+${prefix}:(\\w+)`, 'g')
-  let match: RegExpExecArray | null
-
-  while ((match = regex.exec(ttlContent)) !== null) {
-    const localName = match[1]
-    if (!localName) continue
-    results.push({
-      localName,
-      iri: namespace + localName,
-    })
+  for (const q of parsed.quads) {
+    if (q.predicate.value !== SH_TARGET_CLASS) continue
+    if (q.object.termType !== 'NamedNode') continue
+    const iri = q.object.value
+    if (!iri.startsWith(namespace)) continue
+    const localName = iri.slice(namespace.length)
+    if (!/^\w+$/.test(localName)) continue
+    results.push({ localName, iri })
   }
-
   return results
 }
 
@@ -109,27 +157,14 @@ export function extractVersion(namespace: string): string {
 }
 
 /**
- * Extract `rdfs:subClassOf` edges between NAMED classes from a Turtle document,
- * using a real RDF parser (n3) rather than a regex. Blank-node superclasses
- * (`rdfs:subClassOf [ a owl:Restriction … ]`) are skipped — only named
- * class-to-class edges carry the asset/sub-component signal.
- *
- * A real parser is required, not a regex: the upstream Gaia-X OWL
- * (`gx.owl.ttl`) declares superclasses through deeply nested blank-node
- * restrictions interleaved with named ones (e.g. `gx:VirtualResource` has both
- * an `owl:Restriction` super AND a named `gx:Resource` super). A line-oriented
- * regex misreads such a class as a bare root, which then mis-classifies it as a
- * sub-component base. n3 resolves prefixes and blank nodes correctly.
+ * Extract `rdfs:subClassOf` edges between NAMED classes from already-parsed
+ * quads [RDFS §3.4]. Blank-node superclasses (`rdfs:subClassOf [ a
+ * owl:Restriction … ]`) are skipped — only named class-to-class edges carry the
+ * asset/sub-component signal. Parsing happens once in {@link parseTtl}; here we
+ * only filter, so a deeply nested blank-node restriction beside a named super
+ * (as in the upstream Gaia-X OWL) is resolved correctly.
  */
-export function extractSubClassOfEdges(ttlContent: string): { sub: string; super: string }[] {
-  let quads
-  try {
-    quads = new N3Parser().parse(ttlContent)
-  } catch {
-    // A malformed OWL file shouldn't sink registry construction; the SHACL the
-    // registry actually compiles against is validated elsewhere. Skip its edges.
-    return []
-  }
+export function extractSubClassOfEdges(quads: Quad[]): { sub: string; super: string }[] {
   const edges: { sub: string; super: string }[] = []
   for (const q of quads) {
     if (
