@@ -22,7 +22,7 @@
   "dependencies": {
     "@ontology-search/core": "workspace:*",
     "@ontology-search/slots": "workspace:*",
-    "graphql": "^16.14.2"
+    "graphql": "^17.0.1"
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",
