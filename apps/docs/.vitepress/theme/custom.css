@@ -353,6 +353,19 @@ body {
   overflow: visible !important;
 }
 
+/* Mermaid sizes each node's label foreignObject by measuring the label in a
+   style-free sandbox (our svg-scoped label padding / line-height don't reach
+   it). The global label styling then renders the text TALLER than that
+   measured foreignObject, which clips multi-line node labels to their last
+   line. Inside the canvas, neutralize that inflation so the rendered label
+   height matches mermaid's measurement and nothing is cut off. */
+.slide .diagram-stage svg .label foreignObject div,
+.slide .diagram-stage svg .nodeLabel p,
+.slide .diagram-stage svg .nodeLabel {
+  padding: 0 !important;
+  line-height: 1.15 !important;
+}
+
 .diagram-controls {
   position: absolute;
   top: 0.75rem;
