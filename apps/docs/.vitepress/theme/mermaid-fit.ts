@@ -65,13 +65,15 @@ export function installMermaidFit(): void {
 
   const registered = new WeakSet<Element>()
   const scan = (): void => {
-    document
-      .querySelectorAll<HTMLElement>('.vp-doc div.mermaid, .slide div.mermaid')
-      .forEach((container) => {
-        if (registered.has(container)) return
-        registered.add(container)
-        resizeObserver.observe(container) // fires once immediately, then on resize
-      })
+    // Slide diagrams are handled by the pan/zoom canvas (mermaid-zoom.ts);
+    // this column-fit only governs diagrams on regular docs pages.
+    document.querySelectorAll<HTMLElement>('.vp-doc div.mermaid').forEach((container) => {
+      if (registered.has(container)) return
+      if (container.closest('.slide')) return // owned by the zoom canvas
+
+      registered.add(container)
+      resizeObserver.observe(container) // fires once immediately, then on resize
+    })
   }
 
   const start = (): void => {
