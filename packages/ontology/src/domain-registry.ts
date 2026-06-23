@@ -19,11 +19,11 @@ import { join } from 'path'
 import {
   computeComponentBases,
   extractNamespace,
-  extractPrefixes,
   extractSubClassOfEdges,
   extractTargetClasses,
   extractVersion,
   findPrefixAlias,
+  parseTtl,
   selectPrimaryAssetClass,
 } from './domain-registry-parse.js'
 import { getArtifactRoots } from './sources.js'
@@ -152,17 +152,19 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
 
       if (!shaclFile) continue // Skip domains without SHACL shapes
 
-      const shaclContent = readFileSync(join(domainDir, shaclFile), 'utf-8')
-      const owlContent = owlFile ? readFileSync(join(domainDir, owlFile), 'utf-8') : ''
+      // Parse each file once with a real RDF parser; every extractor below
+      // traverses these resolved quads/prefixes rather than the source text.
+      const shacl = parseTtl(readFileSync(join(domainDir, shaclFile), 'utf-8'))
+      const owl = owlFile ? parseTtl(readFileSync(join(domainDir, owlFile), 'utf-8')) : parseTtl('')
 
       // Collect all @prefix declarations from this domain's files
       const filePrefixes = {
-        ...extractPrefixes(shaclContent),
-        ...extractPrefixes(owlContent),
+        ...shacl.prefixes,
+        ...owl.prefixes,
       }
 
       // Extract namespace
-      const namespace = extractNamespace(shaclContent, entry) || extractNamespace(owlContent, entry)
+      const namespace = extractNamespace(shacl, entry) || extractNamespace(owl, entry)
       if (!namespace) continue
 
       // Resolve the actual TTL prefix alias (may differ from directory name,
@@ -172,16 +174,17 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
       // Use the resolved namespace (with separator) when the prefix was found
       const resolvedNamespace = prefixMatch?.resolvedNs ?? namespace
 
-      // Extract target classes using the actual TTL prefix
-      const targetClasses = extractTargetClasses(shaclContent, resolvedNamespace, ttlPrefix)
+      // Extract target classes that resolve into the domain's namespace
+      const targetClasses = extractTargetClasses(shacl, resolvedNamespace)
       if (targetClasses.length === 0) continue
 
-      // rdfs:subClassOf edges power the component-base signal. Parse both files
-      // (OWL carries the hierarchy; SHACL occasionally does too) with a real
-      // RDF parser so blank-node restrictions don't hide named superclasses.
+      // rdfs:subClassOf edges power the component-base signal. Both files
+      // (OWL carries the hierarchy; SHACL occasionally does too) were parsed
+      // with a real RDF parser, so blank-node restrictions don't hide named
+      // superclasses.
       const subClassEdges = [
-        ...extractSubClassOfEdges(owlContent),
-        ...extractSubClassOfEdges(shaclContent),
+        ...extractSubClassOfEdges(owl.quads),
+        ...extractSubClassOfEdges(shacl.quads),
       ]
 
       raw.push({
