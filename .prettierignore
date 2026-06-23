@@ -13,3 +13,7 @@ docs/specs/references/
 
 # Generated lockfile — managed by pnpm, never hand-/prettier-formatted
 pnpm-lock.yaml
+
+# Generated JSON Schema artifacts — content is owned by the emitting test
+# (toMatchFileSnapshot over z.toJSONSchema); prettier must not reformat them.
+packages/llm/schema/

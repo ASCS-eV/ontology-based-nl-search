@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "slots": {
+      "type": "object",
+      "properties": {
+        "domains": {
+          "default": [],
+          "description": "Target domain(s)",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filters": {
+          "default": {},
+          "description": "Property filters keyed by SHACL leaf local name. Includes EVERY literal/IRI constraint — geography, license, etc. Geographic filters use the property local names declared in the ontology (e.g. \"country\", \"state\", \"region\", \"city\" when the SHACL has those leaves); the compiler discovers the chain from the asset class to each leaf. Use arrays for IN-semantics (e.g. [\"DE\",\"FR\"] when the user expresses a region).",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        },
+        "ranges": {
+          "default": {},
+          "description": "Numeric ranges: localName → { min?, max? }",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "references": {
+          "description": "Cross-reference filter(s): find assets that reference one or more other domains. Pass an ARRAY with one entry per referenced domain when the user names several (AND-combined — the asset must reference all). A single object is also accepted. Put constraints that describe the REFERENCED asset inside that entry via its `filters`/`ranges` (e.g. referenced maps in a country, or with >= N intersections) — NOT in the top-level slots. Each entry may also nest its own `references` for a chain.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/__schema0"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema0"
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "domains",
+        "filters",
+        "ranges"
+      ],
+      "additionalProperties": false,
+      "description": "Search slots: fill only properties where the user expressed intent"
+    },
+    "interpretation": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "Human-readable summary of what was understood"
+        },
+        "mappedTerms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "input": {
+                "type": "string",
+                "description": "What the user said"
+              },
+              "mapped": {
+                "type": "string",
+                "description": "Ontology concept/slot value it maps to"
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ],
+                "description": "Mapping confidence"
+              },
+              "property": {
+                "description": "The property name used",
+                "type": "string"
+              }
+            },
+            "required": [
+              "input",
+              "mapped",
+              "confidence"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "summary",
+        "mappedTerms"
+      ],
+      "additionalProperties": false
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "term": {
+            "type": "string",
+            "description": "Unmapped user term"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why it could not be mapped to a slot"
+          },
+          "suggestions": {
+            "description": "Nearest slot values",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "term",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "slots",
+    "interpretation",
+    "gaps"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "__schema0": {
+      "type": "object",
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "filters": {
+          "description": "Property filters on THIS referenced asset (keyed by SHACL leaf local name), i.e. a property of the referenced asset constrained to one or more values. Put constraints that describe the referenced asset here, NOT in the top-level slots.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        },
+        "ranges": {
+          "description": "Numeric range filters on THIS referenced asset — a numeric property of the referenced asset constrained to a minimum and/or maximum.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        }
+      },
+      "required": [
+        "domain"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
