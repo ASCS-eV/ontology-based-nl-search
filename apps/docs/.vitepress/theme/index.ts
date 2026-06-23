@@ -6,6 +6,7 @@ import SlideControls from './components/SlideControls.vue'
 import SlideDeck from './components/SlideDeck.vue'
 import SlideProvider from './components/SlideProvider.vue'
 import { installMermaidFit } from './mermaid-fit'
+import { installMermaidZoom } from './mermaid-zoom'
 
 import './custom.css'
 
@@ -16,6 +17,7 @@ export default {
     app.component('SlideDeck', SlideDeck)
     app.component('Slide', Slide)
     app.component('SlideControls', SlideControls)
-    installMermaidFit()
+    installMermaidFit() // column-fit for docs-page diagrams
+    installMermaidZoom() // pan/zoom canvas for slide diagrams
   },
 } satisfies Theme
