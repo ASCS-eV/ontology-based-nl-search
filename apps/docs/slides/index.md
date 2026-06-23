@@ -83,17 +83,17 @@ title: Presentation
 ```mermaid
 flowchart TD
     subgraph L0["Leaf contracts (rank 0)"]
-      AT["api-types\nwire JSON shapes"]
-      SL["slots\nthe search IR + Zod schema"]
+      AT["api-types<br/>wire JSON shapes"]
+      SL["slots<br/>the search IR + Zod schema"]
     end
-    CORE["core\nconfig · logging · RDF prefixes · SSE · LRU"]
+    CORE["core<br/>config · logging · RDF prefixes · SSE · LRU"]
     subgraph L2["Capability layer (rank 2)"]
-      SP["sparql\nOxigraph + remote + policy gate"]
-      ONT["ontology\nSHACL discovery + validation"]
-      GIR["graphql-ir\nslot ↔ GraphQL codec"]
+      SP["sparql<br/>Oxigraph + remote + policy gate"]
+      ONT["ontology<br/>SHACL discovery + validation"]
+      GIR["graphql-ir<br/>slot ↔ GraphQL codec"]
     end
-    SEARCH["search\ncompiler · discovery · lineage · service"]
-    LLM["llm\nSHACL prompt · slot validation · agents"]
+    SEARCH["search<br/>compiler · discovery · lineage · service"]
+    LLM["llm<br/>SHACL prompt · slot validation · agents"]
     APPS["apps · api (Hono SSE) + web (React)"]
 
     CORE --> SP & ONT & GIR
@@ -124,16 +124,16 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Q(["🗣️ query"]) --> PB["llm: prompt-builder\nembeds raw SHACL"]
-    PB --> AG["llm: agent\nsubmit_slots only"]
-    AG --> SV["llm: slot-validator\nfuzzy + SHACL gate"]
-    SV --> CO["search: compiler\nSHACL-discovered paths"]
-    CO --> PG["sparql: policy gate\nsandbox boundary"]
-    PG --> OX[("Oxigraph\nWASM, off-thread")]
-    OX --> SVC["search: service\n+ traceability"]
-    SVC --> SSE(["📊 SSE stream\ninterpretation · gaps · SPARQL · results · lineage"])
+    Q(["🗣️ query"]) --> PB["llm: prompt-builder<br/>embeds raw SHACL"]
+    PB --> AG["llm: agent<br/>submit_slots only"]
+    AG --> SV["llm: slot-validator<br/>fuzzy + SHACL gate"]
+    SV --> CO["search: compiler<br/>SHACL-discovered paths"]
+    CO --> PG["sparql: policy gate<br/>sandbox boundary"]
+    PG --> OX[("Oxigraph<br/>WASM, off-thread")]
+    OX --> SVC["search: service<br/>+ traceability"]
+    SVC --> SSE(["📊 SSE stream<br/>interpretation · gaps · SPARQL · results · lineage"])
 
-    DISC[("ontology + search\ndiscovery indexes")] -.->|warmup| PB
+    DISC[("ontology + search<br/>discovery indexes")] -.->|warmup| PB
     DISC -.-> SV
     DISC -.-> CO
 
@@ -308,12 +308,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    ART[("OWL + SHACL\nartifacts")]:::art
-    ART --> D1["domain registry\ntargetClass · subClassOf"]
-    ART --> D2["property paths\nasset → leaf chains"]
-    ART --> D3["reference chains\ncross-asset joins"]
-    ART --> D4["vocabulary\nsh:in · ranges"]
-    ART --> D5["SKOS concepts\nquery expansion"]
+    ART[("OWL + SHACL<br/>artifacts")]:::art
+    ART --> D1["domain registry<br/>targetClass · subClassOf"]
+    ART --> D2["property paths<br/>asset → leaf chains"]
+    ART --> D3["reference chains<br/>cross-asset joins"]
+    ART --> D4["vocabulary<br/>sh:in · ranges"]
+    ART --> D5["SKOS concepts<br/>query expansion"]
 
     D4 --> P["LLM prompt"]
     D4 --> V["slot validator"]
