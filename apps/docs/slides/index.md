@@ -19,7 +19,7 @@ title: Presentation
     </div>
     <div class="metric">
       <strong>0</strong>
-      <span>hardcoded domain names, predicates, or class IRIs in production code</span>
+      <span>hardcoded ontology terms — domains, predicates, or class IRIs — in pipeline code</span>
     </div>
     <div class="metric">
       <strong>1</strong>
@@ -59,7 +59,7 @@ title: Presentation
       <h3>The LLM never writes SPARQL</h3>
       <ul class="tight-list">
         <li>It fills one typed <code>submit_slots</code> tool call — a structured intermediate representation.</li>
-        <li>A deterministic compiler turns those slots into SPARQL. Same slots ⇒ byte-identical query.</li>
+        <li>A deterministic compiler turns those slots into SPARQL: the same slots always produce the identical query.</li>
         <li>No prompt injection can produce an arbitrary query — there is no path from text to the store.</li>
       </ul>
     </div>
@@ -68,8 +68,8 @@ title: Presentation
       <h3>Everything is derived from the ontology</h3>
       <ul class="tight-list">
         <li>Prompt vocabulary, slot values, predicate paths, cross-reference joins, validation — all read from OWL + SHACL at runtime.</li>
-        <li>No domain knowledge is baked into code.</li>
-        <li>Swap the ontology, and a new domain works with zero code change.</li>
+        <li>No domain knowledge is baked into the query path — domains, predicates, and class IRIs are discovered, not hardcoded.</li>
+        <li>Swap the ontology and the query engine adapts with no code change — only UI branding stays domain-specific.</li>
       </ul>
     </div>
   </div>
@@ -115,7 +115,7 @@ flowchart TD
     class APPS app;
 ```
 
-  <div class="callout">A CI layer-gate enforces the arrows: every dependency points strictly downward, so the graph can never grow a cycle. Each box is a publishable unit with its own README, requirements table, and tests.</div>
+  <div class="callout">The arrows show what each package provides to the layer below; an actual dependency runs the other way (e.g. sparql depends on core). A CI layer-gate rejects any dependency that isn't strictly downward by layer rank, plus any cycle — so the graph can never grow a cycle. Each box is an independently publishable, separately tested package.</div>
 </Slide>
 
 <Slide :index="4" variant="diagram">
@@ -131,9 +131,9 @@ flowchart LR
     CO --> PG["sparql: policy gate<br/>sandbox boundary"]
     PG --> OX[("Oxigraph<br/>WASM, off-thread")]
     OX --> SVC["search: service<br/>+ traceability"]
-    SVC --> SSE(["📊 SSE stream<br/>interpretation · gaps · SPARQL · results · lineage"])
+    SVC --> SSE(["📊 SSE stream<br/>interpretation · gaps · SPARQL · results (+ per-row traceability)"])
 
-    DISC[("ontology + search<br/>discovery indexes")] -.->|warmup| PB
+    DISC[("ontology + search<br/>warmup artifacts")] -.->|raw SHACL| PB
     DISC -.-> SV
     DISC -.-> CO
 
@@ -160,7 +160,7 @@ flowchart LR
     </div>
     <div class="signal-card">
       <h3>Streamed transparency</h3>
-      <p>Every phase is an SSE event: users see the interpretation, gaps, and the exact SPARQL before results, plus per-row lineage after.</p>
+      <p>Most phases stream as SSE events: users see the interpretation, gaps, and the exact SPARQL before results, with per-row lineage carried alongside the results.</p>
     </div>
   </div>
 </Slide>
@@ -187,7 +187,7 @@ flowchart LR
     <div class="stack-card">
       <span>sparql · rank 2</span>
       <strong>Execution + sandbox</strong>
-      <p>Oxigraph (WASM, off-thread) and a remote Fuseki store behind one cache, plus the policy gate that is the security boundary.</p>
+      <p>Oxigraph (WASM, in a worker thread) or a remote SPARQL 1.1 store (Apache Jena Fuseki in production) behind one cache — and the policy gate, the system's security boundary.</p>
     </div>
     <div class="stack-card">
       <span>ontology · rank 2</span>
@@ -215,7 +215,7 @@ flowchart LR
 <Slide :index="6">
   <p class="eyebrow">Standards · not invention</p>
   <h2>Every boundary speaks a standard.</h2>
-  <p class="lead">The system is glue between well-specified contracts. Each interface cites its normative spec, audited in <code>docs/standards-audit.md</code>.</p>
+  <p class="lead">The system is glue between well-specified contracts. Each interface cites its normative spec, audited in <code>apps/docs/standards-audit.md</code>.</p>
   <div class="card-grid">
     <div class="card">
       <div class="card-icon">◆</div>
@@ -293,7 +293,7 @@ flowchart LR
       <h3>Gate 2 · the policy sandbox</h3>
       <ul class="tight-list">
         <li>Only <code>SELECT</code> runs; writes, <code>SERVICE</code>, and graph redirection are rejected.</li>
-        <li>The prefix allowlist derives from the same <code>RDF_PREFIXES</code> the compiler emits — it cannot drift.</li>
+        <li>The gate's prefix allowlist shares its sources with what the compiler emits — standard prefixes plus the same ontology namespaces from the domain registry — so the two cannot drift.</li>
         <li>A <code>LIMIT</code> ceiling is enforced; literals are escaped to the SPARQL 1.1 grammar (fuzz-tested).</li>
       </ul>
     </div>
@@ -315,13 +315,13 @@ flowchart LR
     ART --> D4["vocabulary<br/>sh:in · ranges"]
     ART --> D5["SKOS concepts<br/>query expansion"]
 
-    D4 --> P["LLM prompt"]
+    ART -->|raw SHACL| P["LLM prompt"]
     D4 --> V["slot validator"]
+    D5 --> V
     D1 --> C["SPARQL compiler"]
     D2 --> C
     D3 --> C
-    D1 --> G["GraphQL schema"]
-    D2 --> G
+    D4 --> G["GraphQL schema"]
 
     classDef art fill:#f59e0b,stroke:#b45309,color:#0f172a;
     classDef d fill:#dcfce7,stroke:#22c55e,color:#0f172a;
@@ -349,12 +349,12 @@ flowchart LR
     <div class="card">
       <div class="card-icon">📦</div>
       <h3>The discovered model as an artifact</h3>
-      <p>The search surface the system derives — domains, paths, vocabulary, the GraphQL SDL — can be published and versioned: a cacheable, partner-consumable contract that warm-starts the engine.</p>
+      <p>The search surface the system derives — domains, paths, vocabulary, and an in-memory GraphQL schema — could be published and versioned as a cacheable, partner-consumable contract that warm-starts the engine (planned; today the model is rediscovered at each boot).</p>
     </div>
     <div class="card">
       <div class="card-icon">🤝</div>
       <h3>Standard partner contracts</h3>
-      <p>Because the query surface is GraphQL and the store is standard SPARQL 1.1 / Fuseki, partners integrate through interfaces they already know — no bespoke API to learn.</p>
+      <p>Because the query surface is expressed as GraphQL over a standard SPARQL 1.1 store (e.g. Apache Jena Fuseki), an executable GraphQL endpoint is a natural next step — partners would integrate through interfaces they already know, with no bespoke API to learn.</p>
     </div>
   </div>
   <div class="callout">Today it answers questions about simulation assets. The architecture's real claim is that <strong>publishing a good ontology is enough to get a trustworthy natural-language interface over your data.</strong></div>
@@ -369,7 +369,7 @@ flowchart LR
     <a href="http://localhost:5174" class="btn-primary">Launch live demo →</a>
     <a href="/docs/architecture" class="btn-secondary">Read the architecture →</a>
   </div>
-  <p class="subtitle">Try: “motorway HD maps in Germany” · “OpenDRIVE with 3 lanes” · “Autobahnen mit Überholmanöver”</p>
+  <p class="subtitle">Try: “motorway HD maps in Germany” · “OpenDRIVE maps with right-hand traffic” · “Autobahnen mit Überholmanöver”</p>
 </Slide>
 
 </SlideDeck>
