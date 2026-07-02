@@ -79,3 +79,29 @@ mydomain:X a <http://www.w3.org/2002/07/owl#Class> .`
     expect(parsed.prefixes).toEqual({})
   })
 })
+
+describe('domain-registry-parse — flat-ontology namespace fallback (SHACL §2.1.3.3)', () => {
+  it('derives the namespace from sh:targetClass shapes when prefix name and owl:Ontology are absent', () => {
+    // LinkML gen-shacl shape: prefix alias "adont" differs from the directory name
+    // "adontology", and there is no owl:Ontology declaration. The namespace shared
+    // by the target-class shapes IS the domain namespace.
+    const ttl = `@prefix adont: <http://placeholder/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+adont:Scenario a sh:NodeShape ; sh:targetClass adont:Scenario .
+adont:TestCase a sh:NodeShape ; sh:targetClass adont:TestCase .`
+    expect(extractNamespace(parseTtl(ttl), 'adontology')).toBe('http://placeholder/')
+  })
+
+  it('prefers an explicit strategy over the target-class fallback', () => {
+    const ttl = `@prefix scenario: <${NS}> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+scenario:X a sh:NodeShape ; sh:targetClass scenario:X .`
+    expect(extractNamespace(parseTtl(ttl), 'scenario')).toBe(NS)
+  })
+
+  it('returns null when there are no named target-class shapes', () => {
+    const ttl = `@prefix sh: <http://www.w3.org/ns/shacl#> .
+[] a sh:NodeShape .`
+    expect(extractNamespace(parseTtl(ttl), 'nomatch')).toBeNull()
+  })
+})
