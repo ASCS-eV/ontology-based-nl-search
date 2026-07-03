@@ -72,7 +72,12 @@ function lookupPrefix(prefixes: Record<string, string>, alias: string): string |
  * Resolve a domain's namespace IRI: the namespace bound to the domain-name
  * prefix wins, then its underscore variant (directory "openlabel-v2" → TTL
  * prefix "openlabel_v2"), then the subject of the file's `owl:Ontology`
- * declaration.
+ * declaration, and finally — for a flat ontology whose prefix alias differs
+ * from the directory name and that declares no `owl:Ontology` (e.g. LinkML
+ * `gen-shacl` output) — the namespace shared by the file's `sh:targetClass`
+ * shapes. The last fallback needs no prefix-name, version, or ontology-header
+ * convention, so any SHACL carrying target-class shapes yields a domain
+ * [SHACL §2.1.3.3].
  */
 export function extractNamespace(parsed: ParsedTtl, domainName: string): string | null {
   const direct = lookupPrefix(parsed.prefixes, domainName)
@@ -93,7 +98,36 @@ export function extractNamespace(parsed: ParsedTtl, domainName: string): string 
     }
   }
 
-  return null
+  return namespaceFromTargetClasses(parsed)
+}
+
+/**
+ * Last-resort namespace derivation for a flat ontology: the namespace (the IRI up
+ * to and including its final `#` or `/`) shared by the most `sh:targetClass`
+ * shapes. Deterministic — ties are broken by namespace IRI. Returns `null` when
+ * there are no named target classes. This removes the versioned-namespace /
+ * matching-prefix convention as a hard requirement [SHACL §2.1.3.3].
+ */
+function namespaceFromTargetClasses(parsed: ParsedTtl): string | null {
+  const counts = new Map<string, number>()
+  for (const q of parsed.quads) {
+    if (q.predicate.value !== SH_TARGET_CLASS || q.object.termType !== 'NamedNode') continue
+    const iri = q.object.value
+    const idx = Math.max(iri.lastIndexOf('#'), iri.lastIndexOf('/'))
+    if (idx < 0) continue
+    const ns = iri.slice(0, idx + 1)
+    counts.set(ns, (counts.get(ns) ?? 0) + 1)
+  }
+  let best: string | null = null
+  let bestCount = 0
+  for (const ns of [...counts.keys()].sort()) {
+    const count = counts.get(ns) ?? 0
+    if (count > bestCount) {
+      best = ns
+      bestCount = count
+    }
+  }
+  return best
 }
 
 /**
