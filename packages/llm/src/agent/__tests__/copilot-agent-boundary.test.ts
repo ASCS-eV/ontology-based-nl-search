@@ -132,6 +132,36 @@ describe('runCopilotAgent — never-writes-SPARQL boundary', () => {
     expect(res.sparql).toBe(h.PIPELINE_SPARQL)
   })
 
+  it('resolves from the routed submission without waiting for session.idle', async () => {
+    // Regression for the production failure "Timeout after 60000ms waiting for
+    // session.idle": the model routes submit_slots (turn 0), but the SDK's
+    // sendAndWait keeps blocking because the model then emits a DISCARDED
+    // natural-language summary turn — which, combined with the tool-call turn,
+    // can exceed the SDK's hard-coded 60s ceiling. The agent must resolve from
+    // the routed submission the instant it arrives, NOT block on session.idle.
+    // Before the fix this test hangs until the vitest timeout (the old code
+    // `await`ed sendAndWait, which here never resolves).
+    h.session.sendAndWait.mockImplementation(({ prompt }: { prompt: string }) => {
+      const token = prompt.match(TOKEN_RE)?.[1]
+      expect(token, 'prompt must carry a request token').toBeTruthy()
+      // Tool call completes (turn 0) → submission routed synchronously…
+      submitSlotsHandler()(validSubmission(token!))
+      // …but the session NEVER goes idle (stuck on its discarded summary turn).
+      return new Promise<never>(() => {})
+    })
+
+    const { runCopilotAgent } = await import('../copilot-agent.js')
+    const res = await runCopilotAgent('german highways')
+
+    const { runSlotPipeline } = await import('../run-slot-pipeline.js')
+    const { buildEmptyFallbackResponse } = await import('../empty-fallback.js')
+    expect(runSlotPipeline).toHaveBeenCalledOnce()
+    expect(buildEmptyFallbackResponse).not.toHaveBeenCalled()
+    expect(res.sparql).toBe(h.PIPELINE_SPARQL)
+    // The used session is still discarded even though we bailed early on idle.
+    expect(h.session.disconnect).toHaveBeenCalledOnce()
+  })
+
   it('falls back deterministically when the LLM does NOT submit slots', async () => {
     // The round-trip returns without invoking the tool handler (LLM emitted
     // only prose).
