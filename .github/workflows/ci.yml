@@ -63,6 +63,16 @@ jobs:
       - name: Type check
         run: pnpm run check-types
 
+      - name: Layer-boundary gate
+        # Enforces the dependency layering (acyclic + strictly downward) from the
+        # declared workspace deps. See scripts/check-layers.mjs and CONTRIBUTING §6.
+        run: pnpm run check:layers
+
+      - name: Script tests
+        # Repo-tooling tests (scripts/*.test.mjs), incl. the layer-gate regression
+        # tests — these don't run under the turbo `test` task.
+        run: pnpm run test:scripts
+
       - name: Lint
         run: pnpm run lint
 
@@ -89,6 +99,14 @@ jobs:
 
       - name: Run tests
         run: pnpm run test
+
+      # Enforced per-package coverage floors on the pure, fast, instrumentation-
+      # safe units (slots, graphql-ir). The oxigraph cold-start packages are
+      # deliberately excluded — they are guarded by behavior tests, and coverage
+      # instrumentation worsens their documented cold-start timeout (ADR 0003
+      # step 5). Floors live in each package's vitest.config.ts; ratchet up.
+      - name: Check coverage floors
+        run: pnpm run coverage
 
   build:
     name: Build

@@ -26,11 +26,30 @@ pnpm run validate
 
 ### Testing Requirements
 
-| Type        | Tool       | Coverage Target    | When     |
-| ----------- | ---------- | ------------------ | -------- |
-| Unit        | Vitest     | 70% branches/lines | Every PR |
-| Integration | Vitest     | Key flows          | Every PR |
-| E2E         | Playwright | Critical paths     | Every PR |
+| Type        | Tool       | What is enforced                                  | When     |
+| ----------- | ---------- | ------------------------------------------------- | -------- |
+| Unit        | Vitest     | Per-package coverage floors (below) on pure units | Every PR |
+| Integration | Vitest     | Key flows (behavior tests, not a coverage %)      | Every PR |
+| E2E         | Playwright | Critical paths                                    | Every PR |
+
+**Coverage is measured and gated per package, not globally** (`pnpm run coverage`,
+wired into the Unit Tests CI job). A global threshold would wobble run-to-run: the
+heaviest code paths — `compiler-vocab`, `property-paths`, `schema-queries` — are
+exercised only by the oxigraph-WASM cold-start integration tests, and coverage
+instrumentation measurably worsens their documented cold-start timeout. So the gate
+covers the **pure, fast, instrumentation-safe** packages, and the oxigraph
+cold-start packages are deliberately excluded (guarded by their behavior tests, not
+by a percentage).
+
+Enforced floors (in each package's `vitest.config.ts`; **ratchet up, never down**):
+
+| Package                       | Lines | Statements | Functions | Branches |
+| ----------------------------- | ----- | ---------- | --------- | -------- |
+| `@ontology-search/slots`      | 95    | 95         | 95        | 90       |
+| `@ontology-search/graphql-ir` | 90    | 90         | 95        | 80       |
+
+`@ontology-search/api-types` is type-only (zero runtime), so there is nothing to
+instrument. New pure packages should add a floor here as they gain logic.
 
 ## Code Quality Criteria
 
@@ -63,8 +82,12 @@ fix or surface it within the PR's scope, do not bundle.
    `core`/`sparql`/`ontology`/`api-types`; `llm` depends only on the above;
    apps depend on packages — packages never depend on apps. (`api-types` is a
    zero-dependency, browser-safe leaf any layer may import.) No upward import.
-   CI gate:
-   `madge --circular --extensions ts packages` plus an ESLint boundaries rule.
+   CI gate: `pnpm run check:layers` (`scripts/check-layers.mjs`) asserts the
+   declared workspace-dependency graph is acyclic and strictly downward against a
+   layer-rank map; its regression tests live in `scripts/check-layers.test.mjs`.
+   (`madge --circular` cannot enforce this — `exports`-subpath imports with no
+   tsconfig `paths` are unresolvable to its source resolver, so it would pass
+   vacuously.)
 7. **Apps never own reusable logic.** If a file in `apps/api/src` or
    `apps/web/src` could be imported by another app, it belongs in a package.
 8. **Types crossing the HTTP boundary live in `@ontology-search/api-types`.**
@@ -147,8 +170,9 @@ fix or surface it within the PR's scope, do not bundle.
 ### Process
 
 28. **Conventional commits, signed (`-s -S`)**, no AI co-author attribution.
-29. **`pnpm run validate` is green** before push; CI runs `validate` +
-    `test:e2e` + `madge --circular`.
+29. **`pnpm run validate` is green** before push (it runs `check:layers`,
+    typecheck, all tests, script tests, lint, and format). CI mirrors these as
+    separate steps and adds `test:e2e`.
 30. **Each refactor PR carries a regression test that would have failed
     before the fix.** No test = no fix.
 

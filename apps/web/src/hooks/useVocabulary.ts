@@ -1,22 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { apiGet } from '../lib/api-client'
-
-/** Property info from the vocabulary API */
-export interface VocabProperty {
-  name: string
-  label: string
-  description: string
-  domain: string
-  type: 'enum' | 'numeric'
-  allowedValues?: string[]
-  datatype?: 'integer' | 'float'
-}
-
-export interface Vocabulary {
-  domains: string[]
-  properties: VocabProperty[]
-}
+import type { EditorVocabulary } from '../lib/graphql-autocomplete'
 
 /** Cap on the exponential retry backoff while the API warms up (ms). */
 const MAX_RETRY_DELAY_MS = 10_000
@@ -31,10 +16,10 @@ const MAX_RETRY_DELAY_MS = 10_000
  * so this mirrors the resilient `/stats` query in SearchPage (retry +
  * exponential backoff). Cached for the session; the vocabulary is static.
  */
-export function useVocabulary(): Vocabulary | null {
-  const { data } = useQuery<Vocabulary>({
+export function useVocabulary(): EditorVocabulary | null {
+  const { data } = useQuery<EditorVocabulary>({
     queryKey: ['vocabulary'],
-    queryFn: () => apiGet<Vocabulary>('/api/vocabulary'),
+    queryFn: () => apiGet<EditorVocabulary>('/api/vocabulary'),
     retry: true,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, MAX_RETRY_DELAY_MS),
     staleTime: Infinity,

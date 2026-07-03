@@ -8,6 +8,11 @@ export default withMermaid(
       'Natural language search over any OWL + SHACL ontology (demonstrated on ENVITED-X simulation assets)',
     base: process.env.VITEPRESS_BASE || '/docs/',
     appearance: false,
+    // The docs app's own developer README (how to run/build the site) is not a
+    // published docs page — exclude it so VitePress doesn't build it and flag its
+    // repo-relative `../../README.md` link (which resolves outside the docs root)
+    // as a dead link.
+    srcExclude: ['README.md', '**/README.md'],
     ignoreDeadLinks: [
       // localhost links are valid in dev but don't exist at build time
       /^http:\/\/localhost/,

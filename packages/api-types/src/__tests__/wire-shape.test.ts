@@ -19,6 +19,7 @@ import type {
   SearchResponse,
   StatsResponse,
   TimingEntry,
+  VocabularyResponse,
 } from '../index.js'
 
 describe('@ontology-search/api-types — wire shape', () => {
@@ -69,6 +70,36 @@ describe('@ontology-search/api-types — wire shape', () => {
     expect(response.interpretation.mappedTerms[0]?.confidence).toBe('high')
     expect(response.meta.requestId).toBe('req_test')
     expect(response.meta.timings?.[0]?.durationMs).toBe(12)
+  })
+
+  it('accepts a VocabularyResponse shape (enum + numeric properties)', () => {
+    const vocab: VocabularyResponse = {
+      domains: ['domainA', 'domainB'],
+      properties: [
+        {
+          name: 'categoricalProp',
+          label: 'Categorical',
+          description: 'a categorical constraint',
+          domain: 'domainA',
+          type: 'enum',
+          allowedValues: ['v1', 'v2'],
+        },
+        {
+          name: 'numericProp',
+          label: 'Numeric',
+          description: '',
+          domain: 'domainA',
+          type: 'numeric',
+          datatype: 'integer',
+        },
+      ],
+    }
+    expect(vocab.properties[0]?.type).toBe('enum')
+    expect(vocab.properties[0]?.allowedValues).toEqual(['v1', 'v2'])
+    expect(vocab.properties[1]?.datatype).toBe('integer')
+    // optional fields are actually optional
+    const minimal: VocabularyResponse = { domains: [], properties: [] }
+    expect(minimal.properties).toHaveLength(0)
   })
 
   it('accepts a StatsResponse shape', () => {

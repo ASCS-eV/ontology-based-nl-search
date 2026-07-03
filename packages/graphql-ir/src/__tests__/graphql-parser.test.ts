@@ -1,8 +1,8 @@
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { describe, expect, it } from 'vitest'
 
 import { parseGraphQLToSlots } from '../graphql-parser'
 import { slotsToGraphQL } from '../graphql-serializer'
-import type { SearchSlots } from '../slots'
 
 describe('parseGraphQLToSlots', () => {
   it('round-trips a basic query with filters', () => {
@@ -19,6 +19,23 @@ describe('parseGraphQLToSlots', () => {
     if (result.success) {
       expect(result.slots.domains).toEqual(['hdmap'])
       expect(result.slots.filters).toEqual({ country: ['AT', 'DE'], roadType: 'motorway' })
+    }
+  })
+
+  it('round-trips enum-literal filter values back to strings', () => {
+    const slots: SearchSlots = {
+      domains: ['hdmap'],
+      filters: { country: ['DE', 'AT'] },
+      ranges: {},
+    }
+
+    const graphql = slotsToGraphQL(slots, { enumProperties: new Set(['country']) })
+    expect(graphql).toContain('country(values: [AT, DE])') // unquoted enum literals
+
+    const result = parseGraphQLToSlots(graphql)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.slots.filters).toEqual({ country: ['AT', 'DE'] })
     }
   })
 
@@ -98,6 +115,41 @@ describe('parseGraphQLToSlots', () => {
     if (result.success) {
       expect(result.slots.references).toEqual([
         { domain: 'ositrace', references: [{ domain: 'hdmap' }] },
+      ])
+    }
+  })
+
+  it('round-trips a reference with an enum filter, a range, a label, and a nested reference', () => {
+    const slots: SearchSlots = {
+      domains: ['ositrace'],
+      filters: {},
+      ranges: {},
+      references: [
+        {
+          domain: 'hdmap',
+          label: 'German highways',
+          filters: { roadType: 'motorway' },
+          ranges: { numberIntersections: { min: 1, max: 4 } },
+          references: [{ domain: 'scenario' }],
+        },
+      ],
+    }
+
+    // Enum literals (unquoted) must parse back to the same string values.
+    const result = parseGraphQLToSlots(
+      slotsToGraphQL(slots, { enumProperties: new Set(['roadType']) })
+    )
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.slots.references).toEqual([
+        {
+          domain: 'hdmap',
+          label: 'German highways',
+          filters: { roadType: 'motorway' },
+          ranges: { numberIntersections: { min: 1, max: 4 } },
+          references: [{ domain: 'scenario' }],
+        },
       ])
     }
   })

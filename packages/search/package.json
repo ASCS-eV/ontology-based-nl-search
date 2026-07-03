@@ -15,6 +15,16 @@
       "import": "./dist/slots.js",
       "default": "./dist/slots.js"
     },
+    "./discovery": {
+      "types": "./src/discovery.ts",
+      "import": "./dist/discovery.js",
+      "default": "./dist/discovery.js"
+    },
+    "./lineage": {
+      "types": "./src/lineage.ts",
+      "import": "./dist/lineage.js",
+      "default": "./dist/lineage.js"
+    },
     "./compiler": {
       "types": "./src/compiler.ts",
       "import": "./dist/compiler.js",
@@ -51,11 +61,11 @@
   "dependencies": {
     "@ontology-search/api-types": "workspace:*",
     "@ontology-search/core": "workspace:*",
+    "@ontology-search/graphql-ir": "workspace:*",
     "@ontology-search/ontology": "workspace:*",
+    "@ontology-search/slots": "workspace:*",
     "@ontology-search/sparql": "workspace:*",
-    "graphql": "^16.14.2",
-    "sparqljs": "^3.7.4",
-    "zod": "^4.4.3"
+    "sparqljs": "^3.7.4"
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",

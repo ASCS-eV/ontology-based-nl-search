@@ -1,20 +1,53 @@
 # @ontology-search/sparql
 
-SPARQL execution and security layer. Provides a single `SparqlStore`
-abstraction over an in-memory Oxigraph WASM engine (run in a dedicated
-**worker thread** so synchronous WASM queries never block the event loop)
-or a remote SPARQL endpoint (e.g. Fuseki), wrapped in an LRU query cache.
+> SPARQL execution and security layer — Oxigraph WASM (in a worker thread) or a remote store, behind an LRU cache, plus the query policy gate and literal escaping.
 
-**Layer:** depends only on `@ontology-search/core`.
+**Layer:** sits just above `core` (`core ← sparql, ontology ← search ← llm ← apps`). Depends only on `@ontology-search/core`.
 
-## Exports
+## Purpose
 
-| Subpath    | Purpose                                                              |
-| ---------- | -------------------------------------------------------------------- |
-| `.`        | `getSparqlStore()` singleton factory (in-memory or remote by config) |
-| `./types`  | `SparqlStore` interface and query result types                       |
-| `./policy` | `enforceSparqlPolicy` — the query allow-list / sandbox gate          |
-| `./escape` | Literal-escaping helpers for safe query construction                 |
+Provides a single `SparqlStore` abstraction over either an in-memory Oxigraph WASM engine — run in a dedicated **worker thread** so synchronous WASM queries never block the event loop — or a remote SPARQL endpoint (e.g. Fuseki), wrapped in an LRU query cache. It also owns the project's two lines of defence against SPARQL injection: the policy gate that allow-lists what may execute, and the escaping primitives that keep compiler-generated literals well-formed.
 
-The policy gate is security-critical: the compiler must never emit SPARQL
-the gate would reject. See the [SPARQL reference](../../apps/docs/sparql-reference).
+## Public interface
+
+| Subpath    | Purpose                                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| `.`        | `getSparqlStore()` singleton factory — picks in-memory worker or remote store from config, wrapped in an LRU cache |
+| `./types`  | `SparqlStore` interface and query-result types                                                                     |
+| `./policy` | `enforceSparqlPolicy` / `registerPolicyNamespaces` — the query allow-list / sandbox gate                           |
+| `./escape` | Literal- and IRI-escaping helpers for safe SPARQL construction                                                     |
+
+## Requirements & invariants
+
+Each contract below is guarded by a named test. The security-critical rows are P1 (the policy gate is the sandbox boundary) and P4 (literal/IRI escaping is the inner defence) — together they ensure no compiler-emitted or LLM-authored query can read another graph, federate, write, or carry a malformed literal.
+
+| #   | Requirement / invariant                                                                                                                                                                                                                                                                            | Guarded by                                                                                                                                                                                                                                                                                             |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P1  | **Policy gate is the sandbox boundary (allowlist can't drift)** — only SELECT runs; INSERT/CONSTRUCT/LOAD, unparseable queries, SERVICE (incl. nested in a sub-SELECT) and FROM/FROM NAMED are rejected; allowed prefixes are exactly `core`'s `RDF_PREFIXES` plus namespaces registered at warmup | `src/__tests__/policy.test.ts` (`enforceSparqlPolicy` — "rejects INSERT queries", "rejects LOAD operations", "rejects unknown prefix IRIs", "rejects a SERVICE buried inside a sub-SELECT", "rejects FROM dataset clauses (graph redirection)", "allows registered non-ENVITED-X ontology namespaces") |
+| P2  | **LIMIT ceiling enforced** — a missing LIMIT is auto-appended on a fresh line (comment-injection-safe); a LIMIT above `SPARQL_MAX_LIMIT` is rejected                                                                                                                                               | `src/__tests__/policy.test.ts` (`enforceSparqlPolicy` — "appends LIMIT if missing", "rejects LIMIT > 500", "appends LIMIT on a fresh line even when the query ends in a comment")                                                                                                                      |
+| P3  | **Schema-introspection queries are graph-scoped** — `validateSchemaQuery` rejects ASK/DESCRIBE/writes, SERVICE, GRAPH and FROM (incl. nested in sub-SELECT / FILTER EXISTS), injects `FROM <schemaGraph>`, caps rows at 50                                                                         | `src/__tests__/policy.test.ts` (`validateSchemaQuery` — "allows a valid SELECT query and injects FROM scope", "rejects a GRAPH hidden inside FILTER EXISTS", "caps results at 50 even if query has higher LIMIT")                                                                                      |
+| P4  | **Literal escaping follows the SPARQL 1.1 grammar** — `escapeSparqlLiteral` output parses for _every_ input (fast-check fuzz), escapes all `<U+0020` control chars, and does not over-escape printable ASCII                                                                                       | `src/__tests__/escape.test.ts` ("produces a literal that parses for every fast-check string", "escapes every control character below U+0020", "preserves printable ASCII as-is (no over-escaping)")                                                                                                    |
+| P5  | **IRI detection matches the `IRIREF` grammar** — every value `isIri` accepts forms a parseable `<value>` triple (fast-check); forbidden body/control chars are rejected                                                                                                                            | `src/__tests__/escape.test.ts` ("every accepted value forms a parseable IRIREF triple"; `isIri — regression cases`)                                                                                                                                                                                    |
+| P6  | **`getSparqlStore()` is a config-driven singleton** — wraps the worker (memory) or remote store per `SPARQL_MODE`; remote without `SPARQL_ENDPOINT` throws at config validation                                                                                                                    | `src/__tests__/store-factory.test.ts` (`getSparqlStore` — "…wrapping OxigraphStore when SPARQL_MODE is memory", "should throw when SPARQL_MODE is remote without endpoint")                                                                                                                            |
+| P7  | **Singleton teardown is clean and idempotent** — `closeSparqlStore()` releases the worker, is idempotent, and lets a fresh store be built afterward                                                                                                                                                | `src/__tests__/lifecycle.test.ts` (`closeSparqlStore singleton teardown` — "closes the cached singleton and lets a fresh one be built")                                                                                                                                                                |
+| P8  | **WASM queries run off the main thread / async** — auto-initializes on first query, serves concurrent queries without blocking, honours pre-aborted and in-flight `AbortSignal`s                                                                                                                   | `src/__tests__/worker-oxigraph-store.test.ts` ("should handle multiple concurrent queries without blocking", "should abort an in-flight query and clean up the pending map")                                                                                                                           |
+| P9  | **LRU cache eviction & TTL semantics** — whitespace-normalized keys; evicts oldest at capacity; LRU reordering; TTL expiry; returns the stored, deep-frozen reference (no per-hit clone)                                                                                                           | `src/__tests__/cache.test.ts` (`SparqlCache` — "evicts oldest entries when max size is reached", "moves accessed entries to most-recent position (LRU)", "returns the stored reference (no per-hit clone) and deep-freezes it")                                                                        |
+| P10 | **Cache is invalidated on every data mutation** — `update`/`loadTurtle`/`loadJsonLd` flush the cache so a subsequent query re-hits the inner store                                                                                                                                                 | `src/__tests__/cached-store.test.ts` (`cache invalidation on data mutation` — "invalidates cache when update is called")                                                                                                                                                                               |
+| P11 | **Remote store wire behaviour** — POSTs to the correct Fuseki endpoints with correct content types, surfaces HTTP errors, composes caller `AbortSignal` with the per-store timeout                                                                                                                 | `src/__tests__/remote-store.test.ts` (`query` — "should send SPARQL query with correct headers", "should throw on non-OK response", "aborts the underlying fetch when the caller signal fires")                                                                                                        |
+| P12 | **Store-capability probe enforces SPARQL 1.1 property paths** — throws `StoreCapabilityError` for an engine lacking `*`-path support, wrong cardinality, or a failed data load                                                                                                                     | `src/__tests__/capability-probe.test.ts` (`probePropertyPathSupport` — "passes on a real Oxigraph store…", "throws StoreCapabilityError when the store rejects the probe query")                                                                                                                       |
+| P13 | **Depends only on `@ontology-search/core`**                                                                                                                                                                                                                                                        | `scripts/check-layers.mjs` layer gate (`@ontology-search/sparql` ranked at layer 2)                                                                                                                                                                                                                    |
+
+## How to interface
+
+```ts
+import { getSparqlStore } from '@ontology-search/sparql'
+
+const store = getSparqlStore()
+const rows = await store.query('SELECT * WHERE { ?s ?p ?o } LIMIT 10')
+```
+
+## See also
+
+- [Root README](../../README.md) — the search pipeline and the "LLM never writes SPARQL" security model.
+- [`@ontology-search/core`](../core/README.md) — config and `RDF_PREFIXES` it builds on.
+- SPARQL reference docs under `apps/docs/`.
