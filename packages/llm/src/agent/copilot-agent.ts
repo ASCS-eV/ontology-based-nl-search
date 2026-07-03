@@ -150,6 +150,18 @@ const POOL_SIZE = 3
 let replenishing = false
 
 /**
+ * Ceiling for a single LLM turn, passed explicitly to `session.sendAndWait`
+ * (whose SDK default is 60s). Because success is derived from the routed
+ * `submit_slots` submission — not from `session.idle` — this bound only
+ * governs the cases where the model never submits (→ fallback) or where the
+ * tool-call turn itself is pathologically slow. It is deliberately generous:
+ * the embedded-SHACL system prompt is large (~95k tokens), so a heavily loaded
+ * backend can push a legitimate tool-call turn well past the 60s default, which
+ * previously surfaced as "Timeout after 60000ms waiting for session.idle".
+ */
+const LLM_TURN_TIMEOUT_MS = 120_000
+
+/**
  * Create a fresh session. No `infiniteSessions` — each session is used
  * exactly once so no history accumulates.
  */
@@ -276,37 +288,83 @@ export async function runCopilotAgent(
   const session = await acquireSession()
   endSession()
 
-  // Register callback for this request's token
+  // Register callback for this request's token. We resolve `submissionArrived`
+  // the instant the model routes its `submit_slots` tool call to us — we do
+  // NOT wait for `session.idle`. Anthropic models on the Copilot SDK routinely
+  // emit an extra natural-language summary turn AFTER the tool call (which we
+  // discard). Waiting for idle burns that time, and when the tool-call turn and
+  // the summary turn together exceed the SDK's hard-coded 60s `sendAndWait`
+  // ceiling it surfaces as a spurious "Timeout waiting for session.idle" —
+  // even though `submit_slots` already succeeded and we have the answer.
   const requestToken = randomUUID()
+  // `submissionRef` is the synchronous source of truth for precedence:
+  // `submissionArrived` merely WAKES the race. A routed submission always wins
+  // over a same-tick `session.idle`, so we read the ref (not the race outcome)
+  // to decide the result.
   const submissionRef: { value: Submission | null } = { value: null }
-  const unregister = submissionRouter.register(requestToken, (submission) => {
-    submissionRef.value = submission
+  let deliverSubmission!: () => void
+  const submissionArrived = new Promise<void>((resolve) => {
+    deliverSubmission = resolve
+  })
+  const unregister = submissionRouter.register(requestToken, (s) => {
+    submissionRef.value = s
+    deliverSubmission()
   })
 
   const promptWithToken = `${naturalLanguageQuery}\n\n${renderTokenDirective(requestToken)}`
   const signal = options?.signal
 
+  let submission: Submission | null = null
   try {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
     const endLlmCall = sw.time('llm-round-trip')
-    if (signal) {
-      await raceWithSignal(session.sendAndWait({ prompt: promptWithToken }), signal)
-    } else {
-      await session.sendAndWait({ prompt: promptWithToken })
-    }
+
+    // The `session.idle` wait (or the SDK's internal 60s timeout / a session
+    // error), normalized so this branch never rejects on its own — it only
+    // ever competes in the race. A rejection is re-surfaced explicitly below,
+    // and only when no submission arrived.
+    const idleOutcome: Promise<{ kind: 'idle' } | { kind: 'error'; error: unknown }> = session
+      .sendAndWait({ prompt: promptWithToken }, LLM_TURN_TIMEOUT_MS)
+      .then(
+        () => ({ kind: 'idle' as const }),
+        (error: unknown) => ({ kind: 'error' as const, error })
+      )
+
+    // Resolve as soon as EITHER the submission is routed OR the session settles
+    // (idle / error). We do not block on the model's post-tool-call chatter.
+    const raced = Promise.race([
+      submissionArrived.then(() => ({ kind: 'submitted' as const })),
+      idleOutcome,
+    ])
+
+    const outcome = signal ? await raceWithSignal(raced, signal) : await raced
     endLlmCall()
+
+    // A routed submission always wins — even if `session.idle` settled in the
+    // same microtask tick. Only a genuine error with NO submission is surfaced;
+    // a bare idle without a submission degrades to the deterministic fallback.
+    if (submissionRef.value) {
+      submission = submissionRef.value
+    } else if (outcome.kind === 'error') {
+      // The session finished (or the SDK timed out) without ever routing a
+      // submission — surface the failure so the route reports an error rather
+      // than silently degrading.
+      throw outcome.error
+    }
   } finally {
     unregister()
-    // Discard the used session — don't reuse (prevents context accumulation)
+    // Discard the used session — don't reuse (prevents context accumulation).
+    // Disconnecting also abandons any in-flight post-tool summary turn, which
+    // we intentionally never consume.
     session.disconnect().catch(() => {
       // intentional: best-effort cleanup
     })
   }
 
-  if (submissionRef.value) {
+  if (submission) {
     const response = await runSlotPipeline({
-      submission: submissionRef.value,
+      submission,
       vocabulary,
       targetDomain,
       sw,
