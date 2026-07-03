@@ -35,9 +35,10 @@ export interface AgentPolicy {
   readonly thinking: { readonly budgetTokens: number } | null
   /**
    * Copilot SDK reasoning effort. `null` when the model doesn't support it.
-   * Maps to `reasoningEffort` in the `createSession` call.
+   * `'none'` explicitly disables reasoning (a latency win for the deterministic
+   * slot-filling task). Maps to `reasoningEffort` in the `createSession` call.
    */
-  readonly reasoningEffort: 'low' | 'medium' | 'high' | null
+  readonly reasoningEffort: 'none' | 'low' | 'medium' | 'high' | null
   /**
    * The single tool the LLM is forced to call. Both adapters must ensure
    * this is the ONLY callable tool — no investigation tools, no alternatives.
@@ -70,10 +71,14 @@ export function getAgentPolicy(): AgentPolicy {
   const thinking = supportsThinking ? { budgetTokens: config.LLM_THINKING_BUDGET } : null
 
   // Copilot SDK reasoningEffort: only models that accept the parameter.
+  // We disable reasoning entirely (`'none'`) for slot-filling: the task is
+  // deterministic (fill slots from SHACL, validated downstream by the SHACL
+  // gate), so chain-of-thought adds latency and output tokens without improving
+  // the structured result. `null` for models that don't accept the parameter.
   const supportsReasoning =
     config.AI_PROVIDER === 'copilot' &&
     (config.AI_MODEL.includes('4.6') || config.AI_MODEL.includes('opus'))
-  const reasoningEffort = supportsReasoning ? ('low' as const) : null
+  const reasoningEffort = supportsReasoning ? ('none' as const) : null
 
   return {
     temperature: config.LLM_TEMPERATURE,

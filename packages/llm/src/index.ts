@@ -15,7 +15,11 @@
 import { getConfig } from '@ontology-search/core/config'
 import { getPrimaryDomain } from '@ontology-search/search'
 
-import { getPersistentSession, runCopilotAgent } from './agent/copilot-agent.js'
+import {
+  getPersistentSession,
+  primeCacheInBackground,
+  runCopilotAgent,
+} from './agent/copilot-agent.js'
 import { runSparqlAgent, warmupAgentPrompt } from './agent/index.js'
 
 export { warmupAgentPrompt }
@@ -49,12 +53,19 @@ export interface SearchOptions {
  *    discarded — the agent's own cache only filled on first user request.
  *  - Copilot SDK session: ~6s session-create cost. Only relevant for the
  *    Copilot provider.
+ *  - Copilot prompt cache: primed in the background so the first real query
+ *    doesn't pay the ~100k-token cold prefill (measured ~+10s), and kept warm
+ *    against the backend's ~5-min cache TTL.
  */
 export async function warmupLlmSession(): Promise<void> {
   const config = getConfig()
   await warmupAgentPrompt()
   if (config.AI_PROVIDER === 'copilot') {
     await getPersistentSession()
+    // Non-blocking: warm the server-side prompt cache and keep it warm. Readiness
+    // is not delayed; requests arriving before priming completes just pay the
+    // cold cost once, exactly as before.
+    primeCacheInBackground()
   }
 }
 

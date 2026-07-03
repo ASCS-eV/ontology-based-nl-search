@@ -171,7 +171,13 @@ async function createSession(prompt: string): Promise<CopilotSession> {
 
   return c.createSession({
     model: policy.model,
-    ...(policy.reasoningEffort ? { reasoningEffort: policy.reasoningEffort } : {}),
+    // [SDK] The Copilot `session.create` wire schema accepts
+    // `reasoningEffort: "none"` ("none" disables reasoning), but the SDK's
+    // exported `ReasoningEffort` union narrows to low|medium|high|xhigh.
+    // Forward the wire-valid policy value with a cast.
+    ...(policy.reasoningEffort
+      ? { reasoningEffort: policy.reasoningEffort as unknown as 'low' | 'medium' | 'high' }
+      : {}),
     onPermissionRequest: approveAll,
     systemMessage: { mode: 'replace', content: prompt },
     tools: [buildSubmitSlotsTool()],
@@ -231,6 +237,59 @@ export async function getPersistentSession(): Promise<CopilotSession> {
   if (readyPool.length > 0) return readyPool[0]!
   const { prompt } = await getAgentContext()
   return createSession(prompt)
+}
+
+// ─── Prompt-cache priming ────────────────────────────────────────────────────
+
+/**
+ * Throwaway query used only to warm the backend prompt cache. Its content is
+ * irrelevant: the point is to make the backend prefill and cache the identical,
+ * per-request ~100k-token system-prompt prefix once, so real queries hit a warm
+ * cache instead of paying the cold prefill (measured at ~+10s on a cold cache).
+ */
+const CACHE_PRIMING_QUERY = 'warmup'
+
+/**
+ * Re-prime interval. Kept below the backend prompt-cache TTL (~5 min) so an idle
+ * deployment never lets the cache go cold between real queries.
+ */
+const CACHE_KEEPALIVE_MS = 4 * 60 * 1000
+
+let keepAliveTimer: ReturnType<typeof setInterval> | null = null
+
+/**
+ * Run one throwaway slot-fill to warm the shared prompt cache. Best-effort:
+ * any failure is swallowed so priming can never affect readiness or requests.
+ * Exported for tests.
+ */
+export async function primeCacheOnce(): Promise<void> {
+  try {
+    await runCopilotAgent(CACHE_PRIMING_QUERY)
+  } catch {
+    // intentional: priming is best-effort and must never surface an error
+  }
+}
+
+/**
+ * Warm the prompt cache in the background (non-blocking, so warmup readiness is
+ * not delayed) and start a keep-alive that re-primes before the backend cache
+ * TTL expires. Idempotent: the keep-alive timer is started at most once.
+ */
+export function primeCacheInBackground(): void {
+  void primeCacheOnce()
+  if (!keepAliveTimer) {
+    keepAliveTimer = setInterval(() => void primeCacheOnce(), CACHE_KEEPALIVE_MS)
+    // Don't let the keep-alive timer keep the process alive on shutdown.
+    keepAliveTimer.unref()
+  }
+}
+
+/** Stop the keep-alive timer. Exported for tests / graceful shutdown. */
+export function stopCacheKeepAlive(): void {
+  if (keepAliveTimer) {
+    clearInterval(keepAliveTimer)
+    keepAliveTimer = null
+  }
 }
 
 // ─── Abort Helper ────────────────────────────────────────────────────────────
