@@ -1,13 +1,12 @@
 import { Alert } from '@ontology-search/design-system'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 
 import type { StatsResponse } from '../api-types'
 import { useSearchExecution } from '../hooks/useSearchExecution'
 import { useSearchHistory } from '../hooks/useSearchHistory'
 import { useVocabulary } from '../hooks/useVocabulary'
 import { apiGet } from '../lib/api-client'
-import { GraphQLEditor } from './GraphQLEditor'
 import { InterpretationDisplay } from './InterpretationDisplay'
 import { OntologyGapsDisplay } from './OntologyGapsDisplay'
 import type { PipelineStep } from './PipelineStepper'
@@ -17,6 +16,10 @@ import { ResultsDisplay } from './ResultsDisplay'
 import { SearchBar } from './SearchBar'
 import { SparqlPreview } from './SparqlPreview'
 import { TypewriterText } from './TypewriterText'
+
+const GraphQLEditor = lazy(() =>
+  import('./GraphQLEditor').then((m) => ({ default: m.GraphQLEditor }))
+)
 
 /** Steps that start collapsed — the user can expand them manually. */
 const COLLAPSED_STEPS = new Set(['sparql'])
@@ -145,12 +148,14 @@ export function SearchPage() {
         hasContent: !!(graphql || graphQLEntryMode),
         content:
           graphql || graphQLEntryMode ? (
-            <GraphQLEditor
-              value={graphql ?? 'query {\n  \n}'}
-              readOnly={false}
-              onExecute={handleGraphQLRun}
-              vocabulary={vocabulary}
-            />
+            <Suspense fallback={<div>Loading editor…</div>}>
+              <GraphQLEditor
+                value={graphql ?? 'query {\n  \n}'}
+                readOnly={false}
+                onExecute={handleGraphQLRun}
+                vocabulary={vocabulary}
+              />
+            </Suspense>
           ) : null,
       },
       {
