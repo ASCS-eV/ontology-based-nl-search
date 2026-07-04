@@ -97,6 +97,21 @@ function validSubmission(token: string) {
   }
 }
 
+/** A well-formed submit_slots payload carrying a cross-domain `references` slot. */
+function validSubmissionWithReferences(token: string) {
+  return {
+    requestToken: token,
+    slots: {
+      domains: ['hdmap'],
+      filters: {},
+      ranges: {},
+      references: { domain: 'other-domain', filters: { country: 'DE' } },
+    },
+    interpretation: { summary: 'ok', mappedTerms: [] },
+    gaps: [],
+  }
+}
+
 /** Find the captured submit_slots tool handler the agent registered. */
 function submitSlotsHandler(): (p: unknown) => unknown {
   const tool = h.capturedTools.find((t) => t.name === 'submit_slots')
@@ -224,5 +239,43 @@ describe('runCopilotAgent — never-writes-SPARQL boundary', () => {
     const { buildEmptyFallbackResponse } = await import('../empty-fallback.js')
     expect(runSlotPipeline).not.toHaveBeenCalled()
     expect(buildEmptyFallbackResponse).not.toHaveBeenCalled()
+  })
+})
+
+describe('runCopilotAgent — submit_slots tool schema (single-sourced from slotSubmissionSchema)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('advertises a `references` property under `slots` — drift guard for the canonical schema (would FAIL against a hand-written copy that omits it)', async () => {
+    const { copilotSubmitParameters } = await import('../copilot-agent.js')
+    const slotsProperties = (
+      copilotSubmitParameters as {
+        properties?: { slots?: { properties?: Record<string, unknown> } }
+      }
+    ).properties?.slots?.properties
+
+    expect(slotsProperties).toBeDefined()
+    expect(slotsProperties).toHaveProperty('references')
+  })
+
+  it('routes a references-bearing submission through the router and the pipeline consumes it', async () => {
+    h.session.sendAndWait.mockImplementation(async ({ prompt }: { prompt: string }) => {
+      const token = prompt.match(TOKEN_RE)?.[1]
+      expect(token, 'prompt must carry a request token').toBeTruthy()
+      const result = await submitSlotsHandler()(validSubmissionWithReferences(token!))
+      expect(result).toMatchObject({ accepted: true })
+    })
+
+    const { runCopilotAgent } = await import('../copilot-agent.js')
+    const res = await runCopilotAgent('german highways that reference assets in DE')
+
+    const { runSlotPipeline } = await import('../run-slot-pipeline.js')
+    const { buildEmptyFallbackResponse } = await import('../empty-fallback.js')
+    expect(runSlotPipeline).toHaveBeenCalledOnce()
+    expect(buildEmptyFallbackResponse).not.toHaveBeenCalled()
+    const [{ submission }] = vi.mocked(runSlotPipeline).mock.calls[0]!
+    expect(submission.slots).toHaveProperty('references')
+    expect(res.sparql).toBe(h.PIPELINE_SPARQL)
   })
 })

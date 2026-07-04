@@ -21,6 +21,7 @@ import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@git
 import { getConfig } from '@ontology-search/core/config'
 import { Stopwatch } from '@ontology-search/core/logging'
 import { getPrimaryDomain } from '@ontology-search/search'
+import { z } from 'zod'
 
 import type { LlmStructuredResponse } from '../types.js'
 import { getAgentContext } from './agent-context.js'
@@ -29,6 +30,7 @@ import { buildEmptyFallbackResponse } from './empty-fallback.js'
 import type { AgentOptions } from './index.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
 import { renderTokenDirective, type Submission, SubmissionRouter } from './submission-router.js'
+import { slotSubmissionSchema } from './tools.js'
 
 // ─── Client Singleton ────────────────────────────────────────────────────────
 
@@ -54,6 +56,23 @@ const submissionRouter = new SubmissionRouter()
 // ─── Tool Definition ─────────────────────────────────────────────────────────
 
 /**
+ * Copilot routes concurrent replies by an echoed token, so its tool schema is
+ * the canonical slot schema PLUS requestToken. Generating it from the Zod
+ * source (not hand-writing) means new slots — like `references` — can never
+ * drift out of the Copilot provider again.
+ * [JSON-SCHEMA-CORE] JSON Schema 2020-12 — same dialect as the published
+ * submit-slots.schema.json artifact (criterion #31).
+ */
+export const copilotSubmitParameters = z.toJSONSchema(
+  slotSubmissionSchema.extend({
+    requestToken: z
+      .string()
+      .describe('Echo the [request_token: …] value from the user message verbatim. Required.'),
+  }),
+  { target: 'draft-2020-12' }
+)
+
+/**
  * Build the submit_slots tool for a session.
  * The handler routes to whichever request is currently active via callback.
  */
@@ -64,74 +83,7 @@ function buildSubmitSlotsTool() {
       'Call exactly once. You MUST echo the request_token from the user message verbatim ' +
       'as the requestToken property — it is required for routing your reply to the caller.',
     skipPermission: true,
-    parameters: {
-      type: 'object',
-      properties: {
-        requestToken: {
-          type: 'string',
-          description:
-            'Echo the [request_token: …] value from the user message verbatim. Required.',
-        },
-        slots: {
-          type: 'object',
-          properties: {
-            domains: { type: 'array', items: { type: 'string' } },
-            filters: {
-              type: 'object',
-              additionalProperties: {
-                oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-              },
-            },
-            ranges: {
-              type: 'object',
-              additionalProperties: {
-                type: 'object',
-                properties: {
-                  min: { type: 'number' },
-                  max: { type: 'number' },
-                },
-              },
-            },
-          },
-        },
-        interpretation: {
-          type: 'object',
-          properties: {
-            summary: { type: 'string' },
-            mappedTerms: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  input: { type: 'string' },
-                  mapped: { type: 'string' },
-                  confidence: {
-                    type: 'string',
-                    enum: ['high', 'medium', 'low'],
-                  },
-                  property: { type: 'string' },
-                },
-                required: ['input', 'mapped', 'confidence'],
-              },
-            },
-          },
-          required: ['summary', 'mappedTerms'],
-        },
-        gaps: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              term: { type: 'string' },
-              reason: { type: 'string' },
-              suggestions: { type: 'array', items: { type: 'string' } },
-            },
-            required: ['term', 'reason'],
-          },
-        },
-      },
-      required: ['requestToken', 'slots', 'interpretation', 'gaps'],
-    },
+    parameters: copilotSubmitParameters,
     handler: async (params: unknown) => {
       const result = submissionRouter.route(params)
       if (result.ok) return { accepted: true }
