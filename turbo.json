@@ -25,6 +25,9 @@
     "check-types": {
       "dependsOn": ["^check-types"]
     },
+    "check-types:tests": {
+      "dependsOn": ["^check-types"]
+    },
     "test": {
       "dependsOn": ["^build"]
     },
