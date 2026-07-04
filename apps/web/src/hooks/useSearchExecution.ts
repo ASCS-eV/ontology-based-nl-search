@@ -159,13 +159,17 @@ export function useSearchExecution(_availableDomains?: string[]) {
         }
       }
     } catch (err) {
-      if (isAbortError(err)) return
+      if (isAbortError(err) || abortControllerRef.current !== controller) return
       setState((s) => ({
         ...s,
         error: err instanceof Error ? err.message : 'An unexpected error occurred',
       }))
     } finally {
-      setState((s) => ({ ...s, loading: false, phase: 'done' }))
+      // Only the still-current request may finalize the shared state. A superseded
+      // request (aborted because a newer search started) must not flip loading/phase.
+      if (abortControllerRef.current === controller) {
+        setState((s) => ({ ...s, loading: false, phase: 'done' }))
+      }
     }
   }, [])
 
