@@ -64,7 +64,7 @@ describe('logging', () => {
 
     it('emits structured JSON when log level allows', () => {
       setLogLevel('info')
-      const spy = vi.spyOn(console, 'info').mockImplementation()
+      const spy = vi.spyOn(console, 'info').mockImplementation(() => {})
 
       const logger = new RequestLogger({ requestId: 'test-req-4', query: 'test query' })
       logger.info('hello', { extra: 'data' })
@@ -83,9 +83,9 @@ describe('logging', () => {
 
     it('suppresses logs below configured level', () => {
       setLogLevel('error')
-      const infoSpy = vi.spyOn(console, 'info').mockImplementation()
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation()
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+      const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const logger = new RequestLogger({ requestId: 'test-req-5' })
       logger.debug('nope')
@@ -104,7 +104,7 @@ describe('logging', () => {
 
     it('includes error details in error logs', () => {
       setLogLevel('error')
-      const spy = vi.spyOn(console, 'error').mockImplementation()
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const logger = new RequestLogger({ requestId: 'test-req-6' })
       logger.error('failed', new Error('something broke'))
