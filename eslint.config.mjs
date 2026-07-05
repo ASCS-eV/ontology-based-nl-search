@@ -86,7 +86,7 @@ export default tseslint.config(
   // fixtures (e.g. `process.env.ONTOLOGY_ROOT = tmpDir`); criterion #23
   // governs cleanup discipline, not whether the access is allowed.
   {
-    files: ['**/__tests__/**/*', '**/*.test.*', 'e2e/**/*'],
+    files: ['**/__tests__/**/*', '**/*.test.{ts,tsx,mts,cts,js,jsx,mjs,cjs}', 'e2e/**/*'],
     rules: {
       'no-console': 'off',
       '@typescript-eslint/no-unused-vars': 'off',

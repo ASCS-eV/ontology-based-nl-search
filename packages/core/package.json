@@ -61,6 +61,7 @@
     "dev": "tsc --build --watch",
     "test": "vitest run",
     "check-types": "tsc --noEmit",
+    "check-types:tests": "tsc -p tsconfig.test.json",
     "clean": "rimraf dist"
   },
   "dependencies": {
