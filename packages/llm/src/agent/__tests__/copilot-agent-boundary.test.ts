@@ -240,6 +240,18 @@ describe('runCopilotAgent — never-writes-SPARQL boundary', () => {
     expect(runSlotPipeline).not.toHaveBeenCalled()
     expect(buildEmptyFallbackResponse).not.toHaveBeenCalled()
   })
+
+  it('primeCacheOnce warms the cache by running one inference round-trip', async () => {
+    // Regression for the cache-priming perf fix: `primeCacheOnce` must issue a
+    // real LLM round-trip (which writes the shared server-side prompt cache) so
+    // the first real query hits a warm cache. It must also be best-effort — a
+    // failed round-trip never throws.
+    h.session.sendAndWait.mockResolvedValue(undefined)
+
+    const { primeCacheOnce } = await import('../copilot-agent.js')
+    await expect(primeCacheOnce()).resolves.toBeUndefined()
+    expect(h.session.sendAndWait).toHaveBeenCalled()
+  })
 })
 
 describe('runCopilotAgent — submit_slots tool schema (single-sourced from slotSubmissionSchema)', () => {

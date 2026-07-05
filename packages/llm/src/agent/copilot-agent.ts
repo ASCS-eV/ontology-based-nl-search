@@ -123,7 +123,13 @@ async function createSession(prompt: string): Promise<CopilotSession> {
 
   return c.createSession({
     model: policy.model,
-    ...(policy.reasoningEffort ? { reasoningEffort: policy.reasoningEffort } : {}),
+    // [SDK] The Copilot `session.create` wire schema accepts
+    // `reasoningEffort: "none"` ("none" disables reasoning), but the SDK's
+    // exported `ReasoningEffort` union narrows to low|medium|high|xhigh.
+    // Forward the wire-valid policy value with a cast.
+    ...(policy.reasoningEffort
+      ? { reasoningEffort: policy.reasoningEffort as unknown as 'low' | 'medium' | 'high' }
+      : {}),
     onPermissionRequest: approveAll,
     systemMessage: { mode: 'replace', content: prompt },
     tools: [buildSubmitSlotsTool()],
@@ -183,6 +189,43 @@ export async function getPersistentSession(): Promise<CopilotSession> {
   if (readyPool.length > 0) return readyPool[0]!
   const { prompt } = await getAgentContext()
   return createSession(prompt)
+}
+
+// ─── Prompt-cache priming ────────────────────────────────────────────────────
+
+/**
+ * Throwaway query used only to warm the backend prompt cache. Its content is
+ * irrelevant: the point is to make the backend prefill and cache the identical,
+ * per-request ~100k-token system-prompt prefix once, so the first real query
+ * hits a warm cache instead of paying the cold prefill (measured at ~+10s on a
+ * cold cache).
+ */
+const CACHE_PRIMING_QUERY = 'warmup'
+
+/**
+ * Run one throwaway slot-fill to warm the shared prompt cache. Best-effort:
+ * any failure is swallowed so priming can never affect readiness or requests.
+ * Exported for tests.
+ */
+export async function primeCacheOnce(): Promise<void> {
+  try {
+    await runCopilotAgent(CACHE_PRIMING_QUERY)
+  } catch {
+    // intentional: priming is best-effort and must never surface an error
+  }
+}
+
+/**
+ * Warm the prompt cache ONCE in the background (non-blocking, so warmup
+ * readiness is not delayed). Deliberately does NOT re-prime on a timer: keeping
+ * the cache warm would require a periodic LLM round-trip, i.e. continuous token
+ * cost on an otherwise-idle deployment. Instead, an idle deployment simply pays
+ * the one-time cold-prefill cost on its next real query after the backend cache
+ * TTL (~5 min) expires — identical to the pre-priming behaviour, just warm for
+ * the common non-idle case.
+ */
+export function primeCacheInBackground(): void {
+  void primeCacheOnce()
 }
 
 // ─── Abort Helper ────────────────────────────────────────────────────────────
