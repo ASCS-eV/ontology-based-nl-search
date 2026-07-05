@@ -53,18 +53,20 @@ export interface SearchOptions {
  *    discarded — the agent's own cache only filled on first user request.
  *  - Copilot SDK session: ~6s session-create cost. Only relevant for the
  *    Copilot provider.
- *  - Copilot prompt cache: primed in the background so the first real query
- *    doesn't pay the ~100k-token cold prefill (measured ~+10s), and kept warm
- *    against the backend's ~5-min cache TTL.
+ *  - Copilot prompt cache: primed ONCE in the background so the first real
+ *    query doesn't pay the ~100k-token cold prefill (measured ~+10s). Not kept
+ *    warm on a timer — periodic re-priming would incur continuous LLM token
+ *    cost on an idle deployment; an idle instance just pays the one-time cold
+ *    cost again after the backend cache TTL expires.
  */
 export async function warmupLlmSession(): Promise<void> {
   const config = getConfig()
   await warmupAgentPrompt()
   if (config.AI_PROVIDER === 'copilot') {
     await getPersistentSession()
-    // Non-blocking: warm the server-side prompt cache and keep it warm. Readiness
-    // is not delayed; requests arriving before priming completes just pay the
-    // cold cost once, exactly as before.
+    // Non-blocking one-shot prompt-cache prime. Readiness is not delayed;
+    // requests arriving before priming completes just pay the cold cost once,
+    // exactly as before. No recurring keep-alive (no idle token cost).
     primeCacheInBackground()
   }
 }

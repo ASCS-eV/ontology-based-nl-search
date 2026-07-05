@@ -196,18 +196,11 @@ export async function getPersistentSession(): Promise<CopilotSession> {
 /**
  * Throwaway query used only to warm the backend prompt cache. Its content is
  * irrelevant: the point is to make the backend prefill and cache the identical,
- * per-request ~100k-token system-prompt prefix once, so real queries hit a warm
- * cache instead of paying the cold prefill (measured at ~+10s on a cold cache).
+ * per-request ~100k-token system-prompt prefix once, so the first real query
+ * hits a warm cache instead of paying the cold prefill (measured at ~+10s on a
+ * cold cache).
  */
 const CACHE_PRIMING_QUERY = 'warmup'
-
-/**
- * Re-prime interval. Kept below the backend prompt-cache TTL (~5 min) so an idle
- * deployment never lets the cache go cold between real queries.
- */
-const CACHE_KEEPALIVE_MS = 4 * 60 * 1000
-
-let keepAliveTimer: ReturnType<typeof setInterval> | null = null
 
 /**
  * Run one throwaway slot-fill to warm the shared prompt cache. Best-effort:
@@ -223,25 +216,16 @@ export async function primeCacheOnce(): Promise<void> {
 }
 
 /**
- * Warm the prompt cache in the background (non-blocking, so warmup readiness is
- * not delayed) and start a keep-alive that re-primes before the backend cache
- * TTL expires. Idempotent: the keep-alive timer is started at most once.
+ * Warm the prompt cache ONCE in the background (non-blocking, so warmup
+ * readiness is not delayed). Deliberately does NOT re-prime on a timer: keeping
+ * the cache warm would require a periodic LLM round-trip, i.e. continuous token
+ * cost on an otherwise-idle deployment. Instead, an idle deployment simply pays
+ * the one-time cold-prefill cost on its next real query after the backend cache
+ * TTL (~5 min) expires — identical to the pre-priming behaviour, just warm for
+ * the common non-idle case.
  */
 export function primeCacheInBackground(): void {
   void primeCacheOnce()
-  if (!keepAliveTimer) {
-    keepAliveTimer = setInterval(() => void primeCacheOnce(), CACHE_KEEPALIVE_MS)
-    // Don't let the keep-alive timer keep the process alive on shutdown.
-    keepAliveTimer.unref()
-  }
-}
-
-/** Stop the keep-alive timer. Exported for tests / graceful shutdown. */
-export function stopCacheKeepAlive(): void {
-  if (keepAliveTimer) {
-    clearInterval(keepAliveTimer)
-    keepAliveTimer = null
-  }
 }
 
 // ─── Abort Helper ────────────────────────────────────────────────────────────
