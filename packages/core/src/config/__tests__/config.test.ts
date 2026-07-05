@@ -214,6 +214,29 @@ describe('config', () => {
       expect(getConfig().API_ALLOW_UNAUTHENTICATED).toBe(true)
     })
 
+    /**
+     * Regression: `z.coerce.boolean()` applies `Boolean(str)`, so any
+     * non-empty string — including the literal "false" — coerced to
+     * `true`. That silently disabled this fail-safe: an operator setting
+     * `API_ALLOW_UNAUTHENTICATED=false` (intending to REQUIRE auth) would
+     * instead start an open, unauthenticated, LLM-backed public endpoint.
+     * `z.stringbool()` parses the string's meaning instead of its truthiness.
+     */
+    it('refuses to start in production when API_ALLOW_UNAUTHENTICATED="false" (falsy-string regression)', () => {
+      prodEnv()
+      process.env.API_ALLOW_UNAUTHENTICATED = 'false'
+      resetConfig()
+      expect(() => getConfig()).toThrow(/No API authentication configured in production/)
+    })
+
+    it('starts in production when API_ALLOW_UNAUTHENTICATED="true" and resolves to boolean true', () => {
+      prodEnv()
+      process.env.API_ALLOW_UNAUTHENTICATED = 'true'
+      resetConfig()
+      expect(() => getConfig()).not.toThrow()
+      expect(getConfig().API_ALLOW_UNAUTHENTICATED).toBe(true)
+    })
+
     it('does not require auth outside production (dev/test stay open)', () => {
       process.env.AI_PROVIDER = 'ollama'
       process.env.NODE_ENV = 'development'
@@ -228,6 +251,32 @@ describe('config', () => {
       delete process.env.CORS_ALLOWED_ORIGINS
       resetConfig()
       expect(getConfig().CORS_ALLOWED_ORIGINS).toBe('*')
+    })
+  })
+
+  describe('FEATURE_GRAPHQL_LAYER flag', () => {
+    /**
+     * Regression: `z.coerce.boolean()` applies `Boolean(str)`, so the
+     * literal string "false" coerced to `true` and the flag could never be
+     * turned off via env var. `z.stringbool()` parses the string's meaning
+     * instead of its truthiness.
+     */
+    it('parses "false" as boolean false', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      process.env.FEATURE_GRAPHQL_LAYER = 'false'
+      resetConfig()
+      expect(getConfig().FEATURE_GRAPHQL_LAYER).toBe(false)
+    })
+
+    it('parses "true" as boolean true, and defaults to true when unset', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      process.env.FEATURE_GRAPHQL_LAYER = 'true'
+      resetConfig()
+      expect(getConfig().FEATURE_GRAPHQL_LAYER).toBe(true)
+
+      delete process.env.FEATURE_GRAPHQL_LAYER
+      resetConfig()
+      expect(getConfig().FEATURE_GRAPHQL_LAYER).toBe(true)
     })
   })
 

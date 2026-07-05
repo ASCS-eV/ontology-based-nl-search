@@ -152,7 +152,7 @@ const envSchema = z.object({
    * public deployment can't happen by accident (fail-safe, mirroring the
    * `CORS_ALLOWED_ORIGINS="*"` production guard).
    */
-  API_ALLOW_UNAUTHENTICATED: z.coerce.boolean().default(false),
+  API_ALLOW_UNAUTHENTICATED: z.stringbool().default(false),
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).optional(),
@@ -165,7 +165,7 @@ const envSchema = z.object({
    * `false` to hide the feature entirely (endpoints return 404, SSE
    * omits the `graphql` event, UI hides the editor step).
    */
-  FEATURE_GRAPHQL_LAYER: z.coerce.boolean().default(true),
+  FEATURE_GRAPHQL_LAYER: z.stringbool().default(true),
 
   // Runtime (set by Next.js)
   NEXT_RUNTIME: z.string().optional(),
