@@ -38,11 +38,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
  * Default submodule path segments — mirrors DEFAULT_OMB_SUBMODULE_PATH in
  * packages/ontology/src/sources.ts so the preflight check matches runtime.
  */
-const DEFAULT_SUBMODULE_SEGMENTS = [
-  'submodules',
-  'ontology-management-base',
-  'artifacts',
-]
+const DEFAULT_SUBMODULE_SEGMENTS = ['submodules', 'ontology-management-base', 'artifacts']
 
 function resolveArtifactRoots() {
   const manifestPath = join(root, 'ontology-sources.json')
