@@ -49,13 +49,9 @@ describe('ontology source-tree discovery (sources.ts)', () => {
 
   describe('DEFAULT_OMB_SUBMODULE_PATH', () => {
     it('is the canonical chain shared by all callers', () => {
-      // The five previous duplicates each hard-coded this list; pinning it
+      // The previous duplicates each hard-coded this list; pinning it
       // here catches accidental drift from one canonical source.
       expect(DEFAULT_OMB_SUBMODULE_PATH).toEqual([
-        'submodules',
-        'hd-map-asset-example',
-        'submodules',
-        'sl-5-8-asset-tools',
         'submodules',
         'ontology-management-base',
         'artifacts',
@@ -276,9 +272,7 @@ describe('ontology source-tree discovery (sources.ts)', () => {
      */
     it('throws OntologySourcesError with the submodule remediation when nothing is found', () => {
       expect(() => assertOntologySourcesAvailable()).toThrow(OntologySourcesError)
-      expect(() => assertOntologySourcesAvailable()).toThrow(
-        /git submodule update --init --recursive/
-      )
+      expect(() => assertOntologySourcesAvailable()).toThrow(/git submodule update --init/)
     })
 
     it('does not throw when at least one shape file exists', () => {
@@ -314,7 +308,7 @@ describe('ontology source-tree discovery (sources.ts)', () => {
         totalShapeFiles: 0,
       }
       const msg = formatMissingSourcesError(diag)
-      expect(msg).toMatch(/git submodule update --init --recursive/)
+      expect(msg).toMatch(/git submodule update --init/)
       expect(msg).toMatch(/ontology-sources\.json/)
       expect(msg).toMatch(/ONTOLOGY_ARTIFACTS_PATH/)
     })

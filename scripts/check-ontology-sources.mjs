@@ -38,15 +38,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
  * Default submodule path segments — mirrors DEFAULT_OMB_SUBMODULE_PATH in
  * packages/ontology/src/sources.ts so the preflight check matches runtime.
  */
-const DEFAULT_SUBMODULE_SEGMENTS = [
-  'submodules',
-  'hd-map-asset-example',
-  'submodules',
-  'sl-5-8-asset-tools',
-  'submodules',
-  'ontology-management-base',
-  'artifacts',
-]
+const DEFAULT_SUBMODULE_SEGMENTS = ['submodules', 'ontology-management-base', 'artifacts']
 
 function resolveArtifactRoots() {
   const manifestPath = join(root, 'ontology-sources.json')
@@ -119,7 +111,7 @@ const lines = [
 if (missingSubmoduleRoot) {
   lines.push(
     '     • Initialize the ontology git submodules (most likely cause):',
-    '           git submodule update --init --recursive',
+    '           git submodule update --init',
     '       Fresh clones: git clone --recurse-submodules <url>'
   )
 }

@@ -47,18 +47,7 @@ function getArtifactRoots(): string[] {
     }
   }
 
-  return [
-    join(
-      process.cwd(),
-      'submodules',
-      'hd-map-asset-example',
-      'submodules',
-      'sl-5-8-asset-tools',
-      'submodules',
-      'ontology-management-base',
-      'artifacts'
-    ),
-  ]
+  return [join(process.cwd(), 'submodules', 'ontology-management-base', 'artifacts')]
 }
 
 /**

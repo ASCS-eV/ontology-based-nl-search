@@ -30,10 +30,11 @@ npx vitest run packages/search/src/__tests__/compiler.test.ts  # Single test fil
 
 ### Submodules
 
-Ontology files come from a nested git submodule chain. If ontology data is missing:
+Ontology files come from the [ontology-management-base](https://github.com/ASCS-eV/ontology-management-base)
+(OMB) git submodule at `submodules/ontology-management-base`. If ontology data is missing:
 
 ```bash
-git submodule update --init --recursive
+git submodule update --init
 ```
 
 ## Architecture
