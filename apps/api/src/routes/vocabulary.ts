@@ -5,7 +5,7 @@
  * from the SHACL vocabulary. This powers the GraphQL editor's autocomplete.
  */
 import type { VocabProperty, VocabularyResponse } from '@ontology-search/api-types'
-import { extractVocabulary, getInitializedStore } from '@ontology-search/search'
+import { extractSchemaVocabulary, getInitializedStore } from '@ontology-search/search'
 import { Hono } from 'hono'
 
 import type { AppEnv } from '../types.js'
@@ -19,8 +19,12 @@ vocabularyRoutes.get('/', (c) =>
     errorMessage: 'Failed to retrieve vocabulary',
     handler: async (_c, logger) => {
       logger.info('Vocabulary request started')
+      // Schema-only: the response carries sh:in enumerations and datatypes
+      // exclusively — never instance-derived values — so the eager
+      // instance-value scan the old `extractVocabulary` performed was a
+      // pure cold-cache latency cost with no payload effect (issue #121).
       const store = await getInitializedStore()
-      const vocabulary = await extractVocabulary(store)
+      const vocabulary = await extractSchemaVocabulary(store)
 
       const properties: VocabProperty[] = [
         ...vocabulary.enumProperties.map((p) => ({

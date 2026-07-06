@@ -12,9 +12,9 @@
  */
 
 import {
-  extractVocabulary,
+  extractSchemaVocabulary,
   getInitializedStore,
-  type OntologyVocabulary,
+  type SchemaVocabulary,
   type SparqlStore,
 } from '@ontology-search/search'
 import { getShaclContent } from '@ontology-search/search/shacl-reader'
@@ -24,12 +24,12 @@ import { buildSystemPrompt } from '../prompt-builder.js'
 // ─── Module-private singleton cache ──────────────────────────────────────────
 
 let cachedPrompt: string | null = null
-let cachedVocabulary: OntologyVocabulary | null = null
+let cachedVocabulary: SchemaVocabulary | null = null
 let cachedStore: SparqlStore | null = null
 
 export interface AgentContext {
   prompt: string
-  vocabulary: OntologyVocabulary
+  vocabulary: SchemaVocabulary
   store: SparqlStore
 }
 
@@ -48,9 +48,12 @@ export async function getAgentContext(): Promise<AgentContext> {
   const shaclContent = getShaclContent()
   cachedPrompt = buildSystemPrompt(shaclContent)
 
-  // Extract vocabulary separately — needed for post-LLM slot validation
+  // Extract the schema-only vocabulary — needed for post-LLM slot validation.
+  // Deliberately NOT the eager `extractVocabulary`: instance-value
+  // distributions are fetched lazily by the validators that need them, so
+  // warmup performs zero instance-data queries for vocabulary (issue #121).
   const store = await getInitializedStore()
-  cachedVocabulary = await extractVocabulary(store)
+  cachedVocabulary = await extractSchemaVocabulary(store)
   cachedStore = store
 
   return { prompt: cachedPrompt, vocabulary: cachedVocabulary, store: cachedStore }
@@ -58,8 +61,8 @@ export async function getAgentContext(): Promise<AgentContext> {
 
 /**
  * Pre-populate the agent context during startup warmup so the first user
- * query doesn't pay the SHACL-read + buildSystemPrompt + extractVocabulary
- * cost (tens of seconds on a cold start).
+ * query doesn't pay the SHACL-read + buildSystemPrompt +
+ * extractSchemaVocabulary cost (tens of seconds on a cold start).
  *
  * No-op when the cache is already populated.
  */

@@ -12,7 +12,11 @@
 import { validateRangesAgainstShacl, validateSlotsAgainstShacl } from '@ontology-search/llm'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { SearchSlots } from '@ontology-search/search'
-import { extractVocabulary, getInitializedStore } from '@ontology-search/search'
+import {
+  extractSchemaVocabulary,
+  getInitializedStore,
+  getInstanceValues,
+} from '@ontology-search/search'
 
 /**
  * Validate search slots against SHACL constraints.
@@ -21,9 +25,13 @@ import { extractVocabulary, getInitializedStore } from '@ontology-search/search'
 export async function validateSlots(slots: SearchSlots): Promise<SearchSlots> {
   const shacl = await ShaclValidator.fromWorkspace()
   const store = await getInitializedStore()
-  const vocabulary = await extractVocabulary(store)
+  // Schema-only vocabulary; observed instance values for gap suggestions are
+  // fetched lazily — only when a violation needs them (issue #121).
+  const vocabulary = await extractSchemaVocabulary(store)
 
-  const result = await validateSlotsAgainstShacl(slots.filters ?? {}, shacl, vocabulary)
+  const result = await validateSlotsAgainstShacl(slots.filters ?? {}, shacl, vocabulary, (iris) =>
+    getInstanceValues(store, iris)
+  )
 
   // Drop ranges with property names not in the schema
   const rangeResult = validateRangesAgainstShacl(slots.ranges ?? {}, shacl)

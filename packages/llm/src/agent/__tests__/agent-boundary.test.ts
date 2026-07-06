@@ -58,9 +58,10 @@ vi.mock('../../provider.js', () => ({
 // real ontology workspace. Vocabulary shape is irrelevant — these tests
 // don't run `runSlotPipeline` for real.
 vi.mock('@ontology-search/search', () => ({
-  extractVocabulary: vi
+  extractSchemaVocabulary: vi
     .fn()
     .mockResolvedValue({ properties: new Map(), valueToProperty: new Map(), domains: [] }),
+  getInstanceValues: vi.fn().mockResolvedValue(new Map()),
   getInitializedStore: vi.fn().mockResolvedValue({}),
   getPrimaryDomain: vi.fn().mockResolvedValue('hdmap'),
 }))

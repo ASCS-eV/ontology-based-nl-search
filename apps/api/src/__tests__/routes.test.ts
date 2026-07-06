@@ -28,7 +28,8 @@ vi.mock('@ontology-search/search', () => ({
   getAssetMetadata: vi.fn(),
   getDomainMetadataAggregate: vi.fn(),
   slotsToGraphQL: () => 'query { }',
-  extractVocabulary: vi.fn(),
+  extractSchemaVocabulary: vi.fn(),
+  getInstanceValues: vi.fn().mockResolvedValue(new Map()),
 }))
 
 vi.mock('@ontology-search/ontology/domain-registry', () => ({
@@ -497,9 +498,9 @@ describe('GET /vocabulary', () => {
   // enum/numeric properties (keyed by `localName`) into the api-types
   // `VocabularyResponse` shape (`name` = localName) that the web editor consumes.
   it('emits a conforming VocabularyResponse, mapping localName -> name', async () => {
-    const { extractVocabulary, getInitializedStore } = await import('@ontology-search/search')
+    const { extractSchemaVocabulary, getInitializedStore } = await import('@ontology-search/search')
     vi.mocked(getInitializedStore).mockResolvedValue({} as never)
-    vi.mocked(extractVocabulary).mockResolvedValue({
+    vi.mocked(extractSchemaVocabulary).mockResolvedValue({
       domains: ['hdmap'],
       enumProperties: [
         {
@@ -523,7 +524,6 @@ describe('GET /vocabulary', () => {
       ],
       conceptSchemes: new Map(),
       classHierarchy: [],
-      instanceValues: new Map(),
     } as never)
 
     const res = await app.request('/vocabulary')

@@ -54,7 +54,8 @@ vi.mock('@github/copilot-sdk', () => ({
 // Keep the prompt/vocab/store setup off the real ontology workspace.
 vi.mock('@ontology-search/search', () => ({
   getInitializedStore: vi.fn().mockResolvedValue({}),
-  extractVocabulary: vi.fn().mockReturnValue({ domains: [] }),
+  extractSchemaVocabulary: vi.fn().mockReturnValue({ domains: [] }),
+  getInstanceValues: vi.fn().mockResolvedValue(new Map()),
   SCHEMA_GRAPH: 'urn:graph:schema',
   getPrimaryDomain: vi.fn().mockResolvedValue('hdmap'),
 }))

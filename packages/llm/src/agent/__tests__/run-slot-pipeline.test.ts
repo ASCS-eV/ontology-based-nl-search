@@ -15,16 +15,18 @@
  */
 
 import { Stopwatch } from '@ontology-search/core/logging'
-import { extractVocabulary, getInitializedStore } from '@ontology-search/search'
+import { extractSchemaVocabulary, getInitializedStore } from '@ontology-search/search'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { runSlotPipeline, type SlotPipelineSubmission } from '../run-slot-pipeline.js'
 
-let vocabulary: Awaited<ReturnType<typeof extractVocabulary>>
+let vocabulary: Awaited<ReturnType<typeof extractSchemaVocabulary>>
 
 beforeAll(async () => {
   const store = await getInitializedStore()
-  vocabulary = await extractVocabulary(store)
+  // Schema-only, matching what the agents now cache (issue #121) — the
+  // pipeline fetches instance values lazily via its own store handle.
+  vocabulary = await extractSchemaVocabulary(store)
 }, 120_000)
 
 function submission(overrides: Partial<SlotPipelineSubmission['slots']>): SlotPipelineSubmission {

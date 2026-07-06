@@ -63,7 +63,8 @@ vi.mock('../agent-context.js', () => ({
 
 vi.mock('@ontology-search/search', () => ({
   getInitializedStore: vi.fn().mockResolvedValue({}),
-  extractVocabulary: vi.fn().mockReturnValue({ domains: [] }),
+  extractSchemaVocabulary: vi.fn().mockReturnValue({ domains: [] }),
+  getInstanceValues: vi.fn().mockResolvedValue(new Map()),
   SCHEMA_GRAPH: 'urn:graph:schema',
   getPrimaryDomain: vi.fn().mockResolvedValue('hdmap'),
 }))

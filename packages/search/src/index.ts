@@ -56,8 +56,18 @@ export type {
   QueryInterpretation,
   SearchResponse,
 } from './types.js'
-export type { EnumProperty, NumericProperty, OntologyVocabulary } from './vocabulary-extractor.js'
-export { extractVocabulary, resetVocabulary } from './vocabulary-extractor.js'
+export type {
+  EnumProperty,
+  NumericProperty,
+  OntologyVocabulary,
+  SchemaVocabulary,
+} from './vocabulary-extractor.js'
+export {
+  extractSchemaVocabulary,
+  extractVocabulary,
+  getInstanceValues,
+  resetVocabulary,
+} from './vocabulary-extractor.js'
 // Slot↔GraphQL codec re-exported for back-compat: it moved to its own package
 // `@ontology-search/graphql-ir` (ADR 0003, decomposition step 3). Consumers may
 // import from there directly; the root `@ontology-search/search` surface is

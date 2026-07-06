@@ -50,8 +50,15 @@ export interface NumericProperty {
   domain: string
 }
 
-/** Complete ontology vocabulary extracted from the schema graph */
-export interface OntologyVocabulary {
+/**
+ * Schema-only ontology vocabulary — everything derivable without touching
+ * instance data (asset triples in the default graph).
+ *
+ * SKOS concept schemes are included: schemes and their concept members are
+ * declared vocabulary (schema-side), not asset data, even though the
+ * discovery query is deliberately graph-agnostic (see `querySkosConcepts`).
+ */
+export interface SchemaVocabulary {
   /** Properties with sh:in enumerations (filterable) */
   enumProperties: EnumProperty[]
   /** Numeric properties (for range queries) */
@@ -68,6 +75,16 @@ export interface OntologyVocabulary {
    * filter values to all subclasses generically.
    */
   classHierarchy: SubClassEdge[]
+}
+
+/**
+ * Schema vocabulary plus the eager instance-value distribution.
+ *
+ * @deprecated Compose `extractSchemaVocabulary` with `getInstanceValues`
+ * instead — the eager composition forces an instance-data scan even for
+ * callers that never read `instanceValues` (issue #121).
+ */
+export interface OntologyVocabulary extends SchemaVocabulary {
   /**
    * Map from property IRI to distinct literal values observed in instance
    * data. Powers data-driven gap suggestions for any property — no
@@ -76,23 +93,31 @@ export interface OntologyVocabulary {
   instanceValues: Map<string, string[]>
 }
 
-/** Cached singleton */
-let cachedVocabulary: OntologyVocabulary | null = null
+/** Cached singleton (schema-only — instance values are never cached here) */
+let cachedSchemaVocabulary: SchemaVocabulary | null = null
 
 /**
- * Extract the full ontology vocabulary from the store.
+ * Extract the schema-only ontology vocabulary from the store.
  *
  * In parallel:
  *  - sh:in enumerations and numeric properties (from the schema graph),
- *  - SKOS concept schemes (from any loaded graph — generic),
- *  - rdfs:subClassOf edges (for compiler hierarchy expansion),
- *  - distinct instance literal values per property (for gap suggestions).
+ *  - SKOS concept schemes (declared vocabulary — generic),
+ *  - rdfs:subClassOf edges (for compiler hierarchy expansion).
+ *
+ * Issues NO instance-data value scan: per-property literal distributions are
+ * fetched lazily via `getInstanceValues` by the callers that need them.
+ * This keeps warmup and the interpretation path data-independent, so gap
+ * detection stays honest (schema properties with zero instances still
+ * appear) and warmup does not grow with dataset size.
  *
  * No part of this code knows what any specific property means; every
  * discovery is a SPARQL query over standard RDF/SHACL/SKOS vocabulary.
+ *
+ * @see https://www.w3.org/TR/shacl/#InConstraintComponent — [SHACL] §4.6.1 sh:in
+ * @see https://www.w3.org/TR/shacl/#DatatypeConstraintComponent — [SHACL] §4.1.1 sh:datatype
  */
-export async function extractVocabulary(store: SparqlStore): Promise<OntologyVocabulary> {
-  if (cachedVocabulary) return cachedVocabulary
+export async function extractSchemaVocabulary(store: SparqlStore): Promise<SchemaVocabulary> {
+  if (cachedSchemaVocabulary) return cachedSchemaVocabulary
 
   // Attribute every property to its owning domain(s) by SHACL shape membership —
   // the SAME discovered property paths the compiler resolves filters against
@@ -137,33 +162,73 @@ export async function extractVocabulary(store: SparqlStore): Promise<OntologyVoc
     conceptSchemes.set(c.scheme, existing)
   }
 
-  // Eager instance-value distribution for every known property IRI — this
-  // is the data source for Phase 4 gap suggestions. Restricted to known
-  // properties so the query stays bounded on large stores.
-  // Filter to valid IRIs only — SHACL property path sequences (blank nodes)
-  // may slip through as Skolemized hex strings that aren't valid in SPARQL.
-  const knownPropertyIris = [
-    ...enumProperties.map((p) => p.iri),
-    ...numericProperties.map((p) => p.iri),
-  ].filter(isIri)
-  const distributions = await queryInstanceValueDistribution(store, knownPropertyIris)
-  const instanceValues = new Map<string, string[]>()
-  for (const d of distributions) instanceValues.set(d.property, d.values)
-
-  cachedVocabulary = {
+  cachedSchemaVocabulary = {
     enumProperties,
     numericProperties,
     domains,
     conceptSchemes,
     classHierarchy: subClassEdges,
-    instanceValues,
   }
-  return cachedVocabulary
+  return cachedSchemaVocabulary
+}
+
+/**
+ * Distinct literal values observed in the instance data, per property IRI —
+ * lazy, on demand. This is the data source for data-driven gap suggestions;
+ * it is intentionally NOT part of `extractSchemaVocabulary` so nothing on
+ * the warmup/interpretation path pre-analyzes instance data.
+ *
+ * `propertyIris` restricts the scan; when omitted, the schema vocabulary's
+ * known property IRIs (enum + numeric) are used — the same restriction the
+ * old eager path applied. Invalid IRIs are filtered out first: SHACL property
+ * path sequences (blank nodes) may surface as Skolemized hex strings that are
+ * not valid in SPARQL. With an empty effective set this returns an empty map
+ * and issues no query — never an unbounded literal scan.
+ *
+ * Results are not cached here: the store's LRU query cache already dedupes
+ * repeated identical scans, and live data must stay live (constraint: data
+ * gaps are found by querying, not by a stale pre-analysis).
+ *
+ * @see https://www.w3.org/TR/sparql11-query/#inline-data — [SPARQL11] §10.2 VALUES
+ */
+export async function getInstanceValues(
+  store: SparqlStore,
+  propertyIris?: string[]
+): Promise<Map<string, string[]>> {
+  let source = propertyIris
+  if (!source) {
+    const schema = await extractSchemaVocabulary(store)
+    source = [
+      ...schema.enumProperties.map((p) => p.iri),
+      ...schema.numericProperties.map((p) => p.iri),
+    ]
+  }
+  const validIris = source.filter(isIri)
+  if (validIris.length === 0) return new Map()
+
+  const distributions = await queryInstanceValueDistribution(store, validIris)
+  const instanceValues = new Map<string, string[]>()
+  for (const d of distributions) instanceValues.set(d.property, d.values)
+  return instanceValues
+}
+
+/**
+ * Extract the full ontology vocabulary — schema vocabulary plus the eager
+ * instance-value distribution.
+ *
+ * @deprecated Back-compat composition only (issue #121). Callers that don't
+ * read `instanceValues` should use `extractSchemaVocabulary`; callers that do
+ * should fetch values lazily via `getInstanceValues`.
+ */
+export async function extractVocabulary(store: SparqlStore): Promise<OntologyVocabulary> {
+  const schema = await extractSchemaVocabulary(store)
+  const instanceValues = await getInstanceValues(store)
+  return { ...schema, instanceValues }
 }
 
 /** Reset cached vocabulary (for testing) */
 export function resetVocabulary(): void {
-  cachedVocabulary = null
+  cachedSchemaVocabulary = null
 }
 
 /**
