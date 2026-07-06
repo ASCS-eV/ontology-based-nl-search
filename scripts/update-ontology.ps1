@@ -3,8 +3,8 @@
 .SYNOPSIS
   Updates the ontology-management-base submodule to the latest main.
 .DESCRIPTION
-  Navigates the nested submodule chain, fetches and checks out latest
-  origin/main for OMB, then returns to the project root.
+  Fetches and checks out latest origin/main for the OMB submodule, then
+  returns to the project root.
   Run after OMB merges to keep ontology definitions current.
 .EXAMPLE
   ./scripts/update-ontology.ps1
@@ -16,11 +16,11 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if (-not $ProjectRoot) { $ProjectRoot = Get-Location }
 
-$OmbRelativePath = "submodules/hd-map-asset-example/submodules/sl-5-8-asset-tools/submodules/ontology-management-base"
+$OmbRelativePath = "submodules/ontology-management-base"
 $OmbPath = Join-Path $ProjectRoot $OmbRelativePath
 
 if (-not (Test-Path $OmbPath)) {
-    Write-Error "OMB submodule not found at: $OmbPath`nRun 'git submodule update --init --recursive' first."
+    Write-Error "OMB submodule not found at: $OmbPath`nRun 'git submodule update --init' first."
     exit 1
 }
 

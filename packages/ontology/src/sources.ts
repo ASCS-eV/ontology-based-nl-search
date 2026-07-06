@@ -28,19 +28,16 @@ import { getProjectRoot } from './paths.js'
 export { OntologySourcesError }
 
 /**
- * Path segments of the nested git-submodule chain that holds the
- * upstream ontology artifacts (the `artifacts/` directory inside
+ * Path segments of the git-submodule directory that holds the upstream
+ * ontology artifacts (the `artifacts/` directory inside
  * `ontology-management-base`). Used as the last-resort fallback when
  * `ontology-sources.json` and `ONTOLOGY_ARTIFACTS_PATH` are absent.
  *
- * The five duplicate implementations each hard-coded this chain; a
- * future rename of any submodule had to be made in five places.
+ * OMB is a direct submodule of this repo, so the chain is shallow. The
+ * duplicate implementations each hard-coded this path; a future rename of
+ * the submodule had to be made in several places.
  */
 export const DEFAULT_OMB_SUBMODULE_PATH = [
-  'submodules',
-  'hd-map-asset-example',
-  'submodules',
-  'sl-5-8-asset-tools',
   'submodules',
   'ontology-management-base',
   'artifacts',
@@ -244,8 +241,8 @@ export function diagnoseOntologySources(): OntologySourcesDiagnostics {
  *
  * The remediation is data-driven, not ontology-specific: when a missing root
  * lives under a `submodules/` segment the most likely cause is an
- * un-initialized git submodule, so we surface the recursive-init command;
- * otherwise we point at the two configuration knobs (`ontology-sources.json`
+ * un-initialized git submodule, so we surface the init command; otherwise we
+ * point at the two configuration knobs (`ontology-sources.json`
  * and `ONTOLOGY_ARTIFACTS_PATH`).
  */
 export function formatMissingSourcesError(diag: OntologySourcesDiagnostics): string {
@@ -268,7 +265,7 @@ export function formatMissingSourcesError(diag: OntologySourcesDiagnostics): str
   if (missingSubmoduleRoot) {
     lines.push(
       '  • The ontology ships as a git submodule that is not initialized. Run:',
-      '        git submodule update --init --recursive',
+      '        git submodule update --init',
       '    then restart. (Fresh clones: `git clone --recurse-submodules <url>`.)'
     )
   }

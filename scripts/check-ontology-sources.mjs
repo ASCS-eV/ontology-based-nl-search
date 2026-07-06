@@ -40,10 +40,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
  */
 const DEFAULT_SUBMODULE_SEGMENTS = [
   'submodules',
-  'hd-map-asset-example',
-  'submodules',
-  'sl-5-8-asset-tools',
-  'submodules',
   'ontology-management-base',
   'artifacts',
 ]
@@ -119,7 +115,7 @@ const lines = [
 if (missingSubmoduleRoot) {
   lines.push(
     '     • Initialize the ontology git submodules (most likely cause):',
-    '           git submodule update --init --recursive',
+    '           git submodule update --init',
     '       Fresh clones: git clone --recurse-submodules <url>'
   )
 }
