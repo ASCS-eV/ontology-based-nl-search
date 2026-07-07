@@ -51,23 +51,23 @@ function collectDomains(node: TraceabilityNode, into: Set<string> = new Set()): 
 async function findAssetWithMultiClassLineage(): Promise<string | null> {
   const [store, index] = await Promise.all([getInitializedStore(), getReferenceIndex()])
   for (const [, edges] of index) {
-    const crossDomainEdge = edges.find((e) => e.targetDomain !== e.sourceDomain)
-    if (!crossDomainEdge) continue
-    // Not every instance of the source class actually carries the edge —
-    // the index records class-level signatures aggregated from
-    // observations, so a domain may have, say, 50 of 53 instances wired.
-    // Pick an instance that *concretely* has the path to the target.
-    const result = await store.query(`
-      SELECT DISTINCT ?asset WHERE {
-        ?asset a <${crossDomainEdge.sourceClass}> .
-        ?asset ${crossDomainEdge.predicatePath.map((p) => `<${p}>`).join('/')} ?ref .
-        ?ref a <${crossDomainEdge.targetClass}> .
-        FILTER(isIRI(?asset))
-      }
-      LIMIT 1
-    `)
-    const iri = result.results.bindings[0]?.['asset']?.value
-    if (iri) return iri
+    for (const edge of edges) {
+      if (edge.targetDomain === edge.sourceDomain) continue
+      // The index records DECLARED signatures — most are not populated by
+      // the sample data (that gap is a feature). Probe each candidate and
+      // pick an instance that concretely has the path to the target.
+      const result = await store.query(`
+        SELECT DISTINCT ?asset WHERE {
+          ?asset a <${edge.sourceClass}> .
+          ?asset ${edge.predicatePath.map((p) => `<${p}>`).join('/')} ?ref .
+          ?ref a <${edge.targetClass}> .
+          FILTER(isIRI(?asset))
+        }
+        LIMIT 1
+      `)
+      const iri = result.results.bindings[0]?.['asset']?.value
+      if (iri) return iri
+    }
   }
   return null
 }

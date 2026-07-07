@@ -29,35 +29,7 @@ import type { TraceabilityStep } from './slots.js'
  * a literal predicate chain.
  */
 /**
- * Pick a data-driven reference edge from `parentDomain` to `childDomain`,
- * preferring the shortest predicate path (fewer hops → cheaper JOIN) and
- * breaking ties by sample count (more data backing → more likely the
- * intended link). Returns null when the index has observed no
- * connection between the two domains.
- */
-export function pickDataReferenceEdge(
-  index: ReferenceIndex,
-  parentDomain: string,
-  childDomain: string
-): DataReferenceEdge | null {
-  const edges = index.get(parentDomain)
-  if (!edges) return null
-  let best: DataReferenceEdge | null = null
-  for (const e of edges) {
-    if (e.targetDomain !== childDomain) continue
-    if (
-      !best ||
-      e.predicatePath.length < best.predicatePath.length ||
-      (e.predicatePath.length === best.predicatePath.length && e.sampleCount > best.sampleCount)
-    ) {
-      best = e
-    }
-  }
-  return best
-}
-
-/**
- * Fallback for {@link pickDataReferenceEdge}: when no exact target match
+ * Fallback for `pickLiveReferenceEdge`: when no exact target match
  * exists, pick any sibling edge from the same parent domain. The reference
  * IRI edge is generic — the discovered chain
  * can point to any asset type. If the data index observed the parent

@@ -39,7 +39,6 @@ export { assembleQuery } from './compiler-helpers-query.js'
 export {
   emitDataReferencePath,
   emitReferenceChainTriples,
-  pickDataReferenceEdge,
   pickReferenceChain,
   pickSiblingDataEdge,
 } from './compiler-helpers-references.js'

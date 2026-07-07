@@ -28,12 +28,12 @@ import { buildDomainPatterns } from './compiler-domain-patterns.js'
 import {
   emitDataReferencePath,
   emitReferenceChainTriples,
-  pickDataReferenceEdge,
   pickReferenceChain,
   pickSiblingDataEdge,
 } from './compiler-helpers.js'
 import { type CompilerVocab } from './compiler-vocab.js'
-import { getReferenceIndex } from './reference-index.js'
+import { getInitializedStore } from './init.js'
+import { getReferenceIndex, pickLiveReferenceEdge } from './reference-index.js'
 import type { ReferenceFilter, TraceabilityPlan, TraceabilityStep } from './slots.js'
 
 const log = createComponentLogger('compiler')
@@ -190,10 +190,14 @@ export async function emitReferenceNode(
       traceSteps
     )
   } else {
-    // Load the data-driven reference index lazily: only queries with a
+    // Load the declared reference index lazily: only queries with a
     // references slot AND no SHACL chain consult it (cached / pre-warmed).
+    // The concrete edge is picked LIVE — declared candidates are probed
+    // against the data shortest-first, so an unpopulated short spelling
+    // never shadows the chain instances actually use.
     const referenceIndex = await getReferenceIndex()
-    const dataPath = pickDataReferenceEdge(referenceIndex, parentDomain, ref.domain)
+    const store = await getInitializedStore()
+    const dataPath = await pickLiveReferenceEdge(store, referenceIndex, parentDomain, ref.domain)
     if (dataPath) {
       emitDataReferencePath(
         dataPath,
@@ -206,7 +210,7 @@ export async function emitReferenceNode(
         dataPrefix
       )
       patterns.push(`${refVar} a ${refDomain.targetClass} .`)
-      log.info('slots.references: emitting JOIN from data-driven reference index', {
+      log.info('slots.references: emitting JOIN from the declared reference index', {
         parent: parentDomain,
         child: ref.domain,
         hops: dataPath.predicatePath.length,
