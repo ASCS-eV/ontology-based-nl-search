@@ -242,3 +242,54 @@ describe('repo-policy: C3 — no inline W3C namespace IRI outside core/rdf/prefi
     ).toEqual([])
   })
 })
+
+describe('repo-policy: C4 — the retrieval surface names no loaded ontology domain', () => {
+  /**
+   * The schema-retrieval surface must stay absolutely ontology-agnostic:
+   * everything it knows comes from the loaded artifacts at runtime. The
+   * forbidden-token list is DERIVED from the artifact tree (domain
+   * directory names), so the gate updates itself when the ontology grows
+   * and hardcodes no ontology identifier of its own.
+   *
+   * Several real domain names are ordinary English words (`description`,
+   * `example`, `general`), so a raw word grep would drown in prose. The
+   * gate targets the two vectors hardcoding actually takes in code:
+   * a string literal that IS the domain name (`'hdmap'`), and an IRI path
+   * segment (`/hdmap/v`). Comment lines are skipped, like C3.
+   */
+  const RETRIEVAL_SURFACE_DIRS = [
+    join(ROOT, 'packages/search/src/schema-index'),
+    join(ROOT, 'packages/llm/src/prompt'),
+    join(ROOT, 'packages/llm/src/agent'),
+  ]
+
+  it('no schema-index or prompt/agent source hardcodes a loaded domain identifier', () => {
+    const artifactsRoot = join(ROOT, 'submodules/ontology-management-base/artifacts')
+    if (!existsSync(artifactsRoot)) return // submodule not initialized — nothing to derive
+
+    const domainNames = readdirSync(artifactsRoot).filter(
+      (name) => name.length >= 2 && statSync(join(artifactsRoot, name)).isDirectory()
+    )
+    const patterns = domainNames.map(
+      (name) => [name, new RegExp(`(['"\`]${name}['"\`]|/${name}/v)`, 'i')] as const
+    )
+
+    const violations: string[] = []
+    for (const file of FILES) {
+      if (!RETRIEVAL_SURFACE_DIRS.some((dir) => file.path.startsWith(dir))) continue
+      for (let i = 0; i < file.lines.length; i++) {
+        const line = file.lines[i]!
+        if (/^\s*(\*|\/\/)/.test(line)) continue
+        for (const [name, pattern] of patterns) {
+          if (pattern.test(line)) {
+            violations.push(`${file.path}:${i + 1} → hardcodes "${name}": ${line.trim()}`)
+          }
+        }
+      }
+    }
+    expect(
+      violations,
+      `Ontology-specific identifiers in the retrieval surface (discover them from the schema graph instead):\n${violations.join('\n')}`
+    ).toEqual([])
+  })
+})

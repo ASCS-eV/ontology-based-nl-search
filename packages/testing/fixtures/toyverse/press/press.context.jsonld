@@ -1,0 +1,8 @@
+{
+  "@context": {
+    "press": "https://example.org/toyverse/press/v1/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "publisherCountry": { "@id": "press:publisherCountry" },
+    "founded": { "@id": "press:foundedYear", "@type": "xsd:integer" }
+  }
+}

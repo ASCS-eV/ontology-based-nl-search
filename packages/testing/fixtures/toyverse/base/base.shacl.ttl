@@ -1,0 +1,13 @@
+@prefix base: <https://example.org/toyverse/base/v1/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+base:ItemShape a sh:NodeShape ;
+    sh:property
+        [   sh:name "title"@en ;
+            sh:description "Human-readable title of the catalogued item."@en ;
+            sh:datatype xsd:string ;
+            sh:maxCount 1 ;
+            sh:path base:title
+        ] ;
+    sh:targetClass base:Item .

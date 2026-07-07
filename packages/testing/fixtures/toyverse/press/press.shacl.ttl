@@ -1,0 +1,20 @@
+@prefix press: <https://example.org/toyverse/press/v1/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+press:PublisherShape a sh:NodeShape ;
+    sh:property
+        [   sh:name "publisher country"@en ;
+            sh:description "Country the publishing house operates from."@en ;
+            sh:datatype xsd:string ;
+            sh:in ( "DE" "FR" "US" ) ;
+            sh:maxCount 1 ;
+            sh:path press:publisherCountry
+        ] ,
+        [   sh:name "founded year"@en ;
+            sh:description "Year the publishing house was founded."@en ;
+            sh:datatype xsd:integer ;
+            sh:maxCount 1 ;
+            sh:path press:foundedYear
+        ] ;
+    sh:targetClass press:Publisher .

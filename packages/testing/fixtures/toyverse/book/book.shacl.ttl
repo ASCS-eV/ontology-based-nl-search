@@ -1,0 +1,28 @@
+@prefix book: <https://example.org/toyverse/book/v1/> .
+@prefix press: <https://example.org/toyverse/press/v1/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+book:BookShape a sh:NodeShape ;
+    sh:property
+        [   sh:name "genre"@en ;
+            sh:description "Literary genre of the book."@en ;
+            sh:datatype xsd:string ;
+            sh:in ( "fantasy" "scifi" "poetry" ) ;
+            sh:maxCount 1 ;
+            sh:path book:genre
+        ] ,
+        [   sh:name "page count"@en ;
+            sh:description "Total number of printed pages."@en ;
+            sh:datatype xsd:integer ;
+            sh:minInclusive 1 ;
+            sh:maxCount 1 ;
+            sh:path book:pageCount
+        ] ,
+        [   sh:name "publisher"@en ;
+            sh:description "Publishing house that released this edition."@en ;
+            sh:class press:Publisher ;
+            sh:maxCount 1 ;
+            sh:path book:hasPublisher
+        ] ;
+    sh:targetClass book:Book .
