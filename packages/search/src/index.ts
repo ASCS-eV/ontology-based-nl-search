@@ -34,8 +34,14 @@ export {
   readContextTermsForDomain,
   resetContextTerms,
 } from './schema-index/context-reader.js'
+export type { EmbeddingProvider } from './schema-index/embedding.js'
+export { lexicalOnlyProvider } from './schema-index/embedding.js'
 export type { FragmentSelection, ShaclFragment } from './schema-index/fragment-extractor.js'
 export { extractShaclFragments, renderDistilledCards } from './schema-index/fragment-extractor.js'
+export type { RankOptions, ScoredCard, ScoredDomain } from './schema-index/ranking.js'
+export { lexicalScore, rankCards, rankDomains, tokenize } from './schema-index/ranking.js'
+export type { RetrievalOptions, RetrievedSchema } from './schema-index/retrieval.js'
+export { retrieveRelevantSchema, warmupRetrievalIndex } from './schema-index/retrieval.js'
 export type { DomainCard, TermCard, TermConstraints, TermIndex } from './schema-index/term-index.js'
 export { buildTermIndex, resetTermIndex } from './schema-index/term-index.js'
 export { SCHEMA_GRAPH } from './schema-loader.js'

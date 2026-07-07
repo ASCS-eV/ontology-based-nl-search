@@ -67,7 +67,8 @@ interface ShapeAccumulator {
  */
 export async function extractShaclFragments(
   store: SparqlStore,
-  selection: FragmentSelection
+  selection: FragmentSelection,
+  options: { signal?: AbortSignal } = {}
 ): Promise<ShaclFragment[]> {
   const targetClasses = selection.targetClasses ?? []
   const propertyIris = selection.propertyIris ?? []
@@ -80,7 +81,8 @@ export async function extractShaclFragments(
   const pathValues =
     propertyIris.length > 0 ? `VALUES ?path { ${propertyIris.map((p) => `<${p}>`).join(' ')} }` : ''
 
-  const constraintRows = await store.query(`
+  const constraintRows = await store.query(
+    `
     ${sparqlPrefixes('sh')}
 
     SELECT ?shape ?targetClass ?ps ?path ?constraint ?value
@@ -96,9 +98,12 @@ export async function extractShaclFragments(
       FILTER(?constraint != sh:in && ?constraint != sh:property)
       FILTER(!isBlank(?value))
     }
-  `)
+  `,
+    { signal: options.signal }
+  )
 
-  const inRows = await store.query(`
+  const inRows = await store.query(
+    `
     ${sparqlPrefixes('sh', 'rdf')}
 
     SELECT ?shape ?targetClass ?ps ?path ?value
@@ -114,7 +119,9 @@ export async function extractShaclFragments(
       ?list rdf:rest*/rdf:first ?value .
     }
     ORDER BY ?ps ?value
-  `)
+  `,
+    { signal: options.signal }
+  )
 
   const registry = await buildDomainRegistry()
   const namespaces = collectNamespaces(registry.allPrefixes())
