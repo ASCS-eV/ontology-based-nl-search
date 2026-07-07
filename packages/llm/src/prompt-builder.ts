@@ -60,8 +60,11 @@ export function buildSystemPrompt(shaclContent: ShaclDomainContent[]): string {
  * with use `"Ontology definition for X"@en` as the label, which is not a
  * display string. Mechanical kebab→Title conversion gives sensible
  * results for any well-named domain and stays ontology-agnostic.
+ *
+ * Exported so the retrieval-mode composer emits the same section headers
+ * as full mode (one formatting rule, no drift).
  */
-function formatDomainHeader(domain: string): string {
+export function formatDomainHeader(domain: string): string {
   return domain
     .split(/[-_]/)
     .filter((part) => part.length > 0)
