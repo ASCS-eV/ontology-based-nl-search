@@ -34,6 +34,8 @@ export {
   readContextTermsForDomain,
   resetContextTerms,
 } from './schema-index/context-reader.js'
+export type { DomainCard, TermCard, TermConstraints, TermIndex } from './schema-index/term-index.js'
+export { buildTermIndex, resetTermIndex } from './schema-index/term-index.js'
 export { SCHEMA_GRAPH } from './schema-loader.js'
 export type {
   NlSearchOptions,
