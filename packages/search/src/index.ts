@@ -27,6 +27,13 @@ export type { LeafKind, PathStep, PropertyPath, ReferenceChain } from './propert
 export { buildPropertyPaths, buildReferenceChains } from './property-paths.js'
 export type { DataReferenceEdge, ReferenceIndex } from './reference-index.js'
 export { getReferenceIndex, resetReferenceIndex } from './reference-index.js'
+export type { ContextTerm } from './schema-index/context-reader.js'
+export {
+  parseContextTerms,
+  readContextTerms,
+  readContextTermsForDomain,
+  resetContextTerms,
+} from './schema-index/context-reader.js'
 export { SCHEMA_GRAPH } from './schema-loader.js'
 export type {
   NlSearchOptions,
