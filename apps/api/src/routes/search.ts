@@ -9,7 +9,7 @@ import {
 } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import {
-  extractVocabulary,
+  extractSchemaVocabulary,
   getInitializedStore,
   normalizeReferences,
   parseGraphQLToSlots,
@@ -37,7 +37,9 @@ async function getEnumPropertyNames(): Promise<ReadonlySet<string>> {
   if (enumPropertyNamesCache) return enumPropertyNamesCache
   try {
     const store = await getInitializedStore()
-    const vocab = await extractVocabulary(store)
+    // Schema-only: this cache reads enum property names exclusively, so the
+    // eager instance-value scan `extractVocabulary` ran was wasted (issue #121).
+    const vocab = await extractSchemaVocabulary(store)
     const members = enumPropertyMembers(
       vocab.enumProperties.map((p) => ({ name: p.localName, allowedValues: p.allowedValues }))
     )

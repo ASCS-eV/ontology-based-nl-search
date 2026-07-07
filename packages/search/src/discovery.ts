@@ -22,5 +22,15 @@ export {
 export type { LeafKind, PathStep, PropertyPath, ReferenceChain } from './property-paths.js'
 export { buildPropertyPaths, buildReferenceChains } from './property-paths.js'
 export { SCHEMA_GRAPH } from './schema-loader.js'
-export type { EnumProperty, NumericProperty, OntologyVocabulary } from './vocabulary-extractor.js'
-export { extractVocabulary, resetVocabulary } from './vocabulary-extractor.js'
+export type {
+  EnumProperty,
+  NumericProperty,
+  OntologyVocabulary,
+  SchemaVocabulary,
+} from './vocabulary-extractor.js'
+export {
+  extractSchemaVocabulary,
+  extractVocabulary,
+  getInstanceValues,
+  resetVocabulary,
+} from './vocabulary-extractor.js'

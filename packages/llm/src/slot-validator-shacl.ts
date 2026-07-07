@@ -3,10 +3,24 @@
  * violate a declared SHACL constraint (and unknown property keys), surfacing
  * each as a gap with nearest-vocabulary suggestions. Depends on the fuzzy leaf.
  */
-import type { OntologyVocabulary, ShaclValidator } from '@ontology-search/search'
+import { createComponentLogger } from '@ontology-search/core/logging'
+import type { SchemaVocabulary, ShaclValidator } from '@ontology-search/search'
 
 import { buildAllowedValuesIndex, getSuggestions } from './slot-validator-fuzzy.js'
 import type { OntologyGap } from './types.js'
+
+const logger = createComponentLogger('slot-validator-shacl')
+
+/**
+ * Lazy per-property instance-value lookup for data-driven gap suggestions.
+ *
+ * Callers wire this to `getInstanceValues(store, propertyIris)` from
+ * `@ontology-search/search`, so observed values are fetched on demand — only
+ * when a violation actually needs suggestion enrichment — instead of being
+ * pre-analyzed eagerly at warmup (issue #121). Best-effort: a lookup failure
+ * degrades to schema-only (sh:in) suggestions, never fails validation.
+ */
+export type InstanceValueLookup = (propertyIris: string[]) => Promise<Map<string, string[]>>
 
 /**
  * Result of SHACL-validating an entire slot set.
@@ -44,7 +58,8 @@ export interface ShaclSlotValidationResult {
 export async function validateSlotsAgainstShacl(
   filters: Record<string, string | string[]>,
   shaclValidator: ShaclValidator,
-  vocabulary?: OntologyVocabulary
+  vocabulary?: SchemaVocabulary,
+  instanceValues?: InstanceValueLookup
 ): Promise<ShaclSlotValidationResult> {
   const cleanFilters: Record<string, string | string[]> = {}
   const gaps: OntologyGap[] = []
@@ -93,7 +108,8 @@ export async function validateSlotsAgainstShacl(
             needsCheck,
             shaclValidator,
             gaps,
-            vocabulary
+            vocabulary,
+            instanceValues
           )
           if (validated.length > 0) {
             const prev = cleanFilters[slotKey]
@@ -103,17 +119,38 @@ export async function validateSlotsAgainstShacl(
       } else if (enumSet.has(value)) {
         cleanFilters[slotKey] = value
       } else {
-        const ok = await checkAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
+        const ok = await checkAndAccumulate(
+          slotKey,
+          value,
+          shaclValidator,
+          gaps,
+          vocabulary,
+          instanceValues
+        )
         if (ok) cleanFilters[slotKey] = value
       }
       continue
     }
 
     if (Array.isArray(value)) {
-      const kept = await checkArrayAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
+      const kept = await checkArrayAndAccumulate(
+        slotKey,
+        value,
+        shaclValidator,
+        gaps,
+        vocabulary,
+        instanceValues
+      )
       if (kept.length > 0) cleanFilters[slotKey] = kept
     } else {
-      const ok = await checkAndAccumulate(slotKey, value, shaclValidator, gaps, vocabulary)
+      const ok = await checkAndAccumulate(
+        slotKey,
+        value,
+        shaclValidator,
+        gaps,
+        vocabulary,
+        instanceValues
+      )
       if (ok) cleanFilters[slotKey] = value
     }
   }
@@ -170,7 +207,8 @@ async function checkAndAccumulate(
   value: string,
   shaclValidator: ShaclValidator,
   gaps: OntologyGap[],
-  vocabulary?: OntologyVocabulary
+  vocabulary?: SchemaVocabulary,
+  instanceValues?: InstanceValueLookup
 ): Promise<boolean> {
   const result = await shaclValidator.validateBySlotName(slotKey, value)
 
@@ -186,9 +224,10 @@ async function checkAndAccumulate(
     })
     .join('; ')
 
-  const suggestions = vocabulary
-    ? dataDrivenSuggestions(value, result.resolvedIris, vocabulary)
-    : undefined
+  const suggestions =
+    vocabulary || instanceValues
+      ? await dataDrivenSuggestions(value, result.resolvedIris, vocabulary, instanceValues)
+      : undefined
 
   gaps.push({
     term: value,
@@ -210,7 +249,8 @@ async function checkArrayAndAccumulate(
   values: ReadonlyArray<unknown>,
   shaclValidator: ShaclValidator,
   gaps: OntologyGap[],
-  vocabulary?: OntologyVocabulary
+  vocabulary?: SchemaVocabulary,
+  instanceValues?: InstanceValueLookup
 ): Promise<string[]> {
   // Preserve input order; SHACL outcomes are looked up by stringified value.
   const candidates = values.filter((v): v is string => typeof v === 'string' && v.length > 0)
@@ -240,9 +280,10 @@ async function checkArrayAndAccumulate(
       })
       .join('; ')
 
-    const suggestions = vocabulary
-      ? dataDrivenSuggestions(value, result.resolvedIris, vocabulary)
-      : undefined
+    const suggestions =
+      vocabulary || instanceValues
+        ? await dataDrivenSuggestions(value, result.resolvedIris, vocabulary, instanceValues)
+        : undefined
 
     gaps.push({
       term: value,
@@ -259,23 +300,38 @@ async function checkArrayAndAccumulate(
  * instance values plus its sh:in enumeration (if any).
  *
  * The pool is a union of:
- *   - `OntologyVocabulary.instanceValues[propIri]` — values that actually
- *     appear in the data graph for this property,
- *   - `OntologyVocabulary.enumProperties[].allowedValues` — the SHACL
+ *   - the lazy `InstanceValueLookup` result — values that actually appear
+ *     in the data graph for this property, fetched on demand (never
+ *     pre-analyzed at warmup),
+ *   - `SchemaVocabulary.enumProperties[].allowedValues` — the SHACL
  *     enumeration, for properties that have one.
  *
  * Ranked by edit-distance similarity to the rejected value.
- * Generic — every property uses the same path.
+ * Generic — every property uses the same path. Best-effort: a failing
+ * lookup degrades to schema-only suggestions rather than failing the
+ * validation that triggered it.
  */
-function dataDrivenSuggestions(
+async function dataDrivenSuggestions(
   rejectedValue: string,
   propertyIris: string[],
-  vocabulary: OntologyVocabulary
-): string[] {
+  vocabulary?: SchemaVocabulary,
+  instanceValues?: InstanceValueLookup
+): Promise<string[]> {
+  let observed: Map<string, string[]> | undefined
+  if (instanceValues) {
+    try {
+      observed = await instanceValues(propertyIris)
+    } catch (error) {
+      logger.warn('Instance-value lookup for gap suggestions failed; using schema-only pool', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
   const pool = new Set<string>()
   for (const iri of propertyIris) {
-    for (const v of vocabulary.instanceValues.get(iri) ?? []) pool.add(v)
-    const enumProp = vocabulary.enumProperties.find((p) => p.iri === iri)
+    for (const v of observed?.get(iri) ?? []) pool.add(v)
+    const enumProp = vocabulary?.enumProperties.find((p) => p.iri === iri)
     for (const v of enumProp?.allowedValues ?? []) pool.add(v)
   }
   if (pool.size === 0) return []

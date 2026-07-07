@@ -28,7 +28,7 @@ import type { LlmStructuredResponse } from './types.js'
 // Re-export the SHACL slot-validation helpers so the api app can use the
 // same gate in its /refine composition root without depending on internal
 // modules.
-export type { ShaclSlotValidationResult } from './slot-validator.js'
+export type { InstanceValueLookup, ShaclSlotValidationResult } from './slot-validator.js'
 export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-validator.js'
 
 export interface SearchOptions {
@@ -47,7 +47,7 @@ export interface SearchOptions {
  * doesn't pay any cold-start cost:
  *
  *  - Agent system-prompt cache (`warmupAgentPrompt`): SHACL read +
- *    `buildSystemPrompt` + `extractVocabulary`. Tens of seconds on a cold
+ *    `buildSystemPrompt` + `extractSchemaVocabulary`. Tens of seconds on a cold
  *    start; benefits every provider. Without this, the warmup step that
  *    "builds the system prompt" did so into a local variable that was
  *    discarded — the agent's own cache only filled on first user request.

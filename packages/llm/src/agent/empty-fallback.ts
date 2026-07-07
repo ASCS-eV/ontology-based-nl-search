@@ -12,7 +12,7 @@
  * @see packages/llm/src/agent/index.ts — Vercel-SDK caller
  * @see packages/llm/src/agent/copilot-agent.ts — Copilot-SDK caller
  */
-import type { OntologyVocabulary } from '@ontology-search/search'
+import type { SchemaVocabulary } from '@ontology-search/search'
 import { compileSlots } from '@ontology-search/search/compiler'
 import type { SearchSlots } from '@ontology-search/search/slots'
 
@@ -23,7 +23,7 @@ const MAX_EXAMPLE_PROPERTIES = 3
 
 export async function buildEmptyFallbackResponse(
   query: string,
-  vocabulary: OntologyVocabulary
+  vocabulary: SchemaVocabulary
 ): Promise<LlmStructuredResponse> {
   const fallbackSlots: SearchSlots = { domains: [], filters: {}, ranges: {} }
   const sparql = await compileSlots(fallbackSlots)

@@ -22,7 +22,7 @@
  * Suggestions for gaps come from the same vocabulary the LLM saw, using
  * string distance.
  */
-import type { OntologyVocabulary } from '@ontology-search/search'
+import type { SchemaVocabulary } from '@ontology-search/search'
 
 import {
   buildAllowedValuesIndex,
@@ -36,7 +36,7 @@ import {
 } from './slot-validator-fuzzy.js'
 import type { GapKind, LlmStructuredResponse, MappedTerm, OntologyGap } from './types.js'
 
-export type { ShaclSlotValidationResult } from './slot-validator-shacl.js'
+export type { InstanceValueLookup, ShaclSlotValidationResult } from './slot-validator-shacl.js'
 export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-validator-shacl.js'
 
 /**
@@ -52,7 +52,7 @@ export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-va
  */
 export function validateSlots(
   response: LlmStructuredResponse,
-  vocabulary: OntologyVocabulary
+  vocabulary: SchemaVocabulary
 ): LlmStructuredResponse {
   const allowedIndex = buildAllowedValuesIndex(vocabulary)
   const numericProps = buildNumericPropertySet(vocabulary)
@@ -179,7 +179,7 @@ export function validateSlots(
  */
 export function correctFilters(
   filters: Record<string, string | string[]>,
-  vocabulary: OntologyVocabulary
+  vocabulary: SchemaVocabulary
 ): Record<string, string | string[]> {
   const allowedIndex = buildAllowedValuesIndex(vocabulary)
   const corrected: Record<string, string | string[]> = {}
@@ -230,7 +230,7 @@ export function correctDomains(
   domains: string[],
   filters: Record<string, string | string[]>,
   ranges: Record<string, { min?: number; max?: number }>,
-  vocabulary: OntologyVocabulary
+  vocabulary: SchemaVocabulary
 ): string[] {
   // Build property → Set<domain> index (multi-domain aware). Skip
   // occurrences whose domain couldn't be attributed (empty-string sentinel

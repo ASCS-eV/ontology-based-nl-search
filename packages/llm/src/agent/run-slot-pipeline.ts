@@ -19,17 +19,19 @@
  */
 
 import type { Stopwatch } from '@ontology-search/core/logging'
-import type { OntologyVocabulary } from '@ontology-search/search'
+import type { SchemaVocabulary } from '@ontology-search/search'
 import {
   expandFilterConcepts,
   getConceptExpansionIndex,
   getInitializedStore,
+  getInstanceValues,
   ShaclValidator,
 } from '@ontology-search/search'
 import { compileSlotsWithTrace, resolveKnownDomains } from '@ontology-search/search/compiler'
 import type { ReferenceFilter, SearchSlots } from '@ontology-search/search/slots'
 import { normalizeReferences } from '@ontology-search/search/slots'
 
+import type { InstanceValueLookup } from '../slot-validator.js'
 import {
   correctDomains,
   correctFilters,
@@ -66,7 +68,7 @@ export interface SlotPipelineSubmission {
 
 export interface SlotPipelineInput {
   submission: SlotPipelineSubmission
-  vocabulary: OntologyVocabulary
+  vocabulary: SchemaVocabulary
   /** Fallback domain when the submission's `slots.domains` is empty. */
   targetDomain: string
   /**
@@ -88,10 +90,11 @@ export interface SlotPipelineInput {
  */
 async function validateReferenceTree(
   refs: ReferenceFilter[],
-  vocabulary: OntologyVocabulary,
+  vocabulary: SchemaVocabulary,
   conceptIndex: Awaited<ReturnType<typeof getConceptExpansionIndex>>,
   shacl: ShaclValidator,
-  gaps: OntologyGap[]
+  gaps: OntologyGap[],
+  instanceValues?: InstanceValueLookup
 ): Promise<ReferenceFilter[]> {
   const out: ReferenceFilter[] = []
   for (const ref of refs) {
@@ -100,7 +103,7 @@ async function validateReferenceTree(
     if (ref.filters && Object.keys(ref.filters).length > 0) {
       const fuzzed = correctFilters(ref.filters, vocabulary)
       const expanded = expandFilterConcepts(fuzzed, conceptIndex)
-      const res = await validateSlotsAgainstShacl(expanded, shacl, vocabulary)
+      const res = await validateSlotsAgainstShacl(expanded, shacl, vocabulary, instanceValues)
       for (const g of res.gaps) gaps.push(g)
       if (Object.keys(res.filters).length > 0) cleaned.filters = res.filters
       else delete cleaned.filters
@@ -119,7 +122,8 @@ async function validateReferenceTree(
         vocabulary,
         conceptIndex,
         shacl,
-        gaps
+        gaps,
+        instanceValues
       )
     }
 
@@ -148,12 +152,21 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   const store = await getInitializedStore()
   const conceptIndex = await getConceptExpansionIndex(store)
   const expandedFilters = expandFilterConcepts(fuzzedFilters, conceptIndex)
+  // Lazy instance-value lookup for gap-suggestion enrichment — fetched on
+  // demand only when a violation occurs, never pre-analyzed at warmup
+  // (issue #121). The store's LRU query cache dedupes repeated scans.
+  const instanceValueLookup: InstanceValueLookup = (iris) => getInstanceValues(store, iris)
   // 2. SHACL gate: enforces every Core constraint declared in the shapes
   // graph (sh:pattern, sh:datatype, …) on every filter value, including
   // the geographic and license keys that used to live in dedicated
   // sub-shapes. Values that fail are dropped and emitted as gaps.
   const shacl = await ShaclValidator.fromWorkspace()
-  const shaclResult = await validateSlotsAgainstShacl(expandedFilters, shacl, vocabulary)
+  const shaclResult = await validateSlotsAgainstShacl(
+    expandedFilters,
+    shacl,
+    vocabulary,
+    instanceValueLookup
+  )
   // 3. Ranges go through their own check: numeric values always pass SHACL
   // datatype constraints, so we only need to confirm the property name is
   // known. Hallucinated keys (e.g. `numberLanes`) are dropped here.
@@ -213,7 +226,8 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     vocabulary,
     conceptIndex,
     shacl,
-    referenceGaps
+    referenceGaps,
+    instanceValueLookup
   )
   endValidation()
 

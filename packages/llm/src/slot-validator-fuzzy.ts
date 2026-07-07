@@ -4,7 +4,7 @@
  * (ADR 0004 keep-decision), best-match selection, vocabulary indexing, and
  * nearest-vocabulary suggestions. No sibling imports.
  */
-import type { OntologyVocabulary } from '@ontology-search/search'
+import type { SchemaVocabulary } from '@ontology-search/search'
 
 /**
  * Minimum NORMALIZED similarity (0-1) for a fuzzy value match to be accepted.
@@ -263,7 +263,7 @@ export function getSuggestions(
  * in multiple domains.
  */
 export function buildAllowedValuesIndex(
-  vocabulary: OntologyVocabulary
+  vocabulary: SchemaVocabulary
 ): Map<string, { allowedValues: string[]; domain: string }> {
   const index = new Map<string, { allowedValues: string[]; domain: string }>()
   for (const prop of vocabulary.enumProperties) {
@@ -283,6 +283,6 @@ export function buildAllowedValuesIndex(
 }
 
 /** Build a set of known numeric property names */
-export function buildNumericPropertySet(vocabulary: OntologyVocabulary): Set<string> {
+export function buildNumericPropertySet(vocabulary: SchemaVocabulary): Set<string> {
   return new Set(vocabulary.numericProperties.map((p) => p.localName))
 }
