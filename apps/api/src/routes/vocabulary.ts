@@ -1,11 +1,13 @@
 /**
  * Vocabulary endpoint — exposes ontology metadata for frontend autocomplete.
  *
- * Returns domain names, property names (enum + numeric), and allowed values
- * from the SHACL vocabulary. This powers the GraphQL editor's autocomplete.
+ * Projects the shared schema term index (the same one LLM retrieval reads)
+ * into the wire shape the GraphQL editor consumes: domain names, property
+ * names (enum + numeric), and allowed values. One index, one projection —
+ * the editor cannot drift from what the interpreter and compiler see.
  */
-import type { VocabProperty, VocabularyResponse } from '@ontology-search/api-types'
-import { extractSchemaVocabulary, getInitializedStore } from '@ontology-search/search'
+import type { VocabularyResponse } from '@ontology-search/api-types'
+import { buildTermIndex, getInitializedStore, toVocabularyResponse } from '@ontology-search/search'
 import { Hono } from 'hono'
 
 import type { AppEnv } from '../types.js'
@@ -22,36 +24,14 @@ vocabularyRoutes.get('/', (c) =>
       // Schema-only: the response carries sh:in enumerations and datatypes
       // exclusively — never instance-derived values.
       const store = await getInitializedStore()
-      const vocabulary = await extractSchemaVocabulary(store)
-
-      const properties: VocabProperty[] = [
-        ...vocabulary.enumProperties.map((p) => ({
-          name: p.localName,
-          label: p.label,
-          description: p.description,
-          domain: p.domain,
-          type: 'enum' as const,
-          allowedValues: p.allowedValues,
-        })),
-        ...vocabulary.numericProperties.map((p) => ({
-          name: p.localName,
-          label: p.label,
-          description: p.description,
-          domain: p.domain,
-          type: 'numeric' as const,
-          datatype: p.datatype,
-        })),
-      ]
+      const response = toVocabularyResponse(await buildTermIndex(store))
 
       logger.info('Vocabulary request completed', {
-        domains: vocabulary.domains.length,
-        properties: properties.length,
+        domains: response.domains.length,
+        properties: response.properties.length,
       })
 
-      return {
-        domains: vocabulary.domains,
-        properties,
-      }
+      return response
     },
   })
 )

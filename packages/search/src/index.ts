@@ -44,6 +44,7 @@ export type { RetrievalOptions, RetrievedSchema } from './schema-index/retrieval
 export { retrieveRelevantSchema, warmupRetrievalIndex } from './schema-index/retrieval.js'
 export type { DomainCard, TermCard, TermConstraints, TermIndex } from './schema-index/term-index.js'
 export { buildTermIndex, resetTermIndex } from './schema-index/term-index.js'
+export { toVocabularyResponse } from './schema-index/to-vocabulary-response.js'
 export { SCHEMA_GRAPH } from './schema-loader.js'
 export type {
   NlSearchOptions,
