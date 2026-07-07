@@ -1,5 +1,5 @@
 /**
- * Context-reader tests against the real artifact tree (issue #122).
+ * Context-reader tests against the real artifact tree.
  *
  * The two fixture domains exercise the two context dialects that exist in
  * the wild ([JSON-LD11] context processing):

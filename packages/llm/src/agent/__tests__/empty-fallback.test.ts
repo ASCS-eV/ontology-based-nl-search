@@ -6,7 +6,7 @@
  * ENVITED-X demo predicates (`roadTypes`/`scenarioCategory`) the inline
  * fallbacks previously embedded in both agents.
  */
-import type { OntologyVocabulary } from '@ontology-search/search'
+import type { SchemaVocabulary } from '@ontology-search/search'
 import { describe, expect, it, vi } from 'vitest'
 
 // Mock the compiler so the helper doesn't need a real schema graph / store.
@@ -16,7 +16,7 @@ vi.mock('@ontology-search/search/compiler', () => ({
 
 import { buildEmptyFallbackResponse } from '../empty-fallback.js'
 
-function vocab(partial: Partial<OntologyVocabulary>): OntologyVocabulary {
+function vocab(partial: Partial<SchemaVocabulary>): SchemaVocabulary {
   return {
     enumProperties: [],
     numericProperties: [],

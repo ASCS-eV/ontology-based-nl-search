@@ -24,7 +24,7 @@ import { getPrimaryDomain } from '@ontology-search/search'
 import { z } from 'zod'
 
 import type { LlmStructuredResponse } from '../types.js'
-import { getAgentContext } from './agent-context.js'
+import { buildRequestPrompt, getAgentContext, getStaticCore } from './agent-context.js'
 import { getAgentPolicy } from './agent-policy.js'
 import { buildEmptyFallbackResponse } from './empty-fallback.js'
 import type { AgentOptions } from './index.js'
@@ -107,9 +107,8 @@ let replenishing = false
  * `submit_slots` submission — not from `session.idle` — this bound only
  * governs the cases where the model never submits (→ fallback) or where the
  * tool-call turn itself is pathologically slow. It is deliberately generous:
- * the embedded-SHACL system prompt is large (~95k tokens), so a heavily loaded
- * backend can push a legitimate tool-call turn well past the 60s default, which
- * previously surfaced as "Timeout after 60000ms waiting for session.idle".
+ * a heavily loaded backend can push a legitimate tool-call turn well past
+ * the 60s default, which surfaces as "Timeout waiting for session.idle".
  */
 const LLM_TURN_TIMEOUT_MS = 120_000
 
@@ -141,15 +140,21 @@ async function createSession(prompt: string): Promise<CopilotSession> {
  * Fill the pool up to POOL_SIZE. Called at startup (warmup) and after
  * each session is consumed. Runs in the background — never blocks requests.
  * Creates sessions in parallel for faster filling.
+ *
+ * Sessions bake ONLY the static prompt core (the Copilot SDK cannot
+ * replace a session's system message per turn): the core is byte-stable
+ * and therefore prompt-cacheable, while the per-query retrieved schema
+ * tail rides in the request message.
  */
 async function replenishPool(): Promise<void> {
   if (replenishing) return
   replenishing = true
   try {
-    const { prompt } = await getAgentContext()
     const needed = POOL_SIZE - readyPool.length
     if (needed <= 0) return
-    const sessions = await Promise.all(Array.from({ length: needed }, () => createSession(prompt)))
+    const sessions = await Promise.all(
+      Array.from({ length: needed }, () => createSession(getStaticCore()))
+    )
     readyPool.push(...sessions)
   } catch {
     // intentional: pool creation may fail (network issues, proxy down).
@@ -170,8 +175,7 @@ async function acquireSession(): Promise<CopilotSession> {
   void replenishPool()
   if (session) return session
   // Pool exhausted — create inline (rare, only under burst)
-  const { prompt } = await getAgentContext()
-  return createSession(prompt)
+  return createSession(getStaticCore())
 }
 
 /**
@@ -187,18 +191,17 @@ export async function getPersistentSession(): Promise<CopilotSession> {
   // Return a placeholder — warmup doesn't actually need a session reference,
   // it just triggers background creation.
   if (readyPool.length > 0) return readyPool[0]!
-  const { prompt } = await getAgentContext()
-  return createSession(prompt)
+  return createSession(getStaticCore())
 }
 
 // ─── Prompt-cache priming ────────────────────────────────────────────────────
 
 /**
  * Throwaway query used only to warm the backend prompt cache. Its content is
- * irrelevant: the point is to make the backend prefill and cache the identical,
- * per-request ~100k-token system-prompt prefix once, so the first real query
- * hits a warm cache instead of paying the cold prefill (measured at ~+10s on a
- * cold cache).
+ * irrelevant: the point is to make the backend prefill and cache the static
+ * prompt core the pooled sessions bake, so the first real query hits a warm
+ * cache instead of paying the cold prefill. The query-specific retrieved
+ * tail is deliberately never primed.
  */
 const CACHE_PRIMING_QUERY = 'warmup'
 
@@ -273,10 +276,21 @@ export async function runCopilotAgent(
 ): Promise<LlmStructuredResponse> {
   const sw = new Stopwatch()
   const targetDomain = options?.domain ?? (await getPrimaryDomain())
+  const policy = getAgentPolicy()
 
   const endSetup = sw.time('setup')
   const { vocabulary } = await getAgentContext()
   endSetup()
+
+  // Retrieve the query's schema context. Pooled sessions carry the static
+  // core as their system message; this tail rides in the request message.
+  const endRetrieval = sw.time('retrieval')
+  const { tail: retrievedTail } = await buildRequestPrompt(naturalLanguageQuery, {
+    signal: options?.signal,
+    maxDomains: policy.retrieval.maxDomains,
+    maxCards: policy.retrieval.maxCards,
+  })
+  endRetrieval()
 
   // Acquire a fresh, pre-warmed session (pool replenishes in background)
   const endSession = sw.time('session-acquire')
@@ -307,6 +321,11 @@ export async function runCopilotAgent(
   })
 
   const promptWithToken = `${naturalLanguageQuery}\n\n${renderTokenDirective(requestToken)}`
+  // The server-derived schema tail precedes the user query in the request
+  // message (the session only carries the static core). The tail comes from
+  // the schema graph, never from user text, so the injection posture is
+  // unchanged — user input only appears below the delimiter.
+  const requestMessage = [retrievedTail, '---', promptWithToken].join('\n\n')
   const signal = options?.signal
 
   let submission: Submission | null = null
@@ -320,7 +339,7 @@ export async function runCopilotAgent(
     // ever competes in the race. A rejection is re-surfaced explicitly below,
     // and only when no submission arrived.
     const idleOutcome: Promise<{ kind: 'idle' } | { kind: 'error'; error: unknown }> = session
-      .sendAndWait({ prompt: promptWithToken }, LLM_TURN_TIMEOUT_MS)
+      .sendAndWait({ prompt: requestMessage }, LLM_TURN_TIMEOUT_MS)
       .then(
         () => ({ kind: 'idle' as const }),
         (error: unknown) => ({ kind: 'error' as const, error })

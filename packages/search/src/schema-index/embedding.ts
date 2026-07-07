@@ -1,10 +1,10 @@
 /**
- * Pluggable embedding seam for schema retrieval (epic #120, task 05).
+ * Pluggable embedding seam for schema retrieval.
  *
  * The default is OFFLINE lexical-only ranking — no external service, no
- * network, air-gap friendly, and fully deterministic (the epic's accepted
- * default). An embedding service can be plugged in later by implementing
- * `EmbeddingProvider`; callers of the retrieval API never change.
+ * network, air-gap friendly, and fully deterministic. An embedding service
+ * can be plugged in later by implementing `EmbeddingProvider`; callers of
+ * the retrieval API never change.
  */
 
 export interface EmbeddingProvider {

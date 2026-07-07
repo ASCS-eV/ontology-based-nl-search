@@ -1,9 +1,9 @@
 /**
  * Generic Term Index — one schema-only, ontology-agnostic index of
  * searchable terms (`TermCard[]`), the shared substrate for LLM schema
- * retrieval and the GraphQL autocomplete (epic #120, task 03).
+ * retrieval and the GraphQL autocomplete.
  *
- * Anti-duplication keystone: cards are COMPOSED from surfaces that already
+ * Cards are COMPOSED from surfaces that already
  * exist — the compiler's discovered property paths (domain attribution +
  * leaf kinds), the schema-only vocabulary (sh:in enums, numerics), the
  * domain registry (target classes, IRI→domain resolution), and the JSON-LD
@@ -11,16 +11,12 @@
  * description / constraint harvest over the schema graph. No new
  * enum/numeric/path extraction logic, no hardcoded ontology identifiers.
  *
- * gx note: the 500 KB raw-file cap applies only to the prompt path
- * (`shacl-reader.ts`); the schema graph itself is uncapped, so gx terms are
- * indexed here even though the raw gx SHACL never reaches the LLM today.
- *
  * @see https://www.w3.org/TR/shacl/ — [SHACL] §2.3 property shapes
  * @see https://www.w3.org/TR/rdf-schema/ — [RDF-SCHEMA] §5.4.1 rdfs:label
  * @see https://www.w3.org/TR/skos-reference/ — [SKOS] §5 lexical labels
  */
 import { extractLocalName } from '@ontology-search/core/rdf/iri'
-import { iri as toIri, sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
+import { RDF_PREFIXES, sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
@@ -146,7 +142,7 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
     const context = contextByIri.get(iri)
 
     const datatype = numericProp
-      ? toIri('xsd', numericProp.datatype)
+      ? `${RDF_PREFIXES.xsd}${numericProp.datatype}`
       : (annotation?.datatype ?? context?.datatype)
 
     cards.push({

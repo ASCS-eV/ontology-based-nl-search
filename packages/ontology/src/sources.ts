@@ -3,7 +3,7 @@
  *
  * Before this module the workspace-root walk, the `ontology-sources.json`
  * manifest read, and the SHACL/OWL file discovery were copy-pasted across
- * five files (`schema-loader.ts`, `shacl-reader.ts`, `shacl-validator.ts`,
+ * five files (`schema-loader.ts`, `shacl-validator.ts`,
  * `domain-registry.ts`, `vocabulary-index.ts`). Each copy silently swallowed
  * JSON-parse errors via `catch {}`, hiding manifest mis-configuration.
  *

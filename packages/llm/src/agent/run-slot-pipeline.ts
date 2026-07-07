@@ -153,8 +153,8 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   const conceptIndex = await getConceptExpansionIndex(store)
   const expandedFilters = expandFilterConcepts(fuzzedFilters, conceptIndex)
   // Lazy instance-value lookup for gap-suggestion enrichment — fetched on
-  // demand only when a violation occurs, never pre-analyzed at warmup
-  // (issue #121). The store's LRU query cache dedupes repeated scans.
+  // demand only when a violation occurs, never pre-analyzed at warmup.
+  // The store's LRU query cache dedupes repeated scans.
   const instanceValueLookup: InstanceValueLookup = (iris) => getInstanceValues(store, iris)
   // 2. SHACL gate: enforces every Core constraint declared in the shapes
   // graph (sh:pattern, sh:datatype, …) on every filter value, including

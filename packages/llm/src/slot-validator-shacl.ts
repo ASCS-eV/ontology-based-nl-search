@@ -17,7 +17,7 @@ const logger = createComponentLogger('slot-validator-shacl')
  * Callers wire this to `getInstanceValues(store, propertyIris)` from
  * `@ontology-search/search`, so observed values are fetched on demand — only
  * when a violation actually needs suggestion enrichment — instead of being
- * pre-analyzed eagerly at warmup (issue #121). Best-effort: a lookup failure
+ * pre-analyzed eagerly at warmup. Best-effort: a lookup failure
  * degrades to schema-only (sh:in) suggestions, never fails validation.
  */
 export type InstanceValueLookup = (propertyIris: string[]) => Promise<Map<string, string[]>>

@@ -15,7 +15,7 @@ import { generateText, stepCountIs } from 'ai'
 
 import { getModel } from '../provider.js'
 import type { LlmStructuredResponse } from '../types.js'
-import { getAgentContext, warmupAgentContext } from './agent-context.js'
+import { buildRequestPrompt, getAgentContext, warmupAgentContext } from './agent-context.js'
 import { getAgentPolicy } from './agent-policy.js'
 import { buildEmptyFallbackResponse } from './empty-fallback.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
@@ -38,9 +38,10 @@ export interface AgentOptions {
 /**
  * Run the slot-filling agent via Vercel AI SDK.
  *
- * The LLM receives the full ontology vocabulary in its system prompt
- * (auto-generated from SHACL shapes) and directly fills search slots.
- * No pre-processing or SKOS matching — the LLM IS the synonym resolver.
+ * The LLM receives the static instruction core plus the SHACL fragments
+ * retrieved for this query in its system prompt and directly fills search
+ * slots. No pre-processing or SKOS matching — the LLM IS the synonym
+ * resolver.
  *
  * Post-LLM validation layer corrects filter values and recomputes confidence.
  */
@@ -52,10 +53,20 @@ export async function runSparqlAgent(
   const policy = getAgentPolicy()
   const targetDomain = options?.domain ?? (await getPrimaryDomain())
 
-  const endPrompt = sw.time('prompt-build')
-  const { prompt, vocabulary } = await getAgentContext()
+  const endSetup = sw.time('setup')
+  const { vocabulary } = await getAgentContext()
   const model = getModel()
-  endPrompt()
+  endSetup()
+
+  // Per-query system prompt: static core + the schema context retrieved
+  // for this query. Same seam the Copilot adapter uses.
+  const endRetrieval = sw.time('retrieval')
+  const { prompt } = await buildRequestPrompt(naturalLanguageQuery, {
+    signal: options?.signal,
+    maxDomains: policy.retrieval.maxDomains,
+    maxCards: policy.retrieval.maxCards,
+  })
+  endRetrieval()
 
   const endLlmCall = sw.time('llm-round-trip')
   // Anthropic extended thinking — translated from the shared policy.

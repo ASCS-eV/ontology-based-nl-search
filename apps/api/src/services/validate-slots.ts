@@ -26,7 +26,7 @@ export async function validateSlots(slots: SearchSlots): Promise<SearchSlots> {
   const shacl = await ShaclValidator.fromWorkspace()
   const store = await getInitializedStore()
   // Schema-only vocabulary; observed instance values for gap suggestions are
-  // fetched lazily — only when a violation needs them (issue #121).
+  // fetched lazily — only when a violation needs them.
   const vocabulary = await extractSchemaVocabulary(store)
 
   const result = await validateSlotsAgainstShacl(slots.filters ?? {}, shacl, vocabulary, (iris) =>

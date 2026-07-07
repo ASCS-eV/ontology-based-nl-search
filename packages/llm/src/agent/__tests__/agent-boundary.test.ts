@@ -54,9 +54,9 @@ vi.mock('../../provider.js', () => ({
   getModel: vi.fn().mockReturnValue({}),
 }))
 
-// Replace the prompt-building dependencies so the agent does not touch the
-// real ontology workspace. Vocabulary shape is irrelevant — these tests
-// don't run `runSlotPipeline` for real.
+// Replace the schema dependencies so the agent does not touch the real
+// ontology workspace. Vocabulary/retrieval shapes are irrelevant — these
+// tests don't run `runSlotPipeline` for real.
 vi.mock('@ontology-search/search', () => ({
   extractSchemaVocabulary: vi
     .fn()
@@ -64,10 +64,9 @@ vi.mock('@ontology-search/search', () => ({
   getInstanceValues: vi.fn().mockResolvedValue(new Map()),
   getInitializedStore: vi.fn().mockResolvedValue({}),
   getPrimaryDomain: vi.fn().mockResolvedValue('hdmap'),
-}))
-
-vi.mock('@ontology-search/search/shacl-reader', () => ({
-  getShaclContent: vi.fn().mockReturnValue([]),
+  retrieveRelevantSchema: vi
+    .fn()
+    .mockResolvedValue({ domains: [], cards: [], fragments: [], confidence: 1, catalog: [] }),
 }))
 
 // Mock the two downstream emission paths so we can assert WHICH path was
@@ -84,10 +83,6 @@ vi.mock('../run-slot-pipeline.js', () => ({
 
 vi.mock('@ontology-search/search/compiler', () => ({
   compileSlots: vi.fn().mockResolvedValue(FALLBACK_SPARQL),
-}))
-
-vi.mock('../../prompt-builder.js', () => ({
-  buildSystemPrompt: vi.fn().mockReturnValue('mocked system prompt'),
 }))
 
 // ─── Imports come AFTER vi.mock() calls ────────────────────────────────────

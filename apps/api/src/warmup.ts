@@ -87,11 +87,15 @@ export async function warmup(): Promise<WarmupResult> {
     errors
   )
 
-  // [3/6] Pre-build the LLM system prompt + vocabulary into the agent's
-  // module-private cache so the first user request sees a hot cache.
-  // Without this warmup the agent rebuilds on the first request, adding
-  // ~14s of `prompt-build` to the first query trace.
-  const vocabMs = await runStep(3, 'LLM system prompt build', warmupAgentPrompt, errors)
+  // [3/6] Pre-build the agent context (schema-only vocabulary + store
+  // reference) into the agent's module-private cache so the first user
+  // request sees a hot cache instead of paying the extraction cost inline.
+  const vocabMs = await runStep(
+    3,
+    'LLM agent context (schema vocabulary)',
+    warmupAgentPrompt,
+    errors
+  )
 
   // [4/6] Compiler vocabulary — property-path BFS + leaf-kind enrichment
   // + cross-reference chains + concept-expansion index. The single most

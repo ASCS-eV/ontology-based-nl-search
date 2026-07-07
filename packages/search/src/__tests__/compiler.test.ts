@@ -110,7 +110,7 @@ vi.mock('../schema-queries.js', () => ({
   ]),
 }))
 
-// Mock the store init (not needed since we mock extractVocabulary)
+// Mock the store init (not needed since the vocabulary is mocked)
 vi.mock('../init.js', () => ({
   getInitializedStore: vi.fn().mockResolvedValue({}),
 }))
