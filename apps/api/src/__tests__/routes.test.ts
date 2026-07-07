@@ -29,6 +29,8 @@ vi.mock('@ontology-search/search', () => ({
   getDomainMetadataAggregate: vi.fn(),
   slotsToGraphQL: () => 'query { }',
   extractSchemaVocabulary: vi.fn(),
+  buildTermIndex: vi.fn(),
+  toVocabularyResponse: vi.fn(),
   getInstanceValues: vi.fn().mockResolvedValue(new Map()),
 }))
 
@@ -494,55 +496,36 @@ describe('GET /stats', () => {
 })
 
 describe('GET /vocabulary', () => {
-  // Contract test (F2/F3): the route maps the extractor's per-domain
-  // enum/numeric properties (keyed by `localName`) into the api-types
-  // `VocabularyResponse` shape (`name` = localName) that the web editor consumes.
-  it('emits a conforming VocabularyResponse, mapping localName -> name', async () => {
-    const { extractSchemaVocabulary, getInitializedStore } = await import('@ontology-search/search')
-    vi.mocked(getInitializedStore).mockResolvedValue({} as never)
-    vi.mocked(extractSchemaVocabulary).mockResolvedValue({
+  // The route is a thin wire: term index in, projected VocabularyResponse
+  // out. The projection's own mapping contract (enum/numeric selection,
+  // datatype narrowing) is pinned in the search package's
+  // to-vocabulary-response tests.
+  it('serves the projection of the shared term index', async () => {
+    const { buildTermIndex, getInitializedStore, toVocabularyResponse } =
+      await import('@ontology-search/search')
+    const index = { cards: [], byDomain: new Map(), domainCatalog: [] }
+    const projected: VocabularyResponse = {
       domains: ['hdmap'],
-      enumProperties: [
+      properties: [
         {
-          iri: 'urn:p:roadTypes',
-          localName: 'roadTypes',
+          name: 'roadTypes',
           label: 'Road types',
           description: '',
           domain: 'hdmap',
+          type: 'enum',
           allowedValues: ['motorway', 'urban'],
         },
       ],
-      numericProperties: [
-        {
-          iri: 'urn:p:numberOfLanes',
-          localName: 'numberOfLanes',
-          label: 'Lanes',
-          description: '',
-          domain: 'hdmap',
-          datatype: 'integer',
-        },
-      ],
-      conceptSchemes: new Map(),
-      classHierarchy: [],
-    } as never)
+    }
+    vi.mocked(getInitializedStore).mockResolvedValue({} as never)
+    vi.mocked(buildTermIndex).mockResolvedValue(index as never)
+    vi.mocked(toVocabularyResponse).mockReturnValue(projected)
 
     const res = await app.request('/vocabulary')
     expect(res.status).toBe(200)
-    const json = (await res.json()) as VocabularyResponse
-
-    expect(json.domains).toEqual(['hdmap'])
-    expect(json.properties.find((p) => p.name === 'roadTypes')).toMatchObject({
-      name: 'roadTypes',
-      label: 'Road types',
-      domain: 'hdmap',
-      type: 'enum',
-      allowedValues: ['motorway', 'urban'],
-    })
-    expect(json.properties.find((p) => p.name === 'numberOfLanes')).toMatchObject({
-      name: 'numberOfLanes',
-      type: 'numeric',
-      datatype: 'integer',
-    })
+    expect(await res.json()).toEqual(projected)
+    expect(buildTermIndex).toHaveBeenCalledOnce()
+    expect(toVocabularyResponse).toHaveBeenCalledWith(index)
   })
 })
 
