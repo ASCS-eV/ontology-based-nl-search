@@ -51,6 +51,14 @@ export interface AgentPolicy {
   readonly model: string
   /** The provider identifier (e.g. 'copilot', 'claude-cli', 'openai'). */
   readonly provider: string
+  /**
+   * Per-query schema-retrieval budgets for the composed system prompt.
+   * Both adapters read the SAME block — no per-adapter prompt policy.
+   */
+  readonly retrieval: {
+    readonly maxDomains: number
+    readonly maxCards: number
+  }
 }
 
 // ─── Policy Factory ──────────────────────────────────────────────────────────
@@ -88,5 +96,9 @@ export function getAgentPolicy(): AgentPolicy {
     forcedTool: 'submit_slots',
     model: config.AI_MODEL,
     provider: config.AI_PROVIDER,
+    retrieval: {
+      maxDomains: config.RETRIEVAL_MAX_DOMAINS,
+      maxCards: config.RETRIEVAL_MAX_CARDS,
+    },
   }
 }

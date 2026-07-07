@@ -1,5 +1,5 @@
 /**
- * Regression tests for the schema-only vocabulary split (issue #121).
+ * Regression tests for the schema-only vocabulary split.
  *
  * Pins the two halves of the contract:
  *  1. `extractSchemaVocabulary` derives everything from the schema graph
@@ -7,8 +7,7 @@
  *     sh:in, §4.1.1 sh:datatype) and never issues the instance-literal scan
  *     (`FILTER(isLiteral(?v))`) the old eager path ran at warmup.
  *  2. `getInstanceValues` reproduces the old eager distribution — restricted
- *     via a VALUES clause ([SPARQL11] §10.2) — and the deprecated
- *     `extractVocabulary` wrapper composes both halves identically.
+ *     via a VALUES clause ([SPARQL11] §10.2).
  */
 import type { SparqlBinding, SparqlStore } from '@ontology-search/sparql/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,7 +16,6 @@ import { getCompilerVocab } from '../compiler.js'
 import type { CompilerVocab } from '../compiler-vocab.js'
 import {
   extractSchemaVocabulary,
-  extractVocabulary,
   getInstanceValues,
   resetVocabulary,
 } from '../vocabulary-extractor.js'
@@ -84,7 +82,7 @@ beforeEach(() => {
   } as unknown as CompilerVocab)
 })
 
-describe('extractSchemaVocabulary (issue #121)', () => {
+describe('extractSchemaVocabulary', () => {
   it('issues no instance-data literal scan and scopes property discovery to the schema graph', async () => {
     const { store, queries } = fakeStore()
     const vocab = await extractSchemaVocabulary(store)
@@ -113,7 +111,7 @@ describe('extractSchemaVocabulary (issue #121)', () => {
   })
 })
 
-describe('getInstanceValues (issue #121)', () => {
+describe('getInstanceValues', () => {
   it('returns the same distribution the old eager path embedded, restricted via VALUES', async () => {
     const { store, queries } = fakeStore()
     const values = await getInstanceValues(store, [P1, P2])
@@ -142,18 +140,5 @@ describe('getInstanceValues (issue #121)', () => {
     expect(await getInstanceValues(store, [])).toEqual(new Map())
     expect(await getInstanceValues(store, ['not an iri'])).toEqual(new Map())
     expect(queries.some((q) => q.includes('isLiteral('))).toBe(false)
-  })
-
-  it('deprecated extractVocabulary composes both halves identically (back-compat parity)', async () => {
-    const { store } = fakeStore()
-    const composed = await extractVocabulary(store)
-    const schema = await extractSchemaVocabulary(store)
-    const values = await getInstanceValues(store)
-
-    expect(composed.enumProperties).toEqual(schema.enumProperties)
-    expect(composed.numericProperties).toEqual(schema.numericProperties)
-    expect(composed.domains).toEqual(schema.domains)
-    expect(composed.classHierarchy).toEqual(schema.classHierarchy)
-    expect(composed.instanceValues).toEqual(values)
   })
 })

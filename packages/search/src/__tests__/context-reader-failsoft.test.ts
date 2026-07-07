@@ -1,5 +1,5 @@
 /**
- * Fail-soft contract of the context reader (issue #122): the `@context`
+ * Fail-soft contract of the context reader: the `@context`
  * artifacts are transitional enrichment, so a missing or malformed file
  * must degrade to an empty lexicon with a warning — never a throw that
  * would take schema loading down with it.

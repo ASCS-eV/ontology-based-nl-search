@@ -58,12 +58,9 @@ vi.mock('@ontology-search/search', () => ({
   getInstanceValues: vi.fn().mockResolvedValue(new Map()),
   SCHEMA_GRAPH: 'urn:graph:schema',
   getPrimaryDomain: vi.fn().mockResolvedValue('hdmap'),
-}))
-vi.mock('@ontology-search/search/shacl-reader', () => ({
-  getShaclContent: vi.fn().mockReturnValue(''),
-}))
-vi.mock('../../prompt-builder.js', () => ({
-  buildSystemPrompt: vi.fn().mockReturnValue('system prompt'),
+  retrieveRelevantSchema: vi
+    .fn()
+    .mockResolvedValue({ domains: [], cards: [], fragments: [], confidence: 1, catalog: [] }),
 }))
 vi.mock('@ontology-search/core/config', () => ({
   getConfig: vi.fn().mockReturnValue({ AI_MODEL: 'test-model', GITHUB_TOKEN: undefined }),
@@ -146,6 +143,26 @@ describe('runCopilotAgent — never-writes-SPARQL boundary', () => {
     expect(runSlotPipeline).toHaveBeenCalledOnce()
     expect(buildEmptyFallbackResponse).not.toHaveBeenCalled()
     expect(res.sparql).toBe(h.PIPELINE_SPARQL)
+  })
+
+  it('sends the retrieved schema tail in the request message, above the user query', async () => {
+    let capturedPrompt = ''
+    h.session.sendAndWait.mockImplementation(async ({ prompt }: { prompt: string }) => {
+      capturedPrompt = prompt
+      const token = prompt.match(TOKEN_RE)?.[1]
+      submitSlotsHandler()(validSubmission(token!))
+    })
+
+    const { runCopilotAgent } = await import('../copilot-agent.js')
+    await runCopilotAgent('german highways')
+
+    // Sessions bake only the static core; the per-query schema context rides
+    // in the request message, server-derived section first, user text below
+    // the delimiter.
+    expect(capturedPrompt).toContain('## Ontology Reference — Retrieved Schema Fragments')
+    const delimiter = capturedPrompt.indexOf('\n---\n')
+    expect(delimiter).toBeGreaterThan(-1)
+    expect(capturedPrompt.indexOf('german highways')).toBeGreaterThan(delimiter)
   })
 
   it('resolves from the routed submission without waiting for session.idle', async () => {

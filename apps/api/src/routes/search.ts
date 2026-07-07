@@ -37,8 +37,7 @@ async function getEnumPropertyNames(): Promise<ReadonlySet<string>> {
   if (enumPropertyNamesCache) return enumPropertyNamesCache
   try {
     const store = await getInitializedStore()
-    // Schema-only: this cache reads enum property names exclusively, so the
-    // eager instance-value scan `extractVocabulary` ran was wasted (issue #121).
+    // Schema-only: this cache reads enum property names exclusively.
     const vocab = await extractSchemaVocabulary(store)
     const members = enumPropertyMembers(
       vocab.enumProperties.map((p) => ({ name: p.localName, allowedValues: p.allowedValues }))

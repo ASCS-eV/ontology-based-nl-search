@@ -2,9 +2,8 @@
  * Public surface of `@ontology-search/llm`.
  *
  * Exports (declared in `package.json` `exports`):
- *   - `.`               → this file (high-level facade)
- *   - `./types`         → `LlmStructuredResponse`, `OntologyGap`, …
- *   - `./prompt-builder` → `buildSystemPrompt`, `ShaclDomainContent`
+ *   - `.`       → this file (high-level facade)
+ *   - `./types` → `LlmStructuredResponse`, `OntologyGap`, …
  *
  * The `agent/` subdirectory is intentionally NOT exported as a subpath —
  * its contents are implementation details of `generateStructuredSearch`.
@@ -13,7 +12,11 @@
  * breaking downstream packages.
  */
 import { getConfig } from '@ontology-search/core/config'
-import { getPrimaryDomain } from '@ontology-search/search'
+import {
+  getInitializedStore,
+  getPrimaryDomain,
+  warmupRetrievalIndex,
+} from '@ontology-search/search'
 
 import {
   getPersistentSession,
@@ -46,22 +49,23 @@ export interface SearchOptions {
  * Pre-populate the LLM session-level caches so the first user query
  * doesn't pay any cold-start cost:
  *
- *  - Agent system-prompt cache (`warmupAgentPrompt`): SHACL read +
- *    `buildSystemPrompt` + `extractSchemaVocabulary`. Tens of seconds on a cold
- *    start; benefits every provider. Without this, the warmup step that
- *    "builds the system prompt" did so into a local variable that was
- *    discarded — the agent's own cache only filled on first user request.
- *  - Copilot SDK session: ~6s session-create cost. Only relevant for the
- *    Copilot provider.
+ *  - Agent context (`warmupAgentPrompt`): schema-only vocabulary + store.
+ *  - Retrieval term index: built once so the per-query retrieval stage
+ *    starts hot.
+ *  - Copilot SDK session pool: ~6s session-create cost, paid in the
+ *    background. Only relevant for the Copilot provider.
  *  - Copilot prompt cache: primed ONCE in the background so the first real
- *    query doesn't pay the ~100k-token cold prefill (measured ~+10s). Not kept
- *    warm on a timer — periodic re-priming would incur continuous LLM token
- *    cost on an idle deployment; an idle instance just pays the one-time cold
- *    cost again after the backend cache TTL expires.
+ *    query doesn't pay the static-core cold prefill. Not kept warm on a
+ *    timer — periodic re-priming would incur continuous LLM token cost on
+ *    an idle deployment; an idle instance just pays the one-time cold cost
+ *    again after the backend cache TTL expires.
  */
 export async function warmupLlmSession(): Promise<void> {
   const config = getConfig()
   await warmupAgentPrompt()
+  // Build the term index up front so the first query's retrieval stage
+  // pays no index cost.
+  await warmupRetrievalIndex(await getInitializedStore())
   if (config.AI_PROVIDER === 'copilot') {
     await getPersistentSession()
     // Non-blocking one-shot prompt-cache prime. Readiness is not delayed;

@@ -1,20 +1,14 @@
 /**
  * Minimal SHACL fragment extractor — given selected target classes and/or
  * property IRIs, emit the smallest correct SHACL Turtle for each shape,
- * from the schema graph, never by concatenating whole `.shacl.ttl` files
- * (epic #120, task 04).
+ * from the schema graph, never by concatenating whole `.shacl.ttl` files.
+ * Fragment size stays proportional to what a query actually needs.
  *
- * This replaces the 305k-char whole-file prompt dump: fragment size is
- * proportional to what a query actually needs, and the 500 KB raw-file cap
- * (which silently hides gx from the prompt today) becomes irrelevant —
- * fragments come from `urn:graph:schema`, which is uncapped.
- *
- * Store-API note (adversarial review): `SparqlStore.query` is SELECT/ASK
- * only — there is no CONSTRUCT surface — so extraction runs targeted
- * SELECTs ([SPARQL11] §10.2 VALUES, §9 property paths for RDF lists) and
- * serializes Turtle deterministically here. Nested `sh:node` shapes are
- * referenced, not inlined: the retrieval layer (05) pulls referenced
- * domains' fragments via the term index's dependency edges.
+ * `SparqlStore.query` is SELECT/ASK only — there is no CONSTRUCT surface —
+ * so extraction runs targeted SELECTs ([SPARQL11] §10.2 VALUES, §9 property
+ * paths for RDF lists) and serializes Turtle deterministically here. Nested
+ * `sh:node` shapes are referenced, not inlined: the retrieval layer pulls
+ * referenced domains' fragments via the term index's dependency edges.
  *
  * @see https://www.w3.org/TR/shacl/ — [SHACL] §2 shapes, §4 constraints
  * @see https://www.w3.org/TR/sparql11-query/ — [SPARQL11]

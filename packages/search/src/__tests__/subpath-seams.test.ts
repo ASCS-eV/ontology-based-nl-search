@@ -24,7 +24,6 @@ const DISCOVERY_EXPORTS = [
   'buildReferenceChains',
   'SCHEMA_GRAPH',
   'extractSchemaVocabulary',
-  'extractVocabulary',
   'getInstanceValues',
   'resetVocabulary',
 ] as const

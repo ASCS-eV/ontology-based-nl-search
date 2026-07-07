@@ -1,11 +1,11 @@
 /**
- * Fragment-extractor tests against the real ontology (issue #124).
+ * Fragment-extractor tests against the real ontology.
  *
  * Parseability is proven by ROUND-TRIPPING each emitted fragment through
  * the store's own Turtle parser (`loadTurtle` into a throwaway named
  * graph) — the store API has no CONSTRUCT surface, and this exercises the
- * exact parser production uses. Assertions are generic (any ontology set)
- * except the explicit gx-cap-bypass proof the epic calls for.
+ * exact parser production uses. Assertions are generic (any ontology
+ * set) except the explicit gx coverage proof.
  */
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { beforeAll, describe, expect, it } from 'vitest'
@@ -65,7 +65,7 @@ describe('extractShaclFragments', () => {
     }
   })
 
-  it('extracts gx fragments despite the prompt path skipping the raw 2.2 MB file', async () => {
+  it('extracts fragments for the largest domain (gx) from the schema graph', async () => {
     const registry = await buildDomainRegistry()
     const gx = registry.domains.get('gx')
     expect(gx?.targetClassIri).toBeTruthy()

@@ -73,15 +73,9 @@ export type {
   QueryInterpretation,
   SearchResponse,
 } from './types.js'
-export type {
-  EnumProperty,
-  NumericProperty,
-  OntologyVocabulary,
-  SchemaVocabulary,
-} from './vocabulary-extractor.js'
+export type { EnumProperty, NumericProperty, SchemaVocabulary } from './vocabulary-extractor.js'
 export {
   extractSchemaVocabulary,
-  extractVocabulary,
   getInstanceValues,
   resetVocabulary,
 } from './vocabulary-extractor.js'

@@ -24,8 +24,8 @@ let vocabulary: Awaited<ReturnType<typeof extractSchemaVocabulary>>
 
 beforeAll(async () => {
   const store = await getInitializedStore()
-  // Schema-only, matching what the agents now cache (issue #121) — the
-  // pipeline fetches instance values lazily via its own store handle.
+  // Schema-only, matching what the agents cache — the pipeline fetches
+  // instance values lazily via its own store handle.
   vocabulary = await extractSchemaVocabulary(store)
 }, 120_000)
 

@@ -1,10 +1,10 @@
-import type { OntologyVocabulary } from '@ontology-search/search'
+import type { SchemaVocabulary } from '@ontology-search/search'
 import { describe, expect, it } from 'vitest'
 
 import { correctDomains, correctFilters, validateSlots } from '../slot-validator.js'
 import type { LlmStructuredResponse } from '../types.js'
 
-const testVocabulary: OntologyVocabulary = {
+const testVocabulary: SchemaVocabulary = {
   enumProperties: [
     {
       localName: 'roadTypes',
@@ -52,7 +52,6 @@ const testVocabulary: OntologyVocabulary = {
   domains: ['hdmap', 'scenario', 'ositrace'],
   conceptSchemes: new Map(),
   classHierarchy: [],
-  instanceValues: new Map(),
 }
 
 describe('correctFilters', () => {
@@ -380,7 +379,7 @@ describe('correctDomains', () => {
     // can't be attributed to any registered namespace. Such a property must
     // not surface as a searchable domain — regression for the
     // `domains: ["hdmap", ""]` / `domain:unknown` artifact.
-    const vocabWithOrphan: OntologyVocabulary = {
+    const vocabWithOrphan: SchemaVocabulary = {
       ...testVocabulary,
       enumProperties: [
         ...testVocabulary.enumProperties,

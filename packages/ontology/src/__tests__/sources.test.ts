@@ -237,10 +237,10 @@ describe('ontology source-tree discovery (sources.ts)', () => {
 
   describe('discoverContextFiles', () => {
     /**
-     * Regression for issue #122: `*.context.jsonld` files were never
-     * discovered by the schema/vocabulary path (only the data loader read
-     * them ad hoc). The discovery seam mirrors discoverShapeFiles — same
-     * roots, same allowlist, same silent skip of missing roots.
+     * `*.context.jsonld` files were once never discovered by the
+     * schema/vocabulary path (only the data loader read them ad hoc). The
+     * discovery seam mirrors discoverShapeFiles — same roots, same
+     * allowlist, same silent skip of missing roots.
      */
     function setupContexts(): string {
       const artifactsRoot = join(workspaceRoot, 'artifacts')

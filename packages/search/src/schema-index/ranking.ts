@@ -1,6 +1,6 @@
 /**
  * Pure lexical ranking over term cards and domain catalogs — no I/O, fully
- * deterministic (epic #120, task 05).
+ * deterministic.
  *
  * The scorer is a pragmatic hybrid of exact / prefix / trigram-similarity
  * token matching with per-field weights (labels > enum values >

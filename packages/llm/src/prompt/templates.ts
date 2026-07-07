@@ -1,8 +1,9 @@
 /**
- * Slot-filling agent prompt templates (ADR 0003) — the static prompt sections
- * (preamble, static sections, rules, examples) embedded by `buildSystemPrompt`
- * in `./prompt-builder.js`. Pure template strings; no imports. Split out so the
- * prompt-assembly logic stays under CONTRIBUTING #15.
+ * Slot-filling agent prompt templates — the static prompt sections
+ * (preamble, static sections, rules, examples) concatenated by
+ * `buildStaticCore` in `./static-core.js`. Pure template strings; no
+ * imports. Split out so the prompt-assembly logic stays under
+ * CONTRIBUTING #15.
  */
 /** Static preamble — instructions, workflow, slot structure */
 export const PREAMBLE = `# Slot-Filling Agent — Skill Definition

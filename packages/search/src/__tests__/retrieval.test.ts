@@ -1,5 +1,5 @@
 /**
- * Retrieval integration tests against the real ontology (issue #125).
+ * Retrieval integration tests against the real ontology.
  *
  * Queries are DERIVED FROM THE INDEX ITSELF (a card's own labels/values),
  * so every assertion is ontology-agnostic and survives an ontology swap —

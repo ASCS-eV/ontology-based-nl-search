@@ -86,6 +86,13 @@ const envSchema = z.object({
    *   - Ollama and the local providers don't implement this concept.
    */
   LLM_THINKING_BUDGET: z.coerce.number().int().nonnegative().default(0),
+  /**
+   * Schema-retrieval routing budget: at most this many primary domains are
+   * selected per query for the composed system prompt.
+   */
+  RETRIEVAL_MAX_DOMAINS: z.coerce.number().int().positive().default(3),
+  /** Schema-retrieval selection budget: at most this many term cards per query. */
+  RETRIEVAL_MAX_CARDS: z.coerce.number().int().positive().default(40),
 
   // Ontology
   ONTOLOGY_REPO: z.string().default('ASCS-eV/ontology-management-base'),

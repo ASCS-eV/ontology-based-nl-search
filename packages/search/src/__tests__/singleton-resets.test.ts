@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 
 import { getAssetDomains, resetAssetDomains } from '../asset-domains.js'
 import { getConceptExpansionIndex, resetConceptExpansionIndex } from '../concept-expansion.js'
-import { extractVocabulary, resetVocabulary } from '../vocabulary-extractor.js'
+import { resetVocabulary } from '../vocabulary-extractor.js'
 
 describe('singleton reset seams', () => {
   it('resetAssetDomains clears the cached promise', async () => {
@@ -43,11 +43,11 @@ describe('singleton reset seams', () => {
     expect(second).not.toBe(first)
   })
 
-  it('extractVocabulary requires a store argument after reset', () => {
+  it('extractSchemaVocabulary requires a store argument after reset', () => {
     // Verifies the seam exists and the contract that after reset, the
     // cached value is gone — calling without a store would fail.
     resetVocabulary()
-    // extractVocabulary(store) would need to query again from scratch
+    // extractSchemaVocabulary(store) would need to query again from scratch
     expect(() => resetVocabulary()).not.toThrow()
   })
 })

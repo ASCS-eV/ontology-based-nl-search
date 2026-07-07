@@ -77,22 +77,6 @@ export interface SchemaVocabulary {
   classHierarchy: SubClassEdge[]
 }
 
-/**
- * Schema vocabulary plus the eager instance-value distribution.
- *
- * @deprecated Compose `extractSchemaVocabulary` with `getInstanceValues`
- * instead — the eager composition forces an instance-data scan even for
- * callers that never read `instanceValues` (issue #121).
- */
-export interface OntologyVocabulary extends SchemaVocabulary {
-  /**
-   * Map from property IRI to distinct literal values observed in instance
-   * data. Powers data-driven gap suggestions for any property — no
-   * per-domain code paths.
-   */
-  instanceValues: Map<string, string[]>
-}
-
 /** Cached singleton (schema-only — instance values are never cached here) */
 let cachedSchemaVocabulary: SchemaVocabulary | null = null
 
@@ -210,20 +194,6 @@ export async function getInstanceValues(
   const instanceValues = new Map<string, string[]>()
   for (const d of distributions) instanceValues.set(d.property, d.values)
   return instanceValues
-}
-
-/**
- * Extract the full ontology vocabulary — schema vocabulary plus the eager
- * instance-value distribution.
- *
- * @deprecated Back-compat composition only (issue #121). Callers that don't
- * read `instanceValues` should use `extractSchemaVocabulary`; callers that do
- * should fetch values lazily via `getInstanceValues`.
- */
-export async function extractVocabulary(store: SparqlStore): Promise<OntologyVocabulary> {
-  const schema = await extractSchemaVocabulary(store)
-  const instanceValues = await getInstanceValues(store)
-  return { ...schema, instanceValues }
 }
 
 /** Reset cached vocabulary (for testing) */

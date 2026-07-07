@@ -54,9 +54,14 @@ vi.mock('@github/copilot-sdk', () => ({
 
 vi.mock('../agent-context.js', () => ({
   getAgentContext: vi.fn().mockResolvedValue({
-    prompt: 'system prompt stub',
     vocabulary: { domains: [] },
     store: {},
+  }),
+  getStaticCore: vi.fn().mockReturnValue('static core stub'),
+  buildRequestPrompt: vi.fn().mockResolvedValue({
+    prompt: 'composed prompt stub',
+    tail: 'retrieved tail stub',
+    retrieved: { domains: [], cards: [], fragments: [], confidence: 1, catalog: [] },
   }),
   warmupAgentContext: vi.fn().mockResolvedValue(undefined),
 }))
@@ -78,14 +83,6 @@ vi.mock('@ontology-search/core/config', () => ({
     LLM_THINKING_BUDGET: 0,
     LLM_MAX_AGENT_STEPS: 3,
   }),
-}))
-
-vi.mock('@ontology-search/search/shacl-reader', () => ({
-  getShaclContent: vi.fn().mockReturnValue(''),
-}))
-
-vi.mock('../../prompt-builder.js', () => ({
-  buildSystemPrompt: vi.fn().mockReturnValue('system prompt'),
 }))
 
 vi.mock('../run-slot-pipeline.js', () => ({

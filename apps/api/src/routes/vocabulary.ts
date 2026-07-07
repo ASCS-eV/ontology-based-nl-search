@@ -20,9 +20,7 @@ vocabularyRoutes.get('/', (c) =>
     handler: async (_c, logger) => {
       logger.info('Vocabulary request started')
       // Schema-only: the response carries sh:in enumerations and datatypes
-      // exclusively — never instance-derived values — so the eager
-      // instance-value scan the old `extractVocabulary` performed was a
-      // pure cold-cache latency cost with no payload effect (issue #121).
+      // exclusively — never instance-derived values.
       const store = await getInitializedStore()
       const vocabulary = await extractSchemaVocabulary(store)
 

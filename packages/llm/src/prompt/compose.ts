@@ -2,29 +2,40 @@
  * Prompt composer — turns a `RetrievedSchema` into the per-request system
  * prompt: static core first (byte-stable, cache-friendly prefix), then the
  * query-relevant ontology fragments, then the always-present domain
- * catalog (epic #120, task 06).
+ * catalog.
  *
- * Security note (adversarial review): the composer deliberately takes NO
- * user-query parameter. User text reaches the LLM only as the user
- * message, exactly as in `full` mode — retrieval has already consumed the
- * query for selection, and the fragments themselves are server-derived
- * from the schema graph ([SHACL]), never from user text. Interpolating the
- * query here would grant user text system-prompt authority for zero
- * benefit.
+ * Security note: the composer deliberately takes NO user-query parameter.
+ * User text reaches the LLM only as the user message — retrieval has
+ * already consumed the query for selection, and the fragments themselves
+ * are server-derived from the schema graph ([SHACL]), never from user
+ * text. Interpolating the query here would grant user text system-prompt
+ * authority for zero benefit.
  */
 import type { RetrievedSchema, ShaclFragment, TermCard } from '@ontology-search/search'
 import { renderDistilledCards } from '@ontology-search/search'
 
-import { formatDomainHeader } from '../prompt-builder.js'
-
 /**
  * Compose the system prompt from the cached static core and the retrieved
- * schema context. Section markers (`### <Domain> domain`, fenced
- * ` ```turtle `) intentionally match `full` mode so prompt-shape
- * assertions and LLM familiarity transfer between modes.
+ * schema context.
  */
 export function composePrompt(core: string, retrieved: RetrievedSchema): string {
-  const sections: string[] = [core]
+  return joinPromptParts(core, composeRetrievedSections(retrieved))
+}
+
+/** The single core+tail concatenation rule (kept here so it cannot drift). */
+export function joinPromptParts(core: string, tail: string): string {
+  return [core, tail].join('\n')
+}
+
+/**
+ * The query-dependent tail alone — the retrieved fragments + domain
+ * catalog, WITHOUT the static core. The Copilot adapter needs this split:
+ * its pooled sessions bake the static core as the session system message
+ * (stable → prompt-cacheable), and the tail rides in the request message
+ * (the SDK cannot replace a session's system message per turn).
+ */
+export function composeRetrievedSections(retrieved: RetrievedSchema): string {
+  const sections: string[] = []
 
   sections.push('## Ontology Reference — Retrieved Schema Fragments\n')
   sections.push(
@@ -53,7 +64,7 @@ export function composePrompt(core: string, retrieved: RetrievedSchema): string 
 
   // The catalog is ALWAYS present: it lets the model distinguish "not
   // retrieved for this query" from "absent from the ontology", so gap
-  // reporting stays honest under retrieval (epic constraint 3).
+  // reporting stays honest under retrieval.
   sections.push('## Domain Catalog — every searchable domain\n')
   sections.push(
     'The fragments above are a query-specific selection. The complete set of searchable domains is listed here; if a user concept matches nothing above and nothing here, report it as an ontology gap instead of inventing a property.\n'
@@ -91,4 +102,22 @@ function groupCards(retrieved: RetrievedSchema): Map<string, TermCard[]> {
   }
   for (const [domain, cards] of groups) if (cards.length === 0) groups.delete(domain)
   return groups
+}
+
+/**
+ * Format a domain id (kebab-case, e.g. `environment-model`) into a
+ * human-readable section header (`Environment Model`).
+ *
+ * Mechanical transformation only — deliberately NOT a hand-maintained
+ * domain-to-label map, and not SHACL `rdfs:label` either (the ontologies we
+ * ship use `"Ontology definition for X"@en`, which is not a display
+ * string). Kebab→Title conversion gives sensible results for any
+ * well-named domain and stays ontology-agnostic.
+ */
+export function formatDomainHeader(domain: string): string {
+  return domain
+    .split(/[-_]/)
+    .filter((part) => part.length > 0)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }

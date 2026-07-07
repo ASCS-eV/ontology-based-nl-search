@@ -1,5 +1,5 @@
 /**
- * Pure ranking unit tests (issue #125) — fully deterministic, no I/O.
+ * Pure ranking unit tests — fully deterministic, no I/O.
  * Fixtures use synthetic vocabulary; nothing here names a real ontology.
  */
 import { describe, expect, it } from 'vitest'

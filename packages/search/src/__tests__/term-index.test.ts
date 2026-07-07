@@ -1,11 +1,11 @@
 /**
- * Term-index integration tests against the real ontology (issue #123).
+ * Term-index integration tests against the real ontology.
  *
  * All assertions are generic — they hold for ANY loaded ontology set
- * (composition + coverage invariants), with one exception the epic
- * explicitly calls for: proving the `gx` domain is indexed despite its raw
- * SHACL file exceeding the prompt path's 500 KB cap. Naming a real domain
- * in a test is allowed (CLAUDE.md ontology-name budget: tests may).
+ * (composition + coverage invariants), with one exception: proving the
+ * largest shipped domain (gx, 2.3 MB of raw SHACL) is fully indexed from
+ * the schema graph. Naming a real domain in a test is allowed (CLAUDE.md
+ * ontology-name budget: tests may).
  */
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -63,7 +63,7 @@ describe('buildTermIndex — composition invariants', () => {
     expect(edges.length).toBeGreaterThan(0)
   })
 
-  it('indexes gx terms even though the raw gx SHACL is skipped by the prompt path (500 KB cap)', () => {
+  it('indexes the largest domain (gx) completely from the schema graph', () => {
     const gxCards = index.byDomain.get('gx') ?? []
     expect(gxCards.length).toBeGreaterThan(0)
   })

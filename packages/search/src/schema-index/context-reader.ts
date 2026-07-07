@@ -48,7 +48,7 @@ export interface ContextTerm {
    * Best-effort classification. A JSON-LD context cannot reliably say
    * whether a term names a class or a property, so this is only set when
    * the definition proves it: a `@type` coercion marks a property. The
-   * term index (03) classifies the rest against the schema graph.
+   * term index classifies the rest against the schema graph.
    */
   kind?: 'property' | 'class'
 }

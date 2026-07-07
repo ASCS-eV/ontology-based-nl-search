@@ -35,11 +35,6 @@
       "import": "./dist/sparql-validator.js",
       "default": "./dist/sparql-validator.js"
     },
-    "./shacl-reader": {
-      "types": "./src/shacl-reader.ts",
-      "import": "./dist/shacl-reader.js",
-      "default": "./dist/shacl-reader.js"
-    },
     "./types": {
       "types": "./src/types.ts",
       "import": "./dist/types.js",

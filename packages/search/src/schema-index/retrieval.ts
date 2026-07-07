@@ -1,7 +1,7 @@
 /**
  * Retrieval API — the query-time entry point of schema retrieval: given a
  * natural-language query, return the ranked, minimal set of domains + term
- * cards + SHACL fragments the LLM needs (epic #120, task 05).
+ * cards + SHACL fragments the LLM needs.
  *
  * Generic and schema-only by construction: every signal comes from the
  * term index (built from the schema graph + context lexicon), ranking is
@@ -46,9 +46,8 @@ export interface RetrievedSchema {
    * `max(top domain-catalog score, top card score)`, clamped to [0, 1].
    * A query naming a property or value scores via cards even when domain
    * routing is fuzzy; a query naming only a domain scores via the catalog;
-   * nonsense scores near 0. Callers widen or fall back below their
-   * threshold (see the agent-integration flag) — retrieval itself never
-   * fails a low-confidence query.
+   * nonsense scores near 0. Retrieval never fails a low-confidence query —
+   * the always-attached catalog keeps gap reporting possible.
    */
   confidence: number
   /** The full domain catalog — always attached for honest gap reporting. */

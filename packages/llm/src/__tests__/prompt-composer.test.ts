@@ -1,16 +1,15 @@
 /**
- * Prompt-composer tests (issue #126): byte-stable static core, composed
- * retrieval prompts, and the no-user-text-in-system-prompt guarantee.
+ * Prompt-composer tests: byte-stable static core, composed request
+ * prompts, and the no-user-text-in-system-prompt guarantee.
  */
 import type { RetrievedSchema } from '@ontology-search/search'
 import { buildTermIndex, getInitializedStore } from '@ontology-search/search'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { buildRequestPrompt } from '../agent/agent-context.js'
-import { composePrompt } from '../prompt/compose.js'
+import { composePrompt, composeRetrievedSections } from '../prompt/compose.js'
 import { buildStaticCore } from '../prompt/static-core.js'
-import { buildSystemPrompt } from '../prompt-builder.js'
-import { EXAMPLES, PREAMBLE, RULES, STATIC_SECTIONS } from '../prompt-builder-templates.js'
+import { EXAMPLES, PREAMBLE, RULES, STATIC_SECTIONS } from '../prompt/templates.js'
 
 const emptyRetrieved: RetrievedSchema = {
   domains: [],
@@ -24,19 +23,10 @@ const emptyRetrieved: RetrievedSchema = {
 }
 
 describe('buildStaticCore', () => {
-  it('is byte-stable and matches the full-mode template order', () => {
+  it('is byte-stable and concatenates the template sections in order', () => {
     const core = buildStaticCore()
     expect(buildStaticCore()).toBe(core)
     expect(core).toBe([PREAMBLE, STATIC_SECTIONS, RULES, EXAMPLES].join('\n'))
-  })
-
-  it('mirrors full mode: both modes share one template source, same order', () => {
-    const full = buildSystemPrompt([{ domain: 'alpha', content: '@prefix ex: <urn:x> .' }])
-    // Full mode interleaves the SHACL dump between PREAMBLE and the static
-    // sections; the relative order of the shared templates is identical.
-    const order = [PREAMBLE, STATIC_SECTIONS, RULES, EXAMPLES].map((s) => full.indexOf(s))
-    expect(order[0]).toBe(0)
-    expect([...order]).toEqual([...order].sort((a, b) => a - b))
   })
 
   it('keeps the load-bearing agent markers', () => {
@@ -50,7 +40,13 @@ describe('composePrompt', () => {
     expect(composePrompt(core, emptyRetrieved).startsWith(core)).toBe(true)
   })
 
-  it('renders fragments per domain with full-mode section markers', () => {
+  it('equals core + tail, so session-baked cores and composed prompts cannot drift', () => {
+    const core = buildStaticCore()
+    const tail = composeRetrievedSections(emptyRetrieved)
+    expect(composePrompt(core, emptyRetrieved)).toBe(`${core}\n${tail}`)
+  })
+
+  it('renders fragments per domain under fenced turtle section markers', () => {
     const retrieved: RetrievedSchema = {
       ...emptyRetrieved,
       domains: ['alpha'],
@@ -113,25 +109,23 @@ describe('buildRequestPrompt (integration)', () => {
     expect(prompt).not.toContain('XYZZY_MARKER_9314')
   })
 
-  it('produces an order-of-magnitude smaller prompt than full mode for a single-domain query', async () => {
+  it('produces a bounded prompt whose tail is proportional to the query', async () => {
     const store = await getInitializedStore()
     const index = await buildTermIndex(store)
     const card = index.cards.find((c) => c.kind === 'property' && c.allowedValues)
     expect(card).toBeDefined()
 
-    const { prompt, retrieved } = await buildRequestPrompt(
+    const { prompt, tail, retrieved } = await buildRequestPrompt(
       `${card!.labels[0]} ${card!.allowedValues![0]}`
     )
 
     const core = buildStaticCore()
     expect(prompt.startsWith(core)).toBe(true)
-    // Measured on the real 22-domain ontology: tail ≈ 20.7k chars (40 default
-    // property fragments + full catalog), total ≈ 40k vs ~325k in full mode —
-    // an 8× reduction. Thresholds carry headroom over the measurement so an
-    // ontology edit doesn't flake the suite; the order-of-magnitude claim is
-    // what's pinned.
-    const tail = prompt.length - core.length
-    expect(tail).toBeLessThan(30_000)
+    // Measured on the shipped 22-domain ontology: tail ≈ 21k chars (default
+    // budgets: 40 property fragments + full catalog), total ≈ 40k. The
+    // thresholds carry headroom over the measurement so an ontology edit
+    // doesn't flake the suite; boundedness is what's pinned.
+    expect(tail.length).toBeLessThan(30_000)
     expect(prompt.length).toBeLessThan(50_000)
     expect(retrieved.confidence).toBeGreaterThan(0)
     expect(retrieved.domains).toContain(card!.domain)
