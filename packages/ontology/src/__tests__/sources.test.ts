@@ -9,6 +9,7 @@ import {
   assertOntologySourcesAvailable,
   DEFAULT_OMB_SUBMODULE_PATH,
   diagnoseOntologySources,
+  discoverContextFiles,
   discoverShapeFiles,
   formatMissingSourcesError,
   getArtifactRoots,
@@ -231,6 +232,62 @@ describe('ontology source-tree discovery (sources.ts)', () => {
         JSON.stringify({ sources: [{ path: 'does-not-exist' }] })
       )
       expect(discoverShapeFiles()).toEqual([])
+    })
+  })
+
+  describe('discoverContextFiles', () => {
+    /**
+     * Regression for issue #122: `*.context.jsonld` files were never
+     * discovered by the schema/vocabulary path (only the data loader read
+     * them ad hoc). The discovery seam mirrors discoverShapeFiles — same
+     * roots, same allowlist, same silent skip of missing roots.
+     */
+    function setupContexts(): string {
+      const artifactsRoot = join(workspaceRoot, 'artifacts')
+      mkdirSync(join(artifactsRoot, 'hdmap'), { recursive: true })
+      mkdirSync(join(artifactsRoot, 'scenario'), { recursive: true })
+      writeFileSync(join(artifactsRoot, 'hdmap', 'hdmap.context.jsonld'), '{}')
+      writeFileSync(join(artifactsRoot, 'hdmap', 'hdmap.shacl.ttl'), '@prefix : <#> .')
+      writeFileSync(join(artifactsRoot, 'hdmap', 'readme.md'), 'ignored')
+      writeFileSync(join(artifactsRoot, 'scenario', 'scenario.context.jsonld'), '{}')
+      writeFileSync(
+        join(workspaceRoot, 'ontology-sources.json'),
+        JSON.stringify({ sources: [{ path: 'artifacts' }] })
+      )
+      return artifactsRoot
+    }
+
+    it('returns every *.context.jsonld with its domain (the directory above)', () => {
+      const artifactsRoot = setupContexts()
+      const files = discoverContextFiles()
+
+      expect(files.map((f) => f.path).sort()).toEqual([
+        join(artifactsRoot, 'hdmap', 'hdmap.context.jsonld'),
+        join(artifactsRoot, 'scenario', 'scenario.context.jsonld'),
+      ])
+      const byDomain = new Map(files.map((f) => [f.domain, f.path]))
+      expect(byDomain.get('hdmap')).toBe(join(artifactsRoot, 'hdmap', 'hdmap.context.jsonld'))
+      expect(byDomain.get('scenario')).toBe(
+        join(artifactsRoot, 'scenario', 'scenario.context.jsonld')
+      )
+    })
+
+    it('honours the per-root domains allowlist', () => {
+      setupContexts()
+      writeFileSync(
+        join(workspaceRoot, 'ontology-sources.json'),
+        JSON.stringify({ sources: [{ path: 'artifacts', domains: ['scenario'] }] })
+      )
+      const files = discoverContextFiles()
+      expect(files.map((f) => f.domain)).toEqual(['scenario'])
+    })
+
+    it('skips non-existent artifact roots silently', () => {
+      writeFileSync(
+        join(workspaceRoot, 'ontology-sources.json'),
+        JSON.stringify({ sources: [{ path: 'does-not-exist' }] })
+      )
+      expect(discoverContextFiles()).toEqual([])
     })
   })
 

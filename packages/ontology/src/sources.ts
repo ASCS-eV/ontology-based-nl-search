@@ -336,3 +336,40 @@ export function discoverShapeFiles(options: DiscoverShapeFilesOptions = {}): Sha
   }
   return results
 }
+
+/** A discovered JSON-LD context file with its domain (directory name above it). */
+export interface ContextFile {
+  path: string
+  /** Directory name immediately above the file — domain by convention. */
+  domain: string
+}
+
+/**
+ * Walk every artifact root, every domain subdirectory, and return every
+ * `*.context.jsonld` file inside — the per-ontology JSON-LD contexts that
+ * map human-facing term names to IRIs ([JSON-LD11] §3.1 The Context).
+ *
+ * Sibling of {@link discoverShapeFiles}: same root resolution
+ * (`getArtifactRoots`), same allowlist handling, same silent skip of
+ * missing roots. Discovery only — parsing lives with the consumer
+ * (`@ontology-search/search` schema-index), keeping this module I/O-shape
+ * agnostic.
+ */
+export function discoverContextFiles(): ContextFile[] {
+  const results: ContextFile[] = []
+
+  for (const root of getArtifactRoots()) {
+    if (!existsSync(root.path)) continue
+    for (const entry of readdirSync(root.path)) {
+      if (root.domainAllowlist && !root.domainAllowlist.has(entry)) continue
+      const domainDir = join(root.path, entry)
+      if (!statSync(domainDir).isDirectory()) continue
+      for (const file of readdirSync(domainDir)) {
+        if (file.endsWith('.context.jsonld')) {
+          results.push({ path: join(domainDir, file), domain: entry })
+        }
+      }
+    }
+  }
+  return results
+}
