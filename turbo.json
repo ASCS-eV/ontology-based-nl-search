@@ -13,7 +13,8 @@
   ],
   "globalDependencies": [
     "ontology-sources.json",
-    "submodules/ontology-management-base/artifacts/**"
+    "submodules/ontology-management-base/artifacts/**",
+    "submodules/ontology-management-base/imports/**"
   ],
   "tasks": {
     "build": {

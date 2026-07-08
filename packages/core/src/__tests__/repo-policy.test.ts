@@ -319,6 +319,7 @@ describe('repo-policy: turbo hashes the ontology artifacts', () => {
     const globs = turbo.globalDependencies ?? []
 
     expect(globs).toContain('submodules/ontology-management-base/artifacts/**')
+    expect(globs).toContain('submodules/ontology-management-base/imports/**')
     expect(globs).toContain('ontology-sources.json')
     expect(globs.some((g) => g.startsWith('!submodules'))).toBe(false)
   })

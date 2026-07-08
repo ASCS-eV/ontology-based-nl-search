@@ -133,3 +133,45 @@ graph TD
 At warmup, `reference-index.ts` BFSes every typed asset instance and records each outgoing reference as a `(sourceClass, predicatePath, targetClass)` signature. The compiler uses these signatures to emit JOINs, and the per-row traceability breadcrumb under each result renders the actual predicate path that connected the two assets.
 
 When a user searches for "scenarios on German motorways", the compiler generates a SPARQL query that joins scenario assets with their referenced HD map's georeference shape group. Broader queries can stay multi-domain as well: because `roadTypes` exists in both HD map and OSI trace ontologies, a search like "German motorway assets" can match both domains without hardcoded domain tables.
+
+## Ontology Sources & the `imports/` Opt-In
+
+The stack loads its artifacts from the roots declared in `ontology-sources.json`
+(validated by `ontology-sources.schema.json`, JSON Schema 2020-12). Without a
+manifest it falls back to `ONTOLOGY_ARTIFACTS_PATH`, then to the default
+submodule path. Multiple roots are supported, each with an optional per-root
+`domains` allowlist.
+
+OMB also ships `imports/` — the foundation vocabularies its ontologies build on
+(`cred`, `cs`, `dcterms`, `did`, `foaf`, `org`, `owl`, `prov`, `rdf`, `rdfs`,
+`schema`, `sec`, `sh`, `skos`, `xsd` as per-directory `*.owl.ttl`). These are
+**not loaded by default**, and measurement shows loading them is safe but buys
+nothing for search today:
+
+| metric                        | artifacts only | + `imports/` |
+| ----------------------------- | -------------- | ------------ |
+| schema-graph triples          | 248,135        | 272,287      |
+| term cards / searchable props | 483 / 165      | 483 / 165    |
+| asset domains / ref. edges    | 13 / 469       | 13 / 469     |
+| retrieval recall (gating set) | 1.00           | 1.00         |
+
+Searchable vocabulary is SHACL-driven and `imports/` ships no `*.shacl.ttl`,
+so no phantom domains or meta-vocabulary properties can appear — no filter
+layer is required. The only growth is foundation `rdfs:subClassOf` edges,
+which nothing on the search path consumes yet.
+
+**To opt in** (e.g. when foundation class hierarchies become load-bearing),
+add a second source to `ontology-sources.json`:
+
+```json
+{
+  "sources": [
+    { "name": "omb-artifacts", "path": "submodules/ontology-management-base/artifacts" },
+    { "name": "omb-imports", "path": "submodules/ontology-management-base/imports" }
+  ]
+}
+```
+
+No code change is involved; the loader, term index, retrieval, and compiler
+are root-agnostic by construction. `OpenDrive`/`OpenScenario` under `imports/`
+contain only XSD schemas (no RDF) and cannot be loaded.

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ASCS-eV/ontology-based-nl-search/ontology-sources.schema.json",
+  "title": "Ontology sources manifest",
+  "description": "Declares the artifact roots the search stack loads. Each source points at a directory of {domain}/{domain}.{owl,shacl}.ttl (+ optional *.context.jsonld) subdirectories. Multiple roots are supported; per-root domain allowlists scope large roots.",
+  "type": "object",
+  "required": ["sources"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "description": { "type": "string" },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable source name; sources that also declare `data` are promoted to searchable asset domains under this name."
+          },
+          "path": {
+            "type": "string",
+            "description": "Workspace-relative path to an artifacts directory containing domain subdirectories."
+          },
+          "data": {
+            "type": "string",
+            "description": "Optional workspace-relative path to instance data (JSON-LD/Turtle). When any source declares data, built-in sample data is not loaded."
+          },
+          "domains": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Optional allowlist of domain subdirectory names to load from this root; all others are ignored."
+          },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
