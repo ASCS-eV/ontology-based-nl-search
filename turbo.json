@@ -11,7 +11,10 @@
     "https_proxy",
     "no_proxy"
   ],
-  "globalDependencies": ["!submodules/**"],
+  "globalDependencies": [
+    "ontology-sources.json",
+    "submodules/ontology-management-base/artifacts/**"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
