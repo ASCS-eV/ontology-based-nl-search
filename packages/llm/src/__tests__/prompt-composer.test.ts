@@ -121,12 +121,16 @@ describe('buildRequestPrompt (integration)', () => {
 
     const core = buildStaticCore()
     expect(prompt.startsWith(core)).toBe(true)
-    // Measured on the shipped 22-domain ontology: tail ≈ 21k chars (default
-    // budgets: 40 property fragments + full catalog), total ≈ 40k. The
-    // thresholds carry headroom over the measurement so an ontology edit
-    // doesn't flake the suite; boundedness is what's pinned.
-    expect(tail.length).toBeLessThan(30_000)
-    expect(prompt.length).toBeLessThan(50_000)
+    // Measured on the pinned OMB ontology: this card-derived query routes to
+    // `environment-model` plus its transitive references (`hdmap`, `ositrace`),
+    // ~69 fragments, tail ≈ 61k / total ≈ 80k. The service-characteristics /
+    // ISO-34503 refresh enlarged individual shapes and added cross-domain
+    // references, so the tail is ~3× the pre-refresh measurement — still an
+    // order of magnitude under a whole-file SHACL dump (~300k). The thresholds
+    // keep headroom over the measurement so a further ontology edit doesn't
+    // flake the suite; BOUNDEDNESS (not a specific size) is what's pinned.
+    expect(tail.length).toBeLessThan(80_000)
+    expect(prompt.length).toBeLessThan(100_000)
     expect(retrieved.confidence).toBeGreaterThan(0)
     expect(retrieved.domains).toContain(card!.domain)
   })

@@ -13,12 +13,16 @@
  */
 import { OntologySourcesError } from '@ontology-search/core/errors'
 import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
+import type { Quad } from '@rdfjs/types'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 
 import {
   computeComponentBases,
+  computeCompositionScores,
+  extractCompositionAdjacency,
   extractNamespace,
+  extractShapeTargets,
   extractSubClassOfEdges,
   extractTargetClasses,
   extractVersion,
@@ -119,6 +123,8 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
     filePrefixes: Record<string, string>
     targetClasses: { localName: string; iri: string }[]
     subClassEdges: { sub: string; super: string }[]
+    /** Parsed SHACL quads — retained so pass 2 can score composition roots. */
+    shaclQuads: Quad[]
   }
   const raw: RawDomain[] = []
 
@@ -194,6 +200,7 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
         filePrefixes,
         targetClasses,
         subClassEdges,
+        shaclQuads: shacl.quads,
       })
     }
   }
@@ -211,8 +218,26 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
   }
   const componentBases = computeComponentBases(allEdges, targetClassDomain)
 
+  // Composition scores are global (an asset may reference another domain's
+  // shapes) and structural — derived from the whole shapes graph, independent of
+  // per-file declaration order. `selectPrimaryAssetClass` uses them to prefer a
+  // domain's composition root over a standalone shape that merely happens to be
+  // declared first.
+  const allShaclQuads = raw.flatMap((d) => d.shaclQuads)
+  const compositionScore = computeCompositionScores(
+    extractCompositionAdjacency(allShaclQuads),
+    extractShapeTargets(allShaclQuads),
+    new Set(targetClassDomain.keys())
+  )
+
   for (const d of raw) {
-    const primaryClass = selectPrimaryAssetClass(d.targetClasses, d.entry, componentBases, superOf)
+    const primaryClass = selectPrimaryAssetClass(
+      d.targetClasses,
+      d.entry,
+      componentBases,
+      superOf,
+      compositionScore
+    )
     if (!primaryClass) continue
 
     domains.set(d.entry, {

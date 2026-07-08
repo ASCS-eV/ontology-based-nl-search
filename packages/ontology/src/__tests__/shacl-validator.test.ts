@@ -18,6 +18,13 @@ import { ShaclValidator } from '../shacl-validator.js'
 
 const GEOREF_COUNTRY = 'https://w3id.org/ascs-ev/envited-x/georeference/v5/country'
 const HDMAP_ROAD_TYPES = 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/roadTypes'
+// A simple-path `sh:in` enum ("left-hand"/"right-hand"). `roadTypes` also has an
+// `sh:in`, but upstream now expresses it on the version-conditional SEQUENCE path
+// `( hdmap:hasContent hdmap:roadTypes )`; sequence/inverse paths are deliberately
+// out of scope for bare-value slot validation (see shacl-validator-loader.ts),
+// so the enum happy-path is pinned to a property still constrained on a simple
+// path — the validator capability under test.
+const HDMAP_TRAFFIC_DIRECTION = 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/trafficDirection'
 
 describe('ShaclValidator', () => {
   it('builds from the workspace ontology and exposes covered properties', async () => {
@@ -52,7 +59,7 @@ describe('ShaclValidator', () => {
 
   it('rejects a value outside an sh:in enumeration', async () => {
     const validator = await ShaclValidator.fromWorkspace()
-    const result = await validator.validateValue(HDMAP_ROAD_TYPES, 'spaceway')
+    const result = await validator.validateValue(HDMAP_TRAFFIC_DIRECTION, 'diagonal')
 
     expect(result.conforms).toBe(false)
     const constraints = result.violations.map((v) => v.sourceConstraintComponent)
@@ -61,7 +68,7 @@ describe('ShaclValidator', () => {
 
   it('accepts a value inside an sh:in enumeration', async () => {
     const validator = await ShaclValidator.fromWorkspace()
-    const result = await validator.validateValue(HDMAP_ROAD_TYPES, 'motorway')
+    const result = await validator.validateValue(HDMAP_TRAFFIC_DIRECTION, 'left-hand')
 
     expect(result.conforms).toBe(true)
     expect(result.violations).toEqual([])

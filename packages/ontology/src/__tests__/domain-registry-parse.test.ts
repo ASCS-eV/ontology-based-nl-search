@@ -16,7 +16,15 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { extractNamespace, extractTargetClasses, parseTtl } from '../domain-registry-parse.js'
+import {
+  computeCompositionScores,
+  extractCompositionAdjacency,
+  extractNamespace,
+  extractShapeTargets,
+  extractTargetClasses,
+  parseTtl,
+  selectPrimaryAssetClass,
+} from '../domain-registry-parse.js'
 
 const NS = 'http://example.org/v1/'
 
@@ -103,5 +111,64 @@ scenario:X a sh:NodeShape ; sh:targetClass scenario:X .`
     const ttl = `@prefix sh: <http://www.w3.org/ns/shacl#> .
 [] a sh:NodeShape .`
     expect(extractNamespace(parseTtl(ttl), 'nomatch')).toBeNull()
+  })
+})
+
+/**
+ * Regression: a domain's primary asset class must be its composition ROOT (the
+ * shape aggregating the domain's sub-shapes), NOT merely the first-declared
+ * target class. This defends against SHACL declaration-order changes upstream —
+ * e.g. ISO-34503 ODD annotation shapes (`OddDynamicElements`, …) that
+ * `openlabel-v2` now declares AHEAD of `Scenario`. Before composition scoring,
+ * `selectPrimaryAssetClass` returned the first-declared `Leaf` here; it must now
+ * return `Root`, which references `Leaf` and thus scores higher.
+ */
+describe('domain-registry-parse — composition-root primary selection', () => {
+  // `Leaf` is declared first but composes nothing; `Root` is declared second and
+  // references `Leaf` via a property shape (sh:node). Neither is a sub-component.
+  const ttl = `@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <${NS}> .
+
+ex:Leaf a sh:NodeShape ; sh:targetClass ex:Leaf ;
+  sh:property [ sh:path ex:label ; sh:minCount 1 ] .
+
+ex:Root a sh:NodeShape ; sh:targetClass ex:Root ;
+  sh:property [ sh:path ex:hasLeaf ; sh:node ex:Leaf ] .`
+
+  function scoresFor(parsed: ReturnType<typeof parseTtl>) {
+    const targets = extractTargetClasses(parsed, NS)
+    return computeCompositionScores(
+      extractCompositionAdjacency(parsed.quads),
+      extractShapeTargets(parsed.quads),
+      new Set(targets.map((t) => t.iri))
+    )
+  }
+
+  it('scores the aggregating shape above the leaf it composes', () => {
+    const scores = scoresFor(parseTtl(ttl))
+    expect(scores.get(`${NS}Root`)).toBe(1)
+    expect(scores.get(`${NS}Leaf`) ?? 0).toBe(0)
+  })
+
+  it('selects the composition root even though the leaf is declared first', () => {
+    const parsed = parseTtl(ttl)
+    const targets = extractTargetClasses(parsed, NS)
+    expect(targets.map((t) => t.localName)).toEqual(['Leaf', 'Root'])
+
+    const primary = selectPrimaryAssetClass(
+      targets,
+      'somedomain',
+      new Set(),
+      new Map(),
+      scoresFor(parsed)
+    )
+    expect(primary?.localName).toBe('Root')
+  })
+
+  it('without scores, falls back to first-declared (documents prior behavior)', () => {
+    const parsed = parseTtl(ttl)
+    const targets = extractTargetClasses(parsed, NS)
+    const primary = selectPrimaryAssetClass(targets, 'somedomain', new Set(), new Map())
+    expect(primary?.localName).toBe('Leaf')
   })
 })
