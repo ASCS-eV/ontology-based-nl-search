@@ -65,6 +65,7 @@ export async function runSparqlAgent(
     signal: options?.signal,
     maxDomains: policy.retrieval.maxDomains,
     maxCards: policy.retrieval.maxCards,
+    maxContextChars: policy.retrieval.maxContextChars,
   })
   endRetrieval()
 

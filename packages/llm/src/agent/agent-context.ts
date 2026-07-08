@@ -87,6 +87,7 @@ export interface BuildRequestPromptOptions {
   /** Retrieval budgets — wired from the agent policy. */
   maxDomains?: number
   maxCards?: number
+  maxContextChars?: number
   /** false = distilled cards instead of raw SHACL fragments. */
   includeFragments?: boolean
 }
@@ -109,6 +110,7 @@ export async function buildRequestPrompt(
     signal: options.signal,
     maxDomains: options.maxDomains,
     maxCards: options.maxCards,
+    maxContextChars: options.maxContextChars,
     includeFragments: options.includeFragments,
   })
   const tail = composeRetrievedSections(retrieved)

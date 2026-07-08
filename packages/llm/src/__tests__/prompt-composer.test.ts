@@ -56,6 +56,7 @@ describe('composePrompt', () => {
           domain: 'alpha',
           turtle:
             '@prefix sh: <http://www.w3.org/ns/shacl#> .\n<urn:x:AlphaShape> a sh:NodeShape .',
+          propertyIris: [],
         },
       ],
     }
@@ -87,6 +88,46 @@ describe('composePrompt', () => {
     expect(prompt).toContain('### Alpha domain')
     expect(prompt).toContain('speedLimit : integer [30|50]')
     expect(prompt).not.toContain('```turtle')
+  })
+
+  it('renders uncovered selected properties as condensed lines beside the fragments', () => {
+    const retrieved: RetrievedSchema = {
+      ...emptyRetrieved,
+      domains: ['alpha'],
+      cards: [
+        {
+          kind: 'property',
+          iri: 'urn:x:speedLimit',
+          localName: 'speedLimit',
+          domain: 'alpha',
+          labels: ['speed limit'],
+          allowedValues: ['30', '50'],
+        },
+        {
+          kind: 'property',
+          iri: 'urn:x:width',
+          localName: 'width',
+          domain: 'alpha',
+          labels: ['width'],
+        },
+      ],
+      fragments: [
+        {
+          shapeIri: 'urn:x:AlphaShape',
+          domain: 'alpha',
+          turtle: '<urn:x:AlphaShape> a sh:NodeShape .',
+          propertyIris: ['urn:x:speedLimit'],
+        },
+      ],
+    }
+    const prompt = composePrompt(buildStaticCore(), retrieved)
+
+    // Fragment-covered property: raw Turtle only.
+    expect(prompt).toContain('<urn:x:AlphaShape> a sh:NodeShape .')
+    // Budget-overflow property: condensed line under the same domain header.
+    expect(prompt).toContain('Further properties of this domain (condensed):')
+    expect(prompt).toContain('width')
+    expect(prompt.match(/### Alpha domain/g)).toHaveLength(1)
   })
 
   it('always attaches the domain catalog for honest gap reporting', () => {
@@ -121,16 +162,14 @@ describe('buildRequestPrompt (integration)', () => {
 
     const core = buildStaticCore()
     expect(prompt.startsWith(core)).toBe(true)
-    // Measured on the pinned OMB ontology: this card-derived query routes to
-    // `environment-model` plus its transitive references (`hdmap`, `ositrace`),
-    // ~69 fragments, tail ≈ 61k / total ≈ 80k. The service-characteristics /
-    // ISO-34503 refresh enlarged individual shapes and added cross-domain
-    // references, so the tail is ~3× the pre-refresh measurement — still an
-    // order of magnitude under a whole-file SHACL dump (~300k). The thresholds
-    // keep headroom over the measurement so a further ontology edit doesn't
-    // flake the suite; BOUNDEDNESS (not a specific size) is what's pinned.
-    expect(tail.length).toBeLessThan(80_000)
-    expect(prompt.length).toBeLessThan(100_000)
+    // The context budget bounds the raw-fragment payload (default 45k
+    // chars); overflow properties ride as condensed lines. With the pinned
+    // OMB ontology the worst observed unbounded payload was ~57k — the
+    // budget plus catalog/headers keeps every tail under ~52k regardless
+    // of how upstream shapes grow. Thresholds carry headroom; BOUNDEDNESS
+    // is what's pinned.
+    expect(tail.length).toBeLessThan(55_000)
+    expect(prompt.length).toBeLessThan(75_000)
     expect(retrieved.confidence).toBeGreaterThan(0)
     expect(retrieved.domains).toContain(card!.domain)
   })

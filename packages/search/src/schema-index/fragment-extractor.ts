@@ -26,6 +26,12 @@ export interface ShaclFragment {
   shapeIri: string
   domain: string
   turtle: string
+  /**
+   * The sh:path IRIs of the property blocks this fragment carries — the
+   * coverage record that lets budget enforcement degrade an overflowing
+   * fragment's properties to distilled cards instead of dropping them.
+   */
+  propertyIris: string[]
 }
 
 /**
@@ -169,6 +175,7 @@ export async function extractShaclFragments(
       shapeIri: acc.shapeIri,
       domain,
       turtle: serializeShape(acc, namespaces, registry.allPrefixes()),
+      propertyIris: [...new Set([...acc.properties.values()].map((b) => b.path))].sort(),
     })
   }
   return fragments

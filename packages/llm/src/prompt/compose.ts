@@ -45,19 +45,26 @@ export function composeRetrievedSections(retrieved: RetrievedSchema): string {
     'Read the Turtle carefully — look for `sh:in` (allowed values), `sh:pattern` (regex), `sh:datatype` (type), `sh:path` (property name), `sh:name` (label), and `sh:description` (meaning).\n'
   )
 
-  if (retrieved.fragments.length > 0) {
-    for (const [domain, fragments] of groupFragments(retrieved)) {
-      sections.push(`### ${formatDomainHeader(domain)} domain\n`)
+  // Properties whose raw SHACL made it into the (budget-bounded) fragment
+  // payload; everything else selected renders as a distilled line, so
+  // coverage survives the budget.
+  const covered = new Set(retrieved.fragments.flatMap((f) => f.propertyIris))
+  const fragmentsByDomain = groupFragments(retrieved)
+  const uncoveredByDomain = groupCards(retrieved, (card) => !covered.has(card.iri))
+
+  for (const domain of new Set([...fragmentsByDomain.keys(), ...uncoveredByDomain.keys()])) {
+    sections.push(`### ${formatDomainHeader(domain)} domain\n`)
+    const fragments = fragmentsByDomain.get(domain) ?? []
+    if (fragments.length > 0) {
       sections.push('```turtle')
       sections.push(fragments.map((f) => f.turtle.trim()).join('\n\n'))
       sections.push('```\n')
     }
-  } else if (retrieved.cards.length > 0) {
-    // Distilled mode: one dense line per term instead of raw Turtle.
-    for (const [domain, cards] of groupCards(retrieved)) {
-      sections.push(`### ${formatDomainHeader(domain)} domain\n`)
+    const uncovered = uncoveredByDomain.get(domain) ?? []
+    if (uncovered.length > 0) {
+      if (fragments.length > 0) sections.push('Further properties of this domain (condensed):\n')
       sections.push('```')
-      sections.push(renderDistilledCards(cards))
+      sections.push(renderDistilledCards(uncovered))
       sections.push('```\n')
     }
   }
@@ -91,11 +98,15 @@ function groupFragments(retrieved: RetrievedSchema): Map<string, ShaclFragment[]
   return groups
 }
 
-/** Cards grouped by domain, routed domains first, then discovery order. */
-function groupCards(retrieved: RetrievedSchema): Map<string, TermCard[]> {
+/** Property cards grouped by domain, routed domains first, then discovery order. */
+function groupCards(
+  retrieved: RetrievedSchema,
+  keep: (card: TermCard) => boolean
+): Map<string, TermCard[]> {
   const groups = new Map<string, TermCard[]>()
   for (const domain of retrieved.domains) groups.set(domain, [])
   for (const card of retrieved.cards) {
+    if (card.kind !== 'property' || !keep(card)) continue
     const list = groups.get(card.domain) ?? []
     list.push(card)
     groups.set(card.domain, list)

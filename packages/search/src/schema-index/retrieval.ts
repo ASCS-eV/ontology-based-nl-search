@@ -14,6 +14,7 @@
  * LLM can distinguish "few cards retrieved" from "term absent from the
  * ontology" and report ontology gaps honestly.
  */
+import { createComponentLogger } from '@ontology-search/core/logging'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { type EmbeddingProvider, lexicalOnlyProvider } from './embedding.js'
@@ -28,6 +29,13 @@ export interface RetrievalOptions {
   maxCards?: number
   /** Extract SHACL fragments for the selected properties (default true). */
   includeFragments?: boolean
+  /**
+   * Bound on the raw SHACL fragment payload, in characters. Overflowing
+   * fragments are dropped lowest-relevance-first; their properties stay in
+   * `cards` and reach the prompt as distilled lines instead — bounded
+   * context, no lost coverage, never silent.
+   */
+  maxContextChars?: number
   /** Optional embedding rerank; default is the offline lexical-only provider. */
   embedding?: EmbeddingProvider
   /** Cancels in-flight schema queries (SSE close, request abort). */
@@ -54,8 +62,19 @@ export interface RetrievedSchema {
   catalog: DomainCard[]
 }
 
+const log = createComponentLogger('retrieval')
+
 const DEFAULT_MAX_DOMAINS = 3
 const DEFAULT_MAX_CARDS = 40
+/**
+ * Default raw-fragment payload bound. Sized from measurements on the
+ * shipped ontology set: typical schema-term queries retrieve ~20k chars of
+ * fragments; the largest observed (a domain with enlarged upstream shapes
+ * plus transitive references) reached ~57k, tripling the prompt tail. The
+ * bound trims only such outliers — their overflow properties still reach
+ * the prompt as distilled lines.
+ */
+const DEFAULT_MAX_CONTEXT_CHARS = 45_000
 /** Transitive dependency expansion depth over referencesDomain edges. */
 const MAX_EXPANSION_DEPTH = 2
 /** Card budget per transitively-pulled dependency domain. */
@@ -76,6 +95,7 @@ export async function retrieveRelevantSchema(
   const maxDomains = options.maxDomains ?? DEFAULT_MAX_DOMAINS
   const maxCards = options.maxCards ?? DEFAULT_MAX_CARDS
   const includeFragments = options.includeFragments ?? true
+  const maxContextChars = options.maxContextChars ?? DEFAULT_MAX_CONTEXT_CHARS
   const embedding = options.embedding ?? lexicalOnlyProvider
 
   const index = await buildTermIndex(store)
@@ -177,10 +197,13 @@ export async function retrieveRelevantSchema(
   options.signal?.throwIfAborted()
   let fragments: ShaclFragment[] = []
   if (includeFragments) {
-    const propertyIris = [
-      ...new Set(selected.filter((c) => c.kind === 'property').map((c) => c.iri)),
-    ]
-    fragments = await extractShaclFragments(store, { propertyIris }, { signal: options.signal })
+    const selectedPropertyIris = selected.filter((c) => c.kind === 'property').map((c) => c.iri)
+    const propertyIris = [...new Set(selectedPropertyIris)]
+    fragments = enforceContextBudget(
+      await extractShaclFragments(store, { propertyIris }, { signal: options.signal }),
+      selectedPropertyIris,
+      maxContextChars
+    )
   }
 
   return { domains, cards: selected, fragments, confidence, catalog: index.domainCatalog }
@@ -197,6 +220,47 @@ export async function warmupRetrievalIndex(
 ): Promise<void> {
   await buildTermIndex(store)
   await embedding.embed([])
+}
+
+/**
+ * Keep fragments highest-relevance-first until the character budget is
+ * spent. Relevance = the best selection rank among a fragment's covered
+ * properties (`selectedIris` is in selection order). Dropped fragments are
+ * logged — their properties remain in `cards`, so the composer renders
+ * them as distilled lines instead of raw Turtle.
+ */
+function enforceContextBudget(
+  fragments: ShaclFragment[],
+  selectedIris: string[],
+  maxContextChars: number
+): ShaclFragment[] {
+  const rank = new Map<string, number>()
+  selectedIris.forEach((iri, i) => {
+    if (!rank.has(iri)) rank.set(iri, i)
+  })
+  const prioritized = [...fragments].sort((a, b) => {
+    const bestRank = (f: ShaclFragment): number =>
+      Math.min(...f.propertyIris.map((iri) => rank.get(iri) ?? Number.MAX_SAFE_INTEGER))
+    return bestRank(a) - bestRank(b) || a.shapeIri.localeCompare(b.shapeIri)
+  })
+
+  const kept: ShaclFragment[] = []
+  let spent = 0
+  for (const fragment of prioritized) {
+    if (spent + fragment.turtle.length > maxContextChars && kept.length > 0) continue
+    kept.push(fragment)
+    spent += fragment.turtle.length
+  }
+
+  if (kept.length < fragments.length) {
+    log.info('Fragment payload over budget; overflow properties degrade to distilled cards', {
+      keptFragments: kept.length,
+      droppedFragments: fragments.length - kept.length,
+      keptChars: spent,
+      maxContextChars,
+    })
+  }
+  return kept
 }
 
 /**
