@@ -303,3 +303,23 @@ describe('repo-policy: C4 — the retrieval surface names no loaded ontology dom
     ).toEqual([])
   })
 })
+
+describe('repo-policy: turbo hashes the ontology artifacts', () => {
+  /**
+   * Every package's behaviour is a function of the loaded ontology, so the
+   * task hash must change when the pinned artifacts change. A blanket
+   * `!submodules/**` exclusion once made `pnpm run validate` replay stale
+   * cached results across a submodule bump — reporting green for artifact
+   * changes it never tested.
+   */
+  it('globalDependencies covers the artifact tree and never blanket-excludes submodules', () => {
+    const turbo = JSON.parse(readFileSync(join(ROOT, 'turbo.json'), 'utf-8')) as {
+      globalDependencies?: string[]
+    }
+    const globs = turbo.globalDependencies ?? []
+
+    expect(globs).toContain('submodules/ontology-management-base/artifacts/**')
+    expect(globs).toContain('ontology-sources.json')
+    expect(globs.some((g) => g.startsWith('!submodules'))).toBe(false)
+  })
+})
