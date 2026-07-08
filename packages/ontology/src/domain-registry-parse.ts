@@ -21,6 +21,27 @@ const OWL_ONTOLOGY = `${RDF_PREFIXES.owl}Ontology`
 const RDFS_SUBCLASS_OF = `${RDF_PREFIXES.rdfs}subClassOf`
 const SH_TARGET_CLASS = `${RDF_PREFIXES.sh}targetClass`
 
+// Composition-graph predicates: a NodeShape "composes" the shapes and classes
+// it references through its property shapes. Following these edges — the direct
+// structural links (sh:property, sh:node, sh:class, sh:qualifiedValueShape), the
+// logical combinators (sh:and/sh:or/sh:xone/sh:not), and the rdf:first/rdf:rest
+// list plumbing those combinators use — reconstructs which shapes nest which
+// [SHACL §2.3]. Used to pick a domain's primary asset class as the composition
+// ROOT (the shape aggregating the domain's sub-shapes) rather than by SHACL
+// declaration order.
+const COMPOSITION_PREDICATES: ReadonlySet<string> = new Set([
+  `${RDF_PREFIXES.sh}property`,
+  `${RDF_PREFIXES.sh}node`,
+  `${RDF_PREFIXES.sh}class`,
+  `${RDF_PREFIXES.sh}qualifiedValueShape`,
+  `${RDF_PREFIXES.sh}and`,
+  `${RDF_PREFIXES.sh}or`,
+  `${RDF_PREFIXES.sh}xone`,
+  `${RDF_PREFIXES.sh}not`,
+  `${RDF_PREFIXES.rdf}first`,
+  `${RDF_PREFIXES.rdf}rest`,
+])
+
 /** A parsed Turtle document: resolved quads plus its declared prefix map. */
 export interface ParsedTtl {
   quads: Quad[]
@@ -256,21 +277,113 @@ export function computeComponentBases(
 }
 
 /**
+ * Build the composition adjacency for a set of quads: subject term value →
+ * object term values, for every edge whose predicate continues a
+ * shape-composition traversal ({@link COMPOSITION_PREDICATES}). Blank-node
+ * identifiers are kept so nested property shapes and `sh:or`/`sh:xone`
+ * alternative lists are walked; the caller resolves reached nodes back to
+ * target classes [SHACL §2.3].
+ */
+export function extractCompositionAdjacency(quads: Quad[]): Map<string, string[]> {
+  const adjacency = new Map<string, string[]>()
+  for (const q of quads) {
+    if (!COMPOSITION_PREDICATES.has(q.predicate.value)) continue
+    const list = adjacency.get(q.subject.value)
+    if (list) list.push(q.object.value)
+    else adjacency.set(q.subject.value, [q.object.value])
+  }
+  return adjacency
+}
+
+/**
+ * Map every shape subject to the target class(es) it declares via
+ * `sh:targetClass` [SHACL §2.1.3.3]. A shape may target several classes and a
+ * class may be targeted by several shapes, so values are arrays. Lets a
+ * composition-reachable shape node be resolved back to the asset class(es) it
+ * stands for.
+ */
+export function extractShapeTargets(quads: Quad[]): Map<string, string[]> {
+  const map = new Map<string, string[]>()
+  for (const q of quads) {
+    if (q.predicate.value !== SH_TARGET_CLASS || q.object.termType !== 'NamedNode') continue
+    const list = map.get(q.subject.value)
+    if (list) list.push(q.object.value)
+    else map.set(q.subject.value, [q.object.value])
+  }
+  return map
+}
+
+/**
+ * Score each target class by how many OTHER target classes its shape composes
+ * (references transitively through the composition graph). A domain's primary
+ * asset is the composition ROOT — the shape that aggregates the domain's
+ * sub-shapes — which scores highest; standalone leaf/annotation shapes score
+ * zero. This makes primary-asset selection independent of SHACL declaration
+ * order (a shape reordered or newly inserted upstream cannot displace the
+ * asset). Pure over its inputs (adjacency + shape→target map + the set of all
+ * target-class IRIs), so it is unit-testable without I/O.
+ */
+export function computeCompositionScores(
+  adjacency: Map<string, string[]>,
+  shapeTargets: Map<string, string[]>,
+  targetClassIris: ReadonlySet<string>
+): Map<string, number> {
+  const reachedByTarget = new Map<string, Set<string>>()
+
+  for (const [subject, targets] of shapeTargets) {
+    // Depth-first walk of the composition graph from this shape subject,
+    // collecting reachable target classes — either a target-class IRI reached
+    // directly (sh:class) or a shape node that itself declares a target class
+    // (sh:node / sh:qualifiedValueShape). A path-agnostic `seen` set bounds the
+    // walk on cyclic shape graphs.
+    const reached = new Set<string>()
+    const seen = new Set<string>([subject])
+    const stack = [...(adjacency.get(subject) ?? [])]
+    while (stack.length) {
+      const node = stack.pop()!
+      if (seen.has(node)) continue
+      seen.add(node)
+      if (targetClassIris.has(node)) reached.add(node)
+      for (const t of shapeTargets.get(node) ?? []) reached.add(t)
+      for (const next of adjacency.get(node) ?? []) stack.push(next)
+    }
+    for (const target of targets) {
+      const set = reachedByTarget.get(target) ?? new Set<string>()
+      for (const r of reached) if (r !== target) set.add(r)
+      reachedByTarget.set(target, set)
+    }
+  }
+
+  const scores = new Map<string, number>()
+  for (const [target, set] of reachedByTarget) scores.set(target, set.size)
+  return scores
+}
+
+/**
  * Select a domain's primary asset class. PascalCase-of-domain match wins
- * first, otherwise the first declared target class that is not a sub-component
- * — with "sub-component" derived structurally from
+ * first, otherwise the non-sub-component target class that composes the most
+ * of the domain's other shapes — with "sub-component" derived structurally from
  * {@link computeComponentBases} instead of a hard-coded name list. A class is
  * a sub-component when it is, or transitively subclasses, a component-base; an
  * asset class (e.g. `<prefix>:<Class>`) subclasses an asset base instead, so
- * it survives the filter even when not named after its domain. `targetClasses`
- * keeps its SHACL declaration order so the
- * first-non-sub-component fallback is deterministic and matches prior behavior.
+ * it survives the filter even when not named after its domain.
+ *
+ * Among the surviving candidates the composition ROOT wins: the class whose
+ * shape references the most other target classes ({@link computeCompositionScores}),
+ * i.e. the top of the domain's containment tree. This is order-independent — a
+ * standalone annotation shape declared before the asset (as upstream ISO-34503
+ * ODD shapes now are, ahead of `Scenario`) cannot displace it. `targetClasses`
+ * keeps its SHACL declaration order, so ties — including the all-zero case where
+ * no candidate composes another target class — fall back to the first-declared
+ * candidate, matching prior behavior. When no scores are supplied the selection
+ * is exactly the previous first-non-sub-component rule.
  */
 export function selectPrimaryAssetClass(
   targetClasses: { localName: string; iri: string }[],
   domainName: string,
   componentBases: Set<string>,
-  superOf: Map<string, Set<string>>
+  superOf: Map<string, Set<string>>,
+  compositionScore?: ReadonlyMap<string, number>
 ): { localName: string; iri: string } | null {
   if (targetClasses.length === 0) return null
 
@@ -293,6 +406,21 @@ export function selectPrimaryAssetClass(
   const exact = targetClasses.find((tc) => tc.localName === domainPascalCase(domainName))
   if (exact) return exact
 
-  // Otherwise the first declared non-sub-component target class.
-  return targetClasses.find((tc) => !isSubComponent(tc.iri)) ?? targetClasses[0] ?? null
+  // Otherwise the composition root among non-sub-components (falling back to all
+  // target classes if every candidate is a sub-component). Iterating in SHACL
+  // declaration order and replacing only on a STRICTLY higher score keeps the
+  // first-declared winner on ties and when no scores disambiguate.
+  const candidates = targetClasses.filter((tc) => !isSubComponent(tc.iri))
+  const pool = candidates.length > 0 ? candidates : targetClasses
+  let best = pool[0]!
+  let bestScore = compositionScore?.get(best.iri) ?? 0
+  for (let i = 1; i < pool.length; i++) {
+    const tc = pool[i]!
+    const score = compositionScore?.get(tc.iri) ?? 0
+    if (score > bestScore) {
+      best = tc
+      bestScore = score
+    }
+  }
+  return best
 }
