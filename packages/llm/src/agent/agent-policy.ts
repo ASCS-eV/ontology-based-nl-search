@@ -58,6 +58,7 @@ export interface AgentPolicy {
   readonly retrieval: {
     readonly maxDomains: number
     readonly maxCards: number
+    readonly maxContextChars: number
   }
 }
 
@@ -99,6 +100,7 @@ export function getAgentPolicy(): AgentPolicy {
     retrieval: {
       maxDomains: config.RETRIEVAL_MAX_DOMAINS,
       maxCards: config.RETRIEVAL_MAX_CARDS,
+      maxContextChars: config.RETRIEVAL_MAX_CONTEXT_CHARS,
     },
   }
 }

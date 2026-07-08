@@ -93,6 +93,13 @@ const envSchema = z.object({
   RETRIEVAL_MAX_DOMAINS: z.coerce.number().int().positive().default(3),
   /** Schema-retrieval selection budget: at most this many term cards per query. */
   RETRIEVAL_MAX_CARDS: z.coerce.number().int().positive().default(40),
+  /**
+   * Bound on the raw SHACL fragment payload per query, in characters.
+   * Overflowing fragments degrade to distilled one-line cards (coverage is
+   * kept), so the composed prompt stays bounded even when upstream shapes
+   * grow.
+   */
+  RETRIEVAL_MAX_CONTEXT_CHARS: z.coerce.number().int().positive().default(45_000),
 
   // Ontology
   ONTOLOGY_REPO: z.string().default('ASCS-eV/ontology-management-base'),

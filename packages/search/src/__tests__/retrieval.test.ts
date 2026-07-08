@@ -121,6 +121,24 @@ describe('retrieveRelevantSchema — fragments, budgets, abort', () => {
     expect(primary.length).toBeLessThanOrEqual(5)
   })
 
+  it('bounds the raw fragment payload; overflow properties survive as cards', async () => {
+    const card = pickEnumCard()
+    const unbounded = await retrieveRelevantSchema(store, card.labels[0]!)
+    const budget = Math.floor(unbounded.fragments.reduce((sum, f) => sum + f.turtle.length, 0) / 2)
+    const bounded = await retrieveRelevantSchema(store, card.labels[0]!, {
+      maxContextChars: budget,
+    })
+
+    const spent = bounded.fragments.reduce((sum, f) => sum + f.turtle.length, 0)
+    expect(spent).toBeLessThanOrEqual(budget)
+    expect(bounded.fragments.length).toBeLessThan(unbounded.fragments.length)
+    // Selection is unchanged — dropped fragments degrade to distilled cards
+    // downstream, they are not lost.
+    expect(bounded.cards).toEqual(unbounded.cards)
+    // The top-relevance fragment always survives.
+    expect(bounded.fragments.length).toBeGreaterThan(0)
+  })
+
   it('propagates abort before running schema queries', async () => {
     const controller = new AbortController()
     controller.abort()
