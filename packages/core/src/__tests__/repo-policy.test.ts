@@ -270,8 +270,18 @@ describe('repo-policy: C4 — the retrieval surface names no loaded ontology dom
     const domainNames = readdirSync(artifactsRoot).filter(
       (name) => name.length >= 2 && statSync(join(artifactsRoot, name)).isDirectory()
     )
+    // A present-but-empty artifact tree would derive zero patterns and pass
+    // vacuously — the gate must have real domain names to forbid.
+    expect(domainNames.length, `no domain directories under ${artifactsRoot}`).toBeGreaterThan(0)
+    // Escape regex metacharacters so a future artifact directory name carrying
+    // a `.`/`+`/`(` etc. matches literally instead of as a pattern (or throwing).
+    const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const patterns = domainNames.map(
-      (name) => [name, new RegExp(`(['"\`]${name}['"\`]|/${name}/v)`, 'i')] as const
+      (name) =>
+        [
+          name,
+          new RegExp(`(['"\`]${escapeRegExp(name)}['"\`]|/${escapeRegExp(name)}/v)`, 'i'),
+        ] as const
     )
 
     const violations: string[] = []

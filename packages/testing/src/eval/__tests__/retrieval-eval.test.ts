@@ -10,7 +10,7 @@ import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ENVITED_EVAL_CASES } from '../cases-envited.js'
 import { type EvalSummary, evaluateRetrieval } from '../retrieval-eval.js'
@@ -25,6 +25,7 @@ function findRepoRoot(start: string): string {
 }
 
 let summary: EvalSummary
+const prevOntologyRoot = process.env['ONTOLOGY_ROOT']
 
 beforeAll(async () => {
   process.env['ONTOLOGY_ROOT'] = findRepoRoot(dirname(fileURLToPath(import.meta.url)))
@@ -43,7 +44,22 @@ beforeAll(async () => {
   console.warn(`\nRetrieval eval (${summary.gating.cases} gating cases)\n${summary.table}\n`)
 }, 180_000)
 
+afterAll(async () => {
+  // Restore env so a sibling suite sharing the process (were isolation ever
+  // relaxed) doesn't inherit this suite's ONTOLOGY_ROOT.
+  if (prevOntologyRoot === undefined) delete process.env['ONTOLOGY_ROOT']
+  else process.env['ONTOLOGY_ROOT'] = prevOntologyRoot
+  const { resetConfig } = await import('@ontology-search/core/config')
+  resetConfig()
+})
+
 describe('retrieval accuracy gate', () => {
+  it('enforces a non-empty set of gating cases (guards against a vacuous gate)', () => {
+    // Every gate below iterates `results.filter(r => r.gating)`; with zero
+    // gating cases they would all pass vacuously. Pin that the gate has teeth.
+    expect(summary.results.filter((r) => r.gating).length).toBeGreaterThan(0)
+  })
+
   it('selects every expected property for every gating case (card recall = 1)', () => {
     for (const result of summary.results.filter((r) => r.gating)) {
       expect(result.missingProperties, `${result.name}: "${result.query}"`).toEqual([])
@@ -57,7 +73,12 @@ describe('retrieval accuracy gate', () => {
   })
 
   it('keeps the retrieved context bounded for every gating case', () => {
-    expect(summary.gating.maxContextChars).toBeLessThan(40_000)
+    // The service-characteristics / ISO-34503 ontology refresh enlarged
+    // individual shapes and added cross-domain references, so a gating case's
+    // retrieved context grew from ~19k to ~63k chars — still an order of
+    // magnitude under a whole-file SHACL dump (~300k). Boundedness, not a
+    // specific size, is what's pinned; the threshold keeps headroom.
+    expect(summary.gating.maxContextChars).toBeLessThan(80_000)
   })
 
   it('separates schema-term queries from the nonsense band', () => {
