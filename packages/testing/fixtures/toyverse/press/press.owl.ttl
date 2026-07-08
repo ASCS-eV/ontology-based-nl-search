@@ -1,0 +1,16 @@
+@prefix base: <https://example.org/toyverse/base/v1/> .
+@prefix press: <https://example.org/toyverse/press/v1/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<https://example.org/toyverse/press/v1> a owl:Ontology .
+
+press:Publisher a owl:Class ;
+    rdfs:subClassOf base:Item ;
+    rdfs:label "Publisher"@en .
+
+press:publisherCountry a owl:DatatypeProperty ;
+    rdfs:label "publisher country"@en .
+
+press:foundedYear a owl:DatatypeProperty ;
+    rdfs:label "founded year"@en .

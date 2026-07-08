@@ -16,6 +16,7 @@
     "coverage": "turbo run coverage",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "test:e2e": "turbo run test:e2e",
+    "eval:retrieval": "pnpm --filter @ontology-search/testing exec vitest run src/eval/__tests__/retrieval-eval.test.ts --reporter=basic",
     "check-types": "turbo run check-types",
     "check:test-types": "turbo run check-types:tests",
     "check:layers": "node scripts/check-layers.mjs",

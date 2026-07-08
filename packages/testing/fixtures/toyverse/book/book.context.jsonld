@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "book": "https://example.org/toyverse/book/v1/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "genre": { "@id": "book:genre" },
+    "pages": { "@id": "book:pageCount", "@type": "xsd:integer" },
+    "publishedBy": { "@id": "book:hasPublisher", "@type": "@id" }
+  }
+}

@@ -1,0 +1,11 @@
+@prefix base: <https://example.org/toyverse/base/v1/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<https://example.org/toyverse/base/v1> a owl:Ontology .
+
+base:Item a owl:Class ;
+    rdfs:label "Catalogued item"@en .
+
+base:title a owl:DatatypeProperty ;
+    rdfs:label "title"@en .

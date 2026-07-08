@@ -528,6 +528,12 @@ importers:
 
   packages/testing:
     devDependencies:
+      '@ontology-search/api-types':
+        specifier: workspace:*
+        version: link:../api-types
+      '@ontology-search/core':
+        specifier: workspace:*
+        version: link:../core
       '@ontology-search/ontology':
         specifier: workspace:*
         version: link:../ontology
@@ -537,9 +543,18 @@ importers:
       '@ontology-search/sparql':
         specifier: workspace:*
         version: link:../sparql
+      '@ontology-search/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@types/node':
         specifier: ^25.7.0
         version: 25.7.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@types/node@25.7.0)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4)
 
   packages/typescript-config: {}
 

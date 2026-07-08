@@ -1,0 +1,9 @@
+{
+  "extends": "@ontology-search/typescript-config/node.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "outDir": null,
+    "rootDir": "."
+  },
+  "include": ["src/**/*.ts", "helpers/**/*.ts", "vitest.config.ts"]
+}

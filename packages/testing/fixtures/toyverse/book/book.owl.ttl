@@ -1,0 +1,19 @@
+@prefix base: <https://example.org/toyverse/base/v1/> .
+@prefix book: <https://example.org/toyverse/book/v1/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<https://example.org/toyverse/book/v1> a owl:Ontology .
+
+book:Book a owl:Class ;
+    rdfs:subClassOf base:Item ;
+    rdfs:label "Book"@en .
+
+book:genre a owl:DatatypeProperty ;
+    rdfs:label "genre"@en .
+
+book:pageCount a owl:DatatypeProperty ;
+    rdfs:label "page count"@en .
+
+book:hasPublisher a owl:ObjectProperty ;
+    rdfs:label "publisher"@en .
