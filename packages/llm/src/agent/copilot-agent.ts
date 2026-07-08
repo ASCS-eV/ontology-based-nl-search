@@ -29,6 +29,7 @@ import { getAgentPolicy } from './agent-policy.js'
 import { buildEmptyFallbackResponse } from './empty-fallback.js'
 import type { AgentOptions } from './index.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
+import { SCHEMA_TOOL_DEFINITIONS } from './schema-tools.js'
 import { renderTokenDirective, type Submission, SubmissionRouter } from './submission-router.js'
 import { slotSubmissionSchema } from './tools.js'
 
@@ -92,6 +93,22 @@ function buildSubmitSlotsTool() {
   })
 }
 
+/**
+ * Copilot-SDK wrappers for the schema-lookup tools. Stateless and
+ * read-only, so unlike submit_slots they need no request-token routing —
+ * concurrent sessions can share the handlers safely.
+ */
+function buildLookupTools() {
+  return SCHEMA_TOOL_DEFINITIONS.map((def) =>
+    defineTool(def.name, {
+      description: def.description,
+      skipPermission: true,
+      parameters: z.toJSONSchema(def.argsSchema, { target: 'draft-2020-12' }),
+      handler: (params: unknown) => def.handler(params),
+    })
+  )
+}
+
 // ─── Single-Use Session Pool ─────────────────────────────────────────────────
 
 /** Pre-warmed sessions ready for use. Each session is consumed once and discarded. */
@@ -131,8 +148,8 @@ async function createSession(prompt: string): Promise<CopilotSession> {
       : {}),
     onPermissionRequest: approveAll,
     systemMessage: { mode: 'replace', content: prompt },
-    tools: [buildSubmitSlotsTool()],
-    availableTools: [policy.forcedTool],
+    tools: [buildSubmitSlotsTool(), ...buildLookupTools()],
+    availableTools: [...policy.lookupTools, policy.forcedTool],
   })
 }
 

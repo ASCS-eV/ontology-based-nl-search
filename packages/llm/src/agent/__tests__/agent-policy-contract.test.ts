@@ -29,6 +29,7 @@ vi.mock('ai', () => ({
     return { steps: [], text: '', finishReason: 'stop' }
   }),
   stepCountIs: vi.fn().mockReturnValue(undefined),
+  hasToolCall: vi.fn().mockReturnValue(undefined),
   tool: vi.fn().mockImplementation((def) => def),
 }))
 
@@ -121,27 +122,23 @@ describe('Agent policy contract — both adapters honour the shared policy', () 
     expect(policy.thinking).toBeNull()
   })
 
-  it('Vercel adapter passes only submit_slots as toolChoice', async () => {
+  it('Vercel adapter demands a tool call every step (no prose-only turns)', async () => {
     const { runSparqlAgent } = await import('../index.js')
     await runSparqlAgent('test query')
 
     expect(h.generateTextArgs).not.toBeNull()
-    expect(h.generateTextArgs!['toolChoice']).toEqual({
-      type: 'tool',
-      toolName: 'submit_slots',
-    })
+    expect(h.generateTextArgs!['toolChoice']).toBe('required')
   })
 
-  it('Vercel adapter passes only agentTools (submit_slots), no investigation tools', async () => {
+  it('Vercel adapter registers exactly the policy tool set: lookups + submit_slots', async () => {
     const { runSparqlAgent } = await import('../index.js')
+    const { getAgentPolicy } = await import('../agent-policy.js')
     await runSparqlAgent('test query')
 
     const tools = h.generateTextArgs!['tools'] as Record<string, unknown>
-    const toolNames = Object.keys(tools)
-    expect(toolNames).toEqual(['submit_slots'])
-    expect(toolNames).not.toContain('discover_domains')
-    expect(toolNames).not.toContain('discover_properties')
-    expect(toolNames).not.toContain('investigate_schema')
+    const policy = getAgentPolicy()
+    expect(Object.keys(tools).sort()).toEqual([...policy.lookupTools, policy.forcedTool].sort())
+    expect(Object.keys(tools)).not.toContain('investigate_schema')
   })
 
   it('Vercel adapter uses policy temperature', async () => {
@@ -151,24 +148,32 @@ describe('Agent policy contract — both adapters honour the shared policy', () 
     expect(h.generateTextArgs!['temperature']).toBe(0)
   })
 
-  it('Copilot adapter registers only submit_slots in availableTools', async () => {
+  it('Copilot adapter advertises exactly the policy tool set in availableTools', async () => {
     const { runCopilotAgent } = await import('../copilot-agent.js')
+    const { getAgentPolicy } = await import('../agent-policy.js')
     await runCopilotAgent('test query').catch(() => {
       // Expected: may throw due to mock limitations
     })
 
-    // Session creation should have been called with only submit_slots
+    const policy = getAgentPolicy()
     expect(h.copilotSessionArgs).not.toBeNull()
-    expect(h.copilotSessionArgs!['availableTools']).toEqual(['submit_slots'])
+    expect(h.copilotSessionArgs!['availableTools']).toEqual([
+      ...policy.lookupTools,
+      policy.forcedTool,
+    ])
   })
 
-  it('Copilot adapter registers exactly one tool (submit_slots)', async () => {
+  it('Copilot adapter registers submit_slots as the only submission tool', async () => {
     const { runCopilotAgent } = await import('../copilot-agent.js')
+    const { getAgentPolicy } = await import('../agent-policy.js')
     await runCopilotAgent('test query').catch(() => {})
 
+    const policy = getAgentPolicy()
     const tools = h.copilotSessionArgs!['tools'] as Array<{ name: string }>
-    expect(tools).toHaveLength(1)
-    expect(tools[0]!.name).toBe('submit_slots')
+    expect(tools.map((t) => t.name).sort()).toEqual(
+      [...policy.lookupTools, policy.forcedTool].sort()
+    )
+    expect(tools.filter((t) => t.name === 'submit_slots')).toHaveLength(1)
   })
 
   it('Copilot adapter uses policy model', async () => {

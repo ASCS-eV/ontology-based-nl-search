@@ -6,6 +6,8 @@ import {
 import { tool } from 'ai'
 import { z } from 'zod'
 
+import { SCHEMA_TOOL_DEFINITIONS } from './schema-tools.js'
+
 /**
  * Tool schema for the LLM slot-filling agent.
  *
@@ -82,3 +84,19 @@ export const agentTools = {
     },
   }),
 }
+
+/**
+ * Vercel-SDK wrappers for the schema-lookup tools. The canonical
+ * definitions (args, handlers, security notes) live in schema-tools.ts;
+ * this only adapts them to `ai`'s tool shape.
+ */
+export const lookupTools = Object.fromEntries(
+  SCHEMA_TOOL_DEFINITIONS.map((def) => [
+    def.name,
+    tool({
+      description: def.description,
+      inputSchema: def.argsSchema,
+      execute: (args: unknown) => def.handler(args),
+    }),
+  ])
+)
