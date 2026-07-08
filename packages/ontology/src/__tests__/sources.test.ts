@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 
 import { resetConfig } from '@ontology-search/core/config'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -24,6 +24,15 @@ import {
  * so we don't poison the real workspace and we don't fight test-order coupling.
  * `ONTOLOGY_ROOT` is the environment knob `paths.ts:getProjectRoot` honours.
  */
+function repoRoot(): string {
+  let cur = dirname(new URL(import.meta.url).pathname)
+  while (cur !== '/') {
+    if (existsSync(join(cur, 'pnpm-workspace.yaml'))) return cur
+    cur = dirname(cur)
+  }
+  throw new Error('repo root not found')
+}
+
 function setWorkspaceRoot(root: string): void {
   process.env['ONTOLOGY_ROOT'] = root
   // resetConfig() forces getConfig() to re-read process.env on next call,
@@ -232,6 +241,30 @@ describe('ontology source-tree discovery (sources.ts)', () => {
         JSON.stringify({ sources: [{ path: 'does-not-exist' }] })
       )
       expect(discoverShapeFiles()).toEqual([])
+    })
+  })
+
+  describe('ontology-sources.example.json', () => {
+    /**
+     * The shipped example is the template operators copy — the loader (the
+     * runtime contract behind ontology-sources.schema.json) must accept it
+     * verbatim, including the imports opt-in documented in the docs.
+     */
+    it('is accepted by the loader, with and without the imports opt-in source', () => {
+      const example = JSON.parse(
+        readFileSync(join(repoRoot(), 'ontology-sources.example.json'), 'utf-8')
+      ) as { sources: unknown[] }
+
+      writeFileSync(join(workspaceRoot, 'ontology-sources.json'), JSON.stringify(example))
+      expect(loadOntologySourcesManifest()?.sources).toHaveLength(1)
+
+      example.sources.push({
+        name: 'omb-imports',
+        path: 'submodules/ontology-management-base/imports',
+      })
+      writeFileSync(join(workspaceRoot, 'ontology-sources.json'), JSON.stringify(example))
+      expect(loadOntologySourcesManifest()?.sources).toHaveLength(2)
+      expect(getArtifactRoots()).toHaveLength(2)
     })
   })
 

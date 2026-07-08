@@ -14,18 +14,19 @@ governs, e.g. `[SPARQL11] §18.2`.
 
 ## Interface inventory
 
-| Layer         | Interface                   | Governing standard                             |
-| ------------- | --------------------------- | ---------------------------------------------- |
-| Query output  | Compiled SPARQL             | **SPARQL 1.1 Query** (W3C)                     |
-| Query output  | GraphQL serialization       | **GraphQL** (GraphQL Foundation)               |
-| LLM contract  | Slot IR / tool-call schema  | **JSON Schema 2020-12** (IETF)                 |
-| LLM transport | Tool / function calling     | Provider APIs, parameters typed as JSON Schema |
-| API transport | `/search/stream`            | **Server-Sent Events** (W3C / WHATWG)          |
-| API transport | JSON bodies, HTTP semantics | **RFC 8259**, **RFC 9110** (IETF)              |
-| Data          | Instance data, `@context`   | **JSON-LD 1.1**, **RDF 1.1**, **Turtle** (W3C) |
-| Ontology      | Shapes / classes            | **SHACL**, **OWL 2**, **RDFS** (W3C)           |
-| Vocabulary    | Concept expansion           | **SKOS** (W3C)                                 |
-| Identity      | Asset IRIs (`did:web:`)     | **DID Core 1.0** (W3C)                         |
+| Layer         | Interface                   | Governing standard                                       |
+| ------------- | --------------------------- | -------------------------------------------------------- |
+| Query output  | Compiled SPARQL             | **SPARQL 1.1 Query** (W3C)                               |
+| Query output  | GraphQL serialization       | **GraphQL** (GraphQL Foundation)                         |
+| LLM contract  | Slot IR / tool-call schema  | **JSON Schema 2020-12** (IETF)                           |
+| LLM transport | Tool / function calling     | Provider APIs, parameters typed as JSON Schema           |
+| API transport | `/search/stream`            | **Server-Sent Events** (W3C / WHATWG)                    |
+| API transport | JSON bodies, HTTP semantics | **RFC 8259**, **RFC 9110** (IETF)                        |
+| Data          | Instance data, `@context`   | **JSON-LD 1.1**, **RDF 1.1**, **Turtle** (W3C)           |
+| Ontology      | Shapes / classes            | **SHACL**, **OWL 2**, **RDFS** (W3C)                     |
+| Vocabulary    | Concept expansion           | **SKOS** (W3C)                                           |
+| Identity      | Asset IRIs (`did:web:`)     | **DID Core 1.0** (W3C)                                   |
+| Config        | `ontology-sources.json`     | **JSON Schema 2020-12** (`ontology-sources.schema.json`) |
 
 The ontology, query, data, and identity layers are W3C/IETF standards directly.
 The one layer that is not itself a published standard is the **slot
