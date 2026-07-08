@@ -39,6 +39,7 @@ vi.mock('ai', () => ({
     }
   }),
   stepCountIs: vi.fn().mockReturnValue(undefined),
+  hasToolCall: vi.fn().mockReturnValue(undefined),
   tool: vi.fn().mockImplementation((def) => def),
 }))
 
@@ -98,11 +99,10 @@ describe('runSparqlAgent — per-query prompt', () => {
       expect.objectContaining({ maxDomains: 3, maxCards: 40 })
     )
     expect(h.generateTextArgs?.['system']).toBe('COMPOSED_PROMPT')
-    // The forced-tool invariant is untouched by the prompt path.
-    expect(h.generateTextArgs?.['toolChoice']).toEqual({
-      type: 'tool',
-      toolName: 'submit_slots',
-    })
+    // The submission invariant is untouched by the prompt path: every
+    // step must be a tool call, and submit_slots is the only way out.
+    expect(h.generateTextArgs?.['toolChoice']).toBe('required')
+    expect(Object.keys(h.generateTextArgs?.['tools'] as object)).toContain('submit_slots')
     expect(response.timings?.some((t) => t.stage === 'retrieval')).toBe(true)
   })
 

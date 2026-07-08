@@ -14,6 +14,8 @@
 
 import { getConfig } from '@ontology-search/core/config'
 
+import { SCHEMA_TOOL_NAMES } from './schema-tools.js'
+
 // ─── Policy Types ────────────────────────────────────────────────────────────
 
 /**
@@ -40,13 +42,19 @@ export interface AgentPolicy {
    */
   readonly reasoningEffort: 'none' | 'low' | 'medium' | 'high' | null
   /**
-   * The single tool the LLM is forced to call. Both adapters must ensure
-   * this is the ONLY callable tool — no investigation tools, no alternatives.
-   *
-   * In Vercel AI SDK: `toolChoice: { type: 'tool', toolName }`.
-   * In Copilot SDK: only this tool is registered in `availableTools`.
+   * The single SUBMISSION tool — the only way the model's output becomes
+   * a search. Lookup tools may run first (bounded by maxSteps), but no
+   * result exists until this tool is called; a budget exhausted without
+   * it falls back deterministically.
    */
   readonly forcedTool: 'submit_slots'
+  /**
+   * Read-only schema-lookup tools registered ALONGSIDE the submission
+   * tool on both adapters. Every argument is index-validated and every
+   * query they run is index- or compiler-emitted — the model never
+   * supplies query text.
+   */
+  readonly lookupTools: readonly string[]
   /** The model identifier to use (e.g. 'claude-haiku-4.5', 'gpt-4o'). */
   readonly model: string
   /** The provider identifier (e.g. 'copilot', 'claude-cli', 'openai'). */
@@ -95,6 +103,7 @@ export function getAgentPolicy(): AgentPolicy {
     thinking,
     reasoningEffort,
     forcedTool: 'submit_slots',
+    lookupTools: SCHEMA_TOOL_NAMES,
     model: config.AI_MODEL,
     provider: config.AI_PROVIDER,
     retrieval: {

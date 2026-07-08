@@ -45,6 +45,7 @@ const { PIPELINE_SPARQL, FALLBACK_SPARQL } = vi.hoisted(() => ({
 vi.mock('ai', () => ({
   generateText: vi.fn(),
   stepCountIs: vi.fn().mockReturnValue(undefined),
+  hasToolCall: vi.fn().mockReturnValue(undefined),
   tool: vi.fn().mockImplementation((def) => def),
 }))
 
@@ -290,11 +291,24 @@ describe('runSparqlAgent — agent boundary', () => {
    * tool name forces a structured-output call on step 1, regardless
    * of the model's "explore first" inclinations.
    */
-  it('forces toolChoice to submit_slots by name', async () => {
+  it('demands a tool call every step, with submit_slots as the only submission tool', async () => {
     mockLlmResult([{ toolResults: [{ toolName: 'submit_slots', output: fakeSubmission() }] }])
     await runSparqlAgent('test')
     const lastCall = vi.mocked(generateText).mock.lastCall
-    expect(lastCall?.[0]?.toolChoice).toEqual({ type: 'tool', toolName: 'submit_slots' })
+    // Prose-only turns are impossible; results exist only via submit_slots.
+    expect(lastCall?.[0]?.toolChoice).toBe('required')
+    expect(Object.keys(lastCall?.[0]?.tools ?? {})).toContain('submit_slots')
+  })
+
+  it('a lookup tool-call step followed by submit_slots still compiles from the submission', async () => {
+    mockLlmResult([
+      { toolResults: [{ toolName: 'find_terms', output: { matches: [] } }] },
+      { toolResults: [{ toolName: 'submit_slots', output: fakeSubmission() }] },
+    ])
+    const res = await runSparqlAgent('test')
+    // The submission is extracted across steps; lookup results never
+    // become SPARQL or output.
+    expect(res.sparql).toBe(PIPELINE_SPARQL)
   })
 
   /**

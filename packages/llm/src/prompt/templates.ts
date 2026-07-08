@@ -32,7 +32,7 @@ Follow this systematic approach:
 
 ## Workflow
 
-Read the SHACL shapes below → fill slots → call \`submit_slots\`. You have all the information you need in this prompt.
+Read the SHACL shapes below → fill slots → call \`submit_slots\`. The provided context usually has everything you need — submit directly. Only when a user term matches NOTHING in it may you first consult the lookup tools (\`find_terms\`, \`describe_shape\`, \`list_values\`, \`probe_data\`); they are bounded, so prefer one precise lookup over several speculative ones.
 
 ## Understanding RDF/SHACL (Generic Knowledge)
 
@@ -182,6 +182,7 @@ export const RULES = `
 7. If a concept has NO mapping at all, report it only as a gap
 8. ALWAYS extract numeric constraints into ranges — never ignore them
 9. For \`sh:pattern\` properties (like country codes), generate values matching the pattern (e.g., "Germany" → "DE" for a 2-letter alpha pattern)
+10. **Lookup tools are for misses only.** When the provided context already names the property or value, call \`submit_slots\` immediately — every lookup costs a round-trip. \`probe_data\` distinguishes "the ontology cannot express this" (report a gap) from "no data matches" (submit the slots; an empty result is the honest answer).
 
 ## Cross-reference vs Filter — Use the SHACL Structure, Not the User's Wording
 

@@ -11,7 +11,7 @@
 
 import { createComponentLogger, Stopwatch } from '@ontology-search/core/logging'
 import { getPrimaryDomain } from '@ontology-search/search'
-import { generateText, stepCountIs } from 'ai'
+import { generateText, hasToolCall, stepCountIs } from 'ai'
 
 import { getModel } from '../provider.js'
 import type { LlmStructuredResponse } from '../types.js'
@@ -19,7 +19,7 @@ import { buildRequestPrompt, getAgentContext, warmupAgentContext } from './agent
 import { getAgentPolicy } from './agent-policy.js'
 import { buildEmptyFallbackResponse } from './empty-fallback.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
-import { agentTools, type SlotSubmissionParams } from './tools.js'
+import { agentTools, lookupTools, type SlotSubmissionParams } from './tools.js'
 
 /**
  * Pre-populate the agent's system-prompt cache during startup warmup so the
@@ -83,11 +83,16 @@ export async function runSparqlAgent(
     model,
     system: prompt,
     prompt: naturalLanguageQuery,
-    tools: agentTools,
-    // Force the LLM to call submit_slots on step 1. The policy mandates
-    // a single forced tool — no investigation tools, no alternatives.
-    toolChoice: { type: 'tool', toolName: policy.forcedTool },
-    stopWhen: stepCountIs(policy.maxSteps),
+    tools: { ...lookupTools, ...agentTools },
+    // Every step must be a tool call — a bounded lookup or the single
+    // submission tool; prose-only turns are impossible. The step budget
+    // caps lookups, and a budget spent without submit_slots degrades to
+    // the deterministic fallback below.
+    toolChoice: 'required',
+    // Stop the moment the submission arrives OR when the lookup budget is
+    // spent — 'required' alone would force tool calls until the step cap
+    // on every request, even after a successful submit.
+    stopWhen: [stepCountIs(policy.maxSteps), hasToolCall(policy.forcedTool)],
     abortSignal: options?.signal,
     temperature: policy.temperature,
     ...(providerOptions ? { providerOptions } : {}),
