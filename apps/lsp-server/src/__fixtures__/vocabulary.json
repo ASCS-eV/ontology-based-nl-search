@@ -1,0 +1,28 @@
+{
+  "domains": ["hdmap", "trace"],
+  "properties": [
+    {
+      "name": "roadTypes",
+      "label": "Road types",
+      "description": "Road categories present in the map.",
+      "domain": "hdmap",
+      "type": "enum",
+      "allowedValues": ["motorway", "urban"]
+    },
+    {
+      "name": "numberIntersections",
+      "label": "Number of intersections",
+      "description": "Intersection count.",
+      "domain": "hdmap",
+      "type": "numeric",
+      "datatype": "integer"
+    },
+    {
+      "name": "title",
+      "label": "Title",
+      "description": "Human-readable asset title.",
+      "domain": "hdmap",
+      "type": "string"
+    }
+  ]
+}

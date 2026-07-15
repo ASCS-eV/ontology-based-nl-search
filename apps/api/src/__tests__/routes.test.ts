@@ -2,6 +2,7 @@ import type { VocabularyResponse } from '@ontology-search/api-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '../app.js'
+import { resetGraphQLContractForTests } from '../graphql-schema.js'
 import { setReadiness } from '../readiness.js'
 
 const ZERO_TIMINGS = { storeMs: 0, vocabMs: 0, compilerMs: 0, shaclMs: 0, sessionMs: 0 }
@@ -15,6 +16,7 @@ beforeEach(() => {
   // SSE handlers keep running asynchronously after `app.request` returns its
   // headers, so without this, later tests see mock calls from earlier ones.
   vi.clearAllMocks()
+  resetGraphQLContractForTests()
 })
 
 vi.mock('@ontology-search/search', () => ({
@@ -355,6 +357,112 @@ describe('POST /search/refine', () => {
     const headerId = res.headers.get('x-request-id')
     expect(headerId).toBeTruthy()
     expect(vi.mocked(searchRefine).mock.lastCall?.[0].requestId).toBe(headerId)
+  })
+})
+
+describe('POST /search/refine-graphql', () => {
+  const vocabulary: VocabularyResponse = {
+    domains: ['asset-domain'],
+    properties: [
+      {
+        name: 'lane-count',
+        label: 'Lane count',
+        description: 'A free-form lane count label.',
+        domain: 'asset-domain',
+        type: 'string',
+      },
+    ],
+  }
+
+  beforeEach(async () => {
+    const { buildTermIndex, getInitializedStore, toVocabularyResponse } =
+      await import('@ontology-search/search')
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(getInitializedStore).mockResolvedValue({} as never)
+    vi.mocked(buildTermIndex).mockResolvedValue({} as never)
+    vi.mocked(toVocabularyResponse).mockReturnValue(vocabulary)
+    vi.mocked(searchRefine).mockResolvedValue({
+      sparql: 'SELECT * WHERE { ?s ?p ?o }',
+      execution: { results: [{ id: 'asset-1' }], error: undefined },
+      meta: { matchCount: 1, executionTimeMs: 10 },
+    })
+  })
+
+  const request = (body: string) =>
+    app.request('/search/refine-graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    })
+
+  it('retains the request-shape 400 responses', async () => {
+    expect((await request('not json')).status).toBe(400)
+    expect((await request(JSON.stringify({}))).status).toBe(400)
+    expect((await request(JSON.stringify({ graphql: '  ' }))).status).toBe(400)
+  })
+
+  it('returns 422 for malformed GraphQL', async () => {
+    const response = await request(JSON.stringify({ graphql: 'query {' }))
+    expect(response.status).toBe(422)
+    expect(await response.json()).toMatchObject({ code: 'UNPROCESSABLE_ENTITY' })
+  })
+
+  it('rejects parseable unknown fields before execution', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    const response = await request(
+      JSON.stringify({ graphql: 'query { asset_domain { unknown(values: ["x"]) } }' })
+    )
+    expect(response.status).toBe(422)
+    expect(searchRefine).not.toHaveBeenCalled()
+  })
+
+  it('rejects a parseable unknown domain before execution', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    const response = await request(JSON.stringify({ graphql: 'query { unknown { _all } }' }))
+    expect(response.status).toBe(422)
+    expect(searchRefine).not.toHaveBeenCalled()
+  })
+
+  it('accepts a free-form string field and restores raw ontology names', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    const response = await request(
+      JSON.stringify({
+        graphql: 'query { asset_domain { lane_count(values: ["two"]) } }',
+      })
+    )
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      results: [{ id: 'asset-1' }],
+      sparql: 'SELECT * WHERE { ?s ?p ?o }',
+      meta: { matchCount: 1 },
+    })
+    expect(searchRefine).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slots: {
+          domains: ['asset-domain'],
+          filters: { 'lane-count': 'two' },
+          ranges: {},
+        },
+      })
+    )
+  })
+
+  it('returns 500 on contract initialization failure and retries later', async () => {
+    const { buildTermIndex, getInitializedStore } = await import('@ontology-search/search')
+    vi.mocked(getInitializedStore).mockRejectedValueOnce(new Error('temporary load failure'))
+
+    const failed = await request(
+      JSON.stringify({ graphql: 'query { asset_domain { lane_count(values: ["two"]) } }' })
+    )
+    expect(failed.status).toBe(500)
+
+    const retried = await request(
+      JSON.stringify({ graphql: 'query { asset_domain { lane_count(values: ["two"]) } }' })
+    )
+    expect(retried.status).toBe(200)
+    expect(buildTermIndex).toHaveBeenCalledOnce()
+    // The successful response also initializes the independent enum-serialization cache.
+    expect(getInitializedStore).toHaveBeenCalledTimes(3)
   })
 })
 

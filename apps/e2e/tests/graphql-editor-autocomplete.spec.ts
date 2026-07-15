@@ -1,14 +1,8 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
 
 /**
- * Real-browser guard for the GraphQL editor's schema-aware autocomplete.
- *
- * This behavior CANNOT be unit-tested: `cm6-graphql`'s completion runs through
- * `graphql-language-service`, which `instanceof`-checks the `GraphQLSchema`. Under
- * vitest's module resolution `graphql` loads as two instances (CJS + ESM, since
- * graphql@16 has no `exports` map), so those checks throw "from another realm".
- * Real Vite pre-bundles a single `graphql`, so the only faithful environment is a
- * real browser — here, against the live `/vocabulary`-driven schema.
+ * Real-browser guard for the GraphQL editor's schema-aware autocomplete and hover,
+ * against the live `/vocabulary`-driven schema.
  *
  * The specific regression this guards: references used to be a permissive `JSON`
  * scalar, so completion went dead *inside* a reference. They are now typed fields
@@ -20,7 +14,14 @@ const POPUP = '.cm-tooltip-autocomplete'
 
 interface Vocab {
   domains: string[]
-  properties: { domain: string; name: string; type: string; allowedValues?: string[] }[]
+  properties: {
+    domain: string
+    name: string
+    label: string
+    description: string
+    type: string
+    allowedValues?: string[]
+  }[]
 }
 
 /**
@@ -113,6 +114,23 @@ function gqlName(name: string): string {
   return /^[0-9]/.test(safe) ? `_${safe}` : safe || '_field'
 }
 
+async function tokenRectangle(content: Locator, token: string) {
+  return content.evaluate((root, requestedToken) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+    while (walker.nextNode()) {
+      const node = walker.currentNode as Text
+      const offset = node.data.indexOf(requestedToken)
+      if (offset < 0) continue
+      const range = document.createRange()
+      range.setStart(node, offset)
+      range.setEnd(node, offset + requestedToken.length)
+      const rect = range.getBoundingClientRect()
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+    }
+    return null
+  }, token)
+}
+
 test.describe('GraphQL editor autocomplete (real browser)', () => {
   test('references are typed at every depth (the JSON-scalar dead zone is gone)', async ({
     page,
@@ -171,5 +189,44 @@ test.describe('GraphQL editor autocomplete (real browser)', () => {
       options.some((o) => allowedValues.includes(o)),
       `enum members should auto-open in value position; allowed=${allowedValues} got=${options}`
     ).toBe(true)
+  })
+
+  test('ontology property hover shows a safe signature or description', async ({ page }) => {
+    const { content, vocab } = await openEditor(page)
+    const domains = new Set(vocab.domains)
+    const property =
+      vocab.properties.find(
+        (candidate) =>
+          domains.has(candidate.domain) &&
+          (candidate.description.trim().length > 0 || candidate.label.trim().length > 0)
+      ) ?? vocab.properties.find((candidate) => domains.has(candidate.domain))
+    expect(property, 'vocabulary should expose a property on a discovered domain').toBeTruthy()
+
+    const propertyName = gqlName(property!.name)
+    const query = `query {\n  ${gqlName(property!.domain)} {\n    ${propertyName}\n  }\n}`
+    await content.click()
+    await page.keyboard.press('Control+a')
+    await page.keyboard.press('Delete')
+    await page.keyboard.insertText(query)
+
+    const rectangle = await tokenRectangle(content, propertyName)
+    expect(rectangle, `could not locate rendered property token ${propertyName}`).toBeTruthy()
+    await page.mouse.move(rectangle!.x + rectangle!.width / 2, rectangle!.y + rectangle!.height / 2)
+
+    const tooltip = page.locator('.cm-tooltip').filter({ has: page.locator('.cm-graphql-hover') })
+    await expect(tooltip).toBeVisible({ timeout: 5_000 })
+    const tooltipText = (await tooltip.innerText()).trim()
+    const expectedFragments = [
+      property!.description.trim(),
+      property!.label.trim(),
+      property!.name,
+      propertyName,
+    ].filter(Boolean)
+    expect(
+      expectedFragments.some((fragment) => tooltipText.includes(fragment)),
+      `tooltip should include ontology or GraphQL field information; got: ${tooltipText}`
+    ).toBe(true)
+    expect(tooltipText).not.toContain('[object Object]')
+    expect(tooltipText).not.toMatch(/<script\b|<img\b|<iframe\b/i)
   })
 })

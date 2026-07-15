@@ -1,6 +1,7 @@
 import type { SearchSlots } from '@ontology-search/slots/slots'
 import { describe, expect, it } from 'vitest'
 
+import { buildGraphQLNameMap } from '../graphql-name.js'
 import { parseGraphQLToSlots } from '../graphql-parser.js'
 import { slotsToGraphQL } from '../graphql-serializer.js'
 
@@ -231,5 +232,41 @@ describe('parseGraphQLToSlots', () => {
       expect(result.slots.filters).toEqual({ country: ['DE', 'FR'] })
       expect(result.slots.ranges).toEqual({ numberOfLanes: { min: 2 } })
     }
+  })
+
+  it('restores sanitized ontology names at every reference depth', () => {
+    const slots: SearchSlots = {
+      domains: ['asset-domain'],
+      filters: { 'lane-count': '2' },
+      ranges: {},
+      references: [
+        {
+          domain: 'other-domain',
+          filters: { 'display-name': 'Example' },
+        },
+      ],
+    }
+    const nameMap = buildGraphQLNameMap({
+      domains: ['asset-domain', 'other-domain'],
+      properties: [
+        {
+          name: 'lane-count',
+          label: 'Lane count',
+          description: '',
+          domain: 'asset-domain',
+          type: 'string',
+        },
+        {
+          name: 'display-name',
+          label: 'Display name',
+          description: '',
+          domain: 'other-domain',
+          type: 'string',
+        },
+      ],
+    })
+
+    const result = parseGraphQLToSlots(slotsToGraphQL(slots), { nameMap })
+    expect(result).toEqual({ success: true, slots })
   })
 })

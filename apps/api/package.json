@@ -17,10 +17,12 @@
     "@hono/node-server": "^2.0.4",
     "@ontology-search/api-types": "workspace:*",
     "@ontology-search/core": "workspace:*",
+    "@ontology-search/graphql-ir": "workspace:*",
     "@ontology-search/llm": "workspace:*",
     "@ontology-search/ontology": "workspace:*",
     "@ontology-search/search": "workspace:*",
     "@ontology-search/sparql": "workspace:*",
+    "graphql": "^17.0.1",
     "hono": "^4.12.25",
     "zod": "^4.4.3"
   },

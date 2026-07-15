@@ -41,6 +41,7 @@ import { isGraphQLEnumName } from '@ontology-search/core/graphql/enum'
 import { createComponentLogger } from '@ontology-search/core/logging'
 import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
 
+import { sanitizeGraphQLName } from './graphql-name.js'
 import { validateGraphQL } from './graphql-validator.js'
 
 const logger = createComponentLogger('graphql-serializer')
@@ -148,7 +149,7 @@ function buildBlock(
   const fieldIndent = '  '.repeat(depth + 1)
 
   const labelArg = label ? `(label: "${escapeGraphQLString(label)}")` : ''
-  const header = `${indent}${sanitizeFieldName(name)}${labelArg} {`
+  const header = `${indent}${sanitizeGraphQLName(name)}${labelArg} {`
 
   const lines = buildFields(filters, ranges, fieldIndent, enumProperties)
   lines.push(...buildReferencesBlock(references, fieldIndent, enumProperties, depth + 1))
@@ -205,7 +206,7 @@ function buildFields(
   const allKeys = [...new Set([...filterKeys, ...rangeKeys])].sort()
 
   for (const key of allKeys) {
-    const safeKey = sanitizeFieldName(key)
+    const safeKey = sanitizeGraphQLName(key)
 
     if (key in filters) {
       const value = filters[key]
@@ -249,28 +250,4 @@ function escapeGraphQLString(value: string): string {
     .replace(/\n/g, '\\n')
     .replace(/\r/g, '\\r')
     .replace(/\t/g, '\\t')
-}
-
-/**
- * Sanitize a slot key into a valid GraphQL field name.
- *
- * GraphQL spec §2.1.9 (Name): `[_A-Za-z][_0-9A-Za-z]*`
- * @see https://spec.graphql.org/September2025/#sec-Names
- *
- * Slot keys may contain colons (prefixed IRIs), hyphens, or start with
- * digits — all invalid in GraphQL. We replace illegal characters with
- * underscores and prefix digit-leading names.
- */
-function sanitizeFieldName(name: string): string {
-  // Replace any character that isn't [A-Za-z0-9_] with underscore
-  let safe = name.replace(/[^A-Za-z0-9_]/g, '_')
-  // Must start with [_A-Za-z]
-  if (/^[0-9]/.test(safe)) {
-    safe = `_${safe}`
-  }
-  // Empty after sanitization → fallback
-  if (safe.length === 0) {
-    safe = '_field'
-  }
-  return safe
 }

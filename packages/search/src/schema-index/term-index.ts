@@ -21,6 +21,7 @@ import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontol
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from '../compiler.js'
+import type { LeafKind } from '../property-paths.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
 import { extractSchemaVocabulary } from '../vocabulary-extractor.js'
 import { readContextTerms } from './context-reader.js'
@@ -53,6 +54,8 @@ export interface TermCard {
   /** sh:in enumeration (closed enums only) */
   allowedValues?: string[]
   constraints?: TermConstraints
+  /** Compiler-discovered value kind. Present on property cards. */
+  leafKind?: LeafKind
   /**
    * For object properties: the domain this property points at — the
    * dependency edge used for transitive retrieval expansion. Derived from
@@ -161,6 +164,7 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
       ...(datatype ? { datatype } : {}),
       ...(enumProp ? { allowedValues: [...enumProp.allowedValues] } : {}),
       ...(annotation?.constraints ? { constraints: annotation.constraints } : {}),
+      leafKind: path.leafKind,
       ...(referencedDomain(path.leafKind, annotation?.referencedClass, registry) ?? {}),
     })
   }
@@ -339,7 +343,7 @@ function descriptionOf(
 }
 
 function referencedDomain(
-  leafKind: string,
+  leafKind: LeafKind,
   referencedClass: string | undefined,
   registry: DomainRegistry
 ): { referencesDomain: string } | undefined {

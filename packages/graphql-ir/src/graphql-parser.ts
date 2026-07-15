@@ -39,6 +39,8 @@
 import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
 import { type FieldNode, parse, type SelectionSetNode } from 'graphql'
 
+import type { GraphQLNameMap } from './graphql-name.js'
+
 export interface GraphQLParseResult {
   success: true
   slots: SearchSlots
@@ -47,6 +49,11 @@ export interface GraphQLParseResult {
 export interface GraphQLParseError {
   success: false
   error: string
+}
+
+export interface GraphQLParseOptions {
+  /** Restore sanitized GraphQL names to their raw ontology names. */
+  nameMap?: GraphQLNameMap
 }
 
 /** The constraints a selection set carries: property filters, ranges, references. */
@@ -72,7 +79,10 @@ interface ParsedSelection {
  * }
  * ```
  */
-export function parseGraphQLToSlots(query: string): GraphQLParseResult | GraphQLParseError {
+export function parseGraphQLToSlots(
+  query: string,
+  options: GraphQLParseOptions = {}
+): GraphQLParseResult | GraphQLParseError {
   let ast
   try {
     ast = parse(query)
@@ -99,13 +109,14 @@ export function parseGraphQLToSlots(query: string): GraphQLParseResult | GraphQL
   for (const selection of opDef.selectionSet.selections) {
     if (selection.kind !== 'Field') continue
 
-    const domainName = selection.name.value
-    if (domainName === '_empty') continue // placeholder
+    const graphQLDomainName = selection.name.value
+    if (graphQLDomainName === '_empty') continue // placeholder
+    const domainName = options.nameMap?.domains.get(graphQLDomainName) ?? graphQLDomainName
 
     domains.push(domainName)
 
     if (!selection.selectionSet) continue
-    const parsed = parseSelectionSet(selection.selectionSet)
+    const parsed = parseSelectionSet(selection.selectionSet, domainName, options.nameMap)
     // Top-level filters/ranges are flat in the slot model, so merge across
     // domains; references accumulate into the single top-level list.
     Object.assign(filters, parsed.filters)
@@ -123,7 +134,11 @@ export function parseGraphQLToSlots(query: string): GraphQLParseResult | GraphQL
  * become filters/ranges, and the reserved `references` field's sub-fields become
  * {@link ReferenceFilter}s (recursively). `_all`/`__typename` are skipped.
  */
-function parseSelectionSet(selectionSet: SelectionSetNode): ParsedSelection {
+function parseSelectionSet(
+  selectionSet: SelectionSetNode,
+  domain: string,
+  nameMap?: GraphQLNameMap
+): ParsedSelection {
   const filters: Record<string, string | string[]> = {}
   const ranges: Record<string, { min?: number; max?: number }> = {}
   const references: ReferenceFilter[] = []
@@ -139,13 +154,13 @@ function parseSelectionSet(selectionSet: SelectionSetNode): ParsedSelection {
       if (field.selectionSet) {
         for (const refField of field.selectionSet.selections) {
           if (refField.kind !== 'Field') continue
-          references.push(parseReferenceField(refField))
+          references.push(parseReferenceField(refField, nameMap))
         }
       }
       continue
     }
 
-    extractFilterOrRange(field, filters, ranges)
+    extractFilterOrRange(field, filters, ranges, domain, nameMap)
   }
 
   return { filters, ranges, references }
@@ -155,8 +170,9 @@ function parseSelectionSet(selectionSet: SelectionSetNode): ParsedSelection {
  * Parse a referenced-asset field (`<domain>(label: "…") { … }`) into a
  * {@link ReferenceFilter}, recursing into its own `references`.
  */
-function parseReferenceField(field: FieldNode): ReferenceFilter {
-  const ref: ReferenceFilter = { domain: field.name.value }
+function parseReferenceField(field: FieldNode, nameMap?: GraphQLNameMap): ReferenceFilter {
+  const domain = nameMap?.domains.get(field.name.value) ?? field.name.value
+  const ref: ReferenceFilter = { domain }
 
   for (const arg of field.arguments ?? []) {
     if (arg.name.value === 'label' && arg.value.kind === 'StringValue') {
@@ -165,7 +181,7 @@ function parseReferenceField(field: FieldNode): ReferenceFilter {
   }
 
   if (field.selectionSet) {
-    const inner = parseSelectionSet(field.selectionSet)
+    const inner = parseSelectionSet(field.selectionSet, domain, nameMap)
     if (Object.keys(inner.filters).length > 0) ref.filters = inner.filters
     if (Object.keys(inner.ranges).length > 0) ref.ranges = inner.ranges
     if (inner.references.length > 0) ref.references = inner.references
@@ -182,9 +198,12 @@ function parseReferenceField(field: FieldNode): ReferenceFilter {
 function extractFilterOrRange(
   field: FieldNode,
   filters: Record<string, string | string[]>,
-  ranges: Record<string, { min?: number; max?: number }>
+  ranges: Record<string, { min?: number; max?: number }>,
+  domain: string,
+  nameMap?: GraphQLNameMap
 ): void {
-  const fieldName = field.name.value
+  const fieldName =
+    nameMap?.propertiesByDomain.get(domain)?.get(field.name.value) ?? field.name.value
   if (!field.arguments || field.arguments.length === 0) return
 
   for (const arg of field.arguments) {

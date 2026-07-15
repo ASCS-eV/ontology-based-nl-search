@@ -8,12 +8,18 @@ import type { SparqlStore, TermCard, TermIndex } from '../index.js'
 import { getInitializedStore } from '../init.js'
 import { buildTermIndex } from '../schema-index/term-index.js'
 import { toVocabularyResponse } from '../schema-index/to-vocabulary-response.js'
-import { extractSchemaVocabulary } from '../vocabulary-extractor.js'
 
 const XSD = 'http://www.w3.org/2001/XMLSchema#'
 
-function indexOf(cards: TermCard[]): TermIndex {
-  return { cards, byDomain: new Map(), domainCatalog: [] }
+function indexOf(
+  cards: TermCard[],
+  domains = [...new Set(cards.map((entry) => entry.domain))]
+): TermIndex {
+  return {
+    cards,
+    byDomain: new Map(),
+    domainCatalog: domains.map((domain) => ({ domain, classLabels: [domain], sampleTerms: [] })),
+  }
 }
 
 const card = (overrides: Partial<TermCard>): TermCard => ({
@@ -22,6 +28,7 @@ const card = (overrides: Partial<TermCard>): TermCard => ({
   localName: 'p',
   domain: 'alpha',
   labels: ['p'],
+  leafKind: 'literal',
   ...overrides,
 })
 
@@ -65,16 +72,32 @@ describe('toVocabularyResponse (pure projection)', () => {
     ])
   })
 
-  it('drops cards with no autocomplete representation (object refs, free literals, classes)', () => {
+  it('projects free literals and drops object references and classes', () => {
     const response = toVocabularyResponse(
       indexOf([
-        card({ localName: 'hasManifest', referencesDomain: 'manifest' }),
-        card({ localName: 'title', datatype: `${XSD}string` }),
-        card({ kind: 'class', localName: 'Asset' }),
+        card({ localName: 'hasManifest', leafKind: 'iri', referencesDomain: 'manifest' }),
+        card({ localName: 'title', labels: ['title'], datatype: `${XSD}string` }),
+        card({ kind: 'class', localName: 'Asset', leafKind: undefined }),
       ])
     )
+    expect(response.properties).toEqual([
+      {
+        name: 'title',
+        label: 'title',
+        description: '',
+        domain: 'alpha',
+        type: 'string',
+      },
+    ])
+    expect(response.domains).toEqual(['alpha'])
+  })
+
+  it('retains catalog domains that have no projected properties', () => {
+    const response = toVocabularyResponse(
+      indexOf([card({ leafKind: 'iri', referencesDomain: 'beta' })], ['alpha', 'beta'])
+    )
     expect(response.properties).toEqual([])
-    expect(response.domains).toEqual([])
+    expect(response.domains).toEqual(['alpha', 'beta'])
   })
 
   it('defaults the description and falls back to the local name as label', () => {
@@ -92,20 +115,26 @@ describe('toVocabularyResponse (contract parity with the schema vocabulary)', ()
     store = await getInitializedStore()
   }, 120_000)
 
-  it('covers exactly the enum + numeric properties the schema vocabulary declares', async () => {
-    const [index, vocab] = await Promise.all([
-      buildTermIndex(store),
-      extractSchemaVocabulary(store),
-    ])
+  it('covers every compiler literal path and every indexed domain', async () => {
+    const index = await buildTermIndex(store)
     const response = toVocabularyResponse(index)
 
     const projected = new Set(response.properties.map((p) => `${p.domain}|${p.name}|${p.type}`))
-    const declared = new Set([
-      ...vocab.enumProperties.map((p) => `${p.domain}|${p.localName}|enum`),
-      ...vocab.numericProperties.map((p) => `${p.domain}|${p.localName}|numeric`),
-    ])
+    const declared = new Set(
+      index.cards
+        .filter((entry) => entry.kind === 'property' && entry.leafKind === 'literal')
+        .map((entry) => {
+          const type =
+            entry.allowedValues && entry.allowedValues.length > 0
+              ? 'enum'
+              : entry.datatype === `${XSD}integer` || entry.datatype === `${XSD}float`
+                ? 'numeric'
+                : 'string'
+          return `${entry.domain}|${entry.localName}|${type}`
+        })
+    )
 
     expect(projected).toEqual(declared)
-    expect([...response.domains].sort()).toEqual([...vocab.domains].sort())
+    expect(response.domains).toEqual(index.domainCatalog.map((entry) => entry.domain))
   })
 })

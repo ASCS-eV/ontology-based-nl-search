@@ -44,7 +44,8 @@ query {
 }
 ```
 
-Schema shape (`apps/web/src/lib/graphql-schema.ts`):
+Schema shape (`packages/graphql-ir/src/graphql-schema.ts`; the web module is a
+CodeMirror adapter):
 
 - Every `<domain>_Result` type gains a `references: References` field (a reserved
   editor field, like `_all`).
@@ -54,7 +55,7 @@ Schema shape (`apps/web/src/lib/graphql-schema.ts`):
 
 The slot IR (`ReferenceFilter`) and the SPARQL compiler are **unchanged** — only
 the GraphQL projection changes. The serializer and parser
-(`packages/search/src/graphql-{serializer,parser}.ts`) render/parse the nested
+(`packages/graphql-ir/src/graphql-{serializer,parser}.ts`) render/parse the nested
 field shape with one recursive routine shared by domains and references, so
 reference filters now reuse the top-level enum-literal path (they round-trip and
 autocomplete identically).
@@ -86,6 +87,9 @@ structure** — the editor schema becomes the natural surface for that work.
 - **Wire-shape change:** the serialized GraphQL DSL changed (references are
   fields, `label` is an argument, reference filter values are enum literals).
   The slot IR and HTTP slot contract did not change.
+
+The field and argument grammar conforms to the
+[GraphQL Specification, September 2025](https://spec.graphql.org/September2025/).
 
 ## Alternatives considered
 
