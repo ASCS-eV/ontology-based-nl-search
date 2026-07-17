@@ -1,5 +1,40 @@
+import { readdirSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { join, sep } from 'node:path'
+
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+
+// mermaid (bundled into the docs client) transitively pulls in `langium`, whose internal
+// modules deep-import `vscode-jsonrpc/lib/common/*`. vscode-jsonrpc@9 added an `exports`
+// map that no longer exposes those subpaths, so the workspace's phantom-hoisted v9
+// (introduced by the LSP server / graphql-language-service) makes Vite's bundler fail with
+// `Missing "./lib/common/events.js" specifier in "vscode-jsonrpc" package`. Redirect the
+// bare specifier to the co-installed v8.x copy (which has no `exports` restriction, and is
+// the line langium actually depends on) so the deep subpaths resolve as plain file paths.
+// Docs-scoped: does not affect the standalone LSP server, which runs on vscode-jsonrpc@9.
+function resolveVscodeJsonrpc8Dir(): string | undefined {
+  try {
+    const nodeRequire = createRequire(import.meta.url)
+    // `vitepress` is always resolvable from this config and lives inside the pnpm store,
+    // giving us a stable anchor to the `.pnpm` virtual-store directory.
+    const anchor = nodeRequire.resolve('vitepress/package.json')
+    const marker = `${sep}.pnpm${sep}`
+    const idx = anchor.indexOf(marker)
+    if (idx === -1) return undefined
+    const pnpmDir = anchor.slice(0, idx + marker.length - 1)
+    const entry = readdirSync(pnpmDir)
+      .filter((name) => /^vscode-jsonrpc@8\./.test(name))
+      .sort()
+      .pop()
+    if (!entry) return undefined
+    return join(pnpmDir, entry, 'node_modules', 'vscode-jsonrpc').replace(/\\/g, '/')
+  } catch {
+    return undefined
+  }
+}
+
+const vscodeJsonrpcDir = resolveVscodeJsonrpc8Dir()
 
 export default withMermaid(
   defineConfig({
@@ -20,6 +55,14 @@ export default withMermaid(
       /^\/PORT_CONFIGURATION/,
     ],
     vite: {
+      resolve: vscodeJsonrpcDir
+        ? {
+            alias: [
+              { find: /^vscode-jsonrpc$/, replacement: vscodeJsonrpcDir },
+              { find: /^vscode-jsonrpc\/(.*)$/, replacement: `${vscodeJsonrpcDir}/$1` },
+            ],
+          }
+        : undefined,
       server: {
         port: parseInt(process.env.DOCS_PORT ?? '5173', 10),
         strictPort: true,
