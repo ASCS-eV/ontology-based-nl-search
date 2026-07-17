@@ -1,5 +1,5 @@
 import type { VocabularyResponse } from '@ontology-search/api-types'
-import { GraphQLEnumType, GraphQLObjectType, parse, validate } from 'graphql'
+import { graphql, GraphQLEnumType, GraphQLObjectType, parse, validate } from 'graphql'
 import { describe, expect, it } from 'vitest'
 
 import { buildGraphQLSchema } from '../graphql-schema.js'
@@ -104,5 +104,15 @@ describe('buildGraphQLSchema', () => {
   it('provides a valid empty-schema placeholder', () => {
     const empty = buildGraphQLSchema({ domains: [], properties: [] })
     expect(validate(empty, parse('query { _empty }'))).toHaveLength(0)
+  })
+
+  it('serializes Filter and Range leaf values unchanged when executed', async () => {
+    const result = await graphql({
+      schema,
+      source: 'query { hdmap { roadTypes numberIntersections } }',
+      rootValue: { hdmap: { roadTypes: 'motorway', numberIntersections: 3 } },
+    })
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({ hdmap: { roadTypes: 'motorway', numberIntersections: 3 } })
   })
 })
