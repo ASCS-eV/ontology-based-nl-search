@@ -31,13 +31,18 @@
  * routine as parsing a domain's, applied recursively. See
  * `docs/adr/0002-field-based-recursive-references.md`.
  *
+ * Only inlined `Field` selections with literal argument values are modelled.
+ * Fragments (§2.8), variables (§2.10), and directives (§2.12) are rejected up
+ * front (see {@link findUnsupportedConstruct}) rather than silently dropped, so
+ * a schema-valid edited query can never execute an unintended search.
+ *
  * @see https://spec.graphql.org/September2025/ — GraphQL Language Specification
  * @see slotsToGraphQL in ./graphql-serializer.ts — the forward path
  * @see https://github.com/graphql/graphql-js — reference implementation (parser)
  */
 
 import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
-import { type FieldNode, parse, type SelectionSetNode } from 'graphql'
+import { type DocumentNode, type FieldNode, parse, type SelectionSetNode, visit } from 'graphql'
 
 import type { GraphQLNameMap } from './graphql-name.js'
 
@@ -93,6 +98,14 @@ export function parseGraphQLToSlots(
     }
   }
 
+  // This traversal only reads `Field` selections and literal argument values.
+  // Fragments, variables, and directives all parse and schema-validate, but
+  // their constraints would be silently dropped here — so a "valid" edited
+  // query would execute an unintended search. Reject them with a bounded error
+  // instead, keeping the executed query faithful to what the editor validated.
+  const unsupported = findUnsupportedConstruct(ast)
+  if (unsupported) return { success: false, error: unsupported }
+
   // Expect exactly one OperationDefinition of type 'query'
   const opDef = ast.definitions.find((d) => d.kind === 'OperationDefinition')
   if (!opDef || opDef.kind !== 'OperationDefinition') {
@@ -113,7 +126,10 @@ export function parseGraphQLToSlots(
     if (graphQLDomainName === '_empty') continue // placeholder
     const domainName = options.nameMap?.domains.get(graphQLDomainName) ?? graphQLDomainName
 
-    domains.push(domainName)
+    // GraphQL merges repeated fields (§2.5); the flat slot model lists each
+    // domain once. Keep the domain unique while still merging the constraints
+    // from every block that names it.
+    if (!domains.includes(domainName)) domains.push(domainName)
 
     if (!selection.selectionSet) continue
     const parsed = parseSelectionSet(selection.selectionSet, domainName, options.nameMap)
@@ -127,6 +143,35 @@ export function parseGraphQLToSlots(
   const slots: SearchSlots = { domains, filters, ranges }
   if (references.length > 0) slots.references = references
   return { success: true, slots }
+}
+
+/**
+ * Reject GraphQL constructs the slot IR does not model. Each of these parses
+ * and schema-validates, yet the field-only traversal below would silently drop
+ * the constraints it carries — so a "valid" query would execute an unintended,
+ * usually under-constrained, search. Returning a bounded error (surfaced by the
+ * API as HTTP 422) keeps the executed query faithful to the edited one.
+ *
+ * @see https://spec.graphql.org/draft/#sec-Language.Fragments — [GraphQL] §2.8
+ * @see https://spec.graphql.org/draft/#sec-Language.Variables — [GraphQL] §2.10
+ * @see https://spec.graphql.org/draft/#sec-Language.Directives — [GraphQL] §2.12
+ */
+function findUnsupportedConstruct(ast: DocumentNode): string | null {
+  let unsupported: string | null = null
+  const flag = (message: string): void => {
+    unsupported ??= message
+  }
+  visit(ast, {
+    // [GraphQL] §2.8 — fragment fields live outside the selection sets we walk.
+    FragmentDefinition: () => flag('Fragments are not supported; inline the fields directly.'),
+    FragmentSpread: () => flag('Fragment spreads are not supported; inline the fields directly.'),
+    InlineFragment: () => flag('Inline fragments are not supported; inline the fields directly.'),
+    // [GraphQL] §2.10 — variable values are never bound on the refine path.
+    Variable: () => flag('Variables are not supported; use literal values.'),
+    // [GraphQL] §2.12 — directives (e.g. @skip/@include) alter which fields apply.
+    Directive: () => flag('Directives are not supported.'),
+  })
+  return unsupported
 }
 
 /**

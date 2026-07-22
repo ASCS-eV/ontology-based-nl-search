@@ -1,7 +1,7 @@
-import { spawnSync } from 'node:child_process'
+import { spawnSync, type SpawnSyncReturns } from 'node:child_process'
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { extract } from 'tar'
@@ -12,19 +12,34 @@ import { exerciseServer } from './lsp-process.js'
 const packageRoot = fileURLToPath(new URL('../..', import.meta.url))
 const fixturePath = fileURLToPath(new URL('../__fixtures__/vocabulary.json', import.meta.url))
 
+// pnpm/npm ship as `.cmd`/`.ps1` shims on Windows, which Node refuses to spawn
+// by bare name without a shell (the CVE-2024-27980 hardening). Run those through
+// a shell on Windows — quoting each argument so temp paths with spaces survive —
+// while keeping the plain argv form on POSIX CI.
+function runPackageManager(
+  command: string,
+  args: string[],
+  options: { cwd: string }
+): SpawnSyncReturns<string> {
+  if (process.platform === 'win32') {
+    const quoted = [command, ...args]
+      .map((part) => (/\s/.test(part) ? `"${part}"` : part))
+      .join(' ')
+    return spawnSync(quoted, { ...options, encoding: 'utf8', shell: true })
+  }
+  return spawnSync(command, args, { ...options, encoding: 'utf8' })
+}
+
 describe('packed LSP artifact', () => {
   it('installs and runs without workspace dependencies', { timeout: 60_000 }, async () => {
     const temp = await mkdtemp(join(tmpdir(), 'ontology-search-lsp-pack-'))
     try {
-      const packed = spawnSync('pnpm', ['pack', '--pack-destination', temp], {
+      const packed = runPackageManager('pnpm', ['pack', '--pack-destination', temp], {
         cwd: packageRoot,
-        encoding: 'utf8',
       })
       expect(packed.status, packed.stderr || packed.stdout).toBe(0)
       const reportedTarball = packed.stdout.trim().split('\n').at(-1)!
-      const tarball = reportedTarball.startsWith('/')
-        ? reportedTarball
-        : join(temp, reportedTarball)
+      const tarball = isAbsolute(reportedTarball) ? reportedTarball : join(temp, reportedTarball)
       await extract({ file: tarball, cwd: temp })
       const archiveRoot = join(temp, 'package')
       await expect(access(join(archiveRoot, 'dist/cli.js'))).resolves.toBeUndefined()
@@ -49,10 +64,10 @@ describe('packed LSP artifact', () => {
         JSON.stringify({ name: 'pack-test-root', version: '1.0.0', private: true }),
         'utf8'
       )
-      const install = spawnSync(
+      const install = runPackageManager(
         'npm',
         ['install', '--offline', '--ignore-scripts', '--no-audit', '--no-fund', tarball],
-        { cwd: temp, encoding: 'utf8' }
+        { cwd: temp }
       )
       expect(install.status, install.stderr || install.stdout).toBe(0)
 

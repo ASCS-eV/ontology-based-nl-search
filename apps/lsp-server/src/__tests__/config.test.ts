@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
-import { parseCliConfig, UsageError } from '../config.js'
+import { PACKAGE_VERSION, parseCliConfig, UsageError } from '../config.js'
 
 describe('parseCliConfig', () => {
   it('requires stdio and exactly one source', () => {
@@ -37,5 +40,12 @@ describe('parseCliConfig', () => {
   it('supports help and version without a transport or source', () => {
     expect(parseCliConfig(['--help'], {})).toEqual({ action: 'help' })
     expect(parseCliConfig(['--version'], {})).toEqual({ action: 'version' })
+  })
+
+  it('keeps PACKAGE_VERSION in lockstep with package.json (so --version cannot drift)', () => {
+    const manifest = JSON.parse(
+      readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')
+    ) as { version: string }
+    expect(PACKAGE_VERSION).toBe(manifest.version)
   })
 })

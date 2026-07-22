@@ -269,4 +269,48 @@ describe('parseGraphQLToSlots', () => {
     const result = parseGraphQLToSlots(slotsToGraphQL(slots), { nameMap })
     expect(result).toEqual({ success: true, slots })
   })
+
+  // A construct rejected here parses AND schema-validates; without the guard its
+  // nested constraints would be silently dropped, so the API would 200 an
+  // under-constrained search. Each must instead fail with a bounded error.
+  it('rejects fragment spreads instead of dropping their fields', () => {
+    const result = parseGraphQLToSlots(
+      'query { hdmap { ...F } } fragment F on hdmap_Result { country(values: ["DE"]) }'
+    )
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error).toMatch(/fragment/i)
+  })
+
+  it('rejects inline fragments instead of dropping their fields', () => {
+    const result = parseGraphQLToSlots(
+      'query { hdmap { ... on hdmap_Result { country(values: ["DE"]) } } }'
+    )
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error).toMatch(/inline fragment/i)
+  })
+
+  it('rejects variable-valued arguments instead of dropping the filter', () => {
+    const result = parseGraphQLToSlots('query ($v: [String]) { hdmap { country(values: $v) } }')
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error).toMatch(/variable/i)
+  })
+
+  it('rejects directives instead of ignoring their semantics', () => {
+    const result = parseGraphQLToSlots(
+      'query { hdmap { country(values: ["DE"]) @skip(if: true) } }'
+    )
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error).toMatch(/directive/i)
+  })
+
+  it('deduplicates a repeated top-level domain while merging its constraints', () => {
+    const result = parseGraphQLToSlots(
+      'query { hdmap { country(values: ["DE"]) } hdmap { roadType(values: ["motorway"]) } }'
+    )
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.slots.domains).toEqual(['hdmap'])
+      expect(result.slots.filters).toEqual({ country: 'DE', roadType: 'motorway' })
+    }
+  })
 })

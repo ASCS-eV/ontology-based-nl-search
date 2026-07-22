@@ -423,6 +423,33 @@ describe('POST /search/refine-graphql', () => {
     expect(searchRefine).not.toHaveBeenCalled()
   })
 
+  // Fragments/inline fragments schema-validate but their nested constraints are
+  // not modelled by the slot IR; they must be rejected before execution, never
+  // run as a silently under-constrained search.
+  it('rejects a schema-valid fragment spread before execution', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    const response = await request(
+      JSON.stringify({
+        graphql:
+          'query { asset_domain { ...F } } fragment F on asset_domain_Result { lane_count(values: ["two"]) }',
+      })
+    )
+    expect(response.status).toBe(422)
+    expect(searchRefine).not.toHaveBeenCalled()
+  })
+
+  it('rejects a schema-valid inline fragment before execution', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    const response = await request(
+      JSON.stringify({
+        graphql:
+          'query { asset_domain { ... on asset_domain_Result { lane_count(values: ["two"]) } } }',
+      })
+    )
+    expect(response.status).toBe(422)
+    expect(searchRefine).not.toHaveBeenCalled()
+  })
+
   it('accepts a free-form string field and restores raw ontology names', async () => {
     const { searchRefine } = await import('../search-factory.js')
     const response = await request(
