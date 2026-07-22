@@ -8,18 +8,20 @@ import {
   RequestLogger,
 } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
+import { parseGraphQLToSlots } from '@ontology-search/graphql-ir'
 import {
   extractSchemaVocabulary,
   getInitializedStore,
   normalizeReferences,
-  parseGraphQLToSlots,
   slotsToGraphQL,
 } from '@ontology-search/search'
 import { referenceFilterWireSchema } from '@ontology-search/search/slot-wire-schema'
+import { parse, validate } from 'graphql'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { z } from 'zod'
 
+import { getGraphQLContract } from '../graphql-schema.js'
 import { searchNl, searchRefine } from '../search-factory.js'
 import type { AppEnv } from '../types.js'
 
@@ -315,14 +317,32 @@ searchRoutes.post('/refine-graphql', async (c) => {
     return c.json(err.body, err.status)
   }
 
-  // Parse GraphQL → SearchSlots
-  const parseResult = parseGraphQLToSlots(graphqlQuery)
-  if (!parseResult.success) {
-    const err = unprocessable(`GraphQL parse error: ${parseResult.error}`)
+  let document
+  try {
+    document = parse(graphqlQuery)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const err = unprocessable('GraphQL syntax error', [message])
     return c.json(err.body, err.status)
   }
 
   try {
+    const contract = await getGraphQLContract()
+    const validationErrors = validate(contract.schema, document)
+    if (validationErrors.length > 0) {
+      const err = unprocessable(
+        'GraphQL schema validation failed',
+        validationErrors.slice(0, 5).map((error) => error.message)
+      )
+      return c.json(err.body, err.status)
+    }
+
+    const parseResult = parseGraphQLToSlots(graphqlQuery, { nameMap: contract.nameMap })
+    if (!parseResult.success) {
+      const err = unprocessable('GraphQL structure is not supported', [parseResult.error])
+      return c.json(err.body, err.status)
+    }
+
     logger.info('Refine-from-GraphQL started', { slots: parseResult.slots })
     const result = await searchRefine({
       slots: parseResult.slots,

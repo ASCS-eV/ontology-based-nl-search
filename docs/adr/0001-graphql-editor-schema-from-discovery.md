@@ -34,10 +34,13 @@ Two tempting-but-wrong options were raised:
    **ontology-source-agnostic**: it reads whatever SHACL is loaded, whether
    hand-authored or LinkML-generated. It therefore covers ENVITED-X **and**
    OpenLABEL-v2 uniformly, today, with **no dependency on the LinkML migration**.
-2. **Feed that schema to `cm6-graphql`** for schema-aware autocomplete,
+2. **Own that pure schema in `packages/graphql-ir/src/graphql-schema.ts`** and
+   feed it to client adapters. The web adapter uses `cm6-graphql` for schema-aware autocomplete,
    validation (lint), and hover — **deleting** the hand-rolled
    `graphql-completion.ts`. Validate authored queries with
-   `graphql.validate(schema, ast)` instead of syntax-only parsing.
+   `graphql.validate(schema, ast)` instead of syntax-only parsing. The API uses
+   the same schema before executing edited queries, and the standalone LSP
+   adapter uses the same schema for editor-independent language features.
 3. **Keep slots + the deterministic SPARQL compiler for execution.** Flow stays
    NL → slots → GraphQL (prefill) → developer edits → validate against schema →
    slots → SPARQL.
@@ -76,6 +79,10 @@ Two tempting-but-wrong options were raised:
   niche, partly-stale glue between GraphQL-LD and current Comunica).
 
 ## Related
+
+- The query contract follows the
+  [GraphQL Specification, September 2025](https://spec.graphql.org/September2025/)
+  and is parsed/validated by the graphql-js reference implementation.
 
 - **Partner-facing contracts** (a separate, orthogonal track): publish an
   **OpenAPI** description of the Hono+Zod HTTP API, and expose the existing

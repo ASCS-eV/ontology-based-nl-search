@@ -1,8 +1,11 @@
 import { autocompletion, completionKeymap, startCompletion } from '@codemirror/autocomplete'
+import { hoverTooltip } from '@codemirror/view'
+import { buildGraphQLSchema } from '@ontology-search/graphql-ir'
 import { EditorView, type Extension, keymap, Prec } from '@uiw/react-codemirror'
 import { graphql } from 'cm6-graphql'
+import type { GraphQLSchema } from 'graphql'
+import { getHoverInformation } from 'graphql-language-service'
 
-import { buildGraphQLSchema } from './schema'
 import type { EditorVocabulary } from './types'
 
 /**
@@ -50,6 +53,71 @@ export function buildEditorExtensions(vocabulary: EditorVocabulary): Extension[]
     Prec.highest(keymap.of(completionKeymap)),
     autocompletion({ activateOnTyping: true }),
     ...graphql(schema),
+    buildGraphQLHover(schema),
     autoOpenInContext,
   ]
+}
+
+type HoverContent =
+  | string
+  | { language: string; value: string }
+  | { kind: string; value: string }
+  | readonly (string | { language: string; value: string })[]
+
+/** Normalize all standard hover content forms to safe plain text. */
+export function normalizeHoverContent(content: HoverContent | null | undefined): string {
+  if (typeof content === 'string') return content.trim()
+  if (Array.isArray(content)) {
+    return content
+      .map((entry) =>
+        typeof entry === 'string' ? entry : `${entry.language}\n${entry.value}`.trim()
+      )
+      .filter(Boolean)
+      .join('\n\n')
+      .trim()
+  }
+  if (content && 'value' in content) return content.value.trim()
+  return ''
+}
+
+/** Convert a CodeMirror offset to the UTF-16 position used by GraphQL and LSP. */
+export function offsetToGraphQLPosition(
+  document: EditorView['state']['doc'],
+  offset: number
+): { line: number; character: number } {
+  const line = document.lineAt(offset)
+  return { line: line.number - 1, character: offset - line.from }
+}
+
+function buildGraphQLHover(schema: GraphQLSchema): Extension {
+  return hoverTooltip((view, position) => {
+    try {
+      const text = view.state.doc.toString()
+      const content = normalizeHoverContent(
+        getHoverInformation(
+          schema,
+          text,
+          offsetToGraphQLPosition(view.state.doc, position) as never
+        ) as HoverContent
+      )
+      if (!content) return null
+
+      const word = view.state.wordAt(position)
+      return {
+        pos: word?.from ?? position,
+        end: word?.to ?? position,
+        above: true,
+        create() {
+          const dom = document.createElement('div')
+          dom.className = 'cm-graphql-hover'
+          dom.textContent = content
+          dom.style.maxWidth = '36rem'
+          dom.style.whiteSpace = 'pre-wrap'
+          return { dom }
+        },
+      }
+    } catch {
+      return null
+    }
+  })
 }

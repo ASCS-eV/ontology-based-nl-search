@@ -3,7 +3,7 @@
  *
  * Projects the shared schema term index (the same one LLM retrieval reads)
  * into the wire shape the GraphQL editor consumes: domain names, property
- * names (enum + numeric), and allowed values. One index, one projection —
+ * names (enum, numeric, and free-form string), and allowed values. One index, one projection —
  * the editor cannot drift from what the interpreter and compiler see.
  */
 import type { VocabularyResponse } from '@ontology-search/api-types'
@@ -21,8 +21,8 @@ vocabularyRoutes.get('/', (c) =>
     errorMessage: 'Failed to retrieve vocabulary',
     handler: async (_c, logger) => {
       logger.info('Vocabulary request started')
-      // Schema-only: the response carries sh:in enumerations and datatypes
-      // exclusively — never instance-derived values.
+      // Schema-only: the response carries discovered literal constraints,
+      // never instance-derived values.
       const store = await getInitializedStore()
       const response = toVocabularyResponse(await buildTermIndex(store))
 

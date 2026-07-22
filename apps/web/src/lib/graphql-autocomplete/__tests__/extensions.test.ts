@@ -9,12 +9,16 @@
  * e2e (R8–R10). See `../README.md`.
  */
 import { startCompletion } from '@codemirror/autocomplete'
+import { buildGraphQLSchema } from '@ontology-search/graphql-ir'
 import { EditorState, EditorView } from '@uiw/react-codemirror'
 import { graphql } from 'cm6-graphql'
 import { describe, expect, it } from 'vitest'
 
-import { buildEditorExtensions } from '../extensions'
-import { buildGraphQLSchema } from '../schema'
+import {
+  buildEditorExtensions,
+  normalizeHoverContent,
+  offsetToGraphQLPosition,
+} from '../extensions'
 import type { EditorVocabulary } from '../types'
 
 const VOCAB: EditorVocabulary = {
@@ -53,5 +57,32 @@ describe('R7: the extensions make schema-aware completion startable', () => {
     } finally {
       view.destroy()
     }
+  })
+})
+
+describe('R11: GraphQL hover adapter', () => {
+  it('normalizes every standard content shape as plain text', () => {
+    expect(normalizeHoverContent(' field signature ')).toBe('field signature')
+    expect(normalizeHoverContent({ language: 'graphql', value: 'title: Filter' })).toBe(
+      'title: Filter'
+    )
+    expect(normalizeHoverContent({ kind: 'markdown', value: '**description**' })).toBe(
+      '**description**'
+    )
+    expect(normalizeHoverContent(['first', { language: 'graphql', value: 'title: Filter' }])).toBe(
+      'first\n\ngraphql\ntitle: Filter'
+    )
+  })
+
+  it('returns empty text for absent or empty content', () => {
+    expect(normalizeHoverContent(undefined)).toBe('')
+    expect(normalizeHoverContent(null)).toBe('')
+    expect(normalizeHoverContent('   ')).toBe('')
+  })
+
+  it('converts CodeMirror offsets to zero-based UTF-16 positions', () => {
+    const state = EditorState.create({ doc: 'query {\n  # 😀 title\n}' })
+    const offset = state.doc.toString().indexOf('title')
+    expect(offsetToGraphQLPosition(state.doc, offset)).toEqual({ line: 1, character: 7 })
   })
 })

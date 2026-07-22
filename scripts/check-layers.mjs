@@ -49,6 +49,7 @@ export const RANKS = {
   '@ontology-search/web': 5,
   '@ontology-search/e2e': 5,
   '@ontology-search/docs': 5,
+  '@ontology-search/lsp-server': 5,
 }
 
 /** Read `{ name, deps[] }` for every workspace package under packages/ and apps/. */

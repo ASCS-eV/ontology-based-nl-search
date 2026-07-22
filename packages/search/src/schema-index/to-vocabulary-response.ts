@@ -6,10 +6,9 @@
  * this module is the only translation between the two, so the editor's
  * vocabulary can never drift from what the interpreter and compiler see.
  *
- * The wire contract stays exactly what the web client expects: only
- * enum (`sh:in`) and numeric (integer/float datatype) properties are
- * projected, `name` is the SHACL local name, and `datatype` is narrowed
- * to the client's `'integer' | 'float'` union.
+ * Enum (`sh:in`), numeric (integer/float datatype), and free-form literal
+ * properties are projected. Object-reference leaves stay represented by the
+ * GraphQL DSL's recursive `references` field.
  */
 import type { VocabProperty, VocabularyResponse } from '@ontology-search/api-types'
 import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
@@ -27,7 +26,7 @@ export function toVocabularyResponse(index: TermIndex): VocabularyResponse {
   }
 
   return {
-    domains: [...new Set(properties.map((p) => p.domain))],
+    domains: index.domainCatalog.map((entry) => entry.domain),
     properties,
   }
 }
@@ -49,8 +48,11 @@ function projectCard(card: TermCard): VocabProperty | null {
     return { ...base, type: 'numeric', datatype }
   }
 
-  // Object references and free-form literals have no autocomplete
-  // representation in the wire contract.
+  if (card.leafKind === 'literal') {
+    return { ...base, type: 'string' }
+  }
+
+  // Object references are represented by the recursive `references` field.
   return null
 }
 

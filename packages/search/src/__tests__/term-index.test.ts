@@ -98,6 +98,7 @@ describe('buildTermIndex — catalog and caching', () => {
       expect(card.domain.length).toBeGreaterThan(0)
       expect(card.labels.length).toBeGreaterThan(0)
       expect(card.labels).toContain(card.localName)
+      if (card.kind === 'property') expect(card.leafKind).toBeDefined()
     }
   })
 })

@@ -195,8 +195,11 @@ export interface VocabProperty {
   description: string
   /** Owning asset domain. */
   domain: string
-  /** `enum` = closed `sh:in` vocabulary; `numeric` = `min`/`max` range. */
-  type: 'enum' | 'numeric'
+  /**
+   * `enum` = closed `sh:in` vocabulary; `numeric` = `min`/`max` range;
+   * `string` = an otherwise free-form literal filter.
+   */
+  type: 'enum' | 'numeric' | 'string'
   /** For `enum`: the allowed values (`sh:in`). */
   allowedValues?: string[]
   /** For `numeric`: the bound datatype. */

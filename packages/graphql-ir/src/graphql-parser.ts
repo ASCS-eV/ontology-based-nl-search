@@ -31,13 +31,20 @@
  * routine as parsing a domain's, applied recursively. See
  * `docs/adr/0002-field-based-recursive-references.md`.
  *
+ * Only inlined `Field` selections with literal argument values are modelled.
+ * Fragments (§2.8), variables (§2.10), and directives (§2.12) are rejected up
+ * front (see {@link findUnsupportedConstruct}) rather than silently dropped, so
+ * a schema-valid edited query can never execute an unintended search.
+ *
  * @see https://spec.graphql.org/September2025/ — GraphQL Language Specification
  * @see slotsToGraphQL in ./graphql-serializer.ts — the forward path
  * @see https://github.com/graphql/graphql-js — reference implementation (parser)
  */
 
 import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
-import { type FieldNode, parse, type SelectionSetNode } from 'graphql'
+import { type DocumentNode, type FieldNode, parse, type SelectionSetNode, visit } from 'graphql'
+
+import type { GraphQLNameMap } from './graphql-name.js'
 
 export interface GraphQLParseResult {
   success: true
@@ -47,6 +54,11 @@ export interface GraphQLParseResult {
 export interface GraphQLParseError {
   success: false
   error: string
+}
+
+export interface GraphQLParseOptions {
+  /** Restore sanitized GraphQL names to their raw ontology names. */
+  nameMap?: GraphQLNameMap
 }
 
 /** The constraints a selection set carries: property filters, ranges, references. */
@@ -72,7 +84,10 @@ interface ParsedSelection {
  * }
  * ```
  */
-export function parseGraphQLToSlots(query: string): GraphQLParseResult | GraphQLParseError {
+export function parseGraphQLToSlots(
+  query: string,
+  options: GraphQLParseOptions = {}
+): GraphQLParseResult | GraphQLParseError {
   let ast
   try {
     ast = parse(query)
@@ -82,6 +97,14 @@ export function parseGraphQLToSlots(query: string): GraphQLParseResult | GraphQL
       error: `Syntax error: ${err instanceof Error ? err.message : String(err)}`,
     }
   }
+
+  // This traversal only reads `Field` selections and literal argument values.
+  // Fragments, variables, and directives all parse and schema-validate, but
+  // their constraints would be silently dropped here — so a "valid" edited
+  // query would execute an unintended search. Reject them with a bounded error
+  // instead, keeping the executed query faithful to what the editor validated.
+  const unsupported = findUnsupportedConstruct(ast)
+  if (unsupported) return { success: false, error: unsupported }
 
   // Expect exactly one OperationDefinition of type 'query'
   const opDef = ast.definitions.find((d) => d.kind === 'OperationDefinition')
@@ -99,13 +122,17 @@ export function parseGraphQLToSlots(query: string): GraphQLParseResult | GraphQL
   for (const selection of opDef.selectionSet.selections) {
     if (selection.kind !== 'Field') continue
 
-    const domainName = selection.name.value
-    if (domainName === '_empty') continue // placeholder
+    const graphQLDomainName = selection.name.value
+    if (graphQLDomainName === '_empty') continue // placeholder
+    const domainName = options.nameMap?.domains.get(graphQLDomainName) ?? graphQLDomainName
 
-    domains.push(domainName)
+    // GraphQL merges repeated fields (§2.5); the flat slot model lists each
+    // domain once. Keep the domain unique while still merging the constraints
+    // from every block that names it.
+    if (!domains.includes(domainName)) domains.push(domainName)
 
     if (!selection.selectionSet) continue
-    const parsed = parseSelectionSet(selection.selectionSet)
+    const parsed = parseSelectionSet(selection.selectionSet, domainName, options.nameMap)
     // Top-level filters/ranges are flat in the slot model, so merge across
     // domains; references accumulate into the single top-level list.
     Object.assign(filters, parsed.filters)
@@ -119,11 +146,44 @@ export function parseGraphQLToSlots(query: string): GraphQLParseResult | GraphQL
 }
 
 /**
+ * Reject GraphQL constructs the slot IR does not model. Each of these parses
+ * and schema-validates, yet the field-only traversal below would silently drop
+ * the constraints it carries — so a "valid" query would execute an unintended,
+ * usually under-constrained, search. Returning a bounded error (surfaced by the
+ * API as HTTP 422) keeps the executed query faithful to the edited one.
+ *
+ * @see https://spec.graphql.org/draft/#sec-Language.Fragments — [GraphQL] §2.8
+ * @see https://spec.graphql.org/draft/#sec-Language.Variables — [GraphQL] §2.10
+ * @see https://spec.graphql.org/draft/#sec-Language.Directives — [GraphQL] §2.12
+ */
+function findUnsupportedConstruct(ast: DocumentNode): string | null {
+  let unsupported: string | null = null
+  const flag = (message: string): void => {
+    unsupported ??= message
+  }
+  visit(ast, {
+    // [GraphQL] §2.8 — fragment fields live outside the selection sets we walk.
+    FragmentDefinition: () => flag('Fragments are not supported; inline the fields directly.'),
+    FragmentSpread: () => flag('Fragment spreads are not supported; inline the fields directly.'),
+    InlineFragment: () => flag('Inline fragments are not supported; inline the fields directly.'),
+    // [GraphQL] §2.10 — variable values are never bound on the refine path.
+    Variable: () => flag('Variables are not supported; use literal values.'),
+    // [GraphQL] §2.12 — directives (e.g. @skip/@include) alter which fields apply.
+    Directive: () => flag('Directives are not supported.'),
+  })
+  return unsupported
+}
+
+/**
  * Parse a selection set into the constraints it expresses: property fields
  * become filters/ranges, and the reserved `references` field's sub-fields become
  * {@link ReferenceFilter}s (recursively). `_all`/`__typename` are skipped.
  */
-function parseSelectionSet(selectionSet: SelectionSetNode): ParsedSelection {
+function parseSelectionSet(
+  selectionSet: SelectionSetNode,
+  domain: string,
+  nameMap?: GraphQLNameMap
+): ParsedSelection {
   const filters: Record<string, string | string[]> = {}
   const ranges: Record<string, { min?: number; max?: number }> = {}
   const references: ReferenceFilter[] = []
@@ -139,13 +199,13 @@ function parseSelectionSet(selectionSet: SelectionSetNode): ParsedSelection {
       if (field.selectionSet) {
         for (const refField of field.selectionSet.selections) {
           if (refField.kind !== 'Field') continue
-          references.push(parseReferenceField(refField))
+          references.push(parseReferenceField(refField, nameMap))
         }
       }
       continue
     }
 
-    extractFilterOrRange(field, filters, ranges)
+    extractFilterOrRange(field, filters, ranges, domain, nameMap)
   }
 
   return { filters, ranges, references }
@@ -155,8 +215,9 @@ function parseSelectionSet(selectionSet: SelectionSetNode): ParsedSelection {
  * Parse a referenced-asset field (`<domain>(label: "…") { … }`) into a
  * {@link ReferenceFilter}, recursing into its own `references`.
  */
-function parseReferenceField(field: FieldNode): ReferenceFilter {
-  const ref: ReferenceFilter = { domain: field.name.value }
+function parseReferenceField(field: FieldNode, nameMap?: GraphQLNameMap): ReferenceFilter {
+  const domain = nameMap?.domains.get(field.name.value) ?? field.name.value
+  const ref: ReferenceFilter = { domain }
 
   for (const arg of field.arguments ?? []) {
     if (arg.name.value === 'label' && arg.value.kind === 'StringValue') {
@@ -165,7 +226,7 @@ function parseReferenceField(field: FieldNode): ReferenceFilter {
   }
 
   if (field.selectionSet) {
-    const inner = parseSelectionSet(field.selectionSet)
+    const inner = parseSelectionSet(field.selectionSet, domain, nameMap)
     if (Object.keys(inner.filters).length > 0) ref.filters = inner.filters
     if (Object.keys(inner.ranges).length > 0) ref.ranges = inner.ranges
     if (inner.references.length > 0) ref.references = inner.references
@@ -182,9 +243,12 @@ function parseReferenceField(field: FieldNode): ReferenceFilter {
 function extractFilterOrRange(
   field: FieldNode,
   filters: Record<string, string | string[]>,
-  ranges: Record<string, { min?: number; max?: number }>
+  ranges: Record<string, { min?: number; max?: number }>,
+  domain: string,
+  nameMap?: GraphQLNameMap
 ): void {
-  const fieldName = field.name.value
+  const fieldName =
+    nameMap?.propertiesByDomain.get(domain)?.get(field.name.value) ?? field.name.value
   if (!field.arguments || field.arguments.length === 0) return
 
   for (const arg of field.arguments) {
