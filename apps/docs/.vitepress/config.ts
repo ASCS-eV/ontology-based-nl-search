@@ -80,6 +80,7 @@ export default withMermaid(
             { text: 'Query Flow', link: '/query-flow' },
             { text: 'Ontology Model', link: '/ontology' },
             { text: 'Agent Design', link: '/agent' },
+            { text: 'Agent Tools', link: '/agent-tools' },
             { text: 'Data Model', link: '/data' },
             { text: 'SPARQL 1.1 Overview', link: '/sparql-reference/sparql-1.1-overview' },
             { text: 'FILTER Functions', link: '/sparql-reference/filter-functions' },
@@ -111,6 +112,7 @@ export default withMermaid(
           items: [
             { text: 'Ontology Model', link: '/ontology' },
             { text: 'Agent Design', link: '/agent' },
+            { text: 'Agent Tools', link: '/agent-tools' },
             { text: 'Data Model', link: '/data' },
           ],
         },

@@ -13,7 +13,8 @@ import { SCHEMA_TOOL_DEFINITIONS } from './schema-tools.js'
  *
  * Design: The schema mirrors SearchSlots directly — no conversion needed.
  * The LLM fills property names matching the ontology local names
- * (from SHACL sh:path declarations) as documented in skill.md.
+ * (from SHACL sh:path declarations) as documented in the agent-tools
+ * catalog (apps/docs/agent-tools.md).
  */
 
 export const slotSubmissionSchema = z.object({

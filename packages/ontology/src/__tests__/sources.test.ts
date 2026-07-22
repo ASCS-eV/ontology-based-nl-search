@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { resetConfig } from '@ontology-search/core/config'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -25,10 +26,14 @@ import {
  * `ONTOLOGY_ROOT` is the environment knob `paths.ts:getProjectRoot` honours.
  */
 function repoRoot(): string {
-  let cur = dirname(new URL(import.meta.url).pathname)
-  while (cur !== '/') {
+  // fileURLToPath (not `new URL(...).pathname`) so Windows file URLs decode to a
+  // native path (`C:\...`) instead of `/C:/...`, which existsSync/join mishandle.
+  let cur = dirname(fileURLToPath(import.meta.url))
+  for (;;) {
     if (existsSync(join(cur, 'pnpm-workspace.yaml'))) return cur
-    cur = dirname(cur)
+    const parent = dirname(cur)
+    if (parent === cur) break // reached filesystem root on any platform
+    cur = parent
   }
   throw new Error('repo root not found')
 }

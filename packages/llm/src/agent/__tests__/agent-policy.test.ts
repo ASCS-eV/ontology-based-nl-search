@@ -2,9 +2,11 @@
  * AgentPolicy derivation tests — pins how env config maps to the policy knobs.
  *
  * Focused on `reasoningEffort`: slot-filling is deterministic (validated by the
- * SHACL gate downstream), so reasoning is DISABLED (`'none'`) on models that
- * accept the parameter — a latency win. Models that don't accept the parameter
- * get `null` (omitted). This test is the regression guard for that mapping.
+ * SHACL gate downstream), so reasoning is DISABLED (`'none'`) on EVERY Copilot
+ * model — a latency win (benchmarked ~74% off the round-trip for `claude-sonnet-5`).
+ * Passing `'none'` is harmless for models that ignore the knob, so there is no
+ * allowlist. Non-copilot providers get `null` (the knob is omitted). This test is
+ * the regression guard for that mapping.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -38,9 +40,16 @@ describe('getAgentPolicy — reasoningEffort', () => {
     expect(getAgentPolicy().reasoningEffort).toBe('none')
   })
 
-  it('is null for a copilot model that does not accept the parameter (haiku)', () => {
+  it("disables reasoning ('none') for the configured default model (claude-sonnet-5)", () => {
+    // Regression: the previous allowlist gate (`includes('4.6') || 'opus'`)
+    // left reasoning ON for sonnet-5, adding ~14s mean latency per query.
+    cfg.value = config({ AI_MODEL: 'claude-sonnet-5' })
+    expect(getAgentPolicy().reasoningEffort).toBe('none')
+  })
+
+  it("disables reasoning ('none') on copilot regardless of model (haiku)", () => {
     cfg.value = config({ AI_MODEL: 'claude-haiku-4.5' })
-    expect(getAgentPolicy().reasoningEffort).toBeNull()
+    expect(getAgentPolicy().reasoningEffort).toBe('none')
   })
 
   it('is null for non-copilot providers even on a 4.6 model', () => {

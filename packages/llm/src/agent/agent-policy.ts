@@ -87,14 +87,20 @@ export function getAgentPolicy(): AgentPolicy {
     (config.AI_PROVIDER === 'anthropic' || config.AI_PROVIDER === 'claude-cli')
   const thinking = supportsThinking ? { budgetTokens: config.LLM_THINKING_BUDGET } : null
 
-  // Copilot SDK reasoningEffort: only models that accept the parameter.
-  // We disable reasoning entirely (`'none'`) for slot-filling: the task is
-  // deterministic (fill slots from SHACL, validated downstream by the SHACL
-  // gate), so chain-of-thought adds latency and output tokens without improving
-  // the structured result. `null` for models that don't accept the parameter.
-  const supportsReasoning =
-    config.AI_PROVIDER === 'copilot' &&
-    (config.AI_MODEL.includes('4.6') || config.AI_MODEL.includes('opus'))
+  // Copilot SDK reasoningEffort: disable reasoning entirely (`'none'`) for
+  // slot-filling. The task is deterministic (fill slots from SHACL, validated
+  // downstream by the SHACL gate), so chain-of-thought only adds latency and
+  // output tokens without improving the structured result.
+  //
+  // This gate deliberately applies to EVERY Copilot model. A previous version
+  // hard-coded an allowlist (`AI_MODEL.includes('4.6') || includes('opus')`),
+  // which silently left reasoning ON for every model outside that list —
+  // including the configured default `claude-sonnet-5`. Benchmarked impact of
+  // that stale gate: mean round-trip 19.5s (6–43s, high variance) with
+  // reasoning ON vs. ~5.2s (tight) with `'none'` — a ~74% latency cut and the
+  // 43s tail eliminated. Passing `'none'` is harmless for models that ignore
+  // the knob, so an allowlist is the wrong shape here — it can only regress.
+  const supportsReasoning = config.AI_PROVIDER === 'copilot'
   const reasoningEffort = supportsReasoning ? ('none' as const) : null
 
   return {
