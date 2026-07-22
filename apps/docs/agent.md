@@ -1,19 +1,34 @@
 # Agent Design
 
-Single-tool agent with forced structured output. The LLM never writes SPARQL — it fills structured slots via exactly one tool call.
+Constrained slot-filling agent. The LLM **never writes SPARQL** — it fills structured
+slots via a single forced **submission** tool, and may first call a few **read-only
+lookup** tools when the retrieved context doesn't cover a term. A deterministic compiler
+turns the submitted slots into SPARQL.
+
+See the **[Agent Tools](/agent-tools)** catalog for the full tool contract (arguments,
+purpose, and how each tool is defined once and wrapped for both SDKs).
 
 ## Tool Architecture
 
-The agent exposes a **single tool** (`submit_slots`) with forced tool choice. The LLM receives the full SHACL vocabulary in its system prompt and directly fills search slots in one round-trip.
+The agent exposes **one submission tool** (`submit_slots`) plus **four read-only lookup
+tools** (`find_terms`, `describe_shape`, `list_values`, `probe_data`). `submit_slots` is the
+**only** path that produces a search — lookups are optional, bounded by `LLM_MAX_AGENT_STEPS`,
+and never emit a query themselves. The typical query is answered in **one round-trip**: the
+LLM receives the retrieved SHACL context in its prompt and calls `submit_slots` directly.
 
 ```mermaid
 sequenceDiagram
     participant U as User
     participant L as LLM Agent
-    participant SS as submit_slots (forced)
+    participant LK as lookup tools (read-only, optional)
+    participant SS as submit_slots (forced submission)
     participant V as Validator + Compiler
 
-    U->>L: Query + system prompt (raw SHACL)
+    U->>L: Query + system prompt (retrieved SHACL)
+    opt term not covered by context
+        L->>LK: find_terms / describe_shape / list_values / probe_data
+        LK-->>L: compact schema/data facts
+    end
     L->>SS: submit_slots({ slots, interpretation, gaps })
     SS-->>V: Validated SearchSlots →<br/>SPARQL → Results
 ```
@@ -50,7 +65,13 @@ Slot shape: there are no top-level `location` or `license` objects — both flow
 
 ### Forced tool choice
 
-The agent runs with `toolChoice: { type: 'tool', toolName: 'submit_slots' }` (Vercel AI SDK) or `availableTools: ['submit_slots']` (Copilot SDK) — the LLM has no alternative and commits to structured output on step 1. Both adapters read this constraint from the shared `AgentPolicy` module, ensuring they can never diverge.
+The agent runs with `toolChoice: 'required'` (Vercel AI SDK) — every step **must** be a
+tool call, so prose-only turns are impossible — and stops the moment `submit_slots` is
+called (`stopWhen: [stepCountIs(maxSteps), hasToolCall('submit_slots')]`). The Copilot SDK
+adapter mirrors this by advertising exactly the same tool set via `availableTools`
+(`[...lookupTools, 'submit_slots']`). Both adapters read this constraint from the shared
+`AgentPolicy` module, so they can never diverge. A step budget spent without a
+`submit_slots` call degrades to a deterministic fallback.
 
 ## Architecture: SDK Adapter Pattern
 
@@ -78,7 +99,9 @@ Both adapters share a single policy and context layer:
 
 A contract test (`agent-policy-contract.test.ts`) pins that both adapters:
 
-- Register only `submit_slots` (no investigation tools)
+- Register **exactly** the policy tool set — the lookup tools plus `submit_slots`, and
+  nothing else (`[...policy.lookupTools, policy.forcedTool]`)
+- Expose `submit_slots` as the **only** submission tool (exactly one)
 - Use the policy's temperature, model, and forced tool choice
 - Cannot import the deleted `investigation-tools` module
 
@@ -151,3 +174,12 @@ All providers share the same validation pipeline. Selected via the `AI_PROVIDER`
 | `LLM_MAX_AGENT_STEPS` | `3`     | Hard cap on tool-call rounds. With `toolChoice` forcing `submit_slots`, the typical query needs 1 step.                    |
 
 Reasoning mode by provider: Mistral uses the `magistral-*` family, OpenAI uses the `o`-series model names (`o1`, `o4-mini`), Anthropic exposes a typed `thinking` block — `LLM_THINKING_BUDGET` is the only var that surfaces it explicitly.
+
+### Copilot reasoning is disabled for slot-filling
+
+Slot-filling is deterministic extraction (validated downstream by the SHACL gate), so the
+Copilot SDK adapter always requests `reasoningEffort: 'none'` in `createSession` — for
+**every** Copilot model, not an allowlist. This is a large latency win: with reasoning left
+on, `claude-sonnet-5` averaged ~19.5 s per round-trip (6–43 s, high variance); with `'none'`
+it is ~5 s (tight). Passing `'none'` is harmless for models that ignore the knob, so there is
+no per-model gate to fall out of date. See `agent-policy.ts` (`getAgentPolicy`).
