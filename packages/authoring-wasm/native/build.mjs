@@ -13,7 +13,18 @@
  * Run: `pnpm --filter @ontology-search/authoring-wasm build:wasm`
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import {
+  accessSync,
+  constants,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { delimiter, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -30,6 +41,7 @@ const EMBIND = join(NATIVE, 'osc_engine_embind.cpp')
 
 const BUILD = join(PKG, '.build')
 const OUT = join(PKG, 'wasm')
+const VERSIONS = join(PKG, 'versions.json')
 
 const EMXX = resolveTool('em++')
 const JAVA = resolveTool('java')
@@ -45,7 +57,17 @@ function resolveTool(name) {
     if (!dir) continue
     for (const ext of exts) {
       const candidate = join(dir, name + ext.toLowerCase())
-      if (existsSync(candidate)) return candidate
+      // Must be a regular, executable FILE. Emscripten's bin dir ships a `cmake`
+      // *directory* (toolchain modules) that would otherwise shadow the system
+      // cmake once emsdk_env.sh is on PATH — spawning it fails with EACCES.
+      if (!existsSync(candidate)) continue
+      try {
+        if (!statSync(candidate).isFile()) continue
+        if (process.platform !== 'win32') accessSync(candidate, constants.X_OK)
+      } catch {
+        continue
+      }
+      return candidate
     }
   }
   throw new Error(
@@ -113,6 +135,34 @@ function generateGrammar(grammars, outDir, pkg) {
   return outDir
 }
 
+/**
+ * Generate the compile-time header the embind `describe()` returns, from
+ * `versions.json` — the single source of truth for engine/OSC/XSD versions
+ * (task 10). This is why `describe()` cannot drift from the pin: the string it
+ * reports is generated here, not hand-written in C++. Returns the include dir.
+ */
+function generateVersionsHeader() {
+  const versions = JSON.parse(readFileSync(VERSIONS, 'utf8'))
+  const describeJson = JSON.stringify({
+    engine: versions.engine,
+    engineCommit: versions.engineCommit,
+    oscVersions: versions.oscVersions,
+    xsd: versions.xsd,
+  })
+  // C string-escape: backslash then double-quote (values carry no control chars).
+  const cEscaped = describeJson.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  const dir = join(BUILD, 'gen', 'versions')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(
+    join(dir, 'osc_versions_generated.h'),
+    `// GENERATED from versions.json by native/build.mjs — do not edit.\n` +
+      `#pragma once\n` +
+      `#define OSC_DESCRIBE_JSON "${cEscaped}"\n`
+  )
+  console.log(`• generated describe() header from versions.json`)
+  return dir
+}
+
 function main() {
   assertPrereqs()
   rmSync(BUILD, { recursive: true, force: true })
@@ -120,6 +170,8 @@ function main() {
   mkdirSync(OUT, { recursive: true })
 
   applyPatch()
+
+  const genVersions = generateVersionsHeader()
 
   const antlrSrc = extractAntlrRuntime()
   const genXml = generateGrammar(
@@ -144,6 +196,7 @@ function main() {
     antlrSrc,
     genXml,
     genExpr,
+    genVersions,
     join(CPP, 'openScenarioLib', 'src'),
     join(CPP, 'openScenarioLib', 'generated', 'v1_3'),
     join(CPP, 'expressionsLib', 'inc'),
@@ -223,6 +276,22 @@ function main() {
     join(OUT, 'osc-engine.mjs'),
   ])
   console.log(`• linked ${join(OUT, 'osc-engine.mjs')} + osc-engine.wasm`)
+
+  writeChecksum()
+}
+
+/**
+ * Write a `sha256sum`-compatible integrity manifest for the linked `.wasm`
+ * next to it. The committed manifest lets CI (and `verify-checksum.mjs`) detect
+ * a corrupted or tampered binary artifact — the one file in this package a
+ * reviewer cannot read in a diff. Regenerated on every build so it can never go
+ * stale relative to the binary it describes.
+ */
+function writeChecksum() {
+  const wasm = join(OUT, 'osc-engine.wasm')
+  const digest = createHash('sha256').update(readFileSync(wasm)).digest('hex')
+  writeFileSync(join(OUT, 'osc-engine.wasm.sha256'), `${digest}  osc-engine.wasm\n`)
+  console.log(`• wrote osc-engine.wasm.sha256 (${digest.slice(0, 12)}…)`)
 }
 
 function basenameNoExt(p) {

@@ -16,6 +16,7 @@
   "dependencies": {
     "@hono/node-server": "^2.0.10",
     "@ontology-search/api-types": "workspace:*",
+    "@ontology-search/authoring": "workspace:*",
     "@ontology-search/core": "workspace:*",
     "@ontology-search/graphql-ir": "workspace:*",
     "@ontology-search/llm": "workspace:*",

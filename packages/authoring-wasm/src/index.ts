@@ -16,3 +16,5 @@ export type {
   Severity,
   ValidationResult,
 } from './types.js'
+export type { EngineVersions } from './versions.js'
+export { ENGINE_VERSIONS } from './versions.js'

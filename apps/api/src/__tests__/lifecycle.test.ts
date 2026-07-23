@@ -51,6 +51,9 @@ describe('createShutdownHandler', () => {
       closeStore: vi.fn().mockImplementation(async () => {
         order.push('store')
       }),
+      closeAuthoring: vi.fn().mockImplementation(async () => {
+        order.push('authoring')
+      }),
       log: fakeLogger(),
       exit: exit as unknown as (code: number) => void,
     })
@@ -64,17 +67,19 @@ describe('createShutdownHandler', () => {
 
     await handler('SIGTERM')
 
-    expect(order).toEqual(['server', 'store'])
+    expect(order).toEqual(['server', 'store', 'authoring'])
     expect(server.closed).toBe(true)
     expect(exit).toHaveBeenCalledWith(0)
   })
 
-  it('still closes the store and exits 0 when the server is not up yet', async () => {
+  it('still closes the store and authoring engine and exits 0 when the server is not up yet', async () => {
     const closeStore = vi.fn().mockResolvedValue(undefined)
+    const closeAuthoring = vi.fn().mockResolvedValue(undefined)
     const exit = vi.fn()
     const handler = createShutdownHandler({
       getServer: () => null, // pre-serve() window
       closeStore,
+      closeAuthoring,
       log: fakeLogger(),
       exit: exit as unknown as (code: number) => void,
     })
@@ -82,6 +87,7 @@ describe('createShutdownHandler', () => {
     await handler('SIGINT')
 
     expect(closeStore).toHaveBeenCalledOnce()
+    expect(closeAuthoring).toHaveBeenCalledOnce()
     expect(exit).toHaveBeenCalledWith(0)
   })
 
@@ -91,6 +97,7 @@ describe('createShutdownHandler', () => {
     const handler = createShutdownHandler({
       getServer: () => null,
       closeStore: () => new Promise<void>(() => {}),
+      closeAuthoring: vi.fn().mockResolvedValue(undefined),
       log: fakeLogger(),
       exit: exit as unknown as (code: number) => void,
       graceMs: 1000,
@@ -110,6 +117,7 @@ describe('createShutdownHandler', () => {
       getServer: () => null,
       // First drain hangs so the second signal can escalate.
       closeStore: () => new Promise<void>(() => {}),
+      closeAuthoring: vi.fn().mockResolvedValue(undefined),
       log: fakeLogger(),
       exit: exit as unknown as (code: number) => void,
       graceMs: 60_000,
@@ -130,6 +138,7 @@ describe('createShutdownHandler', () => {
     const handler = createShutdownHandler({
       getServer: () => throwingServer,
       closeStore: vi.fn().mockResolvedValue(undefined),
+      closeAuthoring: vi.fn().mockResolvedValue(undefined),
       log: fakeLogger(),
       exit: exit as unknown as (code: number) => void,
     })

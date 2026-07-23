@@ -1,0 +1,80 @@
+name: Authoring WASM
+
+# Reproducibility gate for the in-process OpenSCENARIO engine. The committed
+# `osc-engine.wasm` is a prebuilt binary (consumed like Oxigraph WASM), so this
+# job proves it can be **rebuilt from pinned inputs** — the pinned Emscripten SDK
+# (versions.json) and the pinned RAC submodule commit — and that the fresh build
+# still passes the golden-conformance suite (functional reproducibility).
+#
+# Path-filtered: the emsdk + 239-object build is minutes-long, so it runs only
+# when the engine's build inputs change, never on every PR. The committed
+# artifact's own integrity is checked cheaply in the main CI `quality` job.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/authoring-wasm/native/**'
+      - 'packages/authoring-wasm/versions.json'
+      - 'submodules/openscenario-api'
+      - '.github/workflows/authoring-wasm.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/authoring-wasm/native/**'
+      - 'packages/authoring-wasm/versions.json'
+      - 'submodules/openscenario-api'
+      - '.github/workflows/authoring-wasm.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reproducible-build:
+    name: Reproducible build (pinned emsdk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      # The vendored ANTLR 4.8 jar (grammar codegen) needs a JDK; the build also
+      # uses `cmake -E tar` (preinstalled on ubuntu-latest) as an archive tool.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Emscripten (pinned to versions.json)
+        run: |
+          EMVER=$(node -p "require('./packages/authoring-wasm/versions.json').emscripten")
+          echo "Pinned Emscripten SDK: $EMVER"
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$HOME/emsdk"
+          "$HOME/emsdk/emsdk" install "$EMVER"
+          "$HOME/emsdk/emsdk" activate "$EMVER"
+
+      - name: Rebuild and verify (functional reproducibility)
+        # One shell so the emsdk env (em++ on PATH) is live for the build. The
+        # golden-conformance suite runs against the FRESHLY built WASM, proving
+        # the artifact is reproducible from pinned inputs — not an opaque blob.
+        # Byte-for-byte cross-host parity is out of scope (see ADR 0006): the
+        # committed checksum only asserts the binary matches its own manifest.
+        run: |
+          source "$HOME/emsdk/emsdk_env.sh"
+          pnpm --filter @ontology-search/authoring-wasm build:wasm
+          pnpm --filter @ontology-search/authoring-wasm verify:checksum
+          pnpm --filter @ontology-search/authoring-wasm test

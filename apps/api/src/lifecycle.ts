@@ -28,6 +28,8 @@ export interface ShutdownDeps {
   getServer: () => ServerType | null
   /** Release the SPARQL store (terminates the Oxigraph worker thread). */
   closeStore: () => Promise<void>
+  /** Release the in-process authoring engine (drops the WASM module refs). */
+  closeAuthoring: () => Promise<void>
   log: ShutdownLogger
   /** Process exit — injectable so tests don't kill the runner. */
   exit: (code: number) => void
@@ -48,8 +50,9 @@ const DEFAULT_GRACE_MS = 5_000
  * Drain order:
  *   1. stop accepting new connections (`server.close`, if up),
  *   2. release the SPARQL store / worker thread,
- *   3. exit 0.
- * A watchdog timer force-exits (code 1) if either async step stalls.
+ *   3. release the in-process authoring engine,
+ *   4. exit 0.
+ * A watchdog timer force-exits (code 1) if any async step stalls.
  */
 export interface ListenErrorDeps {
   /** The port we tried to bind — surfaced in the EADDRINUSE message. */
@@ -110,6 +113,7 @@ export function createShutdownHandler(deps: ShutdownDeps): (signal: string) => P
         await new Promise<void>((resolve) => server.close(() => resolve()))
       }
       await deps.closeStore()
+      await deps.closeAuthoring()
       clearTimeout(watchdog)
       deps.log.info('Shutdown complete', { signal })
       deps.exit(0)
