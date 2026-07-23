@@ -57,4 +57,5 @@ export async function closeSparqlStore(): Promise<void> {
 }
 
 export { probePropertyPathSupport } from './capability-probe.js'
+export { OxigraphStore } from './oxigraph-store.js'
 export type { SparqlBinding, SparqlResults, SparqlStore } from './types.js'

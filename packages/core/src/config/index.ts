@@ -12,6 +12,7 @@ import { ConfigError } from '../errors/index.js'
 
 const sparqlModeSchema = z.enum(['memory', 'remote'])
 const authoringModeSchema = z.enum(['wasm', 'null'])
+const residualModeSchema = z.enum(['in-process', 'external'])
 const aiProviderSchema = z.enum([
   'openai',
   'ollama',
@@ -53,6 +54,17 @@ const envSchema = z.object({
    * backend for tests and for running the pipeline without loading the engine.
    */
   AUTHORING_MODE: authoringModeSchema.default('wasm'),
+
+  /**
+   * Selects the residual-gate backend `getResidualChecker()` returns
+   * (packages/authoring-gate), mirroring `AUTHORING_MODE`: `in-process`
+   * (default) runs only the pure analytic-geometry continuity check;
+   * `external` additionally enables an opt-in out-of-process simulator adapter
+   * (esmini / qc-framework) for collision / physics rules. When no external
+   * runner is configured those simulation-only rules are reported `skipped`,
+   * never a false pass.
+   */
+  RESIDUAL_MODE: residualModeSchema.default('in-process'),
 
   // AI / LLM
   AI_PROVIDER: aiProviderSchema.default('openai'),

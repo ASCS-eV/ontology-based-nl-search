@@ -46,6 +46,7 @@ export const RANKS = {
   '@ontology-search/authoring': 2,
   '@ontology-search/graphql-ir': 2,
   '@ontology-search/search': 3,
+  '@ontology-search/authoring-gate': 3,
   '@ontology-search/llm': 4,
   '@ontology-search/testing': 5,
   '@ontology-search/api': 5,
