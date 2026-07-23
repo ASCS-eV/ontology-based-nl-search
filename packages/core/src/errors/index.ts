@@ -144,6 +144,19 @@ export class StoreCapabilityError extends AppError {
   readonly httpStatus = 503
 }
 
+/**
+ * The authoring engine's reported capabilities don't meet the runtime contract
+ * — e.g. the built `osc-engine.wasm` targets a different OpenSCENARIO/XSD
+ * version than the ontology derivation expects, or it can't report at all.
+ * Probed at startup (`probeEngineVersions`) so a mis-built or stale engine
+ * artifact is rejected loudly instead of silently validating against the wrong
+ * schema. The authoring analog of {@link StoreCapabilityError}.
+ */
+export class BackendCapabilityError extends AppError {
+  readonly code = ERROR_CODE.SERVICE_UNAVAILABLE
+  readonly httpStatus = 503
+}
+
 /** Create a 400 Bad Request error */
 export function badRequest(message: string, details?: string[]): HttpError {
   return { status: 400, body: { error: message, code: ERROR_CODE.BAD_REQUEST, details } }
