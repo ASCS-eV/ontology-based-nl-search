@@ -1,0 +1,169 @@
+# OpenSCENARIO authoring domain — OWL vocabulary (cut-in archetype subset).
+#
+# DERIVED, NOT HAND-INVENTED. Classes and properties are a mechanical projection
+# of the normative ASAM OpenSCENARIO 1.3.0 serialization schema
+#   submodules/ontology-management-base/imports/OpenScenario/OpenSCENARIO.xsd
+# (complexType -> owl:Class; element/attribute -> owl:Object/DatatypeProperty),
+# curated to the "cut-in" first-slice subset (see DERIVATION.md). It is the
+# authoring analog of the search feature's ontology artifacts: the translation
+# dictionary the SHACL gate (task 03) and the LLM prompt grounding (task 05)
+# consume. The same model generates the in-process WASM checker
+# (packages/authoring-wasm), so design-time vocabulary and runtime checker share
+# one source and cannot drift.
+#
+# STANDARDS (criterion #31 — cite each interface's standard):
+#   [OSC-XSD] ASAM OpenSCENARIO 1.3.0 — OpenSCENARIO.xsd (normative serialization,
+#             vendored under submodules/ontology-management-base/imports/OpenScenario/)
+#   [OWL2]    W3C OWL 2 — docs/specs/references/owl2-overview.md
+#   [RDFS]    W3C RDF Schema 1.1 — docs/specs/references/rdf-schema.md
+#   [TURTLE]  W3C RDF 1.1 Turtle — docs/specs/references/turtle.md
+
+@prefix openscenario: <https://w3id.org/ascs-ev/envited-x/openscenario/v1/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://w3id.org/ascs-ev/envited-x/openscenario/v1> a owl:Ontology ;
+    rdfs:label "OpenSCENARIO authoring domain (cut-in subset)"@en ;
+    rdfs:comment "OWL vocabulary for authoring ASAM OpenSCENARIO scenarios, derived from the normative OpenSCENARIO 1.3.0 XSD. Curated to the cut-in archetype first slice."@en ;
+    dcterms:identifier <https://w3id.org/ascs-ev/envited-x/openscenario> ;
+    dcterms:source <https://www.asam.net/standards/detail/openscenario/> ;
+    dcterms:references <https://github.com/RA-Consulting-GmbH/openscenario.api.test> ;
+    owl:versionInfo "1.3.0-cutin.1" .
+
+#################################################################
+# Classes (XSD complexType -> owl:Class). [OSC-XSD] complexType
+#################################################################
+
+openscenario:OpenSCENARIO a owl:Class ; rdfs:label "OpenSCENARIO"@en ;
+    rdfs:comment "Root of an OpenSCENARIO document."@en .
+
+openscenario:FileHeader a owl:Class ; rdfs:label "FileHeader"@en .
+openscenario:ParameterDeclarations a owl:Class ; rdfs:label "ParameterDeclarations"@en .
+openscenario:ParameterDeclaration a owl:Class ; rdfs:label "ParameterDeclaration"@en .
+openscenario:RoadNetwork a owl:Class ; rdfs:label "RoadNetwork"@en .
+openscenario:LogicFile a owl:Class ; rdfs:label "LogicFile"@en .
+openscenario:SceneGraphFile a owl:Class ; rdfs:label "SceneGraphFile"@en .
+
+openscenario:Entities a owl:Class ; rdfs:label "Entities"@en .
+openscenario:ScenarioObject a owl:Class ; rdfs:label "ScenarioObject"@en ;
+    rdfs:comment "A named entity in the scene; the referent of every entityRef."@en .
+openscenario:Vehicle a owl:Class ; rdfs:label "Vehicle"@en .
+openscenario:Performance a owl:Class ; rdfs:label "Performance"@en .
+openscenario:BoundingBox a owl:Class ; rdfs:label "BoundingBox"@en .
+openscenario:Center a owl:Class ; rdfs:label "Center"@en .
+openscenario:Dimensions a owl:Class ; rdfs:label "Dimensions"@en .
+openscenario:Axles a owl:Class ; rdfs:label "Axles"@en .
+openscenario:Axle a owl:Class ; rdfs:label "Axle"@en .
+# The XSD names two role-elements (FrontAxle, RearAxle) both of complexType Axle;
+# the generic XML->RDF lift types nodes by element name, so declare the roles as
+# subclasses so the Axle range rules apply to both (and the SHACL AxleShape also
+# targets them explicitly). [OSC-XSD] complexType Vehicle/Axles.
+openscenario:FrontAxle a owl:Class ; rdfs:subClassOf openscenario:Axle ; rdfs:label "FrontAxle"@en .
+openscenario:RearAxle a owl:Class ; rdfs:subClassOf openscenario:Axle ; rdfs:label "RearAxle"@en .
+
+openscenario:Storyboard a owl:Class ; rdfs:label "Storyboard"@en .
+openscenario:Init a owl:Class ; rdfs:label "Init"@en .
+openscenario:Actions a owl:Class ; rdfs:label "Actions"@en .
+openscenario:Private a owl:Class ; rdfs:label "Private"@en .
+openscenario:PrivateAction a owl:Class ; rdfs:label "PrivateAction"@en .
+openscenario:LongitudinalAction a owl:Class ; rdfs:label "LongitudinalAction"@en .
+openscenario:SpeedAction a owl:Class ; rdfs:label "SpeedAction"@en .
+openscenario:SpeedActionDynamics a owl:Class ; rdfs:label "SpeedActionDynamics"@en .
+openscenario:SpeedActionTarget a owl:Class ; rdfs:label "SpeedActionTarget"@en .
+openscenario:AbsoluteTargetSpeed a owl:Class ; rdfs:label "AbsoluteTargetSpeed"@en .
+openscenario:TeleportAction a owl:Class ; rdfs:label "TeleportAction"@en .
+openscenario:Position a owl:Class ; rdfs:label "Position"@en .
+openscenario:LanePosition a owl:Class ; rdfs:label "LanePosition"@en .
+openscenario:RelativeLanePosition a owl:Class ; rdfs:label "RelativeLanePosition"@en .
+openscenario:LateralAction a owl:Class ; rdfs:label "LateralAction"@en .
+openscenario:LaneChangeAction a owl:Class ; rdfs:label "LaneChangeAction"@en .
+openscenario:LaneChangeActionDynamics a owl:Class ; rdfs:label "LaneChangeActionDynamics"@en .
+openscenario:LaneChangeTarget a owl:Class ; rdfs:label "LaneChangeTarget"@en .
+openscenario:RelativeTargetLane a owl:Class ; rdfs:label "RelativeTargetLane"@en .
+
+#################################################################
+# Object properties (XSD child element -> owl:ObjectProperty).
+# Named camelCase of the child element; the generic lift emits the
+# same predicate. [OSC-XSD] xsd:element (composition).
+#################################################################
+
+openscenario:fileHeader a owl:ObjectProperty ; rdfs:domain openscenario:OpenSCENARIO ; rdfs:range openscenario:FileHeader .
+openscenario:parameterDeclarations a owl:ObjectProperty ; rdfs:range openscenario:ParameterDeclarations .
+openscenario:parameterDeclaration a owl:ObjectProperty ; rdfs:domain openscenario:ParameterDeclarations ; rdfs:range openscenario:ParameterDeclaration .
+openscenario:roadNetwork a owl:ObjectProperty ; rdfs:domain openscenario:OpenSCENARIO ; rdfs:range openscenario:RoadNetwork .
+openscenario:logicFile a owl:ObjectProperty ; rdfs:domain openscenario:RoadNetwork ; rdfs:range openscenario:LogicFile .
+openscenario:sceneGraphFile a owl:ObjectProperty ; rdfs:domain openscenario:RoadNetwork ; rdfs:range openscenario:SceneGraphFile .
+openscenario:entities a owl:ObjectProperty ; rdfs:domain openscenario:OpenSCENARIO ; rdfs:range openscenario:Entities .
+openscenario:scenarioObject a owl:ObjectProperty ; rdfs:domain openscenario:Entities ; rdfs:range openscenario:ScenarioObject .
+openscenario:vehicle a owl:ObjectProperty ; rdfs:domain openscenario:ScenarioObject ; rdfs:range openscenario:Vehicle .
+openscenario:performance a owl:ObjectProperty ; rdfs:domain openscenario:Vehicle ; rdfs:range openscenario:Performance .
+openscenario:boundingBox a owl:ObjectProperty ; rdfs:domain openscenario:Vehicle ; rdfs:range openscenario:BoundingBox .
+openscenario:axles a owl:ObjectProperty ; rdfs:domain openscenario:Vehicle ; rdfs:range openscenario:Axles .
+openscenario:center a owl:ObjectProperty ; rdfs:domain openscenario:BoundingBox ; rdfs:range openscenario:Center .
+openscenario:dimensions a owl:ObjectProperty ; rdfs:domain openscenario:BoundingBox ; rdfs:range openscenario:Dimensions .
+openscenario:frontAxle a owl:ObjectProperty ; rdfs:domain openscenario:Axles ; rdfs:range openscenario:FrontAxle .
+openscenario:rearAxle a owl:ObjectProperty ; rdfs:domain openscenario:Axles ; rdfs:range openscenario:RearAxle .
+openscenario:storyboard a owl:ObjectProperty ; rdfs:domain openscenario:OpenSCENARIO ; rdfs:range openscenario:Storyboard .
+openscenario:init a owl:ObjectProperty ; rdfs:domain openscenario:Storyboard ; rdfs:range openscenario:Init .
+openscenario:actions a owl:ObjectProperty ; rdfs:domain openscenario:Init ; rdfs:range openscenario:Actions .
+openscenario:private a owl:ObjectProperty ; rdfs:domain openscenario:Actions ; rdfs:range openscenario:Private .
+openscenario:privateAction a owl:ObjectProperty ; rdfs:domain openscenario:Private ; rdfs:range openscenario:PrivateAction .
+openscenario:longitudinalAction a owl:ObjectProperty ; rdfs:domain openscenario:PrivateAction ; rdfs:range openscenario:LongitudinalAction .
+openscenario:lateralAction a owl:ObjectProperty ; rdfs:domain openscenario:PrivateAction ; rdfs:range openscenario:LateralAction .
+openscenario:teleportAction a owl:ObjectProperty ; rdfs:domain openscenario:PrivateAction ; rdfs:range openscenario:TeleportAction .
+openscenario:speedAction a owl:ObjectProperty ; rdfs:domain openscenario:LongitudinalAction ; rdfs:range openscenario:SpeedAction .
+openscenario:speedActionDynamics a owl:ObjectProperty ; rdfs:domain openscenario:SpeedAction ; rdfs:range openscenario:SpeedActionDynamics .
+openscenario:speedActionTarget a owl:ObjectProperty ; rdfs:domain openscenario:SpeedAction ; rdfs:range openscenario:SpeedActionTarget .
+openscenario:absoluteTargetSpeed a owl:ObjectProperty ; rdfs:domain openscenario:SpeedActionTarget ; rdfs:range openscenario:AbsoluteTargetSpeed .
+openscenario:position a owl:ObjectProperty ; rdfs:domain openscenario:TeleportAction ; rdfs:range openscenario:Position .
+openscenario:lanePosition a owl:ObjectProperty ; rdfs:domain openscenario:Position ; rdfs:range openscenario:LanePosition .
+openscenario:relativeLanePosition a owl:ObjectProperty ; rdfs:domain openscenario:Position ; rdfs:range openscenario:RelativeLanePosition .
+openscenario:laneChangeAction a owl:ObjectProperty ; rdfs:domain openscenario:LateralAction ; rdfs:range openscenario:LaneChangeAction .
+openscenario:laneChangeActionDynamics a owl:ObjectProperty ; rdfs:domain openscenario:LaneChangeAction ; rdfs:range openscenario:LaneChangeActionDynamics .
+openscenario:laneChangeTarget a owl:ObjectProperty ; rdfs:domain openscenario:LaneChangeAction ; rdfs:range openscenario:LaneChangeTarget .
+openscenario:relativeTargetLane a owl:ObjectProperty ; rdfs:domain openscenario:LaneChangeTarget ; rdfs:range openscenario:RelativeTargetLane .
+
+#################################################################
+# Datatype properties (XSD attribute -> owl:DatatypeProperty).
+# Reference-valued attributes (entityRef) keep their raw string here
+# (round-trip fidelity for lowering, task 04); their first-class
+# object-property projection is task 03. [OSC-XSD] xsd:attribute.
+#################################################################
+
+openscenario:name a owl:DatatypeProperty ; rdfs:range xsd:string ; rdfs:label "name"@en .
+openscenario:revMajor a owl:DatatypeProperty ; rdfs:range xsd:unsignedShort .
+openscenario:revMinor a owl:DatatypeProperty ; rdfs:range xsd:unsignedShort .
+openscenario:date a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+openscenario:author a owl:DatatypeProperty ; rdfs:range xsd:string .
+openscenario:description a owl:DatatypeProperty ; rdfs:range xsd:string .
+openscenario:parameterType a owl:DatatypeProperty ; rdfs:label "parameterType"@en .
+openscenario:value a owl:DatatypeProperty ; rdfs:label "value"@en .
+openscenario:filepath a owl:DatatypeProperty ; rdfs:range xsd:string .
+openscenario:vehicleCategory a owl:DatatypeProperty ; rdfs:label "vehicleCategory"@en .
+openscenario:maxSpeed a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:maxAcceleration a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:maxDeceleration a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:width a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:length a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:height a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:x a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:y a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:z a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:maxSteering a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:wheelDiameter a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:trackWidth a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:positionX a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:positionZ a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:entityRef a owl:DatatypeProperty ; rdfs:label "entityRef"@en ;
+    rdfs:comment "Raw name of a referenced ScenarioObject (may be a $param). Referential resolution is the SHACL gate's job (task 03)."@en .
+openscenario:dynamicsShape a owl:DatatypeProperty ; rdfs:label "dynamicsShape"@en .
+openscenario:dynamicsDimension a owl:DatatypeProperty ; rdfs:label "dynamicsDimension"@en .
+openscenario:roadId a owl:DatatypeProperty ; rdfs:range xsd:string .
+openscenario:laneId a owl:DatatypeProperty ; rdfs:range xsd:string .
+openscenario:offset a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:s a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:dLane a owl:DatatypeProperty ; rdfs:range xsd:integer .
+openscenario:ds a owl:DatatypeProperty ; rdfs:range xsd:double .
+openscenario:targetLaneOffset a owl:DatatypeProperty ; rdfs:range xsd:double .
