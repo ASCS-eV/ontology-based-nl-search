@@ -24,6 +24,11 @@
       "types": "./src/sources.ts",
       "import": "./dist/sources.js",
       "default": "./dist/sources.js"
+    },
+    "./xml-to-rdf": {
+      "types": "./src/xml-to-rdf.ts",
+      "import": "./dist/xml-to-rdf.js",
+      "default": "./dist/xml-to-rdf.js"
     }
   },
   "scripts": {
@@ -36,6 +41,7 @@
   "dependencies": {
     "@ontology-search/core": "workspace:*",
     "@rdfjs/dataset": "^2.0.2",
+    "fast-xml-parser": "^5.2.5",
     "n3": "^2.0.3",
     "rdf-validate-shacl": "^0.6.5"
   },
