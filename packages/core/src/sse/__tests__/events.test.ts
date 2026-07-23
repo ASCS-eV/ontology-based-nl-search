@@ -10,11 +10,14 @@ import { describe, expect, it } from 'vitest'
 import { SSE_EVENT, type SseEventName } from '../events.js'
 
 describe('SSE_EVENT', () => {
-  it('exposes the canonical event names emitted by /search/stream', () => {
+  it('exposes the canonical event names emitted by /search/stream and /author/stream', () => {
     expect(SSE_EVENT).toEqual({
       STATUS: 'status',
       INTERPRETATION: 'interpretation',
       GAPS: 'gaps',
+      SCENE: 'scene',
+      XOSC: 'xosc',
+      VALIDATION: 'validation',
       SPARQL: 'sparql',
       GRAPHQL: 'graphql',
       RESULTS: 'results',
@@ -26,6 +29,6 @@ describe('SSE_EVENT', () => {
 
   it('has a type that admits every value', () => {
     const values: SseEventName[] = Object.values(SSE_EVENT)
-    expect(values).toHaveLength(9)
+    expect(values).toHaveLength(12)
   })
 })

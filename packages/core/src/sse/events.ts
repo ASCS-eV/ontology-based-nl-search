@@ -21,6 +21,12 @@ export const SSE_EVENT = {
   INTERPRETATION: 'interpretation',
   /** Ontology gaps: terms the LLM could not map. */
   GAPS: 'gaps',
+  /** Authoring: the filled scene IR (the LLM's only output; XOSC is derived). */
+  SCENE: 'scene',
+  /** Authoring: the emitted `.xosc` document (read-only; derived from the IR). */
+  XOSC: 'xosc',
+  /** Authoring: per-gate validation trace + engine diagnostics for one pass. */
+  VALIDATION: 'validation',
   /** The compiled SPARQL query string (echoed for transparency). */
   SPARQL: 'sparql',
   /** The generated GraphQL query string (intermediate representation). */

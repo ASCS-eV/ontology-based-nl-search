@@ -57,6 +57,16 @@ export const QC_RULES = {
       'A road referenced by the scenario must exist in the referenced OpenDRIVE road network.',
   },
   /**
+   * The scenario document must validate against the OpenSCENARIO XSD schema.
+   * The in-process engine's structural checker is the authoritative gate; this
+   * UID attributes its schema/type/enum violations to the same rule the qc
+   * bundle's `check_asam_xosc_xml_valid_schema` emits. [QC-XOSC] verbatim.
+   */
+  schemaValidation: {
+    uid: 'asam.net:xosc:1.0.0:xml.valid_schema',
+    message: 'The scenario document must validate against the OpenSCENARIO XSD schema.',
+  },
+  /**
    * Analytic road-geometry continuity: consecutive planView geometry primitives
    * must join with continuous heading (G1) and curvature (G2). Implemented by the
    * in-process residual gate over the lifted `.xodr`. Mirrors the qc-opendrive
