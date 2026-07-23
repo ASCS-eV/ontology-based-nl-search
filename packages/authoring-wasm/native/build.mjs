@@ -14,7 +14,17 @@
  */
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  accessSync,
+  constants,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { delimiter, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -47,7 +57,17 @@ function resolveTool(name) {
     if (!dir) continue
     for (const ext of exts) {
       const candidate = join(dir, name + ext.toLowerCase())
-      if (existsSync(candidate)) return candidate
+      // Must be a regular, executable FILE. Emscripten's bin dir ships a `cmake`
+      // *directory* (toolchain modules) that would otherwise shadow the system
+      // cmake once emsdk_env.sh is on PATH — spawning it fails with EACCES.
+      if (!existsSync(candidate)) continue
+      try {
+        if (!statSync(candidate).isFile()) continue
+        if (process.platform !== 'win32') accessSync(candidate, constants.X_OK)
+      } catch {
+        continue
+      }
+      return candidate
     }
   }
   throw new Error(
