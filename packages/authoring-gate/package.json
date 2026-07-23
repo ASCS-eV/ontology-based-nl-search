@@ -1,0 +1,42 @@
+{
+  "name": "@ontology-search/authoring-gate",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The authoring semantic + residual gates — the design-time half of validation. Lowers a validated AuthoringIR to an RDF instance graph and enforces the referential / uniqueness / cross-file qc rules the runtime WASM checker cannot (as real SPARQL over the in-process Oxigraph store), plus an in-process analytic-geometry residual gate. The authoring-domain analog of packages/search.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "check-types": "tsc --noEmit",
+    "check-types:tests": "tsc -p tsconfig.test.json",
+    "clean": "rimraf dist",
+    "coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@ontology-search/api-types": "workspace:*",
+    "@ontology-search/authoring-ir": "workspace:*",
+    "@ontology-search/core": "workspace:*",
+    "@ontology-search/ontology": "workspace:*",
+    "@ontology-search/sparql": "workspace:*",
+    "@rdfjs/types": "^2.0.1",
+    "fast-xml-parser": "^5.2.5",
+    "n3": "^2.0.3"
+  },
+  "devDependencies": {
+    "@ontology-search/typescript-config": "workspace:*",
+    "@types/n3": "^1.26.1",
+    "@types/node": "^25.7.0",
+    "@vitest/coverage-v8": "3.2.4",
+    "rimraf": "^6.0.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.0"
+  }
+}
