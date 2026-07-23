@@ -11,6 +11,7 @@ import { ConfigError } from '../errors/index.js'
  */
 
 const sparqlModeSchema = z.enum(['memory', 'remote'])
+const authoringModeSchema = z.enum(['wasm', 'null'])
 const aiProviderSchema = z.enum([
   'openai',
   'ollama',
@@ -43,6 +44,15 @@ const envSchema = z.object({
    * but the value space is unbounded — so we bound the cache instead.
    */
   SHACL_CACHE_SIZE: z.coerce.number().int().positive().default(1024),
+
+  // Authoring backend (NL → .xosc)
+  /**
+   * Selects the authoring backend `getAuthoringBackend()` returns, mirroring
+   * `SPARQL_MODE`: `wasm` (default) loads the in-process OpenSCENARIO WASM
+   * engine (packages/authoring-wasm); `null` is a deterministic no-engine
+   * backend for tests and for running the pipeline without loading the engine.
+   */
+  AUTHORING_MODE: authoringModeSchema.default('wasm'),
 
   // AI / LLM
   AI_PROVIDER: aiProviderSchema.default('openai'),
