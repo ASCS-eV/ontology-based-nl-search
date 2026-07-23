@@ -25,6 +25,7 @@
  *   [RDF11]  W3C RDF 1.1 Concepts — docs/specs/references/rdf11-concepts.md
  *   [XML10]  W3C XML 1.0 (the lifted serialization)
  */
+import { iri } from '@ontology-search/core/rdf/prefixes'
 import datasetFactory from '@rdfjs/dataset'
 import type { DatasetCore, NamedNode, Quad } from '@rdfjs/types'
 import { XMLParser } from 'fast-xml-parser'
@@ -32,9 +33,9 @@ import { DataFactory } from 'n3'
 
 const { namedNode, blankNode, literal, quad } = DataFactory
 
-const RDF_TYPE = namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
-const RDF_VALUE = namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#value')
-const XSD_DOUBLE = namedNode('http://www.w3.org/2001/XMLSchema#double')
+const RDF_TYPE = namedNode(iri('rdf', 'type'))
+const RDF_VALUE = namedNode(iri('rdf', 'value'))
+const XSD_DOUBLE = namedNode(iri('xsd', 'double'))
 
 /** A token that is wholly an optionally-signed decimal / scientific number. */
 const NUMERIC = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/
