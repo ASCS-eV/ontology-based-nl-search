@@ -12,6 +12,8 @@ export default tseslint.config(
       'node_modules/',
       'coverage/',
       'submodules/',
+      'packages/authoring-wasm/wasm/',
+      'packages/authoring-wasm/.build/',
       'public/',
       'dist/',
       '**/dist/**',

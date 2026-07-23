@@ -7,6 +7,8 @@ dist/
 out/
 tsconfig.tsbuildinfo
 
+# Native WASM build scratch (packages/authoring-wasm/native/build.mjs)
+.build/
 # Environment
 .env.local
 .env.*.local
@@ -24,6 +26,7 @@ ontology-sources.json
 # Local working scratchpad — audits, refactor plans, etc.
 # Tracks transitional state we do not want in repo history.
 .playground/
+plans/
 
 # Claude Code working directory (scheduled-task lockfile, etc.)
 .claude/
