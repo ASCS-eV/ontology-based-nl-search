@@ -14,6 +14,11 @@
       "types": "./src/types.ts",
       "import": "./dist/types.js",
       "default": "./dist/types.js"
+    },
+    "./authoring": {
+      "types": "./src/authoring/index.ts",
+      "import": "./dist/authoring/index.js",
+      "default": "./dist/authoring/index.js"
     }
   },
   "scripts": {
@@ -28,6 +33,10 @@
     "@ai-sdk/mistral": "^3.0.37",
     "@ai-sdk/openai": "^3.0.68",
     "@github/copilot-sdk": "^1.0.0",
+    "@ontology-search/api-types": "workspace:*",
+    "@ontology-search/authoring": "workspace:*",
+    "@ontology-search/authoring-gate": "workspace:*",
+    "@ontology-search/authoring-ir": "workspace:*",
     "@ontology-search/core": "workspace:*",
     "@ontology-search/search": "workspace:*",
     "ai": "^6.0.198",

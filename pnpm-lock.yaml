@@ -61,6 +61,9 @@ importers:
       '@ontology-search/authoring':
         specifier: workspace:*
         version: link:../../packages/authoring
+      '@ontology-search/authoring-ir':
+        specifier: workspace:*
+        version: link:../../packages/authoring-ir
       '@ontology-search/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -548,6 +551,18 @@ importers:
       '@github/copilot-sdk':
         specifier: ^1.0.0
         version: 1.0.0
+      '@ontology-search/api-types':
+        specifier: workspace:*
+        version: link:../api-types
+      '@ontology-search/authoring':
+        specifier: workspace:*
+        version: link:../authoring
+      '@ontology-search/authoring-gate':
+        specifier: workspace:*
+        version: link:../authoring-gate
+      '@ontology-search/authoring-ir':
+        specifier: workspace:*
+        version: link:../authoring-ir
       '@ontology-search/core':
         specifier: workspace:*
         version: link:../core

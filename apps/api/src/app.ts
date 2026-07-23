@@ -10,6 +10,7 @@ import { errorHandler } from './middleware/error-handler.js'
 import { rateLimit } from './middleware/rate-limit.js'
 import { requestId } from './middleware/request-id.js'
 import { getReadiness } from './readiness.js'
+import { authoringRoutes } from './routes/author.js'
 import { metadataRoutes } from './routes/metadata.js'
 import { searchRoutes } from './routes/search.js'
 import { statsRoutes } from './routes/stats.js'
@@ -56,6 +57,13 @@ app.use(
     onError: (c) => c.json({ error: 'Request body too large', code: ERROR_CODE.BAD_REQUEST }, 413),
   })
 )
+app.use(
+  '/author/*',
+  bodyLimit({
+    maxSize: config.API_MAX_BODY_BYTES,
+    onError: (c) => c.json({ error: 'Request body too large', code: ERROR_CODE.BAD_REQUEST }, 413),
+  })
+)
 app.onError(errorHandler)
 
 /**
@@ -72,6 +80,7 @@ app.get('/health', (c) => {
 })
 
 app.route('/metadata', metadataRoutes)
+app.route('/author', authoringRoutes)
 app.route('/search', searchRoutes)
 app.route('/stats', statsRoutes)
 app.route('/traceability', traceabilityRoutes)

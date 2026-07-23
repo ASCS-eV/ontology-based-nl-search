@@ -66,6 +66,16 @@ const envSchema = z.object({
    */
   RESIDUAL_MODE: residualModeSchema.default('in-process'),
 
+  /**
+   * Maximum bounded repair iterations the scene-authoring agent performs
+   * (packages/llm) when a pipeline pass returns IR-fixable gaps. The agent
+   * always runs at least one authoring pass; this caps the RE-prompts after
+   * it, so total LLM round-trips are `AUTHORING_MAX_REPAIRS + 1`. On
+   * exhaustion the agent returns the best artifact plus the outstanding gaps
+   * — never a silently-invalid document.
+   */
+  AUTHORING_MAX_REPAIRS: z.coerce.number().int().nonnegative().default(2),
+
   // AI / LLM
   AI_PROVIDER: aiProviderSchema.default('openai'),
   AI_MODEL: z.string().min(1).default('gpt-4o'),
