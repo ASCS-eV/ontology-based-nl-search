@@ -306,6 +306,9 @@ importers:
 
   packages/authoring:
     dependencies:
+      '@ontology-search/authoring-ir':
+        specifier: workspace:*
+        version: link:../authoring-ir
       '@ontology-search/authoring-wasm':
         specifier: workspace:*
         version: link:../authoring-wasm

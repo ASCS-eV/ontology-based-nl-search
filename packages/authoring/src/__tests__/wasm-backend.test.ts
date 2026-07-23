@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 
 import { WasmAuthoringBackend } from '../wasm-backend.js'
+import { cutInIR } from './fixtures/cut-in-ir.js'
 
 const cutIn = readFileSync(
   fileURLToPath(new URL('./fixtures/cut-in.xosc', import.meta.url)),
@@ -61,5 +62,27 @@ describe('WasmAuthoringBackend (golden conformance, real WASM)', () => {
     const a = await backend.validate(cutIn)
     const b = await backend.validate(cutIn)
     expect(a).toEqual(b)
+  })
+
+  // End-to-end lowering (task 04): a generic authoring IR → a schema-valid
+  // .xosc via the model-generated writer facade, gated by the same engine.
+  describe('lower() — IR → .xosc', () => {
+    it('lowers a cut-in IR to a document that the checker accepts (round-trip)', async () => {
+      const xosc = await backend.lower(cutInIR())
+      expect(xosc.startsWith('<?xml')).toBe(true)
+      const result = await backend.validate(xosc)
+      expect(result.diagnostics.filter((d) => d.severity === 'error')).toHaveLength(0)
+      expect(result.ok).toBe(true)
+    })
+
+    it('is deterministic — the same IR yields a byte-identical document', async () => {
+      expect(await backend.lower(cutInIR())).toBe(await backend.lower(cutInIR()))
+    })
+
+    it('honours an already-aborted signal before dispatch', async () => {
+      await expect(backend.lower(cutInIR(), { signal: AbortSignal.abort() })).rejects.toThrow(
+        /abort/i
+      )
+    })
   })
 })

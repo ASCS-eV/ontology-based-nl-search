@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 import createOscEngine, { type OscEngineModule } from '../../wasm/osc-engine.mjs'
 import { loadOscEngine } from '../engine.js'
-import type { OscEngine } from '../types.js'
+import type { EngineTree, EngineVehicle, OscEngine } from '../types.js'
 
 const cutIn = readFileSync(
   fileURLToPath(new URL('../__fixtures__/cut-in.xosc', import.meta.url)),
@@ -132,6 +132,114 @@ describe('loadOscEngine', () => {
       const parsed = JSON.parse(raw.validate('/authored.xosc')) as { fatal?: string }
       expect(parsed.fatal).toBeUndefined()
       raw.FS.unlink('/authored.xosc')
+    })
+  })
+
+  // The full IR→writer facade (task 04): a resolved engine tree → a complete,
+  // schema-valid cut-in .xosc, gated by the same checker.
+  describe('author() — full cut-in from an engine tree', () => {
+    const car = (name: string): EngineVehicle => ({
+      name,
+      vehicleCategory: 'car',
+      performance: { maxSpeed: 69.444, maxAcceleration: 10, maxDeceleration: 10 },
+      boundingBox: {
+        center: { x: 1.4, y: 0, z: 0.9 },
+        dimensions: { width: 2, length: 4.5, height: 1.8 },
+      },
+      axles: {
+        front: {
+          maxSteering: 0.5,
+          wheelDiameter: 0.6,
+          trackWidth: 1.8,
+          positionX: 2.8,
+          positionZ: 0.3,
+        },
+        rear: { maxSteering: 0, wheelDiameter: 0.6, trackWidth: 1.8, positionX: 0, positionZ: 0.3 },
+      },
+    })
+
+    const cutInTree = (): EngineTree => ({
+      fileHeader: {
+        author: 'test',
+        description: 'cut-in',
+        revMajor: 1,
+        revMinor: 3,
+        date: '2020-02-21T10:00:00',
+      },
+      parameters: [{ name: 'owner', parameterType: 'string', value: 'A2' }],
+      roadNetwork: { logicFile: 'Databases/AB_RQ31_Straight.xodr' },
+      entities: [
+        { name: 'Ego', vehicle: car('HAF') },
+        { name: 'A1', vehicle: car('Default_Car') },
+        { name: 'A2', vehicle: car('Default_Car') },
+      ],
+      init: [
+        {
+          entityRef: 'Ego',
+          speed: 27.778,
+          teleport: { lane: { roadId: '1', laneId: '-3', s: 1000, offset: 0.5 } },
+        },
+        {
+          entityRef: 'A1',
+          speed: 27.778,
+          teleport: { relativeLane: { entityRef: 'Ego', dLane: 0, ds: 84 } },
+        },
+        {
+          entityRef: 'A2',
+          speed: 30.556,
+          teleport: { relativeLane: { entityRef: 'Ego', dLane: 1, ds: -100 } },
+        },
+      ],
+      maneuver: {
+        actorRef: 'A2',
+        startTime: 2,
+        laneChange: {
+          targetLaneOffset: 0,
+          dynamics: { dynamicsShape: 'cubic', dynamicsDimension: 'distance', value: 54.8 },
+          relativeTarget: { entityRef: 'Ego', value: 0 },
+        },
+      },
+      stopTime: 30,
+    })
+
+    it('emits a schema-valid cut-in that passes the checker', () => {
+      const xosc = engine.author(cutInTree())
+      expect(xosc.startsWith('<?xml')).toBe(true)
+      const result = engine.validate(xosc)
+      expect(result.diagnostics.filter((d) => d.severity === 'error')).toHaveLength(0)
+      expect(result.ok).toBe(true)
+    })
+
+    it('is deterministic — the same tree yields a byte-identical document', () => {
+      expect(engine.author(cutInTree())).toBe(engine.author(cutInTree()))
+    })
+
+    it('faithfully emits values so the range gate has teeth (maxSteering > PI)', () => {
+      const tree = cutInTree()
+      const tampered: EngineTree = {
+        ...tree,
+        entities: [
+          {
+            name: 'Ego',
+            vehicle: {
+              ...car('HAF'),
+              axles: {
+                front: {
+                  maxSteering: 10,
+                  wheelDiameter: 0.6,
+                  trackWidth: 1.8,
+                  positionX: 2.8,
+                  positionZ: 0.3,
+                },
+              },
+            },
+          },
+          ...tree.entities!.slice(1),
+        ],
+      }
+      const result = engine.validate(engine.author(tampered))
+      expect(result.ok).toBe(false)
+      expect(result.diagnostics.some((d) => d.severity === 'error')).toBe(true)
     })
   })
 })

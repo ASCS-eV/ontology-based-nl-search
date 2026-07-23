@@ -10,8 +10,15 @@
 export { loadOscEngine } from './engine.js'
 export type {
   Diagnostic,
+  EngineAxle,
+  EngineEntity,
   EngineFiles,
   EngineInfo,
+  EngineInitPrivate,
+  EngineManeuver,
+  EnginePosition,
+  EngineTree,
+  EngineVehicle,
   OscEngine,
   Severity,
   ValidationResult,

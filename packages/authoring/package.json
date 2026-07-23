@@ -26,6 +26,7 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@ontology-search/authoring-ir": "workspace:*",
     "@ontology-search/authoring-wasm": "workspace:*",
     "@ontology-search/core": "workspace:*"
   },

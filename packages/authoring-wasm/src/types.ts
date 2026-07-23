@@ -61,4 +61,123 @@ export interface OscEngine {
    * referenced catalogs/imports by their referenced path.
    */
   validate(xosc: string, files?: EngineFiles): ValidationResult
+  /**
+   * Author a `.xosc` document from a resolved {@link EngineTree}. The typed
+   * writer factory (generated from the ASAM UML model) owns element order,
+   * `xsd:choice` selection and attribute-vs-element placement, so emitted
+   * documents are structurally standard by construction. Deterministic: the
+   * same tree yields a byte-identical document. Throws on an authoring fault.
+   */
+  author(tree: EngineTree): string
+}
+
+// ---------------------------------------------------------------------------
+// Engine tree — the resolved, engine-facing description the writer facade
+// lowers to `.xosc`. It is NOT the LLM-facing IR (that is the generic,
+// SHACL-keyed AuthoringIR in packages/authoring-ir); packages/authoring maps
+// the IR onto this concrete tree (ir-to-engine.ts). Numbers are plain doubles;
+// enum-valued fields carry the OpenSCENARIO literal (e.g. `"car"`, `"cubic"`).
+//
+// [OSC-XSD] OpenSCENARIO 1.3 — field names and nesting mirror the standard's
+// model elements the writer factory materializes.
+
+/** A vehicle axle → `<FrontAxle>` / `<RearAxle>`. */
+export interface EngineAxle {
+  readonly maxSteering: number
+  readonly wheelDiameter: number
+  readonly trackWidth: number
+  readonly positionX: number
+  readonly positionZ: number
+}
+
+/** A vehicle → `<Vehicle>`. */
+export interface EngineVehicle {
+  readonly name: string
+  readonly vehicleCategory: string
+  readonly performance?: {
+    readonly maxSpeed: number
+    readonly maxAcceleration: number
+    readonly maxDeceleration: number
+  }
+  readonly boundingBox?: {
+    readonly center: { readonly x: number; readonly y: number; readonly z: number }
+    readonly dimensions: {
+      readonly width: number
+      readonly length: number
+      readonly height: number
+    }
+  }
+  readonly axles?: { readonly front?: EngineAxle; readonly rear?: EngineAxle }
+}
+
+/** A scenario object → `<ScenarioObject>` wrapping a vehicle. */
+export interface EngineEntity {
+  readonly name: string
+  readonly vehicle: EngineVehicle
+}
+
+/** A teleport position → `<LanePosition>` or `<RelativeLanePosition>`. */
+export interface EnginePosition {
+  readonly lane?: {
+    readonly roadId: string
+    readonly laneId: string
+    readonly s: number
+    readonly offset: number
+  }
+  readonly relativeLane?: {
+    readonly entityRef: string
+    readonly dLane: number
+    readonly ds: number
+    readonly offset?: number
+  }
+}
+
+/** An entity's Init actions → a `<Private>` (initial speed + teleport). */
+export interface EngineInitPrivate {
+  readonly entityRef: string
+  readonly speed?: number
+  readonly teleport?: EnginePosition
+}
+
+/** The single lane-change maneuver → `<Story>/<Act>/…/<LaneChangeAction>`. */
+export interface EngineManeuver {
+  readonly storyName?: string
+  readonly actName?: string
+  readonly groupName?: string
+  readonly maneuverName?: string
+  readonly eventName?: string
+  readonly actionName?: string
+  readonly priority?: string
+  readonly actorRef: string
+  readonly startTime?: number
+  readonly laneChange: {
+    readonly targetLaneOffset: number
+    readonly dynamics: {
+      readonly dynamicsShape: string
+      readonly dynamicsDimension: string
+      readonly value: number
+    }
+    readonly relativeTarget: { readonly entityRef: string; readonly value: number }
+  }
+}
+
+/** The resolved scenario the writer facade lowers to a `.xosc` document. */
+export interface EngineTree {
+  readonly fileHeader?: {
+    readonly author?: string
+    readonly description?: string
+    readonly revMajor?: number
+    readonly revMinor?: number
+    readonly date?: string
+  }
+  readonly parameters?: ReadonlyArray<{
+    readonly name: string
+    readonly parameterType: string
+    readonly value: string
+  }>
+  readonly roadNetwork?: { readonly logicFile?: string; readonly sceneGraphFile?: string }
+  readonly entities?: readonly EngineEntity[]
+  readonly init?: readonly EngineInitPrivate[]
+  readonly maneuver?: EngineManeuver
+  readonly stopTime?: number
 }
