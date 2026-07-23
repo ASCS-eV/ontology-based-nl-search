@@ -1,0 +1,45 @@
+@ontology-search/authoring-wasm
+================================
+
+This package bundles a prebuilt WebAssembly build of third-party software under
+`wasm/osc-engine.{mjs,wasm}`. The bundled engine and its statically-linked
+dependencies retain their original licenses, reproduced/attributed below.
+
+--------------------------------------------------------------------------------
+OpenSCENARIO API (the engine)
+Copyright 2020 ASAM e.V.
+Initially contributed by, and developed at, RA Consulting GmbH.
+
+Licensed under the Apache License, Version 2.0.
+    https://www.apache.org/licenses/LICENSE-2.0
+Upstream: https://github.com/RA-Consulting-GmbH/openscenario.api.test
+Pinned commit: 292d0be84530145f7a09ae5a2a7f9bd63db7e3f3
+Vendored in this repository as the git submodule `submodules/openscenario-api`.
+
+A small Emscripten-portability patch is applied to the submodule at build time
+(see `native/patches/0001-emscripten-portability.patch` and `native/BUILD.md`);
+it is intended for upstream contribution and is not committed into the submodule.
+
+--------------------------------------------------------------------------------
+Statically linked into the WASM artifact:
+
+ANTLR 4 C++ runtime (v4.8) — BSD-3-Clause
+    Copyright (c) 2012 Terence Parr and Sam Harwell. All rights reserved.
+
+TinyXML-2 — zlib-style license
+    Original code by Lee Thomason (www.grinninglizard.com).
+    This software is provided 'as-is', without any express or implied warranty.
+
+ghc::filesystem (externalLibs/Filesystem) — MIT License
+    Copyright (c) 2018 Steffen Schümann <s.schuemann@pobox.com>
+
+UTF8-CPP (externalLibs/UtfCpp) — Boost Software License 1.0
+
+The full license texts for the above ship inside the upstream engine tree
+(`submodules/openscenario-api`): `LICENSE`, `NOTICE`, and the per-library
+license files under `cpp/externalLibs/`.
+
+--------------------------------------------------------------------------------
+The ASAM `OpenSCENARIO.xsd` is used only as a design-time cross-check and is not
+redistributed by this package. It is subject to the ASAM license terms
+(https://www.asam.net/license.html).

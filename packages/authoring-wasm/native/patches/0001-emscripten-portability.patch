@@ -1,0 +1,75 @@
+diff --git a/cpp/expressionsLib/inc/OscExprExportDefs.h b/cpp/expressionsLib/inc/OscExprExportDefs.h
+index 1f24fbc..4b34379 100644
+--- a/cpp/expressionsLib/inc/OscExprExportDefs.h
++++ b/cpp/expressionsLib/inc/OscExprExportDefs.h
+@@ -35,6 +35,8 @@
+ #   endif
+ #elif defined(__APPLE__)
+ #   define OSC_EXPR_EXP
++#elif defined(__EMSCRIPTEN__)
++#   define OSC_EXPR_EXP
+ #else
+ #   error "OPENSCENARIOLIB: Operating system not supported."
+ #endif // _WIN32
+diff --git a/cpp/expressionsLib/src/EvaluatorListener.cpp b/cpp/expressionsLib/src/EvaluatorListener.cpp
+index e00b2fd..4547635 100644
+--- a/cpp/expressionsLib/src/EvaluatorListener.cpp
++++ b/cpp/expressionsLib/src/EvaluatorListener.cpp
+@@ -26,6 +26,18 @@
+ #include <math.h>
+ #include <cmath>
+ 
++#if defined(__EMSCRIPTEN__)
++// WASM has no floating-point exception environment; FE_OVERFLOW/FE_UNDERFLOW
++// are not provided by Emscripten's <cfenv>. Shim to 0 so feclearexcept/
++// fetestexcept compile to no-ops (overflow/underflow detection is disabled).
++#  ifndef FE_OVERFLOW
++#    define FE_OVERFLOW 0
++#  endif
++#  ifndef FE_UNDERFLOW
++#    define FE_UNDERFLOW 0
++#  endif
++#endif
++
+ 
+ namespace OscExpression
+ {	
+diff --git a/cpp/externalLibs/Filesystem/filesystem.hpp b/cpp/externalLibs/Filesystem/filesystem.hpp
+index 1f0fe39..f92b9c3 100644
+--- a/cpp/externalLibs/Filesystem/filesystem.hpp
++++ b/cpp/externalLibs/Filesystem/filesystem.hpp
+@@ -64,6 +64,8 @@
+ #define GHC_OS_SYS5R4
+ #elif defined(BSD)
+ #define GHC_OS_BSD
++#elif defined(__EMSCRIPTEN__)
++#define GHC_OS_LINUX
+ #else
+ #error "Operating system currently not supported!"
+ #endif
+diff --git a/cpp/openScenarioLib/src/common/ExportDefinitions.h b/cpp/openScenarioLib/src/common/ExportDefinitions.h
+index 2b0dfb2..0e46f76 100644
+--- a/cpp/openScenarioLib/src/common/ExportDefinitions.h
++++ b/cpp/openScenarioLib/src/common/ExportDefinitions.h
+@@ -19,6 +19,8 @@
+ #   endif
+ #elif defined(__APPLE__)
+ #   define OPENSCENARIOLIB_EXP
++#elif defined(__EMSCRIPTEN__)
++#   define OPENSCENARIOLIB_EXP
+ #else
+ #   error "OPENSCENARIOLIB: Operating system not supported."
+ #endif // _WIN32
+diff --git a/cpp/openScenarioLib/src/loader/FileResourceLocator.cpp b/cpp/openScenarioLib/src/loader/FileResourceLocator.cpp
+index 7a9e760..b8d7d6a 100644
+--- a/cpp/openScenarioLib/src/loader/FileResourceLocator.cpp
++++ b/cpp/openScenarioLib/src/loader/FileResourceLocator.cpp
+@@ -41,7 +41,7 @@ namespace NET_ASAM_OPENSCENARIO
+         }
+ 
+         auto infile = std::make_shared<std::ifstream>(result.c_str(), std::ios::binary);
+-#elif defined (__linux__) || defined (__APPLE__)
++#elif defined (__linux__) || defined (__APPLE__) || defined (__EMSCRIPTEN__)
+     auto infile = std::make_shared<std::ifstream>(symbolicFilename, std::ios::binary);
+ #else
+ #   error "Operating system not supported."

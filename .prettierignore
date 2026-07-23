@@ -17,3 +17,11 @@ pnpm-lock.yaml
 # Generated JSON Schema artifacts — content is owned by the emitting test
 # (toMatchFileSnapshot over z.toJSONSchema); prettier must not reformat them.
 packages/llm/schema/
+
+# Prebuilt WebAssembly engine — Emscripten-generated glue + binary + its
+# hand-kept .d.mts. Built by native/build.mjs from the pinned RAC submodule;
+# never hand-/prettier-formatted. See packages/authoring-wasm/native/BUILD.md.
+packages/authoring-wasm/wasm/
+
+# Native WASM build scratch — extracted third-party sources + generated grammars.
+packages/authoring-wasm/.build/

@@ -1,3 +1,6 @@
 [submodule "submodules/ontology-management-base"]
 	path = submodules/ontology-management-base
 	url = https://github.com/ASCS-eV/ontology-management-base.git
+[submodule "submodules/openscenario-api"]
+	path = submodules/openscenario-api
+	url = https://github.com/RA-Consulting-GmbH/openscenario.api.test.git
