@@ -7,8 +7,11 @@
  * empty versions, so it is intentionally NOT subjected to `probeEngineVersions`
  * (the probe runs only for the WASM backend).
  */
+import type { AuthoringIR } from '@ontology-search/authoring-ir'
+
 import type {
   AuthoringBackend,
+  AuthoringLowerOptions,
   AuthoringValidateOptions,
   AuthoringValidationResult,
   EngineInfo,
@@ -17,6 +20,10 @@ import type {
 export class NullAuthoringBackend implements AuthoringBackend {
   async describe(): Promise<EngineInfo> {
     return { engine: 'null', engineCommit: 'none', oscVersions: [], xsd: 'none' }
+  }
+
+  async lower(_ir: AuthoringIR, _options?: AuthoringLowerOptions): Promise<string> {
+    throw new Error('Authoring engine unavailable (AUTHORING_MODE=null).')
   }
 
   async validate(

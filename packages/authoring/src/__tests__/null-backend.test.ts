@@ -20,6 +20,10 @@ describe('NullAuthoringBackend', () => {
     expect(result.diagnostics[0]?.message).toMatch(/unavailable/i)
   })
 
+  it('lower() rejects — no engine is available to author', async () => {
+    await expect(backend.lower({ entities: [], actions: [] })).rejects.toThrow(/unavailable/i)
+  })
+
   it('isReady() is true — it is deterministically available', async () => {
     expect(await backend.isReady()).toBe(true)
   })

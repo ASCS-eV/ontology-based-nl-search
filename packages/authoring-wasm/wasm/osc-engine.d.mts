@@ -21,6 +21,12 @@ export interface OscEngineModule {
   roundtripExport(mainPath: string): string
   /** Author a minimal scenario from scratch via the typed writer factory. */
   authorMinimal(): string
+  /**
+   * Author a `.xosc` from a resolved engine-tree JSON via the typed writer
+   * factory + model-generated exporter. Returns the XML, or a JSON
+   * `{"fatal":…}` object on an authoring fault.
+   */
+  author(treeJson: string): string
   /** Emscripten MEMFS handle (present because the module forces FILESYSTEM). */
   FS: OscEngineFS
 }

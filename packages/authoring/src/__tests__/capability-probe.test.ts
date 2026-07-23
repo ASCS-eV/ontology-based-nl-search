@@ -10,6 +10,7 @@ import { WasmAuthoringBackend } from '../wasm-backend.js'
 function fakeBackend(describe: () => Promise<EngineInfo>): AuthoringBackend {
   return {
     describe,
+    lower: () => Promise.reject(new Error('not implemented in stub')),
     validate: () => Promise.resolve({ ok: false, diagnostics: [] }),
     isReady: () => Promise.resolve(false),
   }

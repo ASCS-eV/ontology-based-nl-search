@@ -11,6 +11,7 @@ import type {
   Diagnostic,
   EngineFiles,
   EngineInfo,
+  EngineTree,
   OscEngine,
   Severity,
   ValidationResult,
@@ -96,6 +97,17 @@ function wrap(mod: OscEngineModule): OscEngine {
         message: cleanMessage(m.msg),
       }))
       return { ok: raw.ok === true, diagnostics }
+    },
+
+    author(tree: EngineTree): string {
+      // The facade returns the emitted .xosc, or a JSON `{"fatal":…}` object on
+      // an authoring fault (a valid document always begins with `<?xml`).
+      const out = mod.author(JSON.stringify(tree))
+      if (out.startsWith('{')) {
+        const parsed = JSON.parse(out) as { fatal?: string }
+        throw new Error(`authoring failed: ${parsed.fatal ?? 'unknown error'}`)
+      }
+      return out
     },
   }
 }

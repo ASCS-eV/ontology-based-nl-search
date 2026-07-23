@@ -7,14 +7,17 @@
  * `.xosc` string + companion files) crosses the boundary — never LLM free-text
  * — so there is no port, auth or cold-start surface.
  */
+import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { loadOscEngine, type OscEngine } from '@ontology-search/authoring-wasm'
 
 import type {
   AuthoringBackend,
+  AuthoringLowerOptions,
   AuthoringValidateOptions,
   AuthoringValidationResult,
   EngineInfo,
 } from './backend.js'
+import { irToEngineTree } from './ir-to-engine.js'
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
@@ -45,6 +48,15 @@ export class WasmAuthoringBackend implements AuthoringBackend {
   async describe(): Promise<EngineInfo> {
     const engine = await this.engineReady()
     return engine.describe()
+  }
+
+  async lower(ir: AuthoringIR, options?: AuthoringLowerOptions): Promise<string> {
+    throwIfAborted(options?.signal)
+    const engine = await this.engineReady()
+    // The WASM author call is synchronous and uninterruptible; honour a signal
+    // that fired while the engine was loading before we dispatch.
+    throwIfAborted(options?.signal)
+    return engine.author(irToEngineTree(ir))
   }
 
   async validate(

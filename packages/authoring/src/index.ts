@@ -42,6 +42,7 @@ export async function closeAuthoringBackend(): Promise<void> {
 export type {
   AuthoringBackend,
   AuthoringDiagnostic,
+  AuthoringLowerOptions,
   AuthoringValidateOptions,
   AuthoringValidationResult,
   EngineFiles,
@@ -50,5 +51,6 @@ export type {
 } from './backend.js'
 export type { ExpectedEngine } from './capability-probe.js'
 export { EXPECTED_ENGINE, probeEngineVersions } from './capability-probe.js'
+export { irToEngineTree } from './ir-to-engine.js'
 export { NullAuthoringBackend } from './null-backend.js'
 export { WasmAuthoringBackend } from './wasm-backend.js'

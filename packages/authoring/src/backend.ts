@@ -12,6 +12,7 @@
  * [OSC-XSD] OpenSCENARIO 1.3 — validation is delegated to the engine, whose
  * checker rules are generated from the ASAM UML model.
  */
+import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import type { Diagnostic, EngineFiles, EngineInfo, Severity } from '@ontology-search/authoring-wasm'
 
 export type { EngineFiles, EngineInfo, Severity }
@@ -49,6 +50,15 @@ export interface AuthoringValidateOptions {
   readonly files?: EngineFiles
 }
 
+/** Per-call options for {@link AuthoringBackend.lower}. */
+export interface AuthoringLowerOptions {
+  /**
+   * Cooperative cancellation, honoured at the call boundary (the WASM author
+   * call is synchronous and uninterruptible, exactly like `validate`).
+   */
+  readonly signal?: AbortSignal
+}
+
 /**
  * Abstract authoring backend. Async by contract so a future worker-thread
  * offload (as `WorkerOxigraphStore` does for SPARQL) needs no interface change.
@@ -56,6 +66,17 @@ export interface AuthoringValidateOptions {
 export interface AuthoringBackend {
   /** Report engine / OSC / XSD versions — the capability probe's data source. */
   describe(): Promise<EngineInfo>
+
+  /**
+   * Lower a validated authoring IR to a `.xosc` document via the model-generated
+   * writer facade. Deterministic: the same IR yields a byte-identical document.
+   * The emitted document should then be gated with {@link validate}. Rejects on
+   * an authoring fault (e.g. a malformed IR the writer cannot materialize).
+   *
+   * [OSC-XSD] OpenSCENARIO 1.3 — the engine (writer + exporter) owns element
+   * order and `xsd:choice` selection, so emission cannot drift from the schema.
+   */
+  lower(ir: AuthoringIR, options?: AuthoringLowerOptions): Promise<string>
 
   /** Validate a `.xosc` document with the authoritative checker (schema ⊇ XSD). */
   validate(xosc: string, options?: AuthoringValidateOptions): Promise<AuthoringValidationResult>
