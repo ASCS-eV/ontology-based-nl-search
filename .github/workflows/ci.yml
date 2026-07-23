@@ -73,6 +73,12 @@ jobs:
         # tests — these don't run under the turbo `test` task.
         run: pnpm run test:scripts
 
+      - name: Authoring WASM artifact integrity
+        # The committed osc-engine.wasm is the one file a reviewer cannot read in
+        # a diff — verify it matches its sha256 manifest (written by build:wasm)
+        # so a corrupted/tampered blob fails loudly. Cheap: no build, pure node.
+        run: node packages/authoring-wasm/native/verify-checksum.mjs
+
       - name: Lint
         run: pnpm run lint
 

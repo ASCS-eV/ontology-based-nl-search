@@ -1,5 +1,6 @@
 import type { ServerType } from '@hono/node-server'
 import { serve } from '@hono/node-server'
+import { closeAuthoringBackend } from '@ontology-search/authoring'
 import { getConfig } from '@ontology-search/core/config'
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { closeSparqlStore } from '@ontology-search/sparql'
@@ -26,6 +27,7 @@ let server: ServerType | null = null
 const shutdown = createShutdownHandler({
   getServer: () => server,
   closeStore: closeSparqlStore,
+  closeAuthoring: closeAuthoringBackend,
   log,
   exit: (code) => process.exit(code),
 })

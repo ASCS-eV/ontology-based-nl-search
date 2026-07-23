@@ -58,6 +58,9 @@ importers:
       '@ontology-search/api-types':
         specifier: workspace:*
         version: link:../../packages/api-types
+      '@ontology-search/authoring':
+        specifier: workspace:*
+        version: link:../../packages/authoring
       '@ontology-search/core':
         specifier: workspace:*
         version: link:../../packages/core

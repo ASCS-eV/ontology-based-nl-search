@@ -24,6 +24,7 @@
   "scripts": {
     "build": "tsc --build",
     "build:wasm": "node native/build.mjs",
+    "verify:checksum": "node native/verify-checksum.mjs",
     "dev": "tsc --build --watch",
     "test": "vitest run",
     "check-types": "tsc --noEmit",

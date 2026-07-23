@@ -12,6 +12,15 @@ const cutIn = readFileSync(
   'utf8'
 )
 
+const versions = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../versions.json', import.meta.url)), 'utf8')
+) as {
+  engine: string
+  engineCommit: string
+  oscVersions: string[]
+  xsd: string
+}
+
 describe('loadOscEngine', () => {
   let engine: OscEngine
   let raw: OscEngineModule
@@ -27,7 +36,18 @@ describe('loadOscEngine', () => {
       expect(info.engine).toContain('openscenario.api.test')
       expect(info.oscVersions).toContain('1.3')
       expect(info.xsd).toBe('1.3.0')
-      expect(info.engineCommit).toBe('292d0be')
+      expect(info.engineCommit).toBe('292d0be84530145f7a09ae5a2a7f9bd63db7e3f3')
+    })
+
+    it('cannot drift from versions.json (single source of truth)', () => {
+      // describe() is generated at build time from versions.json, so the WASM
+      // payload must deep-equal the neutral pin. Guards against a stale rebuild.
+      expect(engine.describe()).toEqual({
+        engine: versions.engine,
+        engineCommit: versions.engineCommit,
+        oscVersions: versions.oscVersions,
+        xsd: versions.xsd,
+      })
     })
   })
 

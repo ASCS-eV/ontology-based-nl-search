@@ -28,6 +28,7 @@
 #include "OpenScenarioXmlExporterV1_3.h"
 #include "SimpleMessageLogger.h"
 #include "XmlScenarioLoaderFactoryV1_3.h"
+#include "osc_versions_generated.h"
 #include "tinyxml2.h"
 
 using namespace NET_ASAM_OPENSCENARIO;
@@ -89,9 +90,11 @@ std::string validate(std::string mainPath) {
   return out.str();
 }
 
+// The reported versions are generated from versions.json at build time
+// (native/build.mjs → OSC_DESCRIBE_JSON), so this can never drift from the pin
+// the ontology derivation and the TS capability probe share (task 10).
 std::string describe() {
-  return "{\"engine\":\"RAC openscenario.api.test\",\"engineCommit\":\"292d0be\","
-         "\"oscVersions\":[\"1.3\"],\"xsd\":\"1.3.0\"}";
+  return OSC_DESCRIBE_JSON;
 }
 
 static std::string xmlToString(std::shared_ptr<tinyxml2::XMLDocument> doc) {

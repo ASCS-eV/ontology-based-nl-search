@@ -8,6 +8,7 @@
  * golden-conformance test guards. Run this at startup so a mis-built engine is
  * rejected loudly instead of silently validating against the wrong OSC/XSD.
  */
+import { ENGINE_VERSIONS } from '@ontology-search/authoring-wasm'
 import { BackendCapabilityError } from '@ontology-search/core/errors'
 import { createComponentLogger } from '@ontology-search/core/logging'
 
@@ -24,14 +25,14 @@ export interface ExpectedEngine {
 }
 
 /**
- * The versions the pinned WASM engine (packages/authoring-wasm) is built for.
- * Task 01 will centralize these in a model-derived `versions.json`; until then
- * this is the single expected-capability constant.
+ * The versions the pinned WASM engine (packages/authoring-wasm) is built for,
+ * derived from its single source of truth (`versions.json` → `ENGINE_VERSIONS`)
+ * so this expectation cannot drift from the artifact it guards.
  */
 export const EXPECTED_ENGINE: ExpectedEngine = {
-  oscVersions: ['1.3'],
-  xsd: '1.3.0',
-  engineCommit: '292d0be',
+  oscVersions: ENGINE_VERSIONS.oscVersions,
+  xsd: ENGINE_VERSIONS.xsd,
+  engineCommit: ENGINE_VERSIONS.engineCommit,
 }
 
 /**

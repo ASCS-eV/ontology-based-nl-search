@@ -24,8 +24,10 @@ uses for Oxigraph.
 
 ## Prerequisites (not installed by this repo)
 
-- **Emscripten SDK** — provides `em++`. Pin/activate a known version (see
-  `10-reproducible-build-and-lifecycle` in the plan).
+- **Emscripten SDK** — provides `em++`. Pin the exact version this artifact was
+  built with: **6.0.3** — the `emscripten` field in
+  `packages/authoring-wasm/versions.json` (the single source of truth for the
+  build pin). Activate it with `emsdk install 6.0.3 && emsdk activate 6.0.3`.
 - **JDK 11+** — `java`, to run the vendored ANTLR 4.8 jar for grammar codegen.
 - **CMake** — used only as a cross-platform archive extractor (`cmake -E tar`).
 
