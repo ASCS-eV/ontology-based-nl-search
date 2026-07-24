@@ -1,0 +1,9 @@
+{
+  "engine": "esmini",
+  "engineRepo": "https://github.com/esmini/esmini",
+  "engineCommit": "77028d83e6d402de52f7187e5384d1b1c02b7d1f",
+  "engineBranch": "master",
+  "esminiJsPath": "EnvironmentSimulator/Libraries/esminiJS",
+  "emscripten": "6.0.3",
+  "singleFile": true
+}

@@ -14,6 +14,8 @@ export default tseslint.config(
       'submodules/',
       'packages/authoring-wasm/wasm/',
       'packages/authoring-wasm/.build/',
+      'packages/scenario-viewer-wasm/wasm/',
+      'packages/scenario-viewer-wasm/.build/',
       'public/',
       'dist/',
       '**/dist/**',

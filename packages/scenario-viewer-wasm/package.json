@@ -1,0 +1,43 @@
+{
+  "name": "@ontology-search/scenario-viewer-wasm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The esmini OpenSCENARIO player compiled to WebAssembly (esmini's own esminiJS Emscripten target, MPL-2.0) plus a leak-free TypeScript facade. Steps a scenario in-browser and exposes road geometry + per-frame object states for a viewer, mirroring the prebuilt-WASM pattern of packages/authoring-wasm and packages/sparql.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "import": "./dist/types.js",
+      "default": "./dist/types.js"
+    },
+    "./esmini.js": "./wasm/esmini.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "wasm"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "build:wasm": "node native/build.mjs",
+    "verify:checksum": "node native/verify-checksum.mjs",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "check-types": "tsc --noEmit",
+    "check-types:tests": "tsc -p tsconfig.test.json",
+    "clean": "rimraf dist",
+    "coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@ontology-search/typescript-config": "workspace:*",
+    "@vitest/coverage-v8": "3.2.4",
+    "rimraf": "^6.0.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.0"
+  }
+}
