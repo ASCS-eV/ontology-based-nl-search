@@ -5,9 +5,26 @@ interface SearchBarProps {
   loading?: boolean
   disabled?: boolean
   history?: string[]
+  /** Input placeholder. Defaults to the search prompt. */
+  placeholder?: string
+  /** Submit-button label (also the idle aria-label). Defaults to "Search". */
+  buttonLabel?: string
+  /** Accessible label for the submit button while loading. Defaults to "Searching…". */
+  loadingLabel?: string
+  /** Accessible label for the input. Defaults to the search description. */
+  inputAriaLabel?: string
 }
 
-export function SearchBar({ onSearch, loading, disabled, history = [] }: SearchBarProps) {
+export function SearchBar({
+  onSearch,
+  loading,
+  disabled,
+  history = [],
+  placeholder = "Describe what you're looking for in plain language…",
+  buttonLabel = 'Search',
+  loadingLabel = 'Searching...',
+  inputAriaLabel = 'Natural language search query',
+}: SearchBarProps) {
   const [input, setInput] = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -45,22 +62,22 @@ export function SearchBar({ onSearch, loading, disabled, history = [] }: SearchB
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onFocus={() => history.length > 0 && setShowHistory(true)}
-          placeholder="Describe what you're looking for in plain language…"
+          placeholder={placeholder}
           className="w-full px-6 py-4 text-lg border border-gray-300 rounded-full shadow-sm hover:shadow-md focus:shadow-md focus:outline-none focus:border-blue-400 transition-shadow dark:bg-gray-900 dark:border-gray-700 dark:text-white"
           disabled={loading || disabled}
-          aria-label="Natural language search query"
+          aria-label={inputAriaLabel}
           autoComplete="off"
         />
         <button
           type="submit"
           disabled={loading || disabled || !input.trim()}
           className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          aria-label={loading ? 'Searching...' : 'Search'}
+          aria-label={loading ? loadingLabel : buttonLabel}
         >
           {loading ? (
             <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            'Search'
+            buttonLabel
           )}
         </button>
 

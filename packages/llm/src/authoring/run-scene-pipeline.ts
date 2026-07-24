@@ -24,45 +24,15 @@
  * identity (criterion #31).
  */
 
-import type { OntologyGap } from '@ontology-search/api-types'
+// SceneGap/GateTrace/SceneGateName are the HTTP-boundary contract: defined once
+// in the browser-safe api-types package and consumed by BOTH this server-side
+// pipeline and the web client, so the shapes can never drift.
+import type { GateTrace, SceneGap, SceneGateName } from '@ontology-search/api-types'
 import { type AuthoringDiagnostic, getAuthoringBackend } from '@ontology-search/authoring'
-import {
-  type AuthoringGap,
-  type GateName,
-  QC_RULES,
-  runResidualGate,
-  runSemanticGate,
-} from '@ontology-search/authoring-gate'
+import { QC_RULES, runResidualGate, runSemanticGate } from '@ontology-search/authoring-gate'
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
 
-/** The pipeline's gate identities: the two design-time gates plus the engine. */
-export type SceneGateName = GateName | 'structural'
-
-/**
- * A pipeline violation. Shape-compatible with {@link AuthoringGap} (so the
- * gate gaps flow through unchanged) and with the search feature's
- * {@link OntologyGap}, extended with the engine's source location when a
- * structural diagnostic carries one.
- */
-export interface SceneGap extends OntologyGap {
-  /** The canonical qc rule UID this violation is attributed to. */
-  readonly ruleUid: string
-  /** The gate that produced it. */
-  readonly gate: SceneGateName
-  /** The localized offending element, when the gate can name it. */
-  readonly focusNode?: string
-  /** Source line/col for structural (engine) diagnostics, when reported. */
-  readonly location?: { readonly line: number; readonly col: number }
-}
-
-/** One gate's verdict, recorded for transparency (surfaced to the client). */
-export interface GateTrace {
-  readonly gate: SceneGateName
-  readonly ok: boolean
-  readonly gapCount: number
-  /** Rule UIDs deliberately not evaluated (never a silent pass). */
-  readonly skipped?: readonly string[]
-}
+export type { GateTrace, SceneGap, SceneGateName }
 
 export interface ScenePipelineInput {
   /** The authoring IR to gate and lower. */
@@ -192,6 +162,3 @@ export async function runScenePipeline(input: ScenePipelineInput): Promise<Scene
 export function repairableGaps(gaps: readonly SceneGap[]): readonly SceneGap[] {
   return gaps.filter((g) => g.gate !== 'residual')
 }
-
-/** Re-export so callers assembling gaps from the raw gates keep one type. */
-export type { AuthoringGap }

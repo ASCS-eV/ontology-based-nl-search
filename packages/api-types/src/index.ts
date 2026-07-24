@@ -286,3 +286,78 @@ export interface DomainGroupAggregate {
   assetCount: number
   properties: PropertyStats[]
 }
+
+// ─── Authoring (NL → OpenSCENARIO .xosc) wire types ──────────────────────────
+//
+// The HTTP surface of the authoring loop (`/author/stream` SSE + `/author/refine`
+// JSON), the authoring analog of the search shapes above. The LLM's only output
+// is the scene IR (`@ontology-search/authoring-ir`, imported directly by both
+// sides since it is browser-safe); the `.xosc` is derived and read-only. These
+// gap/trace/meta shapes are the SINGLE source of truth consumed by BOTH the
+// server pipeline (`@ontology-search/llm` `run-scene-pipeline`) and the web
+// client — drift is impossible by construction, exactly like the search types.
+
+/**
+ * Which authoring gate produced a violation: the two design-time gates
+ * (`semantic`, `residual`) plus the engine's `structural` (XSD) gate.
+ */
+export type SceneGateName = 'semantic' | 'structural' | 'residual'
+
+/**
+ * A scene-pipeline violation. An {@link OntologyGap} (the same shape the search
+ * feature emits) extended with the canonical `asam.net:…` qc rule identity and
+ * the gate that produced it, so the repair loop, the web UI, and the ASAM
+ * qc-framework all speak one rule identity (criterion #31).
+ */
+export interface SceneGap extends OntologyGap {
+  /** The canonical `asam.net:…` qc rule UID this violation is attributed to. */
+  readonly ruleUid: string
+  /** The gate that produced it. */
+  readonly gate: SceneGateName
+  /** The localized offending element (entity/parameter/road id), when known. */
+  readonly focusNode?: string
+  /** Source line/col for structural (engine) diagnostics, when reported. */
+  readonly location?: { readonly line: number; readonly col: number }
+}
+
+/** One gate's verdict in the pipeline trace, surfaced to the client. */
+export interface GateTrace {
+  readonly gate: SceneGateName
+  readonly ok: boolean
+  readonly gapCount: number
+  /** Rule UIDs deliberately not evaluated (never a silent pass). */
+  readonly skipped?: readonly string[]
+}
+
+/**
+ * Response of `POST /author/refine` (IR-direct, no LLM) — the authoring analog
+ * of {@link RefineResponse}. The `.xosc` is present unless lowering threw; it is
+ * always read-only (derived from the editable IR).
+ */
+export interface AuthoringRefineResponse {
+  readonly xosc?: string
+  readonly valid: boolean
+  readonly gaps: SceneGap[]
+  readonly trace: GateTrace[]
+}
+
+/** Final `meta` event of the `POST /author/stream` SSE stream. */
+export interface AuthoringMeta {
+  /** True iff the final pass passed the semantic + structural gates. */
+  readonly valid: boolean
+  /** Number of LLM authoring turns performed (1 + repairs used). */
+  readonly attempts: number
+  /** Gaps the MODEL self-reported (concepts it could not express in the IR). */
+  readonly reportedGaps: OntologyGap[]
+  /** Per-gate trace from the final pass. */
+  readonly trace: GateTrace[]
+}
+
+/** Per-attempt `validation` event of the `POST /author/stream` SSE stream. */
+export interface AuthoringValidation {
+  /** 1-based attempt index. */
+  readonly attempt: number
+  readonly valid: boolean
+  readonly trace: GateTrace[]
+  readonly gaps: SceneGap[]
+}

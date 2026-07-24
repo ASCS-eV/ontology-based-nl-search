@@ -20,6 +20,12 @@ export function Header() {
           >
             Search
           </Link>
+          <Link
+            to="/author"
+            className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+          >
+            Author
+          </Link>
           <a
             href="http://localhost:5173/docs/"
             className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"

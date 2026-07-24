@@ -215,6 +215,9 @@ importers:
       '@ontology-search/api-types':
         specifier: workspace:*
         version: link:../../packages/api-types
+      '@ontology-search/authoring-ir':
+        specifier: workspace:*
+        version: link:../../packages/authoring-ir
       '@ontology-search/core':
         specifier: workspace:*
         version: link:../../packages/core
