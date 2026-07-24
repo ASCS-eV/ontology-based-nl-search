@@ -25,8 +25,13 @@ describe('runScenePipeline — valid cut-in IR', () => {
     const gates = new Map(result.trace.map((t) => [t.gate, t]))
     expect(gates.get('semantic')?.ok).toBe(true)
     expect(gates.get('structural')?.ok).toBe(true)
-    // No .xodr content supplied ⇒ residual is explicitly skipped, never a pass.
-    expect(gates.get('residual')?.skipped).toContain(QC_RULES.geometryContinuity.uid)
+    // The IR names a catalog road (german_highway_short), so the pipeline binds
+    // its real bytes and the residual geometry gate RUNS and passes on the
+    // continuous highway — the same bytes the viewer will render. The
+    // geometry-continuity check is no longer skipped for want of a road; only the
+    // simulation-only rules stay skipped in the default analytic residual mode.
+    expect(gates.get('residual')?.ok).toBe(true)
+    expect(gates.get('residual')?.skipped ?? []).not.toContain(QC_RULES.geometryContinuity.uid)
   })
 
   it('is deterministic — the same IR yields a byte-identical document', async () => {

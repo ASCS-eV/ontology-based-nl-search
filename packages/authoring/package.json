@@ -28,7 +28,8 @@
   "dependencies": {
     "@ontology-search/authoring-ir": "workspace:*",
     "@ontology-search/authoring-wasm": "workspace:*",
-    "@ontology-search/core": "workspace:*"
+    "@ontology-search/core": "workspace:*",
+    "@ontology-search/road-catalog": "workspace:*"
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",

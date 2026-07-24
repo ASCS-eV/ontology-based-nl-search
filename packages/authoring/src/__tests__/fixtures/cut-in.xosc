@@ -6,7 +6,7 @@
   </ParameterDeclarations>
   <CatalogLocations />
   <RoadNetwork>
-    <LogicFile filepath="Databases/AB_RQ31_Straight.xodr" />
+    <LogicFile filepath="german_highway_short.xodr" />
   </RoadNetwork>
   <Entities>
     <ScenarioObject name="Ego">
@@ -82,7 +82,7 @@
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <LanePosition roadId="1" laneId="-3" offset="0.5" s="1000.0" />
+                <LanePosition roadId="37" laneId="-3" offset="0.5" s="500.0" />
               </Position>
             </TeleportAction>
           </PrivateAction>
@@ -120,7 +120,7 @@
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <RelativeLanePosition entityRef="Ego" dLane="1" ds="-100.0" />
+                <RelativeLanePosition entityRef="Ego" dLane="-1" ds="-100.0" />
               </Position>
             </TeleportAction>
           </PrivateAction>

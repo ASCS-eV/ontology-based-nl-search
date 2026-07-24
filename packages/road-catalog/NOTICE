@@ -1,0 +1,27 @@
+@ontology-search/road-catalog
+==============================
+
+This package embeds a verbatim copy of a third-party OpenDRIVE road network under
+`src/road-data.generated.ts` (the `xodr` field). The road bytes retain their
+original license, attributed below.
+
+--------------------------------------------------------------------------------
+ASAM OpenX Data and Assets (the road network `german_highway_short.xodr`)
+Copyright © Persival GmbH.
+
+Licensed under the Mozilla Public License, Version 2.0 (MPL-2.0).
+    https://www.mozilla.org/en-US/MPL/2.0/
+Upstream: https://github.com/Persival-GmbH/asam-openx-assets
+Pinned commit: cc27e09daccb06d816eba1dece8e4435fcc3b788
+Vendored in this repository as the git submodule `submodules/asam-openx-assets`.
+
+The OpenDRIVE data was authored with the blender-driving-scenario-creator
+(Johannes Schmitz, https://github.com/johschmitz/blender-driving-scenario-creator).
+
+MPL-2.0 is a weak, file-level copyleft: the embedded `.xodr` bytes remain under
+MPL-2.0, while this package's own source (the generator and the resolver) is under
+the repository's license. The generated module marks the embedded bytes with the
+source, commit and SPDX id in its provenance field.
+
+Only the plain-text `.xodr` road network is vendored. The submodule's 3D media
+(OpenMATERIAL 3D models, textures — Git LFS) is not fetched or redistributed here.

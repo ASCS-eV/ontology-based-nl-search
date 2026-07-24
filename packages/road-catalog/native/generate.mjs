@@ -1,0 +1,163 @@
+/**
+ * Build-time generator for the road catalog.
+ *
+ * Reads each vendored `.xodr` from the pinned `asam-openx-assets` submodule,
+ * DISCOVERS its topology (traffic rule, roads, per-road length, drivable lanes,
+ * entry road) straight from the geometry, and emits `src/road-data.generated.ts`
+ * — the committed data module every consumer imports. The `.xodr` bytes are
+ * embedded verbatim so the authoring gates, the qc self-test, and the browser
+ * viewer all resolve the SAME road by `logicFile`.
+ *
+ * Nothing about a road is hand-authored here: ids, lengths and lane ids come from
+ * the file, so the catalog can never drift from the road the simulator loads.
+ *
+ * Regenerate:  pnpm --filter @ontology-search/road-catalog generate
+ * CI never runs this — the generated module is committed, like the prebuilt WASM.
+ */
+import { execFileSync } from 'node:child_process'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { XMLParser } from 'fast-xml-parser'
+import { format, resolveConfig } from 'prettier'
+
+const HERE = dirname(fileURLToPath(import.meta.url))
+const PKG = join(HERE, '..')
+const REPO = join(PKG, '..', '..')
+const SUBMODULE = join(REPO, 'submodules', 'asam-openx-assets')
+
+const SOURCE_URL = 'https://github.com/Persival-GmbH/asam-openx-assets'
+const SPDX = 'MPL-2.0'
+const ATTRIBUTION =
+  'ASAM OpenX Data and Assets © Persival GmbH, licensed under MPL-2.0. ' +
+  'OpenDRIVE authored with blender-driving-scenario-creator (Johannes Schmitz).'
+
+/** The roads to vendor into the catalog. Add a row to grow the catalog. */
+const MANIFEST = [
+  {
+    id: 'german_highway_short',
+    logicFile: 'german_highway_short.xodr',
+    file: 'xodr/german_highway_short.xodr',
+    description:
+      'German highway, right-hand traffic. A continuous carriageway with two ' +
+      'driving lanes per direction and no junctions.',
+  },
+]
+
+/** Normalize a fast-xml-parser child (object | array | undefined) to an array. */
+function asArray(value) {
+  if (value === undefined || value === null) return []
+  return Array.isArray(value) ? value : [value]
+}
+
+/** Discover the drivable lanes of a lane-section side ('left' | 'right'). */
+function drivableLanesOnSide(roadId, sideNode, side) {
+  return asArray(sideNode?.lane)
+    .filter((lane) => lane['@_type'] === 'driving')
+    .map((lane) => ({
+      roadId,
+      laneId: String(lane['@_id']),
+      type: String(lane['@_type']),
+      side,
+    }))
+}
+
+/** Discover a single road's segment topology. */
+function discoverRoad(road) {
+  const id = String(road['@_id'])
+  const length = Number.parseFloat(road['@_length'])
+
+  // The road-level link (not lane links): a successor whose elementType is a road.
+  const successor = road.link?.successor
+  const successorRoadId =
+    successor && successor['@_elementType'] === 'road'
+      ? String(successor['@_elementId'])
+      : undefined
+
+  // Drivable lanes in the first lane section, left then right (authored order).
+  const laneContainer = road.lanes ?? road
+  const section = asArray(laneContainer.laneSection)[0] ?? {}
+  const drivableLanes = [
+    ...drivableLanesOnSide(id, section.left, 'left'),
+    ...drivableLanesOnSide(id, section.right, 'right'),
+  ]
+
+  return {
+    id,
+    length,
+    ...(successorRoadId !== undefined ? { successorRoadId } : {}),
+    drivableLanes,
+  }
+}
+
+/** Discover the topology of one `.xodr` document. */
+function discoverTopology(xodr) {
+  const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' })
+  const doc = parser.parse(xodr)
+  const roadsRaw = asArray(doc.OpenDRIVE?.road)
+  if (roadsRaw.length === 0) throw new Error('no <road> in .xodr')
+
+  const roads = roadsRaw.map(discoverRoad)
+  const rule = roadsRaw[0]['@_rule'] === 'LHT' ? 'LHT' : 'RHT'
+
+  // Entry road: the one that is no other road's successor (head of the chain).
+  const successorIds = new Set(roads.map((r) => r.successorRoadId).filter(Boolean))
+  const entryRoadId = roads.find((r) => !successorIds.has(r.id))?.id ?? roads[0].id
+
+  return { rule, roads, entryRoadId }
+}
+
+function pinnedCommit() {
+  return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: SUBMODULE }).toString().trim()
+}
+
+async function main() {
+  const commit = pinnedCommit()
+  const provenance = { spdx: SPDX, source: SOURCE_URL, commit, attribution: ATTRIBUTION }
+
+  const roads = MANIFEST.map((entry) => {
+    const xodr = readFileSync(join(SUBMODULE, entry.file), 'utf-8')
+    const topology = discoverTopology(xodr)
+    const drivable = topology.roads.flatMap((r) => r.drivableLanes)
+    if (drivable.length === 0) {
+      throw new Error(
+        `${entry.id}: no drivable lanes discovered — refusing to emit a road nobody can drive on`
+      )
+    }
+    return {
+      id: entry.id,
+      logicFile: entry.logicFile,
+      description: entry.description,
+      xodr,
+      topology,
+      provenance,
+    }
+  })
+
+  const banner =
+    '// AUTO-GENERATED by native/generate.mjs — DO NOT EDIT BY HAND.\n' +
+    `// Regenerate: pnpm --filter @ontology-search/road-catalog generate\n` +
+    `// Source: ${SOURCE_URL} @ ${commit} (${SPDX})\n\n`
+  const body =
+    `import type { CatalogRoad } from './types.js'\n\n` +
+    `export const ROADS: readonly CatalogRoad[] = ${JSON.stringify(roads, null, 2)}\n`
+
+  const out = join(PKG, 'src', 'road-data.generated.ts')
+  // Format with the repo's Prettier so a fresh generate reproduces the committed
+  // bytes exactly (no format:check drift on regeneration).
+  const prettierConfig = (await resolveConfig(out)) ?? {}
+  const formatted = await format(banner + body, { ...prettierConfig, parser: 'typescript' })
+  writeFileSync(out, formatted, 'utf-8')
+
+  const laneSummary = roads
+    .map(
+      (r) =>
+        `${r.id}: ${r.topology.roads.length} road(s), entry ${r.topology.entryRoadId}, ` +
+        `${r.topology.roads.flatMap((s) => s.drivableLanes).length} drivable lane(s)`
+    )
+    .join('; ')
+  console.warn(`road-catalog: generated ${roads.length} road(s) @ ${commit} — ${laneSummary}`)
+}
+
+await main()
