@@ -21,6 +21,12 @@ const aiProviderSchema = z.enum([
   'claude-cli',
   'vibe-cli',
 ])
+/**
+ * Copilot reasoning-effort levels (the SDK's `reasoningEffort` on
+ * `createSession`). `none` disables reasoning; `low`→`max` trade latency for
+ * depth. Search forces `none`; the generative authoring agent turns it on.
+ */
+const reasoningEffortSchema = z.enum(['none', 'low', 'medium', 'high', 'xhigh', 'max'])
 
 const envSchema = z.object({
   // SPARQL Store
@@ -79,6 +85,21 @@ const envSchema = z.object({
   // AI / LLM
   AI_PROVIDER: aiProviderSchema.default('openai'),
   AI_MODEL: z.string().min(1).default('gpt-4o'),
+  /**
+   * Optional model override for the GENERATIVE authoring agent (NL → `.xosc`).
+   * Authoring is scenario composition, not the deterministic slot-filling of
+   * search, so it benefits from a stronger, reasoning-capable model. When unset,
+   * authoring reuses `AI_MODEL`. Example (Copilot provider): `claude-opus-4.8`.
+   */
+  AUTHORING_AI_MODEL: z.string().min(1).optional(),
+  /**
+   * Copilot reasoning effort for the authoring agent. Unlike search — which
+   * forces `none` because slot-filling is deterministic and SHACL-validated —
+   * authoring turns reasoning ON so the model captures nuanced dynamics
+   * (relative speeds, "slows down", timing). Applied only for the `copilot`
+   * provider; other providers reason via `LLM_THINKING_BUDGET` / a model family.
+   */
+  AUTHORING_REASONING_EFFORT: reasoningEffortSchema.default('medium'),
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   /** GitHub token for the Copilot SDK. Sourced from env or `gh auth token`. */

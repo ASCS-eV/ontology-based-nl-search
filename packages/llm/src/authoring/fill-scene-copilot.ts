@@ -97,7 +97,7 @@ export async function fillSceneCopilot(
   signal?: AbortSignal
 ): Promise<SceneSubmissionParams | null> {
   const c = await getClient()
-  const policy = getAgentPolicy()
+  const policy = getAgentPolicy('authoring')
 
   // Request-local capture — no cross-request router needed for per-request
   // sessions: this session's handler is the only writer of `captured`.

@@ -24,6 +24,23 @@ describe('config', () => {
     expect(config.SPARQL_CACHE_SIZE).toBe(256)
     expect(config.SPARQL_CACHE_TTL_MS).toBe(300_000)
     expect(config.OLLAMA_BASE_URL).toBe('http://localhost:11434/v1')
+    expect(config.AUTHORING_AI_MODEL).toBeUndefined()
+    expect(config.AUTHORING_REASONING_EFFORT).toBe('medium')
+  })
+
+  it('parses authoring agent overrides and rejects an invalid reasoning effort', () => {
+    process.env.AI_PROVIDER = 'copilot'
+    process.env.AUTHORING_AI_MODEL = 'claude-opus-4.8'
+    process.env.AUTHORING_REASONING_EFFORT = 'high'
+    resetConfig()
+
+    const config = getConfig()
+    expect(config.AUTHORING_AI_MODEL).toBe('claude-opus-4.8')
+    expect(config.AUTHORING_REASONING_EFFORT).toBe('high')
+
+    process.env.AUTHORING_REASONING_EFFORT = 'ludicrous'
+    resetConfig()
+    expect(() => getConfig()).toThrow('Invalid environment configuration')
   })
 
   it('caches config after first call', () => {
