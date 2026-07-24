@@ -31,16 +31,50 @@ import type { GateTrace, SceneGap, SceneGateName } from '@ontology-search/api-ty
 import { type AuthoringDiagnostic, getAuthoringBackend } from '@ontology-search/authoring'
 import { QC_RULES, runResidualGate, runSemanticGate } from '@ontology-search/authoring-gate'
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
+import { defaultRoad, getRoad } from '@ontology-search/road-catalog'
 
 export type { GateTrace, SceneGap, SceneGateName }
+
+/**
+ * Bind the road network the IR runs on to concrete `.xodr` bytes.
+ *
+ * Single-source safety ("what you validate is what you see"): the SAME bytes
+ * feed the cross-file semantic check, the residual geometry gate, the qc/esmini
+ * self-test, and the browser viewer. Precedence:
+ *
+ *   1. an explicit `roadNetworkXodr` (the caller owns the bytes — the IR is left
+ *      untouched; used by `/author/refine` and tests);
+ *   2. otherwise the curated catalog road named by `ir.roadNetwork.logicFile`;
+ *   3. otherwise the default catalog road.
+ *
+ * In the catalog path the IR's `logicFile` is normalized to the bound road so
+ * the emitted `.xosc` names exactly the road that was validated — never a silent
+ * substitution where the gates check one road and the viewer renders another.
+ */
+export function bindCatalogRoad(
+  ir: AuthoringIR,
+  explicitXodr: string | undefined
+): { readonly ir: AuthoringIR; readonly roadNetworkXodr: string } {
+  if (explicitXodr !== undefined) {
+    return { ir, roadNetworkXodr: explicitXodr }
+  }
+  const wanted = ir.roadNetwork?.logicFile
+  const road = (wanted !== undefined ? getRoad(wanted) : undefined) ?? defaultRoad()
+  return {
+    ir: { ...ir, roadNetwork: { ...ir.roadNetwork, logicFile: road.logicFile } },
+    roadNetworkXodr: road.xodr,
+  }
+}
 
 export interface ScenePipelineInput {
   /** The authoring IR to gate and lower. */
   readonly ir: AuthoringIR
   /**
-   * The referenced OpenDRIVE road network (`.xodr` content). Enables the
-   * cross-file semantic check and the residual geometry gate; omitted ⇒ both
-   * are explicitly skipped (never a false pass).
+   * The referenced OpenDRIVE road network (`.xodr` content). When omitted, the
+   * pipeline binds it from the road catalog (via {@link bindCatalogRoad}) so the
+   * cross-file semantic check and the residual geometry gate always RUN on real
+   * road bytes — never silently skipped. Pass it explicitly to override the
+   * catalog with caller-supplied bytes (e.g. `/author/refine`).
    */
   readonly roadNetworkXodr?: string
   /** Cooperative cancellation, honoured at each gate boundary. */
@@ -71,13 +105,14 @@ export interface SceneResult {
  * invalid result.
  */
 export async function runScenePipeline(input: ScenePipelineInput): Promise<SceneResult> {
-  const { ir, roadNetworkXodr, signal } = input
+  const { ir, roadNetworkXodr } = bindCatalogRoad(input.ir, input.roadNetworkXodr)
+  const { signal } = input
   const gaps: SceneGap[] = []
   const trace: GateTrace[] = []
 
   // ── 1. Semantic gate (design-time, IR-only) ────────────────────────────────
   const semantic = await runSemanticGate(ir, {
-    ...(roadNetworkXodr !== undefined ? { roadNetworkXodr } : {}),
+    roadNetworkXodr,
     ...(signal ? { signal } : {}),
   })
   gaps.push(...semantic.gaps)
@@ -121,27 +156,18 @@ export async function runScenePipeline(input: ScenePipelineInput): Promise<Scene
   const structuralOk = xosc !== undefined && structuralGaps.length === 0
   trace.push({ gate: 'structural', ok: structuralOk, gapCount: structuralGaps.length })
 
-  // ── 4. Residual gate (road geometry) — only when a road network is given ────
-  if (roadNetworkXodr !== undefined) {
-    const residual = await runResidualGate({ roadNetworkXodr }, signal ? { signal } : undefined)
-    // Residual gaps describe the referenced `.xodr`, not the IR, so they are
-    // reported for transparency but do NOT gate `valid` — the LLM cannot fix a
-    // bad road network by editing the scene IR.
-    gaps.push(...residual.gaps)
-    trace.push({
-      gate: 'residual',
-      ok: residual.ok,
-      gapCount: residual.gaps.length,
-      ...(residual.skipped ? { skipped: residual.skipped } : {}),
-    })
-  } else {
-    trace.push({
-      gate: 'residual',
-      ok: true,
-      gapCount: 0,
-      skipped: [QC_RULES.geometryContinuity.uid],
-    })
-  }
+  // ── 4. Residual gate (road geometry) — over the bound road network ──────────
+  const residual = await runResidualGate({ roadNetworkXodr }, signal ? { signal } : undefined)
+  // Residual gaps describe the referenced `.xodr`, not the IR, so they are
+  // reported for transparency but do NOT gate `valid` — the LLM cannot fix a
+  // bad road network by editing the scene IR.
+  gaps.push(...residual.gaps)
+  trace.push({
+    gate: 'residual',
+    ok: residual.ok,
+    gapCount: residual.gaps.length,
+    ...(residual.skipped ? { skipped: residual.skipped } : {}),
+  })
 
   return {
     ir,

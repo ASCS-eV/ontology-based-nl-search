@@ -38,6 +38,7 @@
     "@ontology-search/authoring-gate": "workspace:*",
     "@ontology-search/authoring-ir": "workspace:*",
     "@ontology-search/core": "workspace:*",
+    "@ontology-search/road-catalog": "workspace:*",
     "@ontology-search/search": "workspace:*",
     "ai": "^6.0.198",
     "zod": "^4.4.3"

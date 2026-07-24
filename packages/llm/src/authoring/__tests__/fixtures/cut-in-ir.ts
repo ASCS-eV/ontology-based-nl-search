@@ -10,7 +10,7 @@ import type { AuthoringIR } from '@ontology-search/authoring-ir'
 export function cutInIR(): AuthoringIR {
   return {
     archetype: 'cut-in',
-    roadNetwork: { logicFile: 'Databases/AB_RQ31_Straight.xodr' },
+    roadNetwork: { logicFile: 'german_highway_short.xodr' },
     parameters: { owner: 'A2' },
     entities: [
       { ref: 'Ego', type: 'Vehicle', properties: { name: 'HAF', vehicleCategory: 'car' } },
@@ -22,7 +22,7 @@ export function cutInIR(): AuthoringIR {
       {
         actor: 'Ego',
         kind: 'TeleportAction',
-        properties: { roadId: '1', laneId: '-3', s: '1000', offset: '0.5' },
+        properties: { roadId: '37', laneId: '-3', s: '500', offset: '0.5' },
       },
       { actor: 'A1', kind: 'SpeedAction', properties: { speed: '27.778' } },
       {
@@ -35,7 +35,7 @@ export function cutInIR(): AuthoringIR {
       {
         actor: 'A2',
         kind: 'TeleportAction',
-        properties: { dLane: '1', ds: '-100' },
+        properties: { dLane: '-1', ds: '-100' },
         references: { relativeTo: 'Ego' },
       },
       {

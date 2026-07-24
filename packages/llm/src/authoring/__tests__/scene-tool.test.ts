@@ -3,6 +3,7 @@
  * contract's security boundary and grounding, testable without a model.
  */
 
+import { defaultRoad } from '@ontology-search/road-catalog'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -42,6 +43,10 @@ describe('scene prompt', () => {
     expect(core).toContain('LaneChangeAction')
     // The derived OpenSCENARIO SHACL (task 01) is embedded for enum grounding.
     expect(core).toMatch(/sh:/)
+    // The curated catalog road is embedded so the model sets the right logicFile
+    // and places entities on lanes that exist (the cross-file gate precondition).
+    expect(core).toContain('Road network')
+    expect(core).toContain(defaultRoad().logicFile)
   })
 
   it('buildSceneRequest keeps the user request below a delimiter', () => {

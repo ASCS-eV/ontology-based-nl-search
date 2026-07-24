@@ -4,3 +4,6 @@
 [submodule "submodules/openscenario-api"]
 	path = submodules/openscenario-api
 	url = https://github.com/RA-Consulting-GmbH/openscenario.api.test.git
+[submodule "submodules/asam-openx-assets"]
+	path = submodules/asam-openx-assets
+	url = https://github.com/Persival-GmbH/asam-openx-assets.git

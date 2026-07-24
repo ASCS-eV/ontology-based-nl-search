@@ -34,6 +34,7 @@ import type {
   EngineTree,
   EngineVehicle,
 } from '@ontology-search/authoring-wasm'
+import { defaultRoad, entrySegment, travelSideLanes } from '@ontology-search/road-catalog'
 
 /** A standard passenger car — defaults for any vehicle field the IR omits. */
 const DEFAULT_CAR = {
@@ -107,6 +108,19 @@ function toVehicle(name: string, props: PropertyBag): EngineVehicle {
   }
 }
 
+/**
+ * The default absolute lane placement for an entity whose IR omits an explicit
+ * position: the entry road of the default catalog road and its inner travel-side
+ * lane. Derived from the road's DISCOVERED topology (never hardcoded ids) so it
+ * stays consistent with the road the gates validate and the viewer renders.
+ */
+const DEFAULT_PLACEMENT = (() => {
+  const road = defaultRoad()
+  const entry = entrySegment(road)
+  const inner = travelSideLanes(road)[0]
+  return { roadId: entry.id, laneId: inner?.laneId ?? '-1' }
+})()
+
 function toPosition(action: SceneAction): EnginePosition {
   const relativeTo = action.references?.relativeTo ?? action.references?.entityRef
   if (relativeTo !== undefined) {
@@ -122,8 +136,8 @@ function toPosition(action: SceneAction): EnginePosition {
   }
   return {
     lane: {
-      roadId: str(action.properties, 'roadId', '1'),
-      laneId: str(action.properties, 'laneId', '-1'),
+      roadId: str(action.properties, 'roadId', DEFAULT_PLACEMENT.roadId),
+      laneId: str(action.properties, 'laneId', DEFAULT_PLACEMENT.laneId),
       s: num(action.properties, 's', 0),
       offset: num(action.properties, 'offset', 0),
     },

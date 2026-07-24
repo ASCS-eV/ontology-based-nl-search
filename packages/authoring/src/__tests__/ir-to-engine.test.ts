@@ -48,7 +48,7 @@ describe('irToEngineTree', () => {
     const ego = tree.init?.find((p) => p.entityRef === 'Ego')
     expect(ego?.speed).toBeCloseTo(27.778)
     // Absolute lane teleport for the ego.
-    expect(ego?.teleport?.lane).toEqual({ roadId: '1', laneId: '-3', s: 1000, offset: 0.5 })
+    expect(ego?.teleport?.lane).toEqual({ roadId: '37', laneId: '-3', s: 500, offset: 0.5 })
     // Relative-lane teleport for A1.
     const a1 = tree.init?.find((p) => p.entityRef === 'A1')
     expect(a1?.teleport?.relativeLane).toEqual({ entityRef: 'Ego', dLane: 0, ds: 84 })
@@ -86,7 +86,7 @@ describe('irToEngineTree', () => {
 
   it('carries the road network logic file through unchanged', () => {
     expect(irToEngineTree(cutInIR()).roadNetwork).toEqual({
-      logicFile: 'Databases/AB_RQ31_Straight.xodr',
+      logicFile: 'german_highway_short.xodr',
     })
   })
 })

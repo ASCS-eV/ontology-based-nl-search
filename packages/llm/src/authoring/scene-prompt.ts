@@ -17,6 +17,8 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { defaultRoad, describeRoadForPrompt } from '@ontology-search/road-catalog'
+
 import type { SceneGap } from './run-scene-pipeline.js'
 
 // ─── Derived-SHACL grounding ─────────────────────────────────────────────────
@@ -72,8 +74,11 @@ the \`submit_scene\` tool exactly once.
   \`targetLaneOffset\`, \`dynamicsShape\` (enum), \`dynamicsDimension\` (enum),
   \`dynamicsValue\`, \`targetValue\`, \`startTime\` (s).
 
-### roadNetwork (optional)
-- \`logicFile\`: the referenced .xodr path. \`sceneGraphFile\`: optional .osgb.
+### roadNetwork (REQUIRED — a fixed catalog road)
+The scenario runs on ONE curated road network described under "Road network"
+below. Set \`roadNetwork.logicFile\` to that exact file and place every entity on
+the road ids and lane ids it lists — do not invent road or lane ids, and keep
+\`s\` within the stated range. \`sceneGraphFile\` is optional.
 
 ### parameters (optional)
 - name → value. Reference a parameter elsewhere as \`$name\` (e.g. \`$Ego\`).
@@ -94,12 +99,19 @@ export function getSceneStaticCore(): string {
   const shaclSection = shacl
     ? `\n## OpenSCENARIO domain (derived SHACL — the source of truth for class names, property local names, and enum values)\n\n\`\`\`turtle\n${shacl}\n\`\`\`\n`
     : ''
+  // Road guidance derived from the curated catalog road's DISCOVERED topology,
+  // so the model places entities on lanes that actually exist and sets the
+  // correct logicFile — the precondition for the cross-file gate to pass and for
+  // the viewer to render exactly what was validated. Static (the catalog road is
+  // build-time constant), so it stays inside the prompt-cacheable core.
+  const roadSection = `\n## Road network\n\n${describeRoadForPrompt(defaultRoad())}\n`
   cachedStaticCore = [
     'You are an OpenSCENARIO scenario-authoring assistant. You translate a ' +
       'natural-language description of a driving scenario into a structured scene ' +
       'IR that a deterministic engine lowers to a valid ASAM OpenSCENARIO 1.3 ' +
       '`.xosc` document and validates.',
     ARCHETYPE_CONTRACT,
+    roadSection,
     shaclSection,
   ]
     .filter(Boolean)

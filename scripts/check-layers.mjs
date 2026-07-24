@@ -40,6 +40,7 @@ export const RANKS = {
   '@ontology-search/slots': 0,
   '@ontology-search/authoring-ir': 0,
   '@ontology-search/authoring-wasm': 0,
+  '@ontology-search/road-catalog': 0,
   '@ontology-search/core': 1,
   '@ontology-search/sparql': 2,
   '@ontology-search/ontology': 2,
