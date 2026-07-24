@@ -12,7 +12,11 @@
  * re-introduce drift between the server and client type declarations.
  */
 export type {
+  AuthoringMeta,
+  AuthoringRefineResponse,
+  AuthoringValidation,
   GapKind,
+  GateTrace,
   MappedTerm,
   OntologyGap,
   QueryInterpretation,
@@ -20,6 +24,8 @@ export type {
   ResultRow,
   ResultTraceStep,
   RowTraceability,
+  SceneGap,
+  SceneGateName,
   SearchMeta,
   SearchResponse,
   StatsResponse,

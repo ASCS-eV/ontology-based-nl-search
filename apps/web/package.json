@@ -17,6 +17,7 @@
     "@codemirror/lang-javascript": "^6.2.5",
     "@codemirror/view": "^6.39.16",
     "@ontology-search/api-types": "workspace:*",
+    "@ontology-search/authoring-ir": "workspace:*",
     "@ontology-search/core": "workspace:*",
     "@ontology-search/design-system": "workspace:*",
     "@ontology-search/graphql-ir": "workspace:*",
