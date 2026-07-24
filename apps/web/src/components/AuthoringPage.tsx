@@ -7,6 +7,7 @@ import { GateTraceDisplay } from './GateTraceDisplay'
 import { InterpretationDisplay } from './InterpretationDisplay'
 import type { PipelineStep } from './PipelineStepper'
 import { PipelineStepper } from './PipelineStepper'
+import { ScenarioViewer } from './ScenarioViewer'
 import { SceneSummary } from './SceneSummary'
 import { SearchBar } from './SearchBar'
 import { TypewriterText } from './TypewriterText'
@@ -152,6 +153,8 @@ export function AuthoringPage() {
         showGraphQLEntry={false}
         defaultCollapsed={COLLAPSED_STEPS}
       />
+
+      <ScenarioViewer xosc={xosc} scene={scene} valid={valid} />
     </div>
   )
 }
