@@ -668,6 +668,24 @@ importers:
         specifier: ^3.2.0
         version: 3.2.4(@types/node@25.7.0)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4)
 
+  packages/scenario-viewer-wasm:
+    devDependencies:
+      '@ontology-search/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@vitest/coverage-v8':
+        specifier: 3.2.4
+        version: 3.2.4(vitest@3.2.4(@types/node@25.7.0)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4))
+      rimraf:
+        specifier: ^6.0.0
+        version: 6.1.3
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@types/node@25.7.0)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4)
+
   packages/search:
     dependencies:
       '@ontology-search/api-types':

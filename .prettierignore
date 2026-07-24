@@ -25,3 +25,11 @@ packages/authoring-wasm/wasm/
 
 # Native WASM build scratch — extracted third-party sources + generated grammars.
 packages/authoring-wasm/.build/
+
+# Prebuilt esmini scenario-player WebAssembly — Emscripten SINGLE_FILE glue with
+# the .wasm inlined. Built by native/build.mjs from the pinned esmini submodule;
+# never hand-/prettier-formatted. See packages/scenario-viewer-wasm/native/BUILD.md.
+packages/scenario-viewer-wasm/wasm/
+
+# Native esmini WASM build scratch — CMake/Ninja tree + patched fmt includes.
+packages/scenario-viewer-wasm/.build/

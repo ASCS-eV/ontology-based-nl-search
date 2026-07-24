@@ -1,0 +1,39 @@
+@ontology-search/scenario-viewer-wasm
+======================================
+
+This package vendors, builds and wraps a WebAssembly build of the **esmini**
+OpenSCENARIO player so an authored `.xosc` can be previewed in the browser.
+
+Third-party component
+---------------------
+
+  Component : esmini (EnvironmentSimulator) — the esminiJS Emscripten target
+  Upstream  : https://github.com/esmini/esmini
+  Pin       : commit 77028d83e6d402de52f7187e5384d1b1c02b7d1f (branch master)
+  Path      : EnvironmentSimulator/Libraries/esminiJS
+  License   : Mozilla Public License, Version 2.0 (MPL-2.0)
+
+esmini is licensed under the Mozilla Public License, Version 2.0. A copy of the
+license is distributed with the upstream source (LICENSE file at the repository
+root) and is also available at https://www.mozilla.org/en-US/MPL/2.0/.
+
+The prebuilt artifact `wasm/esmini.js` is the unmodified Emscripten output of
+compiling the esmini source at the pinned commit (see `native/BUILD.md` for the
+exact, reproducible recipe). It is committed here — like the Oxigraph WASM in
+`packages/sparql` and the OpenSCENARIO engine WASM in `packages/authoring-wasm`
+— so that CI never needs the C++ toolchain.
+
+MPL-2.0 is a file-level (weak) copyleft. The esmini source files remain under
+MPL-2.0; the build applies one small, documented portability patch to esmini's
+own `esminiJS/CMakeLists.txt` (`native/patches/0001-esminijs-version-cmake.patch`)
+which is offered upstream (see `native/BUILD.md`). The TypeScript facade under
+`src/` is an independent work that merely *uses* the compiled module across the
+JS/WASM boundary and is licensed under this repository's license.
+
+Build reproducibility
+---------------------
+
+The pin (`versions.json`) plus `native/BUILD.md` + `native/build.mjs` reproduce
+`wasm/esmini.js` from the pinned submodule. `wasm/esmini.js.sha256` is the
+integrity manifest checked by `native/verify-checksum.mjs` (run in CI on every
+PR — the one file here a reviewer cannot read in a diff).
