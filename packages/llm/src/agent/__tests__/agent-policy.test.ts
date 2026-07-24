@@ -1,12 +1,11 @@
 /**
- * AgentPolicy derivation tests — pins how env config maps to the policy knobs.
- *
- * Focused on `reasoningEffort`: slot-filling is deterministic (validated by the
- * SHACL gate downstream), so reasoning is DISABLED (`'none'`) on EVERY Copilot
- * model — a latency win (benchmarked ~74% off the round-trip for `claude-sonnet-5`).
- * Passing `'none'` is harmless for models that ignore the knob, so there is no
- * allowlist. Non-copilot providers get `null` (the knob is omitted). This test is
- * the regression guard for that mapping.
+ * AgentPolicy derivation tests — pins how env config maps to the policy knobs,
+ * per task. `search` is deterministic slot-filling: reasoning is DISABLED
+ * (`'none'`) on EVERY Copilot model (benchmarked ~74% off the round-trip for
+ * `claude-sonnet-5`). `authoring` is generative composition: it reads
+ * `AUTHORING_AI_MODEL` / `AUTHORING_REASONING_EFFORT` so it can run a stronger,
+ * reasoning-ON model independently of search. Non-copilot providers get `null`
+ * (the knob is omitted). This is the regression guard for those mappings.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -25,11 +24,12 @@ function config(overrides: Record<string, unknown>): Record<string, unknown> {
     LLM_TEMPERATURE: 0,
     LLM_THINKING_BUDGET: 0,
     LLM_MAX_AGENT_STEPS: 3,
+    AUTHORING_REASONING_EFFORT: 'medium',
     ...overrides,
   }
 }
 
-describe('getAgentPolicy — reasoningEffort', () => {
+describe('getAgentPolicy — search task (reasoningEffort)', () => {
   it("disables reasoning ('none') for a reasoning-capable copilot model (4.6)", () => {
     cfg.value = config({ AI_MODEL: 'claude-sonnet-4.6' })
     expect(getAgentPolicy().reasoningEffort).toBe('none')
@@ -55,5 +55,37 @@ describe('getAgentPolicy — reasoningEffort', () => {
   it('is null for non-copilot providers even on a 4.6 model', () => {
     cfg.value = config({ AI_PROVIDER: 'openai', AI_MODEL: 'claude-sonnet-4.6' })
     expect(getAgentPolicy().reasoningEffort).toBeNull()
+  })
+
+  it('uses AI_MODEL as the search model, ignoring any authoring override', () => {
+    cfg.value = config({ AI_MODEL: 'claude-sonnet-5', AUTHORING_AI_MODEL: 'claude-opus-4.8' })
+    expect(getAgentPolicy('search').model).toBe('claude-sonnet-5')
+  })
+})
+
+describe('getAgentPolicy — authoring task', () => {
+  it('enables reasoning at AUTHORING_REASONING_EFFORT on copilot', () => {
+    cfg.value = config({ AUTHORING_REASONING_EFFORT: 'high' })
+    expect(getAgentPolicy('authoring').reasoningEffort).toBe('high')
+  })
+
+  it('keeps search reasoning off even when an authoring effort is configured', () => {
+    cfg.value = config({ AUTHORING_REASONING_EFFORT: 'high' })
+    expect(getAgentPolicy('search').reasoningEffort).toBe('none')
+  })
+
+  it('overrides the model with AUTHORING_AI_MODEL for authoring', () => {
+    cfg.value = config({ AI_MODEL: 'claude-sonnet-5', AUTHORING_AI_MODEL: 'claude-opus-4.8' })
+    expect(getAgentPolicy('authoring').model).toBe('claude-opus-4.8')
+  })
+
+  it('falls back to AI_MODEL when AUTHORING_AI_MODEL is unset', () => {
+    cfg.value = config({ AI_MODEL: 'claude-sonnet-5' })
+    expect(getAgentPolicy('authoring').model).toBe('claude-sonnet-5')
+  })
+
+  it('has null reasoning for a non-copilot provider even for authoring', () => {
+    cfg.value = config({ AI_PROVIDER: 'openai', AUTHORING_REASONING_EFFORT: 'high' })
+    expect(getAgentPolicy('authoring').reasoningEffort).toBeNull()
   })
 })

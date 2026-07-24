@@ -26,7 +26,7 @@ export async function fillSceneVercel(
   requestMessage: string,
   signal?: AbortSignal
 ): Promise<SceneSubmissionParams | null> {
-  const policy = getAgentPolicy()
+  const policy = getAgentPolicy('authoring')
   const model = getModel()
 
   const providerOptions = policy.thinking

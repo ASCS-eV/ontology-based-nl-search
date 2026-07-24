@@ -19,6 +19,13 @@ import { SCHEMA_TOOL_NAMES } from './schema-tools.js'
 // ─── Policy Types ────────────────────────────────────────────────────────────
 
 /**
+ * The agent task a policy is derived for. `search` is deterministic slot-filling
+ * (fast, reasoning off); `authoring` is generative scene composition (stronger
+ * model, reasoning on). The two tasks read different config knobs.
+ */
+export type AgentTask = 'search' | 'authoring'
+
+/**
  * Immutable policy object both adapters read on every request.
  *
  * The policy is derived from validated app config (env vars) so it can
@@ -36,11 +43,13 @@ export interface AgentPolicy {
    */
   readonly thinking: { readonly budgetTokens: number } | null
   /**
-   * Copilot SDK reasoning effort. `null` when the model doesn't support it.
-   * `'none'` explicitly disables reasoning (a latency win for the deterministic
-   * slot-filling task). Maps to `reasoningEffort` in the `createSession` call.
+   * Copilot SDK reasoning effort. `null` when the provider isn't Copilot.
+   * For `search` this is `'none'` (reasoning disabled — a latency win for the
+   * deterministic slot-filling task). For `authoring` it is the configured
+   * `AUTHORING_REASONING_EFFORT` (reasoning ON — generative composition needs
+   * it). Maps to `reasoningEffort` in the `createSession` call.
    */
-  readonly reasoningEffort: 'none' | 'low' | 'medium' | 'high' | null
+  readonly reasoningEffort: 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max' | null
   /**
    * The single SUBMISSION tool — the only way the model's output becomes
    * a search. Lookup tools may run first (bounded by maxSteps), but no
@@ -73,12 +82,15 @@ export interface AgentPolicy {
 // ─── Policy Factory ──────────────────────────────────────────────────────────
 
 /**
- * Derive the agent policy from the current application config.
+ * Derive the agent policy for a given task from the current application config.
  *
- * Called once per request (cheap — reads cached Zod-validated config).
- * Adapters pass this to their SDK-specific translation layer.
+ * `search` (default) is deterministic slot-filling: it reuses `AI_MODEL` and
+ * forces reasoning `'none'`. `authoring` is generative scene composition: it
+ * uses `AUTHORING_AI_MODEL` (falling back to `AI_MODEL`) with reasoning turned
+ * ON via `AUTHORING_REASONING_EFFORT`. Called once per request (cheap — reads
+ * cached Zod-validated config). Adapters pass this to their SDK translation.
  */
-export function getAgentPolicy(): AgentPolicy {
+export function getAgentPolicy(task: AgentTask = 'search'): AgentPolicy {
   const config = getConfig()
 
   // Anthropic extended thinking: only when budget > 0 AND provider supports it.
@@ -87,21 +99,31 @@ export function getAgentPolicy(): AgentPolicy {
     (config.AI_PROVIDER === 'anthropic' || config.AI_PROVIDER === 'claude-cli')
   const thinking = supportsThinking ? { budgetTokens: config.LLM_THINKING_BUDGET } : null
 
-  // Copilot SDK reasoningEffort: disable reasoning entirely (`'none'`) for
-  // slot-filling. The task is deterministic (fill slots from SHACL, validated
-  // downstream by the SHACL gate), so chain-of-thought only adds latency and
-  // output tokens without improving the structured result.
+  // Copilot SDK reasoningEffort is task-scoped:
   //
-  // This gate deliberately applies to EVERY Copilot model. A previous version
-  // hard-coded an allowlist (`AI_MODEL.includes('4.6') || includes('opus')`),
-  // which silently left reasoning ON for every model outside that list —
-  // including the configured default `claude-sonnet-5`. Benchmarked impact of
-  // that stale gate: mean round-trip 19.5s (6–43s, high variance) with
-  // reasoning ON vs. ~5.2s (tight) with `'none'` — a ~74% latency cut and the
-  // 43s tail eliminated. Passing `'none'` is harmless for models that ignore
-  // the knob, so an allowlist is the wrong shape here — it can only regress.
+  //  - search: disabled (`'none'`). Slot-filling is deterministic (fill slots
+  //    from SHACL, validated downstream by the SHACL gate), so chain-of-thought
+  //    only adds latency and output tokens without improving the structured
+  //    result. This applies to EVERY Copilot model — a previous allowlist gate
+  //    (`AI_MODEL.includes('4.6') || includes('opus')`) silently left reasoning
+  //    ON for models outside it (incl. the default `claude-sonnet-5`); the
+  //    benchmarked cost was mean 19.5s (6–43s) vs. ~5.2s with `'none'` — a ~74%
+  //    latency cut. Passing `'none'` is harmless for models that ignore the knob.
+  //
+  //  - authoring: enabled at `AUTHORING_REASONING_EFFORT`. Composing a scenario
+  //    from prose is a reasoning task (relative speeds, "slows down", timing);
+  //    the gates validate FORM (XSD/SHACL/geometry), not FIDELITY to intent, so
+  //    reasoning is where nuance is captured.
   const supportsReasoning = config.AI_PROVIDER === 'copilot'
-  const reasoningEffort = supportsReasoning ? ('none' as const) : null
+  const reasoningEffort = supportsReasoning
+    ? task === 'authoring'
+      ? config.AUTHORING_REASONING_EFFORT
+      : ('none' as const)
+    : null
+
+  // Authoring may override the model; search always uses AI_MODEL.
+  const model =
+    task === 'authoring' && config.AUTHORING_AI_MODEL ? config.AUTHORING_AI_MODEL : config.AI_MODEL
 
   return {
     temperature: config.LLM_TEMPERATURE,
@@ -110,7 +132,7 @@ export function getAgentPolicy(): AgentPolicy {
     reasoningEffort,
     forcedTool: 'submit_slots',
     lookupTools: SCHEMA_TOOL_NAMES,
-    model: config.AI_MODEL,
+    model,
     provider: config.AI_PROVIDER,
     retrieval: {
       maxDomains: config.RETRIEVAL_MAX_DOMAINS,
