@@ -21,6 +21,8 @@
     "@ontology-search/core": "workspace:*",
     "@ontology-search/design-system": "workspace:*",
     "@ontology-search/graphql-ir": "workspace:*",
+    "@ontology-search/road-catalog": "workspace:*",
+    "@ontology-search/scenario-viewer-wasm": "workspace:*",
     "@tanstack/react-query": "^5.75.5",
     "@tanstack/react-router": "^1.120.3",
     "@uiw/react-codemirror": "^4.25.10",
@@ -28,7 +30,8 @@
     "graphql": "^17.0.1",
     "graphql-language-service": "5.5.2",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "three": "^0.185.0"
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",
@@ -39,6 +42,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.1.4",
     "@types/react-dom": "^19.1.5",
+    "@types/three": "^0.185.0",
     "@vitejs/plugin-react-swc": "^4.3.0",
     "jsdom": "^26.1.0",
     "tailwindcss": "^4.1.7",
