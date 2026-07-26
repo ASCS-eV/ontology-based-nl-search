@@ -71,7 +71,13 @@ export default withMermaid(
     themeConfig: {
       nav: [
         { text: 'Home', link: '/' },
-        { text: 'Slides', link: '/slides/' },
+        {
+          text: 'Slides',
+          items: [
+            { text: 'Architecture Overview', link: '/slides/' },
+            { text: 'Scenario Authoring', link: '/slides/authoring' },
+          ],
+        },
         {
           text: 'Docs',
           items: [
@@ -97,7 +103,10 @@ export default withMermaid(
       sidebar: [
         {
           text: 'Presentation',
-          items: [{ text: 'Slide Deck', link: '/slides/' }],
+          items: [
+            { text: 'Architecture Overview', link: '/slides/' },
+            { text: 'Scenario Authoring', link: '/slides/authoring' },
+          ],
         },
         {
           text: 'Architecture',
