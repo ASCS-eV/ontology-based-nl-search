@@ -1,12 +1,26 @@
 # Upstream contributions to `openscenario.api.test`
 
-Split of `../0001-emscripten-portability.patch` into upstream-shaped changes, plus
-a triage of the upstream open issues against how this repo uses the engine.
+The five build-portability edits are now carried as **commits on the ASCS-eV
+fork** (submodule pin), not as a build-time patch — see
+[ADR 0007](../../../../../docs/adr/0007-openscenario-fork-carry-branch.md). This
+directory records their upstream-shaped split and a triage of the upstream open
+issues against how this repo uses the engine.
 
-Upstream: https://github.com/RA-Consulting-GmbH/openscenario.api.test
-Pinned at `292d0be84530145f7a09ae5a2a7f9bd63db7e3f3` (`v1.4.1-2-g292d0be`).
+- Upstream: https://github.com/RA-Consulting-GmbH/openscenario.api.test
+- Fork: https://github.com/ASCS-eV/openscenario.api.test
+- Upstream base: `292d0be84530145f7a09ae5a2a7f9bd63db7e3f3` (`v1.4.1-2-g292d0be`)
 
-Both patches below are verified to apply cleanly to the pristine pin with
+**Branch status (on the fork):**
+
+| Branch                              | Contents                                     | Upstream                                   |
+| ----------------------------------- | -------------------------------------------- | ------------------------------------------ |
+| `carry/wasm`                        | base + PR 1 + PR 2 + FP-shim (the build pin) | —                                          |
+| `feature/emscripten-portability`    | PR 1 (three portability branches)            | **PR #227 open**                           |
+| `feature/ghc-filesystem-emscripten` | PR 2 (ghc map)                               | held — offer after #227, maintainer's call |
+| _(FP-exception shim)_               | carry-only commit on `carry/wasm`            | **issue** (below), not a PR                |
+
+The per-file patches below (`pr1-*.patch`, `pr2-*.patch`) are the reviewable
+form of those commits; all verified to apply cleanly to the pristine pin with
 `git apply --check`.
 
 ## Why the build patch is split
