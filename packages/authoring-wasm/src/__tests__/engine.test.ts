@@ -135,7 +135,7 @@ describe('loadOscEngine', () => {
     })
   })
 
-  // The full IR→writer facade (task 04): a resolved engine tree → a complete,
+  // The full IR→writer facade: a resolved engine tree → a complete,
   // schema-valid cut-in .xosc, gated by the same checker.
   describe('author() — full cut-in from an engine tree', () => {
     const car = (name: string): EngineVehicle => ({

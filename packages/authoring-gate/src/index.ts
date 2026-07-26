@@ -5,7 +5,7 @@
  * (road-geometry G1/G2 continuity), both over the in-process Oxigraph store.
  *
  * This is the authoring-domain analog of `packages/search`: it turns a validated
- * {@link AuthoringIR} into rule-attributed gaps the LLM repair loop (task 05)
+ * {@link AuthoringIR} into rule-attributed gaps the LLM repair loop
  * consumes uniformly with the search feature's gaps.
  */
 export { GATE_NS, irToRdf, OPENDRIVE_NS, OSC_NS } from './ir-to-rdf.js'

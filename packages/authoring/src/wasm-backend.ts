@@ -1,6 +1,6 @@
 /**
  * `WasmAuthoringBackend` — the default `AuthoringBackend`, backed by the
- * in-process OpenSCENARIO WASM engine (packages/authoring-wasm, task 08).
+ * in-process OpenSCENARIO WASM engine (packages/authoring-wasm).
  *
  * Loads the engine once (lazily, on first use) and calls it in-process, exactly
  * as `WorkerOxigraphStore` loads Oxigraph WASM. Only already-structured data (a

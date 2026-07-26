@@ -2,7 +2,7 @@
  * System prompt for the scene-authoring agent.
  *
  * Grounds the LLM in (a) the security contract — emit ONLY the scene IR, never
- * raw `.xosc` XML; (b) the derived OpenSCENARIO SHACL (task 01 artifacts), which
+ * raw `.xosc` XML; (b) the derived OpenSCENARIO SHACL (derived artifacts), which
  * carries the class/property local names and the `sh:in` enum vocabularies the
  * IR is keyed by; and (c) the archetype action contract the deterministic
  * lowering (packages/authoring) understands.
@@ -24,7 +24,7 @@ import type { SceneGap } from './run-scene-pipeline.js'
 // ─── Derived-SHACL grounding ─────────────────────────────────────────────────
 
 /**
- * Locate and read the derived OpenSCENARIO SHACL (task 01). Resolved relative to
+ * Locate and read the derived OpenSCENARIO SHACL. Resolved relative to
  * this module so it works from both `src` (vitest) and `dist` (runtime), which
  * sit at the same depth below the repo root.
  */

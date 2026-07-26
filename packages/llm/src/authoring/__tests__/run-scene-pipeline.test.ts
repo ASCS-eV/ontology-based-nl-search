@@ -1,5 +1,5 @@
 /**
- * Acceptance for the deterministic scene pipeline (task 05) — LLM-free, run
+ * Acceptance for the deterministic scene pipeline — LLM-free, run
  * against the REAL WASM engine so the semantic gate, the writer-facade lowering,
  * and the engine's structural gate are all exercised end-to-end.
  *

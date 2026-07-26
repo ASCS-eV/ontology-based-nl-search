@@ -41,7 +41,7 @@ describe('scene prompt', () => {
     const core = getSceneStaticCore()
     expect(core).toContain('submit_scene')
     expect(core).toContain('LaneChangeAction')
-    // The derived OpenSCENARIO SHACL (task 01) is embedded for enum grounding.
+    // The derived OpenSCENARIO SHACL is embedded for enum grounding.
     expect(core).toMatch(/sh:/)
     // The curated catalog road is embedded so the model sets the right logicFile
     // and places entities on lanes that exist (the cross-file gate precondition).
