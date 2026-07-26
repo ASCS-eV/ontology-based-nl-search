@@ -1,0 +1,13 @@
+diff --git a/cpp/externalLibs/Filesystem/filesystem.hpp b/cpp/externalLibs/Filesystem/filesystem.hpp
+index 1f0fe39..f92b9c3 100644
+--- a/cpp/externalLibs/Filesystem/filesystem.hpp
++++ b/cpp/externalLibs/Filesystem/filesystem.hpp
+@@ -64,6 +64,8 @@
+ #define GHC_OS_SYS5R4
+ #elif defined(BSD)
+ #define GHC_OS_BSD
++#elif defined(__EMSCRIPTEN__)
++#define GHC_OS_LINUX
+ #else
+ #error "Operating system currently not supported!"
+ #endif
