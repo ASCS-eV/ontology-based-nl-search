@@ -40,6 +40,13 @@ vi.mock('@ontology-search/ontology/domain-registry', () => ({
   buildDomainRegistry: vi.fn(),
 }))
 
+// The authoring routes call the LLM/gate/engine pipeline; mock it so the HTTP
+// boundary is tested without loading the WASM engine.
+vi.mock('@ontology-search/llm/authoring', () => ({
+  runSceneAgent: vi.fn(),
+  runScenePipeline: vi.fn(),
+}))
+
 describe('GET /health', () => {
   // This block first asserts the pre-warmup "starting" state (module-global
   // readiness is null until index.ts records it), then drives the ok/degraded
@@ -490,6 +497,87 @@ describe('POST /search/refine-graphql', () => {
     expect(buildTermIndex).toHaveBeenCalledOnce()
     // The successful response also initializes the independent enum-serialization cache.
     expect(getInitializedStore).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('POST /author/refine', () => {
+  // A minimal cut-in scene that passes `authoringIrWireSchema` (mirrors the
+  // e2e fixture): two vehicles + one lane-change action on a named road.
+  const SCENE = {
+    entities: [
+      { ref: 'Ego', type: 'Vehicle', properties: { vehicleCategory: 'car' } },
+      { ref: 'A1', type: 'Vehicle', properties: { vehicleCategory: 'car' } },
+    ],
+    actions: [
+      {
+        actor: 'A1',
+        kind: 'LaneChangeAction',
+        properties: { value: '0' },
+        references: { entityRef: 'Ego' },
+      },
+    ],
+    roadNetwork: { logicFile: 'german_highway_short.xodr' },
+  }
+
+  it('returns 400 when the scene field is missing', async () => {
+    const res = await app.request('/author/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    expect(res.status).toBe(400)
+    expect((await res.json()).code).toBe('BAD_REQUEST')
+  })
+
+  it('returns 422 for a scene that fails the IR wire schema', async () => {
+    const res = await app.request('/author/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scene: { entities: 'not-an-array' } }),
+    })
+    expect(res.status).toBe(422)
+    expect((await res.json()).code).toBe('UNPROCESSABLE_ENTITY')
+  })
+
+  it('returns 400 when roadNetworkXodr is not a string', async () => {
+    const res = await app.request('/author/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scene: SCENE, roadNetworkXodr: 123 }),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  /**
+   * The response body is exactly `AuthoringRefineResponse`. This pins the wire
+   * contract the route now annotates: the `diagnostics` field is present (it was
+   * previously smuggled through an un-typed literal), and the pipeline's internal
+   * `ir` never leaks. Combined with the route's type annotation — which fails to
+   * compile if the literal and the wire type disagree — this closes the drift.
+   */
+  it('returns 200 with exactly the AuthoringRefineResponse shape (incl. diagnostics)', async () => {
+    const { runScenePipeline } = await import('@ontology-search/llm/authoring')
+    vi.mocked(runScenePipeline).mockResolvedValue({
+      ir: SCENE,
+      xosc: '<OpenSCENARIO/>',
+      valid: true,
+      gaps: [],
+      diagnostics: [{ severity: 'warning', line: 3, col: 5, message: 'note' }],
+      trace: [{ gate: 'semantic', ok: true, gapCount: 0 }],
+    } as never)
+
+    const res = await app.request('/author/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scene: SCENE }),
+    })
+    expect(res.status).toBe(200)
+    expect(res.headers.get('x-request-id')).toBeTruthy()
+    const json = await res.json()
+    expect(Object.keys(json).sort()).toEqual(['diagnostics', 'gaps', 'trace', 'valid', 'xosc'])
+    expect(json.diagnostics).toEqual([{ severity: 'warning', line: 3, col: 5, message: 'note' }])
+    expect(json.valid).toBe(true)
+    expect(json.ir).toBeUndefined()
   })
 })
 
