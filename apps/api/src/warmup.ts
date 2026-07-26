@@ -1,3 +1,5 @@
+import { getAuthoringBackend, probeEngineVersions } from '@ontology-search/authoring'
+import { getConfig } from '@ontology-search/core/config'
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { warmupAgentPrompt, warmupLlmSession } from '@ontology-search/llm'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
@@ -18,11 +20,30 @@ export interface WarmupResult {
     compilerMs: number
     shaclMs: number
     sessionMs: number
+    /** Optional: absent when the authoring engine is disabled (`AUTHORING_MODE=null`). */
+    authoringMs?: number
   }
 }
 
 /** Total number of warmup steps — used for `[n/TOTAL]` progress prefixes. */
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 7
+
+/**
+ * Assert the in-process authoring engine matches the single-source version pin
+ * (ADR 0006). A stale/wrong committed `.wasm` — one built for a different
+ * OpenSCENARIO/XSD version — would author subtly non-conformant `.xosc` with no
+ * signal; probing `describe()` at startup turns that into a loud, health-visible
+ * failure instead. Guards build-config drift only (semantic correctness is the
+ * golden-conformance suite's job). No-op when the engine is disabled.
+ *
+ * Exported so the drift behaviour is unit-testable without the full warmup graph.
+ */
+export async function probeAuthoring(): Promise<void> {
+  if (getConfig().AUTHORING_MODE === 'null') return
+  // probeEngineVersions calls describe() itself and throws BackendCapabilityError
+  // on any version mismatch (or if the engine can't report).
+  await probeEngineVersions(getAuthoringBackend())
+}
 
 /**
  * Run one named warmup step with start/finish progress logging and
@@ -119,9 +140,15 @@ export async function warmup(): Promise<WarmupResult> {
     errors
   )
 
-  // [6/6] LLM session — pre-create so the first query is instant (no-op
+  // [6/7] LLM session — pre-create so the first query is instant (no-op
   // for providers that don't pool sessions).
   const sessionMs = await runStep(6, 'LLM session', warmupLlmSession, errors)
+
+  // [7/7] Authoring engine capability probe — assert the committed WASM engine
+  // reports the pinned OpenSCENARIO/XSD versions, so a stale/wrong artifact
+  // degrades /health at startup instead of authoring silently non-conformant
+  // `.xosc`. Skipped (0 ms) when AUTHORING_MODE=null.
+  const authoringMs = await runStep(7, 'Authoring engine capability probe', probeAuthoring, errors)
 
   // A fatal misconfiguration (e.g. no ontology sources) rejects the shared
   // store init promise, so several dependent steps surface the same message.
@@ -132,7 +159,7 @@ export async function warmup(): Promise<WarmupResult> {
 
   const totalMs = Date.now() - start
   const ready = errors.length === 0
-  const timings = { storeMs, vocabMs, compilerMs, shaclMs, sessionMs }
+  const timings = { storeMs, vocabMs, compilerMs, shaclMs, sessionMs, authoringMs }
 
   if (ready) {
     logger.info(`Warmup complete in ${totalMs}ms`, { ...timings, totalMs })
