@@ -1,7 +1,7 @@
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { describe, expect, it } from 'vitest'
 
-import { irToEngineTree } from '../ir-to-engine.js'
+import { irToEngineTree, unexpressibleActions } from '../ir-to-engine.js'
 import { cutInIR } from './fixtures/cut-in-ir.js'
 
 describe('irToEngineTree', () => {
@@ -88,5 +88,42 @@ describe('irToEngineTree', () => {
     expect(irToEngineTree(cutInIR()).roadNetwork).toEqual({
       logicFile: 'german_highway_short.xodr',
     })
+  })
+})
+
+describe('unexpressibleActions', () => {
+  it('reports the maneuvers and kinds the single-maneuver lowering omits', () => {
+    const ir: AuthoringIR = {
+      entities: [
+        { ref: 'Ego', type: 'Vehicle', properties: {} },
+        { ref: 'A1', type: 'Vehicle', properties: {} },
+      ],
+      actions: [
+        {
+          actor: 'A1',
+          kind: 'LaneChangeAction',
+          properties: {},
+          references: { relativeTo: 'Ego' },
+        },
+        // A second maneuver — only the first is lowered.
+        {
+          actor: 'A1',
+          kind: 'LaneChangeAction',
+          properties: {},
+          references: { relativeTo: 'Ego' },
+        },
+        // An unsupported kind — dropped by the switch default.
+        { actor: 'A1', kind: 'AcquirePositionAction', properties: {} },
+      ],
+    }
+    const dropped = unexpressibleActions(ir)
+    expect(dropped.map((d) => d.kind)).toEqual(['LaneChangeAction', 'AcquirePositionAction'])
+    // The tree still lowers exactly the first maneuver — the drops are reported,
+    // not silently swallowed.
+    expect(irToEngineTree(ir).maneuver?.actorRef).toBe('A1')
+  })
+
+  it('reports nothing when every action is expressible (the cut-in archetype)', () => {
+    expect(unexpressibleActions(cutInIR())).toEqual([])
   })
 })

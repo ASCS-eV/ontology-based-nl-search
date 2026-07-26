@@ -169,10 +169,28 @@ function toManeuver(action: SceneAction, index: number): EngineManeuver {
 }
 
 /**
- * Resolve an {@link AuthoringIR} into the {@link EngineTree} the writer facade
- * lowers. Deterministic and pure — no engine call, no I/O.
+ * An action the lowering could not express, so it was omitted from the emitted
+ * `.xosc`. Surfaced by {@link unexpressibleActions} so the pipeline can report a
+ * gap instead of silently returning an incomplete-but-valid scenario.
  */
-export function irToEngineTree(ir: AuthoringIR): EngineTree {
+export interface DroppedAction {
+  /** The `actor` ref the omitted action targeted. */
+  readonly actor: string
+  /** The action `kind` the request asked for. */
+  readonly kind: string
+  /** Why the lowering could not express it. */
+  readonly reason: string
+}
+
+/**
+ * Lower an {@link AuthoringIR} to the {@link EngineTree} the writer facade emits,
+ * AND report every action the lowering could not express. Deterministic and pure
+ * — no engine call, no I/O. Single source of truth for both {@link irToEngineTree}
+ * (the tree) and {@link unexpressibleActions} (the drops), so the two can never
+ * disagree on what "supported" means.
+ */
+function lowerScene(ir: AuthoringIR): { tree: EngineTree; dropped: DroppedAction[] } {
+  const dropped: DroppedAction[] = []
   const entities: EngineEntity[] = ir.entities.map((e) => ({
     name: e.ref,
     vehicle: toVehicle(e.ref, e.properties),
@@ -204,9 +222,25 @@ export function irToEngineTree(ir: AuthoringIR): EngineTree {
         ensureInit(action.actor).teleport = toPosition(action)
         break
       case 'LaneChangeAction':
-        maneuver ??= toManeuver(action, index)
+        // The single-maneuver archetype lowers only the first LaneChangeAction;
+        // any later one is dropped, not silently ignored.
+        if (maneuver === undefined) {
+          maneuver = toManeuver(action, index)
+        } else {
+          dropped.push({
+            actor: action.actor,
+            kind: action.kind,
+            reason:
+              'only the first LaneChangeAction is lowered; this additional maneuver was omitted',
+          })
+        }
         break
       default:
+        dropped.push({
+          actor: action.actor,
+          kind: action.kind,
+          reason: `action kind "${action.kind}" is not yet supported by the lowering and was omitted`,
+        })
         break
     }
   })
@@ -237,9 +271,30 @@ export function irToEngineTree(ir: AuthoringIR): EngineTree {
     stopTime: 30,
   }
   return {
-    ...tree,
-    ...(parameters && parameters.length > 0 ? { parameters } : {}),
-    ...(ir.roadNetwork ? { roadNetwork: ir.roadNetwork } : {}),
-    ...(maneuver ? { maneuver } : {}),
+    tree: {
+      ...tree,
+      ...(parameters && parameters.length > 0 ? { parameters } : {}),
+      ...(ir.roadNetwork ? { roadNetwork: ir.roadNetwork } : {}),
+      ...(maneuver ? { maneuver } : {}),
+    },
+    dropped,
   }
+}
+
+/**
+ * Resolve an {@link AuthoringIR} into the {@link EngineTree} the writer facade
+ * lowers. Deterministic and pure — no engine call, no I/O.
+ */
+export function irToEngineTree(ir: AuthoringIR): EngineTree {
+  return lowerScene(ir).tree
+}
+
+/**
+ * The actions the lowering could not express for this IR (unsupported kinds, and
+ * maneuvers beyond the first). Empty when the whole IR is representable. The
+ * pipeline turns each into a rule-attributed gap so an incomplete scenario is
+ * never reported as fully valid.
+ */
+export function unexpressibleActions(ir: AuthoringIR): DroppedAction[] {
+  return lowerScene(ir).dropped
 }

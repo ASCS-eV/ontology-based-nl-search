@@ -28,7 +28,11 @@
 // in the browser-safe api-types package and consumed by BOTH this server-side
 // pipeline and the web client, so the shapes can never drift.
 import type { GateTrace, SceneGap, SceneGateName } from '@ontology-search/api-types'
-import { type AuthoringDiagnostic, getAuthoringBackend } from '@ontology-search/authoring'
+import {
+  type AuthoringDiagnostic,
+  getAuthoringBackend,
+  unexpressibleActions,
+} from '@ontology-search/authoring'
 import { QC_RULES, runResidualGate, runSemanticGate } from '@ontology-search/authoring-gate'
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { defaultRoad, getRoad } from '@ontology-search/road-catalog'
@@ -152,6 +156,21 @@ export async function runScenePipeline(input: ScenePipelineInput): Promise<Scene
       gate: 'structural',
     })
   }
+  // The lowering may omit actions it cannot express (an unsupported kind, or a
+  // maneuver beyond the first). The emitted document is then valid but INCOMPLETE,
+  // so the structural gate above passes while the request was not honoured. Report
+  // each omission as a structural gap — the lowering knows what it dropped, so it
+  // reports rather than relying on the model's self-report — so the pipeline never
+  // returns valid:true for a scenario missing requested actions.
+  for (const d of unexpressibleActions(ir)) {
+    structuralGaps.push({
+      term: `${d.actor} · ${d.kind}`,
+      reason: d.reason,
+      ruleUid: QC_RULES.unexpressibleAction.uid,
+      gate: 'structural',
+    })
+  }
+
   gaps.push(...structuralGaps)
   const structuralOk = xosc !== undefined && structuralGaps.length === 0
   trace.push({ gate: 'structural', ok: structuralOk, gapCount: structuralGaps.length })
