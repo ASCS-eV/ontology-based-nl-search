@@ -4,20 +4,24 @@ Status: in progress · Branch: `claude/open-scenario-api-cpp-coverage-x6c5je`
 
 ## Handoff — pick up here
 
-Nothing in this plan has been implemented yet. What exists so far is the
-analysis, the tracking issues, and one upstream contribution.
+Phase 2.1 (**#173**, the wrong-answer bug) is now implemented on this branch;
+the rest of the plan is still the analysis, the tracking issues, and one
+upstream contribution.
 
 | Tracking issue                                                                                                                   | Phase | State                              |
 | -------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------------------------------- |
 | [#171](https://github.com/ASCS-eV/ontology-based-nl-search/issues/171) — fabricated OpenDRIVE rule UID, gate against UID drift   | 0     | open                               |
 | [#172](https://github.com/ASCS-eV/ontology-based-nl-search/issues/172) — wire the checkers already compiled into the WASM engine | 1     | open                               |
-| [#173](https://github.com/ASCS-eV/ontology-based-nl-search/issues/173) — lowering silently drops actions, reports `valid: true`  | 2     | open                               |
+| [#173](https://github.com/ASCS-eV/ontology-based-nl-search/issues/173) — lowering silently drops actions, reports `valid: true`  | 2     | **done (this branch)**             |
 | [#174](https://github.com/ASCS-eV/ontology-based-nl-search/issues/174) — qc-framework interop (`.xqar`, run the real bundles)    | 3     | open                               |
 | [#175](https://github.com/ASCS-eV/ontology-based-nl-search/issues/175) — upstream contributions                                  | 4     | PR 1 open upstream; 4 items remain |
 
-**Start with #173.** It is the only wrong-answer bug in the set, depends on
-nothing, and needs no WASM rebuild. Then #172, batching all four engine changes
-into a single artifact bump.
+**#173 landed** — `unexpressibleActions` (packages/authoring) reports every
+action the single-maneuver lowering omits (unsupported kinds, maneuvers beyond
+the first), and `run-scene-pipeline` emits one `unexpressibleAction`-UID gap per
+drop so an incomplete scenario is no longer reported `valid: true`. No WASM
+rebuild. **Next: #172** (wire the range/union/version checkers already compiled
+into the artifact), batching all four engine changes into a single artifact bump.
 
 Upstream PR 1 (Emscripten portability) is open against
 `RA-Consulting-GmbH/openscenario.api.test` from

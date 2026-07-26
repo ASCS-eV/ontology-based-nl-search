@@ -67,6 +67,20 @@ export const QC_RULES = {
     message: 'The scenario document must validate against the OpenSCENARIO XSD schema.',
   },
   /**
+   * The IR carried an action the current lowering cannot express (an unsupported
+   * `kind`, or a second maneuver the single-maneuver archetype omits), so the
+   * emitted `.xosc` is a valid but INCOMPLETE representation of the request. This
+   * has no ASAM qc equivalent — the bundle checks a document, it cannot know what
+   * the author asked for and the lowering silently dropped — so it is marked as a
+   * repo `authoring:` extension UID (same honest pattern as
+   * {@link QC_RULES.resolvableRoadReference}).
+   */
+  unexpressibleAction: {
+    uid: 'asam.net:xosc:authoring:unexpressible_action',
+    message:
+      'An action in the request could not be expressed by the lowering and was omitted from the scenario.',
+  },
+  /**
    * Analytic road-geometry continuity: consecutive planView geometry primitives
    * must join with continuous heading (G1) and curvature (G2). Implemented by the
    * in-process residual gate over the lifted `.xodr`. Mirrors the qc-opendrive

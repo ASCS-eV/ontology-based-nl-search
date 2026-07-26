@@ -80,6 +80,32 @@ describe('runScenePipeline — structural gate has teeth', () => {
   })
 })
 
+describe('runScenePipeline — reports what the lowering cannot express', () => {
+  it('flags a dropped extra maneuver + unsupported kind, and is NOT valid', async () => {
+    const ir = cutInIR()
+    // A second LaneChangeAction (only the first is lowered) and an action kind the
+    // lowering does not support. Both reference a real entity, so the semantic gate
+    // is silent and the emitted .xosc is still schema-valid — the pipeline used to
+    // return valid:true here, silently dropping both actions.
+    ir.actions.push(
+      {
+        actor: 'A2',
+        kind: 'LaneChangeAction',
+        properties: {},
+        references: { relativeTo: 'Ego' },
+      },
+      { actor: 'A2', kind: 'AcquirePositionAction', properties: {} }
+    )
+
+    const result = await runScenePipeline({ ir })
+
+    expect(result.valid).toBe(false)
+    const dropGaps = result.gaps.filter((g) => g.ruleUid === QC_RULES.unexpressibleAction.uid)
+    expect(dropGaps).toHaveLength(2)
+    expect(dropGaps.every((g) => g.gate === 'structural')).toBe(true)
+  })
+})
+
 describe('runScenePipeline — repairableGaps', () => {
   it('excludes residual road-geometry gaps (not IR-fixable)', () => {
     const gaps = [
