@@ -1,6 +1,67 @@
 # Implementation plan — OpenSCENARIO API coverage & qc-framework alignment
 
-Status: proposed · Branch: `claude/open-scenario-api-cpp-coverage-x6c5je`
+Status: in progress · Branch: `claude/open-scenario-api-cpp-coverage-x6c5je`
+
+## Handoff — pick up here
+
+Nothing in this plan has been implemented yet. What exists so far is the
+analysis, the tracking issues, and one upstream contribution.
+
+| Tracking issue                                                                                                                   | Phase | State                              |
+| -------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------------------------------- |
+| [#171](https://github.com/ASCS-eV/ontology-based-nl-search/issues/171) — fabricated OpenDRIVE rule UID, gate against UID drift   | 0     | open                               |
+| [#172](https://github.com/ASCS-eV/ontology-based-nl-search/issues/172) — wire the checkers already compiled into the WASM engine | 1     | open                               |
+| [#173](https://github.com/ASCS-eV/ontology-based-nl-search/issues/173) — lowering silently drops actions, reports `valid: true`  | 2     | open                               |
+| [#174](https://github.com/ASCS-eV/ontology-based-nl-search/issues/174) — qc-framework interop (`.xqar`, run the real bundles)    | 3     | open                               |
+| [#175](https://github.com/ASCS-eV/ontology-based-nl-search/issues/175) — upstream contributions                                  | 4     | PR 1 open upstream; 4 items remain |
+
+**Start with #173.** It is the only wrong-answer bug in the set, depends on
+nothing, and needs no WASM rebuild. Then #172, batching all four engine changes
+into a single artifact bump.
+
+Upstream PR 1 (Emscripten portability) is open against
+`RA-Consulting-GmbH/openscenario.api.test` from
+`ASCS-eV:feature/emscripten-portability`. Hold PR 2 (ghc::filesystem) until the
+maintainer responds — the PR 1 body deliberately leaves the map-vs-bump choice
+to them. Prepared bodies and patches are in
+`packages/authoring-wasm/native/patches/upstream/`.
+
+## Working on this locally
+
+The repo needs three setup steps that are easy to miss; the second and third are
+what make the authoring tests resolve at all:
+
+```bash
+git submodule update --init submodules/openscenario-api   # not checked out by default
+pnpm install
+pnpm --filter @ontology-search/road-catalog... build      # else packages/authoring tests fail to resolve
+```
+
+Note that `.playground/` **and any `plans/` directory** are gitignored
+(`.gitignore:26-29`), which is why this plan lives in `docs/` rather than
+following the repo's usual scratch convention — an untracked plan does not
+survive a cloud session's container.
+
+## Re-verifying the findings
+
+Every claim below was verified by executing the committed WASM artifact, not by
+reading source. To re-check, load `packages/authoring-wasm/src/engine.js` and
+call `validate()` on `src/__fixtures__/cut-in.xosc` with these mutations:
+
+| Mutation                                              | Current result | Expected after #172 |
+| ----------------------------------------------------- | -------------- | ------------------- |
+| `maxSpeed="-5"` / `maxSteering="99"` / `width="-3"`   | `ok=true`      | `ok=false`          |
+| `revMinor="9"`                                        | `ok=true`      | `ok=false`          |
+| dangling `<CatalogReference>` (± staged catalog file) | `ok=true`      | `ok=false`          |
+| `vehicleCategory="spaceship"`                         | `ok=false`     | unchanged           |
+| `${10 +}` (malformed expression)                      | `ok=false`     | unchanged           |
+| `<Vehicle>` without `<BoundingBox>`                   | `ok=false`     | unchanged           |
+
+The last three confirm the checkers that _are_ wired (enum, expression,
+cardinality), so a regression there means something broke rather than improved.
+
+For #173, call `irToEngineTree` with two `LaneChangeAction`s and one unsupported
+kind: it currently returns one maneuver, drops the rest, and reports no gap.
 
 ## Why
 
