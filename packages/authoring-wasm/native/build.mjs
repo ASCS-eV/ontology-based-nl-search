@@ -36,7 +36,6 @@ const CPP = join(SUB, 'cpp')
 
 const ANTLR_JAR = join(CPP, 'thirdparty', 'antlr', 'antlr-4.8-complete.jar')
 const ANTLR_ZIP = join(CPP, 'thirdparty', 'antlr', 'antlr4-4.8.zip')
-const PATCH = join(NATIVE, 'patches', '0001-emscripten-portability.patch')
 const EMBIND = join(NATIVE, 'osc_engine_embind.cpp')
 
 const BUILD = join(PKG, '.build')
@@ -95,17 +94,6 @@ function assertPrereqs() {
   }
   for (const f of [ANTLR_JAR, ANTLR_ZIP]) {
     if (!existsSync(f)) throw new Error(`vendored ANTLR artifact missing: ${f}`)
-  }
-}
-
-/** Apply the Emscripten portability patch to the submodule, idempotently. */
-function applyPatch() {
-  try {
-    run('git', ['-C', SUB, 'apply', '--reverse', '--check', PATCH], { stdio: 'ignore' })
-    console.log('• portability patch already applied')
-  } catch {
-    run('git', ['-C', SUB, 'apply', PATCH])
-    console.log('• portability patch applied')
   }
 }
 
@@ -169,7 +157,10 @@ function main() {
   mkdirSync(BUILD, { recursive: true })
   mkdirSync(OUT, { recursive: true })
 
-  applyPatch()
+  // No patch step: the `openscenario-api` submodule points at the ASCS-eV fork's
+  // `carry/wasm` branch, which already carries the portability edits as commits
+  // (see native/patches/upstream/README.md and docs/adr/0007). The checkout is
+  // build-ready as-is.
 
   const genVersions = generateVersionsHeader()
 
