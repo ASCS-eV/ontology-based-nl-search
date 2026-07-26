@@ -3,7 +3,7 @@
  *
  * A gate violation is an {@link OntologyGap} — the SAME shape the search feature
  * already emits — extended with the qc rule identity (`ruleUid`) and the RDF
- * focus node it was found on, so the repair loop (task 05) consumes one uniform,
+ * focus node it was found on, so the repair loop consumes one uniform,
  * rule-attributed gap type across search and authoring.
  */
 import type { OntologyGap } from '@ontology-search/api-types'

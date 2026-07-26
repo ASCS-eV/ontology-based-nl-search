@@ -2,12 +2,12 @@
  * The authoring backend seam — mirrors `SparqlStore` in packages/sparql.
  *
  * The whole codebase depends only on this `AuthoringBackend` interface; the
- * concrete engine (the in-process OpenSCENARIO WASM module, task 08) is one
+ * concrete engine (the in-process OpenSCENARIO WASM module) is one
  * config-selected implementation, exactly as Oxigraph is one `SparqlStore`.
  *
  * This increment exposes `describe` + `validate` (the runtime structural /
- * semantic gate). IR → `.xosc` emission (`lower`) is added to this interface by
- * task 04, together with the model-driven writer facade it needs.
+ * semantic gate). IR → `.xosc` emission (`lower`) is added to this interface
+ * together with the model-driven writer facade it needs.
  *
  * [OSC-XSD] OpenSCENARIO 1.3 — validation is delegated to the engine, whose
  * checker rules are generated from the ASAM UML model.
@@ -20,13 +20,13 @@ export type { EngineFiles, EngineInfo, Severity }
 /**
  * A validation diagnostic surfaced by the backend. Extends the engine's
  * {@link Diagnostic} with an optional ASAM Quality-Checker rule UID
- * (`asam.net:xosc:…`) so the semantic gate (task 03) and the repair loop
- * (task 05) can attribute a violation to the same rule identity they emit —
+ * (`asam.net:xosc:…`) so the semantic gate and the repair loop
+ * can attribute a violation to the same rule identity they emit —
  * shape-compatible with `OntologyGap`.
  *
  * `ruleUid` is populated only where the engine surfaces a structured rule
  * identity. The RAC checker emits free-text messages today, so it is absent
- * until the engine (task 08) exposes rule ids — it is never fabricated.
+ * until the engine exposes rule ids — it is never fabricated.
  */
 export interface AuthoringDiagnostic extends Diagnostic {
   readonly ruleUid?: string

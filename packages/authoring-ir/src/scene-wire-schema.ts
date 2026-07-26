@@ -2,7 +2,7 @@
  * Zod wire schema for the authoring IR ("scene slots").
  *
  * Mirrors `packages/slots/src/slot-wire-schema.ts`: the LLM's `submit_scene`
- * tool (task 05) carries exactly this shape, and it is the authoring security
+ * tool carries exactly this shape, and it is the authoring security
  * boundary — the model emits only this IR, never raw `.xosc`. Objects are
  * strict so a hallucinated key (e.g. an attempt to smuggle raw XML) is rejected
  * rather than silently dropped.
@@ -39,7 +39,7 @@ export const sceneActionWireSchema = z.strictObject({
     .describe('Named references to other entities (entityRef, targetRef, …); each must resolve.'),
 })
 
-/** → `<RoadNetwork>`. `logicFile` is the referenced `.xodr` (cross-file check, task 03). */
+/** → `<RoadNetwork>`. `logicFile` is the referenced `.xodr` (cross-file check). */
 export const roadNetworkWireSchema = z.strictObject({
   logicFile: z.string().optional(),
   sceneGraphFile: z.string().optional(),

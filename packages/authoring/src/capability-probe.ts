@@ -2,7 +2,7 @@
  * Authoring engine capability probe — the analog of
  * `probePropertyPathSupport` in packages/sparql.
  *
- * The ontology (task 01) and the WASM engine (task 08) both derive from the
+ * The ontology and the WASM engine both derive from the
  * same ASAM model, so a version match only guards *build-config* drift (e.g. a
  * stale or wrong `osc-engine.wasm` artifact) — not semantic drift, which the
  * golden-conformance test guards. Run this at startup so a mis-built engine is

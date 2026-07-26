@@ -64,7 +64,7 @@ describe('WasmAuthoringBackend (golden conformance, real WASM)', () => {
     expect(a).toEqual(b)
   })
 
-  // End-to-end lowering (task 04): a generic authoring IR → a schema-valid
+  // End-to-end lowering: a generic authoring IR → a schema-valid
   // .xosc via the model-generated writer facade, gated by the same engine.
   describe('lower() — IR → .xosc', () => {
     it('lowers a cut-in IR to a document that the checker accepts (round-trip)', async () => {

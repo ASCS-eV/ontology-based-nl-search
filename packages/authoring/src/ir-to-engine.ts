@@ -1,6 +1,6 @@
 /**
  * Map the generic, SHACL-keyed authoring IR onto the concrete engine tree the
- * writer facade lowers to `.xosc` (task 04). This is the archetype mapping: it
+ * writer facade lowers to `.xosc`. This is the archetype mapping: it
  * resolves the LLM-facing {@link AuthoringIR} (entities + flat actions) into the
  * structured {@link EngineTree} the model-generated writers materialize, filling
  * standard-car defaults so a minimal IR still yields a schema-valid scenario.

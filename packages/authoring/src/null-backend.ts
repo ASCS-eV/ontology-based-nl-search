@@ -1,7 +1,7 @@
 /**
  * `NullAuthoringBackend` — a deterministic "engine unavailable" backend.
  *
- * Selected by `AUTHORING_MODE=null`. Lets the authoring pipeline (task 05) and
+ * Selected by `AUTHORING_MODE=null`. Lets the authoring pipeline and
  * unit tests run without loading the WASM engine: it never touches the engine
  * and `validate` always fails with a single explanatory diagnostic. It reports
  * empty versions, so it is intentionally NOT subjected to `probeEngineVersions`

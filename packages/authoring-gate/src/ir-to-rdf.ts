@@ -6,7 +6,7 @@
  * `ParameterDeclaration` individuals, and entity/road references become reified
  * reference nodes the semantic gate resolves with SPARQL. Real ontology terms
  * (`os:ScenarioObject`, `os:name`, …) are used where the derived OpenSCENARIO
- * ontology (task 01) defines them; gate-internal modeling predicates live under a
+ * ontology defines them; gate-internal modeling predicates live under a
  * separate `gate:` namespace so they are never confused with the standard's
  * vocabulary.
  *
@@ -21,7 +21,7 @@
  */
 import type { AuthoringIR, SceneAction } from '@ontology-search/authoring-ir'
 
-/** The derived OpenSCENARIO ontology namespace (task 01 artifacts). */
+/** The derived OpenSCENARIO ontology namespace (derived artifacts). */
 export const OSC_NS = 'https://w3id.org/ascs-ev/envited-x/openscenario/v1/'
 /** Gate-internal modeling predicates — NOT part of the standard vocabulary. */
 export const GATE_NS = 'urn:authoring-gate:'

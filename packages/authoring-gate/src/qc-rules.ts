@@ -4,7 +4,7 @@
  *
  * Each entry mirrors a rule from the official ASAM checker bundles so a gap this
  * repo emits at design time carries the SAME `asam.net:…` UID the qc-framework
- * would emit at check time. The agent's repair prompt (task 05) cites the UID, so
+ * would emit at check time. The agent's repair prompt cites the UID, so
  * feedback is traceable to the standard without running the framework.
  *
  * STANDARDS (criterion #31):

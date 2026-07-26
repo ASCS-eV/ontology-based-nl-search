@@ -2,7 +2,7 @@
  * The SHACL semantic gate — the design-time half of authoring validation.
  *
  * It lowers a validated {@link AuthoringIR} to an RDF instance graph and enforces
- * the qc rules the runtime WASM checker (task 04) cannot: **referential**
+ * the qc rules the runtime WASM checker cannot: **referential**
  * resolution (`entityRef`, honoring `$param` indirection), **uniqueness** of
  * element names, and **cross-file** `.xosc`→`.xodr` resolution over a single
  * merged graph. These run as **real SPARQL over the in-process Oxigraph store**
@@ -11,7 +11,7 @@
  * per-file checker can.
  *
  * Every violation carries the canonical qc rule UID (from {@link QC_RULES}) and
- * the offending focus node, so the repair loop (task 05) cites the exact ASAM
+ * the offending focus node, so the repair loop cites the exact ASAM
  * rule — traceable to the standard without running the framework.
  *
  * [QC-XOSC] ASAM OpenSCENARIO checker bundle — reference_control rules
@@ -25,7 +25,7 @@ import { OxigraphStore, type SparqlBinding } from '@ontology-search/sparql'
 import type { DatasetCore } from '@rdfjs/types'
 import { Writer } from 'n3'
 
-import { irToRdf, OPENDRIVE_NS } from './ir-to-rdf.js'
+import { GATE_NS, irToRdf, OPENDRIVE_NS, OSC_NS } from './ir-to-rdf.js'
 import { QC_RULES, type QcRule } from './qc-rules.js'
 import type { AuthoringGap, GateResult } from './types.js'
 
@@ -41,8 +41,10 @@ export interface SemanticGateOptions {
   readonly signal?: AbortSignal
 }
 
-const PREFIXES = `PREFIX os: <https://w3id.org/ascs-ev/envited-x/openscenario/v1/>
-PREFIX gate: <urn:authoring-gate:>
+// Namespaces come from the single source (ir-to-rdf) so the gate's SPARQL and
+// the lifted instance graph cannot disagree on the ontology IRI.
+const PREFIXES = `PREFIX os: <${OSC_NS}>
+PREFIX gate: <${GATE_NS}>
 PREFIX opendrive: <${OPENDRIVE_NS}>`
 
 /** Resolvable entity references, expanding `$param` indirection. */
