@@ -14,8 +14,10 @@
  * the offending focus node, so the repair loop (task 05) cites the exact ASAM
  * rule — traceable to the standard without running the framework.
  *
- * [QC-XOSC] ASAM OpenSCENARIO checker bundle — reference_control rules.
- * [SPARQL] W3C SPARQL 1.1 — the referential/cross-file checks.
+ * [QC-XOSC] ASAM OpenSCENARIO checker bundle — reference_control rules
+ * (submodule-vendored; see docs/specs/references/README.md).
+ * [SPARQL11] SPARQL 1.1 Query (docs/specs/references/sparql11-query.md) — the
+ * referential/cross-file checks run as SPARQL SELECT.
  */
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { liftXmlToRdf } from '@ontology-search/ontology/xml-to-rdf'

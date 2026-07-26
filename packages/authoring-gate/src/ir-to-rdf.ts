@@ -16,6 +16,8 @@
  *
  * [OSC-XSD] OpenSCENARIO 1.3 — individuals are typed by the derived ontology;
  * `$param` indirection follows the standard's parameter mechanism.
+ * [TURTLE] RDF 1.1 Turtle (docs/specs/references/turtle.md) — the emitted instance
+ * graph is Turtle over the [RDF11] RDF 1.1 data model (rdf11-concepts.md).
  */
 import type { AuthoringIR, SceneAction } from '@ontology-search/authoring-ir'
 

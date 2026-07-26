@@ -44,6 +44,29 @@ can check the exact normative language offline.
 | `rfc8259-json.md` | RFC 8259 — JSON | IETF | IETF Trust (BCP 78) | All JSON payloads on the HTTP boundary (`@ontology-search/api-types`). |
 | `rfc9110-http.md` | RFC 9110 — HTTP Semantics | IETF | IETF Trust (BCP 78) | Hono HTTP API surface (methods, status, content negotiation). |
 
+## ASAM standards (submodule-vendored, not prose)
+
+The **authoring** feature (NL → OpenSCENARIO `.xosc`) is governed by ASAM
+standards whose normative text **cannot be vendored here as prose** — the
+refresh proxy allowlist above does not include ASAM, and the ASAM license does
+not permit the verbatim copy the W3C/IETF texts use. Their normative source is
+instead vendored in-repo as **machine-readable submodule artifacts**, pinned by
+commit, and cited inline with the tags below. See
+[the standards page](../../../apps/docs/standards-audit.md) for the authoring
+interface inventory and the derivation
+(`artifacts/openscenario/DERIVATION.md`).
+
+| Tag | Standard | Normative source in-repo | Used in this codebase |
+| --- | --- | --- | --- |
+| `[OSC-XSD]` | ASAM OpenSCENARIO 1.3.0 (XSD) | `submodules/ontology-management-base/imports/OpenScenario/OpenSCENARIO.xsd` (pinned submodule) | The derived ontology (`artifacts/openscenario/*.ttl`), the Scene IR → `.xosc` lowering (`packages/authoring`), and the in-process WASM checker (`packages/authoring-wasm`). |
+| `[OSC-RCR]` | ASAM OpenSCENARIO `RangeCheckerRulesV1_3` (RA Consulting, Apache-2.0) | `submodules/openscenario-api/.../v1_3/checker/range/RangeCheckerRulesV1_3.cpp` (pinned submodule) | Numeric `sh:minInclusive`/`sh:maxInclusive` bounds in `openscenario.shacl.ttl`; the same file compiled into the WASM checker. |
+| `[QC-XOSC]` / `[QC-XODR]` | ASAM Quality Checker rule bundles (OpenSCENARIO / OpenDRIVE) | ASAM QC bundles (rule UIDs `asam.net:…`) | Canonical rule UIDs the authoring gate attributes each gap to (`packages/authoring-gate`). |
+| `[XML10]` | XML 1.0 (W3C) | `https://www.w3.org/TR/xml/` (summary; the generic lift needs only well-formedness) | The generic XML→RDF lift (`packages/ontology/src/xml-to-rdf.ts`). |
+
+Refreshing these means bumping the pinned submodule commit (see
+`packages/authoring-wasm/versions.json` and the submodule pins), not the proxy
+download used for the W3C/IETF texts above.
+
 ## The "slots mechanism" is not a standard
 
 The structured-slots intermediate representation (`SearchSlots` /
