@@ -33,6 +33,39 @@ The one layer that is not itself a published standard is the **slot
 intermediate representation**, whose wire contract is nonetheless governed by
 JSON Schema (below).
 
+## Authoring interfaces (NL → OpenSCENARIO `.xosc`)
+
+The authoring feature is the write-path mirror of search: an LLM fills a typed
+**Scene IR**, a gate validates it, a deterministic lowering emits an ASAM
+OpenSCENARIO `.xosc`, and an in-process WASM engine validates it. Its interfaces
+are held to the same convention.
+
+| Layer          | Interface                         | Governing standard                                        |
+| -------------- | --------------------------------- | --------------------------------------------------------- |
+| LLM contract   | Scene IR / `submit_scene` schema  | **JSON Schema 2020-12** (IETF)                            |
+| Ontology       | OpenSCENARIO classes/shapes       | **OWL 2 · SHACL · RDFS · Turtle** (W3C) `[OSC-XSD]`       |
+| Data           | `openscenario.context.jsonld`     | **JSON-LD 1.1** (W3C)                                     |
+| Data           | Generic XML→RDF lift              | **RDF 1.1** (W3C), **XML 1.0** `[XML10]`                  |
+| Document       | `.xosc` / `.xodr` (in + emitted)  | **ASAM OpenSCENARIO 1.3.0 / OpenDRIVE** (XSD) `[OSC-XSD]` |
+| Validation     | Numeric value bounds              | **`RangeCheckerRulesV1_3`** (RA Consulting) `[OSC-RCR]`   |
+| QC             | Gate rule UIDs (`asam.net:…`)     | **ASAM Quality Checker** bundles `[QC-XOSC]` `[QC-XODR]`  |
+| API transport  | `/author/stream`                  | **Server-Sent Events** (W3C / WHATWG)                     |
+| API transport  | `/author/refine` JSON + HTTP      | **RFC 8259**, **RFC 9110** (IETF)                         |
+| Integrity      | committed WASM `.sha256` manifest | **SHA-256** (FIPS 180-4)                                  |
+| Redistribution | engine `NOTICE`                   | **Apache-2.0 §4**                                         |
+
+**ASAM standards are not vendored as prose.** The W3C/IETF rows above reuse the
+already-registered reference texts. The ASAM-specific tags — `[OSC-XSD]`,
+`[OSC-RCR]`, `[QC-XOSC]`, `[QC-XODR]` — name standards whose normative text
+cannot be mirrored under `docs/specs/references/` (the refresh proxy allowlist
+excludes ASAM, and the ASAM license precludes verbatim copies). Their normative
+source is instead **vendored as machine-readable submodule artifacts** — the
+`OpenSCENARIO.xsd` and `RangeCheckerRulesV1_3.cpp` pinned in
+`submodules/`, transcribed into the derived ontology per
+`artifacts/openscenario/DERIVATION.md`. The `docs/specs/references/README.md`
+"ASAM standards" table records these tags, their in-repo source paths, and that
+refreshing them means bumping the pinned submodule.
+
 ## The slot IR is governed by JSON Schema
 
 The structured-slots IR (`SearchSlots`, `ReferenceFilter`) is the query
