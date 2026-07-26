@@ -330,6 +330,25 @@ export interface GateTrace {
 }
 
 /**
+ * A raw structural-gate diagnostic from the in-process OpenSCENARIO engine —
+ * the browser-safe wire mirror of the engine's `AuthoringDiagnostic`
+ * (`Diagnostic` + optional rule UID). Distinct from {@link SceneGap}: gaps are
+ * gate-attributed and error-only, whereas diagnostics carry the engine's full
+ * message stream (warnings included). Defined locally so `@ontology-search/api-types`
+ * stays zero-dependency; kept field-identical to the engine type.
+ */
+export interface SceneDiagnostic {
+  readonly severity: 'error' | 'warning' | 'info'
+  /** 1-based source line, or 0 when the engine reports no marker. */
+  readonly line: number
+  /** 1-based source column, or 0 when the engine reports no marker. */
+  readonly col: number
+  readonly message: string
+  /** The canonical `asam.net:…` qc rule UID, when the engine surfaces one. */
+  readonly ruleUid?: string
+}
+
+/**
  * Response of `POST /author/refine` (IR-direct, no LLM) — the authoring analog
  * of {@link RefineResponse}. The `.xosc` is present unless lowering threw; it is
  * always read-only (derived from the editable IR).
@@ -338,6 +357,8 @@ export interface AuthoringRefineResponse {
   readonly xosc?: string
   readonly valid: boolean
   readonly gaps: SceneGap[]
+  /** Raw engine diagnostics from the structural gate (warnings included). */
+  readonly diagnostics: SceneDiagnostic[]
   readonly trace: GateTrace[]
 }
 

@@ -18,6 +18,7 @@
  *   [JSON-SCHEMA-CORE] JSON Schema 2020-12 (packages/authoring-ir).
  */
 
+import type { AuthoringRefineResponse } from '@ontology-search/api-types'
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { authoringIrWireSchema } from '@ontology-search/authoring-ir/scene-wire-schema'
 import { getConfig } from '@ontology-search/core/config'
@@ -235,17 +236,17 @@ authoringRoutes.post('/refine', async (c) => {
       gapCount: result.gaps.length,
     })
 
-    return c.json(
-      {
-        xosc: result.xosc,
-        valid: result.valid,
-        gaps: result.gaps,
-        diagnostics: result.diagnostics,
-        trace: result.trace,
-      },
-      200,
-      { [REQUEST_ID_HEADER]: requestId }
-    )
+    // Typed against the shared wire contract so the response cannot drift from
+    // `AuthoringRefineResponse` (an un-annotated literal previously smuggled a
+    // `diagnostics` field the type omitted). [RFC8259] JSON body over [RFC9110].
+    const response: AuthoringRefineResponse = {
+      ...(result.xosc !== undefined ? { xosc: result.xosc } : {}),
+      valid: result.valid,
+      gaps: [...result.gaps],
+      diagnostics: [...result.diagnostics],
+      trace: [...result.trace],
+    }
+    return c.json(response, 200, { [REQUEST_ID_HEADER]: requestId })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       logger.info('Authoring refine aborted by client')
