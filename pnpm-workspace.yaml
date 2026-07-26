@@ -5,10 +5,16 @@ allowBuilds:
   '@swc/core': true
   esbuild: true
 overrides:
-  # Security advisories (see `pnpm audit --prod`). Scoped so unrelated
-  # majors are untouched: brace-expansion 1.x consumers keep 1.x.
-  brace-expansion@1: ^1.1.16 # DoS via exponential expansion (<1.1.16), high
-  brace-expansion@5: ^5.0.7 # DoS via exponential expansion (<5.0.7), high
+  # Security advisory GHSA-mh99-v99m-4gvg (brace-expansion DoS, high). The fix is
+  # brace-expansion >=5.0.8, whose CJS build exports a NAMED `expand` (not the
+  # legacy bare function), so only minimatch >=10 consumes it correctly; older
+  # transitive minimatch (3.x via @eslint/config-array, 9.x via typescript-estree)
+  # crash on it (`TypeError: expand is not a function`). We therefore lift the whole
+  # minimatch lineage to 10.x (which depends on brace-expansion@^5) and pin
+  # brace-expansion to the patched 5.0.8. minimatch is dev-tooling only (ESLint /
+  # typescript-eslint — no runtime consumer). Verified: lint + typecheck + tests pass.
+  minimatch: ^10.2.5
+  brace-expansion: ^5.0.8
   js-yaml@4: ^4.3.0 # quadratic DoS in merge-key chains (GHSA-52cp-r559-cp3m), high
   #
   # NOT overridden: @ai-sdk/provider-utils (GHSA-866g-f22w-33x8, LOW).
