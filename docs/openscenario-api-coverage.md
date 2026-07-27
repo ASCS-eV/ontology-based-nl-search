@@ -3,14 +3,15 @@
 Scope: how far this repo's authoring feature covers the ASAM OpenSCENARIO API
 its engine embeds, and the ASAM Quality Checker rule bundles its gates cite.
 
-| Phase | Tracking issue                                                                                                                | State |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------- | ----- |
-| 0     | [#171](https://github.com/ASCS-eV/ontology-based-nl-search/issues/171) — rule identities must resolve; gate against UID drift | done  |
-| 1     | [#172](https://github.com/ASCS-eV/ontology-based-nl-search/issues/172) — register the checkers compiled into the WASM engine  | done  |
-| 2.1   | [#173](https://github.com/ASCS-eV/ontology-based-nl-search/issues/173) — the lowering reports what it cannot express          | done  |
-| 2.2   | archetype width (multiple maneuvers, entity-based conditions, IR `stopTime`)                                                  | open  |
-| 3     | [#174](https://github.com/ASCS-eV/ontology-based-nl-search/issues/174) — qc-framework interop (`.xqar`, run the real bundles) | open  |
-| 4     | [#175](https://github.com/ASCS-eV/ontology-based-nl-search/issues/175) — upstream contributions                               | done  |
+| Phase   | Tracking issue                                                                                                                     | State |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| 0       | [#171](https://github.com/ASCS-eV/ontology-based-nl-search/issues/171) — rule identities must resolve; gate against UID drift      | done  |
+| 1       | [#172](https://github.com/ASCS-eV/ontology-based-nl-search/issues/172) — register the checkers compiled into the WASM engine       | done  |
+| 2.1     | [#173](https://github.com/ASCS-eV/ontology-based-nl-search/issues/173) — the lowering reports what it cannot express               | done  |
+| 2.2     | [#183](https://github.com/ASCS-eV/ontology-based-nl-search/issues/183) — archetype width (maneuvers, entity triggers, `stopTime`)  | open  |
+| 3.1–3.3 | [#174](https://github.com/ASCS-eV/ontology-based-nl-search/issues/174) — qc-framework interop (`.xqar`, manifest, run the bundles) | done  |
+| 3.4     | [#182](https://github.com/ASCS-eV/ontology-based-nl-search/issues/182) — ontology-derived rules into the C++ checker               | open  |
+| 4       | [#175](https://github.com/ASCS-eV/ontology-based-nl-search/issues/175) — upstream contributions                                    | done  |
 
 ## Working on this locally
 
@@ -219,7 +220,7 @@ knows.
 **Test** — an IR with two `LaneChangeAction`s and one `AcquirePositionAction`
 yields two gaps and `valid: false`.
 
-### 2.2 Widen the archetype — open
+### 2.2 Widen the archetype — open (#183)
 
 - Multiple events / maneuvers rather than one.
 - Entity-based trigger conditions (`TimeHeadway`, `RelativeDistance`); the
@@ -232,36 +233,40 @@ step.
 
 ---
 
-## Phase 3 — interoperate instead of reimplementing — open
+## Phase 3 — interoperate instead of reimplementing
 
-### 3.1 Emit `.xqar`
+Full surface and contracts: `packages/authoring-gate/QC-INTEROP.md`.
 
-Gaps carry a rule UID and, for structural findings, line/col, so the mapping to
-`<CheckerResults><CheckerBundle><Checker><Issue><Locations><FileLocation row
-column>` per the `[QC-FW]` schema is direct. A small adapter in
-`packages/authoring-gate` makes the output consumable by the framework's report
-modules.
+### 3.1 Emit `.xqar` — **done**
 
-### 3.2 Ship a checker-bundle manifest
+`gapsToXqar` renders gaps as a `[QC-FW]` result file: one `<CheckerBundle>`, one
+`<Checker>` per gate, one `<Issue>` per gap, with a `<FileLocation row column>`
+where a finding has a source position. Each checker declares every rule its gate
+can emit as an `<AddressedRule>`, read from the catalog through `QcRule.gate`, so
+a clean run is distinguishable from a rule that was never evaluated.
 
-Let the file-scoped gates run _inside_ the framework via the standard
-`exec_command` / `$ASAM_QC_FRAMEWORK_CONFIG_FILE` contract (`[QC-FW]`,
-`doc/manual/manifest_file.md`).
+### 3.2 Ship a checker-bundle manifest — **done**
 
-### 3.3 Run the real bundles behind the existing external seam
+`qc-bundle/qc_authoring_gate.json` registers the file-scoped gate as a bundle and
+`qc-bundle/main.mjs` implements the `exec_command` /
+`$ASAM_QC_FRAMEWORK_CONFIG_FILE` contract. Scope is one `.xodr`: the semantic
+gate resolves `.xosc`↔`.xodr` over a merged RDF graph built from a validated IR,
+which a per-file checker cannot be handed.
 
-`RESIDUAL_MODE=external` (`residual-gate.ts`) is a documented seam with no runner
-attached. Wire it to invoke `qc-opendrive` / `qc-openscenarioxml` and import
-their `.xqar` back as gaps. This is the honest route to those rule identities —
-run them rather than transcribe them — and it delivers the 26 OpenDRIVE rules the
-repo covers none of.
+### 3.3 Run the real bundles behind the external seam — **done**
 
-### 3.4 Push ontology-derived rules into the C++ checker
+`RESIDUAL_MODE=external` plus `RESIDUAL_EXTERNAL_COMMAND` invokes a bundle out of
+process and imports its `.xqar` as gaps carrying **the bundle's own** rule UIDs.
+That is how the published OpenDRIVE rules are covered — by running the bundle
+that implements them. A bundle that exits non-zero, times out or writes nothing
+is reported through `skipped` with the `external-bundle-unavailable: ` prefix.
+
+### 3.4 Push ontology-derived rules into the C++ checker — open (#182)
 
 `IScenarioChecker` exposes 295 `Add*CheckerRule` slots — upstream's documented
-extension point, and the natural home for rules derived from the ontology. Do
-this only after 3.1–3.3, so repo-declared rules stay clearly separated from ASAM
-ones.
+extension point, and the natural home for rules derived from the ontology. It is
+last on purpose, so repo-declared rules stay clearly separated from ASAM ones,
+and it needs its own artifact rebuild.
 
 ---
 
