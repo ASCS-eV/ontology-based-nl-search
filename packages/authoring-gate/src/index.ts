@@ -9,7 +9,13 @@
  * consumes uniformly with the search feature's gaps.
  */
 export { GATE_NS, irToRdf, OPENDRIVE_NS, OSC_NS } from './ir-to-rdf.js'
-export { QC_RULES, type QcRule, type QcRuleKey } from './qc-rules.js'
+export {
+  QC_RULES,
+  type QcRule,
+  type QcRuleKey,
+  type QcRuleOrigin,
+  REPO_RULE_ENTITY,
+} from './qc-rules.js'
 export {
   checkGeometryContinuity,
   ExternalResidualChecker,
@@ -23,3 +29,14 @@ export {
 } from './residual-gate.js'
 export { runSemanticGate, type SemanticGateOptions } from './semantic-gate.js'
 export type { AuthoringGap, GateName, GateResult } from './types.js'
+export {
+  gapsToXqar,
+  parseXqar,
+  XQAR_LEVEL,
+  type XqarBundleIdentity,
+  type XqarEmitOptions,
+  type XqarFileLocation,
+  type XqarGap,
+  type XqarIssue,
+  type XqarLevel,
+} from './xqar.js'

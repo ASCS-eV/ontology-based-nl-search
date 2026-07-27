@@ -73,6 +73,17 @@ const envSchema = z.object({
   RESIDUAL_MODE: residualModeSchema.default('in-process'),
 
   /**
+   * Command the `external` residual backend invokes to run an out-of-process
+   * ASAM Quality Checker bundle (e.g. `qc-opendrive`). Invoked with the
+   * framework's own contract — `$ASAM_QC_FRAMEWORK_CONFIG_FILE` and
+   * `$ASAM_QC_FRAMEWORK_WORKING_DIR` in the environment — and its `.xqar`
+   * result is imported as gaps carrying the bundle's own rule UIDs. Unset
+   * (default) means no bundle runs and the rules it would decide stay
+   * `skipped`, never a false pass.
+   */
+  RESIDUAL_EXTERNAL_COMMAND: z.string().min(1).optional(),
+
+  /**
    * Maximum bounded repair iterations the scene-authoring agent performs
    * (packages/llm) when a pipeline pass returns IR-fixable gaps. The agent
    * always runs at least one authoring pass; this caps the RE-prompts after

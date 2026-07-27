@@ -8,10 +8,10 @@
  *   - **in-process** (default) — pure, deterministic analytic geometry over the
  *     lifted road network: G1 (heading) and G2 (curvature) continuity between
  *     consecutive `.xodr` planView primitives. No Python, no simulator.
- *   - **external** — an opt-in, out-of-process adapter (e.g. an esmini /
- *     qc-framework runner) for collision / physics / simulation-plausibility
- *     rules. Off by default; when no runner is configured those rules are
- *     reported `skipped`, never a false pass.
+ *   - **external** — the same analytic check plus an opt-in, out-of-process ASAM
+ *     checker bundle named by `RESIDUAL_EXTERNAL_COMMAND`, whose `.xqar` is
+ *     imported as gaps carrying the bundle's own rule UIDs. Off by default; a
+ *     rule no configured backend evaluated is reported `skipped`, never a pass.
  *
  * Every violation carries the geometry-continuity rule UID (from {@link QC_RULES})
  * so residual gaps are attributed exactly like semantic gaps.
@@ -22,8 +22,10 @@
 import { getConfig } from '@ontology-search/core/config'
 import { XMLParser } from 'fast-xml-parser'
 
+import { runCheckerBundle } from './bundle-runner.js'
 import { QC_RULES } from './qc-rules.js'
 import type { AuthoringGap, GateResult } from './types.js'
+import type { XqarIssue } from './xqar.js'
 
 /**
  * Simulation-only rule families no in-process backend can decide. Taken from
@@ -186,11 +188,17 @@ export class InProcessResidualChecker implements ResidualChecker {
 }
 
 /**
- * The opt-in external backend. It runs the same in-process analytic geometry
- * check (always valuable) and would additionally invoke an out-of-process
- * simulator for the collision/physics rules. No runner is wired in-repo, so
- * those rules are reported `skipped` (never a false pass) — the seam is real,
- * the fabrication is not.
+ * The opt-in external backend: the in-process analytic geometry check (always
+ * valuable) **plus** whatever an out-of-process ASAM checker bundle reports for
+ * the same road network, when `RESIDUAL_EXTERNAL_COMMAND` names one.
+ *
+ * Running the bundle is how this repo covers the published OpenDRIVE rules
+ * without reimplementing them: the imported issues carry the bundle's own rule
+ * UIDs, so their identities resolve against the ASAM catalog by construction and
+ * their coverage moves with the bundle. Nothing is transcribed.
+ *
+ * A bundle that cannot run is reported as a skipped rule, not as a pass — the
+ * same discipline as the simulation-only rules no in-process backend can decide.
  */
 export class ExternalResidualChecker implements ResidualChecker {
   readonly mode = 'external' as const
@@ -198,8 +206,49 @@ export class ExternalResidualChecker implements ResidualChecker {
   async check(input: ResidualCheckInput, options?: ResidualCheckOptions): Promise<GateResult> {
     if (options?.signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     const gaps = input.roadNetworkXodr ? checkGeometryContinuity(input.roadNetworkXodr) : []
-    // A configured simulator would evaluate SIMULATION_ONLY_RULES here.
-    return { ok: gaps.length === 0, gaps, skipped: [...SIMULATION_ONLY_RULES] }
+    const skipped: string[] = [...SIMULATION_ONLY_RULES]
+
+    const command = getConfig().RESIDUAL_EXTERNAL_COMMAND
+    if (command && input.roadNetworkXodr) {
+      const run = await runCheckerBundle(
+        { content: input.roadNetworkXodr, fileName: 'road.xodr' },
+        { command, ...(options?.signal ? { signal: options.signal } : {}) }
+      )
+      if (run.failure) {
+        // The bundle's rules were not evaluated. Name the reason on a rule UID
+        // that exists rather than inventing one for "the runner broke".
+        skipped.push(`${EXTERNAL_BUNDLE_SKIP_PREFIX}${run.failure}`)
+      }
+      for (const issue of run.issues) gaps.push(importedGap(issue))
+    }
+
+    return { ok: gaps.length === 0, gaps, skipped }
+  }
+}
+
+/**
+ * Prefix for a `skipped` entry that names a runner failure rather than a rule.
+ * `GateResult.skipped` is a list of rule identities, so a non-rule entry has to
+ * be distinguishable — a consumer filtering for UIDs must not mistake an error
+ * message for one.
+ */
+export const EXTERNAL_BUNDLE_SKIP_PREFIX = 'external-bundle-unavailable: '
+
+/**
+ * Turn one imported `.xqar` issue into a gap. The rule UID is the **bundle's**,
+ * kept verbatim: attributing its finding to one of our own rules would be the
+ * misattribution this repo's rule-identity gate exists to prevent.
+ */
+function importedGap(issue: XqarIssue): AuthoringGap {
+  const focusNode = issue.location
+    ? `${issue.checkerId} at ${issue.location.row}:${issue.location.column}`
+    : issue.checkerId
+  return {
+    term: issue.checkerId,
+    reason: issue.description,
+    ruleUid: issue.ruleUid,
+    gate: 'residual',
+    focusNode,
   }
 }
 
