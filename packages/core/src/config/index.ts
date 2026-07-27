@@ -166,8 +166,12 @@ const envSchema = z.object({
   RETRIEVAL_MAX_CONTEXT_CHARS: z.coerce.number().int().positive().default(45_000),
 
   // Ontology
-  ONTOLOGY_REPO: z.string().default('ASCS-eV/ontology-management-base'),
-  ONTOLOGY_BRANCH: z.string().default('main'),
+  /**
+   * Single directory of ontology artifacts, overriding the default cache. The
+   * default source is the distribution pinned in `ontology-package.json`,
+   * materialized into `.ontology/` by `scripts/fetch-ontology.mjs`; this is for
+   * deployments that mount the artifacts elsewhere.
+   */
   ONTOLOGY_ARTIFACTS_PATH: z.string().optional(),
   /**
    * Override the workspace root for ontology source discovery. Used by tests

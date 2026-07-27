@@ -28,20 +28,17 @@ import { getProjectRoot } from './paths.js'
 export { OntologySourcesError }
 
 /**
- * Path segments of the git-submodule directory that holds the upstream
- * ontology artifacts (the `artifacts/` directory inside
- * `ontology-management-base`). Used as the last-resort fallback when
- * `ontology-sources.json` and `ONTOLOGY_ARTIFACTS_PATH` are absent.
+ * Path segments of the local ontology cache that holds the upstream artifacts.
+ * Used as the last-resort fallback when `ontology-sources.json` and
+ * `ONTOLOGY_ARTIFACTS_PATH` are absent.
  *
- * OMB is a direct submodule of this repo, so the chain is shallow. The
- * duplicate implementations each hard-coded this path; a future rename of
- * the submodule had to be made in several places.
+ * The cache is materialized by `scripts/fetch-ontology.mjs` from the
+ * distribution pinned in `ontology-package.json` (version + sha256), and mirrors
+ * the upstream layout, so this path is version-independent: bumping the
+ * ontology never moves it. Not checked in — a fresh clone gets it from
+ * `pnpm install` (postinstall) or `pnpm run fetch:ontology`.
  */
-export const DEFAULT_OMB_SUBMODULE_PATH = [
-  'submodules',
-  'ontology-management-base',
-  'artifacts',
-] as const
+export const DEFAULT_ONTOLOGY_CACHE_PATH = ['.ontology', 'artifacts'] as const
 
 /** A single declared source in `ontology-sources.json`. */
 export interface OntologySource {
@@ -146,7 +143,7 @@ export interface ArtifactRoot {
  * Resolution order:
  * 1. `sources[].path` entries from `ontology-sources.json` (relative to workspace root)
  * 2. `ONTOLOGY_ARTIFACTS_PATH` from the Zod-validated config (single path)
- * 3. The default {@link DEFAULT_OMB_SUBMODULE_PATH} chain inside the workspace
+ * 3. The default {@link DEFAULT_ONTOLOGY_CACHE_PATH} inside the workspace
  */
 export function getArtifactRoots(): ArtifactRoot[] {
   const root = getWorkspaceRoot()
@@ -161,7 +158,7 @@ export function getArtifactRoots(): ArtifactRoot[] {
   const override = getConfig().ONTOLOGY_ARTIFACTS_PATH
   if (override) return [{ path: override }]
 
-  return [{ path: join(root, ...DEFAULT_OMB_SUBMODULE_PATH) }]
+  return [{ path: join(root, ...DEFAULT_ONTOLOGY_CACHE_PATH) }]
 }
 
 /**
@@ -259,12 +256,27 @@ export function formatMissingSourcesError(diag: OntologySourcesDiagnostics): str
     'To fix:',
   ]
 
+  // Remediation is keyed on the shape of the missing path, not on any ontology
+  // name: the default root is the pinned-package cache, but a deployment may
+  // legitimately declare a submodule (or any directory) of its own.
+  const segments = (r: OntologyRootDiagnostic) => r.path.split(/[/\\]/)
+  const missingCacheRoot = diag.roots.some(
+    (r) => !r.exists && segments(r).includes(DEFAULT_ONTOLOGY_CACHE_PATH[0])
+  )
+  if (missingCacheRoot) {
+    lines.push(
+      '  • The ontology cache has not been materialized yet. Run:',
+      '        pnpm run fetch:ontology',
+      '    which downloads the distribution pinned in ontology-package.json',
+      '    (version + sha256) and extracts it. `pnpm install` does this too.'
+    )
+  }
   const missingSubmoduleRoot = diag.roots.some(
-    (r) => !r.exists && r.path.split(/[/\\]/).includes('submodules')
+    (r) => !r.exists && segments(r).includes('submodules')
   )
   if (missingSubmoduleRoot) {
     lines.push(
-      '  • The ontology ships as a git submodule that is not initialized. Run:',
+      '  • A declared source lives under submodules/ and is not initialized. Run:',
       '        git submodule update --init',
       '    then restart. (Fresh clones: `git clone --recurse-submodules <url>`.)'
     )

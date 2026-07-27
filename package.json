@@ -26,9 +26,10 @@
     "validate": "turbo run check-types && pnpm run check:test-types && pnpm run check:layers && turbo run test --concurrency=2 && pnpm run test:scripts && pnpm run lint && pnpm run format:check",
     "clean": "turbo run clean",
     "clean:ports": "node scripts/clean-ports.mjs",
-    "check:setup": "node scripts/check-ontology-sources.mjs --strict",
-    "postinstall": "node scripts/check-ontology-sources.mjs",
-    "prepare": "husky"
+    "check:setup": "node scripts/fetch-ontology.mjs --check --strict && node scripts/check-ontology-sources.mjs --strict",
+    "postinstall": "node scripts/fetch-ontology.mjs && node scripts/check-ontology-sources.mjs",
+    "prepare": "husky",
+    "fetch:ontology": "node scripts/fetch-ontology.mjs"
   },
   "lint-staged": {
     "*.{ts,mts,tsx}": [
@@ -50,6 +51,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.0.2",
     "prettier": "^3.8.3",
+    "tar": "^7.5.20",
     "turbo": "^2.3.0",
     "typescript-eslint": "^8.59.2"
   }

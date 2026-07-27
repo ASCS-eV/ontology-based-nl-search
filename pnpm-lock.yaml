@@ -43,6 +43,9 @@ importers:
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
+      tar:
+        specifier: ^7.5.20
+        version: 7.5.20
       turbo:
         specifier: ^2.3.0
         version: 2.9.10

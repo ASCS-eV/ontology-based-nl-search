@@ -28,14 +28,22 @@ pnpm --filter @ontology-search/api dev:clean         # Dev server for one app
 npx vitest run packages/search/src/__tests__/compiler.test.ts  # Single test file
 ```
 
-### Submodules
+### Ontology + submodules
 
-Ontology files come from the [ontology-management-base](https://github.com/ASCS-eV/ontology-management-base)
-(OMB) git submodule at `submodules/ontology-management-base`. If ontology data is missing:
+Ontology files come from [ontology-management-base](https://github.com/ASCS-eV/ontology-management-base)
+(OMB), pinned by version + sha256 in `ontology-package.json` and materialized
+into the gitignored `.ontology/` cache. `pnpm install` does it; if ontology data
+is missing:
 
 ```bash
-git submodule update --init
+pnpm run fetch:ontology     # download + verify + extract (idempotent)
+pnpm run check:setup        # strict: fails if the pin or the shapes are missing
 ```
+
+Bumping the ontology = edit `version` + `sdist.sha256` in `ontology-package.json`,
+re-run the fetch, review the behaviour diff. The other submodules
+(`openscenario-api`, `esmini`, `asam-openx-assets`) are unaffected and still need
+`git submodule update --init`.
 
 ## Architecture
 

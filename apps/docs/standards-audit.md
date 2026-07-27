@@ -60,9 +60,11 @@ already-registered reference texts. The ASAM-specific tags — `[OSC-XSD]`,
 normative text cannot be mirrored under `docs/specs/references/` (the refresh
 proxy allowlist excludes ASAM, and the ASAM license precludes verbatim copies).
 Each is instead pinned as a **machine-readable artifact**: `OpenSCENARIO.xsd`
-and `RangeCheckerRulesV1_3.cpp` as submodule commits, transcribed into the
-derived ontology per `artifacts/openscenario/DERIVATION.md`; the two checker
-bundles' rule lists as commit-pinned, SHA-256-checksummed manifests under
+via the ontology distribution pinned by version + SHA-256 in
+`ontology-package.json` (materialized into `.ontology/`), `RangeCheckerRulesV1_3.cpp`
+as a submodule commit — both transcribed into the derived ontology per
+`artifacts/openscenario/DERIVATION.md` — and the two checker bundles' rule lists
+as commit-pinned, SHA-256-checksummed manifests under
 `packages/authoring-gate/qc-bundles/`. The `docs/specs/references/README.md`
 "ASAM standards" table records each tag, its pinned source, and how to refresh
 it.

@@ -264,8 +264,8 @@ describe('repo-policy: C4 — the retrieval surface names no loaded ontology dom
   ]
 
   it('no schema-index or prompt/agent source hardcodes a loaded domain identifier', () => {
-    const artifactsRoot = join(ROOT, 'submodules/ontology-management-base/artifacts')
-    if (!existsSync(artifactsRoot)) return // submodule not initialized — nothing to derive
+    const artifactsRoot = join(ROOT, '.ontology/artifacts')
+    if (!existsSync(artifactsRoot)) return // ontology not fetched — nothing to derive
 
     const domainNames = readdirSync(artifactsRoot).filter(
       (name) => name.length >= 2 && statSync(join(artifactsRoot, name)).isDirectory()
@@ -307,19 +307,23 @@ describe('repo-policy: C4 — the retrieval surface names no loaded ontology dom
 describe('repo-policy: turbo hashes the ontology artifacts', () => {
   /**
    * Every package's behaviour is a function of the loaded ontology, so the
-   * task hash must change when the pinned artifacts change. A blanket
+   * task hash must change when the pinned ontology changes. A blanket
    * `!submodules/**` exclusion once made `pnpm run validate` replay stale
-   * cached results across a submodule bump — reporting green for artifact
+   * cached results across an ontology bump — reporting green for artifact
    * changes it never tested.
+   *
+   * The ontology now arrives as a pinned distribution, so the pin — not the
+   * materialized cache — is the input that determines the content. Hashing
+   * `ontology-package.json` is therefore both cheaper and stricter: the cache is
+   * gitignored, and a bump cannot happen without the pin changing.
    */
-  it('globalDependencies covers the artifact tree and never blanket-excludes submodules', () => {
+  it('globalDependencies covers the ontology pin and never blanket-excludes submodules', () => {
     const turbo = JSON.parse(readFileSync(join(ROOT, 'turbo.json'), 'utf-8')) as {
       globalDependencies?: string[]
     }
     const globs = turbo.globalDependencies ?? []
 
-    expect(globs).toContain('submodules/ontology-management-base/artifacts/**')
-    expect(globs).toContain('submodules/ontology-management-base/imports/**')
+    expect(globs).toContain('ontology-package.json')
     expect(globs).toContain('ontology-sources.json')
     expect(globs.some((g) => g.startsWith('!submodules'))).toBe(false)
   })

@@ -103,6 +103,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify the pinned ontology is materialized
+        # postinstall fetches it advisory-only, so a network hiccup would show up
+        # as confusing empty-result test failures. Name the cause instead.
+        run: pnpm run check:setup
+
       - name: Run tests
         run: pnpm run test
 
@@ -159,6 +164,9 @@ jobs:
       # `dist` (package `exports`), so the libraries must be built first. The
       # unit-test job gets this via turbo's `test` → `^build` dependency, but
       # this job runs Playwright directly, so build explicitly.
+      - name: Verify the pinned ontology is materialized
+        run: pnpm run check:setup
+
       - name: Build workspace
         run: pnpm run build
 
