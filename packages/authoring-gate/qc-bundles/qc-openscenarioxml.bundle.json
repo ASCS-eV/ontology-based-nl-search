@@ -1,0 +1,119 @@
+{
+  "bundle": "qc-openscenarioxml",
+  "standard": "ASAM OpenSCENARIO XML",
+  "repo": "asam-ev/qc-openscenarioxml",
+  "commit": "d98bf3d116d4a1ce0198992c44da44efc7ea7700",
+  "source": "checker_bundle_doc.md",
+  "buildVersion": "v1.0.0-rc.1",
+  "sourceSha256": "12245c00071ef1d70ad420f47a4df590f0bd20228eef9a8171478083955b32b4",
+  "rules": [
+    "asam.net:xosc:1.0.0:xml.fileheader_is_present",
+    "asam.net:xosc:1.0.0:xml.root_tag_is_openscenario",
+    "asam.net:xosc:1.0.0:xml.valid_schema",
+    "asam.net:xosc:1.0.0:xml.valid_xml_document",
+    "asam.net:xosc:1.0.0:xml.version_is_defined",
+    "asam.net:xosc:1.2.0:data_type.allowed_operators",
+    "asam.net:xosc:1.2.0:data_type.non_negative_transition_time_in_light_state_action",
+    "asam.net:xosc:1.2.0:data_type.positive_duration_in_phase",
+    "asam.net:xosc:1.2.0:parameters.valid_parameter_declaration_in_catalogs",
+    "asam.net:xosc:1.2.0:reference_control.resolvable_entity_references",
+    "asam.net:xosc:1.2.0:reference_control.resolvable_signal_id_in_traffic_signal_state_action",
+    "asam.net:xosc:1.2.0:reference_control.resolvable_storyboard_element_reference",
+    "asam.net:xosc:1.2.0:reference_control.resolvable_traffic_signal_controller_by_traffic_signal_controller_ref",
+    "asam.net:xosc:1.2.0:reference_control.resolvable_variable_reference",
+    "asam.net:xosc:1.2.0:reference_control.unique_element_names_on_same_level",
+    "asam.net:xosc:1.2.0:reference_control.uniquely_resolvable_entity_references",
+    "asam.net:xosc:1.2.0:reference_control.valid_actor_reference_in_private_actions"
+  ],
+  "checkers": [
+    {
+      "name": "check_asam_xosc_xml_valid_xml_document",
+      "description": "The given file to check must be a valid XML document.",
+      "rules": ["asam.net:xosc:1.0.0:xml.valid_xml_document"]
+    },
+    {
+      "name": "check_asam_xosc_xml_root_tag_is_openscenario",
+      "description": "The root element of a valid XML document must be OpenSCENARIO.",
+      "rules": ["asam.net:xosc:1.0.0:xml.root_tag_is_openscenario"]
+    },
+    {
+      "name": "check_asam_xosc_xml_fileheader_is_present",
+      "description": "Below the root element a tag with FileHeader must be defined.",
+      "rules": ["asam.net:xosc:1.0.0:xml.fileheader_is_present"]
+    },
+    {
+      "name": "check_asam_xosc_xml_version_is_defined",
+      "description": "The FileHeader tag must have the attributes revMajor and revMinor and of type unsignedShort.",
+      "rules": ["asam.net:xosc:1.0.0:xml.version_is_defined"]
+    },
+    {
+      "name": "check_asam_xosc_xml_valid_schema",
+      "description": "Input xml file must be valid according to the schema.",
+      "rules": ["asam.net:xosc:1.0.0:xml.valid_schema"]
+    },
+    {
+      "name": "check_asam_xosc_reference_control_uniquely_resolvable_entity_references",
+      "description": "Reference names must be unique",
+      "rules": ["asam.net:xosc:1.2.0:reference_control.uniquely_resolvable_entity_references"]
+    },
+    {
+      "name": "check_asam_xosc_reference_control_resolvable_signal_id_in_traffic_signal_state_action",
+      "description": "TrafficSignalStateAction:name -> Signal ID must exist within the given road network.",
+      "rules": [
+        "asam.net:xosc:1.2.0:reference_control.resolvable_signal_id_in_traffic_signal_state_action"
+      ]
+    },
+    {
+      "name": "check_asam_xosc_reference_control_resolvable_traffic_signal_controller_by_traffic_signal_controller_ref",
+      "description": "The trafficSignalController according to the trafficSignalControllerRef property must exist within the scenarios RoadNetwork definition.",
+      "rules": [
+        "asam.net:xosc:1.2.0:reference_control.resolvable_traffic_signal_controller_by_traffic_signal_controller_ref"
+      ]
+    },
+    {
+      "name": "check_asam_xosc_reference_control_valid_actor_reference_in_private_actions",
+      "description": "In a ManeuverGroup, if the defined action is a private action an actor must be defined.",
+      "rules": ["asam.net:xosc:1.2.0:reference_control.valid_actor_reference_in_private_actions"]
+    },
+    {
+      "name": "check_asam_xosc_reference_control_resolvable_entity_references",
+      "description": "A named reference in the EntityRef must be resolvable.",
+      "rules": ["asam.net:xosc:1.2.0:reference_control.resolvable_entity_references"]
+    },
+    {
+      "name": "check_asam_xosc_reference_control_resolvable_variable_reference",
+      "description": "The VariableDeclaration according to the variableRef property must exist within the ScenarioDefinition.",
+      "rules": ["asam.net:xosc:1.2.0:reference_control.resolvable_variable_reference"]
+    },
+    {
+      "name": "check_asam_xosc_reference_control_resolvable_storyboard_element_reference",
+      "description": "The attribute storyboardElementRef shall point to an existing element of the corresponding type and shall be uniquely resolvable.",
+      "rules": ["asam.net:xosc:1.2.0:reference_control.resolvable_storyboard_element_reference"]
+    },
+    {
+      "name": "check_asam_xosc_reference_control_unique_element_names_on_same_level",
+      "description": "Element names at each level shall be unique at that level.",
+      "rules": ["asam.net:xosc:1.2.0:reference_control.unique_element_names_on_same_level"]
+    },
+    {
+      "name": "check_asam_xosc_parameters_valid_parameter_declaration_in_catalogs",
+      "description": "All parameters used within a catalog shall be declared within their ParameterDeclaration in the same catalog, which sets a default value for each parameter.",
+      "rules": ["asam.net:xosc:1.2.0:parameters.valid_parameter_declaration_in_catalogs"]
+    },
+    {
+      "name": "check_asam_xosc_data_type_allowed_operators",
+      "description": "Expressions in OpenSCENARIO must only use the allowed operands.",
+      "rules": ["asam.net:xosc:1.2.0:data_type.allowed_operators"]
+    },
+    {
+      "name": "check_asam_xosc_data_type_non_negative_transition_time_in_light_state_action",
+      "description": "Expressions in OpenSCENARIO must only use the allowed operands.",
+      "rules": ["asam.net:xosc:1.2.0:data_type.non_negative_transition_time_in_light_state_action"]
+    },
+    {
+      "name": "check_asam_xosc_positive_duration_in_phase",
+      "description": "Expressions in OpenSCENARIO must only use the allowed operands.",
+      "rules": ["asam.net:xosc:1.2.0:data_type.positive_duration_in_phase"]
+    }
+  ]
+}

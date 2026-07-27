@@ -305,12 +305,17 @@ export type SceneGateName = 'semantic' | 'structural' | 'residual'
 
 /**
  * A scene-pipeline violation. An {@link OntologyGap} (the same shape the search
- * feature emits) extended with the canonical `asam.net:…` qc rule identity and
- * the gate that produced it, so the repair loop, the web UI, and the ASAM
- * qc-framework all speak one rule identity (criterion #31).
+ * feature emits) extended with the qc rule identity and the gate that produced
+ * it, so the repair loop, the web UI, and the ASAM qc-framework all speak one
+ * rule identity (criterion #31).
  */
 export interface SceneGap extends OntologyGap {
-  /** The canonical `asam.net:…` qc rule UID this violation is attributed to. */
+  /**
+   * The qc rule UID this violation is attributed to, in the qc-framework
+   * grammar `<emanating-entity>:<standard>:<definition-setting>:<rule-set>.<name>`.
+   * `asam.net:…` iff an ASAM checker bundle publishes the rule; otherwise the
+   * declaring entity is this repo. Enforced in `@ontology-search/authoring-gate`.
+   */
   readonly ruleUid: string
   /** The gate that produced it. */
   readonly gate: SceneGateName

@@ -18,7 +18,9 @@
     "check-types": "tsc --noEmit",
     "check-types:tests": "tsc -p tsconfig.test.json",
     "clean": "rimraf dist",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "qc-bundles:refresh": "node qc-bundles/refresh.mjs",
+    "qc-bundles:check": "node qc-bundles/refresh.mjs --check"
   },
   "dependencies": {
     "@ontology-search/api-types": "workspace:*",

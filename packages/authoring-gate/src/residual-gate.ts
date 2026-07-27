@@ -25,10 +25,14 @@ import { XMLParser } from 'fast-xml-parser'
 import { QC_RULES } from './qc-rules.js'
 import type { AuthoringGap, GateResult } from './types.js'
 
-/** Simulation-only rule families no in-process backend can decide. */
+/**
+ * Simulation-only rule families no in-process backend can decide. Taken from
+ * {@link QC_RULES} rather than spelled out here, so every UID this package emits
+ * — reported or skipped — is covered by the catalog's authority gate.
+ */
 const SIMULATION_ONLY_RULES = [
-  'asam.net:xosc:sim:no_collision_at_scenario_start',
-  'asam.net:xosc:sim:reachable_target_within_horizon',
+  QC_RULES.noCollisionAtScenarioStart.uid,
+  QC_RULES.reachableTargetWithinHorizon.uid,
 ] as const
 
 /** Angular / curvature tolerance for a continuity join (radians, 1/m). */
