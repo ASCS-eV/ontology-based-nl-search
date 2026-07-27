@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "ApiClassImplV1_3.h"
 #include "ApiClassWriterInterfacesV1_3.h"
 #include "DateTime.h"
 #include "ErrorLevel.h"
@@ -28,9 +29,14 @@
 #include "NamedReferenceProxy.h"
 #include "OpenScenarioWriterFactoryImplV1_3.h"
 #include "OpenScenarioXmlExporterV1_3.h"
+#include "RangeCheckerHelperV1_3.h"
+#include "ScenarioCheckerImplV1_3.h"
 #include "SimpleMessageLogger.h"
+#include "VersionCheckerRuleV1_3.h"
+#include "XmlScenarioImportLoaderFactoryV1_3.h"
 #include "XmlScenarioLoaderFactoryV1_3.h"
 #include "json.hpp"
+#include "osc_union_rules_generated.h"
 #include "osc_versions_generated.h"
 #include "tinyxml2.h"
 
@@ -52,20 +58,87 @@ static std::string jsonEscape(const std::string& s) {
   return o.str();
 }
 
+// Parse `{"NAME":"VALUE",...}` into the injected-parameter map the loader takes.
+// Injected parameters override `ParameterDeclarations` at resolve time, which is
+// how the reference `openScenarioReader` consumes its `-p` parameter file.
+// Non-object or unparseable input yields an empty map — a malformed override
+// must not silently become a *different* override.
+static std::map<std::string, std::string> parseInjectedParameters(const std::string& json) {
+  std::map<std::string, std::string> params;
+  if (json.empty()) return params;
+  try {
+    auto parsed = nlohmann::json::parse(json);
+    if (!parsed.is_object()) return params;
+    for (auto it = parsed.begin(); it != parsed.end(); ++it) {
+      if (it.value().is_string()) params[it.key()] = it.value().get<std::string>();
+    }
+  } catch (...) {
+    // Reported by the caller's own schema; an empty map is the safe reading.
+  }
+  return params;
+}
+
+// Non-const ref: `FileContentMessage::GetErrorLevel` is not marked const in the
+// engine's API, so a const range would not bind.
+static int countErrors(std::vector<FileContentMessage>& msgs) {
+  int errors = 0;
+  for (auto& m : msgs) {
+    if (m.GetErrorLevel() >= ERROR) errors++;
+  }
+  return errors;
+}
+
 // Validate a .xosc already present in the MEMFS at `mainPath`. Callers (the TS
 // loader) write the scenario + any referenced catalog/import files to MEMFS at
 // their referenced paths, then call this — mirroring how OpenSCENARIO resolves
-// catalog imports by file path. Returns JSON diagnostics.
-std::string validate(std::string mainPath) {
+// catalog imports by file path. `paramsJson` carries injected parameters.
+// Returns JSON diagnostics.
+//
+// Checkers, in the order the engine intends:
+//
+//  1. `XmlScenarioImportLoaderFactory` parses, resolves parameters, **imports
+//     catalogs** (a dangling `<CatalogReference>` is an error, a staged catalog
+//     file resolves), and runs the cardinality, variable and deprecation rules
+//     the loader wires itself.
+//  2. Only if that produced no errors — a checker walking a half-resolved tree
+//     reports noise — a `ScenarioCheckerImpl` carrying every generated **range**
+//     rule ([OSC-RCR]), every generated **union** (`xsd:choice` exclusivity)
+//     rule, and the **version** rule for the OSC version this build supports.
+//
+// The range and union families are compiled into this artifact by the
+// model-generated sources but registered by no loader in the library, so an
+// embedder that does not register them ships the rules and never runs them
+// (RA-Consulting-GmbH/openscenario.api.test#228).
+std::string validate(std::string mainPath, std::string paramsJson) {
   auto messageLogger = std::make_shared<SimpleMessageLogger>(INFO);
-  std::map<std::string, std::string> params;
+  auto catalogMessageLogger = std::make_shared<SimpleMessageLogger>(INFO);
+  auto params = parseInjectedParameters(paramsJson);
   std::ostringstream out;
   try {
-    v::XmlScenarioLoaderFactory factory(mainPath);
+    v::XmlScenarioImportLoaderFactory factory(catalogMessageLogger, mainPath);
     auto locator = std::make_shared<FileResourceLocator>();
     auto loader = factory.CreateLoader(locator);
-    auto model = loader->Load(messageLogger, params);
-    (void)model;
+    auto loaded = loader->Load(messageLogger, params);
+
+    // The loader hands back the version-neutral `IOpenScenario`; the generated
+    // v1_3 checkers take the v1_3 interface. The version-specific model is
+    // reached through the adapter the loader attaches, exactly as the reference
+    // `openScenarioReader` does.
+    std::shared_ptr<v::OpenScenarioImpl> model;
+    if (loaded) {
+      model = std::static_pointer_cast<v::OpenScenarioImpl>(
+          loaded->GetAdapter(typeid(v::OpenScenarioImpl).name()));
+    }
+
+    auto loadMessages = messageLogger->GetMessages();
+    if (model && countErrors(loadMessages) == 0) {
+      auto checker = std::make_shared<v::ScenarioCheckerImpl>();
+      v::RangeCheckerHelper::AddAllRangeCheckerRules(checker);
+      OscAddAllUnionCheckerRules(checker);
+      checker->AddFileHeaderCheckerRule(
+          std::make_shared<v::VersionCheckerRule>(OSC_REV_MAJOR, OSC_REV_MINOR));
+      checker->CheckScenarioInFileContext(messageLogger, model);
+    }
   } catch (std::exception& e) {
     out << "{\"fatal\":\"" << jsonEscape(e.what()) << "\"}";
     return out.str();
@@ -73,11 +146,14 @@ std::string validate(std::string mainPath) {
     return "{\"fatal\":\"unknown exception\"}";
   }
 
-  auto msgs = messageLogger->GetMessages();
-  int errors = 0;
-  for (auto& m : msgs) {
-    if (m.GetErrorLevel() >= ERROR) errors++;
-  }
+  // Catalog-file diagnostics land in their own logger (they describe a *different*
+  // file), and are merged in rather than dropped: a scenario whose catalog does
+  // not parse is not a valid scenario.
+  std::vector<FileContentMessage> msgs = messageLogger->GetMessages();
+  std::vector<FileContentMessage> catalogMsgs = catalogMessageLogger->GetMessages();
+  msgs.insert(msgs.end(), catalogMsgs.begin(), catalogMsgs.end());
+  const int errors = countErrors(msgs);
+
   out << "{\"messageCount\":" << msgs.size() << ",\"errorCount\":" << errors
       << ",\"ok\":" << (errors == 0 ? "true" : "false") << ",\"messages\":[";
   bool first = true;

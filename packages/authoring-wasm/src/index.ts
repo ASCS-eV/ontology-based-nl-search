@@ -16,11 +16,13 @@ export type {
   EngineInfo,
   EngineInitPrivate,
   EngineManeuver,
+  EngineParameters,
   EnginePosition,
   EngineTree,
   EngineVehicle,
   OscEngine,
   Severity,
+  ValidateOptions,
   ValidationResult,
 } from './types.js'
 export type { EngineVersions } from './versions.js'

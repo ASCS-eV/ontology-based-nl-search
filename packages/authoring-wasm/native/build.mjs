@@ -139,15 +139,92 @@ function generateVersionsHeader() {
   })
   // C string-escape: backslash then double-quote (values carry no control chars).
   const cEscaped = describeJson.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+
+  // The version checker rule needs the supported revision as numbers. Derive them
+  // from the same `oscVersions` entry rather than hardcoding `1, 3` in C++, so a
+  // pin bump cannot leave the rule checking the previous version.
+  const [only] = versions.oscVersions
+  const revision = /^(\d+)\.(\d+)$/.exec(only ?? '')
+  if (versions.oscVersions.length !== 1 || !revision) {
+    throw new Error(
+      `versions.json oscVersions must be exactly one "<major>.<minor>" entry; got ${JSON.stringify(versions.oscVersions)}`
+    )
+  }
+
   const dir = join(BUILD, 'gen', 'versions')
   mkdirSync(dir, { recursive: true })
   writeFileSync(
     join(dir, 'osc_versions_generated.h'),
     `// GENERATED from versions.json by native/build.mjs — do not edit.\n` +
       `#pragma once\n` +
-      `#define OSC_DESCRIBE_JSON "${cEscaped}"\n`
+      `#define OSC_DESCRIBE_JSON "${cEscaped}"\n` +
+      `#define OSC_REV_MAJOR ${revision[1]}\n` +
+      `#define OSC_REV_MINOR ${revision[2]}\n`
   )
   console.log(`• generated describe() header from versions.json`)
+  return dir
+}
+
+/**
+ * Generate the union-checker wiring header the embind layer includes.
+ *
+ * The engine generates one `<Type>UnionCheckerRule` class per `xsd:choice` in
+ * the standard (48 at this pin) and one `Add<Type>CheckerRule` slot per type,
+ * but — unlike the range and cardinality families — ships **no helper that
+ * registers them**, and nothing in the library or its own applications ever
+ * instantiates one. Wiring them by hand would mean 48 transcribed class names
+ * that silently rot when the pin moves.
+ *
+ * So derive them: read the generated header, pair each rule class with its
+ * `Add…CheckerRule` slot, and fail the build if a pairing is missing rather
+ * than skipping it. Same discipline as `generateVersionsHeader` — the pin is
+ * the source of truth, never a hand-kept list. Returns the include dir.
+ */
+function generateUnionCheckerHeader() {
+  const v13 = join(CPP, 'openScenarioLib', 'generated', 'v1_3', 'checker')
+  const rulesHeader = readFileSync(join(v13, 'model', 'UnionCheckerRulesV1_3.h'), 'utf8')
+  const checkerHeader = readFileSync(join(v13, 'IScenarioCheckerV1_3.h'), 'utf8')
+
+  const types = [
+    ...rulesHeader.matchAll(/class\s+(\w+)UnionCheckerRule\s*:\s*public\s+UnionCheckerRule/g),
+  ]
+    .map((m) => m[1])
+    .sort()
+  if (types.length === 0) throw new Error('no UnionCheckerRule classes found in the pinned engine')
+
+  const slots = new Set(
+    [...checkerHeader.matchAll(/virtual\s+void\s+Add(\w+)CheckerRule\s*\(/g)].map((m) => m[1])
+  )
+  const orphans = types.filter((t) => !slots.has(t))
+  if (orphans.length > 0) {
+    throw new Error(
+      `union checker rules with no Add<Type>CheckerRule slot: ${orphans.join(', ')} — ` +
+        `the engine's naming changed; fix native/build.mjs rather than dropping the rules`
+    )
+  }
+
+  const dir = join(BUILD, 'gen', 'union')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(
+    join(dir, 'osc_union_rules_generated.h'),
+    `// GENERATED from the pinned engine's UnionCheckerRulesV1_3.h by native/build.mjs — do not edit.\n` +
+      `#pragma once\n\n` +
+      `#include <memory>\n\n` +
+      `#include "IScenarioCheckerV1_3.h"\n` +
+      `#include "UnionCheckerRulesV1_3.h"\n\n` +
+      `// Registers every generated xsd:choice exclusivity rule (${types.length} at this pin).\n` +
+      `inline void OscAddAllUnionCheckerRules(\n` +
+      `    std::shared_ptr<NET_ASAM_OPENSCENARIO::v1_3::IScenarioChecker> scenarioChecker) {\n` +
+      types
+        .map(
+          (t) =>
+            `  scenarioChecker->Add${t}CheckerRule(\n` +
+            `      std::make_shared<NET_ASAM_OPENSCENARIO::v1_3::${t}UnionCheckerRule>());\n`
+        )
+        .join('') +
+      `}\n`
+  )
+  console.log(`• generated union-checker wiring for ${types.length} rules`)
   return dir
 }
 
@@ -163,6 +240,7 @@ function main() {
   // build-ready as-is.
 
   const genVersions = generateVersionsHeader()
+  const genUnion = generateUnionCheckerHeader()
 
   const antlrSrc = extractAntlrRuntime()
   const genXml = generateGrammar(
@@ -188,6 +266,7 @@ function main() {
     genXml,
     genExpr,
     genVersions,
+    genUnion,
     join(CPP, 'openScenarioLib', 'src'),
     join(CPP, 'openScenarioLib', 'generated', 'v1_3'),
     join(CPP, 'expressionsLib', 'inc'),

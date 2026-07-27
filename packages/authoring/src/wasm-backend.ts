@@ -68,7 +68,10 @@ export class WasmAuthoringBackend implements AuthoringBackend {
     // The WASM call is synchronous and cannot be interrupted; honour a signal
     // that fired while the engine was loading before we dispatch.
     throwIfAborted(options?.signal)
-    const result = engine.validate(xosc, options?.files)
+    const result = engine.validate(xosc, {
+      ...(options?.files ? { files: options.files } : {}),
+      ...(options?.parameters ? { parameters: options.parameters } : {}),
+    })
     return { ok: result.ok, diagnostics: result.diagnostics }
   }
 

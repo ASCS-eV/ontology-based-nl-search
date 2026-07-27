@@ -12,12 +12,14 @@ issues against how this repo uses the engine.
 
 **Branch status (on the fork):**
 
-| Branch                              | Contents                                     | Upstream                 |
-| ----------------------------------- | -------------------------------------------- | ------------------------ |
-| `carry/wasm`                        | base + PR 1 + PR 2 + FP-shim (the build pin) | —                        |
-| `feature/emscripten-portability`    | PR 1 (three portability branches)            | **PR #227 open**         |
-| `feature/ghc-filesystem-emscripten` | PR 2 (ghc map, offered map-or-bump)          | **PR #230 open**         |
-| _(FP-exception shim)_               | carry-only commit on `carry/wasm`            | **issue #229**, not a PR |
+| Branch                                      | Contents                                            | Upstream                 |
+| ------------------------------------------- | --------------------------------------------------- | ------------------------ |
+| `carry/wasm`                                | base + PR 1 + PR 2 + PR 3 + FP-shim (the build pin) | —                        |
+| `feature/emscripten-portability`            | PR 1 (three portability branches)                   | **PR #227 open**         |
+| `feature/ghc-filesystem-emscripten`         | PR 2 (ghc map, offered map-or-bump)                 | **PR #230 open**         |
+| `feature/import-loader-injected-parameters` | PR 3 (forward injected parameters)                  | **PR #231 open**         |
+| `feature/orientation-type-default-v1_3`     | not carried — v1.3 `Orientation/@type` default      | **PR #232 open**         |
+| _(FP-exception shim)_                       | carry-only commit on `carry/wasm`                   | **issue #229**, not a PR |
 
 **`carry/wasm` is built from the PR commits themselves.** Each `feature/*` commit
 is cherry-picked verbatim onto the build branch — same author, message and diff,
@@ -25,11 +27,18 @@ only a different parent — so what we build and ship is exactly what upstream i
 being asked to merge, never a local variant that drifted from the proposal. When
 a PR merges, the cherry-pick drops out of a rebase by content.
 
-| `carry/wasm` commit                       | Source                                       |
-| ----------------------------------------- | -------------------------------------------- |
-| `Support Emscripten as a target platform` | cherry-pick of PR #227's commit              |
-| `Support Emscripten in the vendored ghc…` | cherry-pick of PR #230's commit              |
-| `Shim FE_OVERFLOW/FE_UNDERFLOW to 0…`     | carry-only; the subject of upstream **#229** |
+| `carry/wasm` commit                            | Source                                       |
+| ---------------------------------------------- | -------------------------------------------- |
+| `Support Emscripten as a target platform`      | cherry-pick of PR #227's commit              |
+| `Support Emscripten in the vendored ghc…`      | cherry-pick of PR #230's commit              |
+| `Pass injected parameters through the import…` | cherry-pick of PR #231's commit              |
+| `Shim FE_OVERFLOW/FE_UNDERFLOW to 0…`          | carry-only; the subject of upstream **#229** |
+
+PR 3 is not a portability edit: `XmlScenarioImportLoader::Load` accepts an
+injected-parameter map and forwards to the inner loader's single-argument
+overload, so the map is dropped before parameter resolution. It is carried
+because this package's `validate` resolves catalogs through that loader and
+offers `parameters` — the option would be inert without it.
 
 The per-file patches in this directory (`pr1-*.patch`, `pr2-*.patch`) are the
 reviewable form of the two PR commits. Both apply cleanly to the pristine pin
@@ -39,13 +48,16 @@ the patches, the PR branches and the build pin cannot silently disagree.
 
 **Upstream status of everything raised from this port:**
 
-| Upstream item | What it is                                                     | State                     |
-| ------------- | -------------------------------------------------------------- | ------------------------- |
-| PR #227       | Three `__EMSCRIPTEN__` platform branches (this repo's sources) | open, DCO green           |
-| PR #230       | `__EMSCRIPTEN__` → `GHC_OS_LINUX` in vendored ghc, or a bump   | open                      |
-| Issue #228    | Range checker rules are never wired by the library loaders     | open, awaiting maintainer |
-| Issue #229    | `FE_OVERFLOW`/`FE_UNDERFLOW` absent from Emscripten `<cfenv>`  | open, awaiting maintainer |
-| Issue #209    | Commented: cannot reproduce at `292d0be`; fixed by merged #210 | comment posted            |
+| Upstream item | What it is                                                               | State                     |
+| ------------- | ------------------------------------------------------------------------ | ------------------------- |
+| PR #227       | Three `__EMSCRIPTEN__` platform branches (this repo's sources)           | open, DCO green           |
+| PR #230       | `__EMSCRIPTEN__` → `GHC_OS_LINUX` in vendored ghc, or a bump             | open                      |
+| PR #231       | Import loader drops injected parameters (also makes `-p` inert)          | open                      |
+| PR #232       | v1.3 `Orientation/@type` default contradicts the model documentation     | open, fixes their #225    |
+| Issue #228    | Range checker rules are registered by no loader                          | open, awaiting maintainer |
+| Issue #229    | `FE_OVERFLOW`/`FE_UNDERFLOW` absent from Emscripten `<cfenv>`            | open, awaiting maintainer |
+| Issue #209    | Commented: not reproducible at `292d0be`; their merged #210 fixed it     | comment posted            |
+| Issue #226    | Commented: `Clone()` drops XML content — full scope + generator location | comment posted            |
 
 ## Why the build patch is split
 

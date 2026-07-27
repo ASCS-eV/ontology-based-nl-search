@@ -50,6 +50,26 @@ export interface ValidationResult {
 export type EngineFiles = Readonly<Record<string, string>>
 
 /**
+ * Parameter overrides injected at validation time, keyed by parameter name.
+ * They take precedence over the scenario's own `<ParameterDeclarations>` during
+ * parameter resolution — the same contract as `openScenarioReader -p`, and what
+ * makes it possible to validate a parameterized scenario as it would be run.
+ */
+export type EngineParameters = Readonly<Record<string, string>>
+
+/** Options for {@link OscEngine.validate}. */
+export interface ValidateOptions {
+  /**
+   * Referenced catalogs/imports, keyed by the path the scenario references them
+   * at. Written to the engine's in-memory filesystem before the load, so a
+   * `<CatalogReference>` resolves exactly as it would against a real directory.
+   */
+  readonly files?: EngineFiles
+  /** Injected parameter overrides. See {@link EngineParameters}. */
+  readonly parameters?: EngineParameters
+}
+
+/**
  * The in-process OpenSCENARIO engine. Load once via {@link loadOscEngine}, then
  * call in-process — mirroring `WorkerOxigraphStore` in packages/sparql.
  */
@@ -57,10 +77,15 @@ export interface OscEngine {
   /** Report engine / OSC / XSD versions (a capability probe). */
   describe(): EngineInfo
   /**
-   * Validate a scenario. `xosc` is the main document; `files` supplies any
-   * referenced catalogs/imports by their referenced path.
+   * Validate a scenario. `xosc` is the main document; `options.files` supplies
+   * referenced catalogs/imports and `options.parameters` injects parameter
+   * overrides.
+   *
+   * Runs the loader's own rules (schema, cardinality, variables, deprecation,
+   * catalog resolution) plus every generated range, `xsd:choice` union and
+   * version rule compiled into the artifact.
    */
-  validate(xosc: string, files?: EngineFiles): ValidationResult
+  validate(xosc: string, options?: ValidateOptions): ValidationResult
   /**
    * Author a `.xosc` document from a resolved {@link EngineTree}. The typed
    * writer factory (generated from the ASAM UML model) owns element order,

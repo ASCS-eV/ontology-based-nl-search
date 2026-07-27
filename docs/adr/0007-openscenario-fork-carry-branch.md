@@ -43,6 +43,12 @@ submodule to that branch.
   - `feature/emscripten-portability` → PR #227 (the three portability branches).
   - `feature/ghc-filesystem-emscripten` → PR #230 (the ghc map, offered as
     one-line-map-or-version-bump).
+  - `feature/import-loader-injected-parameters` → PR #231 (the import loader
+    forwards injected parameters). Not a portability edit: it is carried because
+    this repo's `validate` resolves catalogs through that loader and exposes
+    `parameters`, which the defect would render inert.
+  - `feature/orientation-type-default-v1_3` → PR #232. **Not** on `carry/wasm`:
+    nothing here reads `Orientation`, so there is no reason to carry it.
 - **`carry/wasm`** — the **integration/build branch**: upstream base + every
   not-yet-merged `feature/*` + the carry-only edits (the FP shim). **This repo's
   submodule pins `carry/wasm` by SHA.**

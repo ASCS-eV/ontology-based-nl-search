@@ -47,6 +47,7 @@ export type {
   AuthoringValidationResult,
   EngineFiles,
   EngineInfo,
+  EngineParameters,
   Severity,
 } from './backend.js'
 export type { ExpectedEngine } from './capability-probe.js'

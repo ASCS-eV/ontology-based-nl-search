@@ -1,32 +1,21 @@
 # Implementation plan — OpenSCENARIO API coverage & qc-framework alignment
 
-Status: in progress
+Scope: how far this repo's authoring feature covers the ASAM OpenSCENARIO API
+its engine embeds, and the ASAM Quality Checker rule bundles its gates cite.
 
-## Handoff — pick up here
-
-| Tracking issue                                                                                                                   | Phase | State                                 |
-| -------------------------------------------------------------------------------------------------------------------------------- | ----- | ------------------------------------- |
-| [#171](https://github.com/ASCS-eV/ontology-based-nl-search/issues/171) — fabricated OpenDRIVE rule UID, gate against UID drift   | 0     | open                                  |
-| [#172](https://github.com/ASCS-eV/ontology-based-nl-search/issues/172) — wire the checkers already compiled into the WASM engine | 1     | open                                  |
-| [#173](https://github.com/ASCS-eV/ontology-based-nl-search/issues/173) — lowering silently drops actions, reports `valid: true`  | 2     | **done** (merged, PR #176)            |
-| [#174](https://github.com/ASCS-eV/ontology-based-nl-search/issues/174) — qc-framework interop (`.xqar`, run the real bundles)    | 3     | open                                  |
-| [#175](https://github.com/ASCS-eV/ontology-based-nl-search/issues/175) — upstream contributions                                  | 4     | **done** (2 PRs, 2 issues, 1 comment) |
-
-**#173 landed** — `unexpressibleActions` (packages/authoring) reports every
-action the single-maneuver lowering omits (unsupported kinds, maneuvers beyond
-the first), and `run-scene-pipeline` emits one `unexpressibleAction`-UID gap per
-drop so an incomplete scenario is no longer reported `valid: true`. No WASM
-rebuild.
-
-**#175 landed** — see Phase 4 below for the five upstream items and their
-numbers. **Next: #171** (honest UIDs + a gate against UID drift, no rebuild),
-then **#172** (wire the range/union/version checkers already compiled into the
-artifact), batching all four engine changes into a single artifact bump.
+| Phase | Tracking issue                                                                                                                | State |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------- | ----- |
+| 0     | [#171](https://github.com/ASCS-eV/ontology-based-nl-search/issues/171) — rule identities must resolve; gate against UID drift | done  |
+| 1     | [#172](https://github.com/ASCS-eV/ontology-based-nl-search/issues/172) — register the checkers compiled into the WASM engine  | done  |
+| 2.1   | [#173](https://github.com/ASCS-eV/ontology-based-nl-search/issues/173) — the lowering reports what it cannot express          | done  |
+| 2.2   | archetype width (multiple maneuvers, entity-based conditions, IR `stopTime`)                                                  | open  |
+| 3     | [#174](https://github.com/ASCS-eV/ontology-based-nl-search/issues/174) — qc-framework interop (`.xqar`, run the real bundles) | open  |
+| 4     | [#175](https://github.com/ASCS-eV/ontology-based-nl-search/issues/175) — upstream contributions                               | done  |
 
 ## Working on this locally
 
-The repo needs three setup steps that are easy to miss; the second and third are
-what make the authoring tests resolve at all:
+Three setup steps that are easy to miss; the second and third are what make the
+authoring tests resolve at all:
 
 ```bash
 git submodule update --init submodules/openscenario-api   # not checked out by default
@@ -34,31 +23,48 @@ pnpm install
 pnpm --filter @ontology-search/road-catalog... build      # else packages/authoring tests fail to resolve
 ```
 
+Rebuilding the engine additionally needs the pinned Emscripten SDK and a JDK —
+see `packages/authoring-wasm/native/BUILD.md`.
+
 Note that `.playground/` **and any `plans/` directory** are gitignored
 (`.gitignore:26-29`), which is why this plan lives in `docs/` rather than
 following the repo's usual scratch convention — an untracked plan does not
 survive a cloud session's container.
 
-## Re-verifying the findings
+## Verifying a claim in this plan
 
-Every claim below was verified by executing the committed WASM artifact, not by
+Claims here are stated from executing the committed WASM artifact, not from
 reading source. To re-check, load `packages/authoring-wasm/src/engine.js` and
-call `validate()` on `src/__fixtures__/cut-in.xosc` with these mutations:
+call `validate()` on `src/__fixtures__/cut-in.xosc` with a mutation applied.
+Every row is also held by a test in
+`packages/authoring-wasm/src/__tests__/engine.test.ts`.
 
-| Mutation                                              | Current result | Expected after #172 |
-| ----------------------------------------------------- | -------------- | ------------------- |
-| `maxSpeed="-5"` / `maxSteering="99"` / `width="-3"`   | `ok=true`      | `ok=false`          |
-| `revMinor="9"`                                        | `ok=true`      | `ok=false`          |
-| dangling `<CatalogReference>` (± staged catalog file) | `ok=true`      | `ok=false`          |
-| `vehicleCategory="spaceship"`                         | `ok=false`     | unchanged           |
-| `${10 +}` (malformed expression)                      | `ok=false`     | unchanged           |
-| `<Vehicle>` without `<BoundingBox>`                   | `ok=false`     | unchanged           |
+| Mutation                                            | Expected       | Enforced by                        |
+| --------------------------------------------------- | -------------- | ---------------------------------- |
+| `maxSpeed="-5"` / `maxSteering="99"` / `width="-3"` | one error each | generated range rules `[OSC-RCR]`  |
+| `revMinor="9"`                                      | `ok=false`     | `VersionCheckerRule`               |
+| dangling `<CatalogReference>`                       | `ok=false`     | catalog import                     |
+| …the same, with the catalog staged via `files`      | `ok=true`      | catalog import                     |
+| injected parameter overriding a declared value      | override wins  | parameter resolution + range rules |
+| `vehicleCategory="spaceship"`                       | `ok=false`     | enum parsing                       |
+| `${10 +}` (malformed expression)                    | `ok=false`     | the expression evaluator           |
+| `<Vehicle>` without `<BoundingBox>`                 | `ok=false`     | generated cardinality rules        |
 
-The last three confirm the checkers that _are_ wired (enum, expression,
-cardinality), so a regression there means something broke rather than improved.
+## Sources
 
-For #173, call `irToEngineTree` with two `LaneChangeAction`s and one unsupported
-kind: it currently returns one maneuver, drops the rest, and reports no gap.
+Every external identity this plan relies on, and the pin it is read from:
+
+| Source                                | Reference                                                                                                                                                              |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ASAM OpenSCENARIO XML 1.3.0           | `submodules/ontology-management-base/imports/OpenScenario/OpenSCENARIO.xsd` (pinned submodule) — `[OSC-XSD]`                                                           |
+| RA Consulting `openscenario.api.test` | Apache-2.0; pinned submodule `submodules/openscenario-api`, upstream base `292d0be`. Range rules from `RangeCheckerRulesV1_3.cpp` — `[OSC-RCR]`                        |
+| ASAM Quality Checker Framework        | `asam-ev/qc-framework` (MPL-2.0) — the rule-UID grammar (`doc/manual/file_formats.md`) and the `.xqar` result schema (`doc/schema/xqar_result_format.xsd`) — `[QC-FW]` |
+| `qc-openscenarioxml` bundle           | `asam-ev/qc-openscenarioxml`, pinned + checksummed in `packages/authoring-gate/qc-bundles/qc-openscenarioxml.bundle.json` — `[QC-XOSC]`                                |
+| `qc-opendrive` bundle                 | `asam-ev/qc-opendrive`, pinned + checksummed in `packages/authoring-gate/qc-bundles/qc-opendrive.bundle.json` — `[QC-XODR]`                                            |
+| Emscripten SDK                        | version pinned in `packages/authoring-wasm/versions.json`; `native/build.mjs` rebuilds the artifact from it                                                            |
+
+Tags are registered in `docs/specs/references/README.md` and
+`apps/docs/standards-audit.md` (criterion #31).
 
 ## Why
 
@@ -66,33 +72,29 @@ Two independent findings drive this plan.
 
 **1. The pinned RAC engine ships far more than the authoring feature uses.**
 `packages/authoring-wasm` compiles the RA Consulting `openscenario.api.test` C++
-API, but `validate()` wires only the checkers the loader wires by default. Range
-rules, union rules, the version rule, catalog resolution and injected parameters
-are all compiled into the artifact and never invoked. Verified against the
-committed `wasm/osc-engine.wasm`:
-
-| Probe                                             | Result                                                                |
-| ------------------------------------------------- | --------------------------------------------------------------------- |
-| `maxSpeed="-5"`, `maxSteering="99"`, `width="-3"` | `ok=true` — the 60 `RangeCheckerRules` never run                      |
-| `revMinor="9"`                                    | `ok=true` — `VersionCheckerRule` unwired                              |
-| Dangling `<CatalogReference>`                     | `ok=true` — `validate` uses the plain loader, not the _Import_ loader |
-| Same + a staged companion catalog file            | `ok=true` — the documented `files` option is inert for catalogs       |
+API in full. Its loaders register only the cardinality, variable and deprecation
+rules, so the range rules, the `xsd:choice` union rules, the version rule,
+catalog import and injected parameters are the embedder's to register — the
+library registers them for nobody
+([upstream #228](https://github.com/RA-Consulting-GmbH/openscenario.api.test/issues/228)).
+Phase 1 registers them all.
 
 Writer coverage is 49 of 295 writer types; the IR lowering understands four
 action kinds and emits at most one maneuver.
 
-**2. The gates claim ASAM qc rule identities they do not have.**
-`asam.net:xodr:1.7.0:road.geometry.continuity` is not in the published
-`qc-opendrive` rule list (23 rules; nearest real ones are the `parampoly3_*`
-family and `lane_smoothness_contact_point_no_horizontal_gaps`), yet
-`qc-rules.ts` presents it as `[QC-XODR]` transcribed verbatim and
-`RESIDUAL-QC.md` calls it canonical. `semantic-gate.ts` describes the bundles as
-"submodule-vendored"; they are not vendored at all.
+**2. Rule identities must resolve where they claim to come from.** Measured from
+the pinned bundle lists, `qc-opendrive` publishes 26 rules and
+`qc-openscenarioxml` 17. Neither publishes an analytic G1/G2 geometry-continuity
+rule — the nearest OpenDRIVE members are the `road.geometry.parampoly3.*` family
+and `lane_smoothness.contact_point_no_horizontal_gaps`, which are different
+checks — so the residual gate's continuity rule is declared by this repo under
+its own emanating entity per the `[QC-FW]` grammar, and gated against the pinned
+lists (Phase 0).
 
-Against `qc-openscenarioxml`'s 16 rules the repo covers roughly 7–8. Two of the
-misses (`non_negative_transition_time_in_light_state_action`,
-`positive_duration_in_phase`) are already implemented inside the binary as range
-rules.
+Against `qc-openscenarioxml`'s 17 rules the repo covers roughly 7–8. Two of the
+misses (`data_type.non_negative_transition_time_in_light_state_action`,
+`data_type.positive_duration_in_phase`) are implemented inside the engine binary
+as range rules, and Phase 1 is what runs them.
 
 ## Non-goals
 
@@ -115,189 +117,189 @@ rules.
 
 ---
 
-## Phase 0 — make the claims true
+## Phase 0 — rule identities that resolve — **done**
 
-Accuracy defects. No engine rebuild.
+### 0.1 Declare the authority
 
-### 0.1 Correct the fabricated OpenDRIVE rule UID
-
-- `packages/authoring-gate/src/qc-rules.ts` — either re-tag
-  `geometryContinuity` as a cross-file/extension UID (reuse the honest pattern
-  already used by `resolvableRoadReference`) or map it to the real
-  `lane_smoothness_contact_point_no_horizontal_gaps`.
-- Fix the "transcribed verbatim" / "submodule-vendored" wording in
-  `qc-rules.ts`, `semantic-gate.ts`, `RESIDUAL-QC.md`,
-  `docs/specs/references/README.md`.
+Each `QC_RULES` entry declares `origin: 'asam' | 'repo'`. An ASAM rule keeps the
+`asam.net` emanating entity; a rule this repo declares — cross-file road
+resolution, analytic G1/G2 continuity, lowering completeness, the two
+simulation-only residual rules — carries this repo's own entity, per the
+`[QC-FW]` grammar
+`<emanating-entity>:<standard>:<definition-setting>:<rule-set>.<name>`. Where a
+published ASAM rule is merely _adjacent_ to one of ours, the catalog records it
+as `relatedAsamRule`: orientation for a reader, never attribution.
 
 ### 0.2 Pin the bundle rule lists and gate on them
 
-The durable fix: make UID drift impossible rather than correcting it once.
+`packages/authoring-gate/qc-bundles/*.bundle.json` pin each bundle's own
+`checker_bundle_doc.md` by commit, with the source SHA-256, the build version,
+and every checker with the rules it addresses. `qc-bundles/refresh.mjs`
+regenerates them (`--check` verifies without writing); nothing is transcribed by
+hand. Same discipline as `native/verify-checksum.mjs`, and no network at test
+time.
 
-- Vendor the `qc-openscenarioxml` / `qc-opendrive` rule lists (submodule pin or
-  a checked-in manifest, matching the discipline of `verify-checksum.mjs`).
-- CI gate: every UID emitted by `QC_RULES` must exist in the pinned list, or be
-  explicitly marked as a repo extension.
+`src/__tests__/qc-rules.test.ts` is the gate: an `origin: 'asam'` UID must appear
+in a pinned list, an `origin: 'repo'` UID must not claim `asam.net` and must not
+collide with a published one, a `relatedAsamRule` must itself resolve, and no
+`asam.net` UID may exist outside the pinned lists.
 
-**Test** — a unit test asserting each non-extension UID resolves against the
-pinned list; fails today on `geometryContinuity`.
+### 0.3 Companion catalogs participate in validation
 
-### 0.3 Remove or implement the inert catalog claim
-
-`packages/authoring-wasm/README.md:28` and the `AuthoringValidateOptions.files`
-docstring both describe companion catalogs as participating in validation. They
-do not. Correct the docs now; Phase 1.3 makes the claim true.
-
----
-
-## Phase 1 — harvest what the artifact already contains
-
-Best coverage-per-line in the plan. One rebuild for the whole phase.
-
-### 1.1 Wire the range checker rules
-
-`native/osc_engine_embind.cpp` — after a clean load, register
-`RangeCheckerHelper::AddAllRangeCheckerRules` on a `ScenarioCheckerImpl` and run
-`CheckScenarioInFileContext`. 60 model-derived rules for a few lines of C++.
-
-Closes `non_negative_transition_time_in_light_state_action` and
-`positive_duration_in_phase` outright, and aligns the runtime checker with the
-`sh:minInclusive`/`sh:maxInclusive` bounds `artifacts/openscenario/DERIVATION.md`
-transcribes by hand from the _same_ source file.
-
-**Test** — negative `maxSpeed` and out-of-range `maxSteering` must produce
-`severity: 'error'`. Both currently pass.
-
-### 1.2 Wire the union and version rules
-
-Union rules enforce `xsd:choice` exclusivity; `VersionCheckerRule(1, 3)` rejects
-a document declaring a version this build does not implement.
-
-**Test** — `revMinor="9"` must fail. Currently passes.
-
-### 1.3 Resolve catalogs
-
-Switch `validate` from `XmlScenarioLoaderFactory` to
-`XmlScenarioImportLoaderFactory`, pass a catalog message logger, and merge its
-diagnostics into the returned set. Makes `EngineFiles` functional and opens
-`parameters.valid_parameter_declaration_in_catalogs`.
-
-**Test** — a dangling `<CatalogReference>` fails; the same reference resolves
-when the catalog is supplied via `files`.
-
-### 1.4 Thread injected parameters
-
-`validate(mainPath)` hardcodes an empty parameter map. Accept a
-`Record<string, string>` through `OscEngine.validate` → `AuthoringBackend`.
-
-**Test** — a scenario whose declaration is overridden by an injected value
-validates against the injected value.
+`packages/authoring-wasm/README.md` and the `AuthoringValidateOptions.files`
+docstring document catalogs as participating in validation. Phase 1.3 is what
+makes that true, and a test holds it.
 
 ---
 
-## Phase 2 — stop the silent drops
+## Phase 1 — register the checkers the artifact contains — **done**
 
-The only wrong-answer bug in the plan. No rebuild for 2.1.
+The engine's loaders register the cardinality, variable and deprecation rules.
+Everything else it compiles in is the embedder's to register, which
+`native/osc_engine_embind.cpp` does.
 
-### 2.1 Report what the lowering cannot express
+### 1.1 Range checker rules
 
-`irToEngineTree` drops unrecognised action kinds (`default: break`,
-`ir-to-engine.ts:209`) and every maneuver after the first (`maneuver ??=`,
-line 207). Nothing reports it: the semantic gate checks refs/uniqueness/roads,
-and the structural gate validates the emitted document — which is valid
-precisely because the action is missing. The pipeline returns `valid: true`.
+`RangeCheckerHelper::AddAllRangeCheckerRules` on a `ScenarioCheckerImpl`, run via
+`CheckScenarioInFileContext` — only when the load produced no errors, since a
+checker walking a half-resolved tree reports noise rather than findings.
 
-This contradicts the feature's own contract in two places: `scene-tool.ts`
-("gaps … never drop silently") and `scene-prompt.ts` ("Report anything you
-cannot express as a gap"). The LLM is asked to self-report, but the _lowering_
-is what knows.
+This covers `data_type.non_negative_transition_time_in_light_state_action` and
+`data_type.positive_duration_in_phase` from `[QC-XOSC]`, and puts the runtime
+checker on the same bounds as the `sh:minInclusive`/`sh:maxInclusive` values
+`artifacts/openscenario/DERIVATION.md` derives from `[OSC-RCR]` — one source,
+two consumers.
 
-- `irToEngineTree` returns the dropped actions alongside the tree.
-- `runScenePipeline` emits one rule-attributed `SceneGap` per drop, so the
-  repair loop can act on it.
+### 1.2 Union and version rules
+
+The engine generates one `xsd:choice` exclusivity rule per union type (48 at this
+pin) but ships no helper that registers them, so `build.mjs` derives the wiring
+from the engine's own `UnionCheckerRulesV1_3.h`, pairs each rule with its
+`Add<Type>CheckerRule` slot in `IScenarioCheckerV1_3.h`, and **fails the build**
+on an unpaired rule. A pin bump re-derives it; nothing is transcribed.
+
+`VersionCheckerRule` takes its revision from `versions.json` (`OSC_REV_MAJOR` /
+`OSC_REV_MINOR`, generated), so it cannot check a version the build does not
+claim to implement.
+
+### 1.3 Catalog resolution
+
+`validate` loads through `XmlScenarioImportLoaderFactory` with its own catalog
+message logger, whose diagnostics are merged into the returned set: a scenario
+whose catalog does not parse is not a valid scenario. This is what makes
+`EngineFiles` functional, and it opens
+`parameters.valid_parameter_declaration_in_catalogs` from `[QC-XOSC]`.
+
+### 1.4 Injected parameters
+
+`OscEngine.validate(xosc, { files, parameters })` →
+`AuthoringBackend.validate(xosc, { files, parameters })` → the loader's injected
+parameter map, the contract `openScenarioReader -p` implements. Overrides apply
+before parameter resolution, so the checkers see resolved values.
+
+**Tests** (criterion #30) — the five mutation rows in _Verifying a claim_ above.
+
+---
+
+## Phase 2 — the lowering reports what it drops
+
+### 2.1 Report what the lowering cannot express — **done**
+
+The archetype lowers four action kinds and one maneuver, so an IR can carry more
+than the lowering can emit. `lowerScene` returns the dropped actions alongside
+the tree and is the single source for both `irToEngineTree` and
+`unexpressibleActions`, so the two cannot disagree about what "supported" means.
+`runScenePipeline` emits one rule-attributed `SceneGap` per drop, which makes the
+result `valid: false` and gives the bounded repair loop something to act on.
+
+Detection belongs here rather than in the model's self-report: the prompt asks
+the LLM to report what it cannot express, but the deterministic lowering is what
+knows.
 
 **Test** — an IR with two `LaneChangeAction`s and one `AcquirePositionAction`
-yields gaps and `valid: false`. Today: `valid: true`, one maneuver, no gap.
+yields two gaps and `valid: false`.
 
-### 2.2 Widen the archetype
+### 2.2 Widen the archetype — open
 
 - Multiple events / maneuvers rather than one.
-- Entity-based trigger conditions (`TimeHeadway`, `RelativeDistance`) — today
-  only `SimulationTimeCondition` exists, which is not how a cut-in is triggered
-  in practice.
-- `stopTime` from the IR instead of the hardcoded `30` (`ir-to-engine.ts:237`).
+- Entity-based trigger conditions (`TimeHeadway`, `RelativeDistance`); the
+  archetype has only `SimulationTimeCondition`, which is not how a cut-in is
+  triggered in practice.
+- `stopTime` from the IR instead of the hardcoded `30` (`ir-to-engine.ts`).
 
 Keep the condition vocabulary SHACL-discovered — this is the budget-sensitive
 step.
 
 ---
 
-## Phase 3 — interoperate instead of reimplementing
+## Phase 3 — interoperate instead of reimplementing — open
 
 ### 3.1 Emit `.xqar`
 
-Gaps already carry a rule UID and line/col, so the mapping to
+Gaps carry a rule UID and, for structural findings, line/col, so the mapping to
 `<CheckerResults><CheckerBundle><Checker><Issue><Locations><FileLocation row
-column>` is direct. A small adapter in `packages/authoring-gate` makes the
-output consumable by the framework's ReportGUI.
+column>` per the `[QC-FW]` schema is direct. A small adapter in
+`packages/authoring-gate` makes the output consumable by the framework's report
+modules.
 
 ### 3.2 Ship a checker-bundle manifest
 
-Let the gates run _inside_ the framework via the standard `exec_command` /
-`$ASAM_QC_FRAMEWORK_CONFIG_FILE` contract.
+Let the file-scoped gates run _inside_ the framework via the standard
+`exec_command` / `$ASAM_QC_FRAMEWORK_CONFIG_FILE` contract (`[QC-FW]`,
+`doc/manual/manifest_file.md`).
 
 ### 3.3 Run the real bundles behind the existing external seam
 
-`RESIDUAL_MODE=external` (`residual-gate.ts`) already exists as a documented
-seam with no runner wired. Wire it to invoke `qc-opendrive` /
-`qc-openscenarioxml` and import their `.xqar` back as gaps. This is the honest
-route to those rule identities — run them rather than transcribe them — and it
-delivers the 23 OpenDRIVE rules the repo currently has none of.
+`RESIDUAL_MODE=external` (`residual-gate.ts`) is a documented seam with no runner
+attached. Wire it to invoke `qc-opendrive` / `qc-openscenarioxml` and import
+their `.xqar` back as gaps. This is the honest route to those rule identities —
+run them rather than transcribe them — and it delivers the 26 OpenDRIVE rules the
+repo covers none of.
 
 ### 3.4 Push ontology-derived rules into the C++ checker
 
-`IScenarioChecker` exposes 295 `Add*CheckerRule` slots — upstream's headline
-extension point ("write your own checker rules for your company's authoring
-guidelines"), and the natural home for rules derived from the ontology. Do this
-only after 3.1–3.3, so repo-specific rules are clearly separated from ASAM ones.
+`IScenarioChecker` exposes 295 `Add*CheckerRule` slots — upstream's documented
+extension point, and the natural home for rules derived from the ontology. Do
+this only after 3.1–3.3, so repo-declared rules stay clearly separated from ASAM
+ones.
 
 ---
 
 ## Phase 4 — upstream — **done**
 
-All five items are with the maintainer; nothing is left staged in-repo.
+Compiling the engine to WebAssembly needs five edits to it, and surfaces two
+behaviour questions. Each is with the maintainer of
+`RA-Consulting-GmbH/openscenario.api.test` in the shape that fits it:
 
-| Item                                                        | Upstream                                                                        |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Three `__EMSCRIPTEN__` platform branches                    | **PR #227** (open, DCO green)                                                   |
-| Vendored `ghc::filesystem` — one-line map _or_ library bump | **PR #230** (open)                                                              |
-| `FE_OVERFLOW`/`FE_UNDERFLOW` absent from Emscripten         | **issue #229** — a behaviour trade-off, deliberately not a PR                   |
-| Neither loader wires `AddAllRangeCheckerRules`              | **issue #228** — asks whether it is intentional before offering a patch         |
-| `XmlSequenceParser` occurrence counting                     | **comment on #209** — cannot reproduce at `292d0be`; fixed by their merged #210 |
+| Item                                                        | Upstream                                                                                                                  |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Three `__EMSCRIPTEN__` platform branches                    | PR [#227](https://github.com/RA-Consulting-GmbH/openscenario.api.test/pull/227)                                           |
+| Vendored `ghc::filesystem` — one-line map _or_ library bump | PR [#230](https://github.com/RA-Consulting-GmbH/openscenario.api.test/pull/230)                                           |
+| `FE_OVERFLOW`/`FE_UNDERFLOW` absent from Emscripten         | issue [#229](https://github.com/RA-Consulting-GmbH/openscenario.api.test/issues/229) — a behaviour trade-off, not a PR    |
+| No loader registers `AddAllRangeCheckerRules`               | issue [#228](https://github.com/RA-Consulting-GmbH/openscenario.api.test/issues/228) — asks before patching               |
+| `XmlSequenceParser` occurrence counting                     | comment on [#209](https://github.com/RA-Consulting-GmbH/openscenario.api.test/issues/209) — not reproducible at `292d0be` |
 
-`carry/wasm` now carries each PR's commit as a verbatim cherry-pick, and the
-engine was rebuilt from that pin (emsdk 6.0.3) and re-run against the
-golden-conformance suite — so "the PRs are tested" means the shipped behaviour
-comes from exactly the commits upstream is being asked to merge, not from a
-local variant of them. Committed bytes unchanged; see
-`packages/authoring-wasm/native/patches/upstream/README.md` and ADR 0007.
-
-Context: the engine has ~40 stars / 13 forks, its Java line is frozen
-(`doc/main.adoc:370`), esmini uses its own pugixml reader, and ASAM's own
-`qc-openscenarioxml` bundle is Python. This repo is plausibly the only project
-compiling the API to WASM — nobody upstream will carry these fixes for us.
+Why upstreaming is worth the effort: the engine's Java product line is frozen
+(`doc/main.adoc:370`), esmini embeds its own pugixml-based reader rather than
+this API, and ASAM's own `qc-openscenarioxml` bundle is Python. This repo is
+plausibly the only project compiling the API to WebAssembly, so every carried
+edit is one nobody else maintains. `carry/wasm` carries each PR's commit as a
+verbatim cherry-pick, so what this repo builds is what upstream is asked to
+merge; see `packages/authoring-wasm/native/patches/upstream/README.md` and
+ADR 0007.
 
 ---
 
 ## Sequencing
 
-| Phase | Effort  | Rebuild  | Unblocks                              |
-| ----- | ------- | -------- | ------------------------------------- |
-| 0     | ~1 day  | no       | honest UID claims; gate against drift |
-| 1     | ~2 days | **yes**  | 60+ rules, catalogs, injected params  |
-| 2     | ~2 days | 2.2 only | removes the wrong-answer bug          |
-| 3     | ~1 week | no       | real qc interop; 23 OpenDRIVE rules   |
-| 4     | ~1 day  | no       | reduces long-term patch burden        |
+| Phase | Rebuild  | Delivers                                           |
+| ----- | -------- | -------------------------------------------------- |
+| 0     | no       | rule identities that resolve; a gate against drift |
+| 1     | **yes**  | range + union + version rules, catalogs, params    |
+| 2.1   | no       | the lowering reports what it drops                 |
+| 2.2   | no       | archetype width                                    |
+| 3     | 3.4 only | qc-framework interop; the 26 OpenDRIVE rules       |
+| 4     | no       | fewer permanently carried engine edits             |
 
-Phases 0 and 1 are independent and can land in either order. Phase 2.1 is the
-highest-severity item and depends on nothing — pull it forward if the wrong
-answers matter more than the coverage.
+Phase 3 depends on Phase 0 for rule identities a framework consumer can resolve.
+The rest are independent.
