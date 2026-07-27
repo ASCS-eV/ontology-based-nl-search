@@ -48,16 +48,18 @@ the patches, the PR branches and the build pin cannot silently disagree.
 
 **Upstream status of everything raised from this port:**
 
-| Upstream item | What it is                                                               | State                     |
-| ------------- | ------------------------------------------------------------------------ | ------------------------- |
-| PR #227       | Three `__EMSCRIPTEN__` platform branches (this repo's sources)           | open, DCO green           |
-| PR #230       | `__EMSCRIPTEN__` → `GHC_OS_LINUX` in vendored ghc, or a bump             | open                      |
-| PR #231       | Import loader drops injected parameters (also makes `-p` inert)          | open                      |
-| PR #232       | v1.3 `Orientation/@type` default contradicts the model documentation     | open, fixes their #225    |
-| Issue #228    | Range checker rules are registered by no loader                          | open, awaiting maintainer |
-| Issue #229    | `FE_OVERFLOW`/`FE_UNDERFLOW` absent from Emscripten `<cfenv>`            | open, awaiting maintainer |
-| Issue #209    | Commented: not reproducible at `292d0be`; their merged #210 fixed it     | comment posted            |
-| Issue #226    | Commented: `Clone()` drops XML content — full scope + generator location | comment posted            |
+| Upstream item | What it is                                                                                                                                      | State                     |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| PR #227       | Three `__EMSCRIPTEN__` platform branches (this repo's sources)                                                                                  | open, DCO green           |
+| PR #230       | `__EMSCRIPTEN__` → `GHC_OS_LINUX` in vendored ghc, or a bump                                                                                    | open                      |
+| PR #231       | Import loader drops injected parameters (also makes `-p` inert)                                                                                 | open                      |
+| PR #232       | v1.3 `Orientation/@type` default contradicts the model documentation                                                                            | open, fixes their #225    |
+| Issue #228    | Range checker rules are registered by no loader                                                                                                 | open, awaiting maintainer |
+| Issue #229    | `FE_OVERFLOW`/`FE_UNDERFLOW` absent from Emscripten `<cfenv>`                                                                                   | open, awaiting maintainer |
+| Issue #209    | Commented: not reproducible at `292d0be`; their merged #210 fixed it                                                                            | comment posted            |
+| Issue #226    | Commented: `Clone()` drops XML content — full scope + generator location                                                                        | comment posted            |
+| Issue #199    | Commented: the `osc:deprecated` tag carries no `withVersion`/`comment` in all three models (1.3 included); the values are the maintainer's call | comment posted            |
+| Issue #215    | Commented: what cross-compiling to WebAssembly actually needed — PRs #227/#230 plus issue #229 are the whole list                               | comment posted            |
 
 ## Why the build patch is split
 
@@ -130,18 +132,23 @@ wait — our shipped `.wasm` contains all 60 of them and runs none.
 
 ## Triage of upstream open issues (as of this pin)
 
-| #    | Title                                                                                  | Affects us             | Why                                                                                                                                                                                                      |
-| ---- | -------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| #215 | Support for Cross-Compilation                                                          | **Yes**                | Our Emscripten build is exactly this. PR 1 targets it.                                                                                                                                                   |
-| #226 | `CustomCommandAction` XML content not imported from catalog                            | **Later**              | Catalog import is unused today; becomes live when `validate` moves to `XmlScenarioImportLoaderFactory`. We do not emit `CustomCommandAction`.                                                            |
-| #205 | Examples for resolving object references                                               | Indirect               | Docs request. We have working knowledge of this path and could contribute an example.                                                                                                                    |
-| #180 | Reduce the large artifact files                                                        | Minor                  | We vendor the repo as a submodule; size is a clone-time cost only.                                                                                                                                       |
-| #209 | `XmlSequenceParser::ParseSubElementsInternal` does not increment `_occuredElementList` | **No (appears fixed)** | The increment is present at this pin (`XmlSequenceParser.cpp:73-81`). Issue predates the pin. Worth a "cannot reproduce at `292d0be`" comment.                                                           |
-| #225 | `OrientationImpl` `type` initialized with wrong value                                  | **No**                 | `_type` defaults to `ABSOLUTE`. Our `validate` discards the parsed model and our writer never sets `Orientation`. Would matter only if we adopt the read API.                                            |
-| #222 | Typo `Entitiy` → `Entity` across the codebase                                          | **No**                 | 36 occurrences in generated v1_3, but the factory/writer surface spells it correctly (`CreateEntityObjectWriter`). Our embind touches zero misspelled symbols, so an upstream rename would not break us. |
-| #199 | Missing version/comment for attribute `model` in v1.1 / v1.2                           | **No**                 | We compile v1_3 only.                                                                                                                                                                                    |
-| #174 | No ANTLR rebuild on debug/release switch in Visual Studio                              | **No**                 | MSVC-specific; we build with Ninja + `emcmake`.                                                                                                                                                          |
-| #168 | Optimize CMake build scripts                                                           | **No**                 | We bypass their CMake entirely (`build.mjs` drives `em++` directly). Our approach is evidence for the issue, not affected by it.                                                                         |
+| #    | Title                                                                                  | Affects us             | Why                                                                                                                                                                                                                                                |
+| ---- | -------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #215 | Support for Cross-Compilation                                                          | **Yes**                | Our Emscripten build is exactly this. PR 1 targets it.                                                                                                                                                                                             |
+| #226 | `CustomCommandAction` XML content not imported from catalog                            | **Later**              | Catalog import is unused today; becomes live when `validate` moves to `XmlScenarioImportLoaderFactory`. We do not emit `CustomCommandAction`.                                                                                                      |
+| #205 | Examples for resolving object references                                               | Indirect               | Docs request. We have working knowledge of this path and could contribute an example.                                                                                                                                                              |
+| #180 | Reduce the large artifact files                                                        | Minor                  | We vendor the repo as a submodule; size is a clone-time cost only.                                                                                                                                                                                 |
+| #209 | `XmlSequenceParser::ParseSubElementsInternal` does not increment `_occuredElementList` | **No (appears fixed)** | The increment is present at this pin (`XmlSequenceParser.cpp:73-81`). Issue predates the pin. Worth a "cannot reproduce at `292d0be`" comment.                                                                                                     |
+| #225 | `OrientationImpl` `type` initialized with wrong value                                  | **Fixed for them**     | Not ours to suffer (our writer never sets `Orientation`), but the cause is findable: the 1.3 model documents "missing type value is interpreted as relative" while the generator's `DefaultValues_1.3.0.json` says `absolute`. PR #232.            |
+| #222 | Typo `Entitiy` → `Entity` across the codebase                                          | **No**                 | 36 occurrences in generated v1_3, but the factory/writer surface spells it correctly (`CreateEntityObjectWriter`). Our embind touches zero misspelled symbols, so an upstream rename would not break us.                                           |
+| #199 | Missing version/comment for attribute `model` in v1.1 / v1.2                           | **Yes**                | Affects v1_3 too, which the issue does not say: the `osc:deprecated` tag for `model` carries neither `withVersion` nor `comment` in any of the three models, so the warning reads `'n/a'`. Commented with the scope; the values are theirs to set. |
+| #174 | No ANTLR rebuild on debug/release switch in Visual Studio                              | **No**                 | MSVC-specific; `build.mjs` drives `em++` directly.                                                                                                                                                                                                 |
+| #168 | Optimize CMake build scripts                                                           | **No**                 | We bypass their CMake entirely (`build.mjs` drives `em++` directly). Our approach is evidence for the issue, not affected by it.                                                                                                                   |
 
-Net: one issue affects us directly (#215), one becomes relevant after Phase 1.3
-(#226), one is likely already fixed and worth a confirming comment (#209).
+Net: #215 is our own use case (PRs #227/#230 answer its blocking defects); #226
+becomes live now that `validate` resolves catalogs, though nothing we emit reaches
+it; #209 was already fixed by their merged #210. #199 and #225 turned out to be
+data defects in the generator's inputs, which is why they were actionable from
+the outside at all. #222, #180, #174 and #168 remain the maintainer's calls: a
+breaking rename, repository size, an MSVC build detail, and their CMake scripts,
+none of which this repo's build touches.
