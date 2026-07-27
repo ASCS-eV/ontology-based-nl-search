@@ -12,16 +12,40 @@ issues against how this repo uses the engine.
 
 **Branch status (on the fork):**
 
-| Branch                              | Contents                                     | Upstream                                   |
-| ----------------------------------- | -------------------------------------------- | ------------------------------------------ |
-| `carry/wasm`                        | base + PR 1 + PR 2 + FP-shim (the build pin) | —                                          |
-| `feature/emscripten-portability`    | PR 1 (three portability branches)            | **PR #227 open**                           |
-| `feature/ghc-filesystem-emscripten` | PR 2 (ghc map)                               | held — offer after #227, maintainer's call |
-| _(FP-exception shim)_               | carry-only commit on `carry/wasm`            | **issue** (below), not a PR                |
+| Branch                              | Contents                                     | Upstream                 |
+| ----------------------------------- | -------------------------------------------- | ------------------------ |
+| `carry/wasm`                        | base + PR 1 + PR 2 + FP-shim (the build pin) | —                        |
+| `feature/emscripten-portability`    | PR 1 (three portability branches)            | **PR #227 open**         |
+| `feature/ghc-filesystem-emscripten` | PR 2 (ghc map, offered map-or-bump)          | **PR #230 open**         |
+| _(FP-exception shim)_               | carry-only commit on `carry/wasm`            | **issue #229**, not a PR |
 
-The per-file patches below (`pr1-*.patch`, `pr2-*.patch`) are the reviewable
-form of those commits; all verified to apply cleanly to the pristine pin with
-`git apply --check`.
+**`carry/wasm` is built from the PR commits themselves.** Each `feature/*` commit
+is cherry-picked verbatim onto the build branch — same author, message and diff,
+only a different parent — so what we build and ship is exactly what upstream is
+being asked to merge, never a local variant that drifted from the proposal. When
+a PR merges, the cherry-pick drops out of a rebase by content.
+
+| `carry/wasm` commit                       | Source                                       |
+| ----------------------------------------- | -------------------------------------------- |
+| `Support Emscripten as a target platform` | cherry-pick of PR #227's commit              |
+| `Support Emscripten in the vendored ghc…` | cherry-pick of PR #230's commit              |
+| `Shim FE_OVERFLOW/FE_UNDERFLOW to 0…`     | carry-only; the subject of upstream **#229** |
+
+The per-file patches in this directory (`pr1-*.patch`, `pr2-*.patch`) are the
+reviewable form of the two PR commits. Both apply cleanly to the pristine pin
+(`git apply --check`), and applying both to `292d0be` yields **the exact tree**
+of the corresponding cherry-picks on `carry/wasm` — verified by tree hash, so
+the patches, the PR branches and the build pin cannot silently disagree.
+
+**Upstream status of everything raised from this port:**
+
+| Upstream item | What it is                                                     | State                     |
+| ------------- | -------------------------------------------------------------- | ------------------------- |
+| PR #227       | Three `__EMSCRIPTEN__` platform branches (this repo's sources) | open, DCO green           |
+| PR #230       | `__EMSCRIPTEN__` → `GHC_OS_LINUX` in vendored ghc, or a bump   | open                      |
+| Issue #228    | Range checker rules are never wired by the library loaders     | open, awaiting maintainer |
+| Issue #229    | `FE_OVERFLOW`/`FE_UNDERFLOW` absent from Emscripten `<cfenv>`  | open, awaiting maintainer |
+| Issue #209    | Commented: cannot reproduce at `292d0be`; fixed by merged #210 | comment posted            |
 
 ## Why the build patch is split
 
@@ -49,18 +73,22 @@ branches fix the build with no behaviour change on any existing platform.
 Relates to upstream **#215 (Support for Cross-Compilation)** — an Emscripten
 target is a cross-compilation, and these are the blocking portability defects.
 
-### PR 2 — `pr2-ghc-filesystem-emscripten.patch`
+### PR 2 — `pr2-ghc-filesystem-emscripten.patch` (upstream #230)
 
 `cpp/externalLibs/Filesystem/filesystem.hpp` is a vendored copy of
-`gulrak/filesystem` that predates Emscripten support. The patch maps
-`__EMSCRIPTEN__` to `GHC_OS_LINUX`.
+`gulrak/filesystem` **v1.3.2** (`GHC_FILESYSTEM_VERSION 10302L`) that predates
+Emscripten support. The patch maps `__EMSCRIPTEN__` to `GHC_OS_LINUX`.
 
-Offer it as _either_ this one-line map _or_ a bump of the vendored library
-(upstream ghc supports Emscripten natively now, which would delete the edit).
-Let the maintainer choose — patching vendored third-party sources is their call,
-not ours.
+The PR offers it as _either_ this one-line map _or_ a bump of the vendored
+library: upstream ghc handles Emscripten natively as of v1.5.x (v1.5.16 defines
+`GHC_OS_WEB` and includes `<wasi/api.h>`, which Emscripten's sysroot provides),
+so a bump deletes the edit and returns the vendored copy to a pristine release.
+The maintainer chooses — patching vendored third-party sources is their call,
+not ours. The two are not equivalent: upstream routes Emscripten through
+`GHC_OS_WEB`, this patch through the Linux branch. Either is fine for a WASM
+target; the difference is who maintains the delta.
 
-### Issue, not a PR — FP exceptions under Emscripten
+### Issue, not a PR — FP exceptions under Emscripten (upstream #229)
 
 `EvaluatorListener.cpp` uses `FE_OVERFLOW` / `FE_UNDERFLOW`, which Emscripten's
 `<cfenv>` does not provide. Our local shim defines them to `0`, which makes
@@ -68,11 +96,11 @@ not ours.
 expression evaluator are silently disabled in that build**.
 
 That is a correctness trade-off, not a portability fix, so it must not be
-smuggled into a PR. File it as an issue describing the constraint and let the
-maintainer decide the contract (compile error? documented limitation? a
+smuggled into a PR. Filed as issue #229, which describes the constraint and asks
+the maintainer to decide the contract (compile error? documented limitation? a
 software-side range check?).
 
-### Issue, not a PR — range rules are never wired
+### Issue, not a PR — range rules are never wired (upstream #228)
 
 `RangeCheckerHelper::AddAllRangeCheckerRules` is defined but invoked nowhere in
 the library or in `openScenarioReader` — only in the test app. Both
@@ -81,9 +109,12 @@ deprecation checkers, but not range. Verified against this pin: a scenario with
 `maxSpeed="-5"`, `maxSteering="99"` and `width="-3"` validates clean.
 
 This may well be deliberate (`IScenarioChecker` is documented as an extension
-point). Ask before patching: if it is intended, the README's "Checking model
-constraints from the standard (Range checker rules)" bullet is misleading for
-embedders, and a doc note would be the fix.
+point), so issue #228 asks rather than patches: if it is intended, the README's
+"Checking model constraints from the standard (Range checker rules)" bullet is
+misleading for embedders and a doc note is the fix; if not, wiring the rules
+into the loaders is, and we offered the PR either way. Independently of the
+answer, this repo will wire the rules itself in its embind layer rather than
+wait — our shipped `.wasm` contains all 60 of them and runs none.
 
 ## Triage of upstream open issues (as of this pin)
 
