@@ -27,6 +27,8 @@
  *             same way in `qc-bundles/qc-opendrive.bundle.json`.
  */
 
+import type { SceneGateName } from '@ontology-search/api-types'
+
 /**
  * The emanating entity for rules this repo declares. Rules the ASAM bundles
  * publish keep `asam.net`; ours must not, or a consumer resolving the UID
@@ -43,6 +45,13 @@ export interface QcRule {
   readonly uid: string
   /** Who declares the rule — gates the UID's authority. See {@link QcRuleOrigin}. */
   readonly origin: QcRuleOrigin
+  /**
+   * The gate that evaluates this rule. Recorded here rather than in each gate so
+   * there is one place that answers "which rules can this gate emit" — the
+   * `.xqar` export needs exactly that to declare a checker's `<AddressedRule>`
+   * set, and a rule cannot be emitted by a checker that does not declare it.
+   */
+  readonly gate: SceneGateName
   /** A concise, human-readable description (echoed to the repair prompt). */
   readonly message: string
   /**
@@ -62,6 +71,7 @@ export const QC_RULES = {
   resolvableEntityReferences: {
     uid: 'asam.net:xosc:1.2.0:reference_control.resolvable_entity_references',
     origin: 'asam',
+    gate: 'semantic',
     message: 'A named reference in an EntityRef must resolve to a declared entity.',
   },
   /**
@@ -71,6 +81,7 @@ export const QC_RULES = {
   uniqueElementNames: {
     uid: 'asam.net:xosc:1.2.0:reference_control.unique_element_names_on_same_level',
     origin: 'asam',
+    gate: 'semantic',
     message: 'Element names (entities, parameters) must be unique at their level.',
   },
   /**
@@ -82,6 +93,7 @@ export const QC_RULES = {
   schemaValidation: {
     uid: 'asam.net:xosc:1.0.0:xml.valid_schema',
     origin: 'asam',
+    gate: 'structural',
     message: 'The scenario document must validate against the OpenSCENARIO XSD schema.',
   },
   /**
@@ -94,6 +106,7 @@ export const QC_RULES = {
   resolvableRoadReference: {
     uid: `${REPO_RULE_ENTITY}:xosc:1.0.0:reference_control.resolvable_road_reference`,
     origin: 'repo',
+    gate: 'semantic',
     relatedAsamRule:
       'asam.net:xosc:1.2.0:reference_control.resolvable_signal_id_in_traffic_signal_state_action',
     message:
@@ -109,6 +122,7 @@ export const QC_RULES = {
   unexpressibleAction: {
     uid: `${REPO_RULE_ENTITY}:xosc:1.0.0:authoring.unexpressible_action`,
     origin: 'repo',
+    gate: 'structural',
     message:
       'An action in the request could not be expressed by the lowering and was omitted from the scenario.',
   },
@@ -126,6 +140,7 @@ export const QC_RULES = {
   geometryContinuity: {
     uid: `${REPO_RULE_ENTITY}:xodr:1.0.0:road.geometry.continuity`,
     origin: 'repo',
+    gate: 'residual',
     relatedAsamRule: 'asam.net:xodr:1.7.0:lane_smoothness.contact_point_no_horizontal_gaps',
     message:
       'Consecutive road geometry primitives must join with continuous heading (G1) and curvature (G2).',
@@ -138,6 +153,7 @@ export const QC_RULES = {
   noCollisionAtScenarioStart: {
     uid: `${REPO_RULE_ENTITY}:xosc:1.0.0:simulation.no_collision_at_scenario_start`,
     origin: 'repo',
+    gate: 'residual',
     message: 'No two entities may overlap at scenario start.',
   },
   /**
@@ -147,6 +163,7 @@ export const QC_RULES = {
   reachableTargetWithinHorizon: {
     uid: `${REPO_RULE_ENTITY}:xosc:1.0.0:simulation.reachable_target_within_horizon`,
     origin: 'repo',
+    gate: 'residual',
     message: 'A commanded target must be reachable within the scenario horizon.',
   },
 } as const satisfies Record<string, QcRule>

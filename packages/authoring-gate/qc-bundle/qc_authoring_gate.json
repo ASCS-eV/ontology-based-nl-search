@@ -1,0 +1,11 @@
+{
+  "$comment": "ASAM Quality Checker Framework module manifest ([QC-FW], doc/manual/manifest_file.md). Register this file in your framework_manifest.json to run this repo's file-scoped gates as a checker bundle. Adjust the absolute paths for your checkout.",
+  "module": [
+    {
+      "name": "authoringGate",
+      "exec_type": "executable",
+      "module_type": "checker_bundle",
+      "exec_command": "cd $ASAM_QC_FRAMEWORK_WORKING_DIR && node /path/to/ontology-based-nl-search/packages/authoring-gate/qc-bundle/main.mjs $ASAM_QC_FRAMEWORK_CONFIG_FILE"
+    }
+  ]
+}

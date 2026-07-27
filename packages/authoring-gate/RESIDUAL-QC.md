@@ -39,11 +39,15 @@ so it is **not** what this gate implements and never carries the attribution.
   are reported `skipped`.
 
 - **`external`** (`ExternalResidualChecker`, opt-in via `RESIDUAL_MODE=external`)
-  — runs the same analytic geometry check **and** exposes the seam for an
-  out-of-process simulator adapter (esmini + the ASAM qc-framework) that would
-  decide the collision / physics rules. No runner is wired in-repo, so those
-  rules remain `skipped` (honest, never fabricated). The self-test provisions a
-  real runner against this seam.
+  — runs the same analytic geometry check **and**, when
+  `RESIDUAL_EXTERNAL_COMMAND` names one, invokes an out-of-process ASAM checker
+  bundle over the same road network and imports its `.xqar` as gaps carrying the
+  bundle's own rule UIDs. That is how the published OpenDRIVE rules are covered:
+  by running the bundle that implements them. See [QC-INTEROP.md](./QC-INTEROP.md).
+
+  Simulation-only rules stay `skipped` — no configured backend decides them — and
+  a bundle that fails to run is reported as skipped with the
+  `external-bundle-unavailable: ` prefix rather than passing silently.
 
 ## Why a separate residual gate
 
