@@ -9,11 +9,11 @@
 import createOscEngine, { type OscEngineModule } from '../wasm/osc-engine.mjs'
 import type {
   Diagnostic,
-  EngineFiles,
   EngineInfo,
   EngineTree,
   OscEngine,
   Severity,
+  ValidateOptions,
   ValidationResult,
 } from './types.js'
 
@@ -56,14 +56,14 @@ function wrap(mod: OscEngineModule): OscEngine {
       return JSON.parse(mod.describe()) as EngineInfo
     },
 
-    validate(xosc: string, files?: EngineFiles): ValidationResult {
+    validate(xosc: string, options?: ValidateOptions): ValidationResult {
       const dir = `/work/${idCounter++}`
       const written: string[] = []
       mod.FS.mkdirTree(dir)
       const mainPath = `${dir}/scenario.xosc`
       mod.FS.writeFile(mainPath, xosc)
       written.push(mainPath)
-      for (const [rel, content] of Object.entries(files ?? {})) {
+      for (const [rel, content] of Object.entries(options?.files ?? {})) {
         const full = `${dir}/${rel}`
         const slash = full.lastIndexOf('/')
         if (slash > 0) mod.FS.mkdirTree(full.slice(0, slash))
@@ -73,7 +73,9 @@ function wrap(mod: OscEngineModule): OscEngine {
 
       let raw: RawValidateResult
       try {
-        raw = JSON.parse(mod.validate(mainPath)) as RawValidateResult
+        raw = JSON.parse(
+          mod.validate(mainPath, JSON.stringify(options?.parameters ?? {}))
+        ) as RawValidateResult
       } finally {
         for (const p of written) {
           try {

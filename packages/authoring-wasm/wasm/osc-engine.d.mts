@@ -15,8 +15,12 @@ export interface OscEngineFS {
 export interface OscEngineModule {
   /** Capability probe → JSON `{ engine, engineCommit, oscVersions[], xsd }`. */
   describe(): string
-  /** Validate the .xosc at MEMFS `mainPath` → JSON diagnostics. */
-  validate(mainPath: string): string
+  /**
+   * Validate the .xosc at MEMFS `mainPath` → JSON diagnostics. `paramsJson` is
+   * a JSON object of injected parameter overrides (`{}` for none), applied the
+   * way `openScenarioReader -p` applies its parameter file.
+   */
+  validate(mainPath: string, paramsJson: string): string
   /** Re-serialize the parsed tree at `mainPath` back to a .xosc string. */
   roundtripExport(mainPath: string): string
   /** Author a minimal scenario from scratch via the typed writer factory. */

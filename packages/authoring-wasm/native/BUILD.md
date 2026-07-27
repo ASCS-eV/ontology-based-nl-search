@@ -56,6 +56,17 @@ pnpm --filter @ontology-search/authoring-wasm build:wasm
 3. **Generate** four grammars with the vendored jar (`-Dlanguage=Cpp -visitor
 -listener`): `XMLLexer`/`XMLParser` and `OscExprLexer`/`OscExprParser`
    (`-package OscExpression`).
+   Two small headers are generated alongside them, both **derived from pinned
+   inputs so they cannot drift**:
+   - `osc_versions_generated.h` — `describe()`'s payload plus `OSC_REV_MAJOR` /
+     `OSC_REV_MINOR` for the version checker rule, from `versions.json`;
+   - `osc_union_rules_generated.h` — one `Add<Type>CheckerRule(...)` call per
+     generated `xsd:choice` rule (48 at this pin), read out of the engine's own
+     `UnionCheckerRulesV1_3.h` and paired against `IScenarioCheckerV1_3.h`. The
+     engine ships no `AddAllUnionCheckerRules` helper and instantiates none of
+     these classes anywhere, so the wiring is derived rather than transcribed;
+     a rule class with no matching slot **fails the build** instead of being
+     silently skipped.
 4. **Compile** (`em++ -std=c++17 -Oz -fexceptions -DSUPPORT_OSC_1_3
 -Wno-deprecated-declarations -Wno-inconsistent-missing-override`) three
    source sets:
@@ -78,19 +89,20 @@ Include roots (headers live next to sources in this engine): the ANTLR runtime
 
 ## Carried edits (fork `carry/wasm`)
 
-The five small edits needed to compile the engine under Emscripten live as
-commits on the fork's `carry/wasm` branch (the submodule pin), **not** as a
-build-time patch. Each is triaged by how it should reach upstream — see
+The edits this package needs on top of the upstream base live as commits on the
+fork's `carry/wasm` branch (the submodule pin), **not** as a build-time patch:
+five to compile under Emscripten, one functional fix the embedding depends on. Each is triaged by how it should reach upstream — see
 `patches/upstream/README.md` for the full rationale and PR bodies:
 
 | Commit on `carry/wasm`                                                                                      | Disposition                                                                                                                                              |
 | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ExportDefinitions.h` / `OscExprExportDefs.h` / `FileResourceLocator.cpp` — `#elif __EMSCRIPTEN__` branches | **Upstream PR** ([#227](https://github.com/RA-Consulting-GmbH/openscenario.api.test/pull/227))                                                           |
 | `filesystem.hpp` — map `__EMSCRIPTEN__` → `GHC_OS_LINUX` (vendored ghc)                                     | **Upstream PR** ([#230](https://github.com/RA-Consulting-GmbH/openscenario.api.test/pull/230), offered map-or-bump)                                      |
+| `XmlScenarioImportLoaderV1_*.cpp` — forward injected parameters to the inner loader                         | **Upstream PR** ([#231](https://github.com/RA-Consulting-GmbH/openscenario.api.test/pull/231))                                                           |
 | `EvaluatorListener.cpp` — shim `FE_OVERFLOW`/`FE_UNDERFLOW` to `0`                                          | **Carry-only** ([issue #229](https://github.com/RA-Consulting-GmbH/openscenario.api.test/issues/229)) — disables overflow/underflow detection under WASM |
 
-The two PR rows are **cherry-picked verbatim** from the `feature/*` branches the
-pull requests are opened from — identical author, message and diff. What this
+The three PR rows are **cherry-picked verbatim** from the `feature/*` branches
+the pull requests are opened from — identical author, message and diff. What this
 package compiles is therefore exactly what upstream is being asked to merge; a
 carried edit cannot drift from its proposal.
 
@@ -104,9 +116,18 @@ Lifecycle: `docs/adr/0007-openscenario-fork-carry-branch.md`.
 ## Entry point
 
 `osc_engine_embind.cpp` (this directory) is the embind surface compiled into the
-module. It exposes `describe()`, `validate(mainPath)`, `roundtripExport(path)`
-and `authorMinimal()` over MEMFS, plus the `FS` runtime object. The TypeScript
-loader (`../src/engine.ts`) wraps it behind the `OscEngine` contract.
+module. It exposes `describe()`, `validate(mainPath, paramsJson)`,
+`roundtripExport(path)`, `author(treeJson)` and `authorMinimal()` over MEMFS,
+plus the `FS` runtime object. The TypeScript loader (`../src/engine.ts`) wraps it
+behind the `OscEngine` contract.
+
+`validate` loads through `XmlScenarioImportLoaderFactory` (so catalogs are
+imported and resolved, and catalog-file diagnostics are merged in from their own
+logger), then — only if the load produced no errors, since a checker walking a
+half-resolved tree reports noise — runs a `ScenarioCheckerImpl` carrying every
+generated range rule, every generated union rule and the version rule. Those
+families are compiled into the artifact by the model-generated sources; the
+library's own loaders register none of them (upstream issue #228).
 
 ## Verify a rebuild
 

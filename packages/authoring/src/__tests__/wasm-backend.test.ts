@@ -64,6 +64,27 @@ describe('WasmAuthoringBackend (golden conformance, real WASM)', () => {
     expect(a).toEqual(b)
   })
 
+  it('threads injected parameters through to the engine', async () => {
+    // The cut-in declares `owner` as a string parameter. Overriding it with a
+    // value of the wrong shape for its use site proves the override reaches
+    // parameter resolution rather than being dropped at the seam: the same
+    // document validates clean without the override.
+    const parameterized = cutIn.replace(
+      '<ParameterDeclaration parameterType="string" name="owner" value="A2"/>',
+      '<ParameterDeclaration parameterType="double" name="egoWidth" value="2.1"/>\n' +
+        '    <ParameterDeclaration parameterType="string" name="owner" value="A2"/>'
+    )
+    const usingParam = parameterized.replace(
+      '<Dimensions width="2.1"',
+      '<Dimensions width="$egoWidth"'
+    )
+
+    expect((await backend.validate(usingParam)).ok).toBe(true)
+    const injected = await backend.validate(usingParam, { parameters: { egoWidth: '-3' } })
+    expect(injected.ok).toBe(false)
+    expect(injected.diagnostics.some((d) => d.severity === 'error')).toBe(true)
+  })
+
   // End-to-end lowering: a generic authoring IR → a schema-valid
   // .xosc via the model-generated writer facade, gated by the same engine.
   describe('lower() — IR → .xosc', () => {

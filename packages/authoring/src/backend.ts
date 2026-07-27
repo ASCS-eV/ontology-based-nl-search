@@ -13,15 +13,20 @@
  * checker rules are generated from the ASAM UML model.
  */
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
-import type { Diagnostic, EngineFiles, EngineInfo, Severity } from '@ontology-search/authoring-wasm'
+import type {
+  Diagnostic,
+  EngineFiles,
+  EngineInfo,
+  EngineParameters,
+  Severity,
+} from '@ontology-search/authoring-wasm'
 
-export type { EngineFiles, EngineInfo, Severity }
+export type { EngineFiles, EngineInfo, EngineParameters, Severity }
 
 /**
  * A validation diagnostic surfaced by the backend. Extends the engine's
- * {@link Diagnostic} with an optional ASAM Quality-Checker rule UID
- * (`asam.net:xosc:…`) so the semantic gate and the repair loop
- * can attribute a violation to the same rule identity they emit —
+ * {@link Diagnostic} with an optional qc rule UID so the semantic gate and the
+ * repair loop can attribute a violation to the same rule identity they emit —
  * shape-compatible with `OntologyGap`.
  *
  * `ruleUid` is populated only where the engine surfaces a structured rule
@@ -46,8 +51,19 @@ export interface AuthoringValidateOptions {
    * so the signal is honoured at the call boundary (before dispatch).
    */
   readonly signal?: AbortSignal
-  /** Companion files (catalogs/imports) staged next to the scenario document. */
+  /**
+   * Companion files (catalogs/imports) staged next to the scenario document.
+   * They participate in validation: the engine resolves `<CatalogReference>`
+   * entries against them, and a reference that resolves to nothing is an error.
+   */
   readonly files?: EngineFiles
+  /**
+   * Parameter overrides injected before parameter resolution, taking precedence
+   * over the scenario's own `<ParameterDeclarations>` — the same contract as
+   * `openScenarioReader -p`. Lets a parameterized scenario be validated as it
+   * would actually be run.
+   */
+  readonly parameters?: EngineParameters
 }
 
 /** Per-call options for {@link AuthoringBackend.lower}. */
