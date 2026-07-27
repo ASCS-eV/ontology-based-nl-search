@@ -1,0 +1,169 @@
+{
+  "bundle": "qc-opendrive",
+  "standard": "ASAM OpenDRIVE",
+  "repo": "asam-ev/qc-opendrive",
+  "commit": "8baf0a5ccd8d7867427d66c874d713af1d8e3491",
+  "source": "checker_bundle_doc.md",
+  "buildVersion": "v1.0.0-rc.1",
+  "sourceSha256": "153ef62ce14ae4737e1001d0aa1c8a71de740d399a72e2fa9e2569ae5266891e",
+  "rules": [
+    "asam.net:xodr:1.0.0:xml.fileheader_is_present",
+    "asam.net:xodr:1.0.0:xml.root_tag_is_opendrive",
+    "asam.net:xodr:1.0.0:xml.valid_schema",
+    "asam.net:xodr:1.0.0:xml.valid_xml_document",
+    "asam.net:xodr:1.0.0:xml.version_is_defined",
+    "asam.net:xodr:1.4.0:junctions.connection.connect_road_no_incoming_road",
+    "asam.net:xodr:1.4.0:road.geometry.elem_asc_order",
+    "asam.net:xodr:1.4.0:road.lane.border.overlap_with_inner_lanes",
+    "asam.net:xodr:1.4.0:road.lane.link.lanes_across_lane_sections",
+    "asam.net:xodr:1.4.0:road.lane.link.new_lane_appear",
+    "asam.net:xodr:1.4.0:road.linkage.is_junction_needed",
+    "asam.net:xodr:1.7.0:junctions.connection.end_opposite_linkage",
+    "asam.net:xodr:1.7.0:junctions.connection.one_connection_element",
+    "asam.net:xodr:1.7.0:junctions.connection.start_along_linkage",
+    "asam.net:xodr:1.7.0:lane_smoothness.contact_point_no_horizontal_gaps",
+    "asam.net:xodr:1.7.0:performance.avoid_redundant_info",
+    "asam.net:xodr:1.7.0:road.geometry.contact_point",
+    "asam.net:xodr:1.7.0:road.geometry.one_geom_elem_per_spec",
+    "asam.net:xodr:1.7.0:road.geometry.parampoly3.arclength_range",
+    "asam.net:xodr:1.7.0:road.geometry.parampoly3.length_match",
+    "asam.net:xodr:1.7.0:road.geometry.parampoly3.normalized_range",
+    "asam.net:xodr:1.7.0:road.lane.access.no_mix_of_deny_or_allow",
+    "asam.net:xodr:1.7.0:road.lane.level_true_one_side",
+    "asam.net:xodr:1.7.0:road.lane.link.zero_width_at_end",
+    "asam.net:xodr:1.7.0:road.lane.link.zero_width_at_start",
+    "asam.net:xodr:1.8.0:junctions.connection.one_link_to_incoming"
+  ],
+  "checkers": [
+    {
+      "name": "check_asam_xodr_xml_valid_xml_document",
+      "description": "The input file must be a valid XML document.",
+      "rules": ["asam.net:xodr:1.0.0:xml.valid_xml_document"]
+    },
+    {
+      "name": "check_asam_xodr_xml_root_tag_is_opendrive",
+      "description": "The root element of a valid XML document must be OpenSCENARIO.",
+      "rules": ["asam.net:xodr:1.0.0:xml.root_tag_is_opendrive"]
+    },
+    {
+      "name": "check_asam_xodr_xml_fileheader_is_present",
+      "description": "Below the root element a tag with FileHeader must be defined.",
+      "rules": ["asam.net:xodr:1.0.0:xml.fileheader_is_present"]
+    },
+    {
+      "name": "check_asam_xodr_xml_version_is_defined",
+      "description": "The FileHeader tag must have the attributes revMajor and revMinor and of type unsignedShort.",
+      "rules": ["asam.net:xodr:1.0.0:xml.version_is_defined"]
+    },
+    {
+      "name": "check_asam_xodr_xml_valid_schema",
+      "description": "Input xml file must be valid according to the schema.",
+      "rules": ["asam.net:xodr:1.0.0:xml.valid_schema"]
+    },
+    {
+      "name": "check_asam_xodr_road_lane_level_true_one_side",
+      "description": "Check if there is any @Level=False after being True until the lane border.",
+      "rules": ["asam.net:xodr:1.7.0:road.lane.level_true_one_side"]
+    },
+    {
+      "name": "check_asam_xodr_road_lane_access_no_mix_of_deny_or_allow",
+      "description": "Check if there is mixed content on access rules for the same sOffset on lanes.",
+      "rules": ["asam.net:xodr:1.7.0:road.lane.access.no_mix_of_deny_or_allow"]
+    },
+    {
+      "name": "check_asam_xodr_road_lane_link_lanes_across_lane_sections",
+      "description": "Lanes that continues across the lane sections shall be connected in both directions.",
+      "rules": ["asam.net:xodr:1.4.0:road.lane.link.lanes_across_lane_sections"]
+    },
+    {
+      "name": "check_asam_xodr_road_linkage_is_junction_needed",
+      "description": "Two roads shall only be linked directly, if the linkage is clear. If the relationship to successor or predecessor is ambiguous, junctions shall be used.",
+      "rules": ["asam.net:xodr:1.4.0:road.linkage.is_junction_needed"]
+    },
+    {
+      "name": "check_asam_xodr_road_lane_link_zero_width_at_start",
+      "description": "Lanes that have a width of zero at the beginning of the lane section shall have no predecessor element.",
+      "rules": ["asam.net:xodr:1.7.0:road.lane.link.zero_width_at_start"]
+    },
+    {
+      "name": "check_asam_xodr_road_lane_link_zero_width_at_end",
+      "description": "Lanes that have a width of zero at the end of the lane section shall have no successor element.",
+      "rules": ["asam.net:xodr:1.7.0:road.lane.link.zero_width_at_end"]
+    },
+    {
+      "name": "check_asam_xodr_road_lane_link_new_lane_appear",
+      "description": "If a new lane appears besides, only the continuing lane shall be connected to the original lane, not the appearing lane.",
+      "rules": ["asam.net:xodr:1.4.0:road.lane.link.new_lane_appear"]
+    },
+    {
+      "name": "check_asam_xodr_junctions_connection_connect_road_no_incoming_road",
+      "description": "Connecting roads shall not be incoming roads.",
+      "rules": ["asam.net:xodr:1.4.0:junctions.connection.connect_road_no_incoming_road"]
+    },
+    {
+      "name": "check_asam_xodr_junctions_connection_one_connection_element",
+      "description": "Each connecting road shall be represented by exactly one element. A connecting road may contain as many lanes as required.",
+      "rules": ["asam.net:xodr:1.7.0:junctions.connection.one_connection_element"]
+    },
+    {
+      "name": "check_asam_xodr_junctions_connection_one_link_to_incoming",
+      "description": "Each connecting road shall be associated with at most one <connection> element per incoming road. A connecting road shall only have the <laneLink> element for that direction.",
+      "rules": ["asam.net:xodr:1.8.0:junctions.connection.one_link_to_incoming"]
+    },
+    {
+      "name": "check_asam_xodr_junctions_connection_start_along_linkage",
+      "description": "The value \"start\" shall be used to indicate that the connecting road runs along the linkage indicated in the element.",
+      "rules": ["asam.net:xodr:1.7.0:junctions.connection.start_along_linkage"]
+    },
+    {
+      "name": "check_asam_xodr_junctions_connection_end_opposite_linkage",
+      "description": "The value \"end\" shall be used to indicate that the connectingroad runs along the opposite direction of the linkage indicated in the element.",
+      "rules": ["asam.net:xodr:1.7.0:junctions.connection.end_opposite_linkage"]
+    },
+    {
+      "name": "check_asam_xodr_road_geometry_contact_point",
+      "description": "If two roads are connected without a junction, the road reference line of a new road shall always begin at the <contactPoint> element of its successor or predecessor road. The road reference lines may be directed in opposite directions.",
+      "rules": ["asam.net:xodr:1.7.0:road.geometry.contact_point"]
+    },
+    {
+      "name": "check_asam_xodr_road_geometry_elem_asc_order",
+      "description": "<geometry> elements shall be defined in ascending order along the road reference line according to the s-coordinate.",
+      "rules": ["asam.net:xodr:1.4.0:road.geometry.elem_asc_order"]
+    },
+    {
+      "name": "check_asam_xodr_road_geometry_parampoly3_length_match",
+      "description": "The actual curve length, as determined by numerical integration over the parameter range, should match '@Length'.",
+      "rules": ["asam.net:xodr:1.7.0:road.geometry.parampoly3.length_match"]
+    },
+    {
+      "name": "check_asam_xodr_road_lane_border_overlap_with_inner_lanes",
+      "description": "Lane borders shall not intersect inner lanes.",
+      "rules": ["asam.net:xodr:1.4.0:road.lane.border.overlap_with_inner_lanes"]
+    },
+    {
+      "name": "check_asam_xodr_road_geometry_parampoly3_arclength_range",
+      "description": "If @prange='arcLength', p shall be chosen in [0, @Length from geometry].",
+      "rules": ["asam.net:xodr:1.7.0:road.geometry.parampoly3.arclength_range"]
+    },
+    {
+      "name": "check_asam_xodr_road_geometry_parampoly3_normalized_range",
+      "description": "If @prange='normalized', p shall be chosen in [0, 1].",
+      "rules": ["asam.net:xodr:1.7.0:road.geometry.parampoly3.normalized_range"]
+    },
+    {
+      "name": "check_asam_xodr_road_geometry_parampoly3_valid_parameters",
+      "description": "One <geometry> element shall contain only one element that further specifies the geometry of the road.",
+      "rules": ["asam.net:xodr:1.7.0:road.geometry.one_geom_elem_per_spec"]
+    },
+    {
+      "name": "check_asam_xodr_performance_avoid_redundant_info",
+      "description": "Redundant elements should be avoided.",
+      "rules": ["asam.net:xodr:1.7.0:performance.avoid_redundant_info"]
+    },
+    {
+      "name": "check_asam_xodr_lane_smoothness_contact_point_no_horizontal_gaps",
+      "description": "Two connected drivable lanes shall have no horizontal gaps.",
+      "rules": ["asam.net:xodr:1.7.0:lane_smoothness.contact_point_no_horizontal_gaps"]
+    }
+  ]
+}

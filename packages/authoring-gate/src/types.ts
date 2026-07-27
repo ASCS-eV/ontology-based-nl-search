@@ -12,10 +12,11 @@ import type { OntologyGap } from '@ontology-search/api-types'
 export type GateName = 'semantic' | 'residual'
 
 /**
- * A gate violation. `ruleUid` is the canonical `asam.net:…` UID (never
- * fabricated — sourced from {@link QC_RULES}); `focusNode` is the offending
- * element (an entity name, a parameter name, a road id, …) when the gate can
- * localize it.
+ * A gate violation. `ruleUid` always comes from {@link QC_RULES}, so it is a
+ * rule identity that resolves: `asam.net:…` when an ASAM checker bundle
+ * publishes the rule, this repo's own emanating entity when the repo declares
+ * it. `focusNode` is the offending element (an entity name, a parameter name, a
+ * road id, …) when the gate can localize it.
  */
 export interface AuthoringGap extends OntologyGap {
   /** The qc rule UID this violation is attributed to. */

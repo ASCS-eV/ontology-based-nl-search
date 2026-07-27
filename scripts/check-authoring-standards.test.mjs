@@ -22,7 +22,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const read = (rel) => readFileSync(join(ROOT, rel), 'utf8')
 
 /** ASAM tags cited in authoring source that must be registered. */
-const ASAM_TAGS = ['[OSC-XSD]', '[OSC-RCR]', '[QC-XOSC]', '[QC-XODR]', '[XML10]']
+const ASAM_TAGS = ['[OSC-XSD]', '[OSC-RCR]', '[QC-FW]', '[QC-XOSC]', '[QC-XODR]', '[XML10]']
 
 test('standards-audit.md registers the authoring interfaces', () => {
   const audit = read('apps/docs/standards-audit.md')

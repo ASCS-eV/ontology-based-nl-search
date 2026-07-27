@@ -10,12 +10,15 @@
  * serialized, so many violations are caught earlier and more precisely than a
  * per-file checker can.
  *
- * Every violation carries the canonical qc rule UID (from {@link QC_RULES}) and
- * the offending focus node, so the repair loop cites the exact ASAM
- * rule — traceable to the standard without running the framework.
+ * Every violation carries a rule UID (from {@link QC_RULES}) and the offending
+ * focus node, so the repair loop cites the exact rule. Two of the three checks
+ * here are attributed to real ASAM `reference_control` rules; the cross-file one
+ * is attributed to a repo rule, because no file-scoped bundle can express it.
  *
- * [QC-XOSC] ASAM OpenSCENARIO checker bundle — reference_control rules
- * (submodule-vendored; see docs/specs/references/README.md).
+ * [QC-XOSC] ASAM OpenSCENARIO XML checker bundle — `reference_control` rules.
+ * The bundle is not vendored in this repo; its rule list is pinned and
+ * checksummed in `qc-bundles/qc-openscenarioxml.bundle.json`, which
+ * `__tests__/qc-rules.test.ts` gates every `origin: 'asam'` UID against.
  * [SPARQL11] SPARQL 1.1 Query (docs/specs/references/sparql11-query.md) — the
  * referential/cross-file checks run as SPARQL SELECT.
  */
