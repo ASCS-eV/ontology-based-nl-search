@@ -23,7 +23,21 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
-import { checkGeometryContinuity, gapsToXqar } from '../dist/index.js'
+// This is a shipped executable, so it consumes the package's build output rather
+// than its TypeScript sources. Say so when the build is missing: the framework
+// invokes this through a manifest, where a bare module-resolution error would
+// surface with no hint about what to do.
+let checkGeometryContinuity
+let gapsToXqar
+try {
+  ;({ checkGeometryContinuity, gapsToXqar } = await import('../dist/index.js'))
+} catch (error) {
+  if (error?.code !== 'ERR_MODULE_NOT_FOUND') throw error
+  console.error(
+    'authoringGate: package not built — run `pnpm --filter @ontology-search/authoring-gate build`'
+  )
+  process.exit(2)
+}
 
 const BUNDLE = {
   name: 'authoringGate',
