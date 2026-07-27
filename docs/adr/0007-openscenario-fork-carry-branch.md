@@ -41,10 +41,19 @@ submodule to that branch.
 - **`feature/<pr>`** — one branch per upstream PR, based on the pinned upstream
   base. PR sources only:
   - `feature/emscripten-portability` → PR #227 (the three portability branches).
-  - `feature/ghc-filesystem-emscripten` → PR 2 (the ghc map), held for the maintainer.
+  - `feature/ghc-filesystem-emscripten` → PR #230 (the ghc map, offered as
+    one-line-map-or-version-bump).
 - **`carry/wasm`** — the **integration/build branch**: upstream base + every
   not-yet-merged `feature/*` + the carry-only edits (the FP shim). **This repo's
   submodule pins `carry/wasm` by SHA.**
+
+`carry/wasm` takes each `feature/*` commit by **cherry-pick**, never by
+re-authoring the same edit: same author, message and diff, only a different
+parent. This is what makes "we tested the PR" a true statement rather than "we
+tested something that resembles the PR" — the artifact this repo ships is built
+from the exact commits upstream is asked to merge. It also makes the shrink
+mechanical: a rebase drops a merged cherry-pick by content, with no judgement
+call about whether a local variant is now redundant.
 
 ### This repo
 
@@ -82,15 +91,33 @@ point the submodule straight back at upstream and retire `carry/wasm`.
 
 ## Honest note on this cutover
 
-This change did **not** rebuild the artifact — `carry/wasm`'s tree is
+The cutover itself did **not** rebuild the artifact — `carry/wasm`'s tree is
 byte-identical to the prior _(base + `0001` patch)_ source (verified: the diff
 between `carry/wasm` and a fresh `base`+patch apply is empty), so the committed
-`.wasm` is still a valid functional build of the new pin, and `verify-checksum`
-(blob vs. its own manifest) is unaffected. CI's reproducible-build job re-derives
-the WASM from the new fork pin with no patch step and gates on golden-conformance.
-The **next** engine change (e.g. wiring the range/union/version checkers already
-compiled into the artifact) will produce the first artifact genuinely rebuilt
-from the fork pin, on a machine with the Emscripten SDK.
+`.wasm` remained a valid functional build of the new pin, and `verify-checksum`
+(blob vs. its own manifest) was unaffected.
+
+**Since verified by an actual rebuild.** When `carry/wasm` was re-created from
+the two upstream PR commits by cherry-pick, the engine was rebuilt from that pin
+with the pinned Emscripten SDK (6.0.3) and the fresh artifact passes the
+golden-conformance suite plus `verify-checksum`. Three facts were checked rather
+than assumed:
+
+- the re-created branch's tree hash equals the previous pin's — the cherry-picks
+  changed provenance, not content;
+- applying the two reviewable patches in `patches/upstream/` to the pristine
+  base yields the same tree as the two cherry-picks, so patch, PR branch and
+  build pin cannot disagree;
+- the freshly built engine validates the golden scenarios identically.
+
+The committed bytes are **unchanged**: the rebuild differs from the committed
+blob only in host-dependent ways (5 826 632 vs 5 825 292 bytes from a different
+build host), and byte-for-byte cross-host parity is explicitly out of scope
+(ADR 0006, and the `authoring-wasm` workflow, which checksums the build it just
+produced rather than the committed one). Shipping a functionally identical blob
+purely to change its hash would be churn. The **next** engine change (wiring the
+range/union/version checkers already compiled into the artifact) is what will
+land a genuinely different artifact.
 
 ## Alternatives considered
 

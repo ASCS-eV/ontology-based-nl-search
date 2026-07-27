@@ -83,11 +83,16 @@ commits on the fork's `carry/wasm` branch (the submodule pin), **not** as a
 build-time patch. Each is triaged by how it should reach upstream — see
 `patches/upstream/README.md` for the full rationale and PR bodies:
 
-| Commit on `carry/wasm`                                                                                      | Disposition                                                                                                           |
-| ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `ExportDefinitions.h` / `OscExprExportDefs.h` / `FileResourceLocator.cpp` — `#elif __EMSCRIPTEN__` branches | **Upstream PR** ([#227](https://github.com/RA-Consulting-GmbH/openscenario.api.test/pull/227))                        |
-| `filesystem.hpp` — map `__EMSCRIPTEN__` → `GHC_OS_LINUX` (vendored ghc)                                     | **Upstream PR** (`feature/ghc-filesystem-emscripten`, held for the maintainer)                                        |
-| `EvaluatorListener.cpp` — shim `FE_OVERFLOW`/`FE_UNDERFLOW` to `0`                                          | **Carry-only** (correctness trade-off; filed as an upstream issue) — disables overflow/underflow detection under WASM |
+| Commit on `carry/wasm`                                                                                      | Disposition                                                                                                                                              |
+| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ExportDefinitions.h` / `OscExprExportDefs.h` / `FileResourceLocator.cpp` — `#elif __EMSCRIPTEN__` branches | **Upstream PR** ([#227](https://github.com/RA-Consulting-GmbH/openscenario.api.test/pull/227))                                                           |
+| `filesystem.hpp` — map `__EMSCRIPTEN__` → `GHC_OS_LINUX` (vendored ghc)                                     | **Upstream PR** ([#230](https://github.com/RA-Consulting-GmbH/openscenario.api.test/pull/230), offered map-or-bump)                                      |
+| `EvaluatorListener.cpp` — shim `FE_OVERFLOW`/`FE_UNDERFLOW` to `0`                                          | **Carry-only** ([issue #229](https://github.com/RA-Consulting-GmbH/openscenario.api.test/issues/229)) — disables overflow/underflow detection under WASM |
+
+The two PR rows are **cherry-picked verbatim** from the `feature/*` branches the
+pull requests are opened from — identical author, message and diff. What this
+package compiles is therefore exactly what upstream is being asked to merge; a
+carried edit cannot drift from its proposal.
 
 Because these are commits (not a working-tree patch), a fresh submodule checkout
 is build-ready with no `git apply` step, and `git -C submodules/openscenario-api

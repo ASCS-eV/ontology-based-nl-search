@@ -1,34 +1,27 @@
 # Implementation plan — OpenSCENARIO API coverage & qc-framework alignment
 
-Status: in progress · Branch: `claude/open-scenario-api-cpp-coverage-x6c5je`
+Status: in progress
 
 ## Handoff — pick up here
 
-Phase 2.1 (**#173**, the wrong-answer bug) is now implemented on this branch;
-the rest of the plan is still the analysis, the tracking issues, and one
-upstream contribution.
-
-| Tracking issue                                                                                                                   | Phase | State                              |
-| -------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------------------------------- |
-| [#171](https://github.com/ASCS-eV/ontology-based-nl-search/issues/171) — fabricated OpenDRIVE rule UID, gate against UID drift   | 0     | open                               |
-| [#172](https://github.com/ASCS-eV/ontology-based-nl-search/issues/172) — wire the checkers already compiled into the WASM engine | 1     | open                               |
-| [#173](https://github.com/ASCS-eV/ontology-based-nl-search/issues/173) — lowering silently drops actions, reports `valid: true`  | 2     | **done (this branch)**             |
-| [#174](https://github.com/ASCS-eV/ontology-based-nl-search/issues/174) — qc-framework interop (`.xqar`, run the real bundles)    | 3     | open                               |
-| [#175](https://github.com/ASCS-eV/ontology-based-nl-search/issues/175) — upstream contributions                                  | 4     | PR 1 open upstream; 4 items remain |
+| Tracking issue                                                                                                                   | Phase | State                                 |
+| -------------------------------------------------------------------------------------------------------------------------------- | ----- | ------------------------------------- |
+| [#171](https://github.com/ASCS-eV/ontology-based-nl-search/issues/171) — fabricated OpenDRIVE rule UID, gate against UID drift   | 0     | open                                  |
+| [#172](https://github.com/ASCS-eV/ontology-based-nl-search/issues/172) — wire the checkers already compiled into the WASM engine | 1     | open                                  |
+| [#173](https://github.com/ASCS-eV/ontology-based-nl-search/issues/173) — lowering silently drops actions, reports `valid: true`  | 2     | **done** (merged, PR #176)            |
+| [#174](https://github.com/ASCS-eV/ontology-based-nl-search/issues/174) — qc-framework interop (`.xqar`, run the real bundles)    | 3     | open                                  |
+| [#175](https://github.com/ASCS-eV/ontology-based-nl-search/issues/175) — upstream contributions                                  | 4     | **done** (2 PRs, 2 issues, 1 comment) |
 
 **#173 landed** — `unexpressibleActions` (packages/authoring) reports every
 action the single-maneuver lowering omits (unsupported kinds, maneuvers beyond
 the first), and `run-scene-pipeline` emits one `unexpressibleAction`-UID gap per
 drop so an incomplete scenario is no longer reported `valid: true`. No WASM
-rebuild. **Next: #172** (wire the range/union/version checkers already compiled
-into the artifact), batching all four engine changes into a single artifact bump.
+rebuild.
 
-Upstream PR 1 (Emscripten portability) is open against
-`RA-Consulting-GmbH/openscenario.api.test` from
-`ASCS-eV:feature/emscripten-portability`. Hold PR 2 (ghc::filesystem) until the
-maintainer responds — the PR 1 body deliberately leaves the map-vs-bump choice
-to them. Prepared bodies and patches are in
-`packages/authoring-wasm/native/patches/upstream/`.
+**#175 landed** — see Phase 4 below for the five upstream items and their
+numbers. **Next: #171** (honest UIDs + a gate against UID drift, no rebuild),
+then **#172** (wire the range/union/version checkers already compiled into the
+artifact), batching all four engine changes into a single artifact bump.
 
 ## Working on this locally
 
@@ -269,13 +262,24 @@ only after 3.1–3.3, so repo-specific rules are clearly separated from ASAM one
 
 ---
 
-## Phase 4 — upstream
+## Phase 4 — upstream — **done**
 
-- Offer `patches/0001-emscripten-portability.patch` (already staged) upstream.
-- Raise the `FE_OVERFLOW`/`FE_UNDERFLOW` shim: overflow/underflow detection is
-  silently disabled under WASM.
-- Raise that neither loader wires `AddAllRangeCheckerRules`, so every embedder
-  of the library silently loses 60 rules.
+All five items are with the maintainer; nothing is left staged in-repo.
+
+| Item                                                        | Upstream                                                                        |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Three `__EMSCRIPTEN__` platform branches                    | **PR #227** (open, DCO green)                                                   |
+| Vendored `ghc::filesystem` — one-line map _or_ library bump | **PR #230** (open)                                                              |
+| `FE_OVERFLOW`/`FE_UNDERFLOW` absent from Emscripten         | **issue #229** — a behaviour trade-off, deliberately not a PR                   |
+| Neither loader wires `AddAllRangeCheckerRules`              | **issue #228** — asks whether it is intentional before offering a patch         |
+| `XmlSequenceParser` occurrence counting                     | **comment on #209** — cannot reproduce at `292d0be`; fixed by their merged #210 |
+
+`carry/wasm` now carries each PR's commit as a verbatim cherry-pick, and the
+engine was rebuilt from that pin (emsdk 6.0.3) and re-run against the
+golden-conformance suite — so "the PRs are tested" means the shipped behaviour
+comes from exactly the commits upstream is being asked to merge, not from a
+local variant of them. Committed bytes unchanged; see
+`packages/authoring-wasm/native/patches/upstream/README.md` and ADR 0007.
 
 Context: the engine has ~40 stars / 13 forks, its Java line is frozen
 (`doc/main.adoc:370`), esmini uses its own pugixml reader, and ASAM's own
