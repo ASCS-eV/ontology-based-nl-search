@@ -1,10 +1,10 @@
 {
   "$schema": "./ontology-sources.schema.json",
-  "description": "Example ontology-sources.json \u2014 copy to ontology-sources.json and adjust paths. Add a second source pointing at the OMB imports/ directory to opt in to the foundation vocabularies (see apps/docs/ontology.md).",
+  "description": "Example ontology-sources.json \u2014 copy to ontology-sources.json and adjust paths. The default paths point at the local ontology cache materialized by `pnpm run fetch:ontology` from the pin in ontology-package.json. Add a second source pointing at .ontology/imports to opt in to the foundation vocabularies (see apps/docs/ontology.md).",
   "sources": [
     {
       "name": "omb-artifacts",
-      "path": "submodules/ontology-management-base/artifacts",
+      "path": ".ontology/artifacts",
       "description": "The ENVITED-X domain artifacts: {domain}/{domain}.{owl,shacl}.ttl per subdirectory."
     }
   ]

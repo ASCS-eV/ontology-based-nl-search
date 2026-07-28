@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   assertOntologySourcesAvailable,
-  DEFAULT_OMB_SUBMODULE_PATH,
+  DEFAULT_ONTOLOGY_CACHE_PATH,
   diagnoseOntologySources,
   discoverContextFiles,
   discoverShapeFiles,
@@ -62,15 +62,18 @@ describe('ontology source-tree discovery (sources.ts)', () => {
     resetConfig()
   })
 
-  describe('DEFAULT_OMB_SUBMODULE_PATH', () => {
+  describe('DEFAULT_ONTOLOGY_CACHE_PATH', () => {
     it('is the canonical chain shared by all callers', () => {
-      // The previous duplicates each hard-coded this list; pinning it
-      // here catches accidental drift from one canonical source.
-      expect(DEFAULT_OMB_SUBMODULE_PATH).toEqual([
-        'submodules',
-        'ontology-management-base',
-        'artifacts',
-      ])
+      // Every caller resolves the fallback through this one constant, and
+      // `scripts/fetch-ontology.mjs` materializes exactly this path — pinning
+      // it here catches drift between the runtime default and the fetcher.
+      expect(DEFAULT_ONTOLOGY_CACHE_PATH).toEqual(['.ontology', 'artifacts'])
+    })
+
+    it('is version-independent, so bumping the pinned ontology never moves it', () => {
+      // The pin (ontology-package.json) carries the version; the path must not,
+      // or a bump would silently orphan the manifest, the preflight and CI.
+      expect(DEFAULT_ONTOLOGY_CACHE_PATH.join('/')).not.toMatch(/\d+\.\d+/)
     })
   })
 
@@ -147,9 +150,9 @@ describe('ontology source-tree discovery (sources.ts)', () => {
       expect(getArtifactRoots()).toEqual([{ path: '/srv/artifacts' }])
     })
 
-    it('falls back to the DEFAULT_OMB_SUBMODULE_PATH chain as last resort', () => {
+    it('falls back to the DEFAULT_ONTOLOGY_CACHE_PATH chain as last resort', () => {
       expect(getArtifactRoots()).toEqual([
-        { path: join(workspaceRoot, ...DEFAULT_OMB_SUBMODULE_PATH) },
+        { path: join(workspaceRoot, ...DEFAULT_ONTOLOGY_CACHE_PATH) },
       ])
     })
 
@@ -265,7 +268,7 @@ describe('ontology source-tree discovery (sources.ts)', () => {
 
       example.sources.push({
         name: 'omb-imports',
-        path: 'submodules/ontology-management-base/imports',
+        path: '.ontology/imports',
       })
       writeFileSync(join(workspaceRoot, 'ontology-sources.json'), JSON.stringify(example))
       expect(loadOntologySourcesManifest()?.sources).toHaveLength(2)
@@ -359,15 +362,18 @@ describe('ontology source-tree discovery (sources.ts)', () => {
 
   describe('assertOntologySourcesAvailable', () => {
     /**
-     * Regression for the first-run gap: with submodules un-initialized the
-     * loader found 0 files, logged it, and the service started "ready" while
-     * every search came back empty. The guard now fails fast with an
-     * actionable message. The default submodule chain does not exist inside
-     * the temp workspace, so a live scan yields zero files here.
+     * Regression for the first-run gap: with no ontology materialized the loader
+     * found 0 files, logged it, and the service started "ready" while every
+     * search came back empty. The guard fails fast with an actionable message.
+     * The default cache path does not exist inside the temp workspace, so a live
+     * scan yields zero files here.
      */
-    it('throws OntologySourcesError with the submodule remediation when nothing is found', () => {
+    it('throws OntologySourcesError naming the fetch remediation when nothing is found', () => {
       expect(() => assertOntologySourcesAvailable()).toThrow(OntologySourcesError)
-      expect(() => assertOntologySourcesAvailable()).toThrow(/git submodule update --init/)
+      // The default root is the pinned-package cache, so the first-run fix is
+      // the fetch — not a submodule init, which no longer applies to it.
+      expect(() => assertOntologySourcesAvailable()).toThrow(/pnpm run fetch:ontology/)
+      expect(() => assertOntologySourcesAvailable()).toThrow(/ontology-package\.json/)
     })
 
     it('does not throw when at least one shape file exists', () => {

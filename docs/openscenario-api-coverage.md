@@ -57,7 +57,7 @@ Every external identity this plan relies on, and the pin it is read from:
 
 | Source                                | Reference                                                                                                                                                              |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ASAM OpenSCENARIO XML 1.3.0           | `submodules/ontology-management-base/imports/OpenScenario/OpenSCENARIO.xsd` (pinned submodule) — `[OSC-XSD]`                                                           |
+| ASAM OpenSCENARIO XML 1.3.0           | `.ontology/imports/OpenScenario/OpenSCENARIO.xsd` — from the distribution pinned by version + sha256 in `ontology-package.json` — `[OSC-XSD]`                          |
 | RA Consulting `openscenario.api.test` | Apache-2.0; pinned submodule `submodules/openscenario-api`, upstream base `292d0be`. Range rules from `RangeCheckerRulesV1_3.cpp` — `[OSC-RCR]`                        |
 | ASAM Quality Checker Framework        | `asam-ev/qc-framework` (MPL-2.0) — the rule-UID grammar (`doc/manual/file_formats.md`) and the `.xqar` result schema (`doc/schema/xqar_result_format.xsd`) — `[QC-FW]` |
 | `qc-openscenarioxml` bundle           | `asam-ev/qc-openscenarioxml`, pinned + checksummed in `packages/authoring-gate/qc-bundles/qc-openscenarioxml.bundle.json` — `[QC-XOSC]`                                |

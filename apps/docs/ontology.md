@@ -166,8 +166,8 @@ add a second source to `ontology-sources.json`:
 ```json
 {
   "sources": [
-    { "name": "omb-artifacts", "path": "submodules/ontology-management-base/artifacts" },
-    { "name": "omb-imports", "path": "submodules/ontology-management-base/imports" }
+    { "name": "omb-artifacts", "path": ".ontology/artifacts" },
+    { "name": "omb-imports", "path": ".ontology/imports" }
   ]
 }
 ```

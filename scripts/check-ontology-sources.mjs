@@ -9,10 +9,10 @@
  *
  * The check mirrors the runtime resolution order in
  * `packages/ontology/src/sources.ts` (manifest → ONTOLOGY_ARTIFACTS_PATH →
- * default submodule path) so the advice here matches what the server would do.
+ * default cache path) so the advice here matches what the server would do.
  * It is ontology-agnostic: it reports on whatever paths are configured and
- * keys its remediation on the generic `submodules/` path segment, never on a
- * specific ontology name.
+ * keys its remediation on generic path segments, never on a specific ontology
+ * name.
  *
  * Self-contained on purpose: `postinstall` runs before any package is built,
  * so it cannot import the (TypeScript) ontology package.
@@ -35,10 +35,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
  * path lives under a `submodules/` segment.
  */
 /**
- * Default submodule path segments — mirrors DEFAULT_OMB_SUBMODULE_PATH in
+ * Default cache path segments — mirrors DEFAULT_ONTOLOGY_CACHE_PATH in
  * packages/ontology/src/sources.ts so the preflight check matches runtime.
  */
-const DEFAULT_SUBMODULE_SEGMENTS = ['submodules', 'ontology-management-base', 'artifacts']
+const DEFAULT_CACHE_SEGMENTS = ['.ontology', 'artifacts']
 
 function resolveArtifactRoots() {
   const manifestPath = join(root, 'ontology-sources.json')
@@ -57,8 +57,8 @@ function resolveArtifactRoots() {
   }
   const envOverride = process.env.ONTOLOGY_ARTIFACTS_PATH
   if (envOverride) return [envOverride]
-  // Last resort: the default submodule chain (matches runtime fallback)
-  return [join(root, ...DEFAULT_SUBMODULE_SEGMENTS)]
+  // Last resort: the default cache path (matches runtime fallback)
+  return [join(root, ...DEFAULT_CACHE_SEGMENTS)]
 }
 
 /** Count `*.shacl.ttl` files in the domain subdirectories of a root. */
@@ -91,9 +91,11 @@ if (total > 0) {
 }
 
 // No shape files — build the same actionable guidance the server emits.
-const missingSubmoduleRoot = roots.some(
-  (r) => !r.exists && r.path.split(/[/\\]/).includes('submodules')
+const segments = (r) => r.path.split(/[/\\]/)
+const missingCacheRoot = roots.some(
+  (r) => !r.exists && segments(r).includes(DEFAULT_CACHE_SEGMENTS[0])
 )
+const missingSubmoduleRoot = roots.some((r) => !r.exists && segments(r).includes('submodules'))
 
 const lines = [
   '',
@@ -108,11 +110,18 @@ const lines = [
   '',
   '   To fix:',
 ]
+if (missingCacheRoot) {
+  lines.push(
+    '     • Materialize the pinned ontology (most likely cause):',
+    '           pnpm run fetch:ontology',
+    '       It downloads the distribution pinned in ontology-package.json',
+    '       (version + sha256) and extracts it. `pnpm install` runs it too.'
+  )
+}
 if (missingSubmoduleRoot) {
   lines.push(
-    '     • Initialize the ontology git submodules (most likely cause):',
-    '           git submodule update --init',
-    '       Fresh clones: git clone --recurse-submodules <url>'
+    '     • A declared source lives under submodules/ — initialize it:',
+    '           git submodule update --init'
   )
 }
 lines.push(
@@ -122,7 +131,7 @@ lines.push(
 )
 process.stderr.write(lines.join('\n'))
 
-// postinstall stays advisory so a missing submodule never bricks `pnpm install`
+// postinstall stays advisory so a missing ontology never bricks `pnpm install`
 // (CI and prod images may legitimately provide artifacts another way). The
 // strict mode used by `pnpm run check:setup` fails so it can gate CI.
 process.exit(strict ? 1 : 0)

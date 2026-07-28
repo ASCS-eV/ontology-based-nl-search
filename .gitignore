@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+# pnpm's content-addressable store, when it lands inside the workspace
+.pnpm-store/
 
 # Build
 dist/
@@ -13,8 +15,10 @@ tsconfig.tsbuildinfo
 .env.local
 .env.*.local
 
-# Ontology cache (fetched at runtime)
-.ontology-cache/
+# Ontology source cache — materialized by scripts/fetch-ontology.mjs from the
+# distribution pinned in ontology-package.json (version + sha256). Not checked
+# in: the pin is the source of truth, the cache is 11 MB of derived files.
+.ontology/
 
 # Generated ontology sources config (use ontology-sources.example.json as template)
 ontology-sources.json
