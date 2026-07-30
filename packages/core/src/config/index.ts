@@ -108,7 +108,7 @@ const envSchema = z.object({
    * forces `none` because slot-filling is deterministic and SHACL-validated —
    * authoring turns reasoning ON so the model captures nuanced dynamics
    * (relative speeds, "slows down", timing). Applied only for the `copilot`
-   * provider; other providers reason via `LLM_THINKING_BUDGET` / a model family.
+   * provider; other providers reason via `LLM_THINKING` / a model family.
    */
   AUTHORING_REASONING_EFFORT: reasoningEffortSchema.default('medium'),
   OPENAI_API_KEY: z.string().optional(),
@@ -148,11 +148,28 @@ const envSchema = z.object({
    */
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).optional(),
   /**
-   * Anthropic-only: token budget for the model's hidden
-   * chain-of-thought. `0` (default) disables reasoning — same speed as
-   * the regular chat completion. Set to a positive integer (Anthropic
-   * recommends ≥ 1024) to enable; the answer becomes more accurate on
-   * hard disambiguation cases but the call takes 2–5× longer.
+   * Anthropic-only reasoning mode. Three accepted forms:
+   *
+   *   - `off` (default) — no reasoning; same speed as a plain completion.
+   *   - `adaptive`      — the model decides when and how deeply to think.
+   *   - a positive int  — a fixed hidden chain-of-thought token budget
+   *                       (Anthropic recommends ≥ 1024).
+   *
+   * The mode is explicit rather than inferred because the two on-modes are
+   * NOT interchangeable across model generations, and picking the wrong one
+   * is a hard 400 rather than a downgrade [ANTHROPIC-MSG] `/v1/messages`
+   * § Request:
+   *
+   *   - `adaptive` requires Claude 4.6 or newer (through Sonnet 5 / Opus 5).
+   *     Older models reject it.
+   *   - A fixed budget (`thinking.budget_tokens`) was REMOVED in the Claude
+   *     4.7 generation; 4.7 and newer reject it. It remains the only way to
+   *     enable reasoning on pre-4.6 models such as `claude-haiku-4-5` and
+   *     `claude-sonnet-4-5`.
+   *
+   * Since only the operator knows which model `AI_MODEL` points at, this is
+   * a deliberate choice rather than something the code guesses from a model
+   * allowlist — the same reasoning as {@link LLM_TEMPERATURE}.
    *
    * Ignored by every other Vercel-SDK provider:
    *   - Mistral exposes reasoning via a separate model family
@@ -161,7 +178,11 @@ const envSchema = z.object({
    *     fixed by the model, not the caller.
    *   - Ollama and the local providers don't implement this concept.
    */
-  LLM_THINKING_BUDGET: z.coerce.number().int().nonnegative().default(0),
+  LLM_THINKING: z
+    // Order matters: the enum is tried first, because `z.coerce.number()`
+    // would turn 'off' into NaN and report a misleading "expected number".
+    .union([z.enum(['off', 'adaptive']), z.coerce.number().int().positive()])
+    .default('off'),
   /**
    * Schema-retrieval routing budget: at most this many primary domains are
    * selected per query for the composed system prompt.

@@ -29,10 +29,15 @@ export async function fillSceneVercel(
   const policy = getAgentPolicy('authoring')
   const model = getModel()
 
+  // See the search adapter: `adaptive` and a fixed budget are different request
+  // shapes, each a 400 on the other's model generation, so the policy decides.
   const providerOptions = policy.thinking
     ? {
         anthropic: {
-          thinking: { type: 'enabled' as const, budgetTokens: policy.thinking.budgetTokens },
+          thinking:
+            policy.thinking.mode === 'adaptive'
+              ? { type: 'adaptive' as const }
+              : { type: 'enabled' as const, budgetTokens: policy.thinking.budgetTokens },
         },
       }
     : undefined

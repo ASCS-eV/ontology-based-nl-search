@@ -47,10 +47,19 @@ export interface AgentPolicy {
   /** Max tool-call steps before the agent is cut off. */
   readonly maxSteps: number
   /**
-   * Whether Anthropic extended thinking is enabled and its budget.
-   * `null` when disabled (budget = 0 or non-Anthropic provider).
+   * Anthropic reasoning mode, or `null` when disabled (`LLM_THINKING=off`, or
+   * a provider with no typed thinking block).
+   *
+   * A discriminated union rather than a bare budget, because the two on-modes
+   * map to different request shapes and each is a hard 400 on the other's
+   * model generation [ANTHROPIC-MSG] `/v1/messages` § Request: `adaptive`
+   * needs Claude 4.6+, while a fixed `budgetTokens` was removed in 4.7 and
+   * only works on older models. Adapters translate; they never guess.
    */
-  readonly thinking: { readonly budgetTokens: number } | null
+  readonly thinking:
+    | { readonly mode: 'adaptive' }
+    | { readonly mode: 'budget'; readonly budgetTokens: number }
+    | null
   /**
    * Copilot SDK reasoning effort. `null` when the provider isn't Copilot.
    * For `search` this is `'none'` (reasoning disabled — a latency win for the
@@ -73,7 +82,13 @@ export interface AgentPolicy {
    * supplies query text.
    */
   readonly lookupTools: readonly string[]
-  /** The model identifier to use (e.g. 'claude-haiku-4.5', 'gpt-4o'). */
+  /**
+   * The model identifier to use, passed through verbatim — its spelling is
+   * PROVIDER-specific and is not normalized here. Copilot uses dotted ids
+   * (`claude-haiku-4.5`); the Anthropic Messages API uses hyphenated ones
+   * (`claude-haiku-4-5`) and rejects the dotted form with a 400 naming the
+   * model. OpenAI ids are unrelated again (`gpt-4o`).
+   */
   readonly model: string
   /** The provider identifier (e.g. 'copilot', 'claude-cli', 'openai'). */
   readonly provider: string
@@ -102,11 +117,17 @@ export interface AgentPolicy {
 export function getAgentPolicy(task: AgentTask = 'search'): AgentPolicy {
   const config = getConfig()
 
-  // Anthropic extended thinking: only when budget > 0 AND provider supports it.
-  const supportsThinking =
-    config.LLM_THINKING_BUDGET > 0 &&
-    (config.AI_PROVIDER === 'anthropic' || config.AI_PROVIDER === 'claude-cli')
-  const thinking = supportsThinking ? { budgetTokens: config.LLM_THINKING_BUDGET } : null
+  // Anthropic reasoning: only when requested AND the provider has a typed
+  // thinking block. The mode is carried through verbatim — see
+  // AgentPolicy.thinking for why it must not be inferred from the model id.
+  const providerHasThinking =
+    config.AI_PROVIDER === 'anthropic' || config.AI_PROVIDER === 'claude-cli'
+  const thinking: AgentPolicy['thinking'] =
+    !providerHasThinking || config.LLM_THINKING === 'off'
+      ? null
+      : config.LLM_THINKING === 'adaptive'
+        ? { mode: 'adaptive' }
+        : { mode: 'budget', budgetTokens: config.LLM_THINKING }
 
   // Copilot SDK reasoningEffort is task-scoped:
   //
