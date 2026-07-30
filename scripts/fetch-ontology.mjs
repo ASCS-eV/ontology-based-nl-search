@@ -189,10 +189,51 @@ export async function fetchOntology({ root = ROOT, fetchImpl = fetch, tarImpl, f
   }
 }
 
+/**
+ * Make `fetch` honour the standard proxy environment variables.
+ *
+ * Node's global `fetch` (undici) ignores `HTTP_PROXY`/`HTTPS_PROXY` unless
+ * `NODE_USE_ENV_PROXY=1` is set *before* the runtime starts — behind a
+ * corporate proxy a plain `fetch` fails with `ENOTFOUND` even though `curl`,
+ * `git` and `pnpm` (which all read those vars) work fine. See the Node docs
+ * for `NODE_USE_ENV_PROXY` / `--use-env-proxy`.
+ *
+ * The flag can only be applied at startup, so when a proxy is configured and
+ * the flag is not yet set we re-exec this script once with it enabled (and the
+ * re-exec's exit code becomes ours). It is a no-op when no proxy variable is
+ * present, so direct-connection setups pay nothing.
+ *
+ * Returns `false` when nothing was done; on re-exec it never returns — it
+ * replaces the current run via `process.exit`.
+ */
+export async function ensureEnvProxy(env = process.env) {
+  const proxyVars = [
+    'HTTPS_PROXY',
+    'https_proxy',
+    'HTTP_PROXY',
+    'http_proxy',
+    'ALL_PROXY',
+    'all_proxy',
+  ]
+  const hasProxy = proxyVars.some((k) => env[k])
+  if (!hasProxy || env.NODE_USE_ENV_PROXY) return false
+
+  const { spawnSync } = await import('node:child_process')
+  const result = spawnSync(process.execPath, process.argv.slice(1), {
+    stdio: 'inherit',
+    env: { ...env, NODE_USE_ENV_PROXY: '1' },
+  })
+  process.exit(result.status ?? 1)
+}
+
 // ── CLI ──────────────────────────────────────────────────────────────────────
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const check = process.argv.includes('--check')
   const force = process.argv.includes('--force')
+
+  // `--check` never touches the network, so it needs no proxy; every other
+  // invocation fetches and must go through the proxy when one is configured.
+  if (!check) await ensureEnvProxy()
 
   try {
     const pin = readPin()

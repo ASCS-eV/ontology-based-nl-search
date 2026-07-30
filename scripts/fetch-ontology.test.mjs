@@ -21,6 +21,7 @@ import * as tar from 'tar'
 
 import {
   cacheMatchesPin,
+  ensureEnvProxy,
   fetchOntology,
   materialize,
   readPin,
@@ -212,4 +213,22 @@ test('resolveSdistUrl fails when the version does not publish the pinned filenam
   const root = mkdtempSync(join(work, 'url404-'))
   const pin = makePin(root, { sdist: { filename: 'other.tar.gz', sha256: tarballSha } })
   await assert.rejects(() => resolveSdistUrl(pin, fakeFetch(tarballPath)), /does not publish/)
+})
+
+// Node's global `fetch` ignores HTTP(S)_PROXY unless NODE_USE_ENV_PROXY is set
+// at startup, so behind a proxy the fetch fails with ENOTFOUND. ensureEnvProxy
+// re-execs with the flag when a proxy is configured; these assert it is a pure
+// no-op otherwise (the re-exec branch calls process.exit and is covered by the
+// integration behaviour, not unit-tested in-process).
+test('ensureEnvProxy is a no-op when no proxy variable is set', async () => {
+  const reexeced = await ensureEnvProxy({})
+  assert.equal(reexeced, false)
+})
+
+test('ensureEnvProxy is a no-op when NODE_USE_ENV_PROXY is already set', async () => {
+  const reexeced = await ensureEnvProxy({
+    HTTPS_PROXY: 'http://127.0.0.1:8080',
+    NODE_USE_ENV_PROXY: '1',
+  })
+  assert.equal(reexeced, false)
 })
