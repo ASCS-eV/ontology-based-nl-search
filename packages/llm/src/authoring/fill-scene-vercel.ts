@@ -9,7 +9,7 @@
  * @see ./scene-agent.ts — the repair-loop orchestrator that drives this
  */
 
-import { generateText, hasToolCall, stepCountIs } from 'ai'
+import { generateText, hasToolCall, isStepCount } from 'ai'
 
 import { getAgentPolicy } from '../agent/agent-policy.js'
 import { getModel } from '../provider.js'
@@ -39,11 +39,11 @@ export async function fillSceneVercel(
 
   const result = await generateText({
     model,
-    system: getSceneStaticCore(),
+    instructions: getSceneStaticCore(),
     prompt: requestMessage,
     tools: sceneAgentTools,
     toolChoice: 'required',
-    stopWhen: [stepCountIs(policy.maxSteps), hasToolCall('submit_scene')],
+    stopWhen: [isStepCount(policy.maxSteps), hasToolCall('submit_scene')],
     ...(signal ? { abortSignal: signal } : {}),
     temperature: policy.temperature,
     ...(providerOptions ? { providerOptions } : {}),

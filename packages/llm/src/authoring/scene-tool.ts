@@ -17,7 +17,7 @@
 
 import { authoringIrWireSchema } from '@ontology-search/authoring-ir/scene-wire-schema'
 import { gapsWireSchema, interpretationWireSchema } from '@ontology-search/search/slot-wire-schema'
-import { tool } from 'ai'
+import { tool, type ToolSet } from 'ai'
 import { z } from 'zod'
 
 /**
@@ -48,17 +48,20 @@ export type SceneSubmissionParams = z.infer<typeof sceneSubmissionSchema>
  * Tool definitions for the scene-authoring agent (Vercel AI SDK shape).
  * The LLM fills the structured scene IR instead of writing `.xosc`.
  */
-export const sceneAgentTools = {
+export const sceneAgentTools: ToolSet = {
   /**
    * Submit the authored scene. Fill the IR for what the user described, report
    * gaps for anything you could not express. Call this exactly once.
    */
-  submit_scene: tool<SceneSubmissionParams, SceneSubmissionParams>({
+  // Types inferred from `inputSchema` / `execute` — see the note in
+  // ../agent/tools.ts: `tool()`'s trailing generic is `CONTEXT extends
+  // Context`, so an explicit `tool<INPUT, OUTPUT>` matches no overload.
+  submit_scene: tool({
     description:
       'Submit the authored OpenSCENARIO scene as a structured IR (entities, actions, ' +
       'roadNetwork, parameters), plus an interpretation and any gaps. Call this exactly once. ' +
       'Never emit raw .xosc XML — only the IR.',
     inputSchema: sceneSubmissionSchema,
-    execute: async (params) => params,
+    execute: async (params: SceneSubmissionParams): Promise<SceneSubmissionParams> => params,
   }),
 }
