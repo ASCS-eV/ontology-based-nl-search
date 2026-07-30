@@ -215,20 +215,28 @@ test('resolveSdistUrl fails when the version does not publish the pinned filenam
   await assert.rejects(() => resolveSdistUrl(pin, fakeFetch(tarballPath)), /does not publish/)
 })
 
-// Node's global `fetch` ignores HTTP(S)_PROXY unless NODE_USE_ENV_PROXY is set
-// at startup, so behind a proxy the fetch fails with ENOTFOUND. ensureEnvProxy
-// re-execs with the flag when a proxy is configured; these assert it is a pure
-// no-op otherwise (the re-exec branch calls process.exit and is covered by the
-// integration behaviour, not unit-tested in-process).
+// Node's global `fetch` ignores HTTP(S)_PROXY on its own, so behind a proxy the
+// fetch fails while curl/git/pnpm succeed. ensureEnvProxy installs an undici
+// dispatcher that reads those vars (plus NO_PROXY).
 test('ensureEnvProxy is a no-op when no proxy variable is set', async () => {
-  const reexeced = await ensureEnvProxy({})
-  assert.equal(reexeced, false)
+  assert.equal(await ensureEnvProxy({}), false)
 })
 
-test('ensureEnvProxy is a no-op when NODE_USE_ENV_PROXY is already set', async () => {
-  const reexeced = await ensureEnvProxy({
-    HTTPS_PROXY: 'http://127.0.0.1:8080',
-    NODE_USE_ENV_PROXY: '1',
-  })
-  assert.equal(reexeced, false)
+test('ensureEnvProxy ignores a proxy variable that is empty or whitespace', async () => {
+  assert.equal(await ensureEnvProxy({ HTTPS_PROXY: '' }), false)
+  assert.equal(await ensureEnvProxy({ HTTPS_PROXY: '   ' }), false)
+})
+
+test('ensureEnvProxy installs a dispatcher when a proxy variable is set', async () => {
+  // Regression: this returned false whenever NODE_USE_ENV_PROXY was already
+  // set, and otherwise re-exec'd with a flag that is a NO-OP on Node 22 — so
+  // the proxy was never actually applied on a supported runtime.
+  assert.equal(await ensureEnvProxy({ HTTPS_PROXY: 'http://127.0.0.1:8080' }), true)
+})
+
+test('ensureEnvProxy applies even when NODE_USE_ENV_PROXY is already set', async () => {
+  assert.equal(
+    await ensureEnvProxy({ HTTPS_PROXY: 'http://127.0.0.1:8080', NODE_USE_ENV_PROXY: '1' }),
+    true
+  )
 })

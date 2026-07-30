@@ -125,6 +125,20 @@ const envSchema = z.object({
   MISTRAL_BASE_URL: z.string().url().default('https://api.mistral.ai/v1'),
   /** Maximum tool-calling steps the Vercel-SDK agent will perform. */
   LLM_MAX_AGENT_STEPS: z.coerce.number().int().positive().default(3),
+
+  // Outbound HTTP proxy. Declared here for documentation and discoverability
+  // only — the values are consumed by undici's `EnvHttpProxyAgent`, which reads
+  // `process.env` itself (including the lowercase spellings `https_proxy` /
+  // `http_proxy` / `no_proxy`, which are equally honoured but not restated
+  // here). See `../net/proxy.ts`; same pattern as the logger's `LOG_LEVEL`.
+  // Node does NOT apply these to `fetch` on its own, which is why the API
+  // installs a dispatcher at startup.
+  /** Proxy for outbound HTTPS, e.g. `http://proxy.example.corp:8080`. */
+  HTTPS_PROXY: z.string().optional(),
+  /** Proxy for outbound HTTP. */
+  HTTP_PROXY: z.string().optional(),
+  /** Comma-separated hosts that bypass the proxy, e.g. `localhost,127.0.0.1`. */
+  NO_PROXY: z.string().optional(),
   /**
    * Sampling temperature passed to the LLM. Slot-filling is an
    * extraction task, so `0` (greedy decoding — same input always
