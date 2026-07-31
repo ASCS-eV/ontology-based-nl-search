@@ -28,7 +28,7 @@ vi.mock('ai', () => ({
     h.generateTextArgs = args
     return { steps: [], text: '', finishReason: 'stop' }
   }),
-  stepCountIs: vi.fn().mockReturnValue(undefined),
+  isStepCount: vi.fn().mockReturnValue(undefined),
   hasToolCall: vi.fn().mockReturnValue(undefined),
   tool: vi.fn().mockImplementation((def) => def),
 }))

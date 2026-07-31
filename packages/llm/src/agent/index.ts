@@ -11,7 +11,7 @@
 
 import { createComponentLogger, Stopwatch } from '@ontology-search/core/logging'
 import { getPrimaryDomain } from '@ontology-search/search'
-import { generateText, hasToolCall, stepCountIs } from 'ai'
+import { generateText, hasToolCall, isStepCount } from 'ai'
 
 import { getModel } from '../provider.js'
 import type { LlmStructuredResponse } from '../types.js'
@@ -86,7 +86,7 @@ export async function runSparqlAgent(
 
   const result = await generateText({
     model,
-    system: prompt,
+    instructions: prompt,
     prompt: naturalLanguageQuery,
     tools: { ...lookupTools, ...agentTools },
     // Every step must be a tool call — a bounded lookup or the single
@@ -97,7 +97,7 @@ export async function runSparqlAgent(
     // Stop the moment the submission arrives OR when the lookup budget is
     // spent — 'required' alone would force tool calls until the step cap
     // on every request, even after a successful submit.
-    stopWhen: [stepCountIs(policy.maxSteps), hasToolCall(policy.forcedTool)],
+    stopWhen: [isStepCount(policy.maxSteps), hasToolCall(policy.forcedTool)],
     abortSignal: options?.signal,
     // Spread, never `temperature: policy.temperature` — an explicit
     // `undefined` is still a present key that the Anthropic provider

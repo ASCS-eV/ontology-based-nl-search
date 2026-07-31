@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server'
 import { closeAuthoringBackend } from '@ontology-search/authoring'
 import { getConfig } from '@ontology-search/core/config'
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { configureHttpProxyFromEnv } from '@ontology-search/core/net/proxy'
 import { closeSparqlStore } from '@ontology-search/sparql'
 
 import { app } from './app.js'
@@ -12,6 +13,20 @@ import { warmup } from './warmup.js'
 
 const log = createComponentLogger('api')
 const port = getConfig().API_PORT
+
+// Install the proxy dispatcher BEFORE anything can make an outbound request
+// (warmup reaches the LLM provider, and a remote store reaches SPARQL). Node's
+// fetch ignores HTTP(S)_PROXY on its own, so behind a corporate proxy every
+// such call fails at the TCP level — surfacing as `Cannot connect to API`
+// rather than anything naming the proxy. No-op when no proxy is configured.
+const proxy = configureHttpProxyFromEnv()
+if (proxy.enabled) {
+  log.info('Outbound HTTP proxy enabled from the environment', {
+    // Names only, never values — proxy URLs routinely embed credentials.
+    sources: proxy.sources,
+    noProxy: proxy.noProxy ?? '(unset)',
+  })
+}
 
 /**
  * The HTTP listener, assigned once `serve()` returns. Held at module

@@ -4,6 +4,13 @@ packages:
 allowBuilds:
   '@swc/core': true
   esbuild: true
+minimumReleaseAgeExclude:
+  - '@ai-sdk/anthropic@4.0.24'
+  - '@ai-sdk/gateway@4.0.32'
+  - '@ai-sdk/mistral@4.0.17'
+  - '@ai-sdk/openai@4.0.24'
+  - '@ai-sdk/provider-utils@5.0.15'
+  - ai@7.0.42
 overrides:
   # Security advisory GHSA-mh99-v99m-4gvg (brace-expansion DoS, high). The fix is
   # brace-expansion >=5.0.8, whose CJS build exports a NAMED `expand` (not the

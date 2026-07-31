@@ -38,7 +38,7 @@ vi.mock('ai', () => ({
       text: '',
     }
   }),
-  stepCountIs: vi.fn().mockReturnValue(undefined),
+  isStepCount: vi.fn().mockReturnValue(undefined),
   hasToolCall: vi.fn().mockReturnValue(undefined),
   tool: vi.fn().mockImplementation((def) => def),
 }))
@@ -89,7 +89,7 @@ beforeEach(() => {
 })
 
 describe('runSparqlAgent — per-query prompt', () => {
-  it('sends the composed prompt as the system message with budgets from the policy', async () => {
+  it('sends the composed prompt as the instructions with budgets from the policy', async () => {
     vi.mocked(buildRequestPrompt).mockResolvedValue(RETRIEVED)
 
     const response = await runSparqlAgent('some query')
@@ -98,7 +98,10 @@ describe('runSparqlAgent — per-query prompt', () => {
       'some query',
       expect.objectContaining({ maxDomains: 3, maxCards: 40 })
     )
-    expect(h.generateTextArgs?.['system']).toBe('COMPOSED_PROMPT')
+    // `instructions`, not `system` — AI SDK 7 renamed the option and
+    // deprecated the old name.
+    expect(h.generateTextArgs?.['instructions']).toBe('COMPOSED_PROMPT')
+    expect(h.generateTextArgs).not.toHaveProperty('system')
     // The submission invariant is untouched by the prompt path: every
     // step must be a tool call, and submit_slots is the only way out.
     expect(h.generateTextArgs?.['toolChoice']).toBe('required')

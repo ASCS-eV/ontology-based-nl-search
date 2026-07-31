@@ -192,38 +192,32 @@ export async function fetchOntology({ root = ROOT, fetchImpl = fetch, tarImpl, f
 /**
  * Make `fetch` honour the standard proxy environment variables.
  *
- * Node's global `fetch` (undici) ignores `HTTP_PROXY`/`HTTPS_PROXY` unless
- * `NODE_USE_ENV_PROXY=1` is set *before* the runtime starts — behind a
- * corporate proxy a plain `fetch` fails with `ENOTFOUND` even though `curl`,
- * `git` and `pnpm` (which all read those vars) work fine. See the Node docs
- * for `NODE_USE_ENV_PROXY` / `--use-env-proxy`.
+ * Node's global `fetch` (undici) ignores `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`
+ * on its own, so behind a corporate proxy this fetch fails while `curl`, `git`
+ * and `pnpm` — which all read those vars — work fine.
  *
- * The flag can only be applied at startup, so when a proxy is configured and
- * the flag is not yet set we re-exec this script once with it enabled (and the
- * re-exec's exit code becomes ours). It is a no-op when no proxy variable is
- * present, so direct-connection setups pay nothing.
+ * `NODE_USE_ENV_PROXY=1` does NOT fix that on the Node versions this repo
+ * supports (`engines.node: >=22`): the flag is a no-op on Node 22 — verified by
+ * pointing `HTTPS_PROXY` at a closed port on v22.20.0 and watching the request
+ * still go direct — so the earlier re-exec-with-the-flag approach silently did
+ * nothing and the fetch kept failing. Installing a dispatcher works on every
+ * supported version.
  *
- * Returns `false` when nothing was done; on re-exec it never returns — it
- * replaces the current run via `process.exit`.
+ * `EnvHttpProxyAgent` (not a bare `ProxyAgent`) because it also implements
+ * `NO_PROXY`, so an internal PyPI mirror listed there is still reached directly.
+ *
+ * Returns `true` when a dispatcher was installed, `false` when no proxy
+ * variable is set — a direct-connection setup pays nothing.
  */
 export async function ensureEnvProxy(env = process.env) {
-  const proxyVars = [
-    'HTTPS_PROXY',
-    'https_proxy',
-    'HTTP_PROXY',
-    'http_proxy',
-    'ALL_PROXY',
-    'all_proxy',
-  ]
-  const hasProxy = proxyVars.some((k) => env[k])
-  if (!hasProxy || env.NODE_USE_ENV_PROXY) return false
+  const hasProxy = ['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy'].some((k) =>
+    typeof env[k] === 'string' ? env[k].trim() !== '' : false
+  )
+  if (!hasProxy) return false
 
-  const { spawnSync } = await import('node:child_process')
-  const result = spawnSync(process.execPath, process.argv.slice(1), {
-    stdio: 'inherit',
-    env: { ...env, NODE_USE_ENV_PROXY: '1' },
-  })
-  process.exit(result.status ?? 1)
+  const { EnvHttpProxyAgent, setGlobalDispatcher } = await import('undici')
+  setGlobalDispatcher(new EnvHttpProxyAgent())
+  return true
 }
 
 // ── CLI ──────────────────────────────────────────────────────────────────────
