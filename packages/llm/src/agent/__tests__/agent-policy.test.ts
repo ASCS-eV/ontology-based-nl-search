@@ -22,7 +22,7 @@ function config(overrides: Record<string, unknown>): Record<string, unknown> {
     AI_PROVIDER: 'copilot',
     AI_MODEL: 'claude-sonnet-4.6',
     LLM_TEMPERATURE: 0,
-    LLM_THINKING_BUDGET: 0,
+    LLM_THINKING: 'off',
     LLM_MAX_AGENT_STEPS: 3,
     AUTHORING_REASONING_EFFORT: 'medium',
     ...overrides,
@@ -48,7 +48,7 @@ describe('getAgentPolicy — search task (reasoningEffort)', () => {
   })
 
   it("disables reasoning ('none') on copilot regardless of model (haiku)", () => {
-    cfg.value = config({ AI_MODEL: 'claude-haiku-4.5' })
+    cfg.value = config({ AI_MODEL: 'claude-haiku-4-5' })
     expect(getAgentPolicy().reasoningEffort).toBe('none')
   })
 
@@ -87,5 +87,37 @@ describe('getAgentPolicy — authoring task', () => {
   it('has null reasoning for a non-copilot provider even for authoring', () => {
     cfg.value = config({ AI_PROVIDER: 'openai', AUTHORING_REASONING_EFFORT: 'high' })
     expect(getAgentPolicy('authoring').reasoningEffort).toBeNull()
+  })
+})
+
+describe('getAgentPolicy — LLM_THINKING mode (Anthropic reasoning)', () => {
+  /**
+   * Regression guard for a latent hard failure: `thinking.budget_tokens` was
+   * REMOVED in the Claude 4.7 generation, and `adaptive` does not exist before
+   * 4.6 — each is a 400 on the other's models [ANTHROPIC-MSG] `/v1/messages`
+   * § Request. So the mode must survive into the policy verbatim; collapsing
+   * both onto one shape (as the previous budget-only knob did) breaks whichever
+   * model generation the operator actually configured.
+   */
+  it("carries 'adaptive' through as a mode, not a budget", () => {
+    cfg.value = config({ AI_PROVIDER: 'claude-cli', LLM_THINKING: 'adaptive' })
+    expect(getAgentPolicy().thinking).toEqual({ mode: 'adaptive' })
+  })
+
+  it('carries a numeric budget through as a budget mode', () => {
+    cfg.value = config({ AI_PROVIDER: 'claude-cli', LLM_THINKING: 4096 })
+    expect(getAgentPolicy().thinking).toEqual({ mode: 'budget', budgetTokens: 4096 })
+  })
+
+  it("is null when LLM_THINKING is 'off' (the default)", () => {
+    cfg.value = config({ AI_PROVIDER: 'claude-cli', LLM_THINKING: 'off' })
+    expect(getAgentPolicy().thinking).toBeNull()
+  })
+
+  it('is null for a provider without a typed thinking block, even when requested', () => {
+    // Copilot reasons via `reasoningEffort`; sending Anthropic provider
+    // options there would be meaningless at best.
+    cfg.value = config({ AI_PROVIDER: 'copilot', LLM_THINKING: 'adaptive' })
+    expect(getAgentPolicy().thinking).toBeNull()
   })
 })

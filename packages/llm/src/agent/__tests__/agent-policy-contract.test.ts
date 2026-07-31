@@ -78,10 +78,13 @@ vi.mock('@ontology-search/search', () => ({
 vi.mock('@ontology-search/core/config', () => ({
   getConfig: vi.fn().mockReturnValue({
     AI_PROVIDER: 'copilot',
+    // Dotted, because this suite mocks the Copilot provider — Copilot model
+    // ids use dots (`claude-haiku-4.5`) where the Anthropic Messages API uses
+    // hyphens (`claude-haiku-4-5`) and 400s on the dotted form.
     AI_MODEL: 'claude-haiku-4.5',
     GITHUB_TOKEN: 'test-token',
     LLM_TEMPERATURE: 0,
-    LLM_THINKING_BUDGET: 0,
+    LLM_THINKING: 'off',
     LLM_MAX_AGENT_STEPS: 3,
   }),
 }))

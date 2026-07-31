@@ -6,14 +6,14 @@
  * timing stage is recorded, and (4) caller aborts during retrieval
  * propagate as aborts instead of degrading.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
   config: {
     AI_PROVIDER: 'claude-cli',
     AI_MODEL: 'test-model',
     LLM_TEMPERATURE: 0,
-    LLM_THINKING_BUDGET: 0,
+    LLM_THINKING: 'off',
     LLM_MAX_AGENT_STEPS: 3,
     RETRIEVAL_MAX_DOMAINS: 3,
     RETRIEVAL_MAX_CARDS: 40,
@@ -114,5 +114,51 @@ describe('runSparqlAgent — per-query prompt', () => {
 
     await expect(runSparqlAgent('some query')).rejects.toThrow('Aborted')
     expect(h.generateTextArgs).toBeNull()
+  })
+})
+
+/**
+ * Wire-level translation of `LLM_THINKING` into Anthropic provider options.
+ *
+ * These pin the SHAPE that reaches the provider, which is the part that fails
+ * as a hard 400 rather than a degradation: `thinking.budget_tokens` was REMOVED
+ * in the Claude 4.7 generation, while `adaptive` does not exist before 4.6
+ * [ANTHROPIC-MSG] `/v1/messages` § Request. Emitting the wrong one for the
+ * configured model rejects every request, so the two must never collapse onto a
+ * single shape.
+ */
+describe('Vercel adapter — LLM_THINKING translation', () => {
+  const THINKING = 'off' as const
+
+  beforeEach(() => {
+    vi.mocked(buildRequestPrompt).mockResolvedValue(RETRIEVED)
+    h.config.LLM_THINKING = THINKING
+  })
+
+  afterEach(() => {
+    // Restore the default so mode changes can't leak into sibling suites.
+    h.config.LLM_THINKING = THINKING
+  })
+
+  it("emits { type: 'adaptive' } and no budget for LLM_THINKING='adaptive'", async () => {
+    h.config.LLM_THINKING = 'adaptive' as unknown as typeof THINKING
+    await runSparqlAgent('some query')
+
+    const opts = h.generateTextArgs?.['providerOptions'] as
+      | { anthropic?: { thinking?: Record<string, unknown> } }
+      | undefined
+    expect(opts?.anthropic?.thinking).toEqual({ type: 'adaptive' })
+    // A budget alongside adaptive is exactly what 4.7+ rejects.
+    expect(opts?.anthropic?.thinking).not.toHaveProperty('budgetTokens')
+  })
+
+  it("emits { type: 'enabled', budgetTokens } for a numeric LLM_THINKING", async () => {
+    h.config.LLM_THINKING = 2048 as unknown as typeof THINKING
+    await runSparqlAgent('some query')
+
+    const opts = h.generateTextArgs?.['providerOptions'] as
+      | { anthropic?: { thinking?: Record<string, unknown> } }
+      | undefined
+    expect(opts?.anthropic?.thinking).toEqual({ type: 'enabled', budgetTokens: 2048 })
   })
 })

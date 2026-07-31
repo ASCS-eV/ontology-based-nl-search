@@ -17,7 +17,7 @@
 | **Lineage explorer**                | `/traceability?asset=<iri>` walks outgoing references multi-hop; deduped distinct-asset tree UI                                                                    |
 | **Metadata facets**                 | `/metadata/asset` (per-asset snapshot) and `/metadata/aggregate` (per-domain distribution)                                                                         |
 | **Multi-provider LLM**              | 5 providers via Vercel AI SDK (OpenAI, Anthropic, claude-cli, vibe-cli, Ollama) + Copilot                                                                          |
-| **LLM tuning surface**              | `LLM_TEMPERATURE`, `LLM_THINKING_BUDGET`, `LLM_MAX_AGENT_STEPS` as typed env knobs                                                                                 |
+| **LLM tuning surface**              | `LLM_TEMPERATURE`, `LLM_THINKING`, `LLM_MAX_AGENT_STEPS` as typed env knobs                                                                                        |
 | **Honest gap reporting**            | Dropped cross-reference slots and SHACL-rejected values surface explanatory gaps                                                                                   |
 | **Forced tool choice**              | `toolChoice` targets `submit_slots` by name — 1-step structured output across providers                                                                            |
 | **Multi-domain architecture**       | All discovered asset classes joined by SHACL-discovered cross-references                                                                                           |

@@ -332,12 +332,12 @@ describe('runSparqlAgent — agent boundary', () => {
   })
 
   /**
-   * `LLM_THINKING_BUDGET` is OFF by default — no `providerOptions` block
-   * should land in the call, regardless of provider. Wiring it always
-   * would shift the request shape and could break providers that
-   * reject unrecognised provider-option keys.
+   * `LLM_THINKING` is `off` by default — no `providerOptions` block should
+   * land in the call, regardless of provider. Wiring it always would shift
+   * the request shape and could break providers that reject unrecognised
+   * provider-option keys.
    */
-  it('omits providerOptions when LLM_THINKING_BUDGET is 0 (default)', async () => {
+  it("omits providerOptions when LLM_THINKING is 'off' (default)", async () => {
     mockLlmResult([{ toolResults: [{ toolName: 'submit_slots', output: fakeSubmission() }] }])
     await runSparqlAgent('test')
     const lastCall = vi.mocked(generateText).mock.lastCall

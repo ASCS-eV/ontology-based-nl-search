@@ -2,7 +2,7 @@
  * Vercel AI SDK Adapter — slot-filling via `generateText` + forced tool choice.
  *
  * Handles all non-Copilot providers: openai, ollama, anthropic, claude-cli, vibe-cli.
- * Reads the shared AgentPolicy for temperature, thinking budget, tool choice,
+ * Reads the shared AgentPolicy for temperature, reasoning mode, tool choice,
  * and max steps — no local policy decisions.
  *
  * @see ./agent-policy.ts — Single source of truth for agent behaviour
@@ -70,11 +70,16 @@ export async function runSparqlAgent(
   endRetrieval()
 
   const endLlmCall = sw.time('llm-round-trip')
-  // Anthropic extended thinking — translated from the shared policy.
+  // Anthropic reasoning — translated from the shared policy. `adaptive` and a
+  // fixed budget are different request shapes, and each is a 400 on the other's
+  // model generation, so the policy's mode decides rather than a default.
   const providerOptions = policy.thinking
     ? {
         anthropic: {
-          thinking: { type: 'enabled' as const, budgetTokens: policy.thinking.budgetTokens },
+          thinking:
+            policy.thinking.mode === 'adaptive'
+              ? { type: 'adaptive' as const }
+              : { type: 'enabled' as const, budgetTokens: policy.thinking.budgetTokens },
         },
       }
     : undefined
