@@ -39,12 +39,12 @@ const { PIPELINE_SPARQL, FALLBACK_SPARQL } = vi.hoisted(() => ({
 
 // ─── Module-level mocks (hoisted by vitest) ────────────────────────────────
 
-// `ai` package: only `generateText`, `stepCountIs`, and `tool` are used by
+// `ai` package: only `generateText`, `isStepCount`, and `tool` are used by
 // the agent. `tool` is a passthrough so tools.ts's schema definition still
 // resolves; we never execute the tool inside these tests.
 vi.mock('ai', () => ({
   generateText: vi.fn(),
-  stepCountIs: vi.fn().mockReturnValue(undefined),
+  isStepCount: vi.fn().mockReturnValue(undefined),
   hasToolCall: vi.fn().mockReturnValue(undefined),
   tool: vi.fn().mockImplementation((def) => def),
 }))
