@@ -15,6 +15,11 @@
       "import": "./dist/logging/index.js",
       "default": "./dist/logging/index.js"
     },
+    "./net/proxy": {
+      "types": "./src/net/proxy.ts",
+      "import": "./dist/net/proxy.js",
+      "default": "./dist/net/proxy.js"
+    },
     "./errors": {
       "types": "./src/errors/index.ts",
       "import": "./dist/errors/index.js",
@@ -66,6 +71,7 @@
   },
   "dependencies": {
     "@zazuko/prefixes": "^2.6.1",
+    "undici": "^8.9.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

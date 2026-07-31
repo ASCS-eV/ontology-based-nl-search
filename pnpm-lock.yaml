@@ -52,6 +52,9 @@ importers:
       typescript-eslint:
         specifier: ^8.59.2
         version: 8.59.2(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
+      undici:
+        specifier: ^8.9.0
+        version: 8.9.0
 
   apps/api:
     dependencies:
@@ -453,6 +456,9 @@ importers:
       '@zazuko/prefixes':
         specifier: ^2.6.1
         version: 2.6.1
+      undici:
+        specifier: ^8.9.0
+        version: 8.9.0
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -4569,6 +4575,10 @@ packages:
     resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
     engines: {node: '>=20.18.1'}
 
+  undici@8.9.0:
+    resolution: {integrity: sha512-aWZpUj7XoGonMClx4gdDRfgBjqeA+F473aDmROQQbM9n6PRfK/u1q/a0X4wMTgcHfT8H6fpbt98PFuDUwFg2YA==}
+    engines: {node: '>=22.19.0'}
+
   unist-util-is@6.0.1:
     resolution: {integrity: sha512-LsiILbtBETkDz8I9p1dQ0uyRUWuaQzd/cuEeS1hoRSyW5E5XGmTzlwY1OrNzzakGowI9Dr/I8HVaw4hTtnxy8g==}
 
@@ -8622,6 +8632,8 @@ snapshots:
   undici-types@7.21.0: {}
 
   undici@7.29.0: {}
+
+  undici@8.9.0: {}
 
   unist-util-is@6.0.1:
     dependencies:
