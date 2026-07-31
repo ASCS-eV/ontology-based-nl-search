@@ -33,8 +33,17 @@ export type AgentTask = 'search' | 'authoring'
  * request scope — it won't mutate during a call.
  */
 export interface AgentPolicy {
-  /** Temperature for sampling. 0 = greedy (deterministic). */
-  readonly temperature: number
+  /**
+   * Sampling temperature, or `undefined` when no sampling parameter should be
+   * sent. Undefined is the DEFAULT: `temperature` was removed from the
+   * Anthropic Messages API in the Claude 4.7 generation and later models
+   * reject it with a 400 [ANTHROPIC-MSG] `/v1/messages` § Request, so adapters
+   * must omit the field entirely rather than pass a fallback value.
+   *
+   * Determinism comes from the single-tool submission plus the deterministic
+   * compiler, not from greedy decoding.
+   */
+  readonly temperature: number | undefined
   /** Max tool-call steps before the agent is cut off. */
   readonly maxSteps: number
   /**

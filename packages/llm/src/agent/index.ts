@@ -94,7 +94,11 @@ export async function runSparqlAgent(
     // on every request, even after a successful submit.
     stopWhen: [isStepCount(policy.maxSteps), hasToolCall(policy.forcedTool)],
     abortSignal: options?.signal,
-    temperature: policy.temperature,
+    // Spread, never `temperature: policy.temperature` — an explicit
+    // `undefined` is still a present key that the Anthropic provider
+    // serializes, and models from the Claude 4.7 generation on reject the
+    // parameter outright [ANTHROPIC-MSG] `/v1/messages` § Request.
+    ...(policy.temperature !== undefined ? { temperature: policy.temperature } : {}),
     ...(providerOptions ? { providerOptions } : {}),
   })
   endLlmCall()

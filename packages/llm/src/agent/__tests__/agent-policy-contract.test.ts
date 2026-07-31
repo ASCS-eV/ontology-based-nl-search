@@ -112,7 +112,7 @@ describe('Agent policy contract — both adapters honour the shared policy', () 
     expect(policy.forcedTool).toBe('submit_slots')
   })
 
-  it('AgentPolicy temperature defaults to 0 (greedy decoding)', () => {
+  it('AgentPolicy temperature mirrors the configured value when one is set', () => {
     const policy = getAgentPolicy()
     expect(policy.temperature).toBe(0)
   })
@@ -141,10 +141,14 @@ describe('Agent policy contract — both adapters honour the shared policy', () 
     expect(Object.keys(tools)).not.toContain('investigate_schema')
   })
 
-  it('Vercel adapter uses policy temperature', async () => {
+  it('Vercel adapter forwards an explicitly configured policy temperature', async () => {
     const { runSparqlAgent } = await import('../index.js')
     await runSparqlAgent('test query')
 
+    // This suite's config mock sets LLM_TEMPERATURE: 0, so the opt-in override
+    // must reach the wire — omission applies only when it is unset. The
+    // unset-by-default wire shape is pinned in agent-boundary.test.ts, which
+    // runs against the real config.
     expect(h.generateTextArgs!['temperature']).toBe(0)
   })
 

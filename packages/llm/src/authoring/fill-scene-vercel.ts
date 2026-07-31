@@ -45,7 +45,9 @@ export async function fillSceneVercel(
     toolChoice: 'required',
     stopWhen: [isStepCount(policy.maxSteps), hasToolCall('submit_scene')],
     ...(signal ? { abortSignal: signal } : {}),
-    temperature: policy.temperature,
+    // Omitted unless explicitly configured — see the search adapter and
+    // {@link AgentPolicy.temperature}: post-4.7 Anthropic models 400 on it.
+    ...(policy.temperature !== undefined ? { temperature: policy.temperature } : {}),
     ...(providerOptions ? { providerOptions } : {}),
   })
 
