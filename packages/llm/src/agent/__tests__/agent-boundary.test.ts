@@ -39,12 +39,12 @@ const { PIPELINE_SPARQL, FALLBACK_SPARQL } = vi.hoisted(() => ({
 
 // ─── Module-level mocks (hoisted by vitest) ────────────────────────────────
 
-// `ai` package: only `generateText`, `stepCountIs`, and `tool` are used by
+// `ai` package: only `generateText`, `isStepCount`, and `tool` are used by
 // the agent. `tool` is a passthrough so tools.ts's schema definition still
 // resolves; we never execute the tool inside these tests.
 vi.mock('ai', () => ({
   generateText: vi.fn(),
-  stepCountIs: vi.fn().mockReturnValue(undefined),
+  isStepCount: vi.fn().mockReturnValue(undefined),
   hasToolCall: vi.fn().mockReturnValue(undefined),
   tool: vi.fn().mockImplementation((def) => def),
 }))
@@ -312,18 +312,23 @@ describe('runSparqlAgent — agent boundary', () => {
   })
 
   /**
-   * `LLM_TEMPERATURE` flows through to the LLM call so the
-   * "deterministic by default" contract is observable from the wire.
-   * Zero is the right default for an extraction task; without this
-   * pin a future refactor could silently drop the field and re-
-   * introduce the Mistral run-to-run variance we caught in the
-   * browser pass.
+   * No sampling parameter may reach the wire unless an operator explicitly
+   * configured one. `temperature` was removed from the Anthropic Messages API
+   * in the Claude 4.7 generation, and later models — including the default
+   * `AI_MODEL` `claude-sonnet-5` — reject it with
+   * `400 "temperature is deprecated for this model"`
+   * [ANTHROPIC-MSG] `/v1/messages` § Request.
+   *
+   * This asserts ABSENCE of the key, not `undefined`: the provider serializes
+   * a present-but-undefined field, so `temperature: policy.temperature` would
+   * still 400. A default of `0` previously failed every search request on a
+   * stock `.env.local`.
    */
-  it('forwards LLM_TEMPERATURE to generateText (default 0 for deterministic extraction)', async () => {
+  it('omits temperature entirely when LLM_TEMPERATURE is unset (default)', async () => {
     mockLlmResult([{ toolResults: [{ toolName: 'submit_slots', output: fakeSubmission() }] }])
     await runSparqlAgent('test')
     const lastCall = vi.mocked(generateText).mock.lastCall
-    expect(lastCall?.[0]?.temperature).toBe(0)
+    expect(lastCall?.[0]).not.toHaveProperty('temperature')
   })
 
   /**

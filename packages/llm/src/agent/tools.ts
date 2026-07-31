@@ -3,7 +3,7 @@ import {
   interpretationWireSchema,
   referenceFilterWireSchema,
 } from '@ontology-search/search/slot-wire-schema'
-import { tool } from 'ai'
+import { tool, type ToolSet } from 'ai'
 import { z } from 'zod'
 
 import { SCHEMA_TOOL_DEFINITIONS } from './schema-tools.js'
@@ -71,16 +71,20 @@ export type SlotSubmissionParams = z.infer<typeof slotSubmissionSchema>
  * The LLM fills structured slots instead of writing raw SPARQL.
  * SPARQL is compiled deterministically from slots by the compiler.
  */
-export const agentTools = {
+export const agentTools: ToolSet = {
   /**
    * Submit the structured slot-based answer.
    * The LLM fills search slots and provides interpretation/gaps.
    */
-  submit_slots: tool<SlotSubmissionParams, SlotSubmissionParams>({
+  // Input and output types are INFERRED from `inputSchema` and `execute`
+  // rather than given explicitly. `tool()`'s trailing generic is now
+  // `CONTEXT extends Context`, so a two-argument `tool<INPUT, OUTPUT>` binds
+  // the submission type to CONTEXT and matches no overload.
+  submit_slots: tool({
     description:
       'Submit the structured search result. Fill slots for known concepts, report gaps for unknown concepts. Call this exactly once.',
     inputSchema: slotSubmissionSchema,
-    execute: async (params) => {
+    execute: async (params: SlotSubmissionParams): Promise<SlotSubmissionParams> => {
       return params
     },
   }),
@@ -91,7 +95,7 @@ export const agentTools = {
  * definitions (args, handlers, security notes) live in schema-tools.ts;
  * this only adapts them to `ai`'s tool shape.
  */
-export const lookupTools = Object.fromEntries(
+export const lookupTools: ToolSet = Object.fromEntries(
   SCHEMA_TOOL_DEFINITIONS.map((def) => [
     def.name,
     tool({

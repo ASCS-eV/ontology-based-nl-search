@@ -140,15 +140,27 @@ const envSchema = z.object({
   /** Comma-separated hosts that bypass the proxy, e.g. `localhost,127.0.0.1`. */
   NO_PROXY: z.string().optional(),
   /**
-   * Sampling temperature passed to the LLM. Slot-filling is an
-   * extraction task, so `0` (greedy decoding — same input always
-   * yields the same output) is the right default. Honoured by every
-   * Vercel-SDK provider (openai, ollama, anthropic, claude-cli,
-   * vibe-cli). The Copilot SDK doesn't expose this knob and ignores
-   * it. Raise above 0 only when intentionally introducing variance
-   * (e.g. A/B comparisons or creative-task experiments).
+   * Sampling temperature passed to the LLM — an OPT-IN override, unset by
+   * default so no sampling parameter is sent at all.
+   *
+   * It cannot default to `0`: `temperature` (with `top_p` / `top_k`) was
+   * REMOVED from the Anthropic Messages API in the Claude 4.7 generation, and
+   * every model from that generation on — including the default `AI_MODEL`
+   * `claude-sonnet-5` — rejects a non-default value with
+   * `400 "temperature is deprecated for this model"`
+   * [ANTHROPIC-MSG] `/v1/messages` § Request. Sending a default of `0`
+   * therefore failed every single search request on the default configuration.
+   *
+   * Determinism does not depend on this knob: the LLM only ever fills
+   * `SearchSlots` through one tool call, and the SPARQL compiler is
+   * deterministic given those slots.
+   *
+   * Set it only for a provider/model that still accepts sampling parameters
+   * (openai, ollama, vibe-cli, or a pre-4.7 Anthropic model). On a model that
+   * removed them the provider's own 400 surfaces — the value is never silently
+   * discarded. The Copilot SDK doesn't expose this knob and ignores it.
    */
-  LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
+  LLM_TEMPERATURE: z.coerce.number().min(0).max(2).optional(),
   /**
    * Anthropic-only: token budget for the model's hidden
    * chain-of-thought. `0` (default) disables reasoning — same speed as
