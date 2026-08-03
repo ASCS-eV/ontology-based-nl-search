@@ -11,7 +11,7 @@
 
 import { createComponentLogger, Stopwatch } from '@ontology-search/core/logging'
 import { getPrimaryDomain } from '@ontology-search/search'
-import { generateText, hasToolCall, isStepCount, type LanguageModel } from 'ai'
+import { generateText, hasToolCall, isStepCount, type LanguageModel, streamText } from 'ai'
 
 import { getModel } from '../provider.js'
 import type { LlmStructuredResponse } from '../types.js'
@@ -51,6 +51,8 @@ export interface AgentOptions {
 interface InjectedAgentOptions extends AgentOptions {
   observer?: AgentEvaluationObserver
   policy?: AgentPolicy
+  streaming?: boolean
+  providerOptions?: Parameters<typeof generateText>[0]['providerOptions']
 }
 
 /**
@@ -104,18 +106,21 @@ export async function runSparqlAgentWithModel(
   // Anthropic reasoning — translated from the shared policy. `adaptive` and a
   // fixed budget are different request shapes, and each is a 400 on the other's
   // model generation, so the policy's mode decides rather than a default.
-  const providerOptions = policy.thinking
-    ? {
-        anthropic: {
-          thinking:
-            policy.thinking.mode === 'adaptive'
-              ? { type: 'adaptive' as const }
-              : { type: 'enabled' as const, budgetTokens: policy.thinking.budgetTokens },
-        },
-      }
-    : undefined
+  const providerOptions = {
+    ...options?.providerOptions,
+    ...(policy.thinking
+      ? {
+          anthropic: {
+            thinking:
+              policy.thinking.mode === 'adaptive'
+                ? { type: 'adaptive' as const }
+                : { type: 'enabled' as const, budgetTokens: policy.thinking.budgetTokens },
+          },
+        }
+      : {}),
+  }
 
-  const result = await generateText({
+  const generationOptions = {
     model,
     instructions: prompt,
     prompt: naturalLanguageQuery,
@@ -124,7 +129,7 @@ export async function runSparqlAgentWithModel(
     // submission tool; prose-only turns are impossible. The step budget
     // caps lookups, and a budget spent without submit_slots degrades to
     // the deterministic fallback below.
-    toolChoice: 'required',
+    toolChoice: 'required' as const,
     // Stop the moment the submission arrives OR when the lookup budget is
     // spent — 'required' alone would force tool calls until the step cap
     // on every request, even after a successful submit.
@@ -135,8 +140,11 @@ export async function runSparqlAgentWithModel(
     // serializes, and models from the Claude 4.7 generation on reject the
     // parameter outright [ANTHROPIC-MSG] `/v1/messages` § Request.
     ...(policy.temperature !== undefined ? { temperature: policy.temperature } : {}),
-    ...(providerOptions ? { providerOptions } : {}),
-  })
+    ...(Object.keys(providerOptions).length > 0 ? { providerOptions } : {}),
+  }
+  const result = options?.streaming
+    ? await collectStreamingResult(streamText(generationOptions))
+    : await generateText(generationOptions)
   endLlmCall()
 
   const toolCalls = collectToolTraces(result)
@@ -146,8 +154,8 @@ export async function runSparqlAgentWithModel(
   // have passed the SDK's schema and execute handler; raw arguments are kept
   // separately above so evaluation can distinguish protocol from semantics.
   const submitCall = result.steps
-    .flatMap((step) => step.toolResults)
-    .find((r) => r.toolName === 'submit_slots')
+    .flatMap((step) => step.toolResults ?? [])
+    .find((toolResult) => toolResult?.toolName === 'submit_slots')
 
   let validatedResponse: LlmStructuredResponse
   if (!submitCall) {
@@ -196,12 +204,31 @@ interface ToolCallLike {
 }
 
 interface GenerateResultLike {
-  finishReason?: unknown
+  finishReason: unknown
   usage?: unknown
   steps: ReadonlyArray<{
     toolCalls?: ReadonlyArray<ToolCallLike>
     toolResults?: ReadonlyArray<ToolResultLike>
   }>
+}
+
+interface StreamingResultLike {
+  finishReason: PromiseLike<unknown>
+  usage: PromiseLike<unknown>
+  text: PromiseLike<string>
+  steps: PromiseLike<GenerateResultLike['steps']>
+}
+
+async function collectStreamingResult(
+  result: StreamingResultLike
+): Promise<GenerateResultLike & { text: string }> {
+  const [finishReason, usage, text, steps] = await Promise.all([
+    result.finishReason,
+    result.usage,
+    result.text,
+    result.steps,
+  ])
+  return { finishReason, usage, text, steps }
 }
 
 function collectToolTraces(result: GenerateResultLike): EvaluationToolTrace[] {

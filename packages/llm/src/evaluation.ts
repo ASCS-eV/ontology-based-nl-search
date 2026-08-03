@@ -6,7 +6,7 @@
  * continues to resolve its provider through `getModel()`.
  */
 import { createOpenAI } from '@ai-sdk/openai'
-import type { LanguageModel } from 'ai'
+import type { generateText, LanguageModel } from 'ai'
 
 import type { AgentPolicy } from './agent/agent-policy.js'
 import { type AgentOptions, runSparqlAgentWithModel } from './agent/index.js'
@@ -31,6 +31,10 @@ export interface EvaluateSearchOptions extends AgentOptions {
   model: LanguageModel
   observer?: import('./agent/evaluation-types.js').AgentEvaluationObserver
   policy?: AgentPolicy
+  /** Use the provider's streaming transport while preserving the same agent loop. */
+  streaming?: boolean
+  /** Evaluation-only provider controls such as Responses API storage policy. */
+  providerOptions?: Parameters<typeof generateText>[0]['providerOptions']
 }
 
 export type { AgentPolicy as EvaluationAgentPolicy } from './agent/agent-policy.js'
@@ -70,6 +74,21 @@ export function createOpenAICompatibleModel(options: OpenAICompatibleModelOption
   return provider.chat(options.model)
 }
 
+/**
+ * Construct a Responses-wire model for hosted smoke tests. Local runtimes use
+ * the chat-completions factory above; Codex and the public OpenAI API use the
+ * Responses protocol instead. Authentication remains caller-owned so this
+ * private seam never reads credentials or mutates process environment.
+ */
+export function createOpenAIResponsesModel(options: OpenAICompatibleModelOptions): LanguageModel {
+  const provider = createOpenAI({
+    baseURL: options.baseUrl.replace(/\/+$/, ''),
+    apiKey: options.apiKey ?? 'hosted-evaluation',
+    ...(options.headers ? { headers: options.headers } : {}),
+  })
+  return provider.responses(options.model)
+}
+
 export function evaluateStructuredSearch(query: string, options: EvaluateSearchOptions) {
   const modelId = typeof options.model === 'string' ? options.model : options.model.modelId
   return runSparqlAgentWithModel(query, options.model, {
@@ -77,5 +96,7 @@ export function evaluateStructuredSearch(query: string, options: EvaluateSearchO
     signal: options.signal,
     observer: options.observer,
     policy: options.policy ?? createEvaluationPolicy(modelId),
+    streaming: options.streaming,
+    providerOptions: options.providerOptions,
   })
 }
