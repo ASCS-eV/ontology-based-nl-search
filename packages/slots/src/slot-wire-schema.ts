@@ -22,6 +22,33 @@
 
 import { z } from 'zod'
 
+// ─── Leaf value shapes ───────────────────────────────────────────────────────
+
+/**
+ * A property filter map: SHACL leaf local name → one value or several.
+ * An array carries IN-semantics for the compiler.
+ */
+export const slotFiltersWireSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.array(z.string())])
+)
+
+/**
+ * A single numeric range. Both bounds are optional and an empty object is
+ * VALID: a model that names a range property without committing to a bound
+ * has still emitted a structurally well-formed submission, and the slot
+ * pipeline — not the wire schema — decides what an unbounded range means.
+ * Tightening this here would make the wire contract reject payloads the
+ * production agent accepts. [JSON-SCHEMA-VAL] §6.5 object/optional keywords.
+ */
+export const slotRangeWireSchema = z.object({
+  min: z.number().optional(),
+  max: z.number().optional(),
+})
+
+/** A numeric range map: SHACL leaf local name → range. */
+export const slotRangesWireSchema = z.record(z.string(), slotRangeWireSchema)
+
 // ─── Reference filter (recursive) ────────────────────────────────────────────
 
 /** Input shape for a cross-domain reference filter (recursive). */
@@ -45,16 +72,14 @@ export const referenceFilterWireSchema: z.ZodType<ReferenceFilterInput> = z.lazy
   z.object({
     domain: z.string(),
     label: z.string().optional(),
-    filters: z
-      .record(z.string(), z.union([z.string(), z.array(z.string())]))
+    filters: slotFiltersWireSchema
       .optional()
       .describe(
         'Property filters on THIS referenced asset (keyed by SHACL leaf local name), ' +
           'i.e. a property of the referenced asset constrained to one or more values. ' +
           'Put constraints that describe the referenced asset here, NOT in the top-level slots.'
       ),
-    ranges: z
-      .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
+    ranges: slotRangesWireSchema
       .optional()
       .describe(
         'Numeric range filters on THIS referenced asset — a numeric property of the ' +
@@ -63,6 +88,26 @@ export const referenceFilterWireSchema: z.ZodType<ReferenceFilterInput> = z.lazy
     references: z.array(referenceFilterWireSchema).optional(),
   })
 )
+
+// ─── Search slots ────────────────────────────────────────────────────────────
+
+/**
+ * The canonical structure of the `slots` object the LLM fills.
+ *
+ * This is the single structural definition of the slot payload. The agent's
+ * `submit_slots` tool layers prompt-facing `.describe()` text over these
+ * fields, and the evaluation harness scores against the very same schema, so
+ * a submission the production agent accepts can never be rejected downstream.
+ * [JSON-SCHEMA-CORE] §10.3 object applicators.
+ */
+export const searchSlotsWireSchema = z.object({
+  domains: z.array(z.string()).default([]),
+  filters: slotFiltersWireSchema.default({}),
+  ranges: slotRangesWireSchema.default({}),
+  references: z.union([referenceFilterWireSchema, z.array(referenceFilterWireSchema)]).optional(),
+})
+
+export type SearchSlotsWire = z.infer<typeof searchSlotsWireSchema>
 
 // ─── Interpretation ──────────────────────────────────────────────────────────
 

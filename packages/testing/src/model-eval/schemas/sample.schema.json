@@ -101,7 +101,11 @@
               ]
             }
           },
-          "required": ["domains", "filters", "ranges"],
+          "required": [
+            "domains",
+            "filters",
+            "ranges"
+          ],
           "additionalProperties": false
         },
         {
@@ -174,7 +178,11 @@
               ]
             }
           },
-          "required": ["domains", "filters", "ranges"],
+          "required": [
+            "domains",
+            "filters",
+            "ranges"
+          ],
           "additionalProperties": false
         },
         {
@@ -202,7 +210,9 @@
             ]
           }
         },
-        "required": ["term"],
+        "required": [
+          "term"
+        ],
         "additionalProperties": false
       }
     },
@@ -252,7 +262,10 @@
               "input": {},
               "output": {}
             },
-            "required": ["step", "toolName"],
+            "required": [
+              "step",
+              "toolName"
+            ],
             "additionalProperties": false
           }
         },
@@ -573,7 +586,11 @@
               "maximum": 9007199254740991
             }
           },
-          "required": ["processTree", "gpu", "samples"],
+          "required": [
+            "processTree",
+            "gpu",
+            "samples"
+          ],
           "additionalProperties": false
         }
       },
@@ -584,6 +601,9 @@
         "samplingCoverage"
       ],
       "additionalProperties": false
+    },
+    "transportError": {
+      "type": "string"
     },
     "error": {
       "type": "string"
@@ -614,10 +634,13 @@
       "type": "object",
       "properties": {
         "domain": {
-          "type": "string",
-          "minLength": 1
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
         },
         "filters": {
+          "description": "Property filters on THIS referenced asset (keyed by SHACL leaf local name), i.e. a property of the referenced asset constrained to one or more values. Put constraints that describe the referenced asset here, NOT in the top-level slots.",
           "type": "object",
           "propertyNames": {
             "type": "string"
@@ -637,6 +660,7 @@
           }
         },
         "ranges": {
+          "description": "Numeric range filters on THIS referenced asset — a numeric property of the referenced asset constrained to a minimum and/or maximum.",
           "type": "object",
           "propertyNames": {
             "type": "string"
@@ -661,7 +685,9 @@
           }
         }
       },
-      "required": ["domain"],
+      "required": [
+        "domain"
+      ],
       "additionalProperties": false
     }
   }

@@ -86,6 +86,34 @@ export default tseslint.config(
     },
   },
 
+  // The evaluation seam accepts a caller-supplied model and policy, which
+  // would bypass the configured provider and the agent policy that the
+  // "the LLM never writes SPARQL" invariant rests on. It exists for the
+  // offline harness only; the allowance below re-enables it there.
+  {
+    files: ['packages/*/src/**/*.{ts,tsx}', 'apps/*/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@ontology-search/llm/evaluation',
+              message:
+                'The evaluation seam is private to @ontology-search/testing. Production code must go through searchWithLlm()/runSparqlAgent(), which resolve the provider and policy from config.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['packages/testing/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+
   // Test files — relaxed rules. Tests legitimately set up env-var
   // fixtures (e.g. `process.env.ONTOLOGY_ROOT = tmpDir`); criterion #23
   // governs cleanup discipline, not whether the access is allowed.

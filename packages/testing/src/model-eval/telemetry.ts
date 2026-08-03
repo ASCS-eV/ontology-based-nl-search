@@ -8,7 +8,13 @@ import type { z } from 'zod'
 import type { CoverageStateSchema, HardwareInventory } from './types.js'
 
 type CoverageState = z.infer<typeof CoverageStateSchema>
-const clockTicksPerSecond = readClockTicksPerSecond()
+
+/**
+ * Another tenant's allocation above this margin marks the sample as sharing
+ * the device. Small allocations (a display server, a monitoring agent) are
+ * expected on a workstation and do not invalidate a measurement.
+ */
+const COMPETING_VRAM_MARGIN_BYTES = 512 * 1024 * 1024
 
 export interface TelemetryResult {
   peakRssBytes: number | null
@@ -103,6 +109,26 @@ export function parseNvidiaCsv(line: string): {
   }
 }
 
+/**
+ * One row of `--query-compute-apps`: the memory a SPECIFIC process holds on a
+ * specific device. Device-level `memory.used` counts every tenant, so it
+ * cannot be attributed to the candidate under test.
+ */
+export function parseNvidiaComputeAppCsv(line: string): {
+  uuid: string
+  pid: number
+  usedMemoryBytes: number
+} {
+  const fields = line.split(',').map((value) => value.trim())
+  if (fields.length !== 3) throw new Error(`Malformed nvidia-smi compute-app CSV: ${line}`)
+  const pid = Number(fields[1])
+  const usedMiB = Number(fields[2])
+  if (!Number.isInteger(pid) || !Number.isFinite(usedMiB)) {
+    throw new Error(`Malformed nvidia-smi compute-app number: ${line}`)
+  }
+  return { uuid: fields[0]!, pid, usedMemoryBytes: usedMiB * 1024 * 1024 }
+}
+
 export function collectHardwareInventory(serverPid?: number): HardwareInventory {
   const memory = readOptional('/proc/meminfo')
   const gpuProbe = probeGpus()
@@ -136,7 +162,12 @@ export class TelemetrySampler {
 
   constructor(serverPid?: number, intervalMs = 250) {
     this.processSampler = new ProcessTreeSampler(serverPid, intervalMs)
-    this.gpuSampler = new NvidiaSampler(serverPid !== undefined, intervalMs)
+    // The GPU sampler attributes VRAM by PID, so it needs the live process
+    // tree: inference servers fork workers that hold the allocations.
+    this.gpuSampler = new NvidiaSampler(
+      serverPid === undefined ? undefined : () => this.processSampler.currentPids(),
+      intervalMs
+    )
   }
 
   start(): void {
@@ -170,6 +201,7 @@ class ProcessTreeSampler {
   private timer?: NodeJS.Timeout
   private coverage: CoverageState
   private samples = 0
+  private pids: Set<number> = new Set()
   private peakRssBytes = 0
   private peakSwapBytes = 0
   private initialSwapBytes: number | null = null
@@ -196,6 +228,11 @@ class ProcessTreeSampler {
     this.timer.unref()
   }
 
+  /** PIDs most recently observed in the server's process tree. */
+  currentPids(): Set<number> {
+    return this.pids
+  }
+
   stop(): {
     peakRssBytes: number | null
     cpuTimeMs: number | null
@@ -213,7 +250,7 @@ class ProcessTreeSampler {
         this.initialCpuJiffies === null
           ? null
           : (Math.max(0, this.latestCpuJiffies - this.initialCpuJiffies) * 1_000) /
-            clockTicksPerSecond,
+            clockTicksPerSecond(),
       readBytes:
         this.initialReadBytes === null
           ? null
@@ -244,6 +281,7 @@ class ProcessTreeSampler {
         this.coverage = 'partial'
         return
       }
+      this.pids = new Set(stats.map((value) => value.stat.pid))
       const rss = stats.reduce((total, value) => total + value.status.rssBytes, 0)
       const swap = stats.reduce((total, value) => total + value.status.swapBytes, 0)
       const cpu = stats.reduce(
@@ -271,19 +309,36 @@ class ProcessTreeSampler {
   }
 }
 
+/**
+ * GPU telemetry from two `nvidia-smi` streams.
+ *
+ * Device metrics (utilization, temperature, power) are inherently per-device.
+ * VRAM is not: `memory.used` is the sum over every tenant, so reporting it as
+ * the candidate's footprint credits it with allocations it never made. Peak
+ * VRAM therefore comes from `--query-compute-apps`, summed over the PIDs in
+ * the server's process tree — which is also correct under tensor parallelism,
+ * where the true footprint is the sum across devices rather than any single
+ * device's maximum.
+ */
 class NvidiaSampler {
-  private child?: ChildProcessByStdio<null, Readable, Readable>
+  private deviceChild?: ChildProcessByStdio<null, Readable, Readable>
+  private appsChild?: ChildProcessByStdio<null, Readable, Readable>
   private coverage: CoverageState
-  private samples = 0
-  private peakVramBytes = 0
+  private cycles = 0
+  private peakAttributedVramBytes = 0
+  private peakDeviceVramBytes = 0
+  private attributedAnyRow = false
   private peakUtilizationPercent = 0
   private peakTemperatureC = 0
   private peakPowerW = 0
-  private firstUtilization: number | null = null
-  private buffer = ''
+  private deviceBuffer = ''
+  private appsBuffer = ''
+  private deviceCycle = new Map<string, number>()
+  private appsCycle = new Map<string, number>()
+  private seenDeviceUuids = new Set<string>()
 
   constructor(
-    attributable: boolean,
+    private readonly resolvePids: (() => Set<number>) | undefined,
     private readonly intervalMs = 250
   ) {
     this.coverage =
@@ -291,31 +346,20 @@ class NvidiaSampler {
         ? 'metal-unsupported'
         : existsSync('/dev/kfd')
           ? 'rocm-unsupported'
-          : attributable
+          : resolvePids
             ? 'complete'
             : 'client-only'
   }
 
   start(): void {
     if (this.coverage !== 'complete') return
-    const child = spawn(
-      'nvidia-smi',
-      [
-        '--query-gpu=uuid,name,memory.total,memory.used,utilization.gpu,temperature.gpu,power.draw',
-        '--format=csv,noheader,nounits',
-        `--loop-ms=${this.intervalMs}`,
-      ],
-      { shell: false, stdio: ['ignore', 'pipe', 'pipe'] }
+    this.deviceChild = this.spawnQuery(
+      '--query-gpu=uuid,name,memory.total,memory.used,utilization.gpu,temperature.gpu,power.draw',
+      (chunk) => this.consumeDevice(chunk)
     )
-    this.child = child
-    child.on('error', (error) => {
-      this.coverage =
-        (error as NodeJS.ErrnoException).code === 'EACCES' ? 'permission-denied' : 'tool-missing'
-    })
-    child.stdout.on('data', (chunk: Buffer) => this.consume(chunk.toString('utf8')))
-    child.stderr.on('data', (chunk: Buffer) => {
-      if (/permission/i.test(chunk.toString('utf8'))) this.coverage = 'permission-denied'
-    })
+    this.appsChild = this.spawnQuery('--query-compute-apps=gpu_uuid,pid,used_gpu_memory', (chunk) =>
+      this.consumeApps(chunk)
+    )
   }
 
   async stop(): Promise<{
@@ -327,48 +371,139 @@ class NvidiaSampler {
     coverage: CoverageState
     samples: number
   }> {
-    const child = this.child
-    if (child && child.exitCode === null) {
-      child.kill('SIGTERM')
-      await Promise.race([
-        new Promise<void>((resolve) => child.once('close', () => resolve())),
-        new Promise<void>((resolve) => setTimeout(resolve, 1_000)),
-      ])
-      if (child.exitCode === null) child.kill('SIGKILL')
-    }
+    await Promise.all([terminate(this.deviceChild), terminate(this.appsChild)])
+    const measured = this.cycles > 0
+    // Without a single attributed row we cannot tell a CPU-only server from a
+    // failed attribution, so the coverage state says "partial" rather than
+    // reporting a confident zero.
+    const coverage: CoverageState =
+      !measured && this.coverage === 'complete'
+        ? 'tool-missing'
+        : measured && this.coverage === 'complete' && !this.attributedAnyRow
+          ? 'partial'
+          : this.coverage
     return {
-      peakVramBytes: this.samples > 0 ? this.peakVramBytes : null,
-      peakUtilizationPercent: this.samples > 0 ? this.peakUtilizationPercent : null,
-      peakTemperatureC: this.samples > 0 ? this.peakTemperatureC : null,
-      peakPowerW: this.samples > 0 ? this.peakPowerW : null,
-      competingGpuLoad: this.firstUtilization === null ? null : this.firstUtilization > 10,
-      coverage: this.samples === 0 && this.coverage === 'complete' ? 'tool-missing' : this.coverage,
-      samples: this.samples,
+      peakVramBytes: this.attributedAnyRow ? this.peakAttributedVramBytes : null,
+      peakUtilizationPercent: measured ? this.peakUtilizationPercent : null,
+      peakTemperatureC: measured ? this.peakTemperatureC : null,
+      peakPowerW: measured ? this.peakPowerW : null,
+      competingGpuLoad: this.competingGpuLoad(),
+      coverage,
+      samples: this.cycles,
     }
   }
 
-  private consume(chunk: string): void {
-    this.buffer += chunk
-    const lines = this.buffer.split(/\r?\n/)
-    this.buffer = lines.pop() ?? ''
+  /**
+   * Another tenant is present when the device holds materially more memory
+   * than this candidate's processes account for.
+   */
+  private competingGpuLoad(): boolean | null {
+    if (this.cycles === 0 || !this.attributedAnyRow) return null
+    return this.peakDeviceVramBytes - this.peakAttributedVramBytes > COMPETING_VRAM_MARGIN_BYTES
+  }
+
+  private spawnQuery(
+    query: string,
+    onChunk: (chunk: string) => void
+  ): ChildProcessByStdio<null, Readable, Readable> {
+    const child = spawn(
+      'nvidia-smi',
+      [query, '--format=csv,noheader,nounits', `--loop-ms=${this.intervalMs}`],
+      { shell: false, stdio: ['ignore', 'pipe', 'pipe'] }
+    )
+    child.on('error', (error) => {
+      this.coverage =
+        (error as NodeJS.ErrnoException).code === 'EACCES' ? 'permission-denied' : 'tool-missing'
+    })
+    child.stdout.on('data', (chunk: Buffer) => onChunk(chunk.toString('utf8')))
+    child.stderr.on('data', (chunk: Buffer) => {
+      if (/permission/i.test(chunk.toString('utf8'))) this.coverage = 'permission-denied'
+    })
+    return child
+  }
+
+  private consumeDevice(chunk: string): void {
+    this.deviceBuffer += chunk
+    const lines = this.deviceBuffer.split(/\r?\n/)
+    this.deviceBuffer = lines.pop() ?? ''
     for (const line of lines) {
       if (!line.trim()) continue
       try {
         const sample = parseNvidiaCsv(line)
-        this.firstUtilization ??= sample.utilizationPercent
-        this.peakVramBytes = Math.max(this.peakVramBytes, sample.vramUsedBytes)
+        // One poll emits one row per device. Counting rows would multiply the
+        // sample count by the number of GPUs, so a cycle closes when a device
+        // repeats.
+        if (this.deviceCycle.has(sample.uuid)) this.closeDeviceCycle()
+        this.deviceCycle.set(sample.uuid, sample.vramUsedBytes)
+        this.seenDeviceUuids.add(sample.uuid)
         this.peakUtilizationPercent = Math.max(
           this.peakUtilizationPercent,
           sample.utilizationPercent
         )
         this.peakTemperatureC = Math.max(this.peakTemperatureC, sample.temperatureC)
         this.peakPowerW = Math.max(this.peakPowerW, sample.powerW)
-        this.samples += 1
+        if (this.deviceCycle.size === this.seenDeviceUuids.size) this.closeDeviceCycle()
       } catch {
         this.coverage = 'partial'
       }
     }
   }
+
+  private closeDeviceCycle(): void {
+    if (this.deviceCycle.size === 0) return
+    const total = [...this.deviceCycle.values()].reduce((sum, value) => sum + value, 0)
+    this.peakDeviceVramBytes = Math.max(this.peakDeviceVramBytes, total)
+    this.cycles += 1
+    this.deviceCycle.clear()
+  }
+
+  private consumeApps(chunk: string): void {
+    this.appsBuffer += chunk
+    const lines = this.appsBuffer.split(/\r?\n/)
+    this.appsBuffer = lines.pop() ?? ''
+    const pids = this.resolvePids?.() ?? new Set<number>()
+    for (const line of lines) {
+      const trimmed = line.trim()
+      // A poll with no compute processes prints a placeholder; it closes the
+      // cycle without contributing memory.
+      if (!trimmed || /no running processes/i.test(trimmed)) {
+        this.closeAppsCycle()
+        continue
+      }
+      try {
+        const row = parseNvidiaComputeAppCsv(trimmed)
+        if (!pids.has(row.pid)) continue
+        const key = `${row.uuid}:${row.pid}`
+        if (this.appsCycle.has(key)) this.closeAppsCycle()
+        this.appsCycle.set(key, row.usedMemoryBytes)
+        this.attributedAnyRow = true
+      } catch {
+        this.coverage = 'partial'
+      }
+    }
+    this.closeAppsCycle()
+  }
+
+  private closeAppsCycle(): void {
+    if (this.appsCycle.size === 0) return
+    // Sum, not max: under tensor parallelism the candidate's footprint is
+    // spread across devices and every shard counts.
+    const total = [...this.appsCycle.values()].reduce((sum, value) => sum + value, 0)
+    this.peakAttributedVramBytes = Math.max(this.peakAttributedVramBytes, total)
+    this.appsCycle.clear()
+  }
+}
+
+async function terminate(child?: ChildProcessByStdio<null, Readable, Readable>): Promise<void> {
+  if (!child || child.exitCode !== null) return
+  child.kill('SIGTERM')
+  await Promise.race([
+    new Promise<void>((resolve) => child.once('close', () => resolve())),
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, 1_000).unref()
+    }),
+  ])
+  if (child.exitCode === null) child.kill('SIGKILL')
 }
 
 function readProcessTree(rootPid: number): Array<{
@@ -503,8 +638,17 @@ function minNonZero(...values: number[]): number {
   return nonZero.length === 0 ? 0 : Math.min(...nonZero)
 }
 
-function readClockTicksPerSecond(): number {
+let cachedClockTicks: number | undefined
+
+/**
+ * Resolved on first use, not at import: a module-level `spawnSync` made every
+ * consumer of this file — including `eval:models list` and each test file —
+ * pay for a subprocess it may never need.
+ */
+function clockTicksPerSecond(): number {
+  if (cachedClockTicks !== undefined) return cachedClockTicks
   const result = spawnSync('getconf', ['CLK_TCK'], { encoding: 'utf8', shell: false })
   const parsed = Number(result.stdout?.trim())
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 100
+  cachedClockTicks = Number.isFinite(parsed) && parsed > 0 ? parsed : 100
+  return cachedClockTicks
 }

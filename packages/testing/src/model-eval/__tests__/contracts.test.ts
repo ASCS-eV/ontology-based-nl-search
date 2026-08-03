@@ -14,17 +14,15 @@ const modelEvalRoot = dirname(fileURLToPath(new URL('../types.ts', import.meta.u
 describe('evaluation contracts', () => {
   it('parses strict CLI commands and rejects conflicting server control', () => {
     expect(parseCliArgs(['list'])).toEqual({ command: 'list' })
-    expect(parseCliArgs(['smoke'])).toMatchObject({
+    expect(parseCliArgs(['smoke', '--api-key', 'sk-test'])).toMatchObject({
       command: 'smoke',
-      auth: 'codex-cli',
       model: 'gpt-5.4-mini',
       caseId: 'env-001',
+      apiKey: 'sk-test',
       timeoutMs: 120_000,
     })
-    expect(() => parseCliArgs(['smoke', '--auth', 'api-key'])).toThrow(/--api-key is required/)
-    expect(() =>
-      parseCliArgs(['smoke', '--auth', 'codex-cli', '--base-url', 'https://api.openai.com/v1'])
-    ).toThrow(/cannot override/)
+    // The hosted smoke authenticates only with a platform API key.
+    expect(() => parseCliArgs(['smoke'])).toThrow(/--api-key is required/)
     expect(
       parseCliArgs([
         'run',

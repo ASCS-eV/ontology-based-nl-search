@@ -93,7 +93,9 @@ function makeSample(caseId: string, exact = true): EvaluationSample {
 
 describe('evaluation gates', () => {
   it('passes a quality aggregate only when every critical category is represented', () => {
-    const cases = CRITICAL_CATEGORIES.map(makeGold)
+    const cases = CRITICAL_CATEGORIES['envited-x'].map((category, index) =>
+      makeGold(category, index)
+    )
     const passing = aggregateSummary({
       runId: 'quality-pass',
       candidateId: 'qwen3.5-4b',
@@ -112,7 +114,7 @@ describe('evaluation gates', () => {
     expect(passing.gates).toMatchObject({ quality: true, passing: true })
     expect(missingCategory.gates.passing).toBe(false)
     expect(missingCategory.gates.failures).toContain(
-      `Critical category "${CRITICAL_CATEGORIES[0]}" is absent from the quality corpus`
+      `Critical category "${CRITICAL_CATEGORIES['envited-x'][0]}" has no measured samples in the envited-x quality corpus`
     )
   })
 
@@ -134,8 +136,87 @@ describe('evaluation gates', () => {
     expect(summary.gates.failures).toHaveLength(2)
   })
 
+  it('reports an unmeasured slice as unknown rather than as a perfect score', () => {
+    // Every case is English, so there is no German evidence at all. An
+    // earlier revision returned 1 for the empty slice, which both reported
+    // 100% for a language the corpus never contained and made the en/de
+    // comparison fire against a score that was never measured.
+    const cases = CRITICAL_CATEGORIES['envited-x'].map((category, index) =>
+      GoldCaseSchema.parse({
+        ...makeGold(category, index),
+        locale: 'en',
+      })
+    )
+    const summary = aggregateSummary({
+      runId: 'single-locale',
+      candidateId: 'qwen3.5-4b',
+      profile: 'quality',
+      cases,
+      samples: cases.map((gold) => makeSample(gold.id)),
+    })
+
+    expect(summary.metrics.localeValidatedExact['de']).toBeUndefined()
+    expect(summary.metrics.localeValidatedExact['en']).toBe(1)
+    expect(summary.gates.failures).not.toContain(
+      'English/German validated accuracy differs by more than five points'
+    )
+  })
+
+  it('fails rather than passes when a run produced no measured samples', () => {
+    const summary = aggregateSummary({
+      runId: 'empty',
+      candidateId: 'qwen3.5-4b',
+      profile: 'quality',
+      cases: CRITICAL_CATEGORIES['envited-x'].map((category, index) => makeGold(category, index)),
+      samples: [],
+    })
+
+    expect(summary.metrics.validatedExact).toBeNull()
+    expect(summary.gates.passing).toBe(false)
+    expect(summary.gates.failures).toContain(
+      'No measured samples: the run produced no evidence to gate on'
+    )
+  })
+
+  it('scopes critical categories to the suite under test', () => {
+    const cases = CRITICAL_CATEGORIES['toyverse'].map((category, index) =>
+      GoldCaseSchema.parse({ ...makeGold(category, index), suite: 'toyverse' })
+    )
+    const summary = aggregateSummary({
+      runId: 'toyverse-quality',
+      candidateId: 'qwen3.5-4b',
+      profile: 'quality',
+      cases,
+      samples: cases.map((gold) => makeSample(gold.id)),
+    })
+
+    // The Toyverse corpus can clear its own gate; it is not held to
+    // ENVITED-X categories it was never designed to cover.
+    expect(summary.suite).toBe('toyverse')
+    expect(summary.gates).toMatchObject({ quality: true, passing: true })
+  })
+
+  it('does not blame the model for a transport failure', () => {
+    const gold = makeGold('enum', 1)
+    const sample = makeSample(gold.id)
+    sample.transportError = 'fetch failed: ECONNREFUSED'
+
+    const summary = aggregateSummary({
+      runId: 'transport',
+      candidateId: 'qwen3.5-4b',
+      profile: 'protocol',
+      cases: [gold],
+      samples: [sample],
+    })
+
+    expect(summary.gates.failures.join(' ')).toMatch(/did not complete a request/)
+    expect(summary.gates.failures.join(' ')).not.toMatch(/unknown or schema-invalid tool calls/)
+  })
+
   it('selects the smallest passing quality artifact within two points of the best', () => {
-    const cases = CRITICAL_CATEGORIES.map(makeGold)
+    const cases = CRITICAL_CATEGORIES['envited-x'].map((category, index) =>
+      makeGold(category, index)
+    )
     const baseline = aggregateSummary({
       runId: 'winner',
       candidateId: 'qwen3.5-4b',
@@ -152,15 +233,17 @@ describe('evaluation gates', () => {
     performance.profile = 'warm-performance'
     performance.gates.quality = null
 
-    const winners = selectTierWinners([larger, baseline, performance])
-    expect(winners.map((winner) => winner.candidateId)).toEqual([
-      'qwen3.5-4b',
-      'qwen3.5-4b',
-      'qwen3.5-4b',
-    ])
+    const { outcomes, incomparableRunIds } = selectTierWinners([larger, baseline, performance])
+    expect(
+      outcomes.map((outcome) => ('candidateId' in outcome ? outcome.candidateId : null))
+    ).toEqual(['qwen3.5-4b', 'qwen3.5-4b', 'qwen3.5-4b'])
+    expect(incomparableRunIds).toEqual([])
+
+    // An incomparable performance run is reported, not thrown: the caller
+    // decides the exit status.
     performance.comparablePerformance = false
-    expect(() => selectTierWinners([larger, baseline, performance])).toThrow(
-      'Incomparable requested performance runs: performance'
-    )
+    expect(selectTierWinners([larger, baseline, performance]).incomparableRunIds).toEqual([
+      'performance',
+    ])
   })
 })

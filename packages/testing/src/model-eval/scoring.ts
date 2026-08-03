@@ -1,4 +1,26 @@
+import { stableStringify } from './canonical-json.js'
 import type { EvaluationSearchSlots, GoldCase, ReferenceSlots } from './types.js'
+
+type RangeMap = Record<string, { min?: number; max?: number }>
+
+/**
+ * Normalize a range map the same way at every nesting depth. Applying this
+ * only to top-level ranges — as an earlier revision did — made an identical
+ * nested range compare unequal purely by key order.
+ */
+function canonicalizeRanges(ranges: RangeMap): RangeMap {
+  return Object.fromEntries(
+    Object.entries(ranges)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, range]) => [
+        key,
+        {
+          ...(range.min === undefined ? {} : { min: range.min }),
+          ...(range.max === undefined ? {} : { max: range.max }),
+        },
+      ])
+  )
+}
 
 export interface SlotScore {
   exact: boolean
@@ -28,17 +50,7 @@ export function canonicalizeSlots(slots: EvaluationSearchSlots): EvaluationSearc
   return {
     domains: [...slots.domains].sort(),
     filters: canonicalizeFilters(slots.filters),
-    ranges: Object.fromEntries(
-      Object.entries(slots.ranges)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, range]) => [
-          key,
-          {
-            ...(range.min === undefined ? {} : { min: range.min }),
-            ...(range.max === undefined ? {} : { max: range.max }),
-          },
-        ])
-    ),
+    ranges: canonicalizeRanges(slots.ranges),
     ...(references.length === 0 ? {} : { references }),
   }
 }
@@ -61,18 +73,12 @@ export function canonicalizeReferenceList(
     .map((reference) => ({
       domain: reference.domain,
       ...(reference.filters ? { filters: canonicalizeFilters(reference.filters) } : {}),
-      ...(reference.ranges
-        ? {
-            ranges: Object.fromEntries(
-              Object.entries(reference.ranges).sort(([left], [right]) => left.localeCompare(right))
-            ),
-          }
-        : {}),
+      ...(reference.ranges ? { ranges: canonicalizeRanges(reference.ranges) } : {}),
       ...(reference.references
         ? { references: canonicalizeReferenceList(reference.references) }
         : {}),
     }))
-    .sort((left, right) => stableJson(left).localeCompare(stableJson(right)))
+    .sort((left, right) => stableStringify(left).localeCompare(stableStringify(right)))
 }
 
 export function scoreSlots(
@@ -89,11 +95,12 @@ export function scoreSlots(
 
   return {
     exact:
-      actualCanonical !== null && stableJson(expectedCanonical) === stableJson(actualCanonical),
+      actualCanonical !== null &&
+      stableStringify(expectedCanonical) === stableStringify(actualCanonical),
     truePositive,
     falsePositive: actualFields.size - truePositive,
     falseNegative: expectedFields.size - truePositive,
-    referenceTopologyExact: stableJson(topologyExpected) === stableJson(topologyActual),
+    referenceTopologyExact: stableStringify(topologyExpected) === stableStringify(topologyActual),
   }
 }
 
@@ -177,10 +184,6 @@ function topology(references: ReferenceSlots | ReferenceSlots[] | undefined): un
     domain: reference.domain,
     children: topology(reference.references),
   }))
-}
-
-function stableJson(value: unknown): string {
-  return JSON.stringify(value)
 }
 
 function intersectionSize(left: Set<string>, right: Set<string>): number {

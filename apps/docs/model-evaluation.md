@@ -2,7 +2,7 @@
 
 This repository evaluates local language models against the production natural-language search path. The model fills `SearchSlots`; deterministic SHACL validation and the existing compiler remain responsible for ontology safety and SPARQL. Scenario authoring is outside this benchmark.
 
-The framework commits candidates, gold expectations, schemas, scoring, and tests. Model weights and generated benchmark runs stay local under `.playground/eval-runs/`. The repository does not claim that any candidate passes until a reproducible local run demonstrates it.
+The framework commits candidates, gold expectations, schemas, scoring, and tests. Model weights and generated benchmark runs stay local under `.eval-runs/`. The repository does not claim that any candidate passes until a reproducible local run demonstrates it.
 
 ## What is held constant
 
@@ -50,22 +50,12 @@ When no suitable local runtime fits the current machine, run one scored ENVITED-
 
 ```bash
 pnpm eval:models smoke \
-  --auth codex-cli \
-  --model gpt-5.4-mini \
-  --case env-001
-```
-
-`codex-cli` reuses the current ChatGPT login from `~/.codex/auth.json`, after checking that the credential file is owner-only and the access token is not expired. The token and account identifier remain in memory and are never printed or written to evaluation artifacts. Run `codex login` first when no valid session exists.
-
-An OpenAI API key is an alternative, not a requirement:
-
-```bash
-pnpm eval:models smoke \
-  --auth api-key \
   --api-key "$OPENAI_API_KEY" \
   --model gpt-5.4-mini \
   --case env-001
 ```
+
+Authentication is a platform API key against the documented OpenAI endpoint. The key is read from the argument and never written to evaluation artifacts.
 
 The smoke command is deliberately non-ranked: it writes no candidate run and makes no local benchmark claim. Its JSON output reports protocol completion, raw and validated exactness, compilation validity, tool path, server token usage when present, and invented identifiers. A passing smoke proves that one request completed end to end; it does not satisfy the protocol or quality gates.
 
@@ -95,13 +85,14 @@ pnpm eval:models run \
   --server-pid 12345
 ```
 
-Alternatively, pass a launch descriptor. The process is spawned directly without a shell, readiness is polled, and the child is terminated on completion, timeout, or abort:
+Alternatively, pass a launch descriptor. The process is spawned directly without a shell in its own process group, readiness is polled, and the whole group is terminated on completion, timeout, or abort so forked inference workers cannot survive holding VRAM:
 
 ```json
 {
   "executable": "/opt/vllm/bin/vllm",
   "args": ["serve", "Qwen/Qwen3.5-9B", "--revision", "c202236235762e1c871ad0ccb60c8ee5ba337b9a"],
   "readinessUrl": "http://localhost:8000/health",
+  "readinessTimeoutMs": 600000,
   "shutdownTimeoutMs": 10000
 }
 ```
@@ -113,6 +104,8 @@ pnpm eval:models run \
   --base-url http://localhost:8000/v1 \
   --launch .playground/qwen-server.json
 ```
+
+`readinessTimeoutMs` (default 10 minutes) budgets model load; `shutdownTimeoutMs` budgets a graceful stop. They are separate because loading a checkpoint takes minutes while stopping should take seconds.
 
 Arguments and endpoint query parameters resembling API keys, tokens, secrets, or authorization values are redacted in artifacts. Prefer a local descriptor with no secrets. `--api-key` is accepted for protected external endpoints but is never written to the run files.
 
@@ -137,48 +130,50 @@ pnpm eval:models run \
   --server-pid 12345
 ```
 
-If the tokenizer protocol is absent, capacity is `not-supported`; the harness never estimates a pass from character counts. Server-reported token usage is retained when available.
+If the tokenizer protocol is absent, capacity is `not-supported` and the command exits 0: the measurement could not be taken, which is not evidence against the candidate. Only a real `failed` outcome exits nonzero. The harness never estimates a pass from character counts. Server-reported token usage is retained when available.
 
 Use `--suite toyverse` to run the separate synthetic ontology-grounding suite. The CLI re-executes this suite in a child process with the committed Toyverse fixture root.
 
 ## Gates and interpretation
 
-The protocol gate requires 100% known, schema-valid tool calls and 100% `submit_slots` completion within three steps.
+The protocol gate requires 100% known, schema-valid tool calls and 100% `submit_slots` completion within the step budget. Transport failures — timeouts, refused connections, HTTP errors — are recorded separately from protocol conformance and mark the run inconclusive rather than condemning the model.
 
 The quality gate requires:
 
 - at least 99% submission success;
 - at least 90% post-SHACL exact-slot accuracy overall;
-- at least 85% in every critical category;
+- at least 85% in every critical category declared for the suite under test;
 - no ontology identifier invented and retained by validation; and
-- no more than five percentage points between English and German exact accuracy.
+- no more than five percentage points between English and German exact accuracy, applied only when the corpus measured both.
+
+A metric over zero samples is reported as `null` — "not measured" — and never as a score. A run with no measured samples fails rather than passing on absent evidence. Critical categories are declared per suite, so the Toyverse grounding suite is held to the categories it covers rather than to the ENVITED-X set.
 
 Raw-slot exactness and post-SHACL validated exactness are separate. Validated exactness is the production-quality score. Canonicalization sorts domains, filter values, and reference siblings while preserving recursive reference topology; identifiers and enum/IRI values remain case-sensitive. Free-form interpretation summary wording is not scored.
 
-Reports also include field and gap precision/recall, reference topology, lookup efficiency, fallback and compilation rates, p50/p95/MAD latency, server token usage, and peak RAM/VRAM. A performance sample is retained but marked incomparable after swap growth, server restart, incomplete sampling, or competing GPU load. Missing `nvidia-smi`, permissions, CPU-only collection, ROCm/Metal, and client-only telemetry appear as coverage states rather than zero measurements.
+Reports also include field and gap precision/recall, reference topology, lookup efficiency, fallback and compilation rates, p50/p95/MAD latency, server token usage, and peak RAM/VRAM. Peak VRAM is attributed per process via `nvidia-smi --query-compute-apps`, summed across devices over the server's process tree, so another tenant's allocation is never counted as the candidate's; device-wide usage above that figure is reported as competing GPU load instead. A performance sample is retained but marked incomparable after swap growth, server restart, incomplete sampling, or competing GPU load. Missing `nvidia-smi`, permissions, CPU-only collection, ROCm/Metal, and client-only telemetry appear as coverage states rather than zero measurements.
 
 ## Artifacts and comparison
 
 Each run writes:
 
 ```text
-.playground/eval-runs/<runId>/
+.eval-runs/<runId>/
 ├── manifest.json
 ├── samples.ndjson
 ├── summary.json
 └── report.md
 ```
 
-The manifest contains the candidate, hardware, endpoint collection mode, corpus digest, and a run digest covering the runtime policy and retrieval settings. Keep all four files together when sharing evidence, but do not commit generated results.
+The manifest records the policy that actually ran — context, temperature, concurrency, step budget, lookup tools, retrieval limits — read from the live policy rather than restated, so the run digest changes whenever the evaluated configuration does. A policy that drifts from the held-constant contract fails the run before any endpoint I/O. Keep all four files together when sharing evidence, but do not commit generated results.
 
 Compare passing quality summaries with:
 
 ```bash
 pnpm eval:models compare \
-  .playground/eval-runs/<run-a> \
-  .playground/eval-runs/<run-b>
+  .eval-runs/<run-a> \
+  .eval-runs/<run-b>
 ```
 
-For 16, 24, and 32–48 GiB independently, `compare` selects the smallest passing artifact within two percentage points of the best validated score. It exits nonzero when a requested gate fails, a performance run is incomparable, or a tier has no passing quality candidate.
+For 16, 24, and 32–48 GiB independently, `compare` selects the smallest passing artifact within two percentage points of the best validated score. A tier with no passing candidate is reported as `none` with the reason; `compare` exits nonzero when any tier is unresolved or a performance run is incomparable.
 
 For reproducibility, report the Git commit, candidate ID, served model/artifact, launch command, server/runtime version, driver version, hardware, profile, complete run directory, and whether any background GPU workload was present.

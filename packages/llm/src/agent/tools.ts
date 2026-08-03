@@ -1,12 +1,21 @@
 import {
   gapsWireSchema,
   interpretationWireSchema,
-  referenceFilterWireSchema,
+  searchSlotsWireSchema,
 } from '@ontology-search/search/slot-wire-schema'
 import { tool, type ToolSet } from 'ai'
 import { z } from 'zod'
 
-import { SCHEMA_TOOL_DEFINITIONS } from './schema-tools.js'
+import { SCHEMA_TOOL_DEFINITIONS, SCHEMA_TOOL_NAMES } from './schema-tools.js'
+
+/** The single tool that ends a slot-filling run. */
+export const SUBMIT_TOOL_NAME = 'submit_slots' as const
+
+/**
+ * Every tool name the agent may legitimately call. Consumers that classify
+ * tool traces read this instead of restating the registry.
+ */
+export const AGENT_TOOL_NAMES = [...SCHEMA_TOOL_NAMES, SUBMIT_TOOL_NAME] as const
 
 /**
  * Tool schema for the LLM slot-filling agent.
@@ -18,30 +27,27 @@ import { SCHEMA_TOOL_DEFINITIONS } from './schema-tools.js'
  */
 
 export const slotSubmissionSchema = z.object({
+  // Structure comes from `searchSlotsWireSchema` — the single definition of the
+  // slot payload shared with the compiler and the evaluation harness. Only
+  // prompt-facing description text is layered on here, per the wire-schema
+  // module's stated contract: decorate, never redeclare.
   slots: z
     .object({
-      domains: z.array(z.string()).default([]).describe('Target domain(s)'),
-      filters: z
-        .record(z.string(), z.union([z.string(), z.array(z.string())]))
-        .default({})
-        .describe(
-          'Property filters keyed by SHACL leaf local name. Includes EVERY literal/IRI constraint — geography, license, etc. Geographic filters use the property local names declared in the ontology (e.g. "country", "state", "region", "city" when the SHACL has those leaves); the compiler discovers the chain from the asset class to each leaf. Use arrays for IN-semantics (e.g. ["DE","FR"] when the user expresses a region).'
-        ),
-      ranges: z
-        .record(z.string(), z.object({ min: z.number().optional(), max: z.number().optional() }))
-        .default({})
-        .describe('Numeric ranges: localName → { min?, max? }'),
-      references: z
-        .union([referenceFilterWireSchema, z.array(referenceFilterWireSchema)])
-        .optional()
-        .describe(
-          'Cross-reference filter(s): find assets that reference one or more other domains. ' +
-            'Pass an ARRAY with one entry per referenced domain when the user names several ' +
-            '(AND-combined — the asset must reference all). A single object is also accepted. ' +
-            'Put constraints that describe the REFERENCED asset inside that entry via its ' +
-            '`filters`/`ranges` (e.g. referenced maps in a country, or with >= N intersections) — ' +
-            'NOT in the top-level slots. Each entry may also nest its own `references` for a chain.'
-        ),
+      domains: searchSlotsWireSchema.shape.domains.describe('Target domain(s)'),
+      filters: searchSlotsWireSchema.shape.filters.describe(
+        'Property filters keyed by SHACL leaf local name. Includes EVERY literal/IRI constraint — geography, license, etc. Geographic filters use the property local names declared in the ontology (e.g. "country", "state", "region", "city" when the SHACL has those leaves); the compiler discovers the chain from the asset class to each leaf. Use arrays for IN-semantics (e.g. ["DE","FR"] when the user expresses a region).'
+      ),
+      ranges: searchSlotsWireSchema.shape.ranges.describe(
+        'Numeric ranges: localName → { min?, max? }'
+      ),
+      references: searchSlotsWireSchema.shape.references.describe(
+        'Cross-reference filter(s): find assets that reference one or more other domains. ' +
+          'Pass an ARRAY with one entry per referenced domain when the user names several ' +
+          '(AND-combined — the asset must reference all). A single object is also accepted. ' +
+          'Put constraints that describe the REFERENCED asset inside that entry via its ' +
+          '`filters`/`ranges` (e.g. referenced maps in a country, or with >= N intersections) — ' +
+          'NOT in the top-level slots. Each entry may also nest its own `references` for a chain.'
+      ),
     })
     .describe('Search slots: fill only properties where the user expressed intent'),
   interpretation: interpretationWireSchema.extend({

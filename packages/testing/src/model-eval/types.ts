@@ -1,3 +1,9 @@
+import { SCHEMA_TOOL_NAMES } from '@ontology-search/llm/evaluation'
+import {
+  type ReferenceFilterInput,
+  referenceFilterWireSchema,
+  searchSlotsWireSchema,
+} from '@ontology-search/search/slot-wire-schema'
 import { z } from 'zod'
 
 export const EVALUATION_SCHEMA_VERSION = '1.0.0' as const
@@ -10,38 +16,16 @@ export const profileNames = [
 ] as const
 export const ProfileNameSchema = z.enum(profileNames)
 
-const StringValuesSchema = z.union([z.string(), z.array(z.string())])
-const RangeSchema = z
-  .object({
-    min: z.number().optional(),
-    max: z.number().optional(),
-  })
-  .refine((value) => value.min !== undefined || value.max !== undefined, {
-    message: 'A range requires min or max',
-  })
+/**
+ * The evaluation harness scores against the SAME schema the production agent
+ * accepts — never a re-declared copy. A stricter local definition would reject
+ * submissions production takes, turning a scoreable weak-model answer into a
+ * harness crash, so the contract is imported rather than restated.
+ */
+export const ReferenceSlotsSchema = referenceFilterWireSchema
+export type ReferenceSlots = ReferenceFilterInput
 
-export type ReferenceSlots = {
-  domain: string
-  filters?: Record<string, string | string[]>
-  ranges?: Record<string, { min?: number; max?: number }>
-  references?: ReferenceSlots[]
-}
-
-export const ReferenceSlotsSchema: z.ZodType<ReferenceSlots> = z.lazy(() =>
-  z.object({
-    domain: z.string().min(1),
-    filters: z.record(z.string(), StringValuesSchema).optional(),
-    ranges: z.record(z.string(), RangeSchema).optional(),
-    references: z.array(ReferenceSlotsSchema).optional(),
-  })
-)
-
-export const SearchSlotsSchema = z.object({
-  domains: z.array(z.string()).default([]),
-  filters: z.record(z.string(), StringValuesSchema).default({}),
-  ranges: z.record(z.string(), RangeSchema).default({}),
-  references: z.union([ReferenceSlotsSchema, z.array(ReferenceSlotsSchema)]).optional(),
-})
+export const SearchSlotsSchema = searchSlotsWireSchema
 export type EvaluationSearchSlots = z.infer<typeof SearchSlotsSchema>
 
 export const ExpectedGapSchema = z.object({
@@ -51,13 +35,12 @@ export const ExpectedGapSchema = z.object({
     .optional(),
 })
 
+/** Lookup-tool names come from the agent itself, never a restated list. */
+export const LookupToolNameSchema = z.enum(SCHEMA_TOOL_NAMES)
+
 export const ToolPolicySchema = z.object({
-  allowed: z
-    .array(z.enum(['find_terms', 'describe_shape', 'list_values', 'probe_data']))
-    .default([]),
-  required: z
-    .array(z.enum(['find_terms', 'describe_shape', 'list_values', 'probe_data']))
-    .default([]),
+  allowed: z.array(LookupToolNameSchema).default([]),
+  required: z.array(LookupToolNameSchema).default([]),
   maxLookups: z.number().int().min(0).max(2),
   directSubmissionAllowed: z.boolean().default(true),
 })
@@ -167,6 +150,19 @@ export const LaunchDescriptorSchema = z.object({
   executable: z.string().min(1),
   args: z.array(z.string()),
   readinessUrl: z.string().url(),
+  /**
+   * How long the server may take to become ready. Distinct from
+   * `shutdownTimeoutMs`: loading a multi-billion-parameter checkpoint into
+   * VRAM routinely takes minutes, while a graceful stop should take seconds.
+   * Sharing one field capped startup at the shutdown budget and made
+   * `cold-load` — the profile that exists to measure startup — unusable.
+   */
+  readinessTimeoutMs: z
+    .number()
+    .int()
+    .min(1_000)
+    .max(30 * 60_000)
+    .default(10 * 60_000),
   shutdownTimeoutMs: z.number().int().min(100).max(120_000),
 })
 
@@ -184,12 +180,20 @@ export const RunManifestSchema = z.object({
     repetitions: z.number().int().positive(),
     warmups: z.number().int().nonnegative(),
   }),
+  /**
+   * What the run ACTUALLY used. These were literals in an earlier revision,
+   * which meant the manifest restated constants instead of recording the
+   * effective policy: changing the evaluated policy would alter behaviour
+   * without altering the manifest or the run digest. The held-constant
+   * contract is now enforced by `assertHeldConstantPolicy`, where a violation
+   * is a loud error rather than a silent mis-record.
+   */
   policy: z.object({
-    contextTokens: z.literal(65_536),
-    temperature: z.literal(0),
-    concurrency: z.literal(1),
-    maxAgentSteps: z.literal(3),
-    lookupTools: z.array(z.string()).length(4),
+    contextTokens: z.number().int().positive(),
+    temperature: z.number().nullable(),
+    concurrency: z.number().int().positive(),
+    maxAgentSteps: z.number().int().positive(),
+    lookupTools: z.array(z.string()).min(1),
     retrieval: z.object({
       maxDomains: z.number().int().positive(),
       maxCards: z.number().int().positive(),
@@ -297,29 +301,44 @@ export const SampleSchema = z.object({
   }),
   comparable: z.boolean(),
   diagnostic: DiagnosticSchema,
+  /**
+   * Set when the request never completed (timeout, refused connection, HTTP
+   * error). Kept separate from `diagnostic.protocolErrors`: a broken endpoint
+   * says nothing about the model's protocol conformance, and merging the two
+   * reported infrastructure flakiness as a model failure.
+   */
+  transportError: z.string().optional(),
   error: z.string().optional(),
 })
 export type EvaluationSample = z.infer<typeof SampleSchema>
+
+/**
+ * A rate over measured samples, or `null` when there were none to measure.
+ * An earlier revision returned 1 for an empty set, which reported a slice
+ * with no data as a perfect score — enough to pass a gate on absent evidence.
+ */
+const RateSchema = z.number().min(0).max(1).nullable()
 
 export const SummarySchema = z.object({
   schemaVersion: z.literal(EVALUATION_SCHEMA_VERSION),
   runId: z.string(),
   candidateId: z.string(),
   profile: ProfileNameSchema,
+  suite: z.enum(['envited-x', 'toyverse']),
   cases: z.number().int().nonnegative(),
   measuredSamples: z.number().int().nonnegative(),
   metrics: z.object({
-    submissionRate: z.number().min(0).max(1),
-    rawExact: z.number().min(0).max(1),
-    validatedExact: z.number().min(0).max(1),
-    fieldPrecision: z.number().min(0).max(1),
-    fieldRecall: z.number().min(0).max(1),
-    gapPrecision: z.number().min(0).max(1),
-    gapRecall: z.number().min(0).max(1),
-    referenceTopologyAccuracy: z.number().min(0).max(1),
-    lookupEfficiency: z.number().min(0).max(1),
-    fallbackRate: z.number().min(0).max(1),
-    compilationValidity: z.number().min(0).max(1),
+    submissionRate: RateSchema,
+    rawExact: RateSchema,
+    validatedExact: RateSchema,
+    fieldPrecision: RateSchema,
+    fieldRecall: RateSchema,
+    gapPrecision: RateSchema,
+    gapRecall: RateSchema,
+    referenceTopologyAccuracy: RateSchema,
+    lookupEfficiency: RateSchema,
+    fallbackRate: RateSchema,
+    compilationValidity: RateSchema,
     latencyMs: z.object({
       p50: z.number().nonnegative().nullable(),
       p95: z.number().nonnegative().nullable(),
@@ -331,8 +350,8 @@ export const SummarySchema = z.object({
     }),
     peakRamBytes: z.number().nonnegative().nullable(),
     peakVramBytes: z.number().nonnegative().nullable(),
-    categoryValidatedExact: z.record(z.string(), z.number().min(0).max(1)),
-    localeValidatedExact: z.record(z.string(), z.number().min(0).max(1)),
+    categoryValidatedExact: z.record(z.string(), RateSchema),
+    localeValidatedExact: z.record(z.string(), RateSchema),
     inventedIdentifierCount: z.number().int().nonnegative(),
   }),
   gates: z.object({
@@ -352,3 +371,28 @@ export const SummarySchema = z.object({
     .optional(),
 })
 export type EvaluationSummary = z.infer<typeof SummarySchema>
+
+/**
+ * The configuration every ranked artifact must share for its numbers to be
+ * comparable. Checked against the policy that actually ran, so a divergence
+ * fails the run instead of being silently recorded as conformant.
+ */
+export const HELD_CONSTANT_POLICY = {
+  contextTokens: 65_536,
+  temperature: 0,
+  concurrency: 1,
+  maxAgentSteps: 3,
+} as const
+
+export function assertHeldConstantPolicy(policy: RunManifest['policy']): void {
+  const drift = Object.entries(HELD_CONSTANT_POLICY).flatMap(([key, expected]) => {
+    const actual = policy[key as keyof typeof HELD_CONSTANT_POLICY]
+    return actual === expected ? [] : [`${key}: expected ${expected}, got ${String(actual)}`]
+  })
+  if (drift.length > 0) {
+    throw new Error(
+      `Evaluation policy diverges from the held-constant contract, so this run is not ` +
+        `comparable with others:\n${drift.map((line) => `  - ${line}`).join('\n')}`
+    )
+  }
+}
