@@ -1,0 +1,668 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "sampleId": {
+      "type": "string"
+    },
+    "caseId": {
+      "type": "string"
+    },
+    "repetition": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "warmup": {
+      "type": "boolean"
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+    },
+    "durationMs": {
+      "type": "number",
+      "minimum": 0
+    },
+    "monotonic": {
+      "type": "boolean",
+      "const": true
+    },
+    "rawSubmission": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "domains": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "filters": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              }
+            },
+            "ranges": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "references": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              ]
+            }
+          },
+          "required": ["domains", "filters", "ranges"],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "validatedSlots": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "domains": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "filters": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              }
+            },
+            "ranges": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "references": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              ]
+            }
+          },
+          "required": ["domains", "filters", "ranges"],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "actualGaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "term": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "missing-domain",
+              "missing-property",
+              "missing-value",
+              "ambiguous",
+              "unsupported"
+            ]
+          }
+        },
+        "required": ["term"],
+        "additionalProperties": false
+      }
+    },
+    "trace": {
+      "type": "object",
+      "properties": {
+        "finishReason": {
+          "type": "string"
+        },
+        "usage": {
+          "type": "object",
+          "properties": {
+            "inputTokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "outputTokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "totalTokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "additionalProperties": false
+        },
+        "toolCalls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "step": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "toolName": {
+                "type": "string"
+              },
+              "callId": {
+                "type": "string"
+              },
+              "input": {},
+              "output": {}
+            },
+            "required": ["step", "toolName"],
+            "additionalProperties": false
+          }
+        },
+        "promptChars": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "retrieval": {
+          "type": "object",
+          "properties": {
+            "domains": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "confidence": {
+              "type": "number"
+            },
+            "cardCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "fragmentCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "catalogCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "contextChars": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "domains",
+            "confidence",
+            "cardCount",
+            "fragmentCount",
+            "catalogCount",
+            "contextChars"
+          ],
+          "additionalProperties": false
+        },
+        "missingSubmitFallback": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "finishReason",
+        "toolCalls",
+        "promptChars",
+        "retrieval",
+        "missingSubmitFallback"
+      ],
+      "additionalProperties": false
+    },
+    "score": {
+      "type": "object",
+      "properties": {
+        "rawExact": {
+          "type": "boolean"
+        },
+        "validatedExact": {
+          "type": "boolean"
+        },
+        "fieldTruePositive": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "fieldFalsePositive": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "fieldFalseNegative": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "gapTruePositive": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "gapFalsePositive": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "gapFalseNegative": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "referenceTopologyExact": {
+          "type": "boolean"
+        },
+        "lookupCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "requiredLookupsSatisfied": {
+          "type": "boolean"
+        },
+        "compilationValid": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "rawExact",
+        "validatedExact",
+        "fieldTruePositive",
+        "fieldFalsePositive",
+        "fieldFalseNegative",
+        "gapTruePositive",
+        "gapFalsePositive",
+        "gapFalseNegative",
+        "referenceTopologyExact",
+        "lookupCount",
+        "requiredLookupsSatisfied",
+        "compilationValid"
+      ],
+      "additionalProperties": false
+    },
+    "telemetry": {
+      "type": "object",
+      "properties": {
+        "peakRssBytes": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "peakVramBytes": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "peakGpuUtilizationPercent": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "peakGpuTemperatureC": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "peakGpuPowerW": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cpuTimeMs": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "readBytes": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "writeBytes": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "swapGrowthBytes": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "competingGpuLoad": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "peakRssBytes",
+        "peakVramBytes",
+        "peakGpuUtilizationPercent",
+        "peakGpuTemperatureC",
+        "peakGpuPowerW",
+        "cpuTimeMs",
+        "readBytes",
+        "writeBytes",
+        "swapGrowthBytes",
+        "competingGpuLoad"
+      ],
+      "additionalProperties": false
+    },
+    "comparable": {
+      "type": "boolean"
+    },
+    "diagnostic": {
+      "type": "object",
+      "properties": {
+        "protocolErrors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inventedIdentifiers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "comparabilityReasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "samplingCoverage": {
+          "type": "object",
+          "properties": {
+            "processTree": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "client-only",
+                "permission-denied",
+                "tool-missing",
+                "platform-unsupported",
+                "rocm-unsupported",
+                "metal-unsupported"
+              ]
+            },
+            "gpu": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "client-only",
+                "permission-denied",
+                "tool-missing",
+                "platform-unsupported",
+                "rocm-unsupported",
+                "metal-unsupported"
+              ]
+            },
+            "samples": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": ["processTree", "gpu", "samples"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocolErrors",
+        "inventedIdentifiers",
+        "comparabilityReasons",
+        "samplingCoverage"
+      ],
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "sampleId",
+    "caseId",
+    "repetition",
+    "warmup",
+    "startedAt",
+    "durationMs",
+    "monotonic",
+    "rawSubmission",
+    "validatedSlots",
+    "actualGaps",
+    "trace",
+    "score",
+    "telemetry",
+    "comparable",
+    "diagnostic"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "__schema0": {
+      "type": "object",
+      "properties": {
+        "domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "filters": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        },
+        "ranges": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        }
+      },
+      "required": ["domain"],
+      "additionalProperties": false
+    }
+  }
+}

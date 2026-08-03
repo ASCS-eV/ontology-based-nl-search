@@ -1,0 +1,304 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "candidateId": {
+      "type": "string"
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["protocol", "quality", "warm-performance", "cold-load", "capacity"]
+    },
+    "cases": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "measuredSamples": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "submissionRate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "rawExact": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "validatedExact": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fieldPrecision": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fieldRecall": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "gapPrecision": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "gapRecall": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "referenceTopologyAccuracy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "lookupEfficiency": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fallbackRate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "compilationValidity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "latencyMs": {
+          "type": "object",
+          "properties": {
+            "p50": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "p95": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mad": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["p50", "p95", "mad"],
+          "additionalProperties": false
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "inputMedian": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "outputMedian": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["inputMedian", "outputMedian"],
+          "additionalProperties": false
+        },
+        "peakRamBytes": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "peakVramBytes": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "categoryValidatedExact": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "localeValidatedExact": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "inventedIdentifierCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "submissionRate",
+        "rawExact",
+        "validatedExact",
+        "fieldPrecision",
+        "fieldRecall",
+        "gapPrecision",
+        "gapRecall",
+        "referenceTopologyAccuracy",
+        "lookupEfficiency",
+        "fallbackRate",
+        "compilationValidity",
+        "latencyMs",
+        "tokens",
+        "peakRamBytes",
+        "peakVramBytes",
+        "categoryValidatedExact",
+        "localeValidatedExact",
+        "inventedIdentifierCount"
+      ],
+      "additionalProperties": false
+    },
+    "gates": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quality": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "passing": {
+          "type": "boolean"
+        },
+        "failures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["protocol", "quality", "passing", "failures"],
+      "additionalProperties": false
+    },
+    "comparablePerformance": {
+      "type": "boolean"
+    },
+    "capacity": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["passed", "failed", "not-supported"]
+        },
+        "targetTokens": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "promptTokens": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": ["status", "targetTokens"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "candidateId",
+    "profile",
+    "cases",
+    "measuredSamples",
+    "metrics",
+    "gates",
+    "comparablePerformance"
+  ],
+  "additionalProperties": false
+}

@@ -1,6 +1,6 @@
 {
   "name": "@ontology-search/testing",
-  "description": "Shared Vitest test helpers, fixtures, and the retrieval eval harness. Not production code.",
+  "description": "Shared test helpers, fixtures, retrieval evaluation, and reproducible local-model evaluation. Not production code.",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -22,12 +22,15 @@
   "devDependencies": {
     "@ontology-search/api-types": "workspace:*",
     "@ontology-search/core": "workspace:*",
+    "@ontology-search/llm": "workspace:*",
     "@ontology-search/ontology": "workspace:*",
     "@ontology-search/search": "workspace:*",
     "@ontology-search/sparql": "workspace:*",
     "@ontology-search/typescript-config": "workspace:*",
     "@types/node": "^25.7.0",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3",
-    "vitest": "^3.2.0"
+    "vitest": "^3.2.0",
+    "zod": "^4.4.3"
   }
 }

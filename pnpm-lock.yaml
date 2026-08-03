@@ -817,6 +817,9 @@ importers:
       '@ontology-search/core':
         specifier: workspace:*
         version: link:../core
+      '@ontology-search/llm':
+        specifier: workspace:*
+        version: link:../llm
       '@ontology-search/ontology':
         specifier: workspace:*
         version: link:../ontology
@@ -832,12 +835,18 @@ importers:
       '@types/node':
         specifier: ^25.7.0
         version: 25.7.0
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
       vitest:
         specifier: ^3.2.0
         version: 3.2.4(@types/node@25.7.0)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4)
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   packages/typescript-config: {}
 
