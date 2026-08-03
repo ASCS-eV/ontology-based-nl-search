@@ -14,7 +14,20 @@
     },
     "profile": {
       "type": "string",
-      "enum": ["protocol", "quality", "warm-performance", "cold-load", "capacity"]
+      "enum": [
+        "protocol",
+        "quality",
+        "warm-performance",
+        "cold-load",
+        "capacity"
+      ]
+    },
+    "suite": {
+      "type": "string",
+      "enum": [
+        "envited-x",
+        "toyverse"
+      ]
     },
     "cases": {
       "type": "integer",
@@ -30,59 +43,136 @@
       "type": "object",
       "properties": {
         "submissionRate": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "rawExact": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "validatedExact": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "fieldPrecision": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "fieldRecall": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "gapPrecision": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "gapRecall": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "referenceTopologyAccuracy": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "lookupEfficiency": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "fallbackRate": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "compilationValidity": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "latencyMs": {
           "type": "object",
@@ -121,7 +211,11 @@
               ]
             }
           },
-          "required": ["p50", "p95", "mad"],
+          "required": [
+            "p50",
+            "p95",
+            "mad"
+          ],
           "additionalProperties": false
         },
         "tokens": {
@@ -150,7 +244,10 @@
               ]
             }
           },
-          "required": ["inputMedian", "outputMedian"],
+          "required": [
+            "inputMedian",
+            "outputMedian"
+          ],
           "additionalProperties": false
         },
         "peakRamBytes": {
@@ -181,9 +278,16 @@
             "type": "string"
           },
           "additionalProperties": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "localeValidatedExact": {
@@ -192,9 +296,16 @@
             "type": "string"
           },
           "additionalProperties": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "inventedIdentifierCount": {
@@ -258,7 +369,12 @@
           }
         }
       },
-      "required": ["protocol", "quality", "passing", "failures"],
+      "required": [
+        "protocol",
+        "quality",
+        "passing",
+        "failures"
+      ],
       "additionalProperties": false
     },
     "comparablePerformance": {
@@ -269,7 +385,11 @@
       "properties": {
         "status": {
           "type": "string",
-          "enum": ["passed", "failed", "not-supported"]
+          "enum": [
+            "passed",
+            "failed",
+            "not-supported"
+          ]
         },
         "targetTokens": {
           "type": "integer",
@@ -285,7 +405,10 @@
           "type": "string"
         }
       },
-      "required": ["status", "targetTokens"],
+      "required": [
+        "status",
+        "targetTokens"
+      ],
       "additionalProperties": false
     }
   },
@@ -294,6 +417,7 @@
     "runId",
     "candidateId",
     "profile",
+    "suite",
     "cases",
     "measuredSamples",
     "metrics",

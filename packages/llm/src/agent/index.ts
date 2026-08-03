@@ -32,6 +32,7 @@ import {
   lookupTools,
   type SlotSubmissionParams,
   slotSubmissionSchema,
+  SUBMIT_TOOL_NAME,
 } from './tools.js'
 
 /**
@@ -69,20 +70,68 @@ export async function runSparqlAgent(
   naturalLanguageQuery: string,
   options?: AgentOptions
 ): Promise<LlmStructuredResponse> {
-  const result = await runSparqlAgentWithModel(naturalLanguageQuery, getModel(), options)
-  return result.validatedResponse
+  // Forward only the two production options by name. Spreading the caller's
+  // object would let any extra key structurally satisfy InjectedAgentOptions
+  // and override the policy — the very thing the "LLM never writes SPARQL"
+  // invariant depends on not being reachable from a request path.
+  const run = await executeAgentRun(naturalLanguageQuery, getModel(), {
+    ...(options?.domain === undefined ? {} : { domain: options.domain }),
+    ...(options?.signal === undefined ? {} : { signal: options.signal }),
+  })
+  return buildValidatedResponse(run)
 }
 
 /**
  * Internal evaluation seam. It accepts a caller-owned model but otherwise
- * executes the exact production path. Only the private `./evaluation`
- * package entrypoint exposes this function outside this package.
+ * executes the exact production path, additionally collecting the trace the
+ * scorer needs. Only the private `./evaluation` package entrypoint exposes
+ * this function outside this package.
  */
 export async function runSparqlAgentWithModel(
   naturalLanguageQuery: string,
   model: LanguageModel,
   options?: InjectedAgentOptions
 ): Promise<AgentEvaluationResult> {
+  const run = await executeAgentRun(naturalLanguageQuery, model, options)
+  const toolCalls = collectToolTraces(run.result)
+  const rawSubmission = extractRawSubmission(toolCalls)
+  const validatedResponse = await buildValidatedResponse(run)
+
+  const trace: AgentEvaluationTrace = {
+    finishReason: String(run.result.finishReason ?? 'unknown'),
+    usage: normalizeUsage(run.result.usage),
+    toolCalls,
+    rawSubmission,
+    promptChars: run.prompt.length,
+    retrieval: summarizeRetrieval(run.retrieved),
+    missingSubmitFallback: run.submitCall === undefined,
+  }
+  await options?.observer?.(trace)
+
+  return { rawSubmission, validatedResponse, trace }
+}
+
+interface AgentRun {
+  result: GenerateResultLike
+  prompt: string
+  retrieved: Awaited<ReturnType<typeof buildRequestPrompt>>['retrieved']
+  vocabulary: Awaited<ReturnType<typeof getAgentContext>>['vocabulary']
+  submitCall: ToolResultLike | undefined
+  targetDomain: string
+  naturalLanguageQuery: string
+  sw: Stopwatch
+}
+
+/**
+ * The shared agent round-trip. Both entrypoints run exactly this; they differ
+ * only in what they derive afterwards, so production never pays to build
+ * evaluation traces it would immediately discard.
+ */
+async function executeAgentRun(
+  naturalLanguageQuery: string,
+  model: LanguageModel,
+  options?: InjectedAgentOptions
+): Promise<AgentRun> {
   const sw = new Stopwatch()
   const policy = options?.policy ?? getAgentPolicy()
   const targetDomain = options?.domain ?? (await getPrimaryDomain())
@@ -147,48 +196,43 @@ export async function runSparqlAgentWithModel(
     : await generateText(generationOptions)
   endLlmCall()
 
-  const toolCalls = collectToolTraces(result)
-  const rawSubmission = extractRawSubmission(toolCalls)
-
   // Extract the validated submit_slots call from tool results. Tool outputs
-  // have passed the SDK's schema and execute handler; raw arguments are kept
-  // separately above so evaluation can distinguish protocol from semantics.
+  // have passed the SDK's schema and execute handler; the raw arguments are
+  // read separately by the evaluation seam so it can distinguish protocol
+  // failures from semantic ones.
   const submitCall = result.steps
     .flatMap((step) => step.toolResults ?? [])
-    .find((toolResult) => toolResult?.toolName === 'submit_slots')
+    .find((toolResult) => toolResult?.toolName === SUBMIT_TOOL_NAME)
+  if (!submitCall) diagnoseMissingSubmit(result)
 
-  let validatedResponse: LlmStructuredResponse
-  if (!submitCall) {
-    diagnoseMissingSubmit(result)
+  return {
+    result,
+    prompt,
+    retrieved,
+    vocabulary,
+    submitCall,
+    targetDomain,
+    naturalLanguageQuery,
+    sw,
   }
-  if (submitCall) {
-    const answer = submitCall.output as SlotSubmissionParams
+}
+
+/** Turn a completed agent round-trip into the response the API returns. */
+async function buildValidatedResponse(run: AgentRun): Promise<LlmStructuredResponse> {
+  if (run.submitCall) {
+    const answer = run.submitCall.output as SlotSubmissionParams
     const response = await runSlotPipeline({
       submission: answer,
-      vocabulary,
-      targetDomain,
-      sw,
+      vocabulary: run.vocabulary,
+      targetDomain: run.targetDomain,
+      sw: run.sw,
     })
-    validatedResponse = { ...response, timings: sw.getTimings() }
-  } else {
-    // Fallback: LLM didn't call submit_slots — shared with the Copilot
-    // adapter so the cross-domain query and vocabulary hint stay identical.
-    const fallback = await buildEmptyFallbackResponse(naturalLanguageQuery, vocabulary)
-    validatedResponse = { ...fallback, timings: sw.getTimings() }
+    return { ...response, timings: run.sw.getTimings() }
   }
-
-  const trace: AgentEvaluationTrace = {
-    finishReason: String(result.finishReason ?? 'unknown'),
-    usage: normalizeUsage(result.usage),
-    toolCalls,
-    rawSubmission,
-    promptChars: prompt.length,
-    retrieval: summarizeRetrieval(retrieved),
-    missingSubmitFallback: !submitCall,
-  }
-  await options?.observer?.(trace)
-
-  return { rawSubmission, validatedResponse, trace }
+  // Fallback: LLM didn't call submit_slots — shared with the Copilot
+  // adapter so the cross-domain query and vocabulary hint stay identical.
+  const fallback = await buildEmptyFallbackResponse(run.naturalLanguageQuery, run.vocabulary)
+  return { ...fallback, timings: run.sw.getTimings() }
 }
 
 interface ToolResultLike {
@@ -266,7 +310,7 @@ function collectToolTraces(result: GenerateResultLike): EvaluationToolTrace[] {
 }
 
 function extractRawSubmission(toolCalls: EvaluationToolTrace[]): SlotPipelineSubmission | null {
-  const raw = toolCalls.find((call) => call.toolName === 'submit_slots')?.input
+  const raw = toolCalls.find((call) => call.toolName === SUBMIT_TOOL_NAME)?.input
   const parsed = slotSubmissionSchema.safeParse(raw)
   return parsed.success ? parsed.data : null
 }

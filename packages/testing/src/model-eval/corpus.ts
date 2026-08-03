@@ -1,3 +1,5 @@
+import { SCHEMA_TOOL_NAMES } from '@ontology-search/llm/evaluation'
+
 import {
   EVALUATION_SCHEMA_VERSION,
   type EvaluationSearchSlots,
@@ -21,7 +23,8 @@ interface CaseOptions {
   directSubmissionAllowed?: boolean
 }
 
-const defaultLookups: LookupName[] = ['find_terms', 'describe_shape', 'list_values', 'probe_data']
+/** The agent's own lookup registry, so a tool rename cannot desync the corpus. */
+const defaultLookups: LookupName[] = [...SCHEMA_TOOL_NAMES]
 
 function slots(
   domains: string[] = [],

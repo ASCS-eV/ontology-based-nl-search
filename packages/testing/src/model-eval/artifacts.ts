@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 
+import { stableStringify } from './canonical-json.js'
 import {
   type EvaluationSample,
   type EvaluationSummary,
@@ -10,6 +11,14 @@ import {
   SampleSchema,
   SummarySchema,
 } from './types.js'
+
+/**
+ * Where generated runs land. Deliberately NOT `.playground/`, which the
+ * contributor guide defines as a per-developer scratch area that may be
+ * cleared at will — benchmark evidence a reader is asked to keep together
+ * must not share a directory with disposable working notes.
+ */
+export const EVAL_RUNS_DIRECTORY = '.eval-runs'
 
 export interface RunArtifacts {
   directory: string
@@ -20,7 +29,7 @@ export interface RunArtifacts {
 }
 
 export function createRunArtifacts(repoRoot: string, runId: string): RunArtifacts {
-  const directory = resolve(repoRoot, '.playground', 'eval-runs', runId)
+  const directory = resolve(repoRoot, EVAL_RUNS_DIRECTORY, runId)
   mkdirSync(dirname(directory), { recursive: true })
   mkdirSync(directory)
   const artifacts = {
@@ -74,10 +83,6 @@ export function sha256(value: unknown): string {
   return createHash('sha256').update(stableStringify(value)).digest('hex')
 }
 
-export function stableStringify(value: unknown): string {
-  return JSON.stringify(sortValue(value))
-}
-
 export function redactEndpoint(value: string): string {
   try {
     const url = new URL(value)
@@ -101,7 +106,11 @@ export function redactSecrets(values: string[]): string[] {
 }
 
 function renderReport(summary: EvaluationSummary): string {
-  const percent = (value: number): string => `${(value * 100).toFixed(1)}%`
+  // `null` renders as "not measured", never 0% or 100%: a slice with no
+  // samples must not read as either a perfect or a catastrophic score.
+  const percent = (value: number | null): string =>
+    value === null ? 'not measured' : `${(value * 100).toFixed(1)}%`
+  const ms = (value: number | null): string => (value === null ? 'n/a' : value.toFixed(0))
   const bytes = (value: number | null): string =>
     value === null ? 'not collected' : `${(value / 1024 ** 3).toFixed(2)} GiB`
   const latency = summary.metrics.latencyMs
@@ -120,7 +129,7 @@ function renderReport(summary: EvaluationSummary): string {
   return `# Local model evaluation: ${summary.candidateId}
 
 - Run: \`${summary.runId}\`
-- Profile: \`${summary.profile}\`
+- Profile: \`${summary.profile}\` on the \`${summary.suite}\` suite
 - Gate: **${summary.gates.passing ? 'PASS' : 'FAIL'}**
 - Cases / measured samples: ${summary.cases} / ${summary.measuredSamples}
 
@@ -142,7 +151,7 @@ function renderReport(summary: EvaluationSummary): string {
 
 | Metric | Result |
 | --- | ---: |
-| Latency p50 / p95 / MAD | ${latency.p50 ?? 'n/a'} / ${latency.p95 ?? 'n/a'} / ${latency.mad ?? 'n/a'} ms |
+| Latency p50 / p95 / MAD | ${ms(latency.p50)} / ${ms(latency.p95)} / ${ms(latency.mad)} ms |
 | Input / output tokens (median) | ${tokens.inputMedian ?? 'not reported'} / ${tokens.outputMedian ?? 'not reported'} |
 | Peak RAM | ${bytes(summary.metrics.peakRamBytes)} |
 | Peak VRAM | ${bytes(summary.metrics.peakVramBytes)} |
@@ -167,18 +176,6 @@ ${summary.gates.failures.length === 0 ? '- None.' : summary.gates.failures.map((
 
 Generated results are local evidence for this run only. The repository does not commit benchmark results or model weights.
 `
-}
-
-function sortValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortValue)
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, item]) => [key, sortValue(item)])
-    )
-  }
-  return value
 }
 
 function writeJson(path: string, value: unknown): void {

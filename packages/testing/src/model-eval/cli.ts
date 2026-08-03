@@ -46,12 +46,10 @@ export type CliCommand =
     }
   | {
       command: 'smoke'
-      auth: 'codex-cli' | 'api-key'
       model: string
       caseId: string
-      apiKey?: string
+      apiKey: string
       baseUrl?: string
-      codexHome?: string
       timeoutMs: number
     }
 
@@ -78,38 +76,21 @@ export function parseCliArgs(argv: string[]): CliCommand {
       allowPositionals: false,
       strict: true,
       options: {
-        auth: { type: 'string', default: 'codex-cli' },
         model: { type: 'string', default: 'gpt-5.4-mini' },
         case: { type: 'string', default: 'env-001' },
         'api-key': { type: 'string' },
         'base-url': { type: 'string' },
-        'codex-home': { type: 'string' },
         'timeout-ms': { type: 'string', default: '120000' },
       },
     })
-    const auth = parsed.values.auth
-    if (auth !== 'codex-cli' && auth !== 'api-key') {
-      throw new Error(`Invalid --auth "${auth}"`)
-    }
-    if (auth === 'api-key' && !parsed.values['api-key']) {
-      throw new Error('--api-key is required when --auth api-key is used')
-    }
-    if (auth === 'codex-cli' && parsed.values['api-key']) {
-      throw new Error('--api-key cannot be combined with --auth codex-cli')
-    }
-    if (auth === 'codex-cli' && parsed.values['base-url']) {
-      throw new Error('--base-url cannot override the Codex subscription endpoint')
-    }
     return {
       command,
-      auth,
       model: parsed.values.model!,
       caseId: parsed.values.case!,
-      ...(parsed.values['api-key'] ? { apiKey: parsed.values['api-key'] } : {}),
+      apiKey: required(parsed.values['api-key'], '--api-key'),
       ...(parsed.values['base-url']
         ? { baseUrl: httpUrl(parsed.values['base-url'], '--base-url') }
         : {}),
-      ...(parsed.values['codex-home'] ? { codexHome: resolve(parsed.values['codex-home']) } : {}),
       timeoutMs: positiveInteger(parsed.values['timeout-ms']!, '--timeout-ms'),
     }
   }
@@ -227,13 +208,22 @@ export async function main(): Promise<number> {
 
   if (command.command === 'compare') {
     const summaries = command.paths.map(readSummary)
-    const winners = selectTierWinners(summaries)
-    for (const winner of winners) {
+    const { outcomes, incomparableRunIds } = selectTierWinners(summaries)
+    for (const outcome of outcomes) {
       process.stdout.write(
-        `${winner.tier.padEnd(5)} GiB: ${winner.candidateId} (${(winner.validatedExact * 100).toFixed(1)}%, ${winner.weightEstimateGiB.toFixed(1)} GiB weights)\n`
+        'candidateId' in outcome
+          ? `${outcome.tier.padEnd(5)} GiB: ${outcome.candidateId} (${(outcome.validatedExact * 100).toFixed(1)}%, ${outcome.weightEstimateGiB.toFixed(1)} GiB weights)\n`
+          : `${outcome.tier.padEnd(5)} GiB: none — ${outcome.reason}\n`
       )
     }
-    return 0
+    // A tier with no winner is a legitimate comparison result, reported rather
+    // than thrown. The exit status still tells a script that something is
+    // unresolved.
+    for (const runId of incomparableRunIds) {
+      process.stderr.write(`Warning: performance run ${runId} is not comparable\n`)
+    }
+    const unresolved = outcomes.filter((outcome) => !('candidateId' in outcome)).length
+    return unresolved > 0 || incomparableRunIds.length > 0 ? 1 : 0
   }
 
   if (command.command === 'smoke') {
@@ -242,12 +232,10 @@ export async function main(): Promise<number> {
     const abort = installRunAbortHandlers()
     try {
       const result = await runSmokeEvaluation({
-        auth: command.auth,
         model: command.model,
         gold,
-        ...(command.apiKey ? { apiKey: command.apiKey } : {}),
+        apiKey: command.apiKey,
         ...(command.baseUrl ? { baseUrl: command.baseUrl } : {}),
-        ...(command.codexHome ? { codexHome: command.codexHome } : {}),
         timeoutMs: command.timeoutMs,
         signal: abort.signal,
       })
@@ -278,8 +266,13 @@ export async function main(): Promise<number> {
         timeoutMs: command.timeoutMs,
         signal: abort.signal,
       })
-      process.stdout.write(`${result.summary.capacity?.status}: ${result.artifacts.directory}\n`)
-      return result.summary.gates.passing ? 0 : 1
+      const capacity = result.summary.capacity
+      process.stdout.write(
+        `${capacity?.status}${capacity?.reason ? ` (${capacity.reason})` : ''}: ${result.artifacts.directory}\n`
+      )
+      // `not-supported` exits 0: the measurement could not be taken, which is
+      // not evidence against the candidate. Only `failed` is a failure.
+      return capacity?.status === 'failed' ? 1 : 0
     }
 
     const result = await runEvaluation({

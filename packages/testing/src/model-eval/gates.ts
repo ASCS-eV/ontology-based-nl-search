@@ -12,19 +12,40 @@ import { EVALUATION_SCHEMA_VERSION } from './types.js'
 
 type ProfileName = z.infer<typeof ProfileNameSchema>
 
-export const CRITICAL_CATEGORIES = [
-  'enum',
-  'range',
-  'geography',
-  'multi-domain',
-  'reference-flat',
-  'reference-scoped',
-  'reference-nested',
-  'gap',
-  'iri',
-  'injection',
-  'multilingual',
-] as const
+type Suite = GoldCase['suite']
+
+/**
+ * Categories a suite must cover before its quality gate means anything.
+ *
+ * Declared per suite because the corpora differ in scope: requiring the
+ * ENVITED-X set of every suite made the Toyverse quality gate unpassable by
+ * construction, since no model could supply coverage the corpus never had.
+ */
+export const CRITICAL_CATEGORIES: Readonly<Record<Suite, readonly string[]>> = {
+  'envited-x': [
+    'enum',
+    'range',
+    'geography',
+    'multi-domain',
+    'reference-flat',
+    'reference-scoped',
+    'reference-nested',
+    'gap',
+    'iri',
+    'injection',
+    'multilingual',
+  ],
+  toyverse: [
+    'enum',
+    'range',
+    'synonym',
+    'multi-domain',
+    'reference-scoped',
+    'inherited-property',
+    'gap',
+    'injection',
+  ],
+}
 
 export function aggregateSummary(input: {
   runId: string
@@ -35,13 +56,16 @@ export function aggregateSummary(input: {
 }): EvaluationSummary {
   const measured = input.samples.filter((sample) => !sample.warmup)
   const caseById = new Map(input.cases.map((gold) => [gold.id, gold]))
+  const suite: Suite = input.cases[0]?.suite ?? 'envited-x'
   const count = measured.length
   const sum = (select: (sample: EvaluationSample) => number): number =>
     measured.reduce((total, sample) => total + select(sample), 0)
-  const ratio = (numerator: number, denominator: number): number =>
-    denominator === 0 ? 1 : numerator / denominator
-  const mean = (values: number[]): number =>
-    values.length === 0 ? 1 : values.reduce((left, right) => left + right, 0) / values.length
+  // `null`, never 1: a rate over nothing is unknown, not perfect. Returning a
+  // neutral-looking 1 let gates pass on slices that had no evidence at all.
+  const ratio = (numerator: number, denominator: number): number | null =>
+    denominator === 0 ? null : numerator / denominator
+  const mean = (values: number[]): number | null =>
+    values.length === 0 ? null : values.reduce((left, right) => left + right, 0) / values.length
 
   const tp = sum((sample) => sample.score.fieldTruePositive)
   const fp = sum((sample) => sample.score.fieldFalsePositive)
@@ -58,8 +82,11 @@ export function aggregateSummary(input: {
       return [category, mean(selected.map((sample) => Number(sample.score.validatedExact)))]
     })
   )
+  // Locales come from the corpus under test, not a fixed list. Hard-coding
+  // every supported locale reported 100% for languages the corpus never
+  // contained, and made the en/de comparison fire against a phantom score.
   const localeValidatedExact = Object.fromEntries(
-    (['en', 'de', 'fr', 'ja'] as const).map((locale) => {
+    [...new Set(input.cases.map((gold) => gold.locale))].sort().map((locale) => {
       const selected = measured.filter((sample) => caseById.get(sample.caseId)?.locale === locale)
       return [locale, mean(selected.map((sample) => Number(sample.score.validatedExact)))]
     })
@@ -126,12 +153,13 @@ export function aggregateSummary(input: {
     inventedIdentifierCount,
   }
 
-  const gates = evaluateGates(input.profile, measured, metrics)
+  const gates = evaluateGates(input.profile, suite, measured, metrics)
   return {
     schemaVersion: EVALUATION_SCHEMA_VERSION,
     runId: input.runId,
     candidateId: input.candidateId,
     profile: input.profile,
+    suite,
     cases: input.cases.length,
     measuredSamples: count,
     metrics,
@@ -143,6 +171,7 @@ export function aggregateSummary(input: {
 
 function evaluateGates(
   profile: ProfileName,
+  suite: Suite,
   samples: EvaluationSample[],
   metrics: EvaluationSummary['metrics']
 ): EvaluationSummary['gates'] {
@@ -150,23 +179,47 @@ function evaluateGates(
   let protocol: boolean | null = null
   let quality: boolean | null = null
 
+  // No evidence is not a pass. Every rate below would be `null` here, and a
+  // gate that skips nulls would otherwise wave an empty run straight through.
+  if (samples.length === 0) {
+    failures.push('No measured samples: the run produced no evidence to gate on')
+  }
+
+  // Transport failures are counted separately from protocol conformance:
+  // an unreachable endpoint invalidates the run rather than condemning
+  // the model.
+  const transportFailures = samples.filter((sample) => sample.transportError !== undefined).length
+  if (transportFailures > 0) {
+    failures.push(
+      `${transportFailures} of ${samples.length} samples did not complete a request ` +
+        `(transport or timeout); the run is not conclusive`
+    )
+  }
+
+  const below = (value: number | null, threshold: number): boolean =>
+    value !== null && value < threshold
+
   if (profile === 'protocol') {
     if (samples.some((sample) => sample.diagnostic.protocolErrors.length > 0)) {
       failures.push('Protocol produced unknown or schema-invalid tool calls')
     }
     if (samples.some((sample) => sample.trace.missingSubmitFallback)) {
-      failures.push('Protocol did not complete submit_slots within three steps')
+      failures.push('Protocol did not complete submit_slots within the step budget')
     }
     protocol = failures.length === 0
   }
 
   if (profile === 'quality') {
-    if (metrics.submissionRate < 0.99) failures.push('Submission rate is below 99%')
-    if (metrics.validatedExact < 0.9) failures.push('Validated exact-slot accuracy is below 90%')
-    for (const category of CRITICAL_CATEGORIES) {
+    if (below(metrics.submissionRate, 0.99)) failures.push('Submission rate is below 99%')
+    if (below(metrics.validatedExact, 0.9)) {
+      failures.push('Validated exact-slot accuracy is below 90%')
+    }
+    for (const category of CRITICAL_CATEGORIES[suite]) {
       const score = metrics.categoryValidatedExact[category]
-      if (score === undefined) {
-        failures.push(`Critical category "${category}" is absent from the quality corpus`)
+      if (score === undefined || score === null) {
+        failures.push(
+          `Critical category "${category}" has no measured samples in the ${suite} quality corpus`
+        )
       } else if (score < 0.85) {
         failures.push(`Critical category "${category}" is below 85%`)
       }
@@ -174,9 +227,17 @@ function evaluateGates(
     if (metrics.inventedIdentifierCount > 0) {
       failures.push('A validated response retained an invented ontology identifier')
     }
+    // Only compare locales the corpus actually measured — a missing language
+    // must not masquerade as a score.
     const english = metrics.localeValidatedExact['en']
     const german = metrics.localeValidatedExact['de']
-    if (english !== undefined && german !== undefined && Math.abs(english - german) > 0.05) {
+    if (
+      english !== undefined &&
+      english !== null &&
+      german !== undefined &&
+      german !== null &&
+      Math.abs(english - german) > 0.05
+    ) {
       failures.push('English/German validated accuracy differs by more than five points')
     }
     quality = failures.length === 0
@@ -194,26 +255,37 @@ function evaluateGates(
   }
 }
 
-export interface TierWinner {
-  tier: '16' | '24' | '32-48'
-  candidateId: string
-  validatedExact: number
-  weightEstimateGiB: number
+export type TierOutcome =
+  | {
+      tier: '16' | '24' | '32-48'
+      candidateId: string
+      validatedExact: number
+      weightEstimateGiB: number
+    }
+  | { tier: '16' | '24' | '32-48'; reason: string }
+
+export interface TierSelection {
+  outcomes: TierOutcome[]
+  /** Runs excluded from selection because their performance is not comparable. */
+  incomparableRunIds: string[]
 }
 
-export function selectTierWinners(summaries: EvaluationSummary[]): TierWinner[] {
-  const incomparable = summaries.filter(
-    (summary) => isPerformanceProfile(summary.profile) && !summary.comparablePerformance
-  )
-  if (incomparable.length > 0) {
-    throw new Error(
-      `Incomparable requested performance runs: ${incomparable.map((summary) => summary.runId).join(', ')}`
-    )
-  }
+/**
+ * Rank the passing quality artifacts per hardware tier.
+ *
+ * Returns outcomes rather than throwing: "no candidate cleared this tier" is a
+ * legitimate result of a comparison, and surfacing it as an exception gave the
+ * operator a stack trace where a report belongs. The caller decides the exit
+ * status.
+ */
+export function selectTierWinners(summaries: EvaluationSummary[]): TierSelection {
+  const incomparableRunIds = summaries
+    .filter((summary) => isPerformanceProfile(summary.profile) && !summary.comparablePerformance)
+    .map((summary) => summary.runId)
   const candidateById = new Map(
     candidateInventory.candidates.map((candidate) => [candidate.id, candidate])
   )
-  return (['16', '24', '32-48'] as const).map((tier) => {
+  const outcomes = (['16', '24', '32-48'] as const).map((tier): TierOutcome => {
     const eligible = summaries
       .filter((summary) => summary.profile === 'quality' && summary.gates.quality === true)
       .map((summary) => ({ summary, candidate: candidateById.get(summary.candidateId) }))
@@ -221,25 +293,34 @@ export function selectTierWinners(summaries: EvaluationSummary[]): TierWinner[] 
         (entry): entry is { summary: EvaluationSummary; candidate: Candidate } =>
           entry.candidate !== undefined && tierRank(entry.candidate.hardwareTier) <= tierRank(tier)
       )
-    if (eligible.length === 0) throw new Error(`No passing candidate for ${tier} GiB tier`)
-    const best = Math.max(...eligible.map((entry) => entry.summary.metrics.validatedExact))
+      // A passing quality gate always has a measured validatedExact; the guard
+      // keeps the ranking total rather than relying on that invariant.
+      .flatMap((entry) =>
+        entry.summary.metrics.validatedExact === null
+          ? []
+          : [{ ...entry, validatedExact: entry.summary.metrics.validatedExact }]
+      )
+    if (eligible.length === 0)
+      return { tier, reason: `no passing quality run fits the ${tier} GiB tier` }
+    const best = Math.max(...eligible.map((entry) => entry.validatedExact))
     const shortlist = eligible.filter(
-      (entry) => best - entry.summary.metrics.validatedExact <= 0.02 + Number.EPSILON
+      (entry) => best - entry.validatedExact <= 0.02 + Number.EPSILON
     )
     shortlist.sort(
       (left, right) =>
         left.candidate.weightEstimateGiB - right.candidate.weightEstimateGiB ||
-        right.summary.metrics.validatedExact - left.summary.metrics.validatedExact ||
+        right.validatedExact - left.validatedExact ||
         left.candidate.id.localeCompare(right.candidate.id)
     )
     const winner = shortlist[0]!
     return {
       tier,
       candidateId: winner.candidate.id,
-      validatedExact: winner.summary.metrics.validatedExact,
+      validatedExact: winner.validatedExact,
       weightEstimateGiB: winner.candidate.weightEstimateGiB,
     }
   })
+  return { outcomes, incomparableRunIds }
 }
 
 function isPerformanceProfile(profile: ProfileName): boolean {

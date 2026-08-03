@@ -33,7 +33,13 @@
         },
         "cohort": {
           "type": "string",
-          "enum": ["core", "control", "floor", "conditional", "ceiling"]
+          "enum": [
+            "core",
+            "control",
+            "floor",
+            "conditional",
+            "ceiling"
+          ]
         },
         "runnable": {
           "type": "boolean",
@@ -56,14 +62,23 @@
             },
             "license": {
               "type": "string",
-              "enum": ["Apache-2.0", "MIT"]
+              "enum": [
+                "Apache-2.0",
+                "MIT"
+              ]
             },
             "licenseUrl": {
               "type": "string",
               "format": "uri"
             }
           },
-          "required": ["huggingFaceId", "revision", "url", "license", "licenseUrl"],
+          "required": [
+            "huggingFaceId",
+            "revision",
+            "url",
+            "license",
+            "licenseUrl"
+          ],
           "additionalProperties": false
         },
         "contextTokens": {
@@ -75,7 +90,11 @@
           "properties": {
             "engine": {
               "type": "string",
-              "enum": ["vllm", "llama.cpp", "sglang"]
+              "enum": [
+                "vllm",
+                "llama.cpp",
+                "sglang"
+              ]
             },
             "toolParser": {
               "type": "string",
@@ -126,7 +145,11 @@
         },
         "hardwareTier": {
           "type": "string",
-          "enum": ["16", "24", "32-48"]
+          "enum": [
+            "16",
+            "24",
+            "32-48"
+          ]
         },
         "notes": {
           "type": "string",
@@ -151,14 +174,23 @@
     },
     "profile": {
       "type": "string",
-      "enum": ["protocol", "quality", "warm-performance", "cold-load", "capacity"]
+      "enum": [
+        "protocol",
+        "quality",
+        "warm-performance",
+        "cold-load",
+        "capacity"
+      ]
     },
     "corpus": {
       "type": "object",
       "properties": {
         "suite": {
           "type": "string",
-          "enum": ["envited-x", "toyverse"]
+          "enum": [
+            "envited-x",
+            "toyverse"
+          ]
         },
         "digest": {
           "type": "string",
@@ -180,31 +212,45 @@
           "maximum": 9007199254740991
         }
       },
-      "required": ["suite", "digest", "caseCount", "repetitions", "warmups"],
+      "required": [
+        "suite",
+        "digest",
+        "caseCount",
+        "repetitions",
+        "warmups"
+      ],
       "additionalProperties": false
     },
     "policy": {
       "type": "object",
       "properties": {
         "contextTokens": {
-          "type": "number",
-          "const": 65536
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
         },
         "temperature": {
-          "type": "number",
-          "const": 0
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "concurrency": {
-          "type": "number",
-          "const": 1
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
         },
         "maxAgentSteps": {
-          "type": "number",
-          "const": 3
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
         },
         "lookupTools": {
-          "minItems": 4,
-          "maxItems": 4,
+          "minItems": 1,
           "type": "array",
           "items": {
             "type": "string"
@@ -229,7 +275,11 @@
               "maximum": 9007199254740991
             }
           },
-          "required": ["maxDomains", "maxCards", "maxContextChars"],
+          "required": [
+            "maxDomains",
+            "maxCards",
+            "maxContextChars"
+          ],
           "additionalProperties": false
         }
       },
@@ -258,7 +308,11 @@
         },
         "collection": {
           "type": "string",
-          "enum": ["client-only", "server-pid", "launched"]
+          "enum": [
+            "client-only",
+            "server-pid",
+            "launched"
+          ]
         },
         "launch": {
           "type": "object",
@@ -279,11 +333,19 @@
               "maximum": 9007199254740991
             }
           },
-          "required": ["command", "readinessUrl", "shutdownTimeoutMs"],
+          "required": [
+            "command",
+            "readinessUrl",
+            "shutdownTimeoutMs"
+          ],
           "additionalProperties": false
         }
       },
-      "required": ["baseUrl", "model", "collection"],
+      "required": [
+        "baseUrl",
+        "model",
+        "collection"
+      ],
       "additionalProperties": false
     },
     "hardware": {
@@ -354,7 +416,11 @@
                 "minimum": 0
               }
             },
-            "required": ["uuid", "model", "vramTotalBytes"],
+            "required": [
+              "uuid",
+              "model",
+              "vramTotalBytes"
+            ],
             "additionalProperties": false
           }
         },
@@ -388,7 +454,10 @@
               ]
             }
           },
-          "required": ["processTree", "gpu"],
+          "required": [
+            "processTree",
+            "gpu"
+          ],
           "additionalProperties": false
         }
       },

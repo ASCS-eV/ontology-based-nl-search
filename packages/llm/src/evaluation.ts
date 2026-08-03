@@ -11,6 +11,14 @@ import type { generateText, LanguageModel } from 'ai'
 import type { AgentPolicy } from './agent/agent-policy.js'
 import { type AgentOptions, runSparqlAgentWithModel } from './agent/index.js'
 import { SCHEMA_TOOL_NAMES } from './agent/schema-tools.js'
+import { SUBMIT_TOOL_NAME } from './agent/tools.js'
+
+/**
+ * Agent steps allowed in an evaluation run: up to two bounded lookups plus the
+ * submission. The harness reads this rather than restating `3`, so a change to
+ * the evaluated policy cannot silently diverge from what the scorer enforces.
+ */
+export const EVALUATION_MAX_AGENT_STEPS = 3
 
 export type {
   AgentEvaluationObserver,
@@ -19,6 +27,21 @@ export type {
   EvaluationRetrievalTrace,
   EvaluationToolTrace,
 } from './agent/evaluation-types.js'
+
+/**
+ * The agent's own tool registry, re-exported so the harness classifies tool
+ * traces against what the agent actually registers rather than a hand-kept
+ * copy that can drift out of step with it.
+ */
+export { SCHEMA_TOOL_NAMES } from './agent/schema-tools.js'
+export { AGENT_TOOL_NAMES, SUBMIT_TOOL_NAME } from './agent/tools.js'
+
+/**
+ * The exact schema `submit_slots` validates against. Exposed so the harness
+ * can assert it never scores against a stricter contract than the one
+ * production accepts.
+ */
+export { slotSubmissionSchema } from './agent/tools.js'
 
 export interface OpenAICompatibleModelOptions {
   baseUrl: string
@@ -49,10 +72,10 @@ export function createEvaluationPolicy(
 ): AgentPolicy {
   return {
     temperature: 0,
-    maxSteps: 3,
+    maxSteps: EVALUATION_MAX_AGENT_STEPS,
     thinking: null,
     reasoningEffort: null,
-    forcedTool: 'submit_slots',
+    forcedTool: SUBMIT_TOOL_NAME,
     lookupTools: SCHEMA_TOOL_NAMES,
     model,
     provider: 'openai-compatible',

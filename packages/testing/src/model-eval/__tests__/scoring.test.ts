@@ -114,4 +114,42 @@ describe('slot scoring', () => {
     expect(direct.requiredLookupsSatisfied).toBe(true)
     expect(forbiddenLookup.requiredLookupsSatisfied).toBe(false)
   })
+  it('canonicalizes nested reference ranges the same way as top-level ranges', () => {
+    // Regression: only top-level ranges were normalized, so an identical
+    // nested range written {max, min} instead of {min, max} scored as a miss
+    // and understated every reference case.
+    const expected = {
+      domains: ['scenario'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'hdmap', ranges: { lanes: { min: 2, max: 4 } } }],
+    }
+    const reordered = {
+      domains: ['scenario'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'hdmap', ranges: { lanes: { max: 4, min: 2 } } }],
+    }
+
+    expect(scoreSlots(expected, reordered).exact).toBe(true)
+    expect(scoreSlots(expected, reordered).falsePositive).toBe(0)
+    expect(scoreSlots(expected, reordered).falseNegative).toBe(0)
+  })
+
+  it('still distinguishes a genuinely different nested bound', () => {
+    const expected = {
+      domains: ['scenario'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'hdmap', ranges: { lanes: { min: 2, max: 4 } } }],
+    }
+    const different = {
+      domains: ['scenario'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'hdmap', ranges: { lanes: { min: 2, max: 5 } } }],
+    }
+
+    expect(scoreSlots(expected, different).exact).toBe(false)
+  })
 })

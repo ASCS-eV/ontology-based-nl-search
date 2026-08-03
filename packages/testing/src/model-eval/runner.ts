@@ -4,6 +4,7 @@ import {
   createOpenAICompatibleModel,
   evaluateStructuredSearch,
   type EvaluationAgentPolicy,
+  SUBMIT_TOOL_NAME,
 } from '@ontology-search/llm/evaluation'
 import { buildTermIndex, getInitializedStore, validateSparql } from '@ontology-search/search'
 import type { z } from 'zod'
@@ -22,18 +23,25 @@ import { getCandidate } from './candidates.js'
 import { aggregateSummary } from './gates.js'
 import { findUnknownIdentifiers, validateGoldCorpus } from './ontology-validation.js'
 import { planProfile, type ProfileName, roundRobinSamples } from './profiles.js'
+import { findProtocolErrors } from './protocol.js'
 import { scoreSample } from './scoring.js'
 import { type LaunchedServer, launchServer } from './server.js'
 import { collectHardwareInventory, TelemetrySampler } from './telemetry.js'
+import { withTimeout } from './timeout.js'
 import {
+  assertHeldConstantPolicy,
+  type Candidate,
   EVALUATION_SCHEMA_VERSION,
   type EvaluationSample,
+  type EvaluationSearchSlots,
   type GoldCase,
   LaunchDescriptorSchema,
   type RunManifest,
   SampleSchema,
   SearchSlotsSchema,
 } from './types.js'
+
+export { withTimeout }
 
 type LaunchDescriptor = z.infer<typeof LaunchDescriptorSchema>
 
@@ -76,11 +84,16 @@ export async function runEvaluation(options: EvaluationRunOptions): Promise<Eval
   const termIndex = await buildTermIndex(await getInitializedStore())
 
   const policy = createEvaluationPolicy(servedModel)
+  const effectivePolicy = digestiblePolicy(policy, candidate)
+  // Fail before any endpoint I/O if the evaluated policy drifted from the
+  // comparability contract, rather than recording conformant-looking
+  // constants over a run that used something else.
+  assertHeldConstantPolicy(effectivePolicy)
   const corpusDigest = sha256(plan.cases)
   const runDigest = sha256({
     candidate,
     corpusDigest,
-    policy: digestiblePolicy(policy),
+    policy: effectivePolicy,
     profile: options.profile,
     repetitions: plan.repetitions,
     warmups: plan.warmups,
@@ -120,7 +133,7 @@ export async function runEvaluation(options: EvaluationRunOptions): Promise<Eval
       repetitions: plan.repetitions,
       warmups: plan.warmups,
     },
-    policy: digestiblePolicy(policy),
+    policy: effectivePolicy,
     runDigest,
     endpoint: {
       baseUrl: redactEndpoint(options.baseUrl),
@@ -224,17 +237,23 @@ async function runOneSample(options: SampleOptions): Promise<EvaluationSample> {
     }
     const telemetryResult = await telemetry.stop()
     const durationMs = performance.now() - monotonicStart
-    const rawSlots = evaluation?.rawSubmission
-      ? SearchSlotsSchema.parse(evaluation.rawSubmission.slots)
-      : null
-    const validatedSlots = evaluation
-      ? SearchSlotsSchema.parse(evaluation.validatedResponse.slots)
-      : null
+    // `safeParse`, never `parse`. Scoring one sample must never be able to
+    // abort the run: an unscoreable payload is a finding about the candidate
+    // and belongs in this sample's diagnostics, not in a stack trace that
+    // discards every remaining case and the summary.
+    const rawParse = readSlots(evaluation?.rawSubmission?.slots)
+    const validatedParse = readSlots(evaluation?.validatedResponse.slots)
+    const schemaErrors = [
+      ...rawParse.errors.map((issue) => `Raw submission: ${issue}`),
+      ...validatedParse.errors.map((issue) => `Validated slots: ${issue}`),
+    ]
+    const rawSlots = rawParse.slots
+    const validatedSlots = validatedParse.slots
     const actualGapTerms = (evaluation?.validatedResponse.gaps ?? []).map((gap) =>
       gap.term === '' ? '<empty>' : gap.term
     )
     const lookupNames = (evaluation?.trace.toolCalls ?? [])
-      .filter((call) => call.toolName !== 'submit_slots')
+      .filter((call) => call.toolName !== SUBMIT_TOOL_NAME)
       .map((call) => call.toolName)
     const compilationValid = evaluation
       ? validateSparql(evaluation.validatedResponse.sparql).valid
@@ -247,8 +266,13 @@ async function runOneSample(options: SampleOptions): Promise<EvaluationSample> {
       lookupNames,
       compilationValid,
     })
-    const protocolErrors = protocolErrorsFor(evaluation)
-    if (error) protocolErrors.push(error)
+    // Protocol errors describe what the model did. A transport failure is
+    // recorded on its own field so a flaky endpoint is never scored as a
+    // protocol violation.
+    const protocolErrors = [
+      ...findProtocolErrors(evaluation?.trace.toolCalls ?? [], options.policy.maxSteps),
+      ...schemaErrors,
+    ]
     const comparabilityReasons = performanceComparabilityReasons(telemetryResult)
     const trace = evaluation?.trace ?? {
       finishReason: 'error',
@@ -311,29 +335,32 @@ async function runOneSample(options: SampleOptions): Promise<EvaluationSample> {
           samples: telemetryResult.samples,
         },
       },
-      ...(error ? { error } : {}),
+      ...(error ? { transportError: error, error } : {}),
     })
   } finally {
     await localServer?.stop()
   }
 }
 
-function protocolErrorsFor(evaluation?: AgentEvaluationResult): string[] {
-  if (!evaluation) return []
-  const known = new Set([
-    'find_terms',
-    'describe_shape',
-    'list_values',
-    'probe_data',
-    'submit_slots',
-  ])
-  const errors: string[] = []
-  for (const call of evaluation.trace.toolCalls) {
-    if (!known.has(call.toolName)) errors.push(`Unknown tool "${call.toolName}"`)
-    if (call.step >= 3) errors.push(`Tool "${call.toolName}" exceeded the three-step budget`)
-    if (call.output === undefined) errors.push(`Tool "${call.toolName}" had no schema-valid result`)
-  }
-  return errors
+/**
+ * Parse slots for scoring without ever throwing. The schema is the production
+ * wire contract, so a rejection here means the payload was malformed rather
+ * than merely weak — either way it is recorded, not fatal.
+ */
+function readSlots(slots: unknown): {
+  slots: EvaluationSearchSlots | null
+  errors: string[]
+} {
+  if (slots === undefined || slots === null) return { slots: null, errors: [] }
+  const parsed = SearchSlotsSchema.safeParse(slots)
+  return parsed.success
+    ? { slots: parsed.data, errors: [] }
+    : {
+        slots: null,
+        errors: parsed.error.issues.map(
+          (issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`
+        ),
+      }
 }
 
 export function performanceComparabilityReasons(
@@ -349,12 +376,23 @@ export function performanceComparabilityReasons(
   return reasons
 }
 
-function digestiblePolicy(policy: EvaluationAgentPolicy): RunManifest['policy'] {
+/** The harness issues one request at a time so latency is attributable. */
+const EVALUATION_CONCURRENCY = 1
+
+/**
+ * Record the policy that ACTUALLY ran. Every field is read from the live
+ * policy or the candidate, so a change to either shows up in both the
+ * manifest and the run digest instead of being masked by a restated constant.
+ */
+export function digestiblePolicy(
+  policy: EvaluationAgentPolicy,
+  candidate: Candidate
+): RunManifest['policy'] {
   return {
-    contextTokens: 65_536,
-    temperature: 0,
-    concurrency: 1,
-    maxAgentSteps: 3,
+    contextTokens: candidate.contextTokens,
+    temperature: policy.temperature ?? null,
+    concurrency: EVALUATION_CONCURRENCY,
+    maxAgentSteps: policy.maxSteps,
     lookupTools: [...policy.lookupTools],
     retrieval: { ...policy.retrieval },
   }
@@ -362,25 +400,4 @@ function digestiblePolicy(policy: EvaluationAgentPolicy): RunManifest['policy'] 
 
 function makeRunId(candidateId: string, profile: ProfileName, digest: string): string {
   return `${new Date().toISOString().replace(/[:.]/g, '-')}-${candidateId}-${profile}-${digest.slice(0, 8)}`
-}
-
-export async function withTimeout<T>(
-  operation: (signal: AbortSignal) => Promise<T>,
-  timeoutMs: number,
-  parent?: AbortSignal
-): Promise<T> {
-  const timeout = AbortSignal.timeout(timeoutMs)
-  const signal = parent ? AbortSignal.any([parent, timeout]) : timeout
-  if (signal.aborted) throw signal.reason
-  let rejectOnAbort: ((reason: unknown) => void) | undefined
-  const aborted = new Promise<never>((_resolve, reject) => {
-    rejectOnAbort = reject
-  })
-  const onAbort = () => rejectOnAbort?.(signal.reason)
-  signal.addEventListener('abort', onAbort, { once: true })
-  try {
-    return await Promise.race([operation(signal), aborted])
-  } finally {
-    signal.removeEventListener('abort', onAbort)
-  }
 }

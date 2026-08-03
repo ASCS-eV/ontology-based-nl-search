@@ -1,3 +1,4 @@
+import { createEvaluationPolicy } from '@ontology-search/llm/evaluation'
 import type { z } from 'zod'
 
 import {
@@ -9,9 +10,11 @@ import {
   writeSummaryArtifacts,
 } from './artifacts.js'
 import { getCandidate } from './candidates.js'
+import { digestiblePolicy } from './runner.js'
 import { launchServer } from './server.js'
 import { collectHardwareInventory } from './telemetry.js'
 import {
+  assertHeldConstantPolicy,
   EVALUATION_SCHEMA_VERSION,
   type EvaluationSummary,
   type LaunchDescriptorSchema,
@@ -46,6 +49,10 @@ async function runCapacityEvaluationWithServer(options: CapacityOptions, launche
   const candidate = getCandidate(options.candidateId)
   const servedModel = options.servedModel ?? candidate.source.huggingFaceId
   const effectivePid = launchedPid ?? options.serverPid
+  // Derived from the same policy the semantic runner uses, so a capacity
+  // manifest cannot describe a configuration that was never in effect.
+  const effectivePolicy = digestiblePolicy(createEvaluationPolicy(servedModel), candidate)
+  assertHeldConstantPolicy(effectivePolicy)
   const runDigest = sha256({
     candidate,
     profile: 'capacity',
@@ -80,14 +87,7 @@ async function runCapacityEvaluationWithServer(options: CapacityOptions, launche
       repetitions: 1,
       warmups: 0,
     },
-    policy: {
-      contextTokens: 65_536,
-      temperature: 0,
-      concurrency: 1,
-      maxAgentSteps: 3,
-      lookupTools: ['find_terms', 'describe_shape', 'list_values', 'probe_data'],
-      retrieval: { maxDomains: 3, maxCards: 40, maxContextChars: 45_000 },
-    },
+    policy: effectivePolicy,
     runDigest,
     endpoint: {
       baseUrl: redactEndpoint(options.baseUrl),
@@ -223,6 +223,11 @@ async function tokenize(options: {
   return count!
 }
 
+/**
+ * Capacity measures one synthetic request, so it has no semantic metrics.
+ * They are `null` — "not measured" — rather than `0`, which rendered a report
+ * full of 0.0% and read as a catastrophic model failure.
+ */
 function emptyCapacitySummary(
   runId: string,
   candidateId: string,
@@ -233,20 +238,21 @@ function emptyCapacitySummary(
     runId,
     candidateId,
     profile: 'capacity',
+    suite: 'envited-x',
     cases: 1,
     measuredSamples: 0,
     metrics: {
-      submissionRate: 0,
-      rawExact: 0,
-      validatedExact: 0,
-      fieldPrecision: 0,
-      fieldRecall: 0,
-      gapPrecision: 0,
-      gapRecall: 0,
-      referenceTopologyAccuracy: 0,
-      lookupEfficiency: 0,
-      fallbackRate: 0,
-      compilationValidity: 0,
+      submissionRate: null,
+      rawExact: null,
+      validatedExact: null,
+      fieldPrecision: null,
+      fieldRecall: null,
+      gapPrecision: null,
+      gapRecall: null,
+      referenceTopologyAccuracy: null,
+      lookupEfficiency: null,
+      fallbackRate: null,
+      compilationValidity: null,
       latencyMs: { p50: null, p95: null, mad: null },
       tokens: { inputMedian: null, outputMedian: null },
       peakRamBytes: null,
@@ -258,8 +264,11 @@ function emptyCapacitySummary(
     gates: {
       protocol: null,
       quality: null,
-      passing: capacity.status === 'passed',
-      failures: capacity.status === 'passed' ? [] : [capacity.reason ?? capacity.status],
+      // `not-supported` is not a failure: nothing about the candidate was
+      // disproved, the measurement simply could not be taken. Only a real
+      // `failed` outcome fails the gate.
+      passing: capacity.status !== 'failed',
+      failures: capacity.status === 'failed' ? [capacity.reason ?? capacity.status] : [],
     },
     comparablePerformance: true,
     capacity,

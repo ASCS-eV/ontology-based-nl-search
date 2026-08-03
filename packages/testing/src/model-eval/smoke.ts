@@ -1,34 +1,30 @@
-import { randomUUID } from 'node:crypto'
-
 import {
   createEvaluationPolicy,
   createOpenAIResponsesModel,
   evaluateStructuredSearch,
+  SUBMIT_TOOL_NAME,
 } from '@ontology-search/llm/evaluation'
 import { buildTermIndex, getInitializedStore, validateSparql } from '@ontology-search/search'
 
-import { readCodexCliCredentials, readCodexCliVersion } from './codex-auth.js'
 import { findUnknownIdentifiers, validateGoldCorpus } from './ontology-validation.js'
+import { findProtocolErrors } from './protocol.js'
 import { scoreSample } from './scoring.js'
+import { withTimeout } from './timeout.js'
 import { type GoldCase, SearchSlotsSchema } from './types.js'
 
-const CODEX_RESPONSES_URL = 'https://chatgpt.com/backend-api/codex'
 const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1'
 
 export interface SmokeOptions {
-  auth: 'codex-cli' | 'api-key'
   model: string
   gold: GoldCase
-  apiKey?: string
+  apiKey: string
   baseUrl?: string
-  codexHome?: string
   timeoutMs: number
   signal?: AbortSignal
 }
 
 export interface SmokeResult {
   kind: 'non-ranked-smoke'
-  auth: SmokeOptions['auth']
   model: string
   caseId: string
   durationMs: number
@@ -53,15 +49,13 @@ export interface SmokeResult {
 export async function runSmokeEvaluation(options: SmokeOptions): Promise<SmokeResult> {
   await validateGoldCorpus([options.gold])
   const termIndex = await buildTermIndex(await getInitializedStore())
-  const endpoint = resolveEndpoint(options)
   // Hosted reasoning models may reject sampling parameters entirely. Local
   // ranked artifacts still use temperature 0; this non-ranked smoke omits it.
   const policy = { ...createEvaluationPolicy(options.model), temperature: undefined }
   const model = createOpenAIResponsesModel({
-    baseUrl: endpoint.baseUrl,
+    baseUrl: options.baseUrl ?? OPENAI_RESPONSES_URL,
     model: options.model,
-    apiKey: endpoint.apiKey,
-    headers: endpoint.headers,
+    apiKey: options.apiKey,
   })
 
   const started = performance.now()
@@ -85,7 +79,7 @@ export async function runSmokeEvaluation(options: SmokeOptions): Promise<SmokeRe
     ? SearchSlotsSchema.parse(evaluation.validatedResponse.slots)
     : null
   const lookupNames = evaluation.trace.toolCalls
-    .filter((call) => call.toolName !== 'submit_slots')
+    .filter((call) => call.toolName !== SUBMIT_TOOL_NAME)
     .map((call) => call.toolName)
   const compilationValid = validateSparql(evaluation.validatedResponse.sparql).valid
   const score = scoreSample({
@@ -96,8 +90,10 @@ export async function runSmokeEvaluation(options: SmokeOptions): Promise<SmokeRe
     lookupNames,
     compilationValid,
   })
-  const protocolErrors = findProtocolErrors(evaluation.trace.toolCalls)
-  if (evaluation.trace.missingSubmitFallback) protocolErrors.push('submit_slots was not completed')
+  const protocolErrors = findProtocolErrors(evaluation.trace.toolCalls, policy.maxSteps)
+  if (evaluation.trace.missingSubmitFallback) {
+    protocolErrors.push(`${SUBMIT_TOOL_NAME} was not completed`)
+  }
   const inventedIdentifiers = findUnknownIdentifiers(validatedSlots, termIndex)
   const passed =
     protocolErrors.length === 0 &&
@@ -107,7 +103,6 @@ export async function runSmokeEvaluation(options: SmokeOptions): Promise<SmokeRe
 
   return {
     kind: 'non-ranked-smoke',
-    auth: options.auth,
     model: options.model,
     caseId: options.gold.id,
     durationMs,
@@ -122,70 +117,5 @@ export async function runSmokeEvaluation(options: SmokeOptions): Promise<SmokeRe
     inventedIdentifiers,
     protocolErrors,
     passed,
-  }
-}
-
-function resolveEndpoint(options: SmokeOptions): {
-  baseUrl: string
-  apiKey: string
-  headers?: Record<string, string>
-} {
-  if (options.auth === 'api-key') {
-    if (!options.apiKey) throw new Error('--api-key is required when --auth api-key is used')
-    return { baseUrl: options.baseUrl ?? OPENAI_RESPONSES_URL, apiKey: options.apiKey }
-  }
-
-  const credentials = readCodexCliCredentials(options.codexHome)
-  const cliVersion = readCodexCliVersion()
-  return {
-    baseUrl: CODEX_RESPONSES_URL,
-    apiKey: credentials.accessToken,
-    headers: {
-      'ChatGPT-Account-ID': credentials.accountId,
-      'OpenAI-Beta': 'responses=v1',
-      originator: 'ontology_search_model_eval',
-      version: cliVersion,
-      session_id: randomUUID(),
-    },
-  }
-}
-
-function findProtocolErrors(
-  calls: Array<{ step: number; toolName: string; output?: unknown }>
-): string[] {
-  const known = new Set([
-    'find_terms',
-    'describe_shape',
-    'list_values',
-    'probe_data',
-    'submit_slots',
-  ])
-  const errors: string[] = []
-  for (const call of calls) {
-    if (!known.has(call.toolName)) errors.push(`Unknown tool "${call.toolName}"`)
-    if (call.step >= 3) errors.push(`Tool "${call.toolName}" exceeded the three-step budget`)
-    if (call.output === undefined) errors.push(`Tool "${call.toolName}" had no schema-valid result`)
-  }
-  return errors
-}
-
-async function withTimeout<T>(
-  operation: (signal: AbortSignal) => Promise<T>,
-  timeoutMs: number,
-  parent?: AbortSignal
-): Promise<T> {
-  const timeout = AbortSignal.timeout(timeoutMs)
-  const signal = parent ? AbortSignal.any([parent, timeout]) : timeout
-  if (signal.aborted) throw signal.reason
-  let rejectOnAbort: ((reason: unknown) => void) | undefined
-  const aborted = new Promise<never>((_resolve, reject) => {
-    rejectOnAbort = reject
-  })
-  const onAbort = () => rejectOnAbort?.(signal.reason)
-  signal.addEventListener('abort', onAbort, { once: true })
-  try {
-    return await Promise.race([operation(signal), aborted])
-  } finally {
-    signal.removeEventListener('abort', onAbort)
   }
 }

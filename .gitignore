@@ -30,6 +30,9 @@ ontology-sources.json
 # Local working scratchpad — audits, refactor plans, etc.
 # Tracks transitional state we do not want in repo history.
 .playground/
+
+# Generated model-evaluation runs — evidence, never committed
+.eval-runs/
 plans/
 
 # Claude Code working directory (scheduled-task lockfile, etc.)
