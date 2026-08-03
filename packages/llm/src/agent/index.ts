@@ -11,15 +11,28 @@
 
 import { createComponentLogger, Stopwatch } from '@ontology-search/core/logging'
 import { getPrimaryDomain } from '@ontology-search/search'
-import { generateText, hasToolCall, isStepCount } from 'ai'
+import { generateText, hasToolCall, isStepCount, type LanguageModel } from 'ai'
 
 import { getModel } from '../provider.js'
 import type { LlmStructuredResponse } from '../types.js'
 import { buildRequestPrompt, getAgentContext, warmupAgentContext } from './agent-context.js'
-import { getAgentPolicy } from './agent-policy.js'
+import { type AgentPolicy, getAgentPolicy } from './agent-policy.js'
 import { buildEmptyFallbackResponse } from './empty-fallback.js'
+import {
+  type AgentEvaluationObserver,
+  type AgentEvaluationResult,
+  type AgentEvaluationTrace,
+  type EvaluationToolTrace,
+  summarizeRetrieval,
+} from './evaluation-types.js'
+import type { SlotPipelineSubmission } from './run-slot-pipeline.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
-import { agentTools, lookupTools, type SlotSubmissionParams } from './tools.js'
+import {
+  agentTools,
+  lookupTools,
+  type SlotSubmissionParams,
+  slotSubmissionSchema,
+} from './tools.js'
 
 /**
  * Pre-populate the agent's system-prompt cache during startup warmup so the
@@ -33,6 +46,11 @@ export interface AgentOptions {
   domain?: string
   /** Cancel the LLM round-trip when the caller aborts. */
   signal?: AbortSignal
+}
+
+interface InjectedAgentOptions extends AgentOptions {
+  observer?: AgentEvaluationObserver
+  policy?: AgentPolicy
 }
 
 /**
@@ -49,19 +67,32 @@ export async function runSparqlAgent(
   naturalLanguageQuery: string,
   options?: AgentOptions
 ): Promise<LlmStructuredResponse> {
+  const result = await runSparqlAgentWithModel(naturalLanguageQuery, getModel(), options)
+  return result.validatedResponse
+}
+
+/**
+ * Internal evaluation seam. It accepts a caller-owned model but otherwise
+ * executes the exact production path. Only the private `./evaluation`
+ * package entrypoint exposes this function outside this package.
+ */
+export async function runSparqlAgentWithModel(
+  naturalLanguageQuery: string,
+  model: LanguageModel,
+  options?: InjectedAgentOptions
+): Promise<AgentEvaluationResult> {
   const sw = new Stopwatch()
-  const policy = getAgentPolicy()
+  const policy = options?.policy ?? getAgentPolicy()
   const targetDomain = options?.domain ?? (await getPrimaryDomain())
 
   const endSetup = sw.time('setup')
   const { vocabulary } = await getAgentContext()
-  const model = getModel()
   endSetup()
 
   // Per-query system prompt: static core + the schema context retrieved
   // for this query. Same seam the Copilot adapter uses.
   const endRetrieval = sw.time('retrieval')
-  const { prompt } = await buildRequestPrompt(naturalLanguageQuery, {
+  const { prompt, retrieved } = await buildRequestPrompt(naturalLanguageQuery, {
     signal: options?.signal,
     maxDomains: policy.retrieval.maxDomains,
     maxCards: policy.retrieval.maxCards,
@@ -108,11 +139,17 @@ export async function runSparqlAgent(
   })
   endLlmCall()
 
-  // Extract the submit_slots call from tool results
+  const toolCalls = collectToolTraces(result)
+  const rawSubmission = extractRawSubmission(toolCalls)
+
+  // Extract the validated submit_slots call from tool results. Tool outputs
+  // have passed the SDK's schema and execute handler; raw arguments are kept
+  // separately above so evaluation can distinguish protocol from semantics.
   const submitCall = result.steps
     .flatMap((step) => step.toolResults)
     .find((r) => r.toolName === 'submit_slots')
 
+  let validatedResponse: LlmStructuredResponse
   if (!submitCall) {
     diagnoseMissingSubmit(result)
   }
@@ -124,13 +161,101 @@ export async function runSparqlAgent(
       targetDomain,
       sw,
     })
-    return { ...response, timings: sw.getTimings() }
+    validatedResponse = { ...response, timings: sw.getTimings() }
+  } else {
+    // Fallback: LLM didn't call submit_slots — shared with the Copilot
+    // adapter so the cross-domain query and vocabulary hint stay identical.
+    const fallback = await buildEmptyFallbackResponse(naturalLanguageQuery, vocabulary)
+    validatedResponse = { ...fallback, timings: sw.getTimings() }
   }
 
-  // Fallback: LLM didn't call submit_slots — shared with the Copilot
-  // adapter so the cross-domain query and vocabulary hint stay identical.
-  const fallback = await buildEmptyFallbackResponse(naturalLanguageQuery, vocabulary)
-  return { ...fallback, timings: sw.getTimings() }
+  const trace: AgentEvaluationTrace = {
+    finishReason: String(result.finishReason ?? 'unknown'),
+    usage: normalizeUsage(result.usage),
+    toolCalls,
+    rawSubmission,
+    promptChars: prompt.length,
+    retrieval: summarizeRetrieval(retrieved),
+    missingSubmitFallback: !submitCall,
+  }
+  await options?.observer?.(trace)
+
+  return { rawSubmission, validatedResponse, trace }
+}
+
+interface ToolResultLike {
+  toolName: string
+  toolCallId?: string
+  output?: unknown
+}
+
+interface ToolCallLike {
+  toolName: string
+  toolCallId?: string
+  input?: unknown
+}
+
+interface GenerateResultLike {
+  finishReason?: unknown
+  usage?: unknown
+  steps: ReadonlyArray<{
+    toolCalls?: ReadonlyArray<ToolCallLike>
+    toolResults?: ReadonlyArray<ToolResultLike>
+  }>
+}
+
+function collectToolTraces(result: GenerateResultLike): EvaluationToolTrace[] {
+  const traces: EvaluationToolTrace[] = []
+  for (const [step, value] of result.steps.entries()) {
+    const results = new Map(
+      (value.toolResults ?? []).map((toolResult) => [
+        toolResult.toolCallId ?? `${toolResult.toolName}:${step}`,
+        toolResult,
+      ])
+    )
+    for (const call of value.toolCalls ?? []) {
+      const resultKey = call.toolCallId ?? `${call.toolName}:${step}`
+      traces.push({
+        step,
+        toolName: call.toolName,
+        ...(call.toolCallId ? { callId: call.toolCallId } : {}),
+        ...(call.input === undefined ? {} : { input: call.input }),
+        ...(results.get(resultKey)?.output === undefined
+          ? {}
+          : { output: results.get(resultKey)?.output }),
+      })
+      results.delete(resultKey)
+    }
+    for (const result of results.values()) {
+      traces.push({
+        step,
+        toolName: result.toolName,
+        ...(result.toolCallId ? { callId: result.toolCallId } : {}),
+        ...(result.output === undefined ? {} : { output: result.output }),
+      })
+    }
+  }
+  return traces
+}
+
+function extractRawSubmission(toolCalls: EvaluationToolTrace[]): SlotPipelineSubmission | null {
+  const raw = toolCalls.find((call) => call.toolName === 'submit_slots')?.input
+  const parsed = slotSubmissionSchema.safeParse(raw)
+  return parsed.success ? parsed.data : null
+}
+
+function normalizeUsage(usage: unknown): AgentEvaluationTrace['usage'] {
+  if (!usage || typeof usage !== 'object') return undefined
+  const value = usage as Record<string, unknown>
+  const number = (key: string): number | undefined =>
+    typeof value[key] === 'number' ? value[key] : undefined
+  const inputTokens = number('inputTokens')
+  const outputTokens = number('outputTokens')
+  const totalTokens = number('totalTokens')
+  if (inputTokens === undefined && outputTokens === undefined && totalTokens === undefined) {
+    return undefined
+  }
+  return { inputTokens, outputTokens, totalTokens }
 }
 
 const diagnosticLog = createComponentLogger('agent-diagnostics')
