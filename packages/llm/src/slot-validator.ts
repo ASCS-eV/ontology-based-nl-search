@@ -232,22 +232,25 @@ export function correctDomains(
   ranges: Record<string, { min?: number; max?: number }>,
   vocabulary: SchemaVocabulary
 ): string[] {
-  // Build property → Set<domain> index (multi-domain aware). Skip
-  // occurrences whose domain couldn't be attributed (empty-string sentinel
-  // from the vocabulary extractor) so an unattributed property never injects
-  // a phantom domain into the corrected set.
+  // Property → Set<domain> over EVERY resolvable property, not just the
+  // enumerated and numeric ones.
+  //
+  // Building this from `enumProperties`/`numericProperties` alone made the
+  // membership test below answer "no" for a leaf that is merely typed
+  // (`sh:datatype` with no `sh:in`). Two domains can declare the same leaf
+  // name under different IRIs with one enumerating it and the other not; the
+  // non-enumerating domain then looked as though it lacked the property, and
+  // the caller's correct domain choice was widened with the other domain —
+  // silently broadening a precise query. `propertyDomains` is derived from the
+  // compiler's own path index, so this asks exactly the right question: can
+  // the compiler resolve this property in that domain?
   const propDomainsIndex = new Map<string, Set<string>>()
-  const indexProperty = (localName: string, domain: string): void => {
-    if (!domain) return
-    const existing = propDomainsIndex.get(localName)
-    if (existing) {
-      existing.add(domain)
-    } else {
-      propDomainsIndex.set(localName, new Set([domain]))
-    }
+  for (const [localName, domains] of vocabulary.propertyDomains) {
+    // Skip occurrences whose domain couldn't be attributed so an
+    // unattributable property never injects a phantom domain.
+    const attributed = domains.filter((domain) => domain.length > 0)
+    if (attributed.length > 0) propDomainsIndex.set(localName, new Set(attributed))
   }
-  for (const prop of vocabulary.enumProperties) indexProperty(prop.localName, prop.domain)
-  for (const prop of vocabulary.numericProperties) indexProperty(prop.localName, prop.domain)
 
   // Collect domains required by filter/range properties
   // If a property exists in the LLM's chosen domain, use that
