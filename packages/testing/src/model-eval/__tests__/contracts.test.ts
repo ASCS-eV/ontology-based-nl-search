@@ -16,13 +16,30 @@ describe('evaluation contracts', () => {
     expect(parseCliArgs(['list'])).toEqual({ command: 'list' })
     expect(parseCliArgs(['smoke', '--api-key', 'sk-test'])).toMatchObject({
       command: 'smoke',
+      auth: 'api-key',
       model: 'gpt-5.4-mini',
       caseId: 'env-001',
       apiKey: 'sk-test',
       timeoutMs: 120_000,
     })
-    // The hosted smoke authenticates only with a platform API key.
+    expect(parseCliArgs(['smoke', '--auth', 'codex-cli'])).toMatchObject({
+      command: 'smoke',
+      auth: 'codex-cli',
+    })
+    // The documented endpoint is the default; each mode owns exactly one
+    // credential source, so ambiguous combinations are rejected rather than
+    // silently resolved in favour of one of them.
     expect(() => parseCliArgs(['smoke'])).toThrow(/--api-key is required/)
+    expect(() => parseCliArgs(['smoke', '--auth', 'nope'])).toThrow(/Invalid --auth/)
+    expect(() => parseCliArgs(['smoke', '--auth', 'codex-cli', '--api-key', 'sk'])).toThrow(
+      /cannot be combined/
+    )
+    expect(() =>
+      parseCliArgs(['smoke', '--auth', 'codex-cli', '--base-url', 'https://example.com'])
+    ).toThrow(/cannot override/)
+    expect(() => parseCliArgs(['smoke', '--api-key', 'sk', '--codex-home', '/tmp/x'])).toThrow(
+      /only applies to --auth codex-cli/
+    )
     expect(
       parseCliArgs([
         'run',
