@@ -1,0 +1,343 @@
+{
+  "schemaVersion": "1.0.0",
+  "candidates": [
+    {
+      "id": "qwen3.5-9b",
+      "displayName": "Qwen3.5 9B",
+      "cohort": "core",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "Qwen/Qwen3.5-9B",
+        "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+        "url": "https://huggingface.co/Qwen/Qwen3.5-9B",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "vllm",
+        "toolParser": "qwen3_coder",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": { "enable_thinking": false }
+      },
+      "quantization": "BF16",
+      "weightEstimateGiB": 18.0,
+      "kvCache64kEstimateGiB": 2.0,
+      "hardwareTier": "24",
+      "notes": "Primary dense multilingual candidate; revision pins the upstream Transformers artifact."
+    },
+    {
+      "id": "granite-4.1-8b",
+      "displayName": "Granite 4.1 8B",
+      "cohort": "core",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "ibm-granite/granite-4.1-8b",
+        "revision": "1504002f650e656a0a3789d99574df12e3e94ed0",
+        "url": "https://huggingface.co/ibm-granite/granite-4.1-8b",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "vllm",
+        "toolParser": "granite",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": {}
+      },
+      "quantization": "BF16",
+      "weightEstimateGiB": 16.4,
+      "kvCache64kEstimateGiB": 10.0,
+      "hardwareTier": "32-48",
+      "notes": "Long-context function-calling control from IBM's permissive Granite line."
+    },
+    {
+      "id": "ministral-3-8b-instruct",
+      "displayName": "Ministral 3 8B Instruct",
+      "cohort": "core",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "mistralai/Ministral-3-8B-Instruct-2512",
+        "revision": "5b26027e7b19eeb4b7352e1fed3926375dd2cb4d",
+        "url": "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "vllm",
+        "toolParser": "mistral",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": {}
+      },
+      "quantization": "FP8",
+      "weightEstimateGiB": 10.4,
+      "kvCache64kEstimateGiB": 4.0,
+      "hardwareTier": "16",
+      "notes": "Official FP8 instruct artifact; multimodal encoder remains loaded although the workload is text-only."
+    },
+    {
+      "id": "gemma-4-12b-it",
+      "displayName": "Gemma 4 12B IT",
+      "cohort": "core",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "google/gemma-4-12B-it",
+        "revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+        "url": "https://huggingface.co/google/gemma-4-12B-it",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "vllm",
+        "toolParser": "gemma",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": { "enable_thinking": false }
+      },
+      "quantization": "BF16",
+      "weightEstimateGiB": 22.3,
+      "kvCache64kEstimateGiB": 3.0,
+      "hardwareTier": "32-48",
+      "notes": "Canonical Apache-2.0 Gemma 4 instruct artifact with thinking disabled through its chat template."
+    },
+    {
+      "id": "gpt-oss-20b",
+      "displayName": "gpt-oss 20B",
+      "cohort": "core",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "openai/gpt-oss-20b",
+        "revision": "6cee5e81ee83917806bbde320786a8fb61efebee",
+        "url": "https://huggingface.co/openai/gpt-oss-20b",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "vllm",
+        "toolParser": "openai",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": { "reasoning_effort": "low" }
+      },
+      "quantization": "MXFP4",
+      "weightEstimateGiB": 12.8,
+      "kvCache64kEstimateGiB": 2.5,
+      "hardwareTier": "16",
+      "notes": "Native low-bit MoE artifact; low is the runtime's minimum reasoning setting and is recorded explicitly."
+    },
+    {
+      "id": "qwen3-8b-control",
+      "displayName": "Qwen3 8B Control",
+      "cohort": "control",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "Qwen/Qwen3-8B",
+        "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+        "url": "https://huggingface.co/Qwen/Qwen3-8B",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "vllm",
+        "toolParser": "hermes",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": { "enable_thinking": false }
+      },
+      "quantization": "BF16",
+      "weightEstimateGiB": 15.3,
+      "kvCache64kEstimateGiB": 3.0,
+      "hardwareTier": "24",
+      "notes": "Previous-generation control with the same context, temperature, and no-thinking policy."
+    },
+    {
+      "id": "qwen3.5-4b",
+      "displayName": "Qwen3.5 4B",
+      "cohort": "floor",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "Qwen/Qwen3.5-4B",
+        "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+        "url": "https://huggingface.co/Qwen/Qwen3.5-4B",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "vllm",
+        "toolParser": "qwen3_coder",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": { "enable_thinking": false }
+      },
+      "quantization": "BF16",
+      "weightEstimateGiB": 8.7,
+      "kvCache64kEstimateGiB": 1.5,
+      "hardwareTier": "16",
+      "notes": "Small-model floor for measuring the minimum useful semantic quality."
+    },
+    {
+      "id": "ministral-3-14b-instruct",
+      "displayName": "Ministral 3 14B Instruct",
+      "cohort": "conditional",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "mistralai/Ministral-3-14B-Instruct-2512",
+        "revision": "29439f81c2be264d8d393273f99e7db9c0961120",
+        "url": "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "vllm",
+        "toolParser": "mistral",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": {}
+      },
+      "quantization": "FP8",
+      "weightEstimateGiB": 14.0,
+      "kvCache64kEstimateGiB": 5.0,
+      "hardwareTier": "24",
+      "notes": "Larger official FP8 Ministral variant, evaluated only if the core cohort leaves headroom."
+    },
+    {
+      "id": "gemma-4-26b-a4b-it",
+      "displayName": "Gemma 4 26B A4B IT",
+      "cohort": "conditional",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "google/gemma-4-26B-A4B-it",
+        "revision": "4d7ae4984b7db7de8f8457170b3f1a419ee76d52",
+        "url": "https://huggingface.co/google/gemma-4-26B-A4B-it",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "llama.cpp",
+        "toolParser": "gemma",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": { "enable_thinking": false }
+      },
+      "quantization": "Q4_K_M",
+      "weightEstimateGiB": 16.5,
+      "kvCache64kEstimateGiB": 4.0,
+      "hardwareTier": "24",
+      "notes": "Quantized runtime variant; the revision pins the upstream source, while the run manifest must record the served artifact name."
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "displayName": "Qwen3.6 35B A3B",
+      "cohort": "conditional",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "Qwen/Qwen3.6-35B-A3B",
+        "revision": "995ad96eacd98c81ed38be0c5b274b04031597b0",
+        "url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "llama.cpp",
+        "toolParser": "qwen3_coder",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": { "enable_thinking": false }
+      },
+      "quantization": "Q4_K_M",
+      "weightEstimateGiB": 22.0,
+      "kvCache64kEstimateGiB": 2.5,
+      "hardwareTier": "32-48",
+      "notes": "Sparse larger candidate in a distinct Q4 runtime variant."
+    },
+    {
+      "id": "glm-4.7-flash",
+      "displayName": "GLM 4.7 Flash",
+      "cohort": "conditional",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "zai-org/GLM-4.7-Flash",
+        "revision": "7dd20894a642a0aa287e9827cb1a1f7f91386b67",
+        "url": "https://huggingface.co/zai-org/GLM-4.7-Flash",
+        "license": "MIT",
+        "licenseUrl": "https://opensource.org/license/mit"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "llama.cpp",
+        "toolParser": "glm47",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": { "enable_thinking": false }
+      },
+      "quantization": "Q4_K_M",
+      "weightEstimateGiB": 19.5,
+      "kvCache64kEstimateGiB": 2.5,
+      "hardwareTier": "32-48",
+      "notes": "MIT-licensed sparse alternative; runtime support must prove tool parsing during protocol evaluation."
+    },
+    {
+      "id": "gpt-oss-120b",
+      "displayName": "gpt-oss 120B",
+      "cohort": "ceiling",
+      "runnable": true,
+      "source": {
+        "huggingFaceId": "openai/gpt-oss-120b",
+        "revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+        "url": "https://huggingface.co/openai/gpt-oss-120b",
+        "license": "Apache-2.0",
+        "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0"
+      },
+      "contextTokens": 65536,
+      "runtime": {
+        "engine": "vllm",
+        "toolParser": "openai",
+        "reasoning": "disabled",
+        "temperature": 0,
+        "concurrency": 1,
+        "chatTemplateArgs": { "reasoning_effort": "low" }
+      },
+      "quantization": "MXFP4",
+      "weightEstimateGiB": 60.8,
+      "kvCache64kEstimateGiB": 4.0,
+      "hardwareTier": "32-48",
+      "notes": "Quality ceiling; requires CPU offload or multi-device capacity beyond the nominal single-GPU tier."
+    }
+  ],
+  "exclusions": [
+    {
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "sourceUrl": "https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct",
+      "license": "Llama 3.1 Community License",
+      "reason": "Custom acceptable-use and redistribution terms exclude it from the permissive ranked shortlist."
+    },
+    {
+      "model": "CohereForAI/c4ai-command-r7b-12-2024",
+      "sourceUrl": "https://huggingface.co/CohereForAI/c4ai-command-r7b-12-2024",
+      "license": "CC-BY-NC-4.0",
+      "reason": "Noncommercial terms make it unsuitable as a runnable production-selection candidate."
+    }
+  ]
+}

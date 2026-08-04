@@ -87,6 +87,7 @@ export default withMermaid(
             { text: 'Ontology Model', link: '/ontology' },
             { text: 'Agent Design', link: '/agent' },
             { text: 'Agent Tools', link: '/agent-tools' },
+            { text: 'Local Model Evaluation', link: '/model-evaluation' },
             { text: 'Data Model', link: '/data' },
             { text: 'SPARQL 1.1 Overview', link: '/sparql-reference/sparql-1.1-overview' },
             { text: 'FILTER Functions', link: '/sparql-reference/filter-functions' },
@@ -124,6 +125,10 @@ export default withMermaid(
             { text: 'Agent Tools', link: '/agent-tools' },
             { text: 'Data Model', link: '/data' },
           ],
+        },
+        {
+          text: 'Evaluation',
+          items: [{ text: 'Local Model Evaluation', link: '/model-evaluation' }],
         },
         {
           text: 'SPARQL Reference',

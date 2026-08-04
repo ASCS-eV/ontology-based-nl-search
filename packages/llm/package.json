@@ -15,6 +15,11 @@
       "import": "./dist/types.js",
       "default": "./dist/types.js"
     },
+    "./evaluation": {
+      "types": "./src/evaluation.ts",
+      "import": "./dist/evaluation.js",
+      "default": "./dist/evaluation.js"
+    },
     "./authoring": {
       "types": "./src/authoring/index.ts",
       "import": "./dist/authoring/index.js",

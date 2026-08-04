@@ -18,6 +18,11 @@ pnpm-lock.yaml
 # (toMatchFileSnapshot over z.toJSONSchema); prettier must not reformat them.
 packages/llm/schema/
 
+# Generated evaluation JSON Schema artifacts — emitted by `pnpm eval:models
+# schemas` and gated by the drift test, which compares parsed content rather
+# than bytes. Reformatting them would make every regeneration fail the check.
+packages/testing/src/model-eval/schemas/
+
 # Prebuilt WebAssembly engine — Emscripten-generated glue + binary + its
 # hand-kept .d.mts. Built by native/build.mjs from the pinned RAC submodule;
 # never hand-/prettier-formatted. See packages/authoring-wasm/native/BUILD.md.
