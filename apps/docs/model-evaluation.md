@@ -46,7 +46,9 @@ pnpm eval:models check
 
 ## Hosted framework smoke test
 
-When no suitable local runtime fits the current machine, run one scored ENVITED-X case through the same production prompt, five tools, three-step policy, SHACL validation, and compiler with a hosted Responses model:
+When no suitable local runtime fits the current machine, run one scored ENVITED-X case through the same production prompt, five tools, three-step policy, SHACL validation, and compiler with a hosted Responses model.
+
+With a platform API key against the documented OpenAI endpoint:
 
 ```bash
 pnpm eval:models smoke \
@@ -55,9 +57,25 @@ pnpm eval:models smoke \
   --case env-001
 ```
 
-Authentication is a platform API key against the documented OpenAI endpoint. The key is read from the argument and never written to evaluation artifacts.
+Alternatively, reuse the ChatGPT session the Codex CLI already holds:
 
-The smoke command is deliberately non-ranked: it writes no candidate run and makes no local benchmark claim. Its JSON output reports protocol completion, raw and validated exactness, compilation validity, tool path, server token usage when present, and invented identifiers. A passing smoke proves that one request completed end to end; it does not satisfy the protocol or quality gates.
+```bash
+pnpm eval:models smoke \
+  --auth codex-cli \
+  --model gpt-5.4-mini \
+  --case env-001
+```
+
+`codex-cli` reads `~/.codex/auth.json`, refusing it unless the file is owner-only and the access token is unexpired. The token and account identifier stay in memory: they are never printed, logged, or written to an artifact. Run `codex login` first when no valid session exists.
+
+This mode is the same idea as the repository's `claude-cli` provider — reuse a CLI's stored OAuth token through a normal AI SDK provider — but with one material difference. Anthropic documents that flow (`anthropic-beta: oauth-2025-04-20`) against its public API host, whereas a ChatGPT subscription credential is not valid against `api.openai.com`, so the only reachable host is the one the Codex CLI itself uses. Two consequences follow, and both are the operator's to accept:
+
+- **Stability** — an endpoint the vendor does not document for third-party clients may change without notice.
+- **Terms** — whether a non-Codex client may present this credential is a question about your own ChatGPT account.
+
+`--auth api-key` carries neither caveat and is the default.
+
+The smoke command is deliberately non-ranked under either mode: it writes no candidate run and makes no local benchmark claim. Its JSON output reports protocol completion, raw and validated exactness, compilation validity, tool path, server token usage when present, and invented identifiers. A passing smoke proves that one request completed end to end; it does not satisfy the protocol or quality gates.
 
 ## Start a compatible runtime
 

@@ -20,7 +20,7 @@ import { validateGoldCorpus } from './ontology-validation.js'
 import { runEvaluation } from './runner.js'
 import { assertSchemaArtifactsCurrent, writeSchemaArtifacts } from './schema-artifacts.js'
 import { readLaunchDescriptor } from './server.js'
-import { runSmokeEvaluation } from './smoke.js'
+import { runSmokeEvaluation, type SmokeAuth } from './smoke.js'
 import { type GoldCase, profileNames } from './types.js'
 
 export type CliCommand =
@@ -46,10 +46,12 @@ export type CliCommand =
     }
   | {
       command: 'smoke'
+      auth: SmokeAuth
       model: string
       caseId: string
-      apiKey: string
+      apiKey?: string
       baseUrl?: string
+      codexHome?: string
       timeoutMs: number
     }
 
@@ -76,21 +78,43 @@ export function parseCliArgs(argv: string[]): CliCommand {
       allowPositionals: false,
       strict: true,
       options: {
+        auth: { type: 'string', default: 'api-key' },
         model: { type: 'string', default: 'gpt-5.4-mini' },
         case: { type: 'string', default: 'env-001' },
         'api-key': { type: 'string' },
         'base-url': { type: 'string' },
+        'codex-home': { type: 'string' },
         'timeout-ms': { type: 'string', default: '120000' },
       },
     })
+    const auth = parsed.values.auth
+    if (auth !== 'codex-cli' && auth !== 'api-key') {
+      throw new Error(`Invalid --auth "${auth}". Expected "api-key" or "codex-cli".`)
+    }
+    // Each mode owns exactly one credential source, so a combination that
+    // silently ignores one of them is rejected rather than resolved.
+    if (auth === 'api-key' && !parsed.values['api-key']) {
+      throw new Error('--api-key is required when --auth api-key is used')
+    }
+    if (auth === 'codex-cli' && parsed.values['api-key']) {
+      throw new Error('--api-key cannot be combined with --auth codex-cli')
+    }
+    if (auth === 'codex-cli' && parsed.values['base-url']) {
+      throw new Error('--base-url cannot override the Codex subscription endpoint')
+    }
+    if (auth === 'api-key' && parsed.values['codex-home']) {
+      throw new Error('--codex-home only applies to --auth codex-cli')
+    }
     return {
       command,
+      auth,
       model: parsed.values.model!,
       caseId: parsed.values.case!,
-      apiKey: required(parsed.values['api-key'], '--api-key'),
+      ...(parsed.values['api-key'] ? { apiKey: parsed.values['api-key'] } : {}),
       ...(parsed.values['base-url']
         ? { baseUrl: httpUrl(parsed.values['base-url'], '--base-url') }
         : {}),
+      ...(parsed.values['codex-home'] ? { codexHome: resolve(parsed.values['codex-home']) } : {}),
       timeoutMs: positiveInteger(parsed.values['timeout-ms']!, '--timeout-ms'),
     }
   }
@@ -232,10 +256,12 @@ export async function main(): Promise<number> {
     const abort = installRunAbortHandlers()
     try {
       const result = await runSmokeEvaluation({
+        auth: command.auth,
         model: command.model,
         gold,
-        apiKey: command.apiKey,
+        ...(command.apiKey ? { apiKey: command.apiKey } : {}),
         ...(command.baseUrl ? { baseUrl: command.baseUrl } : {}),
+        ...(command.codexHome ? { codexHome: command.codexHome } : {}),
         timeoutMs: command.timeoutMs,
         signal: abort.signal,
       })
