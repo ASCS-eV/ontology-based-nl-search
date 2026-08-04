@@ -25,7 +25,7 @@
     "@ontology-search/search": "workspace:*",
     "@ontology-search/sparql": "workspace:*",
     "graphql": "^17.0.1",
-    "hono": "^4.12.27",
+    "hono": "^4.12.34",
     "zod": "^4.4.3"
   },
   "devDependencies": {

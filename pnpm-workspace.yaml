@@ -5,6 +5,10 @@ allowBuilds:
   '@swc/core': true
   esbuild: true
 minimumReleaseAgeExclude:
+  # Security fix adopted ahead of the release-age hold: 4.12.34 patches the
+  # CORS-middleware ReDoS (GHSA-8j4g-w8fx-2239, moderate). Waiting out the hold
+  # would leave the API server on a vulnerable release.
+  - hono@4.12.34
   - '@ai-sdk/anthropic@4.0.24'
   - '@ai-sdk/gateway@4.0.32'
   - '@ai-sdk/mistral@4.0.17'
@@ -12,16 +16,18 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/provider-utils@5.0.15'
   - ai@7.0.42
 overrides:
-  # Security advisory GHSA-mh99-v99m-4gvg (brace-expansion DoS, high). The fix is
-  # brace-expansion >=5.0.8, whose CJS build exports a NAMED `expand` (not the
-  # legacy bare function), so only minimatch >=10 consumes it correctly; older
-  # transitive minimatch (3.x via @eslint/config-array, 9.x via typescript-estree)
-  # crash on it (`TypeError: expand is not a function`). We therefore lift the whole
-  # minimatch lineage to 10.x (which depends on brace-expansion@^5) and pin
-  # brace-expansion to the patched 5.0.8. minimatch is dev-tooling only (ESLint /
+  # Security advisories GHSA-mh99-v99m-4gvg and GHSA-rgw5-rvv9-x895
+  # (brace-expansion DoS via unbounded intermediate arrays, high). The second
+  # bypasses the CVE-2026-14257 mitigation that 5.0.8 shipped, so the floor is
+  # >=5.0.9. The 5.x CJS build exports a NAMED `expand` (not the legacy bare
+  # function), so only minimatch >=10 consumes it correctly; older transitive
+  # minimatch (3.x via @eslint/config-array, 9.x via typescript-estree) crash on
+  # it (`TypeError: expand is not a function`). We therefore lift the whole
+  # minimatch lineage to 10.x (which depends on brace-expansion@^5) and floor
+  # brace-expansion at the patched 5.0.9. minimatch is dev-tooling only (ESLint /
   # typescript-eslint — no runtime consumer). Verified: lint + typecheck + tests pass.
   minimatch: ^10.2.5
-  brace-expansion: ^5.0.8
+  brace-expansion: ^5.0.9
   js-yaml@4: ^4.3.0 # quadratic DoS in merge-key chains (GHSA-52cp-r559-cp3m), high
   #
   # NOT overridden: @ai-sdk/provider-utils (GHSA-866g-f22w-33x8, LOW).
