@@ -16,7 +16,7 @@ describe('getSparqlStore', () => {
     process.env.SPARQL_MODE = 'memory'
     const { resetConfig } = await import('@ontology-search/core/config')
     resetConfig()
-    const { getSparqlStore: getStore } = await import('../index')
+    const { getSparqlStore: getStore } = await import('../index.js')
     const store = getStore()
     expect(store).toBeDefined()
     expect(store.constructor.name).toBe('CachedSparqlStore')
@@ -27,7 +27,7 @@ describe('getSparqlStore', () => {
     delete process.env.SPARQL_ENDPOINT
     const { resetConfig } = await import('@ontology-search/core/config')
     resetConfig()
-    const { getSparqlStore: getStore } = await import('../index')
+    const { getSparqlStore: getStore } = await import('../index.js')
     expect(() => getStore()).toThrow('SPARQL_ENDPOINT is required when SPARQL_MODE is "remote"')
   })
 
@@ -36,7 +36,7 @@ describe('getSparqlStore', () => {
     process.env.SPARQL_ENDPOINT = 'http://localhost:3030/test/sparql'
     const { resetConfig } = await import('@ontology-search/core/config')
     resetConfig()
-    const { getSparqlStore: getStore } = await import('../index')
+    const { getSparqlStore: getStore } = await import('../index.js')
     const store = getStore()
     expect(store.constructor.name).toBe('CachedSparqlStore')
   })

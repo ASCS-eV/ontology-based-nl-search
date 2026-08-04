@@ -2,6 +2,7 @@
  * Tests for the unified search service.
  * Uses direct dependency injection — no vi.mock() needed.
  */
+import type { SearchSlots } from '@ontology-search/slots'
 import type { SparqlResults, SparqlStore } from '@ontology-search/sparql/types'
 import { vi } from 'vitest'
 
@@ -29,6 +30,10 @@ const mockStore = {
   loadTurtle: vi.fn(),
   loadJsonLd: vi.fn(),
   isReady: vi.fn().mockResolvedValue(true),
+  // `close` is optional on SparqlStore but required by this `satisfies`
+  // check, which exists precisely to fail when a member is added and the
+  // mock is not updated.
+  close: vi.fn(),
 } satisfies Record<keyof SparqlStore, unknown>
 
 const mockLlmResponse: LlmStructuredResponse = {
@@ -434,7 +439,7 @@ describe('SearchService.searchRefine', () => {
    * that prevents a refine caller from bypassing SHACL validation.
    */
   it('applies validateSlots before compileSlots (R4)', async () => {
-    const validateSlots = vi.fn(async (s: typeof slots) => {
+    const validateSlots = vi.fn(async (s: SearchSlots): Promise<SearchSlots> => {
       // Pretend the validator dropped a bad country value (e.g. it failed
       // sh:pattern). Strip `country` from the filter map so the
       // post-validation slots no longer carry it.

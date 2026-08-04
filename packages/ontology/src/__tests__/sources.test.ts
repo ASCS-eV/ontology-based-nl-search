@@ -177,8 +177,8 @@ describe('ontology source-tree discovery (sources.ts)', () => {
       )
       const roots = getArtifactRoots()
       expect(roots).toHaveLength(1)
-      expect(roots[0].path).toBe(join(workspaceRoot, 'omb-root'))
-      expect(roots[0].domainAllowlist).toEqual(new Set(['hdmap', 'scenario']))
+      expect(roots[0]?.path).toBe(join(workspaceRoot, 'omb-root'))
+      expect(roots[0]?.domainAllowlist).toEqual(new Set(['hdmap', 'scenario']))
     })
   })
 

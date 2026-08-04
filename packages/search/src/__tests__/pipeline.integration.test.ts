@@ -189,7 +189,7 @@ describe('SearchService — real pipeline integration', () => {
       domains: ['ositrace'],
       filters: {},
       ranges: {},
-      references: { domain: 'hdmap' },
+      references: [{ domain: 'hdmap' }],
     })
     expect(sparql).toMatch(/SELECT DISTINCT \?asset WHERE \{/)
 
@@ -216,7 +216,7 @@ describe('SearchService — real pipeline integration', () => {
       domains: ['ositrace'],
       filters: {},
       ranges: {},
-      references: { domain: 'hdmap' },
+      references: [{ domain: 'hdmap' }],
     }).searchNl({ query: 'OSI traces that reference HD maps' })
 
     expect(result.execution.error).toBeUndefined()
@@ -280,7 +280,7 @@ describe('SearchService — real pipeline integration', () => {
       domains: ['ositrace'],
       filters: {},
       ranges: {},
-      references: { domain: 'hdmap' },
+      references: [{ domain: 'hdmap' }],
     }).searchNl({ query: 'OSI traces that reference HD maps' })
 
     expect(result.execution.error).toBeUndefined()
