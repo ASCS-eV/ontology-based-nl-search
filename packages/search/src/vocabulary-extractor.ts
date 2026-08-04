@@ -66,6 +66,17 @@ export interface SchemaVocabulary {
   /** All domains found in the schema */
   domains: string[]
   /**
+   * Every property the compiler can resolve, as local name → owning domains.
+   *
+   * Deliberately broader than {@link enumProperties} + {@link numericProperties}:
+   * those cover only properties carrying `sh:in` or a numeric `sh:datatype`, so
+   * a plainly-typed leaf (`sh:datatype xsd:string` with no enumeration) is
+   * absent from both while still being perfectly filterable. Consumers asking
+   * "does this domain have this property?" must read this map — answering from
+   * the enum/numeric lists alone reports a false negative for such leaves.
+   */
+  propertyDomains: ReadonlyMap<string, readonly string[]>
+  /**
    * SKOS concepts grouped by scheme — discovered generically from
    * any loaded graph. Empty if no SKOS schemes are loaded.
    */
@@ -117,12 +128,24 @@ export async function extractSchemaVocabulary(store: SparqlStore): Promise<Schem
   // domains is attributed to each (matching the compiler's multi-domain paths).
   const compilerVocab = await getCompilerVocab()
   const domainsByPropertyIri = new Map<string, Set<string>>()
+  // Local-name attribution for every resolvable property, enumerated or not.
+  // Two domains may declare the same leaf name under different IRIs, and one
+  // may enumerate it while the other only types it; both are filterable, so
+  // both belong here.
+  const domainsByPropertyName = new Map<string, Set<string>>()
   for (const path of compilerVocab.paths.values()) {
     if (!path.domain) continue
     const set = domainsByPropertyIri.get(path.propertyIri) ?? new Set<string>()
     set.add(path.domain)
     domainsByPropertyIri.set(path.propertyIri, set)
+
+    const byName = domainsByPropertyName.get(path.propertyName) ?? new Set<string>()
+    byName.add(path.domain)
+    domainsByPropertyName.set(path.propertyName, byName)
   }
+  const propertyDomains = new Map<string, readonly string[]>(
+    [...domainsByPropertyName].map(([name, domains]) => [name, [...domains].sort()])
+  )
 
   const [enumProperties, numericProperties, skosConcepts, subClassEdges] = await Promise.all([
     extractEnumProperties(store, domainsByPropertyIri),
@@ -150,6 +173,7 @@ export async function extractSchemaVocabulary(store: SparqlStore): Promise<Schem
     enumProperties,
     numericProperties,
     domains,
+    propertyDomains,
     conceptSchemes,
     classHierarchy: subClassEdges,
   }

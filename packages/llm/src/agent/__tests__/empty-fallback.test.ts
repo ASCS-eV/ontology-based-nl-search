@@ -21,6 +21,7 @@ function vocab(partial: Partial<SchemaVocabulary>): SchemaVocabulary {
     enumProperties: [],
     numericProperties: [],
     domains: [],
+    propertyDomains: new Map(),
     conceptSchemes: new Map(),
     classHierarchy: [],
     instanceValues: new Map(),

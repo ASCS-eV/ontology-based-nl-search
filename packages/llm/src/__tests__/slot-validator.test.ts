@@ -38,6 +38,14 @@ const testVocabulary: SchemaVocabulary = {
       description: '',
       allowedValues: ['clear', 'rain', 'fog', 'snow'],
     },
+    {
+      localName: 'surfaceType',
+      domain: 'ositrace',
+      iri: 'https://example.org/ositrace/v6/surfaceType',
+      label: 'surface type',
+      description: '',
+      allowedValues: ['asphalt', 'concrete', 'gravel'],
+    },
   ],
   numericProperties: [
     {
@@ -50,6 +58,21 @@ const testVocabulary: SchemaVocabulary = {
     },
   ],
   domains: ['hdmap', 'scenario', 'ositrace'],
+  /**
+   * Local name → owning domains, as the compiler resolves them.
+   *
+   * `surfaceType` models the real ontology's asymmetry: `ositrace` enumerates
+   * it with `sh:in` (so it appears in `enumProperties`), while `hdmap` only
+   * types it with `sh:datatype` (so it appears in neither property list) even
+   * though the compiler can filter it in both.
+   */
+  propertyDomains: new Map<string, readonly string[]>([
+    ['roadTypes', ['hdmap', 'ositrace']],
+    ['scenarioCategory', ['scenario']],
+    ['weatherSummary', ['scenario']],
+    ['length', ['hdmap']],
+    ['surfaceType', ['hdmap', 'ositrace']],
+  ]),
   conceptSchemes: new Map(),
   classHierarchy: [],
 }
@@ -330,6 +353,27 @@ describe('correctDomains', () => {
     expect(result).toEqual(['hdmap'])
   })
 
+  it('keeps a domain that declares the property without enumerating it', () => {
+    // Regression: `surfaceType` is enumerated only in `ositrace`; `hdmap`
+    // declares it with a plain `sh:datatype` and no `sh:in`, so it is absent
+    // from enumProperties/numericProperties for that domain. Deriving the
+    // membership test from those lists alone answered "hdmap lacks
+    // surfaceType" and widened a precise single-domain query to include
+    // `ositrace` — silently searching assets the user never asked for.
+    expect(correctDomains(['hdmap'], { surfaceType: 'asphalt' }, {}, testVocabulary)).toEqual([
+      'hdmap',
+    ])
+  })
+
+  it('still redirects a property the chosen domain genuinely lacks', () => {
+    // The widening itself is correct when the chosen domain really cannot
+    // resolve the property — only the false negative above was wrong.
+    expect(correctDomains(['hdmap'], { weatherSummary: 'rain' }, {}, testVocabulary)).toEqual([
+      'hdmap',
+      'scenario',
+    ])
+  })
+
   it('corrects domain when filters belong to a different domain', () => {
     // LLM chose "scenario" but roadTypes exists in hdmap+ositrace, not scenario
     // Since roadTypes doesn't exist in scenario, we should keep scenario AND add the domains where roadTypes exists
@@ -392,6 +436,12 @@ describe('correctDomains', () => {
           allowedValues: ['x'],
         },
       ],
+      // Present in the attribution map but with no resolvable domain, so the
+      // empty-domain guard is what has to reject it.
+      propertyDomains: new Map<string, readonly string[]>([
+        ...testVocabulary.propertyDomains,
+        ['orphanProp', ['']],
+      ]),
     }
     const result = correctDomains(['hdmap'], { orphanProp: 'x' }, {}, vocabWithOrphan)
     expect(result).toEqual(['hdmap'])
