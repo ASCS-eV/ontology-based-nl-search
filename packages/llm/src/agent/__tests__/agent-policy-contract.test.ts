@@ -193,6 +193,8 @@ describe('Agent policy contract — both adapters honour the shared policy', () 
   it('neither adapter can register investigation tools — the module is deleted', async () => {
     // This is a structural assertion: the investigation-tools module no longer
     // exists. If someone re-adds it, this import will succeed and the test fails.
+    // @ts-expect-error — the module is deliberately absent; its absence is
+    // exactly what this test asserts, so the unresolved import is the point.
     await expect(import('../investigation-tools.js')).rejects.toThrow()
   })
 })

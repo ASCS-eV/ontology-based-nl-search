@@ -550,7 +550,7 @@ describe('compileSlots', () => {
       domains: ['ositrace'],
       filters: {},
       ranges: {},
-      references: { domain: 'hdmap' },
+      references: [{ domain: 'hdmap' }],
     }
     const sparql = await compileSlots(slots)
     // Should join via manifest
@@ -571,7 +571,7 @@ describe('compileSlots', () => {
       domains: ['ositrace'],
       filters: {},
       ranges: {},
-      references: { domain: 'hdmap', label: 'Karlsruhe' },
+      references: [{ domain: 'hdmap', label: 'Karlsruhe' }],
     }
     const sparql = await compileSlots(slots)
     expect(sparql).toContain('manifest:iri ?refAsset')

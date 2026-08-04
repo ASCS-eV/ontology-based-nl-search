@@ -24,9 +24,9 @@ describe('schema-queries', () => {
       expect(prop).toHaveProperty('iri')
       expect(prop).toHaveProperty('domain')
       expect(prop).toHaveProperty('targetClass')
-      expect(typeof prop.localName).toBe('string')
-      expect(typeof prop.iri).toBe('string')
-      expect(typeof prop.domain).toBe('string')
+      expect(typeof prop?.localName).toBe('string')
+      expect(typeof prop?.iri).toBe('string')
+      expect(typeof prop?.domain).toBe('string')
     })
 
     it('handles multi-domain properties (roadTypes in hdmap and ositrace)', async () => {
@@ -84,8 +84,8 @@ describe('schema-queries', () => {
       const domain = domains[0]
       expect(domain).toHaveProperty('domainName')
       expect(domain).toHaveProperty('assetClass')
-      expect(typeof domain.domainName).toBe('string')
-      expect(typeof domain.assetClass).toBe('string')
+      expect(typeof domain?.domainName).toBe('string')
+      expect(typeof domain?.assetClass).toBe('string')
     })
 
     it('includes key simulation asset domains', async () => {
@@ -138,8 +138,8 @@ describe('schema-queries', () => {
       const ref = refs[0]
       expect(ref).toHaveProperty('parentDomain')
       expect(ref).toHaveProperty('childDomain')
-      expect(typeof ref.parentDomain).toBe('string')
-      expect(typeof ref.childDomain).toBe('string')
+      expect(typeof ref?.parentDomain).toBe('string')
+      expect(typeof ref?.childDomain).toBe('string')
     })
 
     it('discovers scenario → hdmap reference', async () => {

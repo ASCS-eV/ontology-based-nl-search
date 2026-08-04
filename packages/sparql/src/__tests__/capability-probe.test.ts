@@ -12,6 +12,26 @@ import { probePropertyPathSupport } from '../capability-probe.js'
 import { OxigraphStore } from '../oxigraph-store.js'
 import type { SparqlResults, SparqlStore } from '../types.js'
 
+/**
+ * Build a complete {@link SparqlStore} from the handful of methods a probe
+ * test actually drives. The remainder throw rather than being cast away, so a
+ * test that starts depending on them fails loudly instead of silently
+ * receiving `undefined`.
+ */
+function fakeStore(overrides: Partial<SparqlStore>): SparqlStore {
+  const unused = (name: string) => (): never => {
+    throw new Error(`fakeStore.${name}() is not exercised by this test`)
+  }
+  return {
+    query: unused('query'),
+    update: unused('update'),
+    loadTurtle: unused('loadTurtle'),
+    loadJsonLd: unused('loadJsonLd'),
+    isReady: unused('isReady'),
+    ...overrides,
+  } as SparqlStore
+}
+
 describe('probePropertyPathSupport', () => {
   it('passes on a real Oxigraph store (SPARQL 1.1 property paths supported)', async () => {
     const store = new OxigraphStore()
@@ -19,19 +39,19 @@ describe('probePropertyPathSupport', () => {
   })
 
   it('throws StoreCapabilityError when the store rejects the probe query', async () => {
-    const broken: SparqlStore = {
+    const broken = fakeStore({
       async loadTurtle() {
         // Accept the load so the probe reaches the query step.
       },
       async query() {
         throw new Error('UNSUPPORTED: property paths are not implemented')
       },
-    }
+    })
     await expect(probePropertyPathSupport(broken)).rejects.toBeInstanceOf(StoreCapabilityError)
   })
 
   it('throws StoreCapabilityError when the probe query returns the wrong cardinality', async () => {
-    const onlyA: SparqlStore = {
+    const onlyA = fakeStore({
       async loadTurtle() {
         // intentional: probe runs no-op load on this mock
       },
@@ -49,19 +69,19 @@ describe('probePropertyPathSupport', () => {
           },
         }
       },
-    }
+    })
     await expect(probePropertyPathSupport(onlyA)).rejects.toBeInstanceOf(StoreCapabilityError)
   })
 
   it('throws StoreCapabilityError when the store rejects the data load', async () => {
-    const noLoad: SparqlStore = {
+    const noLoad = fakeStore({
       async loadTurtle() {
         throw new Error('store is read-only')
       },
       async query() {
         return { head: { vars: [] }, results: { bindings: [] } }
       },
-    }
+    })
     await expect(probePropertyPathSupport(noLoad)).rejects.toBeInstanceOf(StoreCapabilityError)
   })
 })
