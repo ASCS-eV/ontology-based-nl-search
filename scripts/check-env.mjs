@@ -27,7 +27,7 @@
  *   node scripts/check-env.mjs            # advisory: reports, exit 0
  *   node scripts/check-env.mjs --strict   # gate: exits 1 on a real problem
  */
-import { copyFileSync, existsSync, readFileSync } from 'node:fs'
+import { chmodSync, copyFileSync, existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -190,11 +190,19 @@ export function loadEnvFileIntoProcess(root = ROOT, env = process) {
 /**
  * Create `.env.local` from `.env.example`. Returns false when the example is
  * missing (a broken checkout) so callers can report that instead.
+ *
+ * Created owner-only: this is the file API keys get pasted into, and the
+ * example's world-readable mode would carry straight over. Same rule the
+ * runtime already applies to the credential files it reads
+ * (`assertCredentialsPermissions`). `chmod` is a no-op on Windows, where the
+ * ACLs are the real gate.
  */
 export function copyExampleToLocal(root = ROOT) {
   const example = join(root, ENV_EXAMPLE)
   if (!existsSync(example)) return false
-  copyFileSync(example, join(root, ENV_LOCAL))
+  const target = join(root, ENV_LOCAL)
+  copyFileSync(example, target)
+  chmodSync(target, 0o600)
   return true
 }
 

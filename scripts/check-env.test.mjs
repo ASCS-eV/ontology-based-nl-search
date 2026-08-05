@@ -8,7 +8,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { checkEnv, parseEnvKeys, suggestKey } from './check-env.mjs'
+import { mkdtempSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { checkEnv, copyExampleToLocal, parseEnvKeys, suggestKey } from './check-env.mjs'
 
 const EXAMPLE = [
   '# --- LLM Provider ---',
@@ -100,3 +104,16 @@ test('values are never echoed — only key names appear in the output', () => {
   assert.equal(printed.includes(secret), false)
   assert.match(printed, /did you mean ANTHROPIC_API_KEY/)
 })
+
+test(
+  'the created .env.local is owner-only — it is where API keys get pasted',
+  { skip: process.platform === 'win32' },
+  () => {
+    const root = mkdtempSync(join(tmpdir(), 'env-preflight-'))
+    writeFileSync(join(root, '.env.example'), EXAMPLE)
+
+    assert.equal(copyExampleToLocal(root), true)
+    const mode = statSync(join(root, '.env.local')).mode & 0o777
+    assert.equal(mode.toString(8), '600')
+  }
+)
