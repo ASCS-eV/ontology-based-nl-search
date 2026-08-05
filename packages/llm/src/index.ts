@@ -63,8 +63,14 @@ export interface SearchOptions {
  * re-authenticated) needs no restart. See `apps/api/src/warmup.ts`.
  */
 export async function verifyLlmProvider(): Promise<void> {
-  if (getConfig().AI_PROVIDER === 'copilot') {
-    await getPersistentSession()
+  const config = getConfig()
+  if (config.AI_PROVIDER === 'copilot') {
+    // Same translation the request path gets: an unauthenticated SDK reports
+    // its own transport-level failure, which says nothing about GITHUB_TOKEN
+    // or `gh auth token`.
+    await withProviderErrorTranslation(providerContextFromConfig(config), () =>
+      getPersistentSession()
+    )
     // Non-blocking one-shot prompt-cache prime. Readiness is not delayed;
     // requests arriving before priming completes just pay the cold cost once,
     // exactly as before. No recurring keep-alive (no idle token cost).
