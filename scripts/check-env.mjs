@@ -113,8 +113,8 @@ export function checkEnv({ localContent, exampleContent }) {
     return {
       ok: false,
       problems: [
-        `${ENV_LOCAL} is missing. The API dev server loads it at startup, so without it`,
-        `  the API exits before it prints anything about itself. Create it with:`,
+        `${ENV_LOCAL} is missing, so the app runs entirely on built-in defaults —`,
+        `  including which LLM provider it talks to. Create it with:`,
         `      cp ${ENV_EXAMPLE} ${ENV_LOCAL}`,
         `  then review AI_PROVIDER in it — the default (ollama) expects a local Ollama.`,
       ],

@@ -127,8 +127,21 @@ async function verifyOpenAiCompatibleEndpoint(
  * Verify that the configured provider can be used, throwing an
  * {@link AgentError} that names the setting and the command to fix.
  *
- * The Copilot provider is verified by its own session warmup (it creates a
- * real session), so it is skipped here.
+ * What is and is not probed over the network, deliberately:
+ *
+ *  - **Local, endpoint-configurable providers (ollama)** are probed. "Is the
+ *    daemon running, and does it serve the model in AI_MODEL" cannot be
+ *    answered any other way, and both are ordinary first-run mistakes.
+ *  - **Key-based cloud providers** are not. Their credential is validated on
+ *    first use, where a rejection now arrives as an actionable message naming
+ *    the key (see `provider-errors.ts`) — enough that spending a startup
+ *    request, and risking a false "credentials rejected" banner from an
+ *    org-scoped key or a proxy, buys little.
+ *  - **Copilot** is verified by its own session warmup, which authenticates
+ *    by creating a real session, so it is skipped here.
+ *
+ * Credential FILES are always read for every provider that uses one, since
+ * that is local, free, and the most common failure of all.
  */
 export async function verifyProviderAccess(options: VerifyProviderOptions = {}): Promise<void> {
   const config = getConfig()

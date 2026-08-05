@@ -28,6 +28,7 @@ test('a missing .env.local reports the exact command that fixes it', () => {
   const result = checkEnv({ localContent: null, exampleContent: EXAMPLE })
   assert.equal(result.ok, false)
   assert.match(result.problems.join('\n'), /\.env\.local is missing/)
+  assert.match(result.problems.join('\n'), /built-in defaults/)
   assert.match(result.problems.join('\n'), /cp \.env\.example \.env\.local/)
 })
 
