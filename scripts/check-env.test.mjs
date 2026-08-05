@@ -32,6 +32,16 @@ test('a missing .env.local reports the exact command that fixes it', () => {
   assert.match(result.problems.join('\n'), /cp \.env\.example \.env\.local/)
 })
 
+test('a missing .env.local is flagged as missing, not as a silently-ignored setting', () => {
+  // The two are reported differently because only one is broken: without the
+  // file the app runs on documented defaults, and CI or a container image
+  // legitimately configures everything through the real environment. The CLI
+  // fails its strict gate on `typos` alone.
+  const result = checkEnv({ localContent: null, exampleContent: EXAMPLE })
+  assert.equal(result.missing, true)
+  assert.deepEqual(result.typos, [])
+})
+
 test('a fully documented .env.local passes clean', () => {
   const result = checkEnv({
     localContent: 'AI_PROVIDER=claude-cli\nAI_MODEL=claude-haiku-4-5\nWEB_PORT=5174\n',
@@ -45,6 +55,7 @@ test('a fully documented .env.local passes clean', () => {
 test('a misspelled key fails the gate and names the key it meant', () => {
   const result = checkEnv({ localContent: 'AI_PROVDER=ollama\n', exampleContent: EXAMPLE })
   assert.equal(result.ok, false)
+  assert.equal(result.missing, false)
   assert.deepEqual(result.typos, [{ key: 'AI_PROVDER', suggestion: 'AI_PROVIDER' }])
   assert.match(result.problems.join('\n'), /did you mean AI_PROVIDER/)
 })

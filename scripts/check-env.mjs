@@ -111,9 +111,19 @@ export function suggestKey(unknown, documented) {
 /**
  * Compare a `.env.local` against the documented keys.
  *
- * `ok: false` means a problem worth failing a gate over: a missing file, or a
- * key that is one slip away from a documented one. Unrecognized keys with no
- * near match are surfaced in `notes` and leave `ok` untouched.
+ * Two different severities, because they are two different situations:
+ *
+ *   - `missing` — there is no `.env.local`. The app still runs, on the
+ *     defaults documented in `.env.example`, and `pnpm dev` creates the file.
+ *     It is worth reporting loudly (the provider you get is probably not the
+ *     one you want) but it is NOT a broken machine: CI and container images
+ *     legitimately configure everything through the real environment.
+ *   - `typos` — a key that is one slip from a documented one. That value IS
+ *     silently ignored while the operator believes it applied, so it fails
+ *     the gate.
+ *
+ * Unrecognized keys with no near match are surfaced in `notes` only: they may
+ * belong to another tool reading the same file.
  */
 export function checkEnv({ localContent, exampleContent }) {
   const problems = []
@@ -122,6 +132,7 @@ export function checkEnv({ localContent, exampleContent }) {
   if (localContent === null) {
     return {
       ok: false,
+      missing: true,
       problems: [
         `${ENV_LOCAL} is missing, so the app runs entirely on built-in defaults —`,
         `  including which LLM provider it talks to. Create it with:`,
@@ -148,7 +159,7 @@ export function checkEnv({ localContent, exampleContent }) {
     }
   }
 
-  return { ok: problems.length === 0, problems, notes, typos }
+  return { ok: problems.length === 0, missing: false, problems, notes, typos }
 }
 
 /** Read a repo-root file, or null when it does not exist. */
@@ -209,5 +220,11 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   process.stderr.write(`\n⚠  ${result.problems[0]}\n`)
   for (const line of result.problems.slice(1)) process.stderr.write(`   ${line}\n`)
   process.stderr.write('\n')
-  process.exit(strict ? 1 : 0)
+
+  // Only a silently-ignored setting fails the gate. A missing file is reported
+  // just as loudly, but it leaves the app on documented defaults rather than
+  // on a value the operator thinks took effect — and an environment that
+  // configures everything through the real environment (CI, a container) has
+  // no reason to carry the file at all.
+  process.exit(strict && result.typos.length > 0 ? 1 : 0)
 }
