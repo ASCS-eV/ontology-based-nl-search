@@ -13,6 +13,7 @@
  * `@ontology-search/core/sse/parser` so the parser cannot drift between
  * producer (this route) and consumer (the web client).
  */
+import { AgentError } from '@ontology-search/core/errors'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { collectSSEEvents } from '@ontology-search/core/sse/parser'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -167,6 +168,29 @@ describe('POST /search/stream — SSE protocol', () => {
     // The error payload exposes a message field but never the inner stack.
     expect(errorEvent?.data).toMatchObject({ message: expect.any(String) })
     expect(JSON.stringify(errorEvent?.data)).not.toContain('upstream failure')
+  })
+
+  /**
+   * The counterpart to the test above: a TYPED error is a condition the
+   * operator has to act on, and its message says how. Flattening it to
+   * "Search failed" (as this route used to) left the only copy of
+   * "Run \"claude\" to authenticate first" in the server's terminal, which is
+   * exactly where a browser user cannot see it.
+   */
+  it('forwards a typed AppError message and code to the client', async () => {
+    const { searchNl } = await import('../search-factory.js')
+    vi.mocked(searchNl).mockRejectedValue(
+      new AgentError('Claude CLI credentials not found at ~/.claude/.credentials.json.')
+    )
+
+    const res = await postStream({ query: 'anything' })
+    const events = await collectSSEEvents(res.body)
+    const errorEvent = events.find((e) => e.event === SSE_EVENT.ERROR)
+
+    expect(errorEvent?.data).toMatchObject({
+      message: expect.stringContaining('credentials not found'),
+      code: 'SERVICE_UNAVAILABLE',
+    })
   })
 
   it('emits a parseable error event when the request body is malformed', async () => {

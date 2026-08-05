@@ -7,28 +7,58 @@
  * Cross-platform: PowerShell + taskkill on Windows, lsof + kill elsewhere.
  *
  * Usage:
- *   node scripts/clean-ports.mjs
- *   node scripts/clean-ports.mjs 3003 5174 5173
+ *   node scripts/clean-ports.mjs               # every dev service
+ *   node scripts/clean-ports.mjs --api         # just the API's configured port
+ *   node scripts/clean-ports.mjs 3003 5174     # explicit ports
  *
- * Ports can be configured via environment variables:
- *   API_PORT, WEB_PORT, DOCS_PORT
+ * Ports come from API_PORT / WEB_PORT / DOCS_PORT, read from the environment
+ * or from `.env.local`.
  */
 
 import { exec } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 
+import { loadEnvFileIntoProcess } from './check-env.mjs'
+
 const execAsync = promisify(exec)
 const isWindows = process.platform === 'win32'
 
-const DEFAULT_PORTS = [
-  parseInt(process.env.API_PORT ?? '3003', 10), // API
-  parseInt(process.env.DOCS_PORT ?? '5173', 10), // Docs
-  parseInt(process.env.WEB_PORT ?? '5174', 10), // Web
-]
+// This script runs as its own process before the dev launcher, so it has to
+// read `.env.local` itself. Without it, a developer who moved the API to
+// another port in that file had the OLD default port cleaned and the new one
+// left occupied — the port config appearing to do nothing.
+loadEnvFileIntoProcess()
 
-const PORTS_TO_CLEAN = process.argv.slice(2).map(Number).filter(Boolean)
-const ports = PORTS_TO_CLEAN.length > 0 ? PORTS_TO_CLEAN : DEFAULT_PORTS
+/**
+ * The configured port of each dev service, by service name. Reading them here
+ * (rather than hard-coding numbers at every call site) is what lets a single
+ * `API_PORT` in `.env.local` move both the server and its cleanup.
+ */
+export function resolveServicePorts(env = process.env) {
+  return {
+    api: parseInt(env.API_PORT ?? '3003', 10),
+    docs: parseInt(env.DOCS_PORT ?? '5173', 10),
+    web: parseInt(env.WEB_PORT ?? '5174', 10),
+  }
+}
+
+/**
+ * Ports to clean, from CLI arguments: explicit numbers, and/or `--api` /
+ * `--web` / `--docs` which resolve to the configured port of that service.
+ * With no arguments, every dev service is cleaned.
+ */
+export function selectPorts(argv, env = process.env) {
+  const services = resolveServicePorts(env)
+  const explicit = argv.map(Number).filter(Boolean)
+  const named = Object.keys(services)
+    .filter((name) => argv.includes(`--${name}`))
+    .map((name) => services[name])
+  const selected = [...new Set([...explicit, ...named])]
+  return selected.length > 0 ? selected : Object.values(services)
+}
+
+const ports = selectPorts(process.argv.slice(2))
 
 /** Parse command stdout into a de-duplicated list of numeric PIDs. */
 export function parsePids(stdout) {

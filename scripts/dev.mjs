@@ -8,9 +8,73 @@ import { execSync, spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+import {
+  checkEnv,
+  copyExampleToLocal,
+  ENV_EXAMPLE,
+  ENV_LOCAL,
+  loadEnvFileIntoProcess,
+  readRootFile,
+} from './check-env.mjs'
 import { cacheMatchesPin, readPin } from './fetch-ontology.mjs'
 
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url))
+
+/**
+ * Environment-file preflight for `pnpm dev`.
+ *
+ * The API dev server loads `.env.local` with Node's `--env-file-if-exists`, so
+ * a missing file no longer kills it — but it does leave every setting at its
+ * built-in default, which is not what a developer who never created the file
+ * expects. Rather than let that surface later as a provider that was never
+ * configured, create the file from the example (the documented setup step) and
+ * say so, mirroring how the ontology preflight below materializes the cache.
+ *
+ * Misspelled keys get the same treatment as a failed ontology fetch: an
+ * unmissable banner, never an abort — the servers still start.
+ */
+export function preflightEnvFile({
+  readLocal = () => readRootFile(ENV_LOCAL),
+  readExample = () => readRootFile(ENV_EXAMPLE),
+  copyExample = copyExampleToLocal,
+  stdout = process.stdout,
+  stderr = process.stderr,
+} = {}) {
+  const exampleContent = readExample()
+  if (exampleContent === null) {
+    stderr.write(`⚠  ${ENV_EXAMPLE} is missing — skipping the environment preflight.\n`)
+    return
+  }
+
+  if (readLocal() === null) {
+    if (!copyExample()) {
+      stderr.write(`⚠  Could not create ${ENV_LOCAL} from ${ENV_EXAMPLE}.\n`)
+      return
+    }
+    stdout.write(
+      `• Created ${ENV_LOCAL} from ${ENV_EXAMPLE} (first run).\n` +
+        `  Review AI_PROVIDER in it — the default (ollama) expects a local Ollama\n` +
+        `  at OLLAMA_BASE_URL with the model in AI_MODEL already pulled.\n`
+    )
+    return
+  }
+
+  const result = checkEnv({ localContent: readLocal(), exampleContent })
+  if (result.ok) return
+
+  stderr.write(
+    [
+      '',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `⚠  ${ENV_LOCAL} has ${result.problems.length} unrecognized setting(s). They are`,
+      '   IGNORED at runtime, so the app silently uses the defaults instead:',
+      '',
+      ...result.problems.map((p) => `     • ${p}`),
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+    ].join('\n')
+  )
+}
 
 /**
  * Ontology preflight for `pnpm dev`.
@@ -95,6 +159,10 @@ export function preflightOntology({
 
 // ── CLI ──────────────────────────────────────────────────────────────────────
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  // Environment first: the ontology preflight and the dev servers both read
+  // settings that may only exist in `.env.local`.
+  preflightEnvFile()
+  loadEnvFileIntoProcess()
   preflightOntology()
 
   process.env.NODE_OPTIONS = [process.env.NODE_OPTIONS ?? '', '--max-old-space-size=8192']

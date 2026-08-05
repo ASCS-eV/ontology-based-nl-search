@@ -296,14 +296,46 @@ const envSchema = z.object({
    */
   FEATURE_GRAPHQL_LAYER: z.stringbool().default(true),
 
-  // Runtime (set by Next.js)
-  NEXT_RUNTIME: z.string().optional(),
+  // Runtime (set by the process manager / test runner, never by the operator)
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 })
 
 export type AppConfig = z.infer<typeof envSchema>
 
+/**
+ * Every environment variable this schema reads.
+ *
+ * Exported so tooling can check a `.env.local` against the real contract
+ * instead of a hand-maintained copy of it — a variable that exists here but is
+ * undocumented in `.env.example` is invisible to operators, and a variable
+ * documented there but absent here is silently ignored at runtime. A drift
+ * test asserts the two agree.
+ */
+export const CONFIG_ENV_KEYS: readonly string[] = Object.keys(envSchema.shape)
+
 let cachedConfig: AppConfig | null = null
+
+/**
+ * ` (received: "…")` for a value rejected against a closed vocabulary, else
+ * the empty string.
+ *
+ * Zod lists the accepted options but not what it got, which hides the two most
+ * common causes outright: a stray quote or trailing space (`"ollama "`), and a
+ * case mismatch.
+ *
+ * Only `invalid_value` issues are echoed, and that is the safety rule as much
+ * as a formatting one: the code is raised exclusively by the enum/boolean
+ * settings above, every one of which is a documented vocabulary in
+ * `.env.example`. Credentials are free-form strings — they cannot produce this
+ * issue — so no secret can reach the message. Keep it that way: do not extend
+ * this to other issue codes.
+ */
+function receivedSuffix(issue: { code: string; path: PropertyKey[] }): string {
+  if (issue.code !== 'invalid_value') return ''
+  const key = String(issue.path[0] ?? '')
+  const received = key ? process.env[key] : undefined
+  return received === undefined ? '' : ` (received: ${JSON.stringify(received)})`
+}
 
 /**
  * Parse and validate environment variables into a typed config object.
@@ -318,7 +350,7 @@ export function getConfig(): AppConfig {
 
   if (!result.success) {
     const formatted = result.error.issues
-      .map((issue) => `  ${issue.path.join('.')}: ${issue.message}`)
+      .map((issue) => `  ${issue.path.join('.')}: ${issue.message}${receivedSuffix(issue)}`)
       .join('\n')
     throw new ConfigError(`Invalid environment configuration:\n${formatted}`)
   }

@@ -132,7 +132,7 @@ Then restart:
 pnpm dev
 ```
 
-**Note:** Update any hardcoded references if you change the API proxy target. The web UI proxies `/api` calls to `http://localhost:{API_PORT}`, but if you have hardcoded API URLs elsewhere, update them too.
+**Note:** The web UI proxies `/api` calls to `http://localhost:{API_PORT}`, so moving the API needs no separate proxy change — but the proxy target is read when the dev server starts, so restart the web server after changing `API_PORT`. Any API URLs you hardcoded elsewhere still need updating by hand.
 
 ## Port Configuration Details
 
@@ -143,6 +143,8 @@ pnpm dev
 - **Configuration:**
   - Via `.env.local`: `API_PORT=3003`
   - Backend server (`apps/api/src/index.ts`) reads this at startup
+  - `pnpm dev` also loads `.env.local` before cleaning ports, so the port it
+    frees is the one the API will bind
 - **Usage:** All backend queries, health checks, stats
 
 ### Web Port (WEB_PORT)
@@ -153,7 +155,10 @@ pnpm dev
   - Via `.env.local`: `WEB_PORT=5174`
   - Vite config (`apps/web/vite.config.ts`) reads this at dev startup
 - **Usage:** Frontend React application
-- **Note:** The API proxy target inside the web UI still points to localhost:3003 by default. If you change `API_PORT`, the web UI will automatically proxy to the new port.
+- **Note:** The Vite config reads `.env.local` itself (via `loadEnv`), so both
+  `WEB_PORT` and the `/api` proxy target follow the file. A shell variable
+  still wins over the file, which is what makes
+  `API_PORT=4000 WEB_PORT=8080 pnpm dev` work.
 
 ### Docs Port (DOCS_PORT)
 

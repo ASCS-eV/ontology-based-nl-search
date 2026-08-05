@@ -10,8 +10,8 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "node scripts/clean-ports.mjs && node scripts/dev.mjs",
-    "dev:api": "node scripts/clean-ports.mjs 3003 && pnpm run build && pnpm --filter @ontology-search/api dev",
-    "dev:web": "node scripts/clean-ports.mjs 5174 && turbo run dev --filter=@ontology-search/web",
+    "dev:api": "node scripts/clean-ports.mjs --api && pnpm run build && pnpm --filter @ontology-search/api dev",
+    "dev:web": "node scripts/clean-ports.mjs --web && turbo run dev --filter=@ontology-search/web",
     "test": "turbo run test --concurrency=2",
     "coverage": "turbo run coverage",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
@@ -27,8 +27,8 @@
     "validate": "turbo run check-types && pnpm run check:test-types && pnpm run check:layers && turbo run test --concurrency=2 && pnpm run test:scripts && pnpm run lint && pnpm run format:check",
     "clean": "turbo run clean",
     "clean:ports": "node scripts/clean-ports.mjs",
-    "check:setup": "node scripts/fetch-ontology.mjs --check --strict && node scripts/check-ontology-sources.mjs --strict",
-    "postinstall": "node scripts/fetch-ontology.mjs && node scripts/check-ontology-sources.mjs",
+    "check:setup": "node scripts/check-node.mjs --strict && node scripts/fetch-ontology.mjs --check --strict && node scripts/check-ontology-sources.mjs --strict && node scripts/check-env.mjs --strict",
+    "postinstall": "node scripts/check-node.mjs && node scripts/fetch-ontology.mjs && node scripts/check-ontology-sources.mjs && node scripts/check-env.mjs",
     "prepare": "husky",
     "fetch:ontology": "node scripts/fetch-ontology.mjs"
   },

@@ -325,4 +325,29 @@ describe('config', () => {
       expect(() => getConfig()).toThrow('Invalid environment configuration')
     })
   })
+
+  describe('error messages', () => {
+    it('echoes the rejected value for a closed-vocabulary setting', () => {
+      // A trailing space or a case slip is invisible when the message only
+      // lists the accepted options.
+      process.env.AI_PROVIDER = 'ollama '
+      resetConfig()
+      expect(() => getConfig()).toThrow(/received: "ollama "/)
+    })
+
+    it('echoes nothing for settings that are not closed vocabularies', () => {
+      // The echo is limited to enum/boolean settings precisely because free-form
+      // values (credentials, URLs, paths) must never reach an error message.
+      process.env.AI_PROVIDER = 'ollama'
+      process.env.SPARQL_CACHE_SIZE = 'definitely-not-a-number'
+      resetConfig()
+      try {
+        getConfig()
+        expect.unreachable('expected the invalid cache size to be rejected')
+      } catch (error) {
+        expect((error as Error).message).toContain('SPARQL_CACHE_SIZE')
+        expect((error as Error).message).not.toContain('definitely-not-a-number')
+      }
+    })
+  })
 })

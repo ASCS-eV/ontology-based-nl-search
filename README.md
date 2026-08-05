@@ -33,12 +33,18 @@ search returns empty results.
 ```bash
 git clone <repo-url>
 
-# `postinstall` fetches the pinned ontology, then runs a preflight that warns
-# if no sources were found. Both are re-runnable any time:
+# `postinstall` checks the Node version, fetches the pinned ontology, and runs
+# preflights that report anything missing. All are re-runnable any time:
 pnpm install
 pnpm run fetch:ontology   # download + verify + extract (idempotent)
-pnpm run check:setup      # exits non-zero if the pin or the shape files are missing
+pnpm run check:setup      # strict: Node version, ontology, and .env.local
 ```
+
+Prerequisites are Node (the version in `.nvmrc` / `engines.node`) and the pnpm
+version pinned by `packageManager`. The install fails fast and names both
+versions if the Node one does not match; if `pnpm` cannot run `node` at all
+(standalone pnpm with no Node on `PATH`), install one with
+`pnpm env use --global 22` first.
 
 The upstream ontology is [ontology-management-base](https://github.com/ASCS-eV/ontology-management-base),
 published on PyPI; its sdist carries the `artifacts/` and `imports/` trees. Only
@@ -98,20 +104,22 @@ This command automatically:
 If you prefer to run services separately or troubleshoot issues:
 
 ```bash
-# Terminal 1: Start API only (with port cleanup)
-pnpm run --filter @ontology-search/api dev:clean
+# Terminal 1: API only — builds the workspace packages first, which a fresh
+# clone needs (the packages resolve to their built output).
+pnpm run dev:api
 
-# Terminal 2: Start web frontend only (with port cleanup)
-pnpm run --filter @ontology-search/web dev:clean
+# Terminal 2: web frontend only
+pnpm run dev:web
 
-# Terminal 3 (optional): Start docs
+# Terminal 3 (optional): docs
 pnpm run --filter @ontology-search/docs dev
 ```
 
 **Manual port cleanup** if ports are still blocked:
 
 ```bash
-pnpm run clean:ports                    # Clean default ports
+pnpm run clean:ports                    # Clean every dev-service port
+node scripts/clean-ports.mjs --api      # Clean the API's configured port
 node scripts/clean-ports.mjs 3003 5174  # Clean specific ports
 ```
 

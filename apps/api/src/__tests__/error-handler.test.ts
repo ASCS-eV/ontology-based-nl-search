@@ -22,7 +22,7 @@ import {
 import { Hono } from 'hono'
 import { describe, expect, it } from 'vitest'
 
-import { errorHandler } from '../middleware/error-handler.js'
+import { errorHandler, sseErrorPayload } from '../middleware/error-handler.js'
 import type { AppEnv } from '../types.js'
 
 function buildApp(make: () => Error) {
@@ -95,5 +95,32 @@ describe('errorHandler middleware', () => {
     expect(body.code).toBe('INTERNAL_ERROR')
     // The plain message must never leak to the client.
     expect(body.error).not.toContain('something untyped')
+  })
+})
+
+describe('sseErrorPayload', () => {
+  /**
+   * The SSE transport has already sent HTTP 200 by the time an error happens,
+   * so the payload is the only channel left. It must carry the same
+   * information the status-code path does.
+   */
+  it('forwards a typed error message and code', () => {
+    const payload = sseErrorPayload(
+      new AgentError('Claude CLI token expired. Run "claude" to refresh your session.'),
+      'Search failed'
+    )
+    expect(payload).toEqual({
+      message: 'Claude CLI token expired. Run "claude" to refresh your session.',
+      code: 'SERVICE_UNAVAILABLE',
+    })
+  })
+
+  it('replaces an untyped error with the fallback and no code', () => {
+    const payload = sseErrorPayload(new Error('ECONNRESET at internal/stream'), 'Search failed')
+    expect(payload).toEqual({ message: 'Search failed' })
+  })
+
+  it('handles a non-Error rejection value', () => {
+    expect(sseErrorPayload('boom', 'Search failed')).toEqual({ message: 'Search failed' })
   })
 })

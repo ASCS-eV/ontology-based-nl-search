@@ -24,6 +24,8 @@ import {
   runCopilotAgent,
 } from './agent/copilot-agent.js'
 import { runSparqlAgent, warmupAgentPrompt } from './agent/index.js'
+import { verifyProviderAccess } from './provider-access.js'
+import { providerContextFromConfig, withProviderErrorTranslation } from './provider-errors.js'
 
 export { warmupAgentPrompt }
 import type { LlmStructuredResponse } from './types.js'
@@ -46,9 +48,13 @@ export interface SearchOptions {
 }
 
 /**
- * Pre-populate the LLM session-level caches so the first user query
- * doesn't pay any cold-start cost:
+ * Verify the provider and pre-populate the LLM session-level caches so the
+ * first user query doesn't pay any cold-start cost:
  *
+ *  - Provider access (`verifyProviderAccess`): the configured provider's
+ *    credentials are readable and its endpoint serves the configured model,
+ *    so a misconfiguration degrades `/health` at startup instead of failing
+ *    the first search.
  *  - Agent context (`warmupAgentPrompt`): schema-only vocabulary + store.
  *  - Retrieval term index: built once so the per-query retrieval stage
  *    starts hot.
@@ -62,6 +68,10 @@ export interface SearchOptions {
  */
 export async function warmupLlmSession(): Promise<void> {
   const config = getConfig()
+  // Provider first: a credential or reachability fault is the one warmup
+  // failure the operator must fix before anything else works, and finding it
+  // here is what makes /health report it instead of the first user query.
+  await verifyProviderAccess()
   await warmupAgentPrompt()
   // Build the term index up front so the first query's retrieval stage
   // pays no index cost.
@@ -91,9 +101,12 @@ export async function generateStructuredSearch(
   const domain = options?.domain ?? (await getPrimaryDomain())
   const signal = options?.signal
 
-  if (config.AI_PROVIDER === 'copilot') {
-    return runCopilotAgent(naturalLanguageQuery, { domain, signal })
-  }
-
-  return runSparqlAgent(naturalLanguageQuery, { domain, signal })
+  // One choke point for provider faults: an unreachable Ollama, a rejected
+  // key, or a model that was never pulled becomes an AgentError naming the
+  // setting and the command, instead of the SDK's transport-level wording.
+  return withProviderErrorTranslation(providerContextFromConfig(config), () =>
+    config.AI_PROVIDER === 'copilot'
+      ? runCopilotAgent(naturalLanguageQuery, { domain, signal })
+      : runSparqlAgent(naturalLanguageQuery, { domain, signal })
+  )
 }

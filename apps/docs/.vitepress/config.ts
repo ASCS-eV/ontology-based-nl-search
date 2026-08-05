@@ -1,9 +1,16 @@
 import { readdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-import { defineConfig } from 'vitepress'
+// `loadEnv` via vitepress, which re-exports it — `vite` itself is not a
+// dependency of this app, and importing it directly would be a phantom
+// dependency that breaks on a strict node_modules layout.
+import { defineConfig, loadEnv } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+
+/** The repo root, where the shared `.env.local` lives. */
+const ENV_DIR = fileURLToPath(new URL('../../..', import.meta.url))
 
 // mermaid (bundled into the docs client) transitively pulls in `langium`, whose internal
 // modules deep-import `vscode-jsonrpc/lib/common/*`. vscode-jsonrpc@9 added an `exports`
@@ -64,7 +71,9 @@ export default withMermaid(
           }
         : undefined,
       server: {
-        port: parseInt(process.env.DOCS_PORT ?? '5173', 10),
+        // `.env.local` is the documented place for DOCS_PORT, so read it the
+        // same way the web app does — the shell still wins over the file.
+        port: parseInt(loadEnv('development', ENV_DIR, '').DOCS_PORT ?? '5173', 10),
         strictPort: true,
       },
     },
