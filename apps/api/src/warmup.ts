@@ -88,7 +88,9 @@ async function runStep(
   } catch (error) {
     const durationMs = Date.now() - start
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    collected.push(`${label} failed: ${msg}`)
+    // The recorded line matches the severity: "failed" reads as a fault, which
+    // is exactly the wrong impression for something the service tolerates.
+    collected.push(`${label} ${severity === 'warning' ? 'unavailable' : 'failed'}: ${msg}`)
     if (severity === 'warning') {
       // The whole message, not a summary: these carry the command that fixes
       // the problem, and this log line is where the operator looks first.

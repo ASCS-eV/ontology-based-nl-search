@@ -103,6 +103,9 @@ describe('warmup severity', () => {
     expect(result.ready).toBe(true)
     expect(result.warnings).toHaveLength(1)
     expect(result.warnings[0]).toContain('ollama serve')
+    // Worded as tolerated, not as broken — the service is still serving.
+    expect(result.warnings[0]).toContain('LLM provider access unavailable')
+    expect(result.warnings[0]).not.toContain('failed')
   })
 
   /**

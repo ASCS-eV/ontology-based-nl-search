@@ -1,4 +1,5 @@
 import type { VocabularyResponse } from '@ontology-search/api-types'
+import { CompileError } from '@ontology-search/core/errors'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '../app.js'
@@ -84,7 +85,7 @@ describe('GET /health', () => {
       ready: true,
       errors: [],
       warnings: [
-        'LLM provider access failed: Ollama is not reachable. Start it with `ollama serve`.',
+        'LLM provider access unavailable: Ollama is not reachable. Start it with `ollama serve`.',
       ],
       timings: ZERO_TIMINGS,
     })
@@ -93,7 +94,7 @@ describe('GET /health', () => {
     expect(await res.json()).toEqual({
       status: 'ok',
       warnings: [
-        'LLM provider access failed: Ollama is not reachable. Start it with `ollama serve`.',
+        'LLM provider access unavailable: Ollama is not reachable. Start it with `ollama serve`.',
       ],
     })
   })
@@ -250,6 +251,44 @@ describe('POST /search/refine', () => {
     expect(res.status).toBe(400)
     const json = await res.json()
     expect(json.code).toBe('BAD_REQUEST')
+  })
+
+  /**
+   * A typed error carries its own status and a message written for whoever has
+   * to fix it (a missing credential, an unavailable store). Catching it here
+   * and answering a generic 500 — as this route used to — discarded both.
+   */
+  it('forwards a typed error with its own status and message', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(searchRefine).mockRejectedValue(
+      new CompileError('Unknown domain "hdmapp" — no such domain in the registry.')
+    )
+
+    const res = await app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slots: { domains: ['hdmapp'] } }),
+    })
+
+    expect(res.status).toBe(422)
+    expect(await res.json()).toMatchObject({
+      error: expect.stringContaining('Unknown domain'),
+      code: 'UNPROCESSABLE_ENTITY',
+    })
+  })
+
+  it('still hides an untyped failure behind a generic 500', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(searchRefine).mockRejectedValue(new Error('connection reset at internal/stream'))
+
+    const res = await app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slots: { domains: ['hdmap'] } }),
+    })
+
+    expect(res.status).toBe(500)
+    expect(JSON.stringify(await res.json())).not.toContain('internal/stream')
   })
 
   it('returns 200 with results for valid slots', async () => {

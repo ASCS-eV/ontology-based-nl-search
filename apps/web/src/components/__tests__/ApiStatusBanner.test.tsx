@@ -68,7 +68,7 @@ describe('ApiStatusBanner', () => {
     mockHealth({
       status: 'ok',
       warnings: [
-        'LLM provider access failed: Ollama is not reachable at http://localhost:11434/v1. Start it with `ollama serve`.',
+        'LLM provider access unavailable: Ollama is not reachable at http://localhost:11434/v1. Start it with `ollama serve`.',
       ],
     })
     renderBanner()
