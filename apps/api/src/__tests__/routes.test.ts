@@ -5,7 +5,14 @@ import { app } from '../app.js'
 import { resetGraphQLContractForTests } from '../graphql-schema.js'
 import { setReadiness } from '../readiness.js'
 
-const ZERO_TIMINGS = { storeMs: 0, vocabMs: 0, compilerMs: 0, shaclMs: 0, sessionMs: 0 }
+const ZERO_TIMINGS = {
+  storeMs: 0,
+  vocabMs: 0,
+  compilerMs: 0,
+  shaclMs: 0,
+  providerMs: 0,
+  sessionMs: 0,
+}
 
 vi.mock('../search-factory.js', () => ({
   searchNl: vi.fn(),
@@ -60,16 +67,42 @@ describe('GET /health', () => {
   })
 
   it('returns 200 "ok" once warmup succeeded', async () => {
-    setReadiness({ ready: true, errors: [], timings: ZERO_TIMINGS })
+    setReadiness({ ready: true, errors: [], warnings: [], timings: ZERO_TIMINGS })
     const res = await app.request('/health')
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ status: 'ok' })
+  })
+
+  /**
+   * A non-fatal problem (an unreachable LLM provider) must be visible without
+   * pretending the instance is unready: most routes still answer, and it
+   * recovers without a restart. Reporting 503 here would take a working
+   * instance out of rotation and block anything waiting for readiness.
+   */
+  it('returns 200 with the warnings when something non-fatal is unavailable', async () => {
+    setReadiness({
+      ready: true,
+      errors: [],
+      warnings: [
+        'LLM provider access failed: Ollama is not reachable. Start it with `ollama serve`.',
+      ],
+      timings: ZERO_TIMINGS,
+    })
+    const res = await app.request('/health')
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      status: 'ok',
+      warnings: [
+        'LLM provider access failed: Ollama is not reachable. Start it with `ollama serve`.',
+      ],
+    })
   })
 
   it('returns 503 "degraded" with the errors when warmup failed', async () => {
     setReadiness({
       ready: false,
       errors: ['SPARQL store + capability probe failed: No ontology shape files'],
+      warnings: [],
       timings: ZERO_TIMINGS,
     })
     const res = await app.request('/health')

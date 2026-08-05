@@ -121,6 +121,14 @@ describe('toProviderAgentError', () => {
     expect(translated?.message).toContain('tool calling')
   })
 
+  it('also names the base URL on a 404, which has the same two causes', () => {
+    // A 404 from a base URL that does not serve the OpenAI-compatible API
+    // looks identical to a model that was never pulled. Advising only the pull
+    // would be exactly the confident misdirection this module removes.
+    const translated = toProviderAgentError(apiCallError('404 page not found', 404), OLLAMA)
+    expect(translated?.message).toContain('OLLAMA_BASE_URL (http://localhost:11434/v1)')
+  })
+
   it('explains that "invalid x-api-key" is not about a key on the claude-cli provider', () => {
     const translated = toProviderAgentError(apiCallError('invalid x-api-key', 401), {
       provider: 'claude-cli',

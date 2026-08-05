@@ -107,7 +107,12 @@ setReadiness(warmupResult)
 // misleading "ready" line followed by a crash.
 server = serve({ fetch: app.fetch, port }, () => {
   if (warmupResult.ready) {
-    log.info('Ontology Search API ready', { url: `http://localhost:${port}` })
+    log.info('Ontology Search API ready', {
+      url: `http://localhost:${port}`,
+      // Present when something non-fatal is unavailable (typically the LLM
+      // provider) — "ready" alone would read as "everything works".
+      ...(warmupResult.warnings.length > 0 ? { warnings: warmupResult.warnings } : {}),
+    })
   } else {
     log.warn('Ontology Search API started DEGRADED', {
       url: `http://localhost:${port}`,

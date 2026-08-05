@@ -10,9 +10,10 @@ import { useQuery } from '@tanstack/react-query'
  * symptom to diagnose from the browser.
  */
 export type ApiHealthState =
-  | { status: 'ok' }
+  /** Serving normally; `warnings` lists anything unavailable but non-fatal. */
+  | { status: 'ok'; warnings: string[] }
   | { status: 'starting' }
-  | { status: 'degraded'; errors: string[] }
+  | { status: 'degraded'; errors: string[]; warnings: string[] }
   | { status: 'unreachable' }
 
 /** Poll interval while the API is not ready, so the banner clears by itself. */
@@ -21,6 +22,14 @@ const RECHECK_MS = 5_000
 interface HealthBody {
   status?: string
   errors?: unknown
+  warnings?: unknown
+}
+
+/** Defensive read: the payload comes off the wire, so filter to strings. */
+function messages(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : []
 }
 
 /**
@@ -38,13 +47,14 @@ export async function fetchApiHealth(fetchImpl: typeof fetch = fetch): Promise<A
   }
 
   const body = (await response.json().catch(() => null)) as HealthBody | null
-  if (response.ok && body?.status === 'ok') return { status: 'ok' }
+  if (response.ok && body?.status === 'ok') {
+    return { status: 'ok', warnings: messages(body.warnings) }
+  }
   if (body?.status === 'starting') return { status: 'starting' }
 
-  const errors = Array.isArray(body?.errors)
-    ? body.errors.filter((entry): entry is string => typeof entry === 'string')
-    : []
-  if (body?.status === 'degraded') return { status: 'degraded', errors }
+  if (body?.status === 'degraded') {
+    return { status: 'degraded', errors: messages(body.errors), warnings: messages(body.warnings) }
+  }
   // A response we cannot interpret still means the API is not serving normally.
   return { status: 'unreachable' }
 }
@@ -56,7 +66,13 @@ export function useApiHealth(): ApiHealthState | null {
     // The state is the value even when it is bad, so never treat it as a
     // failed query — retrying would hide the banner behind a loading state.
     retry: false,
-    refetchInterval: (query) => (query.state.data?.status === 'ok' ? false : RECHECK_MS),
+    // Keep polling while anything is wrong, including a warning: a provider
+    // that comes back (Ollama started, session re-authenticated) should clear
+    // the banner without a page reload.
+    refetchInterval: (query) => {
+      const state = query.state.data
+      return state?.status === 'ok' && state.warnings.length === 0 ? false : RECHECK_MS
+    },
     refetchOnWindowFocus: true,
   })
 

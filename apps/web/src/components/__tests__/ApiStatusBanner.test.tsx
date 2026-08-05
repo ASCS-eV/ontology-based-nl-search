@@ -62,6 +62,22 @@ describe('ApiStatusBanner', () => {
     expect(screen.queryByText(/degraded/i)).not.toBeInTheDocument()
   })
 
+  it('warns without crying "degraded" when only the LLM provider is unavailable', async () => {
+    // The instance is serving: stats, vocabulary and slot-based refinement all
+    // work. Reporting it as broken would be as misleading as saying nothing.
+    mockHealth({
+      status: 'ok',
+      warnings: [
+        'LLM provider access failed: Ollama is not reachable at http://localhost:11434/v1. Start it with `ollama serve`.',
+      ],
+    })
+    renderBanner()
+
+    expect(await screen.findByText(/Natural-language search is unavailable/i)).toBeInTheDocument()
+    expect(await screen.findByText(/ollama serve/)).toBeInTheDocument()
+    expect(screen.queryByText(/started degraded/i)).not.toBeInTheDocument()
+  })
+
   it('tells the user how to start the API when nothing answers', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
     renderBanner()

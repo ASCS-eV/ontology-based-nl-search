@@ -170,10 +170,12 @@ jobs:
       - name: Build workspace
         run: pnpm run build
 
-      # The API dev server reads `--env-file=.env.local`. The committed
+      # The API dev server loads `.env.local` when present. The committed
       # example defaults to the keyless `ollama` provider and in-memory store,
       # which is all the smoke needs — the search-flow specs mock the LLM, so
-      # no provider is ever actually called.
+      # no provider is ever actually called. No Ollama runs here, so warmup
+      # records the provider as an unavailable-but-non-fatal warning and the
+      # API still reports ready.
       - name: Seed env
         run: cp .env.example .env.local
 

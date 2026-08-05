@@ -139,13 +139,28 @@ function reachabilityAdvice(ctx: ProviderContext): string {
   )
 }
 
-/** What to do when the endpoint does not know the configured model. */
+/**
+ * What to do when the endpoint answered 404 / "no such model".
+ *
+ * A 404 has a second cause worth naming: on an endpoint-configurable provider
+ * it is equally often a base URL pointing somewhere that does not serve this
+ * API at all (`OLLAMA_BASE_URL` without its `/v1` suffix, say). Advising only
+ * "pull the model" there would be the same kind of confident misdirection this
+ * module exists to remove, so both causes are stated when both are possible.
+ */
 function modelAdvice(ctx: ProviderContext): string {
   const base = `The ${ctx.provider} provider does not offer a model named "${ctx.model}" (AI_MODEL).`
   if (ctx.provider === 'ollama') {
-    return `${base} Pull it first: \`ollama pull ${ctx.model}\`. It must support tool calling.`
+    return (
+      `${base} Pull it first: \`ollama pull ${ctx.model}\`. It must support tool calling. ` +
+      `If it IS pulled, check OLLAMA_BASE_URL (${ctx.endpoint ?? 'unset'}) — a base URL that ` +
+      'does not serve the OpenAI-compatible API answers 404 the same way.'
+    )
   }
-  return `${base} Set AI_MODEL to a model this provider serves; it must support tool calling.`
+  const endpointNote = ctx.endpoint
+    ? ` If the model name is right, check the base URL (${ctx.endpoint}) — one that does not serve this API answers 404 the same way.`
+    : ''
+  return `${base} Set AI_MODEL to a model this provider serves; it must support tool calling.${endpointNote}`
 }
 
 /**

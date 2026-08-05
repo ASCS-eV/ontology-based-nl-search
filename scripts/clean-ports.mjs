@@ -24,12 +24,6 @@ import { loadEnvFileIntoProcess } from './check-env.mjs'
 const execAsync = promisify(exec)
 const isWindows = process.platform === 'win32'
 
-// This script runs as its own process before the dev launcher, so it has to
-// read `.env.local` itself. Without it, a developer who moved the API to
-// another port in that file had the OLD default port cleaned and the new one
-// left occupied — the port config appearing to do nothing.
-loadEnvFileIntoProcess()
-
 /**
  * The configured port of each dev service, by service name. Reading them here
  * (rather than hard-coding numbers at every call site) is what lets a single
@@ -57,8 +51,6 @@ export function selectPorts(argv, env = process.env) {
   const selected = [...new Set([...explicit, ...named])]
   return selected.length > 0 ? selected : Object.values(services)
 }
-
-const ports = selectPorts(process.argv.slice(2))
 
 /** Parse command stdout into a de-duplicated list of numeric PIDs. */
 export function parsePids(stdout) {
@@ -144,6 +136,14 @@ async function cleanPort(port) {
 }
 
 async function main() {
+  // This script runs as its own process before the dev launcher, so it reads
+  // `.env.local` itself. Without it, a developer who moved the API to another
+  // port in that file had the OLD default port cleaned and the new one left
+  // occupied — the port setting appearing to do nothing. Done here rather than
+  // at import so that importing this module (from a test) has no side effect
+  // on the process environment.
+  loadEnvFileIntoProcess()
+  const ports = selectPorts(process.argv.slice(2))
   console.log(`[clean-ports] Cleaning ports: ${ports.join(', ')}`)
 
   for (const port of ports) {

@@ -192,7 +192,7 @@ During warmup, the API loads 5 sample TTL files: `sample-assets.ttl`, `sample-sc
 
 A healthy `/stats` response reports the sample-data totals — currently **358 assets**: 165 HD maps, 70 environment models, 53 OSI traces, 50 scenarios, and 20 surface models. (Exact counts track the sample TTL files and may shift as they evolve; any non-zero `totalAssets` with five domains means the store loaded correctly.)
 
-**Wait time**: first cold start takes roughly **30–60 seconds** under `pnpm dev` (which runs the API via `tsx`). The dominant cost is building the compiler vocabulary (property-path discovery); the API logs `[n/6]` warmup steps so you can watch progress. `/health` returns `503` (`starting`/`degraded`) until warmup succeeds, then `200 ok`.
+**Wait time**: first cold start takes roughly **30–60 seconds** under `pnpm dev` (which runs the API via `tsx`). The dominant cost is building the compiler vocabulary (property-path discovery); the API logs `[n/8]` warmup steps so you can watch progress. `/health` returns `503` (`starting`/`degraded`) until warmup succeeds, then `200 ok` — with a `warnings` list when something non-fatal is unavailable, such as an unreachable LLM provider (searches fail with an actionable message, everything else still works).
 
 ## Stopping Services
 

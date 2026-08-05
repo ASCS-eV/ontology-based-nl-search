@@ -68,15 +68,19 @@ app.onError(errorHandler)
 
 /**
  * Liveness + readiness probe. Reports the real warmup state so a misconfigured
- * instance (e.g. ontology submodules not initialized → schema load failed) is
- * visibly unhealthy instead of returning `ok` while every search comes back
- * empty. Returns 503 until warmup succeeds so orchestrators don't route to it.
+ * instance (e.g. no ontology materialized → schema load failed) is visibly
+ * unhealthy instead of returning `ok` while every search comes back empty.
+ * Returns 503 until warmup succeeds so orchestrators don't route to it.
  */
 app.get('/health', (c) => {
   const readiness = getReadiness()
   if (!readiness) return c.json({ status: 'starting' }, 503)
-  if (readiness.ready) return c.json({ status: 'ok' })
-  return c.json({ status: 'degraded', errors: readiness.errors }, 503)
+  // `warnings` ride along on a healthy response: an unavailable LLM provider
+  // does not make the instance unready (most routes still answer, and it
+  // recovers without a restart), but it must still be visible to whoever asks.
+  const warnings = readiness.warnings.length > 0 ? { warnings: readiness.warnings } : {}
+  if (readiness.ready) return c.json({ status: 'ok', ...warnings })
+  return c.json({ status: 'degraded', errors: readiness.errors, ...warnings }, 503)
 })
 
 app.route('/metadata', metadataRoutes)
