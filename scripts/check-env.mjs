@@ -79,15 +79,25 @@ export function editDistance(a, b) {
 }
 
 /**
+ * Length at which a two-character difference is more likely a slip than a
+ * different name. Below it the budget is one character.
+ */
+const TWO_EDIT_MIN_LENGTH = 14
+
+/**
  * The documented key an unknown key most likely meant, or null.
  *
- * The threshold scales with the key length so short names don't match
- * everything, and a one-character slip in a long name (`AI_PROVDER`) still
- * resolves. A key with no near match is NOT a typo — it may belong to another
- * tool that reads the same file — so it is reported without failing the gate.
+ * The budget is deliberately tight, because this decides whether
+ * `check:setup` FAILS. Real typos are overwhelmingly one edit —
+ * `AI_PROVDER`, `OLAMA_BASE_URL`, a case slip (the comparison is
+ * case-insensitive). Allowing two edits on short names turns genuinely
+ * different keys into false accusations: `API_HOST` is two edits from
+ * `API_PORT` and means something else entirely. A key with no near match is
+ * NOT treated as a typo — it may belong to another tool that reads the same
+ * file — so it is reported without failing the gate.
  */
 export function suggestKey(unknown, documented) {
-  const budget = Math.max(1, Math.min(3, Math.floor(unknown.length / 4)))
+  const budget = unknown.length >= TWO_EDIT_MIN_LENGTH ? 2 : 1
   let best = null
   for (const candidate of documented) {
     const distance = editDistance(unknown.toUpperCase(), candidate.toUpperCase())

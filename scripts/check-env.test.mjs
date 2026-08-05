@@ -65,10 +65,18 @@ test('runtime-provided and lowercase-proxy keys are accepted undocumented', () =
   assert.deepEqual(result.notes, [])
 })
 
-test('suggestion budget scales with key length instead of matching everything', () => {
-  // A short key must not be "corrected" to an unrelated short key.
-  assert.equal(suggestKey('FOO', ['AI_MODEL', 'API_PORT']), null)
+test('suggests only near-misses, so the gate cannot fail on a different key', () => {
+  // One edit, any length: the common typo.
+  assert.equal(suggestKey('AI_PROVDER', ['AI_PROVIDER']), 'AI_PROVIDER')
   assert.equal(suggestKey('OLLAMA_BASE_UR', ['OLLAMA_BASE_URL']), 'OLLAMA_BASE_URL')
+  // Case slips are the same key.
+  assert.equal(suggestKey('ai_provider', ['AI_PROVIDER']), 'AI_PROVIDER')
+  // Two edits on a SHORT name is a different setting, not a slip —
+  // API_HOST must never be "corrected" to API_PORT and fail the gate.
+  assert.equal(suggestKey('API_HOST', ['API_PORT', 'AI_MODEL']), null)
+  assert.equal(suggestKey('FOO', ['AI_MODEL', 'API_PORT']), null)
+  // Two edits on a long name is still a slip.
+  assert.equal(suggestKey('ANTHROPIC_APIKEYY', ['ANTHROPIC_API_KEY']), 'ANTHROPIC_API_KEY')
 })
 
 test('values are never echoed — only key names appear in the output', () => {
