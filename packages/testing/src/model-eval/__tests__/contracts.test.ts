@@ -148,9 +148,9 @@ describe('evaluation contracts', () => {
 
   it('keeps corpus size, language balance, legacy migration, and protocol subset fixed', () => {
     expect(() => assertCorpusInvariants()).not.toThrow()
-    expect(envitedGoldCases).toHaveLength(150)
+    expect(envitedGoldCases).toHaveLength(149)
     expect(protocolGoldCases).toHaveLength(30)
-    expect(envitedGoldCases.filter((gold) => gold.legacyId)).toHaveLength(99)
+    expect(envitedGoldCases.filter((gold) => gold.legacyId)).toHaveLength(98)
   })
 
   it('schedules warmups and repetitions in deterministic round-robin order', () => {

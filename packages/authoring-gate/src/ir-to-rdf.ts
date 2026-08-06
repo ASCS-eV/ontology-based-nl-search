@@ -25,8 +25,6 @@ import type { AuthoringIR, SceneAction } from '@ontology-search/authoring-ir'
 export const OSC_NS = 'https://w3id.org/ascs-ev/envited-x/openscenario/v1/'
 /** Gate-internal modeling predicates — NOT part of the standard vocabulary. */
 export const GATE_NS = 'urn:authoring-gate:'
-/** Namespace the referenced `.xodr` road network is lifted into. */
-export const OPENDRIVE_NS = 'urn:opendrive:'
 
 /** Escape a string for a Turtle double-quoted literal. */
 function ttl(value: string): string {

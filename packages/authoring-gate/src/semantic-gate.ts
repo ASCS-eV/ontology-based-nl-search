@@ -21,16 +21,23 @@
  * `__tests__/qc-rules.test.ts` gates every `origin: 'asam'` UID against.
  * [SPARQL11] SPARQL 1.1 Query (docs/specs/references/sparql11-query.md) — the
  * referential/cross-file checks run as SPARQL SELECT.
+ * [OWL2] OWL 2 Web Ontology Language — the cross-file road check is grounded
+ * in ASAM's real OpenDRIVE `T_road` / `T_road.id` (`opendrive-ontology.ts`),
+ * not an invented namespace.
+ * [XMLCAT] OASIS XML Catalogs 1.1 — that ontology is resolved by IRI through
+ * the pinned package's catalog, never by a hardcoded path.
  */
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
-import { liftXmlToRdf } from '@ontology-search/ontology/xml-to-rdf'
+import { createComponentLogger } from '@ontology-search/core/logging'
 import { OxigraphStore, type SparqlBinding } from '@ontology-search/sparql'
-import type { DatasetCore } from '@rdfjs/types'
-import { Writer } from 'n3'
 
-import { GATE_NS, irToRdf, OPENDRIVE_NS, OSC_NS } from './ir-to-rdf.js'
+import { GATE_NS, irToRdf, OSC_NS } from './ir-to-rdf.js'
+import { type OpenDriveRoadGrounding, resolveOpenDriveRoadGrounding } from './opendrive-ontology.js'
+import { liftOpenDriveRoadFacts } from './opendrive-road-lift.js'
 import { QC_RULES, type QcRule } from './qc-rules.js'
 import type { AuthoringGap, GateResult } from './types.js'
+
+const log = createComponentLogger('semantic-gate')
 
 /** Per-call options for {@link runSemanticGate}. */
 export interface SemanticGateOptions {
@@ -47,8 +54,7 @@ export interface SemanticGateOptions {
 // Namespaces come from the single source (ir-to-rdf) so the gate's SPARQL and
 // the lifted instance graph cannot disagree on the ontology IRI.
 const PREFIXES = `PREFIX os: <${OSC_NS}>
-PREFIX gate: <${GATE_NS}>
-PREFIX opendrive: <${OPENDRIVE_NS}>`
+PREFIX gate: <${GATE_NS}>`
 
 /** Resolvable entity references, expanding `$param` indirection. */
 const Q_RESOLVABLE_ENTITY_REFS = `${PREFIXES}
@@ -69,15 +75,25 @@ SELECT ?name (COUNT(?o) AS ?n) WHERE {
   ?o a os:ScenarioObject ; os:name ?name .
 } GROUP BY ?name HAVING (COUNT(?o) > 1)`
 
-/** Cross-file: a scenario road id must resolve to a road in the road network. */
-const Q_RESOLVABLE_ROAD_REFS = `${PREFIXES}
+/**
+ * Cross-file: a scenario road id must resolve to a road in the road network.
+ * The road class/property are the REAL ASAM OpenDRIVE ontology's `T_road` /
+ * `T_road.id` [OWL2], resolved through the pinned package's OASIS catalog —
+ * see `opendrive-ontology.ts`. Built from the resolved grounding (not a
+ * module-level constant) so nothing is read unless a road network is actually
+ * supplied, matching this gate's "never a false pass" lazy cross-file gating.
+ */
+function roadRefsQuery(grounding: OpenDriveRoadGrounding): string {
+  const { roadClassIri, roadIdPropertyIri } = grounding
+  return `${PREFIXES}
 SELECT ?actor ?roadId WHERE {
   ?r a gate:RoadReference ; gate:roadId ?roadId ; gate:referencedBy ?actor .
   FILTER NOT EXISTS {
-    ?road a opendrive:road ; opendrive:id ?rid .
+    ?road a <${roadClassIri}> ; <${roadIdPropertyIri}> ?rid .
     FILTER(STR(?rid) = STR(?roadId))
   }
 }`
+}
 
 function value(binding: SparqlBinding, key: string): string {
   return binding[key]?.value ?? ''
@@ -93,15 +109,6 @@ function gap(rule: QcRule, focusNode: string, reason: string): AuthoringGap {
   }
 }
 
-/** Serialize a lifted RDF dataset to Turtle for loading into the store. */
-function datasetToTurtle(dataset: DatasetCore): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const writer = new Writer()
-    for (const quad of dataset) writer.addQuad(quad)
-    writer.end((error, result) => (error ? reject(error) : resolve(result)))
-  })
-}
-
 /**
  * Run the semantic gate over a validated authoring IR. Returns UID-attributed
  * violations; `ok` is true iff none. Uses a fresh in-process Oxigraph store per
@@ -114,11 +121,28 @@ export async function runSemanticGate(
   const store = new OxigraphStore()
   await store.loadTurtle(irToRdf(ir))
 
-  let crossFile = false
-  if (options.roadNetworkXodr !== undefined) {
-    const lifted = liftXmlToRdf(options.roadNetworkXodr, { namespace: OPENDRIVE_NS })
-    await store.loadTurtle(await datasetToTurtle(lifted))
-    crossFile = true
+  // Cross-file checking needs the real ontology, which needs the pinned cache.
+  // A cache that cannot be resolved is a DEPLOYMENT fault, not a request fault:
+  // the sentinel catches it at setup and warmup catches it at startup. If it
+  // still reaches a request, the rule is recorded as un-evaluated rather than
+  // thrown — `runScenePipeline` documents that it rejects only on client abort,
+  // and `skipped` exists precisely so an un-evaluated rule is never mistaken
+  // for a passing one.
+  const { roadNetworkXodr } = options
+  let grounding: OpenDriveRoadGrounding | undefined
+  const skipped: string[] = []
+  if (roadNetworkXodr !== undefined) {
+    try {
+      grounding = await resolveOpenDriveRoadGrounding()
+      await store.loadTurtle(liftOpenDriveRoadFacts(roadNetworkXodr, grounding))
+    } catch (err) {
+      log.error(
+        'Cross-file road check unavailable: the OpenDRIVE grounding could not be resolved',
+        { error: err instanceof Error ? err.message : String(err) }
+      )
+      grounding = undefined
+      skipped.push(QC_RULES.resolvableRoadReference.uid)
+    }
   }
 
   const gaps: AuthoringGap[] = []
@@ -150,8 +174,8 @@ export async function runSemanticGate(
     )
   }
 
-  if (crossFile) {
-    for (const row of await select(Q_RESOLVABLE_ROAD_REFS)) {
+  if (grounding) {
+    for (const row of await select(roadRefsQuery(grounding))) {
       const roadId = value(row, 'roadId')
       const actor = value(row, 'actor')
       gaps.push(
@@ -164,5 +188,5 @@ export async function runSemanticGate(
     }
   }
 
-  return { ok: gaps.length === 0, gaps }
+  return { ok: gaps.length === 0, gaps, ...(skipped.length > 0 ? { skipped } : {}) }
 }

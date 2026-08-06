@@ -14,6 +14,7 @@ import datasetFactory from '@rdfjs/dataset'
 import type { DatasetCore, NamedNode, Quad, Term } from '@rdfjs/types'
 import { DataFactory, Parser } from 'n3'
 
+import type { PropertyConstraint } from './shacl-validator-types.js'
 import { discoverShapeFiles } from './sources.js'
 
 const log = createComponentLogger('shacl-validator')
@@ -204,9 +205,7 @@ function termKey(t: Term): string {
  */
 export async function indexPropertyConstraints(
   shapes: DatasetCore
-): Promise<
-  Map<string, { patterns: RegExp[]; inValues: Set<string> | null; datatypeOnly: boolean }>
-> {
+): Promise<Map<string, PropertyConstraint>> {
   const SH_PROPERTY = `${SH_NS}property`
   const SH_PATH = `${SH_NS}path`
   const SH_PATTERN = `${SH_NS}pattern`
@@ -234,10 +233,7 @@ export async function indexPropertyConstraints(
     `${SH_NS}qualifiedValueShape`,
   ]
 
-  const index = new Map<
-    string,
-    { patterns: RegExp[]; inValues: Set<string> | null; datatypeOnly: boolean }
-  >()
+  const index = new Map<string, PropertyConstraint>()
 
   // Walk all property shapes
   for (const propLink of shapes.match(null, namedNode(SH_PROPERTY), null, null)) {
@@ -257,12 +253,18 @@ export async function indexPropertyConstraints(
       patterns: [],
       inValues: null,
       datatypeOnly: false,
+      datatypes: new Set<string>(),
     }
 
-    // Check if this shape has sh:datatype
+    // Check if this shape has sh:datatype. The IRI is kept, not just the fact
+    // of it: candidate synthesis needs the declared datatype to build a literal
+    // the shape can actually accept [SHACL] §4.2.3.
     let hasDatatype = false
     for (const dtQ of shapes.match(propShape, namedNode(SH_DATATYPE), null, null)) {
-      if (dtQ.object.termType === 'NamedNode') hasDatatype = true
+      if (dtQ.object.termType === 'NamedNode') {
+        hasDatatype = true
+        entry.datatypes.add(dtQ.object.value)
+      }
     }
 
     // Extract sh:pattern (deduplicate by source string)
@@ -335,8 +337,19 @@ export async function indexPropertyConstraints(
       }
     }
 
-    // Index this property if it has any fast-path-eligible information
-    if (entry.patterns.length > 0 || entry.inValues !== null || entry.datatypeOnly) {
+    // Index this property if it carries anything the validator can use.
+    // `datatypes` counts even when the fast path cannot decide from it: a
+    // property with sh:datatype AND a value-constraining component (say
+    // sh:minInclusive) is not `datatypeOnly`, but candidate synthesis still
+    // needs the declared datatype to build a literal the shape can accept.
+    // Without it, a valid integer arriving as the string "5" fails both the
+    // sh:datatype check and, in cascade, the sh:minInclusive comparison.
+    if (
+      entry.patterns.length > 0 ||
+      entry.inValues !== null ||
+      entry.datatypeOnly ||
+      entry.datatypes.size > 0
+    ) {
       index.set(propIri, entry)
     }
   }

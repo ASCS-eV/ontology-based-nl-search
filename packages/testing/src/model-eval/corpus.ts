@@ -107,11 +107,19 @@ export const envitedGoldCases: GoldCase[] = [
   envCase(6, 'en', 'Highway maps', slots(['hdmap'], { roadTypes: 'motorway' }), ['synonym'], l(6)),
   envCase(7, 'en', 'Rural road HD maps', slots(['hdmap'], { roadTypes: 'rural' }), ['enum'], l(7)),
   envCase(8, 'en', 'Town driving maps', slots(['hdmap'], { roadTypes: 'town' }), ['enum'], l(8)),
+  // `onRamp`, not `entry` or `mwyEntry`. All three are in the v0.4.0 laneTypes
+  // vocabulary and all three read plausibly for "motorway entry", so the choice
+  // is stated rather than left implicit: ASAM OpenDRIVE distinguishes the ramp
+  // road itself (`onRamp`) from the acceleration lane alongside the motorway
+  // (`entry`), and this query names the ramp. `mwyEntry` is the third
+  // candidate, deprecated by v1.9.0 in favour of `entry` — see the deprecation
+  // list in the pinned hdmap laneTypes description. Case 71 asks the same
+  // question in German and expects the same answer for the same reason.
   envCase(
     9,
     'en',
     'Motorway entry ramp maps',
-    slots(['hdmap'], { roadTypes: 'motorway_entry' }),
+    slots(['hdmap'], { laneTypes: 'onRamp' }),
     ['synonym'],
     l(9)
   ),
@@ -179,7 +187,7 @@ export const envitedGoldCases: GoldCase[] = [
     17,
     'en',
     'Maps with emergency lanes',
-    slots(['hdmap'], { laneTypes: 'emergency' }),
+    slots(['hdmap'], { laneTypes: 'shoulder' }),
     ['synonym'],
     l(17)
   ),
@@ -607,7 +615,7 @@ export const envitedGoldCases: GoldCase[] = [
     71,
     'de',
     'Autobahnauffahrt in OpenDRIVE mit drei Fahrspuren',
-    slots(['hdmap'], { roadTypes: 'motorway_entry', formatType: 'ASAM OpenDRIVE' }),
+    slots(['hdmap'], { laneTypes: 'onRamp', formatType: 'ASAM OpenDRIVE' }),
     ['multilingual', 'gap', 'enum'],
     h(71, {
       gaps: ['drei Fahrspuren'],
@@ -743,17 +751,23 @@ export const envitedGoldCases: GoldCase[] = [
     ['multilingual', 'range'],
     h(85, { legacyQuery: 'High-precision OSI recordings with precision under 0.01' })
   ),
+  // The French query text itself was rewritten for OMB v0.4.0: it previously
+  // spelled the enum literal ("routes motorway_entry"), which upstream retired,
+  // and a gold query that names a value the ontology no longer has tests
+  // nothing. It now asks in natural French for the same thing. Recorded here
+  // because changing a query — rather than only its expected slots — moves the
+  // eval baseline: scores for this case are not comparable across the bump.
   envCase(
     86,
     'fr',
-    'Cartes OpenDRIVE de Corée avec des routes motorway_entry',
+    "Cartes OpenDRIVE de Corée avec des bretelles d'accès autoroute",
     slots(['hdmap'], {
       country: 'KR',
       formatType: 'ASAM OpenDRIVE',
-      roadTypes: 'motorway_entry',
+      laneTypes: 'onRamp',
     }),
     ['multilingual', 'enum'],
-    l(86, { legacyQuery: 'OpenDRIVE maps from Korea with motorway_entry roads' })
+    l(86, { legacyQuery: 'OpenDRIVE maps from Korea with motorway entry ramps' })
   ),
   envCase(
     87,
@@ -846,14 +860,12 @@ export const envitedGoldCases: GoldCase[] = [
       legacyQuery: 'OSI version 3.7 traces',
     })
   ),
-  envCase(
-    96,
-    'ja',
-    'オーストラリアのカスタム道路種別HDマップ',
-    slots(['hdmap'], { country: 'AU', roadTypes: 'custom' }),
-    ['multilingual', 'geography'],
-    l(96, { legacyQuery: 'Custom road type HD maps in Australia' })
-  ),
+  // Case 96 asked for a "custom road type", which OMB v0.4.0 retired from the
+  // roadTypes vocabulary. No surviving value means it — `unknown` states that
+  // the road type is not known, which is a different claim — and the concept
+  // was a vocabulary artefact rather than something a user would ask for, so
+  // there is no meaningful gap case to convert it into either. Dropped rather
+  // than retargeted: a case whose premise no longer exists measures nothing.
   envCase(
     97,
     'ja',
@@ -1352,8 +1364,12 @@ export const protocolGoldCases = envitedGoldCases.filter((value) => value.risk =
 export function assertCorpusInvariants(): void {
   const ids = new Set(envitedGoldCases.map((value) => value.id))
   if (ids.size !== envitedGoldCases.length) throw new Error('Duplicate ENVITED-X case id')
-  if (envitedGoldCases.length !== 150) {
-    throw new Error(`ENVITED-X corpus must contain 150 cases, got ${envitedGoldCases.length}`)
+  // 149, not 150: case 96 asked for a "custom road type", a value OMB v0.4.0
+  // retired from the roadTypes vocabulary with no surviving equivalent. A case
+  // whose premise the ontology no longer holds measures nothing, so it was
+  // dropped rather than retargeted onto a value that means something else.
+  if (envitedGoldCases.length !== 149) {
+    throw new Error(`ENVITED-X corpus must contain 149 cases, got ${envitedGoldCases.length}`)
   }
   const localeCounts = Object.fromEntries(
     (['en', 'de', 'fr', 'ja'] as const).map((locale) => [
@@ -1361,7 +1377,8 @@ export function assertCorpusInvariants(): void {
       envitedGoldCases.filter((value) => value.locale === locale).length,
     ])
   )
-  const expected = { en: 60, de: 60, fr: 15, ja: 15 }
+  // ja is 14 rather than 15 because the dropped case 96 was Japanese.
+  const expected = { en: 60, de: 60, fr: 15, ja: 14 }
   if (JSON.stringify(localeCounts) !== JSON.stringify(expected)) {
     throw new Error(`Locale distribution drift: ${JSON.stringify(localeCounts)}`)
   }
@@ -1373,8 +1390,9 @@ export function assertCorpusInvariants(): void {
   const legacyIds = new Set(
     envitedGoldCases.flatMap((value) => (value.legacyId ? [value.legacyId] : []))
   )
-  if (legacyIds.size !== 99) {
-    throw new Error(`Expected all 99 legacy cases, got ${legacyIds.size}`)
+  // 98, not 99: the dropped case 96 carried a legacy id.
+  if (legacyIds.size !== 98) {
+    throw new Error(`Expected all 98 legacy cases, got ${legacyIds.size}`)
   }
   if (toyverseGoldCases.length !== 12) {
     throw new Error(`Toyverse corpus must contain 12 cases, got ${toyverseGoldCases.length}`)

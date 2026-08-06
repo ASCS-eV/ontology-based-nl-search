@@ -1,6 +1,8 @@
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
-import { beforeEach, describe, expect, it } from 'vitest'
+import * as catalog from '@ontology-search/ontology/catalog'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { resetOpenDriveRoadGroundingCache } from '../opendrive-ontology.js'
 import { QC_RULES } from '../qc-rules.js'
 import { runSemanticGate } from '../semantic-gate.js'
 import { cutInIR } from './fixtures/cut-in-ir.js'
@@ -60,5 +62,38 @@ describe('runSemanticGate', () => {
     ir.actions[1]!.properties.roadId = '999'
     const result = await runSemanticGate(ir)
     expect(result.gaps.some((g) => g.ruleUid === QC_RULES.resolvableRoadReference.uid)).toBe(false)
+  })
+})
+
+/**
+ * A pinned cache that cannot be resolved is a deployment fault, not a request
+ * fault — the sentinel catches it at setup and warmup at startup. If one still
+ * reaches a request, `runScenePipeline` documents that it rejects only on
+ * client abort, so the gate must contain it: report the rule as un-evaluated,
+ * never throw, and never let an un-run check read as a pass.
+ */
+describe('runSemanticGate when the OpenDRIVE grounding cannot be resolved', () => {
+  beforeEach(() => resetOpenDriveRoadGroundingCache())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    resetOpenDriveRoadGroundingCache()
+  })
+
+  it('records the cross-file rule as skipped instead of throwing', async () => {
+    vi.spyOn(catalog, 'resolveOntologyPath').mockImplementation(() => {
+      throw new Error('ontology cache is not materialized')
+    })
+
+    const result = await runSemanticGate(cutInIR(), { roadNetworkXodr: NO_ROAD_ONE_XODR })
+
+    expect(result.skipped).toContain(QC_RULES.resolvableRoadReference.uid)
+    // The other semantic checks still ran, and the un-evaluated one produced
+    // no gap that could be mistaken for a verdict either way.
+    expect(result.gaps.some((g) => g.ruleUid === QC_RULES.resolvableRoadReference.uid)).toBe(false)
+  })
+
+  it('reports no skipped rule when the grounding resolves', async () => {
+    const result = await runSemanticGate(cutInIR(), { roadNetworkXodr: CONTINUOUS_XODR })
+    expect(result.skipped).toBeUndefined()
   })
 })

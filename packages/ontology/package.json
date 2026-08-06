@@ -10,6 +10,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./catalog": {
+      "types": "./src/ontology-catalog.ts",
+      "import": "./dist/ontology-catalog.js",
+      "default": "./dist/ontology-catalog.js"
+    },
     "./domain-registry": {
       "types": "./src/domain-registry.ts",
       "import": "./dist/domain-registry.js",
@@ -24,11 +29,6 @@
       "types": "./src/sources.ts",
       "import": "./dist/sources.js",
       "default": "./dist/sources.js"
-    },
-    "./xml-to-rdf": {
-      "types": "./src/xml-to-rdf.ts",
-      "import": "./dist/xml-to-rdf.js",
-      "default": "./dist/xml-to-rdf.js"
     }
   },
   "scripts": {
@@ -37,7 +37,9 @@
     "test": "vitest run",
     "check-types": "tsc --noEmit",
     "check-types:tests": "tsc -p tsconfig.test.json",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "derive:openscenario-authoring": "node scripts/derive-openscenario-authoring-shacl.mjs",
+    "derive:openscenario-authoring:check": "node scripts/derive-openscenario-authoring-shacl.mjs --check"
   },
   "dependencies": {
     "@ontology-search/core": "workspace:*",

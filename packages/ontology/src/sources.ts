@@ -40,6 +40,17 @@ export { OntologySourcesError }
  */
 export const DEFAULT_ONTOLOGY_CACHE_PATH = ['.ontology', 'artifacts'] as const
 
+/**
+ * Path segments of the local ontology cache's `imports/` tree — the
+ * upstream standards (ASAM OpenDRIVE, ASAM OpenSCENARIO, …) an asset domain
+ * references, as opposed to the ASCS-eV `artifacts/` domains above. Same
+ * materialization and versioning story as {@link DEFAULT_ONTOLOGY_CACHE_PATH};
+ * kept as a sibling constant so a consumer resolving into `imports/` (e.g. the
+ * authoring gate grounding its cross-file OpenDRIVE check in the real ASAM
+ * ontology) shares one source of truth for the cache layout.
+ */
+export const DEFAULT_ONTOLOGY_IMPORTS_PATH = ['.ontology', 'imports'] as const
+
 /** A single declared source in `ontology-sources.json`. */
 export interface OntologySource {
   /** Human-readable name (typically the domain name). */

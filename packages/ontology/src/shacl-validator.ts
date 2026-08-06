@@ -37,7 +37,11 @@ import {
   indexPropertyTargetClasses,
   loadShapesFromDisk,
 } from './shacl-validator-loader.js'
-import type { ShaclValidationResult, ShaclViolation } from './shacl-validator-types.js'
+import type {
+  PropertyConstraint,
+  ShaclValidationResult,
+  ShaclViolation,
+} from './shacl-validator-types.js'
 
 // The pure, stateless halves of the validator (shapes loading + indexing, and
 // candidate-dataset synthesis + violation mapping) were extracted to the sibling
@@ -76,10 +80,7 @@ export class ShaclValidator {
    * Properties with only sh:datatype xsd:string (no further constraints)
    * trivially accept any string value — indexed as `datatypeOnly: true`.
    */
-  readonly constraintIndex: Map<
-    string,
-    { patterns: RegExp[]; inValues: Set<string> | null; datatypeOnly: boolean }
-  >
+  readonly constraintIndex: Map<string, PropertyConstraint>
   /**
    * Memoized per-(propertyIri, value, targetClass) validation outcomes.
    * Shapes are immutable for the process lifetime, but the value space
@@ -102,10 +103,7 @@ export class ShaclValidator {
   private constructor(
     validator: SHACLValidator,
     propertyToTargetClass: Map<string, string[]>,
-    constraintIndex: Map<
-      string,
-      { patterns: RegExp[]; inValues: Set<string> | null; datatypeOnly: boolean }
-    >
+    constraintIndex: Map<string, PropertyConstraint>
   ) {
     this.validator = validator
     this.propertyToTargetClass = propertyToTargetClass
@@ -215,7 +213,7 @@ export class ShaclValidator {
     // Those are spurious for our use case — we filter to only violations whose
     // sh:resultPath matches the property under test.
     for (const cls of candidates) {
-      const candidate = buildCandidateDataset(propertyIri, value, cls)
+      const candidate = buildCandidateDataset(propertyIri, value, cls, constraint?.datatypes)
       this.engineCallCount++
       const report = await this.validator.validate(candidate)
       const relevant = report.results
@@ -372,7 +370,12 @@ export class ShaclValidator {
       const unresolved = engineNeeded.filter((v) => !conformed.has(v))
       if (unresolved.length === 0) break
 
-      const { dataset, valueToFocusIri } = buildBatchCandidateDataset(propertyIri, unresolved, cls)
+      const { dataset, valueToFocusIri } = buildBatchCandidateDataset(
+        propertyIri,
+        unresolved,
+        cls,
+        constraint?.datatypes
+      )
       this.engineCallCount++
       const report = await this.validator.validate(dataset)
 

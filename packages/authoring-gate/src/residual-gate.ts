@@ -18,6 +18,8 @@
  *
  * [QC-XODR] ASAM OpenDRIVE checker bundle — road.geometry continuity family.
  * See RESIDUAL-QC.md for the rule → UID → backend coverage manifest.
+ * [XML10] XML 1.0 (W3C) — `checkGeometryContinuity` parses the `.xodr` for
+ * well-formedness only; schema validity is the WASM engine's `[OSC-XSD]` concern.
  */
 import { getConfig } from '@ontology-search/core/config'
 import { XMLParser } from 'fast-xml-parser'
