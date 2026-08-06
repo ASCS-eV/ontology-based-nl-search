@@ -119,6 +119,43 @@ jobs:
       - name: Check coverage floors
         run: pnpm run coverage
 
+  first-run:
+    name: First run (clean machine)
+    runs-on: ubuntu-latest
+    steps:
+      # No submodules on purpose: a developer cloning to try the search does
+      # not need the authoring engine's build inputs, and the ontology comes
+      # from the pinned package.
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install exactly as a new developer does
+        run: pnpm install --frozen-lockfile
+
+      # The setup gate must pass on a machine that has not been configured yet.
+      # It failed here once: a missing .env.local was treated as a broken
+      # machine, so the very first command a new developer runs said no.
+      - name: The setup gate passes on an unconfigured machine
+        run: |
+          test ! -f .env.local
+          pnpm run check:setup
+
+      - name: Build
+        run: pnpm run build
+
+      # The end-to-end first-run contract: a server that starts with no
+      # configuration, reports ready, names what is unavailable, keeps serving
+      # the routes that do not need it, and answers a search with the command
+      # that fixes it rather than "Search failed".
+      - name: A clean machine starts and explains itself
+        run: node scripts/first-run-smoke.mjs --require-clean
+
   build:
     name: Build
     runs-on: ubuntu-latest

@@ -20,7 +20,7 @@ describe('config', () => {
 
     expect(config.SPARQL_MODE).toBe('memory')
     expect(config.AI_PROVIDER).toBe('ollama')
-    expect(config.AI_MODEL).toBe('gpt-4o')
+    expect(config.AI_MODEL).toBe('qwen3:8b')
     expect(config.SPARQL_CACHE_SIZE).toBe(256)
     expect(config.SPARQL_CACHE_TTL_MS).toBe(300_000)
     expect(config.OLLAMA_BASE_URL).toBe('http://localhost:11434/v1')
@@ -324,6 +324,24 @@ describe('config', () => {
       resetConfig()
       expect(() => getConfig()).toThrow('Invalid environment configuration')
     })
+  })
+
+  /**
+   * A machine with no `.env.local` must be able to start. The defaults used to
+   * name a provider whose cross-field check then demanded an API key, so the
+   * zero-configuration path — the one every setup document describes — failed
+   * before the server printed anything about itself.
+   */
+  it('starts with no provider configuration at all, on the documented default', () => {
+    for (const key of ['AI_PROVIDER', 'AI_MODEL', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY']) {
+      delete process.env[key]
+    }
+    process.env.NODE_ENV = 'development'
+    resetConfig()
+
+    const config = getConfig()
+    expect(config.AI_PROVIDER).toBe('ollama')
+    expect(config.AI_MODEL).toBe('qwen3:8b')
   })
 
   describe('error messages', () => {

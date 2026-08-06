@@ -94,8 +94,18 @@ const envSchema = z.object({
   AUTHORING_MAX_REPAIRS: z.coerce.number().int().nonnegative().default(2),
 
   // AI / LLM
-  AI_PROVIDER: aiProviderSchema.default('openai'),
-  AI_MODEL: z.string().min(1).default('gpt-4o'),
+  /**
+   * Default provider and model.
+   *
+   * These match what `.env.example`, the README and the startup guide all
+   * document as the default setup — a local Ollama, no API key. They used to
+   * default to `openai` / `gpt-4o` instead, which contradicted every one of
+   * those documents and, because the cross-field check below requires
+   * `OPENAI_API_KEY` for that provider, meant a machine with no `.env.local`
+   * could not start at all. Defaults now describe a configuration that runs.
+   */
+  AI_PROVIDER: aiProviderSchema.default('ollama'),
+  AI_MODEL: z.string().min(1).default('qwen3:8b'),
   /**
    * Optional model override for the GENERATIVE authoring agent (NL → `.xosc`).
    * Authoring is scenario composition, not the deterministic slot-filling of
