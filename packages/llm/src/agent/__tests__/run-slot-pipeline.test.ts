@@ -37,6 +37,12 @@ function submission(overrides: Partial<SlotPipelineSubmission['slots']>): SlotPi
   }
 }
 
+/**
+ * Prose that names no domain, so the domain tie-break stays out of the way of
+ * cases that are about slot validation. The tie-break has its own tests.
+ */
+const NEUTRAL_QUERY = 'assets with these properties'
+
 describe('runSlotPipeline', () => {
   it('corrects case / typo on enum filter values via fuzzy matching', async () => {
     const sw = new Stopwatch()
@@ -48,12 +54,52 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'hdmap',
       sw,
+      query: NEUTRAL_QUERY,
     })
     expect(response.sparql).toContain('?roadTypes')
     // The compiler emits the corrected value, not the LLM's original.
     expect(response.sparql).toContain('motorway')
     expect(response.sparql).not.toContain('MOTORWAY')
   }, 120_000)
+
+  /**
+   * The reported case: `roadTypes` is declared by more than one domain, so the
+   * slot layer kept them all and a query that named its subject outright was
+   * answered from a domain the user had just ruled out. Runs against the real
+   * loaded ontology, so it also proves the domain names the tie-break reads are
+   * the ones the schema graph actually yields.
+   */
+  it('answers a query that names its subject from that domain alone', async () => {
+    const sw = new Stopwatch()
+    const response = await runSlotPipeline({
+      submission: submission({
+        domains: ['hdmap', 'ositrace'],
+        filters: { roadTypes: 'MOTORWAY' },
+      }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      sw,
+      query: 'maps in france and other european countries with autobahn',
+    })
+
+    expect(response.interpretation.domains).toEqual(['hdmap'])
+  })
+
+  it('keeps every candidate domain when the query names none of them', async () => {
+    const sw = new Stopwatch()
+    const response = await runSlotPipeline({
+      submission: submission({
+        domains: ['hdmap', 'ositrace'],
+        filters: { roadTypes: 'MOTORWAY' },
+      }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      sw,
+      query: 'anything from europe with motorways',
+    })
+
+    expect(response.interpretation.domains).toEqual(['hdmap', 'ositrace'])
+  })
 
   it('drops a filter value that violates a declared SHACL constraint', async () => {
     const sw = new Stopwatch()
@@ -64,6 +110,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'hdmap',
       sw,
+      query: NEUTRAL_QUERY,
     })
     expect(response.sparql).not.toContain('notacountry')
     expect(response.gaps.length).toBeGreaterThan(0)
@@ -79,6 +126,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'hdmap',
       sw,
+      query: NEUTRAL_QUERY,
     })
     expect(response.sparql).not.toContain('numberLanes')
     // A gap explains the drop so the LLM caller can revise.
@@ -109,6 +157,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'ositrace',
       sw,
+      query: NEUTRAL_QUERY,
     })
     // The cross-domain JOIN to hdmap compiled (the reference target appears).
     expect(response.sparql).toContain('hdmap:HdMap')
@@ -143,6 +192,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'scenario',
       sw,
+      query: NEUTRAL_QUERY,
     })
     // Multi-reference is now supported: BOTH the slot reference (ositrace) and
     // the additionally-named one (hdmap) compile into JOINs, AND-combined.
@@ -171,6 +221,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'hdmap',
       sw,
+      query: NEUTRAL_QUERY,
     })
     expect(response.gaps.find((g) => g.term === 'highways')?.kind).toBe('recognized')
   }, 120_000)
@@ -189,6 +240,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'hdmap',
       sw,
+      query: NEUTRAL_QUERY,
     })
     expect(response.sparql).toContain('?asset a hdmap:HdMap')
     expect(response.sparql).toContain('motorway')
@@ -206,6 +258,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'scenario',
       sw,
+      query: NEUTRAL_QUERY,
     })
     expect(response.sparql).toContain('?asset a scenario:Scenario')
   }, 120_000)
@@ -231,6 +284,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'hdmap',
       sw,
+      query: NEUTRAL_QUERY,
     })
     expect(response.interpretation.summary).toBe('Looking for HD maps with motorways')
     expect(response.interpretation.mappedTerms).toHaveLength(1)
@@ -266,6 +320,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'scenario',
       sw,
+      query: NEUTRAL_QUERY,
     })
     expect(response.interpretation.domains).toEqual(['scenario'])
     expect(response.sparql).toContain('scenario:Scenario')
@@ -293,6 +348,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'hdmap',
       sw,
+      query: NEUTRAL_QUERY,
     })
     expect(response.sparql).not.toContain('?refAsset')
   }, 120_000)
@@ -319,6 +375,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'scenario',
       sw,
+      query: NEUTRAL_QUERY,
     })
     // Both references are AND-combined JOINs (both target classes present).
     expect(response.sparql).toContain('ositrace:OSITrace')
@@ -339,6 +396,7 @@ describe('runSlotPipeline', () => {
       vocabulary,
       targetDomain: 'hdmap',
       sw,
+      query: NEUTRAL_QUERY,
     })
     const timings = sw.getTimings()
     const stageNames = timings.map((t) => t.stage)

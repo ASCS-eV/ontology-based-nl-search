@@ -25,6 +25,7 @@ import {
   getConceptExpansionIndex,
   getInitializedStore,
   getInstanceValues,
+  preferDomainsNamedInQuery,
   ShaclValidator,
 } from '@ontology-search/search'
 import { compileSlotsWithTrace, resolveKnownDomains } from '@ontology-search/search/compiler'
@@ -71,6 +72,12 @@ export interface SlotPipelineInput {
   vocabulary: SchemaVocabulary
   /** Fallback domain when the submission's `slots.domains` is empty. */
   targetDomain: string
+  /**
+   * The user's own words. Used only to break a tie between domains that all
+   * declare the requested property: when the query names one of them, the
+   * others were never asked for. See `preferDomainsNamedInQuery`.
+   */
+  query: string
   /**
    * Stopwatch from the calling agent. The pipeline records two sub-stages
    * here — `post-llm-validation` and `sparql-compile` — so existing trace
@@ -139,7 +146,7 @@ async function validateReferenceTree(
  * this helper.
  */
 export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStructuredResponse> {
-  const { submission, vocabulary, targetDomain, sw } = input
+  const { submission, vocabulary, targetDomain, sw, query } = input
 
   const endValidation = sw.time('post-llm-validation')
   // 1. Fuzzy match: case / typo correction against sh:in enums.
@@ -186,6 +193,13 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   // honest about what was actually compiled.
   const knownDomains = await resolveKnownDomains(correctedDomains)
 
+  // 4b-ii. A property declared by several domains keeps them all — the safe
+  // default. But when the query names one of those domains outright ("maps
+  // …"), the others were never asked for, and answering from them buries the
+  // asked-for results among assets the user had already ruled out. Narrows
+  // only on a clear, unambiguous naming; every other case passes through.
+  const preferredDomains = preferDomainsNamedInQuery(knownDomains, query)
+
   // 4c. references.* are cross-reference JOIN targets (parent → child via the
   // discovered chain), not peers of the primary domain. Normalize to an array,
   // promote any references the LLM named in its narrative but omitted from the
@@ -215,7 +229,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
       normalizedReferences.push({ ...ref, domain: canonical })
     }
   }
-  const primaryDomains = knownDomains.filter((d) => !referencedDomains.has(d))
+  const primaryDomains = preferredDomains.filter((d) => !referencedDomains.has(d))
 
   // Validate reference-scoped filters/ranges with the same gates as the
   // top-level slots (fuzzy-match, SKOS expansion, SHACL). Gaps surface to the

@@ -226,6 +226,7 @@ async function buildValidatedResponse(run: AgentRun): Promise<LlmStructuredRespo
       vocabulary: run.vocabulary,
       targetDomain: run.targetDomain,
       sw: run.sw,
+      query: run.naturalLanguageQuery,
     })
     return { ...response, timings: run.sw.getTimings() }
   }
