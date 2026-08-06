@@ -22,13 +22,14 @@ import type { AuthoringRefineResponse } from '@ontology-search/api-types'
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { authoringIrWireSchema } from '@ontology-search/authoring-ir/scene-wire-schema'
 import { getConfig } from '@ontology-search/core/config'
-import { badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
+import { AppError, badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { runSceneAgent, runScenePipeline } from '@ontology-search/llm/authoring'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 
+import { sseErrorPayload } from '../middleware/error-handler.js'
 import type { AppEnv } from '../types.js'
 
 export const authoringRoutes = new Hono<AppEnv>()
@@ -174,7 +175,7 @@ authoringRoutes.post('/stream', (c) => {
         logger.error('Authoring stream failed', error)
         await stream.writeSSE({
           event: SSE_EVENT.ERROR,
-          data: JSON.stringify({ message: 'Authoring failed' }),
+          data: JSON.stringify(sseErrorPayload(error, 'Authoring failed')),
         })
       }
     },
@@ -182,7 +183,7 @@ authoringRoutes.post('/stream', (c) => {
       streamLogger.error('SSE stream error', err)
       await stream.writeSSE({
         event: SSE_EVENT.ERROR,
-        data: JSON.stringify({ message: 'Stream error' }),
+        data: JSON.stringify(sseErrorPayload(err, 'Stream error')),
       })
     }
   )
@@ -252,6 +253,10 @@ authoringRoutes.post('/refine', async (c) => {
       logger.info('Authoring refine aborted by client')
       return c.body(null, 408)
     }
+    // Typed errors carry their own status and an operator-facing message —
+    // let the app's onError handler map them instead of flattening every
+    // cause into one opaque 500.
+    if (error instanceof AppError) throw error
     logger.error('Authoring refine failed', error)
     const err = internalError()
     return c.json(err.body, err.status)

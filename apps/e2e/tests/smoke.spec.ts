@@ -5,9 +5,13 @@ import { expect, test } from '@playwright/test'
  *
  * Playwright's `webServer` config boots the actual API + web servers and waits
  * for `/health` to report ready, so simply reaching these assertions proves
- * the backend warmed up: ontology submodules loaded, schema graph built, sample
+ * the backend warmed up: the pinned ontology loaded, schema graph built, sample
  * data loaded. These checks then confirm the store is populated and the web
  * shell renders real data.
+ *
+ * `toMatchObject` rather than an exact body: a ready instance may also report
+ * `warnings` (an LLM provider that is unreachable here, and that these specs
+ * do not need), and that must not read as a smoke failure.
  *
  * The deterministic search-flow assertions (which depend on an LLM) live in
  * `search.spec.ts`, where the LLM-backed endpoints are mocked. This file

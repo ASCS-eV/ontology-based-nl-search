@@ -1,6 +1,16 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+
+# Fail the install when the running Node does not satisfy `engines.node`
+# instead of printing a warning nobody reads. A too-old Node installs fine
+# without this and then fails later in unrelated-looking ways (a missing
+# built-in, an unsupported flag), which is far harder to diagnose than
+# "Expected version: >=22.19.0, Got: v20.x" at install time.
+#
+# This setting MUST live here, not in `.npmrc`: pnpm 11 reads its own settings
+# from this file, and silently ignores them in `.npmrc`.
+engineStrict: true
 allowBuilds:
   '@swc/core': true
   esbuild: true

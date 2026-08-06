@@ -16,6 +16,7 @@ import { QC_RULES } from '@ontology-search/authoring-gate'
 import { type AuthoringIR, createEmptyScene } from '@ontology-search/authoring-ir'
 import { getConfig } from '@ontology-search/core/config'
 
+import { providerContextFromConfig, withProviderErrorTranslation } from '../provider-errors.js'
 import { fillSceneCopilot } from './fill-scene-copilot.js'
 import { fillSceneVercel } from './fill-scene-vercel.js'
 import {
@@ -114,7 +115,14 @@ export async function runSceneAgent(
       ...(archetype ? { archetype } : {}),
       ...(feedback ? { feedback } : {}),
     })
-    const submission = await fill(request, signal)
+    // Same provider-fault translation as search: an unreachable or
+    // unauthenticated backend must say which setting to fix, not surface the
+    // SDK's transport wording. The authoring model may differ from the search
+    // one, so the advice names AUTHORING_AI_MODEL when that is what ran.
+    const submission = await withProviderErrorTranslation(
+      providerContextFromConfig(getConfig(), { authoring: true }),
+      () => fill(request, signal)
+    )
     attempts = attempt
     if (!submission) {
       lastSubmission = null

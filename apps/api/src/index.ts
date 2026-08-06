@@ -1,18 +1,52 @@
 import type { ServerType } from '@hono/node-server'
 import { serve } from '@hono/node-server'
 import { closeAuthoringBackend } from '@ontology-search/authoring'
+import type { AppConfig } from '@ontology-search/core/config'
 import { getConfig } from '@ontology-search/core/config'
+import { ConfigError } from '@ontology-search/core/errors'
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { configureHttpProxyFromEnv } from '@ontology-search/core/net/proxy'
 import { closeSparqlStore } from '@ontology-search/sparql'
 
-import { app } from './app.js'
 import { createListenErrorHandler, createShutdownHandler } from './lifecycle.js'
 import { setReadiness } from './readiness.js'
 import { warmup } from './warmup.js'
 
 const log = createComponentLogger('api')
-const port = getConfig().API_PORT
+
+/**
+ * Read the configuration before anything else imports it.
+ *
+ * A `ConfigError` here is an operator mistake in `.env.local`, not a crash:
+ * reported as the message plus where to fix it, and never as an unhandled
+ * exception with a stack trace through Zod. This is also why the Hono app is
+ * imported dynamically below — a static import would construct it (and read
+ * the config) during module loading, before this handler could run.
+ */
+function loadConfigOrExit(): AppConfig {
+  try {
+    return getConfig()
+  } catch (error) {
+    if (!(error instanceof ConfigError)) throw error
+    process.stderr.write(
+      [
+        '',
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        `✗ ${error.message}`,
+        '',
+        '  These come from .env.local in the repo root (plus your shell).',
+        '  Every setting, its accepted values and its default are documented in',
+        '  .env.example. `pnpm run check:setup` checks the rest of the setup.',
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        '',
+      ].join('\n')
+    )
+    process.exit(1)
+  }
+}
+
+const config = loadConfigOrExit()
+const port = config.API_PORT
 
 // Install the proxy dispatcher BEFORE anything can make an outbound request
 // (warmup reaches the LLM provider, and a remote store reaches SPARQL). Node's
@@ -27,6 +61,19 @@ if (proxy.enabled) {
     noProxy: proxy.noProxy ?? '(unset)',
   })
 }
+
+// The bundled web UI sends no API key, so outside production this setting only
+// produces a wall of 401s that reads like a broken frontend. Warn rather than
+// refuse: an operator may deliberately be testing the gate with curl.
+if (config.API_KEY && config.NODE_ENV !== 'production') {
+  log.warn(
+    'API_KEY is set outside production — every request without the key gets 401, ' +
+      'and the bundled web UI does not send one. Unset API_KEY in .env.local for local development.'
+  )
+}
+
+// Imported now, after the configuration has been validated and reported on.
+const { app } = await import('./app.js')
 
 /**
  * The HTTP listener, assigned once `serve()` returns. Held at module
@@ -60,11 +107,19 @@ setReadiness(warmupResult)
 // misleading "ready" line followed by a crash.
 server = serve({ fetch: app.fetch, port }, () => {
   if (warmupResult.ready) {
-    log.info('Ontology Search API ready', { url: `http://localhost:${port}` })
+    log.info('Ontology Search API ready', {
+      url: `http://localhost:${port}`,
+      // Present when something non-fatal is unavailable (typically the LLM
+      // provider) — "ready" alone would read as "everything works".
+      ...(warmupResult.warnings.length > 0 ? { warnings: warmupResult.warnings } : {}),
+    })
   } else {
     log.warn('Ontology Search API started DEGRADED', {
       url: `http://localhost:${port}`,
       warmupErrorCount: warmupResult.errors.length,
+      // The reasons, not just the count: this is the line an operator reads
+      // when the UI says every search comes back empty.
+      errors: warmupResult.errors,
     })
   }
 })

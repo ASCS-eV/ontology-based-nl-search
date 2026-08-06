@@ -2,7 +2,7 @@ import { getAuthoringBackend, probeEngineVersions } from '@ontology-search/autho
 import { getConfig } from '@ontology-search/core/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { probeAuthoring } from '../warmup.js'
+import { probeAuthoring, warmup } from '../warmup.js'
 
 // Mock every workspace dep warmup.ts imports so importing it is cheap and
 // `probeAuthoring` exercises only the authoring-probe path (config + backend).
@@ -11,7 +11,11 @@ vi.mock('@ontology-search/authoring', () => ({
   getAuthoringBackend: vi.fn(),
   probeEngineVersions: vi.fn(),
 }))
-vi.mock('@ontology-search/llm', () => ({ warmupAgentPrompt: vi.fn(), warmupLlmSession: vi.fn() }))
+vi.mock('@ontology-search/llm', () => ({
+  verifyLlmProvider: vi.fn(),
+  warmupAgentPrompt: vi.fn(),
+  warmupLlmSession: vi.fn(),
+}))
 vi.mock('@ontology-search/ontology/domain-registry', () => ({ buildDomainRegistry: vi.fn() }))
 vi.mock('@ontology-search/ontology/shacl-validator', () => ({
   ShaclValidator: { fromWorkspace: vi.fn() },
@@ -63,5 +67,59 @@ describe('probeAuthoring (authoring engine capability probe at warmup)', () => {
 
     await expect(probeAuthoring()).resolves.toBeUndefined()
     expect(probeEngineVersions).toHaveBeenCalledWith(backend)
+  })
+})
+
+describe('warmup severity', () => {
+  /**
+   * An unreachable LLM provider stops natural-language search but nothing
+   * else: /stats, /vocabulary and slot-based refinement still answer, and the
+   * provider can return without restarting the process. Reporting it as
+   * unready would take a working instance out of rotation — and would leave
+   * /health permanently 503 for anything (an orchestrator, Playwright) waiting
+   * on it. It must be reported, and it must not be fatal.
+   */
+  /** Every other step succeeding, so the assertions isolate the step under test. */
+  async function stubHealthyWarmup(): Promise<void> {
+    const { buildDomainRegistry } = await import('@ontology-search/ontology/domain-registry')
+    vi.mocked(buildDomainRegistry).mockResolvedValue({
+      getAllNamespaces: () => ({}),
+    } as never)
+    vi.mocked(getAuthoringBackend).mockReturnValue({ describe: vi.fn() } as never)
+    vi.mocked(probeEngineVersions).mockResolvedValue(undefined)
+  }
+
+  it('records an unavailable provider as a warning, staying ready', async () => {
+    await stubHealthyWarmup()
+    const { verifyLlmProvider } = await import('@ontology-search/llm')
+    vi.mocked(verifyLlmProvider).mockRejectedValue(
+      new Error(
+        'Ollama is not reachable at http://localhost:11434/v1. Start it with `ollama serve`.'
+      )
+    )
+    const result = await warmup()
+
+    expect(result.errors).toEqual([])
+    expect(result.ready).toBe(true)
+    expect(result.warnings).toHaveLength(1)
+    expect(result.warnings[0]).toContain('ollama serve')
+    // Worded as tolerated, not as broken — the service is still serving.
+    expect(result.warnings[0]).toContain('LLM provider access unavailable')
+    expect(result.warnings[0]).not.toContain('failed')
+  })
+
+  /**
+   * The opposite case: a store or ontology failure is not recoverable without
+   * a restart and breaks every route, so it stays fatal.
+   */
+  it('keeps a store failure fatal', async () => {
+    await stubHealthyWarmup()
+    const { getInitializedStore } = await import('@ontology-search/search')
+    vi.mocked(getInitializedStore).mockRejectedValue(new Error('no ontology shape files found'))
+
+    const result = await warmup()
+
+    expect(result.ready).toBe(false)
+    expect(result.errors.join('\n')).toContain('no ontology shape files found')
   })
 })

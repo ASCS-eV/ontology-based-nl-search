@@ -2,29 +2,46 @@
 
 ## Prerequisites
 
-- Node.js 22+
-- pnpm 11+ (the repo pins `pnpm@11.1.2` via `packageManager`; `corepack enable` will honor it)
-- Git
+- **Node.js** satisfying `engines.node` in the root `package.json` (`.nvmrc`
+  pins the supported major — `nvm use` selects it). The install fails with the
+  expected and running versions if it is not satisfied.
+- **pnpm**, the version pinned by `packageManager` in the root `package.json`
+  (`corepack enable` honors it automatically).
+  Note: pnpm must be able to run `node` — the setup scripts are Node scripts.
+  If you installed pnpm as a standalone binary and have no Node on `PATH`,
+  install one (`pnpm env use --global 22`) before running `pnpm install`.
+- **Git**
+
+Verify both before installing:
+
+```bash
+node -v && pnpm -v
+```
 
 ## Initial Setup (First Time Only)
 
 ```bash
-# 1. Initialize the ontology submodules (REQUIRED — search needs the ontology).
-#    Fresh clones can instead use: git clone --recurse-submodules <url>
-git submodule update --init --recursive
-
-# 2. Install dependencies. postinstall runs an ontology-sources preflight and
-#    warns if no shape files are found.
+# 1. Install dependencies. postinstall checks the Node version, materializes
+#    the pinned ontology, and reports anything missing from the setup.
 pnpm install
 
-# 3. Verify the ontology sources resolved (optional, exits non-zero on failure)
-pnpm run check:setup
-
-# 4. Create environment file
+# 2. Create the environment file (`pnpm dev` also creates it if you forget).
 cp .env.example .env.local
 
-# 5. Edit .env.local if needed (defaults work for development)
+# 3. Edit .env.local — most importantly AI_PROVIDER. The default (`ollama`)
+#    expects a local Ollama serving the model in AI_MODEL:
+#        ollama pull qwen3:8b
+#    Other providers are documented inline in the file.
+
+# 4. Verify the machine is ready (exits non-zero and says what to fix)
+pnpm run check:setup
 ```
+
+> The ontology is **not** a git submodule. It is pinned by version + sha256 in
+> `ontology-package.json` and materialized into `.ontology/` by
+> `pnpm run fetch:ontology`, which `pnpm install` runs for you. The remaining
+> submodules (`openscenario-api`, `esmini`, `asam-openx-assets`) are only
+> needed for the authoring engine's build: `git submodule update --init`.
 
 ## Starting the Application
 
@@ -109,8 +126,8 @@ pnpm run --filter @ontology-search/docs dev
 # Clean all development ports
 pnpm run clean:ports
 
-# Or clean specific ports
-node scripts/clean-ports.mjs 3003 5174 5173
+# Or clean one service's configured port
+node scripts/clean-ports.mjs --api
 
 # Then restart services
 pnpm dev
@@ -139,10 +156,11 @@ curl http://localhost:3003/stats
 
 ### Issue: "Searches return nothing" / `/health` says `degraded`
 
-**Cause**: No ontology was loaded — almost always because the git submodules
-were not initialized. The ontology drives the LLM prompt, slot validation, and
-query compiler, so without it the API starts **degraded** and every search is
-empty.
+**Cause**: No ontology was loaded — almost always because the pinned ontology
+cache was never materialized (a failed download on install, e.g. behind a
+proxy). The ontology drives the LLM prompt, slot validation, and query
+compiler, so without it the API starts **degraded** and every search is empty.
+The web UI shows a banner with the same errors `/health` reports.
 
 **Diagnose**:
 
@@ -157,13 +175,16 @@ pnpm run check:setup
 **Solution**:
 
 ```bash
-git submodule update --init --recursive
+pnpm run fetch:ontology   # downloads + verifies the pinned distribution
 # then restart the API
 ```
 
+Behind a proxy, export `HTTPS_PROXY` / `NO_PROXY` in the same shell first —
+Node does not read them on its own.
+
 If you keep your ontology elsewhere, point `ONTOLOGY_ARTIFACTS_PATH` at it or
-create an `ontology-sources.json` (see `ontology-sources.example.json` as template)
-instead of using the submodule.
+create an `ontology-sources.json` (see `ontology-sources.example.json` as
+template).
 
 ### Note: sample instance data
 
@@ -171,7 +192,7 @@ During warmup, the API loads 5 sample TTL files: `sample-assets.ttl`, `sample-sc
 
 A healthy `/stats` response reports the sample-data totals — currently **358 assets**: 165 HD maps, 70 environment models, 53 OSI traces, 50 scenarios, and 20 surface models. (Exact counts track the sample TTL files and may shift as they evolve; any non-zero `totalAssets` with five domains means the store loaded correctly.)
 
-**Wait time**: first cold start takes roughly **30–60 seconds** under `pnpm dev` (which runs the API via `tsx`). The dominant cost is building the compiler vocabulary (property-path discovery); the API logs `[n/6]` warmup steps so you can watch progress. `/health` returns `503` (`starting`/`degraded`) until warmup succeeds, then `200 ok`.
+**Wait time**: first cold start takes roughly **30–60 seconds** under `pnpm dev` (which runs the API via `tsx`). The dominant cost is building the compiler vocabulary (property-path discovery); the API logs `[n/8]` warmup steps so you can watch progress. `/health` returns `503` (`starting`/`degraded`) until warmup succeeds, then `200 ok` — with a `warnings` list when something non-fatal is unavailable, such as an unreachable LLM provider (searches fail with an actionable message, everything else still works).
 
 ## Stopping Services
 
@@ -242,7 +263,10 @@ pnpm run validate
 
 ## Need Help?
 
+- Run `pnpm run check:setup` — it checks the Node version, the ontology, and
+  `.env.local` (including misspelled keys, which are otherwise ignored silently)
+- Check `curl http://localhost:3003/health` — a degraded API lists exactly what
+  failed, and the web UI shows the same list in a banner
 - Check logs in the terminal where services are running
 - Look for error messages in browser console (F12)
-- Verify `.env.local` has correct settings
 - Ensure ports 3003, 5173, 5174 are not used by other applications

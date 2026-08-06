@@ -1,7 +1,7 @@
 import { getAuthoringBackend, probeEngineVersions } from '@ontology-search/authoring'
 import { getConfig } from '@ontology-search/core/config'
 import { createComponentLogger } from '@ontology-search/core/logging'
-import { warmupAgentPrompt, warmupLlmSession } from '@ontology-search/llm'
+import { verifyLlmProvider, warmupAgentPrompt, warmupLlmSession } from '@ontology-search/llm'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import { getInitializedStore, warmupCompiler } from '@ontology-search/search'
@@ -14,11 +14,28 @@ const logger = createComponentLogger('warmup')
 export interface WarmupResult {
   ready: boolean
   errors: string[]
+  /**
+   * Problems that do NOT make the service unready.
+   *
+   * The distinction is recoverability plus blast radius. An unreachable LLM
+   * provider stops natural-language search, but `/stats`, `/vocabulary`,
+   * `/metadata` and slot-based refinement all still answer, and the provider
+   * can come back — Ollama started, a session re-authenticated — without
+   * restarting this process. Reporting that as unready would take a mostly
+   * working instance out of rotation and, in a dev loop, leave `/health`
+   * permanently 503 for anything waiting on it. The problem is still surfaced:
+   * logged at startup, listed by `/health`, and shown by the web UI.
+   *
+   * A failed store, ontology, compiler or validator is the opposite on both
+   * counts, and stays in {@link errors}.
+   */
+  warnings: string[]
   timings: {
     storeMs: number
     vocabMs: number
     compilerMs: number
     shaclMs: number
+    providerMs: number
     sessionMs: number
     /** Optional: absent when the authoring engine is disabled (`AUTHORING_MODE=null`). */
     authoringMs?: number
@@ -26,7 +43,7 @@ export interface WarmupResult {
 }
 
 /** Total number of warmup steps — used for `[n/TOTAL]` progress prefixes. */
-const TOTAL_STEPS = 7
+const TOTAL_STEPS = 8
 
 /**
  * Assert the in-process authoring engine matches the single-source version pin
@@ -58,7 +75,8 @@ async function runStep(
   step: number,
   label: string,
   fn: () => Promise<void>,
-  errors: string[]
+  collected: string[],
+  severity: 'error' | 'warning' = 'error'
 ): Promise<number> {
   logger.info(`[${step}/${TOTAL_STEPS}] ${label} — starting`)
   const start = Date.now()
@@ -70,8 +88,16 @@ async function runStep(
   } catch (error) {
     const durationMs = Date.now() - start
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    errors.push(`${label} failed: ${msg}`)
-    logger.error(`[${step}/${TOTAL_STEPS}] ${label} — FAILED`, error, { durationMs })
+    // The recorded line matches the severity: "failed" reads as a fault, which
+    // is exactly the wrong impression for something the service tolerates.
+    collected.push(`${label} ${severity === 'warning' ? 'unavailable' : 'failed'}: ${msg}`)
+    if (severity === 'warning') {
+      // The whole message, not a summary: these carry the command that fixes
+      // the problem, and this log line is where the operator looks first.
+      logger.warn(`[${step}/${TOTAL_STEPS}] ${label} — UNAVAILABLE: ${msg}`, { durationMs })
+    } else {
+      logger.error(`[${step}/${TOTAL_STEPS}] ${label} — FAILED`, error, { durationMs })
+    }
     return durationMs
   }
 }
@@ -82,8 +108,9 @@ export async function warmup(): Promise<WarmupResult> {
   })
   const start = Date.now()
   const errors: string[] = []
+  const warnings: string[] = []
 
-  // [1/6] Store init + property-path capability probe. Probe runs first
+  // [1/8] Store init + property-path capability probe. Probe runs first
   // so a store that silently drops `rdfs:subClassOf*` fails loudly at
   // startup rather than returning zero rows for hierarchical queries.
   const storeMs = await runStep(
@@ -96,7 +123,7 @@ export async function warmup(): Promise<WarmupResult> {
     errors
   )
 
-  // [2/6] Register every discovered namespace with the SPARQL policy so
+  // [2/8] Register every discovered namespace with the SPARQL policy so
   // compiled queries pass prefix validation regardless of the ontology.
   await runStep(
     2,
@@ -108,7 +135,7 @@ export async function warmup(): Promise<WarmupResult> {
     errors
   )
 
-  // [3/6] Pre-build the agent context (schema-only vocabulary + store
+  // [3/8] Pre-build the agent context (schema-only vocabulary + store
   // reference) into the agent's module-private cache so the first user
   // request sees a hot cache instead of paying the extraction cost inline.
   const vocabMs = await runStep(
@@ -118,7 +145,7 @@ export async function warmup(): Promise<WarmupResult> {
     errors
   )
 
-  // [4/6] Compiler vocabulary — property-path BFS + leaf-kind enrichment
+  // [4/8] Compiler vocabulary — property-path BFS + leaf-kind enrichment
   // + cross-reference chains + concept-expansion index. The single most
   // expensive cold-start step; its sub-phases log their own timings (see
   // `buildPropertyPaths`).
@@ -129,7 +156,7 @@ export async function warmup(): Promise<WarmupResult> {
     errors
   )
 
-  // [5/6] SHACL validator — parse every shape into an RDF/JS dataset for
+  // [5/8] SHACL validator — parse every shape into an RDF/JS dataset for
   // the slot-validation gate.
   const shaclMs = await runStep(
     5,
@@ -140,15 +167,19 @@ export async function warmup(): Promise<WarmupResult> {
     errors
   )
 
-  // [6/7] LLM session — pre-create so the first query is instant (no-op
-  // for providers that don't pool sessions).
-  const sessionMs = await runStep(6, 'LLM session', warmupLlmSession, errors)
+  // [6/8] LLM provider access — credentials readable, endpoint reachable,
+  // model served. A WARNING, not an error: see WarmupResult.warnings for why
+  // an unavailable provider must not make the instance unready.
+  const providerMs = await runStep(6, 'LLM provider access', verifyLlmProvider, warnings, 'warning')
 
-  // [7/7] Authoring engine capability probe — assert the committed WASM engine
+  // [7/8] LLM session caches — pre-built so the first query is instant.
+  const sessionMs = await runStep(7, 'LLM session', warmupLlmSession, errors)
+
+  // [8/8] Authoring engine capability probe — assert the committed WASM engine
   // reports the pinned OpenSCENARIO/XSD versions, so a stale/wrong artifact
   // degrades /health at startup instead of authoring silently non-conformant
   // `.xosc`. Skipped (0 ms) when AUTHORING_MODE=null.
-  const authoringMs = await runStep(7, 'Authoring engine capability probe', probeAuthoring, errors)
+  const authoringMs = await runStep(8, 'Authoring engine capability probe', probeAuthoring, errors)
 
   // A fatal misconfiguration (e.g. no ontology sources) rejects the shared
   // store init promise, so several dependent steps surface the same message.
@@ -159,17 +190,24 @@ export async function warmup(): Promise<WarmupResult> {
 
   const totalMs = Date.now() - start
   const ready = errors.length === 0
-  const timings = { storeMs, vocabMs, compilerMs, shaclMs, sessionMs, authoringMs }
+  const timings = { storeMs, vocabMs, compilerMs, shaclMs, providerMs, sessionMs, authoringMs }
 
-  if (ready) {
-    logger.info(`Warmup complete in ${totalMs}ms`, { ...timings, totalMs })
-  } else {
+  if (!ready) {
     logger.warn(`Warmup completed with ${errors.length} error(s) — service DEGRADED`, {
       errors,
+      warnings,
       ...timings,
       totalMs,
     })
+  } else if (warnings.length > 0) {
+    logger.warn(`Warmup complete in ${totalMs}ms, with ${warnings.length} warning(s)`, {
+      warnings,
+      ...timings,
+      totalMs,
+    })
+  } else {
+    logger.info(`Warmup complete in ${totalMs}ms`, { ...timings, totalMs })
   }
 
-  return { ready, errors, timings }
+  return { ready, errors, warnings, timings }
 }

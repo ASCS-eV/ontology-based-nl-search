@@ -4,6 +4,9 @@
   "globalEnv": ["DESIGN_SYSTEM_MODULE", "VITE_DESIGN_SYSTEM"],
   "globalPassThroughEnv": [
     "NODE_OPTIONS",
+    "API_PORT",
+    "WEB_PORT",
+    "DOCS_PORT",
     "HTTP_PROXY",
     "HTTPS_PROXY",
     "NO_PROXY",

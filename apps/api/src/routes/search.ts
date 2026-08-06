@@ -1,6 +1,6 @@
 import type { RefineResponse } from '@ontology-search/api-types'
 import { getConfig } from '@ontology-search/core/config'
-import { badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
+import { AppError, badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
 import { enumPropertyMembers } from '@ontology-search/core/graphql/enum'
 import {
   createComponentLogger,
@@ -22,6 +22,7 @@ import { streamSSE } from 'hono/streaming'
 import { z } from 'zod'
 
 import { getGraphQLContract } from '../graphql-schema.js'
+import { sseErrorPayload } from '../middleware/error-handler.js'
 import { searchNl, searchRefine } from '../search-factory.js'
 import type { AppEnv } from '../types.js'
 
@@ -205,7 +206,7 @@ searchRoutes.post('/stream', (c) => {
         logger.error('Stream search failed', error)
         await stream.writeSSE({
           event: SSE_EVENT.ERROR,
-          data: JSON.stringify({ message: 'Search failed' }),
+          data: JSON.stringify(sseErrorPayload(error, 'Search failed')),
         })
       }
     },
@@ -213,7 +214,7 @@ searchRoutes.post('/stream', (c) => {
       streamLogger.error('SSE stream error', err)
       await stream.writeSSE({
         event: SSE_EVENT.ERROR,
-        data: JSON.stringify({ message: 'Stream error' }),
+        data: JSON.stringify(sseErrorPayload(err, 'Stream error')),
       })
     }
   )
@@ -285,6 +286,10 @@ searchRoutes.post('/refine', async (c) => {
       logger.info('Refine search aborted by client')
       return c.body(null, 408)
     }
+    // Typed errors carry their own status and an operator-facing message —
+    // let the app's onError handler map them instead of flattening every
+    // cause into one opaque 500.
+    if (error instanceof AppError) throw error
     logger.error('Refine search failed', error)
     const err = internalError()
     return c.json(err.body, err.status)
@@ -378,6 +383,7 @@ searchRoutes.post('/refine-graphql', async (c) => {
       logger.info('Refine-from-GraphQL aborted by client')
       return c.body(null, 408)
     }
+    if (error instanceof AppError) throw error
     logger.error('Refine-from-GraphQL failed', error)
     const err = internalError()
     return c.json(err.body, err.status)

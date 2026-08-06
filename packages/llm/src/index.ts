@@ -24,6 +24,8 @@ import {
   runCopilotAgent,
 } from './agent/copilot-agent.js'
 import { runSparqlAgent, warmupAgentPrompt } from './agent/index.js'
+import { verifyProviderAccess } from './provider-access.js'
+import { providerContextFromConfig, withProviderErrorTranslation } from './provider-errors.js'
 
 export { warmupAgentPrompt }
 import type { LlmStructuredResponse } from './types.js'
@@ -46,33 +48,55 @@ export interface SearchOptions {
 }
 
 /**
- * Pre-populate the LLM session-level caches so the first user query
- * doesn't pay any cold-start cost:
+ * Check at startup that the configured LLM provider can actually be used —
+ * credentials readable, endpoint reachable, model served — so a
+ * misconfiguration is reported while the operator is still watching the
+ * server start, instead of by the first user's first query.
  *
- *  - Agent context (`warmupAgentPrompt`): schema-only vocabulary + store.
- *  - Retrieval term index: built once so the per-query retrieval stage
- *    starts hot.
- *  - Copilot SDK session pool: ~6s session-create cost, paid in the
- *    background. Only relevant for the Copilot provider.
- *  - Copilot prompt cache: primed ONCE in the background so the first real
- *    query doesn't pay the static-core cold prefill. Not kept warm on a
- *    timer — periodic re-priming would incur continuous LLM token cost on
- *    an idle deployment; an idle instance just pays the one-time cold cost
- *    again after the backend cache TTL expires.
+ * For Copilot the check IS creating the session (which authenticates), so
+ * that also primes the pool and the prompt cache.
+ *
+ * Throws an {@link @ontology-search/core/errors!AgentError} naming the setting
+ * and the command that fixes it. Callers treat that as a WARNING rather than a
+ * failed startup: everything except natural-language search still works
+ * without a provider, and a provider that comes back (Ollama started, session
+ * re-authenticated) needs no restart. See `apps/api/src/warmup.ts`.
  */
-export async function warmupLlmSession(): Promise<void> {
+export async function verifyLlmProvider(): Promise<void> {
   const config = getConfig()
-  await warmupAgentPrompt()
-  // Build the term index up front so the first query's retrieval stage
-  // pays no index cost.
-  await warmupRetrievalIndex(await getInitializedStore())
   if (config.AI_PROVIDER === 'copilot') {
-    await getPersistentSession()
+    // Same translation the request path gets: an unauthenticated SDK reports
+    // its own transport-level failure, which says nothing about GITHUB_TOKEN
+    // or `gh auth token`.
+    await withProviderErrorTranslation(providerContextFromConfig(config), () =>
+      getPersistentSession()
+    )
     // Non-blocking one-shot prompt-cache prime. Readiness is not delayed;
     // requests arriving before priming completes just pay the cold cost once,
     // exactly as before. No recurring keep-alive (no idle token cost).
     primeCacheInBackground()
+    return
   }
+  await verifyProviderAccess()
+}
+
+/**
+ * Pre-populate the LLM session-level caches so the first user query doesn't
+ * pay any cold-start cost:
+ *
+ *  - Agent context (`warmupAgentPrompt`): schema-only vocabulary + store.
+ *  - Retrieval term index: built once so the per-query retrieval stage
+ *    starts hot.
+ *
+ * Provider reachability is NOT checked here — see {@link verifyLlmProvider},
+ * which the API runs as its own warmup step because the two failures mean
+ * different things for readiness.
+ */
+export async function warmupLlmSession(): Promise<void> {
+  await warmupAgentPrompt()
+  // Build the term index up front so the first query's retrieval stage
+  // pays no index cost.
+  await warmupRetrievalIndex(await getInitializedStore())
 }
 
 /**
@@ -91,9 +115,12 @@ export async function generateStructuredSearch(
   const domain = options?.domain ?? (await getPrimaryDomain())
   const signal = options?.signal
 
-  if (config.AI_PROVIDER === 'copilot') {
-    return runCopilotAgent(naturalLanguageQuery, { domain, signal })
-  }
-
-  return runSparqlAgent(naturalLanguageQuery, { domain, signal })
+  // One choke point for provider faults: an unreachable Ollama, a rejected
+  // key, or a model that was never pulled becomes an AgentError naming the
+  // setting and the command, instead of the SDK's transport-level wording.
+  return withProviderErrorTranslation(providerContextFromConfig(config), () =>
+    config.AI_PROVIDER === 'copilot'
+      ? runCopilotAgent(naturalLanguageQuery, { domain, signal })
+      : runSparqlAgent(naturalLanguageQuery, { domain, signal })
+  )
 }

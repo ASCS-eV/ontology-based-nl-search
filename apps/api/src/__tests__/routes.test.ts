@@ -1,11 +1,19 @@
 import type { VocabularyResponse } from '@ontology-search/api-types'
+import { CompileError } from '@ontology-search/core/errors'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '../app.js'
 import { resetGraphQLContractForTests } from '../graphql-schema.js'
 import { setReadiness } from '../readiness.js'
 
-const ZERO_TIMINGS = { storeMs: 0, vocabMs: 0, compilerMs: 0, shaclMs: 0, sessionMs: 0 }
+const ZERO_TIMINGS = {
+  storeMs: 0,
+  vocabMs: 0,
+  compilerMs: 0,
+  shaclMs: 0,
+  providerMs: 0,
+  sessionMs: 0,
+}
 
 vi.mock('../search-factory.js', () => ({
   searchNl: vi.fn(),
@@ -60,16 +68,42 @@ describe('GET /health', () => {
   })
 
   it('returns 200 "ok" once warmup succeeded', async () => {
-    setReadiness({ ready: true, errors: [], timings: ZERO_TIMINGS })
+    setReadiness({ ready: true, errors: [], warnings: [], timings: ZERO_TIMINGS })
     const res = await app.request('/health')
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ status: 'ok' })
+  })
+
+  /**
+   * A non-fatal problem (an unreachable LLM provider) must be visible without
+   * pretending the instance is unready: most routes still answer, and it
+   * recovers without a restart. Reporting 503 here would take a working
+   * instance out of rotation and block anything waiting for readiness.
+   */
+  it('returns 200 with the warnings when something non-fatal is unavailable', async () => {
+    setReadiness({
+      ready: true,
+      errors: [],
+      warnings: [
+        'LLM provider access unavailable: Ollama is not reachable. Start it with `ollama serve`.',
+      ],
+      timings: ZERO_TIMINGS,
+    })
+    const res = await app.request('/health')
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      status: 'ok',
+      warnings: [
+        'LLM provider access unavailable: Ollama is not reachable. Start it with `ollama serve`.',
+      ],
+    })
   })
 
   it('returns 503 "degraded" with the errors when warmup failed', async () => {
     setReadiness({
       ready: false,
       errors: ['SPARQL store + capability probe failed: No ontology shape files'],
+      warnings: [],
       timings: ZERO_TIMINGS,
     })
     const res = await app.request('/health')
@@ -217,6 +251,44 @@ describe('POST /search/refine', () => {
     expect(res.status).toBe(400)
     const json = await res.json()
     expect(json.code).toBe('BAD_REQUEST')
+  })
+
+  /**
+   * A typed error carries its own status and a message written for whoever has
+   * to fix it (a missing credential, an unavailable store). Catching it here
+   * and answering a generic 500 — as this route used to — discarded both.
+   */
+  it('forwards a typed error with its own status and message', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(searchRefine).mockRejectedValue(
+      new CompileError('Unknown domain "hdmapp" — no such domain in the registry.')
+    )
+
+    const res = await app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slots: { domains: ['hdmapp'] } }),
+    })
+
+    expect(res.status).toBe(422)
+    expect(await res.json()).toMatchObject({
+      error: expect.stringContaining('Unknown domain'),
+      code: 'UNPROCESSABLE_ENTITY',
+    })
+  })
+
+  it('still hides an untyped failure behind a generic 500', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(searchRefine).mockRejectedValue(new Error('connection reset at internal/stream'))
+
+    const res = await app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slots: { domains: ['hdmap'] } }),
+    })
+
+    expect(res.status).toBe(500)
+    expect(JSON.stringify(await res.json())).not.toContain('internal/stream')
   })
 
   it('returns 200 with results for valid slots', async () => {

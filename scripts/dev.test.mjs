@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { preflightOntology } from './dev.mjs'
+import { preflightEnvFile, preflightOntology } from './dev.mjs'
 
 const PIN = { package: 'demo-ontology', version: '1.2.3' }
 
@@ -76,6 +76,55 @@ test('preflight prints an actionable banner when the fetch cannot recover', () =
   assert.match(err.text, /DEGRADED/)
   assert.match(err.text, /pnpm run fetch:ontology/)
   assert.match(err.text, /HTTP_PROXY \/ HTTPS_PROXY/)
+})
+
+test('env preflight creates .env.local from the example on a first run', () => {
+  const out = sink()
+  const err = sink()
+  let copied = false
+  preflightEnvFile({
+    readLocal: () => (copied ? 'AI_PROVIDER=ollama\n' : null),
+    readExample: () => 'AI_PROVIDER=ollama\n',
+    copyExample: () => {
+      copied = true
+      return true
+    },
+    stdout: out,
+    stderr: err,
+  })
+  assert.equal(copied, true)
+  assert.match(out.text, /Created \.env\.local from \.env\.example/)
+  assert.match(out.text, /Review AI_PROVIDER/)
+  assert.equal(err.text, '')
+})
+
+test('env preflight banners a misspelled key instead of letting it be ignored', () => {
+  const out = sink()
+  const err = sink()
+  preflightEnvFile({
+    readLocal: () => 'AI_PROVDER=ollama\n',
+    readExample: () => 'AI_PROVIDER=ollama\n',
+    copyExample: () => assert.fail('must not overwrite an existing .env.local'),
+    stdout: out,
+    stderr: err,
+  })
+  assert.match(err.text, /unrecognized setting/)
+  assert.match(err.text, /did you mean AI_PROVIDER/)
+  assert.match(err.text, /IGNORED at runtime/)
+})
+
+test('env preflight is silent when .env.local is present and clean', () => {
+  const out = sink()
+  const err = sink()
+  preflightEnvFile({
+    readLocal: () => 'AI_PROVIDER=ollama\n',
+    readExample: () => 'AI_PROVIDER=ollama\n# API_PORT=3003\n',
+    copyExample: () => assert.fail('must not overwrite an existing .env.local'),
+    stdout: out,
+    stderr: err,
+  })
+  assert.equal(out.text, '')
+  assert.equal(err.text, '')
 })
 
 test('preflight skips (does not throw) when the pin cannot be read', () => {
