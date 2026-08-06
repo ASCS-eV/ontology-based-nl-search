@@ -40,6 +40,27 @@ describe('evaluation contracts', () => {
     expect(() => parseCliArgs(['smoke', '--api-key', 'sk', '--codex-home', '/tmp/x'])).toThrow(
       /only applies to --auth codex-cli/
     )
+    // Same rule for the tokenizer: only the capacity profile measures prompt
+    // size, so anywhere else the flag was parsed, validated and then dropped —
+    // the one option where "accepted" did not mean "in effect".
+    const runWithTokenizer = (profile: string) => [
+      'run',
+      '--candidate',
+      'qwen3.5-9b',
+      '--profile',
+      profile,
+      '--base-url',
+      'http://localhost:8000/v1',
+      '--tokenizer-url',
+      'http://localhost:8000/tokenize',
+    ]
+    expect(() => parseCliArgs(runWithTokenizer('quality'))).toThrow(
+      /only applies to --profile capacity/
+    )
+    expect(parseCliArgs(runWithTokenizer('capacity'))).toMatchObject({
+      profile: 'capacity',
+      tokenizerUrl: 'http://localhost:8000/tokenize',
+    })
     expect(
       parseCliArgs([
         'run',
