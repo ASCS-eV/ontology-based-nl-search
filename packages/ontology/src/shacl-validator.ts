@@ -138,9 +138,9 @@ export class ShaclValidator {
    */
   static async fromWorkspace(): Promise<ShaclValidator> {
     if (cachedInstance) return cachedInstance
-    const shapesDataset = loadShapesFromDisk()
-    const propertyToTargetClass = indexPropertyTargetClasses(shapesDataset)
-    const constraintIndex = indexPropertyConstraints(shapesDataset)
+    const shapesDataset = await loadShapesFromDisk()
+    const propertyToTargetClass = await indexPropertyTargetClasses(shapesDataset)
+    const constraintIndex = await indexPropertyConstraints(shapesDataset)
     // The Turtle loader already pulls every workspace shape file into one
     // dataset, so owl:imports references are already satisfied. We provide
     // an empty resolver to suppress the engine's mandatory import-fetch hook.
