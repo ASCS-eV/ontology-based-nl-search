@@ -170,7 +170,7 @@ describe('ShaclValidator — event-loop behaviour while building', () => {
     let ticks = 0
     const timer = setInterval(() => {
       ticks++
-    }, 20)
+    }, 5)
 
     try {
       await ShaclValidator.fromWorkspace()
@@ -178,8 +178,13 @@ describe('ShaclValidator — event-loop behaviour while building', () => {
       clearInterval(timer)
     }
 
-    // A monopolising build produced 0-1 ticks regardless of how long it took.
-    expect(ticks).toBeGreaterThan(5)
+    // The property is categorical, and the threshold must stay well clear of
+    // how long the build happens to take: a monopolising build produced ZERO
+    // ticks however long it ran, while a yielding one ticks throughout. An
+    // earlier threshold of 5 was tuned against a slower build and started
+    // failing the moment the build got faster — the wrong thing to be
+    // sensitive to.
+    expect(ticks).toBeGreaterThanOrEqual(3)
   })
 })
 
