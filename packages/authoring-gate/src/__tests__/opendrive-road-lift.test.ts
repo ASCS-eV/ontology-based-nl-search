@@ -27,4 +27,15 @@ describe('liftOpenDriveRoadFacts', () => {
     const ttl = liftOpenDriveRoadFacts('<OpenDRIVE></OpenDRIVE>')
     expect(ttl.trim()).toBe('')
   })
+
+  /**
+   * The point of grounding this check in ASAM's ontology is that no namespace
+   * in the lifted graph is one this repo made up. A lifted road has no
+   * identity beyond the graph it is asserted in, so it is a blank node.
+   */
+  it('invents no namespace of its own for the lifted roads', () => {
+    const ttl = liftOpenDriveRoadFacts(CONTINUOUS_XODR)
+    expect(ttl).not.toMatch(/urn:/)
+    expect(ttl).toMatch(/^_:/m)
+  })
 })

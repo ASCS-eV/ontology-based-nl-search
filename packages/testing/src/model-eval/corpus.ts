@@ -846,14 +846,12 @@ export const envitedGoldCases: GoldCase[] = [
       legacyQuery: 'OSI version 3.7 traces',
     })
   ),
-  envCase(
-    96,
-    'ja',
-    'オーストラリアのカスタム道路種別HDマップ',
-    slots(['hdmap'], { country: 'AU', roadTypes: 'unknown' }),
-    ['multilingual', 'geography'],
-    l(96, { legacyQuery: 'Custom road type HD maps in Australia' })
-  ),
+  // Case 96 asked for a "custom road type", which OMB v0.4.0 retired from the
+  // roadTypes vocabulary. No surviving value means it — `unknown` states that
+  // the road type is not known, which is a different claim — and the concept
+  // was a vocabulary artefact rather than something a user would ask for, so
+  // there is no meaningful gap case to convert it into either. Dropped rather
+  // than retargeted: a case whose premise no longer exists measures nothing.
   envCase(
     97,
     'ja',
@@ -1352,8 +1350,12 @@ export const protocolGoldCases = envitedGoldCases.filter((value) => value.risk =
 export function assertCorpusInvariants(): void {
   const ids = new Set(envitedGoldCases.map((value) => value.id))
   if (ids.size !== envitedGoldCases.length) throw new Error('Duplicate ENVITED-X case id')
-  if (envitedGoldCases.length !== 150) {
-    throw new Error(`ENVITED-X corpus must contain 150 cases, got ${envitedGoldCases.length}`)
+  // 149, not 150: case 96 asked for a "custom road type", a value OMB v0.4.0
+  // retired from the roadTypes vocabulary with no surviving equivalent. A case
+  // whose premise the ontology no longer holds measures nothing, so it was
+  // dropped rather than retargeted onto a value that means something else.
+  if (envitedGoldCases.length !== 149) {
+    throw new Error(`ENVITED-X corpus must contain 149 cases, got ${envitedGoldCases.length}`)
   }
   const localeCounts = Object.fromEntries(
     (['en', 'de', 'fr', 'ja'] as const).map((locale) => [
@@ -1361,7 +1363,8 @@ export function assertCorpusInvariants(): void {
       envitedGoldCases.filter((value) => value.locale === locale).length,
     ])
   )
-  const expected = { en: 60, de: 60, fr: 15, ja: 15 }
+  // ja is 14 rather than 15 because the dropped case 96 was Japanese.
+  const expected = { en: 60, de: 60, fr: 15, ja: 14 }
   if (JSON.stringify(localeCounts) !== JSON.stringify(expected)) {
     throw new Error(`Locale distribution drift: ${JSON.stringify(localeCounts)}`)
   }
@@ -1373,8 +1376,9 @@ export function assertCorpusInvariants(): void {
   const legacyIds = new Set(
     envitedGoldCases.flatMap((value) => (value.legacyId ? [value.legacyId] : []))
   )
-  if (legacyIds.size !== 99) {
-    throw new Error(`Expected all 99 legacy cases, got ${legacyIds.size}`)
+  // 98, not 99: the dropped case 96 carried a legacy id.
+  if (legacyIds.size !== 98) {
+    throw new Error(`Expected all 98 legacy cases, got ${legacyIds.size}`)
   }
   if (toyverseGoldCases.length !== 12) {
     throw new Error(`Toyverse corpus must contain 12 cases, got ${toyverseGoldCases.length}`)

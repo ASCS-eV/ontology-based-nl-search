@@ -10,7 +10,9 @@
   "paths": ["artifacts", "imports"],
   "sentinels": [
     "artifacts/envited-x/envited-x.shacl.ttl",
-    "imports/openscenario/schema/OpenSCENARIO.xsd"
+    "imports/openscenario/schema/OpenSCENARIO.xsd",
+    "imports/opendrive/opendrive.owl.ttl",
+    "imports/openscenario/openscenario.owl.ttl"
   ],
   "cacheDir": ".ontology"
 }

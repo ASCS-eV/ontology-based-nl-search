@@ -53,8 +53,13 @@ export function liftOpenDriveRoadFacts(xodr: string): string {
       (road, index) => {
         const id = road['@_id']
         if (id === undefined) return
-        const subject = `<urn:opendrive-road:${index}>`
-        lines.push(`${subject} a <${roadClassIri}> ; <${roadIdPropertyIri}> "${ttl(String(id))}" .`)
+        // Blank node: a lifted road has no identity of its own beyond the graph
+        // it is asserted in, and inventing a `urn:` IRI for it would put a
+        // namespace this repo made up back into the very check that exists to
+        // be grounded in the real ontology. The query only ever binds `?road`.
+        lines.push(
+          `_:road${index} a <${roadClassIri}> ; <${roadIdPropertyIri}> "${ttl(String(id))}" .`
+        )
       }
     )
   } catch {

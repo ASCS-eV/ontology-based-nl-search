@@ -110,6 +110,19 @@ test('the real pin in this repo is well-formed', () => {
     pin.sentinels.some((s) => s.endsWith('.shacl.ttl')),
     'at least one sentinel must be a shape file — the thing the loader needs'
   )
+  // A file the repo resolves against must be a sentinel, or a distribution
+  // that moved or dropped it passes setup and fails later — inside a request
+  // for the gate's ontology, at derivation time for the prompt's. Upstream has
+  // already moved a pinned path once (the OpenSCENARIO schema).
+  for (const resolved of [
+    'imports/opendrive/opendrive.owl.ttl',
+    'imports/openscenario/openscenario.owl.ttl',
+  ]) {
+    assert.ok(
+      pin.sentinels.includes(resolved),
+      `${resolved} is resolved by this repo and must be a sentinel`
+    )
+  }
 })
 
 test('readPin rejects a pin without a usable checksum', () => {

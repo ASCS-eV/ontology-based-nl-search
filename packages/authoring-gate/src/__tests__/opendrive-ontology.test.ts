@@ -58,6 +58,22 @@ describe('resolveOpenDriveRoadGroundingFrom', () => {
     expect(() => resolveOpenDriveRoadGroundingFrom(quads)).toThrow(/t_road/)
   })
 
+  /**
+   * Resolution indexes the ontology rather than rescanning it per candidate,
+   * so it must still pick the same declaration every time. Document order is
+   * the tie-break if upstream ever ships two classes under one label.
+   */
+  it('resolves deterministically when a label is declared more than once', () => {
+    const ambiguous = `${FIXTURE_TTL}
+odr:T_road_duplicate a owl:Class ;
+    rdfs:label "t_road"@en .
+`
+    const first = resolveOpenDriveRoadGroundingFrom(new N3Parser().parse(ambiguous))
+    const second = resolveOpenDriveRoadGroundingFrom(new N3Parser().parse(ambiguous))
+    expect(first.roadClassIri).toBe(`${NS}T_road`)
+    expect(second.roadClassIri).toBe(first.roadClassIri)
+  })
+
   it('throws a clear, actionable error when the road class has no "id" property (upstream drift)', () => {
     const drifted = FIXTURE_TTL.replace(
       `odr:T_road.id a owl:DatatypeProperty ;

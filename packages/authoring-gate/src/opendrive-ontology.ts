@@ -80,61 +80,84 @@ function parseTtl(path: string): Quad[] {
 }
 
 /**
- * Resolve {@link OpenDriveRoadGrounding} from the pinned ontology cache.
- * Pure over the file path so it is unit-testable against a fixture ontology
+ * The three predicates the resolution needs, indexed by subject in one pass.
+ * `typed` keeps document order so resolution stays deterministic — the same
+ * ontology always resolves to the same IRI, even if upstream ever declared two
+ * classes under one label.
+ */
+interface OntologyIndex {
+  /** `rdf:type` object → subjects carrying it, in document order. */
+  readonly typed: Map<string, string[]>
+  /** subject → its `rdfs:label` values. */
+  readonly labels: Map<string, Set<string>>
+  /** subject → its `rdfs:domain` values. */
+  readonly domains: Map<string, Set<string>>
+}
+
+function addTo(index: Map<string, Set<string>>, key: string, value: string): void {
+  const existing = index.get(key)
+  if (existing) existing.add(value)
+  else index.set(key, new Set([value]))
+}
+
+/**
+ * Index the three predicates in a single O(quads) pass. Resolving by scanning
+ * the quad list per candidate instead costs O(declarations × quads), which on
+ * ASAM's real ontology (8k quads, 178 classes, 460 datatype properties) is ~70 ms
+ * of blocking work on the thread that runs the gate.
+ */
+function indexQuads(quads: Quad[]): OntologyIndex {
+  const typed = new Map<string, string[]>()
+  const labels = new Map<string, Set<string>>()
+  const domains = new Map<string, Set<string>>()
+
+  for (const q of quads) {
+    const subject = q.subject.value
+    switch (q.predicate.value) {
+      case RDF_TYPE: {
+        if (q.subject.termType !== 'NamedNode') break
+        const subjects = typed.get(q.object.value)
+        if (subjects) subjects.push(subject)
+        else typed.set(q.object.value, [subject])
+        break
+      }
+      case RDFS_LABEL:
+        addTo(labels, subject, q.object.value)
+        break
+      case RDFS_DOMAIN:
+        addTo(domains, subject, q.object.value)
+        break
+    }
+  }
+
+  return { typed, labels, domains }
+}
+
+/**
+ * Resolve {@link OpenDriveRoadGrounding} from a parsed ontology.
+ * Pure over the quads so it is unit-testable against a fixture ontology
  * without touching the real 423 KB pinned file on every call.
  */
 export function resolveOpenDriveRoadGroundingFrom(quads: Quad[]): OpenDriveRoadGrounding {
-  let roadClassIri: string | undefined
-  for (const q of quads) {
-    if (
-      q.predicate.value === RDF_TYPE &&
-      q.object.value === OWL_CLASS &&
-      q.subject.termType === 'NamedNode'
-    ) {
-      const hasLabel = quads.some(
-        (l) =>
-          l.subject.value === q.subject.value &&
-          l.predicate.value === RDFS_LABEL &&
-          l.object.value === ROAD_CLASS_LABEL
-      )
-      if (hasLabel) {
-        roadClassIri = q.subject.value
-        break
-      }
-    }
-  }
+  const { typed, labels, domains } = indexQuads(quads)
+
+  const roadClassIri = typed
+    .get(OWL_CLASS)
+    ?.find((subject) => labels.get(subject)?.has(ROAD_CLASS_LABEL))
   if (!roadClassIri) {
     throw new OpenDriveGroundingError(
       `No owl:Class with rdfs:label "${ROAD_CLASS_LABEL}" found in the OpenDRIVE ontology.`
     )
   }
 
-  let roadIdPropertyIri: string | undefined
-  for (const q of quads) {
-    if (
-      q.predicate.value === RDF_TYPE &&
-      q.object.value === OWL_DATATYPE_PROPERTY &&
-      q.subject.termType === 'NamedNode'
-    ) {
-      const domainMatches = quads.some(
-        (d) =>
-          d.subject.value === q.subject.value &&
-          d.predicate.value === RDFS_DOMAIN &&
-          d.object.value === roadClassIri
-      )
-      const labelMatches = quads.some(
-        (l) =>
-          l.subject.value === q.subject.value &&
-          l.predicate.value === RDFS_LABEL &&
-          l.object.value === ROAD_ID_PROPERTY_LABEL
-      )
-      if (domainMatches && labelMatches) {
-        roadIdPropertyIri = q.subject.value
-        break
-      }
-    }
-  }
+  // Domain-scoped: `id` is a label ~35 elements share upstream, so the label
+  // alone would resolve to whichever happens to be declared first.
+  const roadIdPropertyIri = typed
+    .get(OWL_DATATYPE_PROPERTY)
+    ?.find(
+      (subject) =>
+        domains.get(subject)?.has(roadClassIri) && labels.get(subject)?.has(ROAD_ID_PROPERTY_LABEL)
+    )
   if (!roadIdPropertyIri) {
     throw new OpenDriveGroundingError(
       `No owl:DatatypeProperty with rdfs:domain <${roadClassIri}> and rdfs:label ` +
