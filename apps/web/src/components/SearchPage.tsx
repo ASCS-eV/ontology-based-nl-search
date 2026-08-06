@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { lazy, Suspense, useMemo, useState } from 'react'
 
 import type { StatsResponse } from '../api-types'
+import { useQueryHistory } from '../hooks/useQueryHistory'
 import { useSearchExecution } from '../hooks/useSearchExecution'
-import { useSearchHistory } from '../hooks/useSearchHistory'
 import { useVocabulary } from '../hooks/useVocabulary'
 import { apiGet } from '../lib/api-client'
 import { InterpretationDisplay } from './InterpretationDisplay'
@@ -24,6 +24,9 @@ const GraphQLEditor = lazy(() =>
 /** Steps that start collapsed — the user can expand them manually. */
 const COLLAPSED_STEPS = new Set(['sparql'])
 
+/** Distinct localStorage key so search history never mixes with authoring's. */
+const SEARCH_HISTORY_KEY = 'nl-search-history'
+
 export function SearchPage() {
   const {
     data: stats,
@@ -36,7 +39,7 @@ export function SearchPage() {
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
   })
 
-  const { history, addToHistory } = useSearchHistory()
+  const { history, addToHistory } = useQueryHistory(SEARCH_HISTORY_KEY)
   const vocabulary = useVocabulary()
 
   const {

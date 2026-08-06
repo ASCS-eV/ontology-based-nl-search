@@ -1,7 +1,8 @@
 import { Alert } from '@ontology-search/design-system'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import { useAuthoringExecution } from '../hooks/useAuthoringExecution'
+import { useQueryHistory } from '../hooks/useQueryHistory'
 import { AuthoringGapsDisplay } from './AuthoringGapsDisplay'
 import { GateTraceDisplay } from './GateTraceDisplay'
 import { InterpretationDisplay } from './InterpretationDisplay'
@@ -15,6 +16,9 @@ import { XoscPreview } from './XoscPreview'
 
 /** Steps that start collapsed — the user can expand them manually. */
 const COLLAPSED_STEPS = new Set(['xosc'])
+
+/** Distinct localStorage key so authoring history never mixes with search's. */
+const AUTHOR_HISTORY_KEY = 'nl-author-history'
 
 /**
  * The authoring page — the authoring analog of {@link ./SearchPage SearchPage}.
@@ -39,6 +43,16 @@ export function AuthoringPage() {
     handleAuthor,
   } = useAuthoringExecution()
 
+  const { history, addToHistory } = useQueryHistory(AUTHOR_HISTORY_KEY)
+
+  const handleSubmit = useCallback(
+    async (query: string) => {
+      await handleAuthor(query)
+      addToHistory(query)
+    },
+    [handleAuthor, addToHistory]
+  )
+
   const hasResponse = interpretation || scene || xosc || (gaps && gaps.length > 0)
 
   const activeStepId = useMemo(() => {
@@ -59,8 +73,9 @@ export function AuthoringPage() {
         content: (
           <div>
             <SearchBar
-              onSearch={handleAuthor}
+              onSearch={handleSubmit}
               loading={loading}
+              history={history}
               placeholder="Describe a driving scenario, e.g. a cut-in on a three-lane highway…"
               buttonLabel="Author"
               loadingLabel="Authoring…"
@@ -124,7 +139,8 @@ export function AuthoringPage() {
       phase,
       statusMessage,
       loading,
-      handleAuthor,
+      history,
+      handleSubmit,
     ]
   )
 
