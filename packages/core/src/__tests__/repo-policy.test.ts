@@ -53,7 +53,7 @@ const CONSOLE_EXEMPT_FILES = new Set([
   // top-comments for rationale).
   join(ROOT, 'packages/core/src/sse/parser.ts'),
   join(ROOT, 'apps/web/src/components/ErrorBoundary.tsx'),
-  join(ROOT, 'apps/web/src/hooks/useSearchHistory.ts'),
+  join(ROOT, 'apps/web/src/hooks/useQueryHistory.ts'),
   join(ROOT, 'apps/web/src/lib/lineage.ts'),
 ])
 
@@ -128,6 +128,17 @@ describe('repo-policy: C12 — no console.* outside structured logger', () => {
     }
 
     expect(violations, `Unannotated console.* calls:\n${violations.join('\n')}`).toEqual([])
+  })
+
+  /**
+   * An exemption naming a file that no longer exists silently stops exempting
+   * anything: renaming an exempt module leaves the list pointing at the old
+   * path, and the rule then fires on the new one for a reason the list does
+   * not explain. Stale entries fail here instead, where the fix is obvious.
+   */
+  it('exempts no path that has since been renamed or deleted', () => {
+    const stale = [...CONSOLE_EXEMPT_FILES].filter((path) => !existsSync(path))
+    expect(stale, `Exempt paths that no longer exist:\n${stale.join('\n')}`).toEqual([])
   })
 })
 
