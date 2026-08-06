@@ -150,6 +150,13 @@ export function parseCliArgs(argv: string[]): CliCommand {
     if (serverPid && parsed.values.launch) {
       throw new Error('--server-pid and --launch are mutually exclusive')
     }
+    // Only the capacity profile measures prompt size, so only it has anywhere
+    // to send a tokenizer. Accepting the flag elsewhere and dropping it made
+    // this the one option in an otherwise strict parser where "accepted
+    // without error" did not mean "in effect".
+    if (parsed.values['tokenizer-url'] && profile !== 'capacity') {
+      throw new Error('--tokenizer-url only applies to --profile capacity')
+    }
     return {
       command,
       candidate,

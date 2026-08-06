@@ -148,6 +148,8 @@ pnpm eval:models run \
   --server-pid 12345
 ```
 
+`--tokenizer-url` belongs to this profile alone — it is the only one that measures prompt size — so the CLI rejects it elsewhere rather than accepting a flag it would then ignore.
+
 If the tokenizer protocol is absent, capacity is `not-supported` and the command exits 0: the measurement could not be taken, which is not evidence against the candidate. Only a real `failed` outcome exits nonzero. The harness never estimates a pass from character counts. Server-reported token usage is retained when available.
 
 Use `--suite toyverse` to run the separate synthetic ontology-grounding suite. The CLI re-executes this suite in a child process with the committed Toyverse fixture root.
