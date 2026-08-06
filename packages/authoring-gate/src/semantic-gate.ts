@@ -24,15 +24,20 @@
  * [OWL2] OWL 2 Web Ontology Language — the cross-file road check is grounded
  * in ASAM's real OpenDRIVE `T_road` / `T_road.id` (`opendrive-ontology.ts`),
  * not an invented namespace.
+ * [XMLCAT] OASIS XML Catalogs 1.1 — that ontology is resolved by IRI through
+ * the pinned package's catalog, never by a hardcoded path.
  */
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
+import { createComponentLogger } from '@ontology-search/core/logging'
 import { OxigraphStore, type SparqlBinding } from '@ontology-search/sparql'
 
 import { GATE_NS, irToRdf, OSC_NS } from './ir-to-rdf.js'
-import { resolveOpenDriveRoadGrounding } from './opendrive-ontology.js'
+import { type OpenDriveRoadGrounding, resolveOpenDriveRoadGrounding } from './opendrive-ontology.js'
 import { liftOpenDriveRoadFacts } from './opendrive-road-lift.js'
 import { QC_RULES, type QcRule } from './qc-rules.js'
 import type { AuthoringGap, GateResult } from './types.js'
+
+const log = createComponentLogger('semantic-gate')
 
 /** Per-call options for {@link runSemanticGate}. */
 export interface SemanticGateOptions {
@@ -73,13 +78,13 @@ SELECT ?name (COUNT(?o) AS ?n) WHERE {
 /**
  * Cross-file: a scenario road id must resolve to a road in the road network.
  * The road class/property are the REAL ASAM OpenDRIVE ontology's `T_road` /
- * `T_road.id` [OWL2], resolved by label (never hand-typed) — see
- * `opendrive-ontology.ts`. Built as a function (not a module-level constant)
- * so resolution only runs when a road network is actually supplied, matching
- * `runSemanticGate`'s existing "never a false pass" lazy cross-file gating.
+ * `T_road.id` [OWL2], resolved through the pinned package's OASIS catalog —
+ * see `opendrive-ontology.ts`. Built from the resolved grounding (not a
+ * module-level constant) so nothing is read unless a road network is actually
+ * supplied, matching this gate's "never a false pass" lazy cross-file gating.
  */
-function roadRefsQuery(): string {
-  const { roadClassIri, roadIdPropertyIri } = resolveOpenDriveRoadGrounding()
+function roadRefsQuery(grounding: OpenDriveRoadGrounding): string {
+  const { roadClassIri, roadIdPropertyIri } = grounding
   return `${PREFIXES}
 SELECT ?actor ?roadId WHERE {
   ?r a gate:RoadReference ; gate:roadId ?roadId ; gate:referencedBy ?actor .
@@ -116,10 +121,28 @@ export async function runSemanticGate(
   const store = new OxigraphStore()
   await store.loadTurtle(irToRdf(ir))
 
-  let crossFile = false
-  if (options.roadNetworkXodr !== undefined) {
-    await store.loadTurtle(liftOpenDriveRoadFacts(options.roadNetworkXodr))
-    crossFile = true
+  // Cross-file checking needs the real ontology, which needs the pinned cache.
+  // A cache that cannot be resolved is a DEPLOYMENT fault, not a request fault:
+  // the sentinel catches it at setup and warmup catches it at startup. If it
+  // still reaches a request, the rule is recorded as un-evaluated rather than
+  // thrown — `runScenePipeline` documents that it rejects only on client abort,
+  // and `skipped` exists precisely so an un-evaluated rule is never mistaken
+  // for a passing one.
+  const { roadNetworkXodr } = options
+  let grounding: OpenDriveRoadGrounding | undefined
+  const skipped: string[] = []
+  if (roadNetworkXodr !== undefined) {
+    try {
+      grounding = await resolveOpenDriveRoadGrounding()
+      await store.loadTurtle(liftOpenDriveRoadFacts(roadNetworkXodr, grounding))
+    } catch (err) {
+      log.error(
+        'Cross-file road check unavailable: the OpenDRIVE grounding could not be resolved',
+        { error: err instanceof Error ? err.message : String(err) }
+      )
+      grounding = undefined
+      skipped.push(QC_RULES.resolvableRoadReference.uid)
+    }
   }
 
   const gaps: AuthoringGap[] = []
@@ -151,8 +174,8 @@ export async function runSemanticGate(
     )
   }
 
-  if (crossFile) {
-    for (const row of await select(roadRefsQuery())) {
+  if (grounding) {
+    for (const row of await select(roadRefsQuery(grounding))) {
       const roadId = value(row, 'roadId')
       const actor = value(row, 'actor')
       gaps.push(
@@ -165,5 +188,5 @@ export async function runSemanticGate(
     }
   }
 
-  return { ok: gaps.length === 0, gaps }
+  return { ok: gaps.length === 0, gaps, ...(skipped.length > 0 ? { skipped } : {}) }
 }

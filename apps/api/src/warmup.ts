@@ -1,7 +1,12 @@
 import { getAuthoringBackend, probeEngineVersions } from '@ontology-search/authoring'
 import { getConfig } from '@ontology-search/core/config'
 import { createComponentLogger } from '@ontology-search/core/logging'
-import { verifyLlmProvider, warmupAgentPrompt, warmupLlmSession } from '@ontology-search/llm'
+import {
+  verifyLlmProvider,
+  warmOpenDriveRoadGrounding,
+  warmupAgentPrompt,
+  warmupLlmSession,
+} from '@ontology-search/llm'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import { getInitializedStore, warmupCompiler } from '@ontology-search/search'
@@ -39,11 +44,13 @@ export interface WarmupResult {
     sessionMs: number
     /** Optional: absent when the authoring engine is disabled (`AUTHORING_MODE=null`). */
     authoringMs?: number
+    /** Resolving + verifying the OpenDRIVE grounding the cross-file road check needs. */
+    groundingMs?: number
   }
 }
 
 /** Total number of warmup steps — used for `[n/TOTAL]` progress prefixes. */
-const TOTAL_STEPS = 8
+const TOTAL_STEPS = 9
 
 /**
  * Assert the in-process authoring engine matches the single-source version pin
@@ -181,6 +188,19 @@ export async function warmup(): Promise<WarmupResult> {
   // `.xosc`. Skipped (0 ms) when AUTHORING_MODE=null.
   const authoringMs = await runStep(8, 'Authoring engine capability probe', probeAuthoring, errors)
 
+  // [9/9] OpenDRIVE grounding — resolve the ontology the cross-file road check
+  // is grounded in, through the pinned package's OASIS catalog. Doing it here
+  // means a cache that is missing, moved or renamed upstream degrades /health
+  // at startup, rather than surfacing inside the first authoring request that
+  // supplies a road network — which the gate can only report as an
+  // un-evaluated rule, since `runScenePipeline` rejects on client abort alone.
+  const groundingMs = await runStep(
+    9,
+    'OpenDRIVE cross-file grounding',
+    warmOpenDriveRoadGrounding,
+    errors
+  )
+
   // A fatal misconfiguration (e.g. no ontology sources) rejects the shared
   // store init promise, so several dependent steps surface the same message.
   // Collapse duplicates so /health and the logs show it once.
@@ -190,7 +210,16 @@ export async function warmup(): Promise<WarmupResult> {
 
   const totalMs = Date.now() - start
   const ready = errors.length === 0
-  const timings = { storeMs, vocabMs, compilerMs, shaclMs, providerMs, sessionMs, authoringMs }
+  const timings = {
+    storeMs,
+    vocabMs,
+    compilerMs,
+    shaclMs,
+    providerMs,
+    sessionMs,
+    authoringMs,
+    groundingMs,
+  }
 
   if (!ready) {
     logger.warn(`Warmup completed with ${errors.length} error(s) — service DEGRADED`, {

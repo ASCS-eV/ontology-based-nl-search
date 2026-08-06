@@ -10,9 +10,11 @@
  */
 export { GATE_NS, irToRdf, OSC_NS } from './ir-to-rdf.js'
 export {
+  OpenDriveGroundingError,
   type OpenDriveRoadGrounding,
   resolveOpenDriveRoadGrounding,
   resolveOpenDriveRoadGroundingFrom,
+  warmOpenDriveRoadGrounding,
 } from './opendrive-ontology.js'
 export { liftOpenDriveRoadFacts } from './opendrive-road-lift.js'
 export {

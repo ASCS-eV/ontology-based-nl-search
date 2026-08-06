@@ -14,7 +14,7 @@
  */
 import { XMLParser } from 'fast-xml-parser'
 
-import { resolveOpenDriveRoadGrounding } from './opendrive-ontology.js'
+import type { OpenDriveRoadGrounding } from './opendrive-ontology.js'
 
 /** Escape a string for a Turtle double-quoted literal. */
 function ttl(value: string): string {
@@ -41,8 +41,8 @@ function asArray<T>(value: T | T[] | undefined): T[] {
  * malformed XML — the semantic gate's `FILTER NOT EXISTS` then correctly
  * reports every referenced road id as unresolvable, rather than throwing.
  */
-export function liftOpenDriveRoadFacts(xodr: string): string {
-  const { roadClassIri, roadIdPropertyIri } = resolveOpenDriveRoadGrounding()
+export function liftOpenDriveRoadFacts(xodr: string, grounding: OpenDriveRoadGrounding): string {
+  const { roadClassIri, roadIdPropertyIri } = grounding
   const lines: string[] = []
 
   try {

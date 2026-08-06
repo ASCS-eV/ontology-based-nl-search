@@ -11,8 +11,7 @@
   "sentinels": [
     "artifacts/envited-x/envited-x.shacl.ttl",
     "imports/openscenario/schema/OpenSCENARIO.xsd",
-    "imports/opendrive/opendrive.owl.ttl",
-    "imports/openscenario/openscenario.owl.ttl"
+    "imports/catalog-v001.xml"
   ],
   "cacheDir": ".ontology"
 }

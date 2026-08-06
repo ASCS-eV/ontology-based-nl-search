@@ -36,6 +36,11 @@ import type { LlmStructuredResponse } from './types.js'
 export type { InstanceValueLookup, ShaclSlotValidationResult } from './slot-validator.js'
 export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-validator.js'
 
+// Re-exported so the api app can warm the authoring pipeline's ontology
+// grounding at startup without taking a direct dependency on the gate package:
+// the pipeline that consumes it (`runScenePipeline`) lives here.
+export { warmOpenDriveRoadGrounding } from '@ontology-search/authoring-gate'
+
 export interface SearchOptions {
   domain?: string
   /**

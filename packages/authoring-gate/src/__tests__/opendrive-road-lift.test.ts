@@ -1,31 +1,37 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
-import { resolveOpenDriveRoadGrounding } from '../opendrive-ontology.js'
+import {
+  type OpenDriveRoadGrounding,
+  resolveOpenDriveRoadGrounding,
+} from '../opendrive-ontology.js'
 import { liftOpenDriveRoadFacts } from '../opendrive-road-lift.js'
 import { CONTINUOUS_XODR, NO_ROAD_ONE_XODR } from './fixtures/xodr.js'
 
+let grounding: OpenDriveRoadGrounding
+
+beforeAll(async () => {
+  grounding = await resolveOpenDriveRoadGrounding()
+})
+
 describe('liftOpenDriveRoadFacts', () => {
   it('emits a fact for the top-level road, typed and keyed by the REAL ASAM ontology IRIs', () => {
-    const { roadClassIri, roadIdPropertyIri } = resolveOpenDriveRoadGrounding()
-    const ttl = liftOpenDriveRoadFacts(CONTINUOUS_XODR)
-    expect(ttl).toContain(`a <${roadClassIri}>`)
-    expect(ttl).toContain(`<${roadIdPropertyIri}> "1"`)
+    const ttl = liftOpenDriveRoadFacts(CONTINUOUS_XODR, grounding)
+    expect(ttl).toContain(`a <${grounding.roadClassIri}>`)
+    expect(ttl).toContain(`<${grounding.roadIdPropertyIri}> "1"`)
   })
 
   it('emits the id declared by a differently-numbered road network', () => {
-    const { roadIdPropertyIri } = resolveOpenDriveRoadGrounding()
-    const ttl = liftOpenDriveRoadFacts(NO_ROAD_ONE_XODR)
-    expect(ttl).toContain(`<${roadIdPropertyIri}> "5"`)
-    expect(ttl).not.toContain(`<${roadIdPropertyIri}> "1"`)
+    const ttl = liftOpenDriveRoadFacts(NO_ROAD_ONE_XODR, grounding)
+    expect(ttl).toContain(`<${grounding.roadIdPropertyIri}> "5"`)
+    expect(ttl).not.toContain(`<${grounding.roadIdPropertyIri}> "1"`)
   })
 
   it('returns a well-formed empty document (no throw) for malformed XML', () => {
-    expect(() => liftOpenDriveRoadFacts('<not-xml')).not.toThrow()
+    expect(() => liftOpenDriveRoadFacts('<not-xml', grounding)).not.toThrow()
   })
 
   it('returns a well-formed empty document for a road network declaring no roads', () => {
-    const ttl = liftOpenDriveRoadFacts('<OpenDRIVE></OpenDRIVE>')
-    expect(ttl.trim()).toBe('')
+    expect(liftOpenDriveRoadFacts('<OpenDRIVE></OpenDRIVE>', grounding).trim()).toBe('')
   })
 
   /**
@@ -34,7 +40,7 @@ describe('liftOpenDriveRoadFacts', () => {
    * identity beyond the graph it is asserted in, so it is a blank node.
    */
   it('invents no namespace of its own for the lifted roads', () => {
-    const ttl = liftOpenDriveRoadFacts(CONTINUOUS_XODR)
+    const ttl = liftOpenDriveRoadFacts(CONTINUOUS_XODR, grounding)
     expect(ttl).not.toMatch(/urn:/)
     expect(ttl).toMatch(/^_:/m)
   })

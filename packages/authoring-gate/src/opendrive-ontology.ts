@@ -1,195 +1,152 @@
 /**
  * Grounds the "existing maps" cross-file check in the REAL ASAM OpenDRIVE
- * ontology OMB v0.4.0 vendors (`.ontology/imports/opendrive/opendrive.owl.ttl`,
- * ASAM's own generated OWL — see that file's README) — replacing the ad-hoc
- * `urn:opendrive:` namespace + verbatim-tag-name lift this package used while
- * OMB shipped only the raw `.xsd` and no native ontology.
+ * ontology the pinned package vendors — replacing the ad-hoc `urn:opendrive:`
+ * namespace and verbatim-tag-name lift this package used while only the raw
+ * `.xsd` shipped upstream.
  *
  * Scope is intentionally narrow. The semantic gate's cross-file check
  * (`resolvableRoadReference`) only needs to know which `<road id="…">`
- * elements a `.xodr` road network declares — it never needs lanes, junctions,
- * or geometry (the residual gate parses those directly off the XML for the
- * G1/G2 continuity check). A full recursive lift of every OpenDRIVE element
- * would need the same per-context class disambiguation ASAM's own
- * OpenSCENARIO README documents for choice/role constructs (e.g. `<left>` /
- * `<right>` / `<center>` all contain a `<lane>` element that resolves to three
- * DIFFERENT OWL classes depending on the parent) and is not needed here, so
- * this module resolves and emits only the two facts the query uses: the
- * `T_road` class and its `id` property.
+ * elements a `.xodr` declares — never lanes, junctions, or geometry (the
+ * residual gate reads those off the XML directly for the G1/G2 continuity
+ * check). A full recursive lift would need the per-context class
+ * disambiguation ASAM's own README documents for choice/role constructs
+ * (`<left>`, `<right>` and `<center>` each contain a `<lane>` element
+ * resolving to a DIFFERENT OWL class), which this check does not require.
  *
- * Both are resolved BY LABEL from the pinned ontology at module load — never
- * hand-typed — so an upstream rename fails fast (a clear startup error)
- * instead of silently mismatching and turning the cross-file check into a
- * permanent no-op.
+ * Neither the document nor the entities are hardcoded to a path:
  *
- * [OWL2] OWL 2 Web Ontology Language Structural Specification
- * (docs/specs/references/owl2-syntax.md) — `odr:T_road` / `odr:T_road.id` are
- * `owl:Class` / `owl:DatatypeProperty` declarations resolved by their
- * `rdfs:label` [RDFS §5.4.2].
+ *   - the DOCUMENT comes from the pinned package's OASIS XML catalog, keyed by
+ *     the ontology IRI, so an upstream layout move cannot break it [XMLCAT];
+ *   - the ENTITIES are asserted to be declared in that document, so an
+ *     upstream rename fails fast with a clear error instead of silently
+ *     mismatching and turning the cross-file check into a permanent no-op.
+ *
+ * Resolution is by IRI, not by `rdfs:label`. `rdfs:label` provides "a
+ * human-readable version of a resource's name" [RDFS] §3.6 — an annotation
+ * with no uniqueness or stability guarantee, and this ontology declares
+ * `rdfs:label "id"` on 35 different entities. The IRI is the identifier
+ * [OWL2] §2, so resolving an identifier through an annotation is strictly
+ * weaker than resolving it directly.
+ *
+ * [OWL2] OWL 2 Structural Specification (docs/specs/references/owl2-syntax.md)
+ * §2 — entities are named by IRI; `T_road` is an `owl:Class` and `T_road.id`
+ * an `owl:DatatypeProperty`.
+ * [RDFS] RDF Schema 1.1 (docs/specs/references/rdf-schema.md) §3.6 —
+ * `rdfs:label`.
+ * [XMLCAT] OASIS XML Catalogs 1.1 — ontology IRI → document resolution.
  */
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFile } from 'node:fs/promises'
 
 import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
-import { getWorkspaceRoot } from '@ontology-search/ontology/sources'
+import { resolveOntologyPath } from '@ontology-search/ontology/catalog'
 import { Parser as N3Parser, type Quad } from 'n3'
 
 const RDF_TYPE = `${RDF_PREFIXES.rdf}type`
-const RDFS_LABEL = `${RDF_PREFIXES.rdfs}label`
-const RDFS_DOMAIN = `${RDF_PREFIXES.rdfs}domain`
 const OWL_CLASS = `${RDF_PREFIXES.owl}Class`
 const OWL_DATATYPE_PROPERTY = `${RDF_PREFIXES.owl}DatatypeProperty`
 
-/** Workspace-relative path to the pinned OpenDRIVE ontology (OMB `imports/`). */
-const OPENDRIVE_ONTOLOGY_PATH = ['.ontology', 'imports', 'opendrive', 'opendrive.owl.ttl'] as const
+/**
+ * The ontology this check is grounded in, named by the IRI the pinned catalog
+ * resolves. ASAM publishes this IRI; this repo does not choose it.
+ */
+const OPENDRIVE_ONTOLOGY_IRI = 'http://code.asam.net/simulation/standard/opendrive'
 
 /**
- * The XSD complexType `rdfs:label` bound to the `<road>` element (ASAM's
- * `T_<complexType>` naming convention — see `imports/opendrive/README.md` in
- * the pinned ontology cache). Not itself an IRI or class/property name: it is
- * the label the resolver looks up, so a class rename upstream is caught by
- * {@link resolveOpenDriveRoadGrounding} throwing rather than by a silently
- * wrong IRI.
+ * The two entities the cross-file road-reference check needs. Naming two IRIs,
+ * once, is the floor: the XSD→OWL element mapping that would let them be
+ * *discovered* rather than named is not published as data.
  */
-const ROAD_CLASS_LABEL = 't_road'
-const ROAD_ID_PROPERTY_LABEL = 'id'
+const ROAD_CLASS_IRI = `${OPENDRIVE_ONTOLOGY_IRI}#T_road`
+const ROAD_ID_PROPERTY_IRI = `${OPENDRIVE_ONTOLOGY_IRI}#T_road.id`
 
 /** The two real-ontology IRIs the cross-file road-reference check needs. */
 export interface OpenDriveRoadGrounding {
-  /** `odr:T_road` — resolved by label, never hand-typed. */
+  /** `odr:T_road`, verified declared in the pinned ontology. */
   readonly roadClassIri: string
-  /** `odr:T_road.id` — resolved by (domain, label), never hand-typed. */
+  /** `odr:T_road.id`, verified declared in the pinned ontology. */
   readonly roadIdPropertyIri: string
 }
 
-class OpenDriveGroundingError extends Error {
+export class OpenDriveGroundingError extends Error {
   constructor(message: string) {
     super(
-      `${message} Expected to find it in ${OPENDRIVE_ONTOLOGY_PATH.join('/')} ` +
-        `(pinned by ontology-package.json, materialized by 'pnpm run fetch:ontology'). ` +
-        `If ASAM renamed the class/property, update ROAD_CLASS_LABEL / ` +
-        `ROAD_ID_PROPERTY_LABEL in opendrive-ontology.ts to match.`
+      `${message} The ontology is resolved from <${OPENDRIVE_ONTOLOGY_IRI}> via the pinned ` +
+        `package's OASIS catalog (materialized by 'pnpm run fetch:ontology'). If ASAM renamed ` +
+        `the class or property, update ROAD_CLASS_IRI / ROAD_ID_PROPERTY_IRI in ` +
+        `opendrive-ontology.ts to match.`
     )
     this.name = 'OpenDriveGroundingError'
   }
 }
 
-function parseTtl(path: string): Quad[] {
-  const content = readFileSync(path, 'utf-8')
-  return new N3Parser().parse(content)
-}
-
 /**
- * The three predicates the resolution needs, indexed by subject in one pass.
- * `typed` keeps document order so resolution stays deterministic — the same
- * ontology always resolves to the same IRI, even if upstream ever declared two
- * classes under one label.
- */
-interface OntologyIndex {
-  /** `rdf:type` object → subjects carrying it, in document order. */
-  readonly typed: Map<string, string[]>
-  /** subject → its `rdfs:label` values. */
-  readonly labels: Map<string, Set<string>>
-  /** subject → its `rdfs:domain` values. */
-  readonly domains: Map<string, Set<string>>
-}
-
-function addTo(index: Map<string, Set<string>>, key: string, value: string): void {
-  const existing = index.get(key)
-  if (existing) existing.add(value)
-  else index.set(key, new Set([value]))
-}
-
-/**
- * Index the three predicates in a single O(quads) pass. Resolving by scanning
- * the quad list per candidate instead costs O(declarations × quads), which on
- * ASAM's real ontology (8k quads, 178 classes, 460 datatype properties) is ~70 ms
- * of blocking work on the thread that runs the gate.
- */
-function indexQuads(quads: Quad[]): OntologyIndex {
-  const typed = new Map<string, string[]>()
-  const labels = new Map<string, Set<string>>()
-  const domains = new Map<string, Set<string>>()
-
-  for (const q of quads) {
-    const subject = q.subject.value
-    switch (q.predicate.value) {
-      case RDF_TYPE: {
-        if (q.subject.termType !== 'NamedNode') break
-        const subjects = typed.get(q.object.value)
-        if (subjects) subjects.push(subject)
-        else typed.set(q.object.value, [subject])
-        break
-      }
-      case RDFS_LABEL:
-        addTo(labels, subject, q.object.value)
-        break
-      case RDFS_DOMAIN:
-        addTo(domains, subject, q.object.value)
-        break
-    }
-  }
-
-  return { typed, labels, domains }
-}
-
-/**
- * Resolve {@link OpenDriveRoadGrounding} from a parsed ontology.
- * Pure over the quads so it is unit-testable against a fixture ontology
- * without touching the real 423 KB pinned file on every call.
+ * Verify both entities are declared in a parsed ontology, and return them.
+ * Pure over the quads, so it is testable against a fixture without reading the
+ * real pinned document.
  */
 export function resolveOpenDriveRoadGroundingFrom(quads: Quad[]): OpenDriveRoadGrounding {
-  const { typed, labels, domains } = indexQuads(quads)
+  const declared = new Set<string>()
+  for (const q of quads) {
+    if (q.predicate.value !== RDF_TYPE) continue
+    if (q.object.value !== OWL_CLASS && q.object.value !== OWL_DATATYPE_PROPERTY) continue
+    declared.add(`${q.subject.value} ${q.object.value}`)
+  }
 
-  const roadClassIri = typed
-    .get(OWL_CLASS)
-    ?.find((subject) => labels.get(subject)?.has(ROAD_CLASS_LABEL))
-  if (!roadClassIri) {
+  if (!declared.has(`${ROAD_CLASS_IRI} ${OWL_CLASS}`)) {
+    throw new OpenDriveGroundingError(`<${ROAD_CLASS_IRI}> is not declared as an owl:Class.`)
+  }
+  if (!declared.has(`${ROAD_ID_PROPERTY_IRI} ${OWL_DATATYPE_PROPERTY}`)) {
     throw new OpenDriveGroundingError(
-      `No owl:Class with rdfs:label "${ROAD_CLASS_LABEL}" found in the OpenDRIVE ontology.`
+      `<${ROAD_ID_PROPERTY_IRI}> is not declared as an owl:DatatypeProperty.`
     )
   }
 
-  // Domain-scoped: `id` is a label ~35 elements share upstream, so the label
-  // alone would resolve to whichever happens to be declared first.
-  const roadIdPropertyIri = typed
-    .get(OWL_DATATYPE_PROPERTY)
-    ?.find(
-      (subject) =>
-        domains.get(subject)?.has(roadClassIri) && labels.get(subject)?.has(ROAD_ID_PROPERTY_LABEL)
-    )
-  if (!roadIdPropertyIri) {
-    throw new OpenDriveGroundingError(
-      `No owl:DatatypeProperty with rdfs:domain <${roadClassIri}> and rdfs:label ` +
-        `"${ROAD_ID_PROPERTY_LABEL}" found in the OpenDRIVE ontology.`
-    )
-  }
-
-  return { roadClassIri, roadIdPropertyIri }
+  return { roadClassIri: ROAD_CLASS_IRI, roadIdPropertyIri: ROAD_ID_PROPERTY_IRI }
 }
 
 let cached: OpenDriveRoadGrounding | null = null
+let inFlight: Promise<OpenDriveRoadGrounding> | null = null
 
 /**
- * Resolve {@link OpenDriveRoadGrounding} from the pinned ontology cache,
- * memoized (the pinned file is a build-time constant, not per-request data).
+ * Resolve and verify the grounding, once.
+ *
+ * Memoized on the PROMISE, not only the value: warmup and a first request can
+ * race, and two concurrent callers must not both read and parse the ontology.
+ * Reading it is tens of milliseconds that have no business on a request thread
+ * at all — {@link warmOpenDriveRoadGrounding} exists so startup pays it.
  */
-export function resolveOpenDriveRoadGrounding(): OpenDriveRoadGrounding {
-  if (cached) return cached
-  const path = join(getWorkspaceRoot(), ...OPENDRIVE_ONTOLOGY_PATH)
-  let quads: Quad[]
-  try {
-    quads = parseTtl(path)
-  } catch (err) {
-    throw new OpenDriveGroundingError(
-      `Cannot read/parse the OpenDRIVE ontology: ${err instanceof Error ? err.message : String(err)}`
-    )
-  }
-  cached = resolveOpenDriveRoadGroundingFrom(quads)
-  return cached
+export function resolveOpenDriveRoadGrounding(): Promise<OpenDriveRoadGrounding> {
+  if (cached) return Promise.resolve(cached)
+  inFlight ??= (async () => {
+    try {
+      const path = resolveOntologyPath(OPENDRIVE_ONTOLOGY_IRI)
+      const quads = new N3Parser().parse(await readFile(path, 'utf-8'))
+      cached = resolveOpenDriveRoadGroundingFrom(quads)
+      return cached
+    } catch (err) {
+      if (err instanceof OpenDriveGroundingError) throw err
+      throw new OpenDriveGroundingError(
+        `Cannot read the OpenDRIVE ontology: ${err instanceof Error ? err.message : String(err)}.`
+      )
+    } finally {
+      // Cleared either way: a failed resolution must be retryable once the
+      // operator fixes the cache, not cached as a permanent failure.
+      inFlight = null
+    }
+  })()
+  return inFlight
+}
+
+/**
+ * Resolve the grounding ahead of any request, so a broken pin fails readiness
+ * rather than a user's authoring run. Safe to call more than once.
+ */
+export async function warmOpenDriveRoadGrounding(): Promise<void> {
+  await resolveOpenDriveRoadGrounding()
 }
 
 /** Reset the memoized grounding. Test-only (the pinned ontology is build-time constant). */
 export function resetOpenDriveRoadGroundingCache(): void {
   cached = null
+  inFlight = null
 }

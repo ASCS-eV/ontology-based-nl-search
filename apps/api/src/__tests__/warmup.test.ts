@@ -13,6 +13,7 @@ vi.mock('@ontology-search/authoring', () => ({
 }))
 vi.mock('@ontology-search/llm', () => ({
   verifyLlmProvider: vi.fn(),
+  warmOpenDriveRoadGrounding: vi.fn(),
   warmupAgentPrompt: vi.fn(),
   warmupLlmSession: vi.fn(),
 }))

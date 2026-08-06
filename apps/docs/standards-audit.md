@@ -69,8 +69,10 @@ SHA-256 in `ontology-package.json` (materialized into `.ontology/`); and
 regenerated live by `packages/ontology/scripts/derive-openscenario-authoring-shacl.mjs`
 — see `artifacts/openscenario/DERIVATION.md`); `[OSC-RCR]` feeds that same
 artifact's numeric bounds (not part of the OWL/SHACL model); `[ODR-OWL]` grounds
-the cross-file "existing map" road-reference check directly, by label lookup, in
-`packages/authoring-gate/src/opendrive-ontology.ts`. The two checker bundles'
+the cross-file "existing map" road-reference check in
+`packages/authoring-gate/src/opendrive-ontology.ts`, which locates that ontology
+by IRI through the `[XMLCAT]` catalog and asserts the two entities it needs are
+declared there. The two checker bundles'
 rule lists are commit-pinned, SHA-256-checksummed manifests under
 `packages/authoring-gate/qc-bundles/`. The `docs/specs/references/README.md`
 "ASAM standards" table records each tag, its pinned source, and how to refresh

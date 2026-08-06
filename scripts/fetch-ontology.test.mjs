@@ -110,19 +110,16 @@ test('the real pin in this repo is well-formed', () => {
     pin.sentinels.some((s) => s.endsWith('.shacl.ttl')),
     'at least one sentinel must be a shape file — the thing the loader needs'
   )
-  // A file the repo resolves against must be a sentinel, or a distribution
-  // that moved or dropped it passes setup and fails later — inside a request
-  // for the gate's ontology, at derivation time for the prompt's. Upstream has
-  // already moved a pinned path once (the OpenSCENARIO schema).
-  for (const resolved of [
-    'imports/opendrive/opendrive.owl.ttl',
-    'imports/openscenario/openscenario.owl.ttl',
-  ]) {
-    assert.ok(
-      pin.sentinels.includes(resolved),
-      `${resolved} is resolved by this repo and must be a sentinel`
-    )
-  }
+  // The OASIS catalog is how this repo resolves every upstream ontology, so its
+  // absence is the one import-side failure setup must catch. Individual ontology
+  // paths are deliberately NOT sentinels: upstream moves them (v0.4.0 moved the
+  // OpenSCENARIO schema) and regenerates the catalog to match, so pinning a path
+  // here would fail setup for a move the code itself follows correctly. A
+  // catalog entry that points at a missing file is caught where it is resolved.
+  assert.ok(
+    pin.sentinels.includes('imports/catalog-v001.xml'),
+    'the OASIS catalog every upstream ontology is resolved through must be a sentinel'
+  )
 })
 
 test('readPin rejects a pin without a usable checksum', () => {

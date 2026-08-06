@@ -10,6 +10,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./catalog": {
+      "types": "./src/ontology-catalog.ts",
+      "import": "./dist/ontology-catalog.js",
+      "default": "./dist/ontology-catalog.js"
+    },
     "./domain-registry": {
       "types": "./src/domain-registry.ts",
       "import": "./dist/domain-registry.js",
