@@ -13,6 +13,8 @@ interface SearchBarProps {
   loadingLabel?: string
   /** Accessible label for the input. Defaults to the search description. */
   inputAriaLabel?: string
+  /** Heading and accessible label for the history dropdown. Defaults to "Recent searches". */
+  historyLabel?: string
 }
 
 export function SearchBar({
@@ -24,6 +26,7 @@ export function SearchBar({
   buttonLabel = 'Search',
   loadingLabel = 'Searching...',
   inputAriaLabel = 'Natural language search query',
+  historyLabel = 'Recent searches',
 }: SearchBarProps) {
   const [input, setInput] = useState('')
   const [showHistory, setShowHistory] = useState(false)
@@ -86,10 +89,10 @@ export function SearchBar({
           <ul
             className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-10 overflow-hidden"
             role="listbox"
-            aria-label="Recent searches"
+            aria-label={historyLabel}
           >
             <li className="px-4 py-1.5 text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
-              Recent searches
+              {historyLabel}
             </li>
             {history.map((h, i) => (
               <li key={i}>

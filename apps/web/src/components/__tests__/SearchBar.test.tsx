@@ -64,4 +64,24 @@ describe('SearchBar', () => {
     await user.click(screen.getByRole('option', { name: /previous query/i }))
     expect(onSearch).toHaveBeenCalledWith('previous query')
   })
+
+  /**
+   * The bar is reused outside search (authoring describes scenarios, not
+   * searches), so the dropdown names what the entries actually are.
+   */
+  it('labels the history dropdown with historyLabel', async () => {
+    const user = userEvent.setup()
+    render(
+      <SearchBar
+        onSearch={vi.fn()}
+        history={['a cut-in on a three-lane highway']}
+        historyLabel="Recent descriptions"
+        inputAriaLabel="Scenario description"
+      />
+    )
+
+    await user.click(screen.getByLabelText(/scenario description/i))
+    expect(screen.getByRole('listbox', { name: /recent descriptions/i })).toBeInTheDocument()
+    expect(screen.getByText(/recent descriptions/i)).toBeInTheDocument()
+  })
 })
