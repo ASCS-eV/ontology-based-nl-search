@@ -11,10 +11,17 @@
  * If new constraint types appear in the ontology, no test changes are needed
  * for the validator itself — it forwards every Core constraint to SHACL.
  */
+import { readFileSync } from 'node:fs'
+
 import { resetConfig } from '@ontology-search/core/config'
+import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
+import { Parser } from 'n3'
 import { afterAll, describe, expect, it } from 'vitest'
 
 import { ShaclValidator } from '../shacl-validator.js'
+import { discoverShapeFiles } from '../sources.js'
+
+const SHACL_NS = RDF_PREFIXES.sh
 
 const GEOREF_COUNTRY = 'https://w3id.org/ascs-ev/envited-x/georeference/v5/country'
 const HDMAP_ROAD_TYPES = 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/roadTypes'
@@ -102,6 +109,48 @@ describe('ShaclValidator', () => {
     // no-op pass so the caller can decide how to handle them.
     expect(result.conforms).toBe(true)
   }, 120_000)
+})
+
+describe('ShaclValidator — what the shapes graph contains', () => {
+  /**
+   * The validator loads `.shacl.ttl` only. That is safe exactly as long as the
+   * OWL files carry no SHACL: they hold class axioms, and this engine does no
+   * OWL or RDFS reasoning, so their quads sat in the shapes graph unreferenced
+   * while being more than half of it (254k quads and a 10.5s build, versus 176k
+   * and 6.6s without).
+   *
+   * If an upstream release ever moves a shape into a `.owl.ttl`, that silently
+   * stops being validated. This asserts the premise rather than the shortcut,
+   * so the failure names the reason.
+   */
+  it('has no SHACL shapes hiding in the OWL files', () => {
+    const shaclPaths = new Set(discoverShapeFiles().map((f) => f.path))
+    const owlFiles = discoverShapeFiles({ includeOwl: true }).filter((f) => !shaclPaths.has(f.path))
+    expect(owlFiles.length).toBeGreaterThan(0)
+
+    const parser = new Parser()
+    const offenders: string[] = []
+    for (const { path } of owlFiles) {
+      let quads
+      try {
+        quads = parser.parse(readFileSync(path, 'utf-8'))
+      } catch {
+        continue // Unparseable files are the loader's problem, not this test's.
+      }
+      const declaresShape = quads.some(
+        (q) =>
+          q.predicate.value === `${SHACL_NS}property` ||
+          q.predicate.value === `${SHACL_NS}targetClass` ||
+          q.object.value === `${SHACL_NS}NodeShape`
+      )
+      if (declaresShape) offenders.push(path)
+    }
+
+    expect(
+      offenders,
+      `These OWL files declare SHACL shapes, which the validator no longer loads:\n${offenders.join('\n')}`
+    ).toEqual([])
+  })
 })
 
 describe('ShaclValidator — event-loop behaviour while building', () => {
