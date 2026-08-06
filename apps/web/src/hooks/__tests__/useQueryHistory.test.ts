@@ -53,6 +53,25 @@ describe('useQueryHistory', () => {
   })
 
   /**
+   * localStorage is user-writable and outlives app versions, so a stored entry
+   * can be valid JSON of the wrong shape. Such an entry must be discarded
+   * rather than handed to `addToHistory`, whose filter/unshift assume a list
+   * of strings.
+   */
+  it.each([
+    ['an object', '{"first":"query"}'],
+    ['a bare string', '"just a string"'],
+    ['a list of non-strings', '[1, 2, 3]'],
+  ])('discards stored history that is %s', (_shape, stored) => {
+    localStorage.setItem(SEARCH_KEY, stored)
+    const { result } = renderHook(() => useQueryHistory(SEARCH_KEY))
+
+    expect(result.current.history).toEqual([])
+    act(() => result.current.addToHistory('a real query'))
+    expect(result.current.history).toEqual(['a real query'])
+  })
+
+  /**
    * The reason this hook takes a storage key at all: search and authoring
    * each keep their own history and must never see the other's entries, even
    * though both mount the same hook.

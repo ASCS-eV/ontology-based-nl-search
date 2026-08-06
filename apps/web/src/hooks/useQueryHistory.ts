@@ -3,15 +3,26 @@ import { useCallback, useEffect, useState } from 'react'
 const MAX_HISTORY = 10
 
 function readHistory(storageKey: string): string[] {
+  let parsed: unknown
   try {
-    return JSON.parse(localStorage.getItem(storageKey) ?? '[]')
+    parsed = JSON.parse(localStorage.getItem(storageKey) ?? '[]')
   } catch {
-    // intentional: corrupted localStorage — clear and start fresh.
-
-    console.warn(`useQueryHistory: corrupted localStorage entry for "${storageKey}", resetting`)
-    localStorage.removeItem(storageKey)
-    return []
+    return reset(storageKey)
   }
+  // localStorage is user-writable and shared across app versions, so a
+  // syntactically valid entry can still be the wrong shape. Anything that is
+  // not a list of strings would break `addToHistory`'s filter/unshift.
+  if (!Array.isArray(parsed) || parsed.some((entry) => typeof entry !== 'string')) {
+    return reset(storageKey)
+  }
+  return parsed as string[]
+}
+
+/** Discard an unusable stored history and start fresh. */
+function reset(storageKey: string): string[] {
+  console.warn(`useQueryHistory: corrupted localStorage entry for "${storageKey}", resetting`)
+  localStorage.removeItem(storageKey)
+  return []
 }
 
 /**

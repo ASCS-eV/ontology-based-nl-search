@@ -76,6 +76,7 @@ export function AuthoringPage() {
               onSearch={handleSubmit}
               loading={loading}
               history={history}
+              historyLabel="Recent descriptions"
               placeholder="Describe a driving scenario, e.g. a cut-in on a three-lane highway…"
               buttonLabel="Author"
               loadingLabel="Authoring…"
