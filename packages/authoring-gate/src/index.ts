@@ -8,7 +8,13 @@
  * {@link AuthoringIR} into rule-attributed gaps the LLM repair loop
  * consumes uniformly with the search feature's gaps.
  */
-export { GATE_NS, irToRdf, OPENDRIVE_NS, OSC_NS } from './ir-to-rdf.js'
+export { GATE_NS, irToRdf, OSC_NS } from './ir-to-rdf.js'
+export {
+  type OpenDriveRoadGrounding,
+  resolveOpenDriveRoadGrounding,
+  resolveOpenDriveRoadGroundingFrom,
+} from './opendrive-ontology.js'
+export { liftOpenDriveRoadFacts } from './opendrive-road-lift.js'
 export {
   QC_RULES,
   type QcRule,
