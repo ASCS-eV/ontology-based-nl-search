@@ -10,5 +10,3 @@
  */
 export type { DomainDescriptor, DomainRegistry } from './domain-registry.js'
 export { buildDomainRegistry } from './domain-registry.js'
-export type { LiftOptions } from './xml-to-rdf.js'
-export { childPredicateIri, classIri, liftXmlToRdf } from './xml-to-rdf.js'

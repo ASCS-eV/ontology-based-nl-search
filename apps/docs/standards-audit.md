@@ -40,31 +40,38 @@ The authoring feature is the write-path mirror of search: an LLM fills a typed
 OpenSCENARIO `.xosc`, and an in-process WASM engine validates it. Its interfaces
 are held to the same convention.
 
-| Layer          | Interface                         | Governing standard                                                                             |
-| -------------- | --------------------------------- | ---------------------------------------------------------------------------------------------- |
-| LLM contract   | Scene IR / `submit_scene` schema  | **JSON Schema 2020-12** (IETF)                                                                 |
-| Ontology       | OpenSCENARIO classes/shapes       | **OWL 2 · SHACL · RDFS · Turtle** (W3C) `[OSC-XSD]`                                            |
-| Data           | `openscenario.context.jsonld`     | **JSON-LD 1.1** (W3C)                                                                          |
-| Data           | Generic XML→RDF lift              | **RDF 1.1** (W3C), **XML 1.0** `[XML10]`                                                       |
-| Document       | `.xosc` / `.xodr` (in + emitted)  | **ASAM OpenSCENARIO 1.3.0 / OpenDRIVE** (XSD) `[OSC-XSD]`                                      |
-| Validation     | Numeric value bounds              | **`RangeCheckerRulesV1_3`** (RA Consulting) `[OSC-RCR]`                                        |
-| QC             | Gate rule identities              | **ASAM Quality Checker Framework** UID grammar `[QC-FW]`; bundle rules `[QC-XOSC]` `[QC-XODR]` |
-| API transport  | `/author/stream`                  | **Server-Sent Events** (W3C / WHATWG)                                                          |
-| API transport  | `/author/refine` JSON + HTTP      | **RFC 8259**, **RFC 9110** (IETF)                                                              |
-| Integrity      | committed WASM `.sha256` manifest | **SHA-256** (FIPS 180-4)                                                                       |
-| Redistribution | engine `NOTICE`                   | **Apache-2.0 §4**                                                                              |
+| Layer          | Interface                          | Governing standard                                                                             |
+| -------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------- |
+| LLM contract   | Scene IR / `submit_scene` schema   | **JSON Schema 2020-12** (IETF)                                                                 |
+| Ontology       | OpenSCENARIO classes/shapes        | **OWL 2 · SHACL · RDFS · Turtle** (W3C) `[OSC-OWL]`                                            |
+| Ontology       | OpenDRIVE road-reference grounding | **OWL 2 · RDFS · Turtle** (W3C) `[ODR-OWL]`                                                    |
+| Document       | `.xosc` / `.xodr` (in + emitted)   | **ASAM OpenSCENARIO 1.3.0 / OpenDRIVE** (XSD) `[OSC-XSD]`                                      |
+| Data           | `.xodr` / `.xosc` well-formedness  | **XML 1.0** (W3C) `[XML10]`                                                                    |
+| Validation     | Numeric value bounds               | **`RangeCheckerRulesV1_3`** (RA Consulting) `[OSC-RCR]`                                        |
+| QC             | Gate rule identities               | **ASAM Quality Checker Framework** UID grammar `[QC-FW]`; bundle rules `[QC-XOSC]` `[QC-XODR]` |
+| API transport  | `/author/stream`                   | **Server-Sent Events** (W3C / WHATWG)                                                          |
+| API transport  | `/author/refine` JSON + HTTP       | **RFC 8259**, **RFC 9110** (IETF)                                                              |
+| Integrity      | committed WASM `.sha256` manifest  | **SHA-256** (FIPS 180-4)                                                                       |
+| Redistribution | engine `NOTICE`                    | **Apache-2.0 §4**                                                                              |
 
 **ASAM standards are not vendored as prose.** The W3C/IETF rows above reuse the
-already-registered reference texts. The ASAM-specific tags — `[OSC-XSD]`,
-`[OSC-RCR]`, `[QC-FW]`, `[QC-XOSC]`, `[QC-XODR]` — name standards whose
-normative text cannot be mirrored under `docs/specs/references/` (the refresh
-proxy allowlist excludes ASAM, and the ASAM license precludes verbatim copies).
-Each is instead pinned as a **machine-readable artifact**: `OpenSCENARIO.xsd`
-via the ontology distribution pinned by version + SHA-256 in
-`ontology-package.json` (materialized into `.ontology/`), `RangeCheckerRulesV1_3.cpp`
-as a submodule commit — both transcribed into the derived ontology per
-`artifacts/openscenario/DERIVATION.md` — and the two checker bundles' rule lists
-as commit-pinned, SHA-256-checksummed manifests under
+already-registered reference texts. The ASAM-specific tags — `[OSC-OWL]`,
+`[ODR-OWL]`, `[OSC-XSD]`, `[OSC-RCR]`, `[QC-FW]`, `[QC-XOSC]`, `[QC-XODR]` —
+name standards whose normative text cannot be mirrored under
+`docs/specs/references/` (the refresh proxy allowlist excludes ASAM, and the
+ASAM license precludes verbatim copies). Each is instead pinned as a
+**machine-readable artifact**: ASAM's own generated OpenSCENARIO and OpenDRIVE
+OWL 2 + SHACL (`.ontology/imports/{openscenario,opendrive}/`) and the raw
+`OpenSCENARIO.xsd`, all via the ontology distribution pinned by version +
+SHA-256 in `ontology-package.json` (materialized into `.ontology/`); and
+`RangeCheckerRulesV1_3.cpp` as a submodule commit. `[OSC-OWL]` feeds
+`artifacts/openscenario/openscenario.shacl.ttl` (enums + class existence,
+regenerated live by `packages/ontology/scripts/derive-openscenario-authoring-shacl.mjs`
+— see `artifacts/openscenario/DERIVATION.md`); `[OSC-RCR]` feeds that same
+artifact's numeric bounds (not part of the OWL/SHACL model); `[ODR-OWL]` grounds
+the cross-file "existing map" road-reference check directly, by label lookup, in
+`packages/authoring-gate/src/opendrive-ontology.ts`. The two checker bundles'
+rule lists are commit-pinned, SHA-256-checksummed manifests under
 `packages/authoring-gate/qc-bundles/`. The `docs/specs/references/README.md`
 "ASAM standards" table records each tag, its pinned source, and how to refresh
 it.

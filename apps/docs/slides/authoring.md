@@ -159,30 +159,28 @@ flowchart LR
 
 <Slide :index="5" variant="diagram">
   <p class="eyebrow">The beautiful core · derivation, not invention</p>
-  <h2>The translation dictionary is <em>lifted</em> from the ASAM standard.</h2>
-  <p class="lead">The OpenSCENARIO ontology is derived by a mechanical, documented method from two normative sources — never hand-authored. It is the authoring analog of the search feature's OWL + SHACL core.</p>
+  <h2>The translation dictionary is <em>ASAM's own</em>, not hand-lifted.</h2>
+  <p class="lead">OMB v0.4.0+ vendors ASAM's own generated OpenSCENARIO OWL + SHACL directly — this repo no longer derives class/property/enum vocabulary from the raw XSD itself. A small, curated excerpt (cut-in archetype scope) is regenerated from that pinned source; numeric bounds still come from a second normative source, RangeCheckerRules, which the OWL/SHACL model does not carry.</p>
 
 ```mermaid
 flowchart LR
-    XSD[("ASAM OpenSCENARIO 1.3<br/>OpenSCENARIO.xsd")]:::src
+    OWL[("ASAM OpenSCENARIO 1.3<br/>generated OWL + SHACL<br/>(vendored by OMB v0.4.0+)")]:::src
     RCR[("RangeCheckerRulesV1_3<br/>RA Consulting")]:::src
-    XSD -->|"complexType → owl:Class<br/>attribute → owl:DatatypeProperty<br/>enumeration → sh:in"| ONT["openscenario.owl.ttl<br/>+ openscenario.shacl.ttl"]
-    RCR -->|"numeric bounds → sh:minInclusive / maxInclusive"| ONT
-    ONT --> CTX["context.jsonld<br/>term → IRI"]
-    ONT -->|raw SHACL| PROMPT["LLM prompt"]
-    ONT --> GATE["structural gate"]
+    OWL -->|"owl:oneOf → sh:in<br/>(read live, never hand-typed)"| ART["artifacts/openscenario/<br/>openscenario.shacl.ttl<br/>(cut-in archetype excerpt)"]
+    RCR -->|"numeric bounds → sh:minInclusive / maxInclusive"| ART
+    ART -->|raw SHACL text| PROMPT["LLM prompt"]
     RCR -->|compiled into| CHECK[("WASM checker")]
 
     classDef src fill:#f59e0b,stroke:#b45309,color:#0f172a;
     classDef d fill:#dcfce7,stroke:#22c55e,color:#0f172a;
     classDef use fill:#dbeafe,stroke:#2563eb,color:#0f172a;
-    class ONT,CTX d;
-    class PROMPT,GATE,CHECK use;
+    class ART d;
+    class PROMPT,CHECK use;
 ```
 
   <div class="mono-block">
-    <span class="mono-label">The convention is the generic lift</span><br />
-    <code>complexType → owl:Class</code>, <code>child element → owl:ObjectProperty</code>, <code>attribute → owl:DatatypeProperty</code> — the exact rules the domain-agnostic <code>xml-to-rdf.ts</code> lift emits, so a lifted <code>.xosc</code> is typed by these shapes with no bespoke mapping. Curated to the cut-in subset today; unmodeled elements stay unconstrained under SHACL's open world.
+    <span class="mono-label">Generated, drift-guarded, still curated</span><br />
+    <code>packages/ontology/scripts/derive-openscenario-authoring-shacl.mjs</code> reads the pinned ontology's <code>owl:oneOf</code> lists live and fails loudly if ASAM renames a class or datatype it depends on — the same discipline that once let the artifact's <code>VehicleCategory</code> enum silently freeze at 10 of ASAM's 21 real values. The class/property SCOPE stays hand-curated to the cut-in archetype (see <code>DERIVATION.md</code>); unmodeled elements stay unconstrained under SHACL's open world.
   </div>
 </Slide>
 
