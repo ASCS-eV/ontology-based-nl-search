@@ -1,13 +1,16 @@
 {
   "$comment": "The pinned ontology source. `scripts/fetch-ontology.mjs` downloads this exact distribution, verifies its sha256, and extracts the `paths` below into `cacheDir`. Bumping the ontology = edit `version` + `sdist`, run `pnpm run fetch:ontology`, review the diff in behaviour. The sha256 here is the authority: the registry is asked where the file lives, never what it should contain.",
   "package": "ontology-management-base",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "registry": "https://pypi.org",
   "sdist": {
-    "filename": "ontology_management_base-0.3.0.tar.gz",
-    "sha256": "ab30f6f0bf4f7745d70c53645f07c787a494f1ae9d1b2200fd9c082191d402a6"
+    "filename": "ontology_management_base-0.4.0.tar.gz",
+    "sha256": "374d50f135fcfb0880b325d0fdee5432486a781ce407e3857d8a2ce878149f98"
   },
   "paths": ["artifacts", "imports"],
-  "sentinels": ["artifacts/envited-x/envited-x.shacl.ttl", "imports/OpenScenario/OpenSCENARIO.xsd"],
+  "sentinels": [
+    "artifacts/envited-x/envited-x.shacl.ttl",
+    "imports/openscenario/schema/OpenSCENARIO.xsd"
+  ],
   "cacheDir": ".ontology"
 }

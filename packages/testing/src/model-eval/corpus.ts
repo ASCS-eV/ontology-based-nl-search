@@ -111,7 +111,7 @@ export const envitedGoldCases: GoldCase[] = [
     9,
     'en',
     'Motorway entry ramp maps',
-    slots(['hdmap'], { roadTypes: 'motorway_entry' }),
+    slots(['hdmap'], { laneTypes: 'onRamp' }),
     ['synonym'],
     l(9)
   ),
@@ -179,7 +179,7 @@ export const envitedGoldCases: GoldCase[] = [
     17,
     'en',
     'Maps with emergency lanes',
-    slots(['hdmap'], { laneTypes: 'emergency' }),
+    slots(['hdmap'], { laneTypes: 'shoulder' }),
     ['synonym'],
     l(17)
   ),
@@ -607,7 +607,7 @@ export const envitedGoldCases: GoldCase[] = [
     71,
     'de',
     'Autobahnauffahrt in OpenDRIVE mit drei Fahrspuren',
-    slots(['hdmap'], { roadTypes: 'motorway_entry', formatType: 'ASAM OpenDRIVE' }),
+    slots(['hdmap'], { laneTypes: 'onRamp', formatType: 'ASAM OpenDRIVE' }),
     ['multilingual', 'gap', 'enum'],
     h(71, {
       gaps: ['drei Fahrspuren'],
@@ -746,14 +746,14 @@ export const envitedGoldCases: GoldCase[] = [
   envCase(
     86,
     'fr',
-    'Cartes OpenDRIVE de Corée avec des routes motorway_entry',
+    "Cartes OpenDRIVE de Corée avec des bretelles d'accès autoroute",
     slots(['hdmap'], {
       country: 'KR',
       formatType: 'ASAM OpenDRIVE',
-      roadTypes: 'motorway_entry',
+      laneTypes: 'onRamp',
     }),
     ['multilingual', 'enum'],
-    l(86, { legacyQuery: 'OpenDRIVE maps from Korea with motorway_entry roads' })
+    l(86, { legacyQuery: 'OpenDRIVE maps from Korea with motorway entry ramps' })
   ),
   envCase(
     87,
@@ -850,7 +850,7 @@ export const envitedGoldCases: GoldCase[] = [
     96,
     'ja',
     'オーストラリアのカスタム道路種別HDマップ',
-    slots(['hdmap'], { country: 'AU', roadTypes: 'custom' }),
+    slots(['hdmap'], { country: 'AU', roadTypes: 'unknown' }),
     ['multilingual', 'geography'],
     l(96, { legacyQuery: 'Custom road type HD maps in Australia' })
   ),
