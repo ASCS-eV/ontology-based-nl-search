@@ -104,6 +104,36 @@ describe('ShaclValidator', () => {
   }, 120_000)
 })
 
+describe('ShaclValidator — event-loop behaviour while building', () => {
+  /**
+   * Building the validator is seconds of tight loops over a quarter-million
+   * quads. While it held the thread outright, two things broke: the API could
+   * not answer `/health` during warmup, and a vitest worker doing this could
+   * not process the reply to its own progress call — past birpc's fixed 60s
+   * ceiling that surfaces as `Timeout calling "onTaskUpdate"`, failing a run
+   * in which every test passed.
+   *
+   * The assertion is deliberately about the loop, not about wall-clock: a
+   * timer scheduled before the build must actually fire while it runs.
+   */
+  it('yields to the event loop while building, so callers stay responsive', async () => {
+    ShaclValidator.reset()
+    let ticks = 0
+    const timer = setInterval(() => {
+      ticks++
+    }, 20)
+
+    try {
+      await ShaclValidator.fromWorkspace()
+    } finally {
+      clearInterval(timer)
+    }
+
+    // A monopolising build produced 0-1 ticks regardless of how long it took.
+    expect(ticks).toBeGreaterThan(5)
+  })
+})
+
 describe('ShaclValidator — engine-call accounting (R2, R3, R8)', () => {
   /**
    * R2: Batch validation MUST invoke the underlying engine at most once per

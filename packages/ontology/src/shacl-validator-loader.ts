@@ -17,10 +17,40 @@ import { DataFactory, Parser } from 'n3'
 import { discoverShapeFiles } from './sources.js'
 
 const log = createComponentLogger('shacl-validator')
+
+/**
+ * Hand the event loop back for one turn.
+ *
+ * Building the validator is several seconds of tight synchronous loops over a
+ * quarter-million quads, and nothing else on the thread can run while they
+ * hold it. Two things break as a result:
+ *
+ *   - **Under vitest**, a worker that blocks for longer than birpc's fixed 60s
+ *     ceiling cannot process the reply to its own progress call, so the run
+ *     fails with `Timeout calling "onTaskUpdate"` while every test passes.
+ *     Serializing files made that worse, not better: the blocking stretches
+ *     concatenated into one 115s span.
+ *   - **In the API**, warmup holds the loop for the same reason, so `/health`
+ *     cannot answer while the shapes load — the readiness probe is unavailable
+ *     exactly when an operator is watching startup.
+ *
+ * `setImmediate` rather than a timer: it resumes on the next loop iteration
+ * after pending I/O and messages are handled, which is precisely the pending
+ * work that must not wait for us.
+ */
+function breathe(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve))
+}
+
+/**
+ * Quads to process between yields. Large enough that the yields cost nothing
+ * measurable, small enough that a chunk is milliseconds rather than seconds.
+ */
+const QUADS_PER_CHUNK = 20_000
 const { namedNode } = DataFactory
 const SH_NS = RDF_PREFIXES.sh
 
-export function loadShapesFromDisk(): DatasetCore {
+export async function loadShapesFromDisk(): Promise<DatasetCore> {
   const ds = datasetFactory.dataset()
   const parser = new Parser()
 
@@ -32,6 +62,10 @@ export function loadShapesFromDisk(): DatasetCore {
     } catch (err) {
       log.warn('Failed to parse SHACL file', { file: filePath, error: String(err) })
     }
+    // Per file, not per quad: the largest single file here parses in well
+    // under a second, so this bounds the blocking stretch without adding a
+    // yield to the hot inner loop.
+    await breathe()
   }
 
   // Strip SHACL-Advanced constraints rdf-validate-shacl (Zazuko, Core
@@ -96,14 +130,18 @@ function stripUnsupportedConstraints(ds: DatasetCore): void {
  * SHACL allows the same property to appear on multiple shapes; we keep all
  * target classes so the validator can iterate them.
  */
-export function indexPropertyTargetClasses(shapes: DatasetCore): Map<string, string[]> {
+export async function indexPropertyTargetClasses(
+  shapes: DatasetCore
+): Promise<Map<string, string[]>> {
   const SH_PROPERTY = `${SH_NS}property`
   const SH_PATH = `${SH_NS}path`
   const SH_TARGET_CLASS = `${SH_NS}targetClass`
 
   // Step 1: shape → targetClass
   const shapeTargets = new Map<string, string[]>()
+  let processed = 0
   for (const q of shapes.match(null, namedNode(SH_TARGET_CLASS), null, null)) {
+    if (++processed % QUADS_PER_CHUNK === 0) await breathe()
     if (q.object.termType !== 'NamedNode') continue
     const subjectKey = termKey(q.subject)
     const existing = shapeTargets.get(subjectKey) ?? []
@@ -113,7 +151,10 @@ export function indexPropertyTargetClasses(shapes: DatasetCore): Map<string, str
 
   // Step 2: shape → property-shape(s) → path
   const index = new Map<string, Set<string>>()
+  let processedShapes = 0
   for (const propLink of shapes.match(null, namedNode(SH_PROPERTY), null, null)) {
+    if (++processedShapes % QUADS_PER_CHUNK === 0) await breathe()
+    if (++processed % QUADS_PER_CHUNK === 0) await breathe()
     const targets = shapeTargets.get(termKey(propLink.subject))
     if (!targets || targets.length === 0) continue
 
@@ -151,9 +192,11 @@ function termKey(t: Term): string {
  * This is fully generic — reads only standard SHACL vocabulary, works with
  * any shapes graph.
  */
-export function indexPropertyConstraints(
+export async function indexPropertyConstraints(
   shapes: DatasetCore
-): Map<string, { patterns: RegExp[]; inValues: Set<string> | null; datatypeOnly: boolean }> {
+): Promise<
+  Map<string, { patterns: RegExp[]; inValues: Set<string> | null; datatypeOnly: boolean }>
+> {
   const SH_PROPERTY = `${SH_NS}property`
   const SH_PATH = `${SH_NS}path`
   const SH_PATTERN = `${SH_NS}pattern`
