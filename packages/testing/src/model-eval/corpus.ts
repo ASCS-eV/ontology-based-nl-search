@@ -107,6 +107,14 @@ export const envitedGoldCases: GoldCase[] = [
   envCase(6, 'en', 'Highway maps', slots(['hdmap'], { roadTypes: 'motorway' }), ['synonym'], l(6)),
   envCase(7, 'en', 'Rural road HD maps', slots(['hdmap'], { roadTypes: 'rural' }), ['enum'], l(7)),
   envCase(8, 'en', 'Town driving maps', slots(['hdmap'], { roadTypes: 'town' }), ['enum'], l(8)),
+  // `onRamp`, not `entry` or `mwyEntry`. All three are in the v0.4.0 laneTypes
+  // vocabulary and all three read plausibly for "motorway entry", so the choice
+  // is stated rather than left implicit: ASAM OpenDRIVE distinguishes the ramp
+  // road itself (`onRamp`) from the acceleration lane alongside the motorway
+  // (`entry`), and this query names the ramp. `mwyEntry` is the third
+  // candidate, deprecated by v1.9.0 in favour of `entry` — see the deprecation
+  // list in the pinned hdmap laneTypes description. Case 71 asks the same
+  // question in German and expects the same answer for the same reason.
   envCase(
     9,
     'en',
@@ -743,6 +751,12 @@ export const envitedGoldCases: GoldCase[] = [
     ['multilingual', 'range'],
     h(85, { legacyQuery: 'High-precision OSI recordings with precision under 0.01' })
   ),
+  // The French query text itself was rewritten for OMB v0.4.0: it previously
+  // spelled the enum literal ("routes motorway_entry"), which upstream retired,
+  // and a gold query that names a value the ontology no longer has tests
+  // nothing. It now asks in natural French for the same thing. Recorded here
+  // because changing a query — rather than only its expected slots — moves the
+  // eval baseline: scores for this case are not comparable across the bump.
   envCase(
     86,
     'fr',
