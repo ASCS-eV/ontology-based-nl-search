@@ -15,6 +15,7 @@ export {
   getConceptExpansionIndex,
   resetConceptExpansionIndex,
 } from './concept-expansion.js'
+export { preferDomainsNamedInQuery } from './domain-preference.js'
 export { getInitializedStore } from './init.js'
 export type {
   AssetMetadata,

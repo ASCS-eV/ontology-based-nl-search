@@ -400,6 +400,7 @@ export async function runCopilotAgent(
       vocabulary,
       targetDomain,
       sw,
+      query: naturalLanguageQuery,
     })
     return { ...response, timings: sw.getTimings() }
   }
