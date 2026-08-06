@@ -54,7 +54,17 @@ export async function loadShapesFromDisk(): Promise<DatasetCore> {
   const ds = datasetFactory.dataset()
   const parser = new Parser()
 
-  for (const { path: filePath } of discoverShapeFiles({ includeOwl: true })) {
+  // Shapes only. The OWL files carry class axioms, not SHACL: none of them
+  // declares a NodeShape, a sh:property or a sh:targetClass, and this engine
+  // does no OWL or RDFS reasoning, so every one of their quads sat in the
+  // shapes graph unreferenced — while being more than half of it. Loading them
+  // cost 254k quads instead of 176k, and 10.5s to build instead of 6.6s, for
+  // byte-identical indexes (924 properties, 420 constraints, zero differences)
+  // and identical verdicts.
+  //
+  // Note this is the VALIDATOR's graph only. The schema graph the compiler
+  // queries still loads the OWL, which is where class hierarchy is needed.
+  for (const { path: filePath } of discoverShapeFiles()) {
     const turtle = readFileSync(filePath, 'utf-8')
     try {
       const quads = parser.parse(turtle)
