@@ -111,11 +111,21 @@ jobs:
       - name: Run tests
         run: pnpm run test
 
-      # Enforced per-package coverage floors on the pure, fast, instrumentation-
-      # safe units (slots, graphql-ir). The oxigraph cold-start packages are
-      # deliberately excluded — they are guarded by behavior tests, and coverage
-      # instrumentation worsens their documented cold-start timeout (ADR 0003
-      # step 5). Floors live in each package's vitest.config.ts; ratchet up.
+      # Enforced per-package coverage floors. Floors live in each package's
+      # vitest.config.ts, set at the rate measured when introduced; ratchet up,
+      # never down.
+      #
+      # This now covers the oxigraph cold-start packages (ontology, search,
+      # sparql, llm) too. ADR 0003 step 5 had excluded them because coverage
+      # instrumentation worsens their documented cold-start timeout — the
+      # concern was real, and the fix was `--concurrency=2` on the root
+      # `coverage` script (matching `test`): the failure was several packages
+      # building the full SHACL graph against Oxigraph at once, not
+      # instrumentation per se. They were also the packages that most needed a
+      # floor, `search` being the largest in the repo.
+      #
+      # If this step turns intermittent, the answer is to exclude the specific
+      # offending package again — not to lower its floor to make the build green.
       - name: Check coverage floors
         run: pnpm run coverage
 
