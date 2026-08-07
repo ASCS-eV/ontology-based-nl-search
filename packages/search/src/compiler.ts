@@ -42,13 +42,13 @@ import { buildDomainPatterns } from './compiler-domain-patterns.js'
 // reference-JOIN emitters were further split out (step 22c) so this core stays
 // under the file-size budget.
 import {
-  assembleQuery,
   buildPrefixes,
   detectHierarchy,
   partitionFiltersByDomain,
   partitionRangesByDomain,
   resolvePrimaryDomain,
-} from './compiler-helpers.js'
+} from './compiler-helpers-domains.js'
+import { assembleQuery } from './compiler-helpers-query.js'
 import {
   emitReferencedDomainJoins,
   emitReferenceNode,

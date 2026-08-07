@@ -16,15 +16,15 @@ import { type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SearchSlots } from '@ontology-search/slots/slots'
 
 import { buildDomainPatterns } from './compiler-domain-patterns.js'
+import { buildPrefixes } from './compiler-helpers-domains.js'
 import {
   addEnumFilter,
   addLocationFilter,
-  assembleQuery,
-  buildPrefixes,
   findDomainForIri,
   isNonEmpty,
   prefixedPredicate,
-} from './compiler-helpers.js'
+} from './compiler-helpers-primitives.js'
+import { assembleQuery } from './compiler-helpers-query.js'
 import { type CompilerVocab } from './compiler-vocab.js'
 import { type PropertyPath } from './property-paths.js'
 

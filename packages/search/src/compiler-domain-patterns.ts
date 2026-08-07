@@ -17,21 +17,22 @@ import {
   type DomainDescriptor,
 } from '@ontology-search/ontology/domain-registry'
 
+import { classifyProperty, resolvePropertyPrefix } from './compiler-helpers-domains.js'
 import {
-  addEnumFilter,
-  classifyProperty,
   emitDeepFilters,
   emitDirectPathFilters,
+  lookupDomainSpecPredicate,
+  lookupStepPredicate,
+  SHALLOW_PATH_MAX_STEPS,
+} from './compiler-helpers-paths.js'
+import {
+  addEnumFilter,
   findDomainForIri,
   groupPredicate,
   groupVariableName,
   isNonEmpty,
-  lookupDomainSpecPredicate,
-  lookupStepPredicate,
   prefixedPredicate,
-  resolvePropertyPrefix,
-  SHALLOW_PATH_MAX_STEPS,
-} from './compiler-helpers.js'
+} from './compiler-helpers-primitives.js'
 import { type CompilerVocab } from './compiler-vocab.js'
 import { type PropertyPath } from './property-paths.js'
 

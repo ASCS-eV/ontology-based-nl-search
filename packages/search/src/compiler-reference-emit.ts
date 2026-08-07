@@ -35,7 +35,7 @@ import {
   emitReferenceChainTriples,
   pickReferenceChain,
   pickSiblingDataEdge,
-} from './compiler-helpers.js'
+} from './compiler-helpers-references.js'
 import { type CompilerVocab } from './compiler-vocab.js'
 import { getInitializedStore } from './init.js'
 import { getReferenceIndex, pickLiveReferenceEdge } from './reference-index.js'
