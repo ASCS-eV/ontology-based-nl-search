@@ -8,17 +8,17 @@
  * `asam.net:…` rule UID and message — up to `AUTHORING_MAX_REPAIRS` times.
  *
  * On exhaustion it returns the best artifact PLUS the outstanding gaps; it never
- * returns a silently-invalid document. Provider selection mirrors the search
- * agent: Copilot when `AI_PROVIDER=copilot`, otherwise the Vercel path.
+ * returns a silently-invalid document. The provider is whichever
+ * {@link getAgentBackend} selected — the same backend the search agent fills
+ * slots through, so the two cannot disagree about which one is configured.
  */
 
 import { QC_RULES } from '@ontology-search/authoring-gate'
 import { type AuthoringIR, createEmptyScene } from '@ontology-search/authoring-ir'
 import { getConfig } from '@ontology-search/core/config'
 
+import { getAgentBackend } from '../backend.js'
 import { providerContextFromConfig, withProviderErrorTranslation } from '../provider-errors.js'
-import { fillSceneCopilot } from './fill-scene-copilot.js'
-import { fillSceneVercel } from './fill-scene-vercel.js'
 import {
   type GateTrace,
   repairableGaps,
@@ -27,12 +27,6 @@ import {
 } from './run-scene-pipeline.js'
 import { buildSceneRequest, renderRepairFeedback } from './scene-prompt.js'
 import type { SceneSubmissionParams } from './scene-tool.js'
-
-/** One turn of one fill; returns the submission or `null` when none was made. */
-type SceneFiller = (
-  requestMessage: string,
-  signal?: AbortSignal
-) => Promise<SceneSubmissionParams | null>
 
 /** Progress phases the SSE route maps to status events. */
 export type SceneProgressPhase = 'authoring' | 'authored' | 'gated' | 'repairing'
@@ -81,10 +75,6 @@ export interface SceneAgentResult {
   readonly attempts: number
 }
 
-function selectFiller(): SceneFiller {
-  return getConfig().AI_PROVIDER === 'copilot' ? fillSceneCopilot : fillSceneVercel
-}
-
 /**
  * Author a scenario from natural language, gating and repairing until valid or
  * the repair budget is exhausted.
@@ -93,7 +83,7 @@ export async function runSceneAgent(
   naturalLanguage: string,
   options: SceneAgentOptions = {}
 ): Promise<SceneAgentResult> {
-  const fill = selectFiller()
+  const backend = getAgentBackend()
   const maxRepairs = options.maxRepairs ?? getConfig().AUTHORING_MAX_REPAIRS
   const { archetype, roadNetworkXodr, signal, onProgress } = options
 
@@ -121,7 +111,7 @@ export async function runSceneAgent(
     // one, so the advice names AUTHORING_AI_MODEL when that is what ran.
     const submission = await withProviderErrorTranslation(
       providerContextFromConfig(getConfig(), { authoring: true }),
-      () => fill(request, signal)
+      () => backend.fillScene(request, signal)
     )
     attempts = attempt
     if (!submission) {

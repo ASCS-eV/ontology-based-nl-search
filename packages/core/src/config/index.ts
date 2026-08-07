@@ -13,14 +13,20 @@ import { ConfigError } from '../errors/index.js'
 const sparqlModeSchema = z.enum(['memory', 'remote'])
 const authoringModeSchema = z.enum(['wasm', 'null'])
 const residualModeSchema = z.enum(['in-process', 'external'])
-const aiProviderSchema = z.enum([
+/**
+ * Every LLM provider the config admits. Exported so consumers can enumerate
+ * them — `packages/llm`'s backend seam asserts it resolves a backend for each,
+ * which a hand-copied list in the test could not guarantee.
+ */
+export const AI_PROVIDERS = [
   'openai',
   'ollama',
   'copilot',
   'anthropic',
   'claude-cli',
   'vibe-cli',
-])
+] as const
+const aiProviderSchema = z.enum(AI_PROVIDERS)
 /**
  * Copilot reasoning-effort levels (the SDK's `reasoningEffort` on
  * `createSession`). `none` disables reasoning; `low`→`max` trade latency for

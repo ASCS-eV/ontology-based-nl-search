@@ -15,13 +15,8 @@ import { getConfig } from '@ontology-search/core/config'
 import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
 import { getInitializedStore, warmupRetrievalIndex } from '@ontology-search/search'
 
-import {
-  getPersistentSession,
-  primeCacheInBackground,
-  runCopilotAgent,
-} from './agent/copilot-agent.js'
-import { runSparqlAgent, warmupAgentPrompt } from './agent/index.js'
-import { verifyProviderAccess } from './provider-access.js'
+import { warmupAgentPrompt } from './agent/index.js'
+import { getAgentBackend } from './backend.js'
 import { providerContextFromConfig, withProviderErrorTranslation } from './provider-errors.js'
 
 export { warmupAgentPrompt }
@@ -61,20 +56,12 @@ export interface SearchOptions {
  */
 export async function verifyLlmProvider(): Promise<void> {
   const config = getConfig()
-  if (config.AI_PROVIDER === 'copilot') {
-    // Same translation the request path gets: an unauthenticated SDK reports
-    // its own transport-level failure, which says nothing about GITHUB_TOKEN
-    // or `gh auth token`.
-    await withProviderErrorTranslation(providerContextFromConfig(config), () =>
-      getPersistentSession()
-    )
-    // Non-blocking one-shot prompt-cache prime. Readiness is not delayed;
-    // requests arriving before priming completes just pay the cold cost once,
-    // exactly as before. No recurring keep-alive (no idle token cost).
-    primeCacheInBackground()
-    return
-  }
-  await verifyProviderAccess()
+  // Same translation the request path gets: an unauthenticated SDK reports its
+  // own transport-level failure, which says nothing about GITHUB_TOKEN or
+  // `gh auth token`.
+  await withProviderErrorTranslation(providerContextFromConfig(config), () =>
+    getAgentBackend().verify()
+  )
 }
 
 /**
@@ -116,8 +103,9 @@ export async function generateStructuredSearch(
   // key, or a model that was never pulled becomes an AgentError naming the
   // setting and the command, instead of the SDK's transport-level wording.
   return withProviderErrorTranslation(providerContextFromConfig(config), () =>
-    config.AI_PROVIDER === 'copilot'
-      ? runCopilotAgent(naturalLanguageQuery, { domain, signal })
-      : runSparqlAgent(naturalLanguageQuery, { domain, signal })
+    getAgentBackend().fillSlots(naturalLanguageQuery, {
+      domain,
+      ...(signal === undefined ? {} : { signal }),
+    })
   )
 }
