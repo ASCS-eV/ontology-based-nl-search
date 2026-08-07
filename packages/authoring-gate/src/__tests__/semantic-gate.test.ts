@@ -43,6 +43,24 @@ describe('runSemanticGate', () => {
     expect(gap?.ruleUid).toBe(QC_RULES.resolvableEntityReferences.uid)
   })
 
+  /**
+   * The gate resolves references graph-to-graph: both the entity name and the
+   * reference value reach the store through `irToRdf`, so whatever the literal
+   * escaper does must be symmetric across the two. A single quote is the case
+   * that changed — it is now emitted as the `\'` ECHAR rather than raw — and a
+   * regression here would look like a valid scene suddenly reporting a
+   * dangling reference.
+   */
+  it('resolves a reference whose entity name needs literal escaping', async () => {
+    ir.entities[0]!.ref = `O'Brien "the\\ Ego"\ttab`
+    ir.actions[3]!.references!.relativeTo = `O'Brien "the\\ Ego"\ttab`
+    ir.actions[0]!.actor = `O'Brien "the\\ Ego"\ttab`
+    ir.actions[1]!.actor = `O'Brien "the\\ Ego"\ttab`
+    const result = await runSemanticGate(ir)
+    expect(result.gaps).toEqual([])
+    expect(result.ok).toBe(true)
+  })
+
   it('flags a duplicate entity name with the unique_element_names UID', async () => {
     ir.entities.push({ ref: 'Ego', type: 'Vehicle', properties: { name: 'dup' } })
     const result = await runSemanticGate(ir)

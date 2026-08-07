@@ -33,12 +33,26 @@
  */
 
 /**
+ * Characters this function rewrites. Used only to decide whether the
+ * per-code-point pass is needed at all — see {@link escapeRdfLiteral}.
+ */
+const NEEDS_ESCAPE = /["'\\\n\r\t\u0000-\u001F]/
+
+/**
  * Escape `value` for embedding inside a double-quoted RDF literal (SPARQL
  * `STRING_LITERAL2` / Turtle `STRING_LITERAL_QUOTE`).
  *
  * The returned string carries no delimiters — the caller wraps it in `"…"`.
+ *
+ * Scan-then-copy: almost every value an emitter passes here (property local
+ * names, IRIs, labels, enum values) contains nothing to escape, so one regex
+ * scan returns it untouched and the allocating per-code-point pass runs only
+ * when it has work to do. Call volume is low either way — a full sweep of every
+ * domain's shapes serializes ~700 terms — so this is cheap insurance, not a
+ * measured bottleneck.
  */
 export function escapeRdfLiteral(value: string): string {
+  if (!NEEDS_ESCAPE.test(value)) return value
   let out = ''
   for (const ch of value) {
     const code = ch.codePointAt(0)!
