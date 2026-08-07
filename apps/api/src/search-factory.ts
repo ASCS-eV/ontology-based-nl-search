@@ -6,6 +6,11 @@
  * this module provides the concrete implementations.
  *
  * Tests construct SearchService directly with mock dependencies.
+ *
+ * A composition root in the wiring sense, not the ownership sense: each
+ * function injected below resolves a process-wide singleton internally rather
+ * than receiving one from here, so this module chooses WHICH implementation
+ * runs but does not own its lifetime. ADR 0008 records why that was left as is.
  */
 import { generateStructuredSearch } from '@ontology-search/llm'
 import type {

@@ -3,8 +3,18 @@
  *
  * Architecture:
  * - SearchService class with constructor-injected dependencies (Dependency Inversion)
- * - No global state — all external I/O accessed through typed interfaces
- * - Module-level factory provides production wiring; tests inject mocks directly
+ * - This CLASS holds no state of its own; every external effect goes through a
+ *   typed interface on {@link SearchDependencies}, so tests inject mocks and
+ *   need no store, no ontology and no LLM.
+ * - The COMPOSED system does hold process-wide state. The production wiring
+ *   (`apps/api/src/search-factory.ts`) injects `getInitializedStore`,
+ *   `compileSlotsWithTrace`, `compileAllCountQueries` and
+ *   `generateStructuredSearch`, each of which reads a module-level singleton
+ *   internally — the store, the compiler vocabulary, the schema vocabulary.
+ *   The injection seam is one layer thick over those caches. That is deliberate
+ *   for a server that loads one ontology at startup and holds it for the
+ *   process lifetime; see ADR 0008 for why it was not converged onto a
+ *   store-keyed registry, and what would change that.
  *
  * Responsibilities:
  * 1. Full NL search: init → LLM interpret → compile → policy → execute → count
