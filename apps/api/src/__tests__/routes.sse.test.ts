@@ -40,7 +40,7 @@ function mockSearchNlWithProgress(result: typeof HAPPY_PATH_RESULT) {
           interpretation: result.interpretation,
           gaps: result.gaps,
           sparql: result.sparql,
-          slots: { domains: ['hdmap'], filters: {}, ranges: {} },
+          slots: HAPPY_PATH_SLOTS,
         },
       })
       await opts.onProgress({ phase: 'executing' })
@@ -64,6 +64,18 @@ vi.mock('@ontology-search/ontology/domain-registry', () => ({
 beforeEach(() => {
   vi.clearAllMocks()
 })
+
+/**
+ * A slot IR with every shape the refine round-trip must preserve: a
+ * multi-valued filter, a scalar filter, a numeric range and a cross-domain
+ * reference. Anything the client would have to guess at is present here.
+ */
+const HAPPY_PATH_SLOTS = {
+  domains: ['hdmap'],
+  filters: { roadTypes: ['motorway', 'urban'], country: 'DE' },
+  ranges: { laneCount: { min: 3, max: 6 } },
+  references: [{ domain: 'ositrace' }],
+}
 
 const HAPPY_PATH_RESULT = {
   interpretation: {
@@ -103,6 +115,7 @@ describe('POST /search/stream — SSE protocol', () => {
       SSE_EVENT.INTERPRETATION,
       SSE_EVENT.GAPS,
       SSE_EVENT.SPARQL,
+      SSE_EVENT.SLOTS,
       SSE_EVENT.GRAPHQL,
       SSE_EVENT.STATUS,
       SSE_EVENT.RESULTS,
@@ -143,6 +156,9 @@ describe('POST /search/stream — SSE protocol', () => {
     })
     expect(byEvent.get(SSE_EVENT.GAPS)).toEqual([])
     expect(typeof byEvent.get(SSE_EVENT.SPARQL)).toBe('string')
+    // The slot IR ships verbatim — this is what the refine round-trip posts
+    // back, so a lossy projection here would silently change the re-run query.
+    expect(byEvent.get(SSE_EVENT.SLOTS)).toEqual(HAPPY_PATH_SLOTS)
     expect(typeof byEvent.get(SSE_EVENT.GRAPHQL)).toBe('string')
     expect(byEvent.get(SSE_EVENT.RESULTS)).toMatchObject({ results: expect.any(Array) })
     expect(byEvent.get(SSE_EVENT.META)).toMatchObject({ matchCount: expect.any(Number) })

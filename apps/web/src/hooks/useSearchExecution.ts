@@ -1,13 +1,8 @@
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { useCallback, useRef, useState } from 'react'
 
-import type {
-  MappedTerm,
-  OntologyGap,
-  QueryInterpretation,
-  RowTraceability,
-  SearchMeta,
-} from '../api-types'
+import type { OntologyGap, QueryInterpretation, RowTraceability, SearchMeta } from '../api-types'
 import { apiPost, apiPostStream, isAbortError } from '../lib/api-client'
 import { parseSSEBuffer } from '../lib/sse-parser'
 
@@ -18,6 +13,12 @@ export interface SearchState {
   gaps: OntologyGap[] | null
   sparql: string | null
   graphql: string | null
+  /**
+   * The validated slot IR the server compiled, streamed over SSE. This is the
+   * editable representation the refine round-trip posts back — the search
+   * analog of the authoring scene IR.
+   */
+  slots: SearchSlots | null
   results: Record<string, string>[] | null
   /**
    * Per-row traceability, aligned by index with `results`. Present when the
@@ -32,24 +33,6 @@ export interface SearchState {
   error: string | null
 }
 
-function isNumericRange(mapped: string): boolean {
-  return /[><=]\s*\d/.test(mapped) || /\d+\s*[-–]\s*\d+/.test(mapped)
-}
-
-function parseRange(mapped: string): { min?: number; max?: number } {
-  const geMatch = mapped.match(/>=?\s*(\d+(?:\.\d+)?)/)
-  const leMatch = mapped.match(/<=?\s*(\d+(?:\.\d+)?)/)
-  const rangeMatch = mapped.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/)
-
-  if (rangeMatch) {
-    return { min: Number(rangeMatch[1]), max: Number(rangeMatch[2]) }
-  }
-  const result: { min?: number; max?: number } = {}
-  if (geMatch) result.min = Number(geMatch[1])
-  if (leMatch) result.max = Number(leMatch[1])
-  return result
-}
-
 /**
  * Hook encapsulating the entire search execution lifecycle:
  * - SSE streaming for the initial natural-language search
@@ -62,6 +45,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
     gaps: null,
     sparql: null,
     graphql: null,
+    slots: null,
     results: null,
     traceability: null,
     meta: null,
@@ -82,6 +66,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
       gaps: null,
       sparql: null,
       graphql: null,
+      slots: null,
       results: null,
       traceability: null,
       meta: null,
@@ -132,6 +117,9 @@ export function useSearchExecution(_availableDomains?: string[]) {
             case SSE_EVENT.GRAPHQL:
               setState((s) => ({ ...s, graphql: data as string }))
               break
+            case SSE_EVENT.SLOTS:
+              setState((s) => ({ ...s, slots: data as SearchSlots }))
+              break
             case SSE_EVENT.RESULTS: {
               const resultData = data as {
                 results: Record<string, string>[]
@@ -173,7 +161,17 @@ export function useSearchExecution(_availableDomains?: string[]) {
     }
   }, [])
 
-  const handleRefine = useCallback(async (updatedTerms: MappedTerm[], updatedDomains: string[]) => {
+  /**
+   * Re-run against edited slots.
+   *
+   * `slots` is the server's own validated IR with the user's edits applied —
+   * never a reconstruction. The previous implementation rebuilt it by
+   * regex-scraping `interpretation.mappedTerms[].mapped`, a human-readable
+   * display string: multi-valued filters collapsed to a single string,
+   * references were dropped entirely, and a reworded interpretation silently
+   * changed the query.
+   */
+  const handleRefine = useCallback(async (edited: SearchSlots) => {
     setState((s) => ({
       ...s,
       loading: true,
@@ -182,35 +180,11 @@ export function useSearchExecution(_availableDomains?: string[]) {
       traceability: null,
       meta: null,
       phase: 'executing',
+      slots: edited,
     }))
 
     try {
-      const filters: Record<string, string> = {}
-      const ranges: Record<string, { min?: number; max?: number }> = {}
-
-      // Every mapped term — geography, license, plain
-      // enums — flows through the same `filters` map keyed by SHACL
-      // leaf local name. The compiler walks the discovered property
-      // path for each key; no client-side knowledge of which fields
-      // are "location" is needed.
-      for (const term of updatedTerms) {
-        if (term.property && term.mapped) {
-          if (isNumericRange(term.mapped)) {
-            ranges[term.property] = parseRange(term.mapped)
-          } else {
-            filters[term.property] = term.mapped
-          }
-        }
-      }
-
-      // Empty domains = search all domains (cross-domain query)
-      const domains = updatedDomains
-
-      const slots = {
-        domains,
-        filters,
-        ranges,
-      }
+      const slots = edited
 
       const data = await apiPost<{
         sparql: string

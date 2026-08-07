@@ -1,4 +1,5 @@
 import { Alert } from '@ontology-search/design-system'
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { useQuery } from '@tanstack/react-query'
 import { lazy, Suspense, useMemo, useState } from 'react'
 
@@ -27,6 +28,15 @@ const COLLAPSED_STEPS = new Set(['sparql'])
 /** Distinct localStorage key so search history never mixes with authoring's. */
 const SEARCH_HISTORY_KEY = 'nl-search-history'
 
+/** Total editable constraints in the slot IR — one per filter VALUE, plus ranges. */
+function countSlotFilters(slots: SearchSlots): number {
+  const filterValues = Object.values(slots.filters).reduce<number>(
+    (n, v) => n + (Array.isArray(v) ? v.length : 1),
+    0
+  )
+  return filterValues + Object.keys(slots.ranges).length
+}
+
 export function SearchPage() {
   const {
     data: stats,
@@ -47,6 +57,7 @@ export function SearchPage() {
     gaps,
     sparql,
     graphql,
+    slots,
     results,
     traceability,
     meta,
@@ -123,19 +134,11 @@ export function SearchPage() {
       {
         id: 'filters',
         label: 'Selected Filters',
-        summary: interpretation
-          ? `${interpretation.mappedTerms.length} filter(s) applied`
-          : undefined,
-        hasContent: !!(interpretation && interpretation.mappedTerms.length > 0),
-        content:
-          interpretation && interpretation.mappedTerms.length > 0 ? (
-            <QueryRefinement
-              mappedTerms={interpretation.mappedTerms}
-              domains={interpretation.domains ?? []}
-              onRerun={handleRefine}
-              loading={loading}
-            />
-          ) : null,
+        summary: slots ? `${countSlotFilters(slots)} filter(s) applied` : undefined,
+        hasContent: !!slots,
+        content: slots ? (
+          <QueryRefinement slots={slots} onRerun={handleRefine} loading={loading} />
+        ) : null,
       },
       {
         id: 'gaps',
@@ -227,14 +230,7 @@ export function SearchPage() {
           {hasResponse && (
             <div className="mt-8 space-y-4">
               {interpretation && <InterpretationDisplay interpretation={interpretation} />}
-              {interpretation && interpretation.mappedTerms.length > 0 && (
-                <QueryRefinement
-                  mappedTerms={interpretation.mappedTerms}
-                  domains={interpretation.domains ?? []}
-                  onRerun={handleRefine}
-                  loading={loading}
-                />
-              )}
+              {slots && <QueryRefinement slots={slots} onRerun={handleRefine} loading={loading} />}
               {gaps && <OntologyGapsDisplay gaps={gaps} />}
               {sparql && <SparqlPreview sparql={sparql} />}
               {results && <ResultsDisplay results={results} traceability={traceability} />}

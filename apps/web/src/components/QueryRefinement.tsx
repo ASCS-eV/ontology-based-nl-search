@@ -1,96 +1,158 @@
 import { Button } from '@ontology-search/design-system'
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { useEffect, useState } from 'react'
 
-import type { MappedTerm } from '../api-types'
+/**
+ * Editable chips over the **slot IR** the server compiled and streamed back.
+ *
+ * The slots are the source of truth, exactly as the authoring page edits the
+ * scene IR. Earlier this component edited `interpretation.mappedTerms` — a
+ * human-readable summary — and the hook regex-parsed those strings back into
+ * slots, which silently flattened multi-valued filters and dropped references.
+ *
+ * One chip per VALUE, not per property: a filter holding `['motorway','urban']`
+ * renders two chips, so editing or removing one value is unambiguous and needs
+ * no delimiter convention. Ranges get typed min/max number inputs rather than
+ * free text, for the same reason.
+ */
 
-/** Structural equality check for MappedTerm arrays (avoids JSON.stringify) */
-function termsEqual(a: MappedTerm[], b: MappedTerm[]): boolean {
-  if (a.length !== b.length) return false
-  return a.every(
-    (term, i) =>
-      term.property === b[i]?.property &&
-      term.mapped === b[i]?.mapped &&
-      term.input === b[i]?.input &&
-      term.confidence === b[i]?.confidence
+/** A single editable filter value, addressed by its property and array index. */
+interface FilterChip {
+  property: string
+  value: string
+  /** Index within the property's value array; `null` when it is a lone string. */
+  index: number | null
+}
+
+function filterChips(filters: SearchSlots['filters']): FilterChip[] {
+  const chips: FilterChip[] = []
+  for (const [property, value] of Object.entries(filters)) {
+    if (Array.isArray(value)) {
+      value.forEach((v, index) => chips.push({ property, value: v, index }))
+    } else if (value) {
+      chips.push({ property, value, index: null })
+    }
+  }
+  return chips
+}
+
+/** Replace one value in place, preserving whether the slot held an array. */
+function setFilterValue(slots: SearchSlots, chip: FilterChip, next: string): SearchSlots {
+  const filters = { ...slots.filters }
+  if (chip.index === null) {
+    filters[chip.property] = next
+  } else {
+    const current = filters[chip.property]
+    const arr = Array.isArray(current) ? [...current] : [current ?? '']
+    arr[chip.index] = next
+    filters[chip.property] = arr
+  }
+  return { ...slots, filters }
+}
+
+/** Drop one value; removing the last one drops the property entirely. */
+function removeFilterValue(slots: SearchSlots, chip: FilterChip): SearchSlots {
+  const filters = { ...slots.filters }
+  if (chip.index === null) {
+    delete filters[chip.property]
+    return { ...slots, filters }
+  }
+  const current = filters[chip.property]
+  const arr = (Array.isArray(current) ? current : [current ?? '']).filter(
+    (_, i) => i !== chip.index
+  )
+  if (arr.length === 0) delete filters[chip.property]
+  else filters[chip.property] = arr.length === 1 ? arr[0]! : arr
+  return { ...slots, filters }
+}
+
+function removeRange(slots: SearchSlots, property: string): SearchSlots {
+  const ranges = { ...slots.ranges }
+  delete ranges[property]
+  return { ...slots, ranges }
+}
+
+function setRangeBound(
+  slots: SearchSlots,
+  property: string,
+  bound: 'min' | 'max',
+  raw: string
+): SearchSlots {
+  const ranges = { ...slots.ranges }
+  const current = { ...(ranges[property] ?? {}) }
+  // An empty field means "no bound on this side", which is not the same as 0.
+  if (raw.trim() === '') delete current[bound]
+  else {
+    const parsed = Number(raw)
+    if (Number.isNaN(parsed)) return slots
+    current[bound] = parsed
+  }
+  ranges[property] = current
+  return { ...slots, ranges }
+}
+
+function removeDomain(slots: SearchSlots, domain: string): SearchSlots {
+  return { ...slots, domains: slots.domains.filter((d) => d !== domain) }
+}
+
+function removeReference(slots: SearchSlots, domain: string): SearchSlots {
+  const references = (slots.references ?? []).filter((r) => r.domain !== domain)
+  const next: SearchSlots = { ...slots, references }
+  if (references.length === 0) delete next.references
+  return next
+}
+
+/** Structural equality over the parts this component can edit. */
+function slotsEqual(a: SearchSlots, b: SearchSlots): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+function hasAnything(slots: SearchSlots): boolean {
+  return (
+    slots.domains.length > 0 ||
+    Object.keys(slots.filters).length > 0 ||
+    Object.keys(slots.ranges).length > 0 ||
+    (slots.references?.length ?? 0) > 0
   )
 }
 
-function arraysEqual(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false
-  return a.every((v, i) => v === b[i])
-}
-
 interface QueryRefinementProps {
-  mappedTerms: MappedTerm[]
-  domains: string[]
-  onRerun: (updatedTerms: MappedTerm[], updatedDomains: string[]) => void
+  slots: SearchSlots
+  onRerun: (slots: SearchSlots) => void
   loading?: boolean
 }
 
-/**
- * Editable chips for the interpreted query terms and domains.
- * Users can remove terms/domains or edit values, then re-run directly.
- * Removing all domains means "search all domains".
- */
-export function QueryRefinement({
-  mappedTerms,
-  domains: initialDomains,
-  onRerun,
-  loading,
-}: QueryRefinementProps) {
-  const [terms, setTerms] = useState<MappedTerm[]>(mappedTerms)
-  const [domains, setDomains] = useState<string[]>(initialDomains)
-  const [editingIdx, setEditingIdx] = useState<number | null>(null)
+const CHIP = 'group inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm shadow-sm'
+const REMOVE =
+  'ml-0.5 w-4 h-4 flex items-center justify-center text-gray-400 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+
+export function QueryRefinement({ slots: incoming, onRerun, loading }: QueryRefinementProps) {
+  const [slots, setSlots] = useState<SearchSlots>(incoming)
+  const [editing, setEditing] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
-  // Sync internal state when parent provides new data (e.g., new search)
+  // Adopt fresh server slots (a new search, or a completed refine).
   useEffect(() => {
-    setTerms(mappedTerms)
-  }, [mappedTerms])
+    setSlots(incoming)
+    setEditing(null)
+  }, [incoming])
 
-  useEffect(() => {
-    setDomains(initialDomains)
-  }, [initialDomains])
+  const hasChanges = !slotsEqual(slots, incoming)
+  const chips = filterChips(slots.filters)
 
-  const hasChanges = !termsEqual(terms, mappedTerms) || !arraysEqual(domains, initialDomains)
-
-  const removeDomain = (domain: string) => {
-    setDomains(domains.filter((d) => d !== domain))
+  const startEdit = (key: string, value: string) => {
+    setEditing(key)
+    setEditValue(value)
   }
 
-  const removeTerm = (idx: number) => {
-    setTerms(terms.filter((_, i) => i !== idx))
-  }
-
-  const startEdit = (idx: number) => {
-    const term = terms[idx]
-    if (!term) return
-    setEditingIdx(idx)
-    setEditValue(term.mapped)
-  }
-
-  const confirmEdit = () => {
-    if (editingIdx === null) return
-    const updated = [...terms]
-    const target = updated[editingIdx]
-    if (target && editValue.trim()) {
-      updated[editingIdx] = { ...target, mapped: editValue.trim(), confidence: 'medium' }
-      setTerms(updated)
-    }
-    setEditingIdx(null)
+  const confirmEdit = (chip: FilterChip) => {
+    const next = editValue.trim()
+    if (next) setSlots(setFilterValue(slots, chip, next))
+    setEditing(null)
     setEditValue('')
   }
 
-  const cancelEdit = () => {
-    setEditingIdx(null)
-    setEditValue('')
-  }
-
-  const handleRerun = () => {
-    onRerun(terms, domains)
-  }
-
-  if (terms.length === 0 && domains.length === 0) return null
+  if (!hasAnything(slots) && !hasAnything(incoming)) return null
 
   return (
     <div className="w-full" role="region" aria-label="Refine query">
@@ -102,17 +164,16 @@ export function QueryRefinement({
       </div>
 
       <div className="flex flex-wrap gap-2 items-center">
-        {/* Domain chips */}
-        {domains.map((domain) => (
+        {slots.domains.map((domain) => (
           <div
             key={`domain-${domain}`}
-            className="group inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-sm shadow-sm hover:shadow transition-shadow"
+            className={`${CHIP} bg-indigo-50 border border-indigo-200 hover:shadow transition-shadow`}
           >
             <span className="text-xs text-indigo-400 font-mono">domain:</span>
             <span className="font-medium text-indigo-700">{domain}</span>
             <button
-              onClick={() => removeDomain(domain)}
-              className="ml-0.5 w-4 h-4 flex items-center justify-center text-indigo-400 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => setSlots(removeDomain(slots, domain))}
+              className={REMOVE}
               aria-label={`Remove ${domain} domain filter`}
               title="Remove domain (empty = all domains)"
             >
@@ -121,70 +182,110 @@ export function QueryRefinement({
           </div>
         ))}
 
-        {/* No-domain hint */}
-        {domains.length === 0 && initialDomains.length > 0 && (
+        {slots.domains.length === 0 && incoming.domains.length > 0 && (
           <span className="text-xs text-gray-400 italic">all domains</span>
         )}
 
-        {/* Property filter chips (exclude domain terms — shown above).
-            Drop any term whose `mapped` value is empty: the LLM sometimes
-            emits a property-only marker alongside the real mapping, which
-            would otherwise render as a bare "country:" / "references.domain:"
-            chip with no value next to it. */}
-        {terms
-          .map((term, origIdx) => ({ term, origIdx }))
-          .filter(
-            ({ term }) => term.property !== 'domain' && term.property !== 'domains' && term.mapped
-          )
-          .map(({ term, origIdx }) => (
-            <div
-              key={`${term.property}-${origIdx}`}
-              className="group inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-sm shadow-sm hover:shadow transition-shadow"
+        {(slots.references ?? []).map((ref) => (
+          <div
+            key={`ref-${ref.domain}`}
+            className={`${CHIP} bg-amber-50 border border-amber-200 hover:shadow transition-shadow`}
+          >
+            <span className="text-xs text-amber-500 font-mono">references:</span>
+            <span className="font-medium text-amber-700">{ref.domain}</span>
+            <button
+              onClick={() => setSlots(removeReference(slots, ref.domain))}
+              className={REMOVE}
+              aria-label={`Remove ${ref.domain} reference filter`}
+              title="Remove cross-reference"
             >
-              {term.property && (
-                <span className="text-xs text-gray-400 font-mono">{term.property}:</span>
-              )}
+              ×
+            </button>
+          </div>
+        ))}
 
-              {editingIdx === origIdx ? (
+        {chips.map((chip) => {
+          const key = `${chip.property}#${chip.index ?? 'single'}`
+          return (
+            <div
+              key={key}
+              className={`${CHIP} bg-white border border-gray-200 hover:shadow transition-shadow`}
+            >
+              <span className="text-xs text-gray-400 font-mono">{chip.property}:</span>
+              {editing === key ? (
                 <input
                   type="text"
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') confirmEdit()
-                    if (e.key === 'Escape') cancelEdit()
+                    if (e.key === 'Enter') confirmEdit(chip)
+                    if (e.key === 'Escape') setEditing(null)
                   }}
-                  onBlur={confirmEdit}
+                  onBlur={() => confirmEdit(chip)}
                   className="w-24 px-1 py-0 text-sm border-b border-blue-400 outline-none bg-transparent"
                   autoFocus
-                  aria-label={`Edit value for ${term.property || term.input}`}
+                  aria-label={`Edit value for ${chip.property}`}
                 />
               ) : (
                 <button
-                  onClick={() => startEdit(origIdx)}
+                  onClick={() => startEdit(key, chip.value)}
                   className="font-medium text-gray-800 hover:text-blue-600 cursor-pointer"
                   title="Click to edit"
-                  aria-label={`Edit ${term.mapped}`}
+                  aria-label={`Edit ${chip.value}`}
                 >
-                  {term.mapped}
+                  {chip.value}
                 </button>
               )}
-
               <button
-                onClick={() => removeTerm(origIdx)}
-                className="ml-0.5 w-4 h-4 flex items-center justify-center text-gray-400 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                aria-label={`Remove ${term.mapped} filter`}
+                onClick={() => setSlots(removeFilterValue(slots, chip))}
+                className={REMOVE}
+                aria-label={`Remove ${chip.value} filter`}
                 title="Remove filter"
               >
                 ×
               </button>
             </div>
-          ))}
+          )
+        })}
+
+        {Object.entries(slots.ranges).map(([property, range]) => (
+          <div
+            key={`range-${property}`}
+            className={`${CHIP} bg-emerald-50 border border-emerald-200 hover:shadow transition-shadow`}
+          >
+            <span className="text-xs text-emerald-500 font-mono">{property}:</span>
+            <input
+              type="number"
+              value={range.min ?? ''}
+              placeholder="min"
+              onChange={(e) => setSlots(setRangeBound(slots, property, 'min', e.target.value))}
+              className="w-14 px-1 py-0 text-sm bg-transparent border-b border-emerald-300 outline-none"
+              aria-label={`Minimum ${property}`}
+            />
+            <span className="text-emerald-400">–</span>
+            <input
+              type="number"
+              value={range.max ?? ''}
+              placeholder="max"
+              onChange={(e) => setSlots(setRangeBound(slots, property, 'max', e.target.value))}
+              className="w-14 px-1 py-0 text-sm bg-transparent border-b border-emerald-300 outline-none"
+              aria-label={`Maximum ${property}`}
+            />
+            <button
+              onClick={() => setSlots(removeRange(slots, property))}
+              className={REMOVE}
+              aria-label={`Remove ${property} range filter`}
+              title="Remove range"
+            >
+              ×
+            </button>
+          </div>
+        ))}
 
         {hasChanges && (
           <Button
-            onClick={handleRerun}
-            disabled={loading || terms.length === 0}
+            onClick={() => onRerun(slots)}
+            disabled={loading || !hasAnything(slots)}
             variant="primary"
             size="sm"
             ariaLabel="Re-run with modified filters"

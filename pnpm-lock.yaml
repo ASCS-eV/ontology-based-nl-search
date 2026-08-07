@@ -245,6 +245,9 @@ importers:
       '@ontology-search/scenario-viewer-wasm':
         specifier: workspace:*
         version: link:../../packages/scenario-viewer-wasm
+      '@ontology-search/slots':
+        specifier: workspace:*
+        version: link:../../packages/slots
       '@tanstack/react-query':
         specifier: ^5.75.5
         version: 5.100.9(react@19.2.6)

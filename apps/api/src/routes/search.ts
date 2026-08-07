@@ -155,6 +155,16 @@ searchRoutes.post('/stream', (c) => {
                     event: SSE_EVENT.SPARQL,
                     data: JSON.stringify(progress.data.sparql),
                   })
+                  // The validated slot IR. The refine round-trip posts this
+                  // back, so it ships unconditionally — a client that had to
+                  // re-derive it from `interpretation` could only guess, and
+                  // would lose multi-valued filters, ranges and references.
+                  if (progress.data.slots) {
+                    await stream.writeSSE({
+                      event: SSE_EVENT.SLOTS,
+                      data: JSON.stringify(progress.data.slots),
+                    })
+                  }
                   // Emit GraphQL intermediate representation when feature is enabled
                   if (getConfig().FEATURE_GRAPHQL_LAYER && progress.data.slots) {
                     const enumProperties = await getEnumPropertyNames()
