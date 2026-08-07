@@ -11,12 +11,12 @@
  */
 import { validateRangesAgainstShacl, validateSlotsAgainstShacl } from '@ontology-search/llm'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
-import type { SearchSlots } from '@ontology-search/search'
 import {
   extractSchemaVocabulary,
   getInitializedStore,
   getInstanceValues,
 } from '@ontology-search/search'
+import type { SearchSlots } from '@ontology-search/slots/slots'
 
 /**
  * Validate search slots against SHACL constraints.

@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { resetConfig } from '@ontology-search/core/config'
+import { OntologySourcesError } from '@ontology-search/core/errors'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
@@ -17,7 +18,6 @@ import {
   getWorkspaceRoot,
   loadOntologySourcesManifest,
   type OntologySourcesDiagnostics,
-  OntologySourcesError,
 } from '../sources.js'
 
 /**

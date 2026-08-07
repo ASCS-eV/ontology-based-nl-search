@@ -18,7 +18,9 @@
  * @see packages/llm/src/agent/copilot-agent.ts — Copilot-SDK caller
  */
 
+import type { OntologyGap, QueryInterpretation } from '@ontology-search/api-types'
 import type { Stopwatch } from '@ontology-search/core/logging'
+import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { SchemaVocabulary } from '@ontology-search/search'
 import {
   expandFilterConcepts,
@@ -26,11 +28,11 @@ import {
   getInitializedStore,
   getInstanceValues,
   preferDomainsNamedInQuery,
-  ShaclValidator,
 } from '@ontology-search/search'
 import { compileSlotsWithTrace, resolveKnownDomains } from '@ontology-search/search/compiler'
-import type { ReferenceFilter, SearchSlots } from '@ontology-search/search/slots'
-import { normalizeReferences } from '@ontology-search/search/slots'
+import type { LlmStructuredResponse } from '@ontology-search/search/types'
+import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
+import { normalizeReferences } from '@ontology-search/slots/slots'
 
 import type { InstanceValueLookup } from '../slot-validator.js'
 import {
@@ -40,7 +42,6 @@ import {
   validateSlots,
   validateSlotsAgainstShacl,
 } from '../slot-validator.js'
-import type { LlmStructuredResponse, OntologyGap, QueryInterpretation } from '../types.js'
 
 /**
  * Shape of a slot submission as received from any LLM provider.

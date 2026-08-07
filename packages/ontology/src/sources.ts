@@ -25,7 +25,6 @@ import { getProjectRoot } from './paths.js'
  * can map it to HTTP status by `instanceof` without depending on the
  * ontology package.
  */
-export { OntologySourcesError }
 
 /**
  * Path segments of the local ontology cache that holds the upstream artifacts.

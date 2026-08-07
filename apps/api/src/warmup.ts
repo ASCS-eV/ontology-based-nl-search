@@ -1,12 +1,8 @@
 import { getAuthoringBackend, probeEngineVersions } from '@ontology-search/authoring'
+import { warmOpenDriveRoadGrounding } from '@ontology-search/authoring-gate'
 import { getConfig } from '@ontology-search/core/config'
 import { createComponentLogger } from '@ontology-search/core/logging'
-import {
-  verifyLlmProvider,
-  warmOpenDriveRoadGrounding,
-  warmupAgentPrompt,
-  warmupLlmSession,
-} from '@ontology-search/llm'
+import { verifyLlmProvider, warmupAgentPrompt, warmupLlmSession } from '@ontology-search/llm'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import { getInitializedStore, warmupCompiler } from '@ontology-search/search'

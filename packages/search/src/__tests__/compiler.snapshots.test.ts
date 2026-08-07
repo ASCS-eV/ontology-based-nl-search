@@ -24,12 +24,12 @@
  * here should be regenerated deliberately, not silently auto-fixed.
  */
 
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { enforceSparqlPolicy, registerPolicyNamespaces } from '@ontology-search/sparql/policy'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { compileSlots, compileSlotsWithTrace } from '../compiler.js'
 import { getInitializedStore } from '../init.js'
-import type { SearchSlots } from '../slots.js'
 
 beforeAll(async () => {
   // Warm the singletons once. The compiler's internal vocabulary cache plus

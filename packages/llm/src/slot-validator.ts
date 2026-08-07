@@ -22,7 +22,9 @@
  * Suggestions for gaps come from the same vocabulary the LLM saw, using
  * string distance.
  */
+import type { GapKind, MappedTerm, OntologyGap } from '@ontology-search/api-types'
 import type { SchemaVocabulary } from '@ontology-search/search'
+import type { LlmStructuredResponse } from '@ontology-search/search/types'
 
 import {
   buildAllowedValuesIndex,
@@ -34,7 +36,6 @@ import {
   MIN_SUGGESTION_SIMILARITY,
   suggestionScore,
 } from './slot-validator-fuzzy.js'
-import type { GapKind, LlmStructuredResponse, MappedTerm, OntologyGap } from './types.js'
 
 export type { InstanceValueLookup, ShaclSlotValidationResult } from './slot-validator-shacl.js'
 export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-validator-shacl.js'

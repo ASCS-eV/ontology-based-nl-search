@@ -10,11 +10,11 @@
  */
 
 import { createComponentLogger, Stopwatch } from '@ontology-search/core/logging'
-import { getPrimaryDomain } from '@ontology-search/search'
+import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
+import type { LlmStructuredResponse } from '@ontology-search/search/types'
 import { generateText, hasToolCall, isStepCount, type LanguageModel, streamText } from 'ai'
 
 import { getModel } from '../provider.js'
-import type { LlmStructuredResponse } from '../types.js'
 import { buildRequestPrompt, getAgentContext, warmupAgentContext } from './agent-context.js'
 import { type AgentPolicy, getAgentPolicy } from './agent-policy.js'
 import { buildEmptyFallbackResponse } from './empty-fallback.js'

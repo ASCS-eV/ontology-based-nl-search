@@ -6,12 +6,12 @@
  * @see https://www.w3.org/TR/sparql11-query/ — [SPARQL11]
  */
 import { type DomainRegistry } from '@ontology-search/ontology/domain-registry'
+import type { TraceabilityStep } from '@ontology-search/slots/slots'
 
 import { findDomainForIri, prefixedPredicate } from './compiler-helpers-primitives.js'
 import { type CompilerVocab } from './compiler-vocab.js'
 import { type ReferenceChain } from './property-paths.js'
 import { type DataReferenceEdge, type ReferenceIndex } from './reference-index.js'
-import type { TraceabilityStep } from './slots.js'
 
 /**
  * Pick the cross-domain reference chain to use when joining `parentDomain`

@@ -8,13 +8,13 @@
  * (the probe runs only for the WASM backend).
  */
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
+import type { EngineInfo } from '@ontology-search/authoring-wasm'
 
 import type {
   AuthoringBackend,
   AuthoringLowerOptions,
   AuthoringValidateOptions,
   AuthoringValidationResult,
-  EngineInfo,
 } from './backend.js'
 
 export class NullAuthoringBackend implements AuthoringBackend {

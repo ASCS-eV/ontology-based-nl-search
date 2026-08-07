@@ -14,11 +14,10 @@
  * `./service-types.js` (ADR 0003 split for CONTRIBUTING #15); it is re-exported
  * here so consumers keep importing it from `@ontology-search/search`.
  */
+import type { ResultRow, ResultTraceStep, RowTraceability } from '@ontology-search/api-types'
 import { generateRequestId, RequestLogger } from '@ontology-search/core/logging'
+import type { TraceabilityPlan } from '@ontology-search/slots/slots'
 import type { SparqlBinding } from '@ontology-search/sparql/types'
-
-import type { TraceabilityPlan } from './slots.js'
-import type { ResultRow, ResultTraceStep, RowTraceability } from './types.js'
 
 export type {
   ExecutionResult,

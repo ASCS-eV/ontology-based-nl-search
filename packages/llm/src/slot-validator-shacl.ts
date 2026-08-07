@@ -3,11 +3,12 @@
  * violate a declared SHACL constraint (and unknown property keys), surfacing
  * each as a gap with nearest-vocabulary suggestions. Depends on the fuzzy leaf.
  */
+import type { OntologyGap } from '@ontology-search/api-types'
 import { createComponentLogger } from '@ontology-search/core/logging'
-import type { SchemaVocabulary, ShaclValidator } from '@ontology-search/search'
+import type { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
+import type { SchemaVocabulary } from '@ontology-search/search'
 
 import { buildAllowedValuesIndex, getSuggestions } from './slot-validator-fuzzy.js'
-import type { OntologyGap } from './types.js'
 
 const logger = createComponentLogger('slot-validator-shacl')
 

@@ -1,32 +1,16 @@
 /**
- * Re-exports the HTTP-boundary wire types from the browser-safe
- * `@ontology-search/api-types` package. Keeping the wire shapes there
- * lets the web client import the SAME declarations without pulling in
- * server-only modules (Oxigraph WASM, SHACL validator, Node `fs`).
+ * Server-internal types built ON TOP of the HTTP-boundary wire types.
  *
- * Server-internal additions (currently `LlmStructuredResponse`, which
- * carries `core/logging` `TimingEntry`s) live here on top of the
- * exported wire types.
+ * The wire shapes themselves live in the browser-safe
+ * `@ontology-search/api-types` package and are imported from there directly —
+ * by this module, by the web client, and by every other consumer. This module
+ * deliberately does not re-export them: doing so let callers reach api-types
+ * through `search` without declaring it, which hid the real edge from
+ * `scripts/check-layers.mjs`.
  */
-import type { TimingEntry } from '@ontology-search/core/logging'
-
-import type { TraceabilityPlan } from './slots.js'
-import type { SearchSlots } from './slots.js'
-
-export type {
-  GapKind,
-  MappedTerm,
-  OntologyGap,
-  QueryInterpretation,
-  ResultRow,
-  ResultTraceStep,
-  RowTraceability,
-  SearchMeta,
-  SearchResponse,
-  StatsResponse,
-} from '@ontology-search/api-types'
-
 import type { OntologyGap, QueryInterpretation } from '@ontology-search/api-types'
+import type { TimingEntry } from '@ontology-search/core/logging'
+import type { SearchSlots, TraceabilityPlan } from '@ontology-search/slots/slots'
 
 /**
  * Server-side full structured response from the LLM. Adds richer

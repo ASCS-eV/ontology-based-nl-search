@@ -13,6 +13,7 @@
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { sparqlPrefix } from '@ontology-search/core/rdf/prefixes'
 import { type DomainRegistry } from '@ontology-search/ontology/domain-registry'
+import type { SearchSlots } from '@ontology-search/slots/slots'
 
 import { buildDomainPatterns } from './compiler-domain-patterns.js'
 import {
@@ -26,7 +27,6 @@ import {
 } from './compiler-helpers.js'
 import { type CompilerVocab } from './compiler-vocab.js'
 import { type PropertyPath } from './property-paths.js'
-import type { SearchSlots } from './slots.js'
 
 const log = createComponentLogger('compiler')
 

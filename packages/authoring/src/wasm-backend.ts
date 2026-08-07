@@ -8,6 +8,7 @@
  * — so there is no port, auth or cold-start surface.
  */
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
+import type { EngineInfo } from '@ontology-search/authoring-wasm'
 import { loadOscEngine, type OscEngine } from '@ontology-search/authoring-wasm'
 
 import type {
@@ -15,7 +16,6 @@ import type {
   AuthoringLowerOptions,
   AuthoringValidateOptions,
   AuthoringValidationResult,
-  EngineInfo,
 } from './backend.js'
 import { irToEngineTree } from './ir-to-engine.js'
 

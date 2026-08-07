@@ -28,6 +28,8 @@
 import { getConfig } from '@ontology-search/core/config'
 import { CompileError } from '@ontology-search/core/errors'
 import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
+import type { CompileResult, SearchSlots, TraceabilityPlan } from '@ontology-search/slots/slots'
+import { normalizeReferences } from '@ontology-search/slots/slots'
 
 // `getAssetDomains` lives in `./asset-domains.js` (broke a compiler ↔
 // reference-index cycle); the vocab/cache + warmup half of the compiler lives in
@@ -53,8 +55,6 @@ import {
   type ReferenceEmitContext,
 } from './compiler-reference-emit.js'
 import { type CompilerVocab, getCompilerVocab, getDomainReferences } from './compiler-vocab.js'
-import type { CompileResult, SearchSlots, TraceabilityPlan } from './slots.js'
-import { normalizeReferences } from './slots.js'
 
 // Re-export the extracted compiler submodules (ADR 0003, step 1) so the existing
 // `@ontology-search/search` public surface and intra-package importers keep

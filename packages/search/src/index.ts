@@ -55,53 +55,24 @@ export type {
 } from './service.js'
 export type { SearchDependencies } from './service.js'
 export { SearchService } from './service.js'
-export type {
-  CompileResult,
-  ReferenceFilter,
-  SearchSlots,
-  TraceabilityPlan,
-  TraceabilityStep,
-} from './slots.js'
-export { normalizeReferences } from './slots.js'
 export type { SparqlValidationIssue, SparqlValidationResult } from './sparql-validator.js'
 export { validateSparql } from './sparql-validator.js'
 export type { LineageOptions, TraceabilityEdge, TraceabilityNode } from './traceability.js'
 export { DEFAULT_LINEAGE_DEPTH, exploreLineage, MAX_LINEAGE_DEPTH } from './traceability.js'
-export type {
-  LlmStructuredResponse,
-  MappedTerm,
-  OntologyGap,
-  QueryInterpretation,
-  SearchResponse,
-} from './types.js'
+export type { LlmStructuredResponse } from './types.js'
 export type { EnumProperty, NumericProperty, SchemaVocabulary } from './vocabulary-extractor.js'
 export {
   extractSchemaVocabulary,
   getInstanceValues,
   resetVocabulary,
 } from './vocabulary-extractor.js'
-// Slot↔GraphQL codec re-exported for back-compat: it moved to its own package
-// `@ontology-search/graphql-ir` (ADR 0003, decomposition step 3). Consumers may
-// import from there directly; the root `@ontology-search/search` surface is
-// unchanged.
-export type {
-  GraphQLParseError,
-  GraphQLParseResult,
-  GraphQLValidationIssue,
-  GraphQLValidationResult,
-} from '@ontology-search/graphql-ir'
-export {
-  parseGraphQLToSlots,
-  slotsToGraphQL,
-  validateGraphQL,
-  validateGraphQLCompleteness,
-} from '@ontology-search/graphql-ir'
 
-// Re-exports from lower layers so upper layers (llm) can depend on search alone.
-export { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
-export type {
-  ShaclValidationResult,
-  ShaclViolation,
-} from '@ontology-search/ontology/shacl-validator'
-export { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
-export type { SparqlStore } from '@ontology-search/sparql/types'
+// This barrel exports what THIS package owns and nothing else. The slot IR
+// (`@ontology-search/slots`), the slot↔GraphQL codec
+// (`@ontology-search/graphql-ir`), the SHACL validator and domain registry
+// (`@ontology-search/ontology`) and the store interface
+// (`@ontology-search/sparql`) are each their own package; consumers import
+// them directly and declare the dependency. Re-exporting them here made
+// `llm -> ontology` and `llm -> slots` invisible to `scripts/check-layers.mjs`,
+// which reads the DECLARED package.json graph — the gate now rejects a
+// downward re-export from any entry point.

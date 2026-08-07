@@ -1,4 +1,5 @@
 import { parseGraphQLToSlots, slotsToGraphQL } from '@ontology-search/graphql-ir'
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import {
   enforceSparqlPolicy,
   registerPolicyNamespaces,
@@ -8,7 +9,6 @@ import { afterAll, beforeAll, vi } from 'vitest'
 
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
 import { compileCountQuery, compileSlots, normalizeDomainName } from '../compiler.js'
-import type { SearchSlots } from '../slots.js'
 
 // Register ontology namespaces so compiled queries pass policy validation
 beforeAll(() => {
