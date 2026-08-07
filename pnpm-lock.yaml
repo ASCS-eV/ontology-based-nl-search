@@ -67,6 +67,9 @@ importers:
       '@ontology-search/authoring':
         specifier: workspace:*
         version: link:../../packages/authoring
+      '@ontology-search/authoring-gate':
+        specifier: workspace:*
+        version: link:../../packages/authoring-gate
       '@ontology-search/authoring-ir':
         specifier: workspace:*
         version: link:../../packages/authoring-ir
@@ -85,6 +88,9 @@ importers:
       '@ontology-search/search':
         specifier: workspace:*
         version: link:../../packages/search
+      '@ontology-search/slots':
+        specifier: workspace:*
+        version: link:../../packages/slots
       '@ontology-search/sparql':
         specifier: workspace:*
         version: link:../../packages/sparql
@@ -593,12 +599,21 @@ importers:
       '@ontology-search/core':
         specifier: workspace:*
         version: link:../core
+      '@ontology-search/ontology':
+        specifier: workspace:*
+        version: link:../ontology
       '@ontology-search/road-catalog':
         specifier: workspace:*
         version: link:../road-catalog
       '@ontology-search/search':
         specifier: workspace:*
         version: link:../search
+      '@ontology-search/slots':
+        specifier: workspace:*
+        version: link:../slots
+      '@ontology-search/sparql':
+        specifier: workspace:*
+        version: link:../sparql
       ai:
         specifier: ^7.0.42
         version: 7.0.42(zod@4.4.3)
@@ -810,6 +825,10 @@ importers:
         version: 3.2.4(@types/node@25.7.0)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4)
 
   packages/testing:
+    dependencies:
+      '@ontology-search/slots':
+        specifier: workspace:*
+        version: link:../slots
     devDependencies:
       '@ontology-search/api-types':
         specifier: workspace:*

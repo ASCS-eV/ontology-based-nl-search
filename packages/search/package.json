@@ -10,11 +10,6 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./slots": {
-      "types": "./src/slots.ts",
-      "import": "./dist/slots.js",
-      "default": "./dist/slots.js"
-    },
     "./discovery": {
       "types": "./src/discovery.ts",
       "import": "./dist/discovery.js",
@@ -39,11 +34,6 @@
       "types": "./src/types.ts",
       "import": "./dist/types.js",
       "default": "./dist/types.js"
-    },
-    "./slot-wire-schema": {
-      "types": "./src/slot-wire-schema.ts",
-      "import": "./dist/slot-wire-schema.js",
-      "default": "./dist/slot-wire-schema.js"
     }
   },
   "scripts": {

@@ -10,11 +10,6 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./types": {
-      "types": "./src/types.ts",
-      "import": "./dist/types.js",
-      "default": "./dist/types.js"
-    },
     "./evaluation": {
       "types": "./src/evaluation.ts",
       "import": "./dist/evaluation.js",
@@ -44,8 +39,11 @@
     "@ontology-search/authoring-gate": "workspace:*",
     "@ontology-search/authoring-ir": "workspace:*",
     "@ontology-search/core": "workspace:*",
+    "@ontology-search/ontology": "workspace:*",
     "@ontology-search/road-catalog": "workspace:*",
     "@ontology-search/search": "workspace:*",
+    "@ontology-search/slots": "workspace:*",
+    "@ontology-search/sparql": "workspace:*",
     "ai": "^7.0.42",
     "zod": "^4.4.3"
   },

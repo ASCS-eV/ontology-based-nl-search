@@ -3,18 +3,18 @@
  * and options interfaces for the orchestration class in `./service.js`. Split
  * out so `service.ts` (the class) stays under CONTRIBUTING #15. Pure types.
  */
-import type { TimingEntry } from '@ontology-search/core/logging'
-import type { PolicyResult } from '@ontology-search/sparql/policy'
-import type { SparqlStore } from '@ontology-search/sparql/types'
-
-import type { CompileResult, SearchSlots } from './slots.js'
 import type {
-  LlmStructuredResponse,
   ResultRow,
   ResultTraceStep,
   RowTraceability,
   SearchMeta as WireSearchMeta,
-} from './types.js'
+} from '@ontology-search/api-types'
+import type { TimingEntry } from '@ontology-search/core/logging'
+import type { CompileResult, SearchSlots } from '@ontology-search/slots/slots'
+import type { PolicyResult } from '@ontology-search/sparql/policy'
+import type { SparqlStore } from '@ontology-search/sparql/types'
+
+import type { LlmStructuredResponse } from './types.js'
 
 // Re-export the wire row/step types so any intra-package reference keeps
 // resolving from here, while the single declaration lives in api-types.

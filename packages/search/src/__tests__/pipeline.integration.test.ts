@@ -35,6 +35,7 @@
  */
 
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { enforceSparqlPolicy } from '@ontology-search/sparql/policy'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -51,7 +52,6 @@ import {
 } from '../compiler.js'
 import { getInitializedStore } from '../init.js'
 import { type SearchDependencies, SearchService } from '../service.js'
-import type { SearchSlots } from '../slots.js'
 import type { LlmStructuredResponse } from '../types.js'
 
 /**

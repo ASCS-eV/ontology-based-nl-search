@@ -2,7 +2,7 @@ import {
   gapsWireSchema,
   interpretationWireSchema,
   searchSlotsWireSchema,
-} from '@ontology-search/search/slot-wire-schema'
+} from '@ontology-search/slots/slot-wire-schema'
 import { tool, type ToolSet } from 'ai'
 import { z } from 'zod'
 

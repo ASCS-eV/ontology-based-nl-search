@@ -23,6 +23,11 @@
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { escapeRdfLiteral } from '@ontology-search/core/rdf/literal'
 import { type DomainRegistry } from '@ontology-search/ontology/domain-registry'
+import type {
+  ReferenceFilter,
+  TraceabilityPlan,
+  TraceabilityStep,
+} from '@ontology-search/slots/slots'
 
 import { buildDomainPatterns } from './compiler-domain-patterns.js'
 import {
@@ -34,7 +39,6 @@ import {
 import { type CompilerVocab } from './compiler-vocab.js'
 import { getInitializedStore } from './init.js'
 import { getReferenceIndex, pickLiveReferenceEdge } from './reference-index.js'
-import type { ReferenceFilter, TraceabilityPlan, TraceabilityStep } from './slots.js'
 
 const log = createComponentLogger('compiler')
 

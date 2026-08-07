@@ -19,8 +19,8 @@ import {
   type RetrievedSchema,
   retrieveRelevantSchema,
   type SchemaVocabulary,
-  type SparqlStore,
 } from '@ontology-search/search'
+import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { composeRetrievedSections, joinPromptParts } from '../prompt/compose.js'
 import { buildStaticCore } from '../prompt/static-core.js'

@@ -16,7 +16,7 @@
  */
 
 import { authoringIrWireSchema } from '@ontology-search/authoring-ir/scene-wire-schema'
-import { gapsWireSchema, interpretationWireSchema } from '@ontology-search/search/slot-wire-schema'
+import { gapsWireSchema, interpretationWireSchema } from '@ontology-search/slots/slot-wire-schema'
 import { tool, type ToolSet } from 'ai'
 import { z } from 'zod'
 

@@ -5,9 +5,10 @@
  * so every assertion is ontology-agnostic and survives an ontology swap —
  * the fixtures adapt to whatever schema is loaded.
  */
+import type { SparqlStore } from '@ontology-search/sparql/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import type { SparqlStore, TermCard, TermIndex } from '../index.js'
+import type { TermCard, TermIndex } from '../index.js'
 import { getInitializedStore } from '../init.js'
 import { retrieveRelevantSchema, warmupRetrievalIndex } from '../schema-index/retrieval.js'
 import { buildTermIndex } from '../schema-index/term-index.js'

@@ -8,9 +8,10 @@
  * set) except the explicit gx coverage proof.
  */
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
+import type { SparqlStore } from '@ontology-search/sparql/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import type { SparqlStore, TermCard } from '../index.js'
+import type { TermCard } from '../index.js'
 import { getInitializedStore } from '../init.js'
 import {
   extractShaclFragments,

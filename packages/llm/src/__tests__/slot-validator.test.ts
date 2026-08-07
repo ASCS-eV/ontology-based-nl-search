@@ -1,8 +1,8 @@
 import type { SchemaVocabulary } from '@ontology-search/search'
+import type { LlmStructuredResponse } from '@ontology-search/search/types'
 import { describe, expect, it } from 'vitest'
 
 import { correctDomains, correctFilters, validateSlots } from '../slot-validator.js'
-import type { LlmStructuredResponse } from '../types.js'
 
 const testVocabulary: SchemaVocabulary = {
   enumProperties: [

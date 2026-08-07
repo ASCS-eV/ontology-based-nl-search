@@ -14,9 +14,8 @@
  */
 import type { SchemaVocabulary } from '@ontology-search/search'
 import { compileSlots } from '@ontology-search/search/compiler'
-import type { SearchSlots } from '@ontology-search/search/slots'
-
-import type { LlmStructuredResponse } from '../types.js'
+import type { LlmStructuredResponse } from '@ontology-search/search/types'
+import type { SearchSlots } from '@ontology-search/slots/slots'
 
 /** How many example property names to surface in the fallback hint. */
 const MAX_EXAMPLE_PROPERTIES = 3

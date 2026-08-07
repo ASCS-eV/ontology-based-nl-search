@@ -7,9 +7,9 @@
  * the schema graph. Naming a real domain in a test is allowed (CLAUDE.md
  * ontology-name budget: tests may).
  */
+import type { SparqlStore } from '@ontology-search/sparql/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import type { SparqlStore } from '../index.js'
 import { getInitializedStore } from '../init.js'
 import { buildTermIndex, resetTermIndex, type TermIndex } from '../schema-index/term-index.js'
 import { extractSchemaVocabulary } from '../vocabulary-extractor.js'

@@ -3,7 +3,7 @@ import {
   type ReferenceFilterInput,
   referenceFilterWireSchema,
   searchSlotsWireSchema,
-} from '@ontology-search/search/slot-wire-schema'
+} from '@ontology-search/slots/slot-wire-schema'
 import { z } from 'zod'
 
 export const EVALUATION_SCHEMA_VERSION = '1.0.0' as const

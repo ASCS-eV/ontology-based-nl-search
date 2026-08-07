@@ -11,10 +11,10 @@
  * the schema's real predicate. The previous implementation fabricated
  * `<prefix>:hasDomainSpecification` here, which this test forbids.
  */
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { describe, expect, it } from 'vitest'
 
 import { compileSlotsWithTrace } from '../compiler.js'
-import type { SearchSlots } from '../slots.js'
 
 const NS = 'http://example.org/widget/v1/'
 

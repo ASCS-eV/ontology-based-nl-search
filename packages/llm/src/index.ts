@@ -12,11 +12,8 @@
  * breaking downstream packages.
  */
 import { getConfig } from '@ontology-search/core/config'
-import {
-  getInitializedStore,
-  getPrimaryDomain,
-  warmupRetrievalIndex,
-} from '@ontology-search/search'
+import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
+import { getInitializedStore, warmupRetrievalIndex } from '@ontology-search/search'
 
 import {
   getPersistentSession,
@@ -28,18 +25,13 @@ import { verifyProviderAccess } from './provider-access.js'
 import { providerContextFromConfig, withProviderErrorTranslation } from './provider-errors.js'
 
 export { warmupAgentPrompt }
-import type { LlmStructuredResponse } from './types.js'
+import type { LlmStructuredResponse } from '@ontology-search/search/types'
 
 // Re-export the SHACL slot-validation helpers so the api app can use the
 // same gate in its /refine composition root without depending on internal
 // modules.
 export type { InstanceValueLookup, ShaclSlotValidationResult } from './slot-validator.js'
 export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-validator.js'
-
-// Re-exported so the api app can warm the authoring pipeline's ontology
-// grounding at startup without taking a direct dependency on the gate package:
-// the pipeline that consumes it (`runScenePipeline`) lives here.
-export { warmOpenDriveRoadGrounding } from '@ontology-search/authoring-gate'
 
 export interface SearchOptions {
   domain?: string

@@ -8,14 +8,10 @@ import {
   RequestLogger,
 } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
-import { parseGraphQLToSlots } from '@ontology-search/graphql-ir'
-import {
-  extractSchemaVocabulary,
-  getInitializedStore,
-  normalizeReferences,
-  slotsToGraphQL,
-} from '@ontology-search/search'
-import { referenceFilterWireSchema } from '@ontology-search/search/slot-wire-schema'
+import { parseGraphQLToSlots, slotsToGraphQL } from '@ontology-search/graphql-ir'
+import { extractSchemaVocabulary, getInitializedStore } from '@ontology-search/search'
+import { referenceFilterWireSchema } from '@ontology-search/slots/slot-wire-schema'
+import { normalizeReferences } from '@ontology-search/slots/slots'
 import { parse, validate } from 'graphql'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'

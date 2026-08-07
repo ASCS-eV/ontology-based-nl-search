@@ -2,9 +2,10 @@
  * Projection contract: the autocomplete wire shape is derived from the
  * shared term index without changing what the web client sees.
  */
+import type { SparqlStore } from '@ontology-search/sparql/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import type { SparqlStore, TermCard, TermIndex } from '../index.js'
+import type { TermCard, TermIndex } from '../index.js'
 import { getInitializedStore } from '../init.js'
 import { buildTermIndex } from '../schema-index/term-index.js'
 import { toVocabularyResponse } from '../schema-index/to-vocabulary-response.js'

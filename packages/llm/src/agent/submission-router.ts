@@ -16,7 +16,7 @@ import {
   gapsWireSchema,
   interpretationWireSchema,
   referenceFilterWireSchema,
-} from '@ontology-search/search/slot-wire-schema'
+} from '@ontology-search/slots/slot-wire-schema'
 import { z } from 'zod'
 
 /**

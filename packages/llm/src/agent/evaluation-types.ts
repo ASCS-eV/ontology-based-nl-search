@@ -1,6 +1,6 @@
 import type { RetrievedSchema } from '@ontology-search/search'
+import type { LlmStructuredResponse } from '@ontology-search/search/types'
 
-import type { LlmStructuredResponse } from '../types.js'
 import type { SlotPipelineSubmission } from './run-slot-pipeline.js'
 
 export interface EvaluationToolTrace {
