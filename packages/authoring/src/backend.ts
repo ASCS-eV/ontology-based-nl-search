@@ -18,10 +18,7 @@ import type {
   EngineFiles,
   EngineInfo,
   EngineParameters,
-  Severity,
 } from '@ontology-search/authoring-wasm'
-
-export type { EngineFiles, EngineInfo, EngineParameters, Severity }
 
 /**
  * A validation diagnostic surfaced by the backend. Extends the engine's

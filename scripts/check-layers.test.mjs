@@ -151,3 +151,68 @@ test('the real workspace has no re-export laundering left', () => {
     []
   )
 })
+
+/**
+ * The INDIRECT form: import a workspace symbol, then export the local binding.
+ * Semantically identical to `export … from`, equally invisible to the declared
+ * graph, and the shape `ontology/sources.ts` and `authoring/backend.ts` were
+ * both using — neither of which the `export … from` pattern alone would catch.
+ */
+test('readWorkspaceGraph detects import-then-export laundering', () => {
+  const root = mkdtempSync(join(tmpdir(), 'check-layers-'))
+  try {
+    const dir = join(root, 'packages', 'mid')
+    mkdirSync(join(dir, 'src'), { recursive: true })
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({
+        name: '@ontology-search/mid',
+        exports: { '.': { types: './src/index.ts' } },
+      })
+    )
+    writeFileSync(
+      join(dir, 'src', 'index.ts'),
+      [
+        "import { Err } from '@ontology-search/leaf'", // bound locally...
+        "import { kept } from '@ontology-search/leaf'", // ...used, never exported
+        "import { local } from './local.js'",
+        'export { Err }', // ...then re-exported: IS a violation
+        'export { local }', // same-package binding: not a violation
+        'export function ownThing() { return kept(local) }',
+      ].join('\n')
+    )
+    assert.deepEqual(readWorkspaceGraph(root)[0].reexports, [
+      { subpath: '.', target: '@ontology-search/leaf' },
+    ])
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('does not treat `export { X } from` as an indirect re-export twice', () => {
+  const root = mkdtempSync(join(tmpdir(), 'check-layers-'))
+  try {
+    const dir = join(root, 'packages', 'mid')
+    mkdirSync(join(dir, 'src'), { recursive: true })
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({
+        name: '@ontology-search/mid',
+        exports: { '.': { types: './src/index.ts' } },
+      })
+    )
+    writeFileSync(
+      join(dir, 'src', 'index.ts'),
+      [
+        "import { X } from '@ontology-search/leaf'",
+        "export { X } from '@ontology-search/leaf'",
+      ].join('\n')
+    )
+    // Reported once by the direct rule, not a second time by the indirect one.
+    assert.deepEqual(readWorkspaceGraph(root)[0].reexports, [
+      { subpath: '.', target: '@ontology-search/leaf' },
+    ])
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})

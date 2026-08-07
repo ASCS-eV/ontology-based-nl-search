@@ -1,7 +1,8 @@
+import type { EngineInfo } from '@ontology-search/authoring-wasm'
 import { BackendCapabilityError } from '@ontology-search/core/errors'
 import { describe, expect, it } from 'vitest'
 
-import type { AuthoringBackend, EngineInfo } from '../backend.js'
+import type { AuthoringBackend } from '../backend.js'
 import { EXPECTED_ENGINE, probeEngineVersions } from '../capability-probe.js'
 import { NullAuthoringBackend } from '../null-backend.js'
 import { WasmAuthoringBackend } from '../wasm-backend.js'

@@ -59,11 +59,71 @@ export const RANKS = {
 }
 
 /**
- * `export … from '@ontology-search/x'` — a re-export of another workspace
- * package's API. Covers `export *`, `export { … }` and `export type { … }`.
+ * `export … from '@ontology-search/x'` — the direct form of a cross-package
+ * re-export. Covers `export *`, `export { … }` and `export type { … }`.
  */
 const CROSS_PACKAGE_REEXPORT =
   /export\s+(?:type\s+)?(?:\*(?:\s+as\s+\w+)?|\{[^}]*\})\s*from\s*['"](@ontology-search\/[^'"]+)['"]/g
+
+/** `import { a, b as c } from '@ontology-search/x'` — binds workspace names locally. */
+const CROSS_PACKAGE_IMPORT =
+  /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"](@ontology-search\/[^'"]+)['"]/g
+
+/** Any `export { … }` list; the caller decides whether a `from` clause follows. */
+const EXPORT_LIST = /export\s+(?:type\s+)?\{([^}]*)\}/g
+
+/** Split an import/export specifier list into the names it binds locally. */
+function importedNames(list) {
+  return list
+    .split(',')
+    .map((part) =>
+      part
+        .trim()
+        .split(/\s+as\s+/)
+        .pop()
+        ?.trim()
+    )
+    .filter(Boolean)
+}
+
+/** Split an export list into the names it takes from local scope. */
+function exportedNames(list) {
+  return list
+    .split(',')
+    .map((part) =>
+      part
+        .trim()
+        .split(/\s+as\s+/)[0]
+        ?.trim()
+    )
+    .filter(Boolean)
+}
+
+/**
+ * Find the indirect form: `import { X } from '@ontology-search/x'` followed by
+ * a bare `export { X }`. Semantically identical to the direct form and just as
+ * invisible to the declared-graph check, so the gate must see both.
+ */
+function indirectReexports(src, subpath) {
+  const fromWorkspace = new Map() // local name -> owning workspace package
+  for (const match of src.matchAll(CROSS_PACKAGE_IMPORT)) {
+    const target = match[2].split('/').slice(0, 2).join('/')
+    for (const name of importedNames(match[1])) fromWorkspace.set(name, target)
+  }
+  if (fromWorkspace.size === 0) return []
+
+  const found = []
+  for (const match of src.matchAll(EXPORT_LIST)) {
+    // A `from` clause after the brace means the direct rule already saw it.
+    const after = src.slice(match.index + match[0].length)
+    if (/^\s*from\b/.test(after)) continue
+    for (const name of exportedNames(match[1])) {
+      const target = fromWorkspace.get(name)
+      if (target) found.push({ subpath, target })
+    }
+  }
+  return found
+}
 
 /**
  * The `.ts` entry points a package publishes, read from its `exports` map —
@@ -117,6 +177,9 @@ export function readWorkspaceGraph(root = ROOT) {
           // `@ontology-search/foo/bar` -> `@ontology-search/foo`
           const target = match[1].split('/').slice(0, 2).join('/')
           if (target !== pkg.name) reexports.push({ subpath, target })
+        }
+        for (const found of indirectReexports(src, subpath)) {
+          if (found.target !== pkg.name) reexports.push(found)
         }
       }
       pkgs.push({ name: pkg.name, deps, reexports })
