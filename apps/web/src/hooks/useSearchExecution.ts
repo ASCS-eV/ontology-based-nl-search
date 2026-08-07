@@ -2,7 +2,13 @@ import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import type { SearchSlots } from '@ontology-search/slots/slots'
 import { useCallback, useRef, useState } from 'react'
 
-import type { OntologyGap, QueryInterpretation, RowTraceability, SearchMeta } from '../api-types'
+import type {
+  OntologyGap,
+  QueryInterpretation,
+  RefineResponse,
+  RowTraceability,
+  SearchMeta,
+} from '../api-types'
 import { apiPost, apiPostStream, isAbortError } from '../lib/api-client'
 import { parseSSEBuffer } from '../lib/sse-parser'
 
@@ -186,18 +192,13 @@ export function useSearchExecution(_availableDomains?: string[]) {
     try {
       const slots = edited
 
-      const data = await apiPost<{
-        sparql: string
-        graphql?: string
-        results: Record<string, string>[]
-        traceability?: RowTraceability[]
-        meta: SearchMeta
-      }>('/api/search/refine', { slots })
+      const data = await apiPost<RefineResponse>('/api/search/refine', { slots })
 
       setState((s) => ({
         ...s,
         sparql: data.sparql,
         graphql: data.graphql ?? null,
+        slots: data.slots,
         results: data.results,
         traceability: data.traceability ?? null,
         meta: data.meta,
@@ -226,18 +227,18 @@ export function useSearchExecution(_availableDomains?: string[]) {
 
     try {
       // Parse GraphQL back to slots via the API
-      const data = await apiPost<{
-        sparql: string
-        graphql?: string
-        results: Record<string, string>[]
-        traceability?: RowTraceability[]
-        meta: SearchMeta
-      }>('/api/search/refine-graphql', { graphql: graphqlQuery })
+      const data = await apiPost<RefineResponse>('/api/search/refine-graphql', {
+        graphql: graphqlQuery,
+      })
 
       setState((s) => ({
         ...s,
         sparql: data.sparql,
         graphql: data.graphql ?? graphqlQuery,
+        // The slots the GraphQL document parsed to. Without adopting them the
+        // refinement panel would still show the PREVIOUS query's IR, and a
+        // re-run would silently execute that instead of what the user wrote.
+        slots: data.slots,
         results: data.results,
         traceability: data.traceability ?? null,
         meta: data.meta,

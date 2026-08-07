@@ -107,7 +107,11 @@ function slotsEqual(a: SearchSlots, b: SearchSlots): boolean {
   return JSON.stringify(a) === JSON.stringify(b)
 }
 
-function hasAnything(slots: SearchSlots): boolean {
+/**
+ * Whether the IR carries anything this panel can show or edit. Exported so the
+ * page's pipeline step cannot claim content while the panel renders nothing.
+ */
+export function hasEditableSlots(slots: SearchSlots): boolean {
   return (
     slots.domains.length > 0 ||
     Object.keys(slots.filters).length > 0 ||
@@ -152,7 +156,7 @@ export function QueryRefinement({ slots: incoming, onRerun, loading }: QueryRefi
     setEditValue('')
   }
 
-  if (!hasAnything(slots) && !hasAnything(incoming)) return null
+  if (!hasEditableSlots(slots) && !hasEditableSlots(incoming)) return null
 
   return (
     <div className="w-full" role="region" aria-label="Refine query">
@@ -285,7 +289,7 @@ export function QueryRefinement({ slots: incoming, onRerun, loading }: QueryRefi
         {hasChanges && (
           <Button
             onClick={() => onRerun(slots)}
-            disabled={loading || !hasAnything(slots)}
+            disabled={loading || !hasEditableSlots(slots)}
             variant="primary"
             size="sm"
             ariaLabel="Re-run with modified filters"

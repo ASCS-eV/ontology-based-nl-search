@@ -5,11 +5,17 @@
  * the web client consumes over the `/search/stream` SSE stream and the
  * `/search/refine` / `/stats` JSON endpoints.
  *
- * **Zero workspace dependencies on purpose.** The web app cannot pull
- * in `@ontology-search/search` (it transitively brings Oxigraph WASM,
+ * **Browser-safe by construction.** The web app cannot pull in
+ * `@ontology-search/search` (it transitively brings Oxigraph WASM,
  * Node `fs`, and the SHACL validator). Keeping the wire shapes in
- * their own browser-safe package lets both sides of the HTTP boundary
- * import the SAME declarations — drift is impossible by construction.
+ * their own package lets both sides of the HTTP boundary import the
+ * SAME declarations — drift is impossible by construction.
+ *
+ * The only workspace dependency is `@ontology-search/slots`, and it is a
+ * dependency of the CONTRACT, not an implementation detail: `/search/refine`
+ * takes the slot IR as its request body and reports the slots it ran. Slots is
+ * itself a zero-dependency, browser-safe leaf (types plus Zod schemas), so this
+ * costs the client bundle nothing.
  *
  * Server-internal extensions (e.g. `LlmStructuredResponse` which
  * carries `core/logging` `TimingEntry`s) live in the search package
@@ -28,6 +34,8 @@
  */
 
 /** A single term mapped from user input to an ontology concept. */
+import type { SearchSlots } from '@ontology-search/slots/slots'
+
 export interface MappedTerm {
   /** What the user typed or implied. */
   input: string
@@ -168,6 +176,15 @@ export interface RefineResponse {
   /** Per-row, per-reference breadcrumbs; present only when the query had a JOIN. */
   traceability?: RowTraceability[]
   meta: SearchMeta
+  /**
+   * The slots this refine actually ran, after normalization.
+   *
+   * `/refine` echoes what the caller sent; `/refine-graphql` reports what the
+   * GraphQL document parsed to, which the caller has no other way to learn.
+   * The editable refinement panel is driven by this, so a client that kept its
+   * own copy would drift the moment the server normalized anything.
+   */
+  slots: SearchSlots
 }
 
 /** Body of the `/stats` JSON response. */

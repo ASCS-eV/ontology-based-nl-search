@@ -12,7 +12,7 @@ import { InterpretationDisplay } from './InterpretationDisplay'
 import { OntologyGapsDisplay } from './OntologyGapsDisplay'
 import type { PipelineStep } from './PipelineStepper'
 import { PipelineStepper } from './PipelineStepper'
-import { QueryRefinement } from './QueryRefinement'
+import { hasEditableSlots, QueryRefinement } from './QueryRefinement'
 import { ResultsDisplay } from './ResultsDisplay'
 import { SearchBar } from './SearchBar'
 import { SparqlPreview } from './SparqlPreview'
@@ -135,10 +135,11 @@ export function SearchPage() {
         id: 'filters',
         label: 'Selected Filters',
         summary: slots ? `${countSlotFilters(slots)} filter(s) applied` : undefined,
-        hasContent: !!slots,
-        content: slots ? (
-          <QueryRefinement slots={slots} onRerun={handleRefine} loading={loading} />
-        ) : null,
+        hasContent: !!slots && hasEditableSlots(slots),
+        content:
+          slots && hasEditableSlots(slots) ? (
+            <QueryRefinement slots={slots} onRerun={handleRefine} loading={loading} />
+          ) : null,
       },
       {
         id: 'gaps',
@@ -230,7 +231,9 @@ export function SearchPage() {
           {hasResponse && (
             <div className="mt-8 space-y-4">
               {interpretation && <InterpretationDisplay interpretation={interpretation} />}
-              {slots && <QueryRefinement slots={slots} onRerun={handleRefine} loading={loading} />}
+              {slots && hasEditableSlots(slots) && (
+                <QueryRefinement slots={slots} onRerun={handleRefine} loading={loading} />
+              )}
               {gaps && <OntologyGapsDisplay gaps={gaps} />}
               {sparql && <SparqlPreview sparql={sparql} />}
               {results && <ResultsDisplay results={results} traceability={traceability} />}

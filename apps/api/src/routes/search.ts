@@ -274,6 +274,10 @@ searchRoutes.post('/refine', async (c) => {
       results: result.execution.results,
       traceability: result.execution.traceability,
       meta: result.meta,
+      // The POST-normalization slots (`references` is coerced to an array
+      // here), so the client's editable panel reflects what actually ran
+      // rather than what it happened to send.
+      slots: parseResult.data,
     }
 
     // Include GraphQL intermediate representation when feature is enabled
@@ -374,6 +378,11 @@ searchRoutes.post('/refine-graphql', async (c) => {
       results: result.execution.results,
       traceability: result.execution.traceability,
       meta: result.meta,
+      // What the GraphQL document parsed to. The caller sent prose-free
+      // GraphQL and has no other way to learn the slots that ran, so without
+      // this its refinement panel would keep showing the PREVIOUS query's IR
+      // and a subsequent re-run would silently execute that instead.
+      slots: parseResult.slots,
     }
 
     // Re-serialize from the parsed slots (normalized form)

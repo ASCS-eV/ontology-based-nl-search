@@ -35,13 +35,16 @@ const WORKSPACE_PREFIX = '@ontology-search/'
 export const RANKS = {
   '@ontology-search/typescript-config': -1,
   '@ontology-search/eslint-config': -1,
-  '@ontology-search/api-types': 0,
   '@ontology-search/design-system': 0,
   '@ontology-search/slots': 0,
   '@ontology-search/authoring-ir': 0,
   '@ontology-search/authoring-wasm': 0,
   '@ontology-search/road-catalog': 0,
   '@ontology-search/scenario-viewer-wasm': 0,
+  // api-types sits above the leaf IR packages: the wire contract EMBEDS the
+  // slot IR (a refine takes slots in and reports the slots it ran), so it must
+  // be able to depend on `slots`. Nothing at rank <= 1 depends on api-types.
+  '@ontology-search/api-types': 1,
   '@ontology-search/core': 1,
   '@ontology-search/sparql': 2,
   '@ontology-search/ontology': 2,

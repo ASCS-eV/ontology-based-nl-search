@@ -19,7 +19,9 @@
     "check-types:tests": "tsc -p tsconfig.test.json",
     "clean": "rimraf dist"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@ontology-search/slots": "workspace:*"
+  },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",
     "rimraf": "^6.0.0",
