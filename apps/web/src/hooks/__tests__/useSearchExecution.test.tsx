@@ -103,4 +103,115 @@ describe('useSearchExecution', () => {
     expect(result.current.loading).toBe(true)
     expect(result.current.phase).toBe('interpreting')
   })
+  /**
+   * The defect this change exists to fix. `handleRefine` used to rebuild the
+   * slot IR by regex-scraping `interpretation.mappedTerms[].mapped` — a
+   * human-readable display string. A multi-valued filter came back as one
+   * string, ranges depended on the summary happening to read like ">= 3", and
+   * `references` were dropped outright, so a cross-domain query silently
+   * became a single-domain one on re-run.
+   *
+   * The server now streams the validated slots and the client posts exactly
+   * what it was given, edits included.
+   */
+  it('streams the slot IR and refines with it verbatim — arrays, ranges and references intact', async () => {
+    const slots = {
+      domains: ['hdmap'],
+      filters: { roadTypes: ['motorway', 'urban'], country: 'DE' },
+      ranges: { laneCount: { min: 3, max: 6 } },
+      references: [{ domain: 'ositrace' }],
+    }
+    vi.spyOn(api, 'apiPostStream').mockResolvedValue(
+      sseResponse(`event: slots\ndata: ${JSON.stringify(slots)}\n\nevent: done\ndata: {}\n\n`)
+    )
+    const apiPost = vi.spyOn(api, 'apiPost').mockResolvedValue({
+      sparql: 'SELECT * WHERE {}',
+      results: [],
+      meta: {},
+    } as never)
+
+    const { result } = renderHook(() => useSearchExecution())
+
+    await act(async () => {
+      await result.current.handleSearch('German motorways referencing traces')
+    })
+
+    // The hook holds the server's own IR, not a reconstruction.
+    expect(result.current.slots).toEqual(slots)
+
+    await act(async () => {
+      await result.current.handleRefine(result.current.slots!)
+    })
+
+    expect(apiPost).toHaveBeenCalledWith('/api/search/refine', { slots })
+  })
+
+  it('leaves slots null when the stream carries none', async () => {
+    vi.spyOn(api, 'apiPostStream').mockResolvedValue(sseResponse('event: done\ndata: {}\n\n'))
+    const { result } = renderHook(() => useSearchExecution())
+    await act(async () => {
+      await result.current.handleSearch('anything')
+    })
+    expect(result.current.slots).toBeNull()
+  })
+  /**
+   * Regression: `handleGraphQLRun` did not touch `slots`. Once the refinement
+   * panel became the authoritative editable IR, that left it showing the
+   * PREVIOUS query's slots after a GraphQL run — and pressing Re-run would
+   * execute those instead of the GraphQL the user actually wrote. The endpoint
+   * now reports the slots the document parsed to, and the hook adopts them.
+   */
+  it('adopts the slots a GraphQL run parsed to, replacing the previous search IR', async () => {
+    const nlSlots = { domains: ['hdmap'], filters: { country: 'DE' }, ranges: {} }
+    const graphqlSlots = { domains: ['ositrace'], filters: { roadTypes: ['urban'] }, ranges: {} }
+
+    vi.spyOn(api, 'apiPostStream').mockResolvedValue(
+      sseResponse(`event: slots\ndata: ${JSON.stringify(nlSlots)}\n\nevent: done\ndata: {}\n\n`)
+    )
+    vi.spyOn(api, 'apiPost').mockResolvedValue({
+      sparql: 'SELECT * WHERE {}',
+      results: [],
+      meta: {},
+      slots: graphqlSlots,
+    } as never)
+
+    const { result } = renderHook(() => useSearchExecution())
+    await act(async () => {
+      await result.current.handleSearch('German HD maps')
+    })
+    expect(result.current.slots).toEqual(nlSlots)
+
+    await act(async () => {
+      await result.current.handleGraphQLRun('query { ositrace { roadTypes(values: ["urban"]) } }')
+    })
+
+    expect(result.current.slots).toEqual(graphqlSlots)
+  })
+
+  /**
+   * The server normalizes what it receives (e.g. coerces a single `references`
+   * object to an array), so the panel must show what RAN, not what was sent.
+   */
+  it('adopts the server-normalized slots a refine reports back', async () => {
+    vi.spyOn(api, 'apiPostStream').mockResolvedValue(sseResponse('event: done\ndata: {}\n\n'))
+    const normalized = {
+      domains: ['hdmap'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'ositrace' }],
+    }
+    vi.spyOn(api, 'apiPost').mockResolvedValue({
+      sparql: 'SELECT * WHERE {}',
+      results: [],
+      meta: {},
+      slots: normalized,
+    } as never)
+
+    const { result } = renderHook(() => useSearchExecution())
+    await act(async () => {
+      await result.current.handleRefine({ domains: ['hdmap'], filters: {}, ranges: {} })
+    })
+
+    expect(result.current.slots).toEqual(normalized)
+  })
 })

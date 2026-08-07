@@ -155,6 +155,16 @@ searchRoutes.post('/stream', (c) => {
                     event: SSE_EVENT.SPARQL,
                     data: JSON.stringify(progress.data.sparql),
                   })
+                  // The validated slot IR. The refine round-trip posts this
+                  // back, so it ships unconditionally — a client that had to
+                  // re-derive it from `interpretation` could only guess, and
+                  // would lose multi-valued filters, ranges and references.
+                  if (progress.data.slots) {
+                    await stream.writeSSE({
+                      event: SSE_EVENT.SLOTS,
+                      data: JSON.stringify(progress.data.slots),
+                    })
+                  }
                   // Emit GraphQL intermediate representation when feature is enabled
                   if (getConfig().FEATURE_GRAPHQL_LAYER && progress.data.slots) {
                     const enumProperties = await getEnumPropertyNames()
@@ -264,6 +274,10 @@ searchRoutes.post('/refine', async (c) => {
       results: result.execution.results,
       traceability: result.execution.traceability,
       meta: result.meta,
+      // The POST-normalization slots (`references` is coerced to an array
+      // here), so the client's editable panel reflects what actually ran
+      // rather than what it happened to send.
+      slots: parseResult.data,
     }
 
     // Include GraphQL intermediate representation when feature is enabled
@@ -364,6 +378,11 @@ searchRoutes.post('/refine-graphql', async (c) => {
       results: result.execution.results,
       traceability: result.execution.traceability,
       meta: result.meta,
+      // What the GraphQL document parsed to. The caller sent prose-free
+      // GraphQL and has no other way to learn the slots that ran, so without
+      // this its refinement panel would keep showing the PREVIOUS query's IR
+      // and a subsequent re-run would silently execute that instead.
+      slots: parseResult.slots,
     }
 
     // Re-serialize from the parsed slots (normalized form)

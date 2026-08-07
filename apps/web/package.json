@@ -23,6 +23,7 @@
     "@ontology-search/graphql-ir": "workspace:*",
     "@ontology-search/road-catalog": "workspace:*",
     "@ontology-search/scenario-viewer-wasm": "workspace:*",
+    "@ontology-search/slots": "workspace:*",
     "@tanstack/react-query": "^5.75.5",
     "@tanstack/react-router": "^1.120.3",
     "@uiw/react-codemirror": "^4.25.10",

@@ -21,6 +21,13 @@ export const SSE_EVENT = {
   INTERPRETATION: 'interpretation',
   /** Ontology gaps: terms the LLM could not map. */
   GAPS: 'gaps',
+  /**
+   * The validated `SearchSlots` the compiler ran on — the search analog of
+   * {@link SCENE}. This is the editable IR: the refine round-trip posts it
+   * back, so it must be the real structured slots, never something the client
+   * re-derives from the human-readable interpretation.
+   */
+  SLOTS: 'slots',
   /** Authoring: the filled scene IR (the LLM's only output; XOSC is derived). */
   SCENE: 'scene',
   /** Authoring: the emitted `.xosc` document (read-only; derived from the IR). */

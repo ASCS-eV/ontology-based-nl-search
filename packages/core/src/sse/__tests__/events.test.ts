@@ -15,6 +15,7 @@ describe('SSE_EVENT', () => {
       STATUS: 'status',
       INTERPRETATION: 'interpretation',
       GAPS: 'gaps',
+      SLOTS: 'slots',
       SCENE: 'scene',
       XOSC: 'xosc',
       VALIDATION: 'validation',
@@ -29,6 +30,6 @@ describe('SSE_EVENT', () => {
 
   it('has a type that admits every value', () => {
     const values: SseEventName[] = Object.values(SSE_EVENT)
-    expect(values).toHaveLength(12)
+    expect(values).toHaveLength(13)
   })
 })

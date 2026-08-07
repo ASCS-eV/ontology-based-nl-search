@@ -245,6 +245,9 @@ importers:
       '@ontology-search/scenario-viewer-wasm':
         specifier: workspace:*
         version: link:../../packages/scenario-viewer-wasm
+      '@ontology-search/slots':
+        specifier: workspace:*
+        version: link:../../packages/slots
       '@tanstack/react-query':
         specifier: ^5.75.5
         version: 5.100.9(react@19.2.6)
@@ -320,6 +323,10 @@ importers:
         version: 3.2.4(@types/node@25.7.0)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4)
 
   packages/api-types:
+    dependencies:
+      '@ontology-search/slots':
+        specifier: workspace:*
+        version: link:../slots
     devDependencies:
       '@ontology-search/typescript-config':
         specifier: workspace:*
