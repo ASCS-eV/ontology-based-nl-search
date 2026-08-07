@@ -38,7 +38,15 @@ overrides:
   # typescript-eslint — no runtime consumer). Verified: lint + typecheck + tests pass.
   minimatch: ^10.2.5
   brace-expansion: ^5.0.9
-  js-yaml@4: ^4.3.0 # quadratic DoS in merge-key chains (GHSA-52cp-r559-cp3m), high
+  # Two quadratic-CPU advisories against the same 4.x line, so the floor is the
+  # higher of the two patched versions:
+  #   GHSA-52cp-r559-cp3m — merge-key chains, patched in 4.3.0
+  #   GHSA-5p4m-2wfm-xmqj — !!omap resolution (CVE-2026-59870), patched in 4.3.1
+  # The `^4.3.0` floor still resolved to a version the second advisory covers.
+  # Reached under `--audit-level=moderate --prod` via eslint-config's
+  # typescript-eslint → eslint → @eslint/eslintrc; dev-tooling only, no runtime
+  # consumer, but it fails the audit gate on every PR until floored.
+  js-yaml@4: ^4.3.1
   #
   # NOT overridden: @ai-sdk/provider-utils (GHSA-866g-f22w-33x8, LOW).
   # The only stable patched line is 4.x, but `ai`@5 / @ai-sdk@2 require
