@@ -12,7 +12,11 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 import type { SparqlStore, TermCard } from '../index.js'
 import { getInitializedStore } from '../init.js'
-import { extractShaclFragments, renderDistilledCards } from '../schema-index/fragment-extractor.js'
+import {
+  extractShaclFragments,
+  renderDistilledCards,
+  serializeTerm,
+} from '../schema-index/fragment-extractor.js'
 import { buildTermIndex } from '../schema-index/term-index.js'
 
 let store: SparqlStore
@@ -96,6 +100,48 @@ describe('extractShaclFragments', () => {
         .join('\n')
       expect(body, `unused prefix ${match[1]}`).toMatch(new RegExp(`(^|[\\s(,^])${match[1]}:`))
     }
+  })
+})
+
+describe('serializeTerm — literal escaping', () => {
+  const ns = new Map<string, string>()
+
+  /**
+   * Regression: the serializer used to escape `\`, `"` and LF only. A literal
+   * carrying CR — ordinary in a `.ttl` authored on Windows, or written as a
+   * `\r` escape in a `sh:description` — was re-emitted with a RAW CR inside
+   * the quotes, which `STRING_LITERAL_QUOTE` forbids ([TURTLE] §6.5). The
+   * fragment then failed to parse when the retrieval layer loaded it, and it
+   * reaches the LLM system prompt either way.
+   */
+  it('escapes CR, which the previous in-file escaper emitted raw', () => {
+    const out = serializeTerm({ type: 'literal', value: 'before\rafter' }, ns)
+    expect(out).toBe('"before\\rafter"')
+    expect(out).not.toContain('\r')
+  })
+
+  it('leaves no raw character below U+0020 in the emitted literal', () => {
+    for (let code = 0; code < 0x20; code++) {
+      const ch = String.fromCharCode(code)
+      expect(serializeTerm({ type: 'literal', value: `a${ch}b` }, ns)).not.toContain(ch)
+    }
+  })
+
+  it('still escapes the quote and backslash cases it always handled', () => {
+    expect(serializeTerm({ type: 'literal', value: 'say "hi"' }, ns)).toBe('"say \\"hi\\""')
+    expect(serializeTerm({ type: 'literal', value: 'a\\b' }, ns)).toBe('"a\\\\b"')
+  })
+
+  it('preserves the language tag and datatype forms', () => {
+    expect(serializeTerm({ type: 'literal', value: 'Straße', 'xml:lang': 'de' }, ns)).toBe(
+      '"Straße"@de'
+    )
+    expect(
+      serializeTerm(
+        { type: 'literal', value: '3', datatype: 'http://www.w3.org/2001/XMLSchema#integer' },
+        ns
+      )
+    ).toBe('"3"^^<http://www.w3.org/2001/XMLSchema#integer>')
   })
 })
 

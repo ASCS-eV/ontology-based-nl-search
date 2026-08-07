@@ -5,12 +5,13 @@
  *
  * @see https://www.w3.org/TR/sparql11-query/ — [SPARQL11]
  */
+import { escapeRdfLiteral } from '@ontology-search/core/rdf/literal'
 import { iri } from '@ontology-search/core/rdf/prefixes'
 import {
   type DomainDescriptor,
   type DomainRegistry,
 } from '@ontology-search/ontology/domain-registry'
-import { escapeSparqlLiteral, isIri } from '@ontology-search/sparql/escape'
+import { isIri } from '@ontology-search/sparql/escape'
 
 /**
  * Compress a full predicate IRI to a `prefix:localName` form when the
@@ -73,12 +74,12 @@ export function groupPredicate(group: string): string {
   return `has${group}`
 }
 
-// `isIri` is imported from `@ontology-search/sparql/escape` (see the
-// `escapeSparqlLiteral` re-export above for rationale). The previous
-// in-file prefix-only check (`^https?://|^urn:`) was both too narrow
-// (it missed `did:web:` IRIs in the project's sample data) and too lax
-// (it accepted any garbage after the scheme); the lifted version
-// enforces the full SPARQL `IRIREF` body grammar.
+// `isIri` comes from `@ontology-search/sparql/escape`. The previous in-file
+// prefix-only check (`^https?://|^urn:`) was both too narrow (it missed
+// `did:web:` IRIs in the project's sample data) and too lax (it accepted any
+// garbage after the scheme); the lifted version enforces the full SPARQL
+// `IRIREF` body grammar. Literal escaping is the grammar-shared
+// `escapeRdfLiteral` from `@ontology-search/core/rdf/literal`.
 
 /**
  * A slot value carries information iff it's a non-empty string or a
@@ -112,14 +113,14 @@ export function addLocationFilter(
   // making this safe for both IRI-valued and literal-valued properties.
   if (Array.isArray(value)) {
     if (value.length === 1) {
-      const v = escapeSparqlLiteral(value[0]!.toLowerCase())
+      const v = escapeRdfLiteral(value[0]!.toLowerCase())
       filters.push(`FILTER(LCASE(STR(${varName})) = "${v}")`)
     } else {
-      const lits = value.map((v) => `"${escapeSparqlLiteral(v.toLowerCase())}"`).join(', ')
+      const lits = value.map((v) => `"${escapeRdfLiteral(v.toLowerCase())}"`).join(', ')
       filters.push(`FILTER(LCASE(STR(${varName})) IN (${lits}))`)
     }
   } else {
-    const v = escapeSparqlLiteral(value.toLowerCase())
+    const v = escapeRdfLiteral(value.toLowerCase())
     filters.push(`FILTER(CONTAINS(LCASE(STR(${varName})), "${v}"))`)
   }
 }
@@ -169,9 +170,9 @@ export function addEnumFilter(
   const literalValues = arr.filter((v) => !isIri(v))
 
   if (literalValues.length === 1) {
-    filters.push(`FILTER(${varName} = "${escapeSparqlLiteral(literalValues[0]!)}")`)
+    filters.push(`FILTER(${varName} = "${escapeRdfLiteral(literalValues[0]!)}")`)
   } else if (literalValues.length > 1) {
-    const values = literalValues.map((v) => `"${escapeSparqlLiteral(v)}"`).join(', ')
+    const values = literalValues.map((v) => `"${escapeRdfLiteral(v)}"`).join(', ')
     filters.push(`FILTER(${varName} IN (${values}))`)
   }
 

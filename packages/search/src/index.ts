@@ -4,7 +4,6 @@ export {
   compileCountQuery,
   compileSlots,
   compileSlotsWithTrace,
-  escapeSparqlLiteral,
   warmupCompiler,
 } from './compiler.js'
 export type { ConceptExpansionIndex } from './concept-expansion.js'

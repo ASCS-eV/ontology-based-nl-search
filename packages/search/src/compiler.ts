@@ -56,12 +56,6 @@ import { type CompilerVocab, getCompilerVocab, getDomainReferences } from './com
 import type { CompileResult, SearchSlots, TraceabilityPlan } from './slots.js'
 import { normalizeReferences } from './slots.js'
 
-// `escapeSparqlLiteral` + `isIri` are sourced from
-// `@ontology-search/sparql/escape` (re-exported here so the existing
-// `@ontology-search/search` public surface — used by the api app — keeps
-// shipping `escapeSparqlLiteral`).
-export { escapeSparqlLiteral } from '@ontology-search/sparql/escape'
-
 // Re-export the extracted compiler submodules (ADR 0003, step 1) so the existing
 // `@ontology-search/search` public surface and intra-package importers keep
 // resolving these from `./compiler.js` unchanged.

@@ -40,6 +40,11 @@
       "import": "./dist/rdf/iri.js",
       "default": "./dist/rdf/iri.js"
     },
+    "./rdf/literal": {
+      "types": "./src/rdf/literal.ts",
+      "import": "./dist/rdf/literal.js",
+      "default": "./dist/rdf/literal.js"
+    },
     "./http/mime": {
       "types": "./src/http/mime.ts",
       "import": "./dist/http/mime.js",
