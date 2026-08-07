@@ -13,7 +13,7 @@
     "dev:api": "node scripts/clean-ports.mjs --api && pnpm run build && pnpm --filter @ontology-search/api dev",
     "dev:web": "node scripts/clean-ports.mjs --web && turbo run dev --filter=@ontology-search/web",
     "test": "turbo run test --concurrency=2",
-    "coverage": "turbo run coverage",
+    "coverage": "turbo run coverage --concurrency=2",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "test:e2e": "turbo run test:e2e",
     "eval:retrieval": "pnpm --filter @ontology-search/testing exec vitest run src/eval/__tests__/retrieval-eval.test.ts --reporter=basic",
