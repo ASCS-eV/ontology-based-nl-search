@@ -14,6 +14,7 @@
  * @see https://www.w3.org/TR/sparql11-query/ — [SPARQL11]
  * @see https://www.w3.org/TR/turtle/ — [TURTLE] §2 serialization
  */
+import { escapeRdfLiteral } from '@ontology-search/core/rdf/literal'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlBinding, SparqlStore } from '@ontology-search/sparql/types'
@@ -285,10 +286,18 @@ function compact(iri: string, namespaces: Map<string, string>): string {
   return `<${iri}>`
 }
 
-/** Serialize one SPARQL binding term as a Turtle object term. */
-function serializeTerm(term: SparqlBinding[string], namespaces: Map<string, string>): string {
+/**
+ * Serialize one SPARQL binding term as a Turtle object term.
+ *
+ * Exported for the escaping regression test — not re-exported from the package
+ * barrel, so this stays module-internal to every consumer.
+ */
+export function serializeTerm(
+  term: SparqlBinding[string],
+  namespaces: Map<string, string>
+): string {
   if (term.type === 'uri') return compact(term.value, namespaces)
-  const escaped = term.value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+  const escaped = escapeRdfLiteral(term.value)
   // Language-tagged literals report BOTH xml:lang and rdf:langString as the
   // datatype in SPARQL JSON results — the tag wins; a bare rdf:langString
   // datatype must never be emitted ([TURTLE] §2.5.1).

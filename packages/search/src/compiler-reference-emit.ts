@@ -21,8 +21,8 @@
  * @see https://www.w3.org/TR/sparql11-query/ — [SPARQL11] §5 (BGP)
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { escapeRdfLiteral } from '@ontology-search/core/rdf/literal'
 import { type DomainRegistry } from '@ontology-search/ontology/domain-registry'
-import { escapeSparqlLiteral } from '@ontology-search/sparql/escape'
 
 import { buildDomainPatterns } from './compiler-domain-patterns.js'
 import {
@@ -262,7 +262,7 @@ export async function emitReferenceNode(
   patterns.push(`${refVar} rdfs:label ${refNameVar} .`)
   if (ref.label) {
     filters.push(
-      `FILTER(CONTAINS(LCASE(${refNameVar}), "${escapeSparqlLiteral(ref.label.toLowerCase())}"))`
+      `FILTER(CONTAINS(LCASE(${refNameVar}), "${escapeRdfLiteral(ref.label.toLowerCase())}"))`
     )
   }
 

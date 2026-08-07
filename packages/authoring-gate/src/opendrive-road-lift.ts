@@ -12,19 +12,10 @@
  * [XML10] XML 1.0 (W3C) — the input `.xodr` is parsed for well-formedness only
  * (no schema validation here; that is the WASM engine's `[OSC-XSD]` concern).
  */
+import { escapeRdfLiteral } from '@ontology-search/core/rdf/literal'
 import { XMLParser } from 'fast-xml-parser'
 
 import type { OpenDriveRoadGrounding } from './opendrive-ontology.js'
-
-/** Escape a string for a Turtle double-quoted literal. */
-function ttl(value: string): string {
-  return value
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t')
-}
 
 function asArray<T>(value: T | T[] | undefined): T[] {
   if (value === undefined) return []
@@ -58,7 +49,7 @@ export function liftOpenDriveRoadFacts(xodr: string, grounding: OpenDriveRoadGro
         // namespace this repo made up back into the very check that exists to
         // be grounded in the real ontology. The query only ever binds `?road`.
         lines.push(
-          `_:road${index} a <${roadClassIri}> ; <${roadIdPropertyIri}> "${ttl(String(id))}" .`
+          `_:road${index} a <${roadClassIri}> ; <${roadIdPropertyIri}> "${escapeRdfLiteral(String(id))}" .`
         )
       }
     )

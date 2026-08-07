@@ -7,12 +7,7 @@ import {
 import { afterAll, beforeAll, vi } from 'vitest'
 
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
-import {
-  compileCountQuery,
-  compileSlots,
-  escapeSparqlLiteral,
-  normalizeDomainName,
-} from '../compiler.js'
+import { compileCountQuery, compileSlots, normalizeDomainName } from '../compiler.js'
 import type { SearchSlots } from '../slots.js'
 
 // Register ontology namespaces so compiled queries pass policy validation
@@ -763,38 +758,11 @@ describe('compileCountQuery', () => {
   })
 })
 
-describe('escapeSparqlLiteral', () => {
-  it('passes through clean strings unchanged', () => {
-    expect(escapeSparqlLiteral('motorway')).toBe('motorway')
-    expect(escapeSparqlLiteral('ASAM OpenDRIVE')).toBe('ASAM OpenDRIVE')
-  })
-
-  it('escapes double quotes', () => {
-    expect(escapeSparqlLiteral('value"injection')).toBe('value\\"injection')
-  })
-
-  it('escapes backslashes', () => {
-    expect(escapeSparqlLiteral('path\\to')).toBe('path\\\\to')
-  })
-
-  it('escapes newlines and tabs', () => {
-    expect(escapeSparqlLiteral('line1\nline2')).toBe('line1\\nline2')
-    expect(escapeSparqlLiteral('col1\tcol2')).toBe('col1\\tcol2')
-    expect(escapeSparqlLiteral('line\r\n')).toBe('line\\r\\n')
-  })
-
-  it('prevents SPARQL injection via filter breakout', () => {
-    const malicious = '" ) . ?s ?p ?o } # '
-    const escaped = escapeSparqlLiteral(malicious)
-    expect(escaped).not.toContain('")') // Must not break out of the literal
-    expect(escaped).toBe('\\" ) . ?s ?p ?o } # ')
-  })
-
-  it('handles combined special characters', () => {
-    const input = 'val"ue\\with\nnewline'
-    expect(escapeSparqlLiteral(input)).toBe('val\\"ue\\\\with\\nnewline')
-  })
-})
+// Literal-escaping semantics are pinned where the primitive lives:
+// `packages/core/src/__tests__/rdf-literal.test.ts` (semantics + injection
+// breakout), `packages/sparql` (sparqljs round-trip), `packages/authoring-gate`
+// (Turtle round-trip). The compiler consumes `escapeRdfLiteral`; it does not
+// re-export it, so there is nothing left to assert from here.
 
 describe('normalizeDomainName', () => {
   it('lowercases and hyphenates camelCase / spaced / underscored variants', () => {

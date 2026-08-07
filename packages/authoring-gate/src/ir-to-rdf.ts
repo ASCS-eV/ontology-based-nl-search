@@ -20,21 +20,12 @@
  * graph is Turtle over the [RDF11] RDF 1.1 data model (rdf11-concepts.md).
  */
 import type { AuthoringIR, SceneAction } from '@ontology-search/authoring-ir'
+import { escapeRdfLiteral } from '@ontology-search/core/rdf/literal'
 
 /** The derived OpenSCENARIO ontology namespace (derived artifacts). */
 export const OSC_NS = 'https://w3id.org/ascs-ev/envited-x/openscenario/v1/'
 /** Gate-internal modeling predicates — NOT part of the standard vocabulary. */
 export const GATE_NS = 'urn:authoring-gate:'
-
-/** Escape a string for a Turtle double-quoted literal. */
-function ttl(value: string): string {
-  return value
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t')
-}
 
 /** Mint a stable instance IRI for a scene individual. */
 function iri(kind: string, id: string | number): string {
@@ -67,13 +58,13 @@ export function irToRdf(ir: AuthoringIR): string {
     // ref become two distinct nodes with the same os:name — the uniqueness gate
     // must be able to SEE a duplicate, not silently merge it into one node.
     const s = iri('entity', index)
-    lines.push(`${s} a os:ScenarioObject ; os:name "${ttl(entity.ref)}" .`)
+    lines.push(`${s} a os:ScenarioObject ; os:name "${escapeRdfLiteral(entity.ref)}" .`)
   }
 
   for (const [name, value] of Object.entries(ir.parameters ?? {})) {
     const s = iri('param', name)
     lines.push(
-      `${s} a os:ParameterDeclaration ; os:name "${ttl(name)}" ; os:value "${ttl(value)}" .`
+      `${s} a os:ParameterDeclaration ; os:name "${escapeRdfLiteral(name)}" ; os:value "${escapeRdfLiteral(value)}" .`
     )
   }
 
@@ -83,8 +74,8 @@ export function irToRdf(ir: AuthoringIR): string {
     for (const { role, value } of entityReferences(action)) {
       const s = iri('ref', refIndex++)
       lines.push(
-        `${s} a gate:EntityReference ; gate:referenceValue "${ttl(value)}" ; ` +
-          `gate:referenceRole "${ttl(role)}" ; gate:referencedBy "${ttl(action.actor)}" .`
+        `${s} a gate:EntityReference ; gate:referenceValue "${escapeRdfLiteral(value)}" ; ` +
+          `gate:referenceRole "${escapeRdfLiteral(role)}" ; gate:referencedBy "${escapeRdfLiteral(action.actor)}" .`
       )
     }
     // An absolute-lane teleport carries a road id that must resolve cross-file.
@@ -93,8 +84,8 @@ export function irToRdf(ir: AuthoringIR): string {
       if (roadId !== undefined) {
         const s = iri('roadref', roadIndex++)
         lines.push(
-          `${s} a gate:RoadReference ; gate:roadId "${ttl(roadId)}" ; ` +
-            `gate:referencedBy "${ttl(action.actor)}" .`
+          `${s} a gate:RoadReference ; gate:roadId "${escapeRdfLiteral(roadId)}" ; ` +
+            `gate:referencedBy "${escapeRdfLiteral(action.actor)}" .`
         )
       }
     }

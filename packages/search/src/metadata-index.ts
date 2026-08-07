@@ -30,6 +30,7 @@
  * are populated by `buildPropertyPaths` from the live shapes graph.
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { escapeRdfLiteral } from '@ontology-search/core/rdf/literal'
 import { iri } from '@ontology-search/core/rdf/prefixes'
 import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
@@ -217,7 +218,10 @@ function buildAssetFacetQuery(
 ): string {
   const arms = entries.map(({ property, path }) => {
     const pathExpr = path.steps.map((s) => `<${s.predicate}>`).join('/')
-    return `{ <${assetIri}> ${pathExpr} ?value . BIND("${escapeBindLiteral(property)}" AS ?propName) }`
+    // Local names are tame ASCII in practice; escaping is defensive so a
+    // future ontology with a quote, backslash or line break in a name cannot
+    // produce a malformed BIND clause.
+    return `{ <${assetIri}> ${pathExpr} ?value . BIND("${escapeRdfLiteral(property)}" AS ?propName) }`
   })
   return `
     SELECT ?propName ?value WHERE {
@@ -308,14 +312,4 @@ function isPlainIri(value: string): boolean {
   if (!value || value.startsWith('_:')) return false
   if (/[<>\s]/.test(value)) return false
   return /^[A-Za-z][A-Za-z0-9+\-.]*:/.test(value)
-}
-
-/**
- * Escape the property name embedded as a SPARQL string literal in the
- * `BIND("…" AS ?propName)` clauses. Local names are tame ASCII in
- * practice; the escape is defensive so a future ontology with quotes
- * or backslashes in a name doesn't break the query.
- */
-function escapeBindLiteral(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
