@@ -25,6 +25,7 @@
     "build": "tsc --build",
     "dev": "tsc --build --watch",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "check-types": "tsc --noEmit",
     "check-types:tests": "tsc -p tsconfig.test.json",
     "clean": "rimraf dist"
@@ -50,6 +51,7 @@
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",
     "@types/node": "^25.7.0",
+    "@vitest/coverage-v8": "3.2.4",
     "rimraf": "^6.0.0",
     "typescript": "~5.9.3",
     "vitest": "^3.2.0"
