@@ -30,6 +30,38 @@ The `@' ... '@` here-string syntax avoids all interpolation.
 - Follow the project's ESLint and Prettier configuration.
 - Use TypeScript strict mode — avoid `any` unless explicitly justified.
 
+## Token Efficiency Policy
+
+Canonical version: `AGENTS.md` (repo root) — mirrored here so this applies
+even if only this file is loaded. Keep both copies in sync.
+
+- **Model tiering** — use the smallest model capable of the task: lightweight/
+  fast models for exploration, mechanical edits, and running tests/lint/build;
+  escalate to a higher-capability model only for cross-package architecture
+  work, ontology/standards-compliance reasoning, or changes touching the
+  invariants documented in `CLAUDE.md` (module layering, the ontology-name
+  budget, the deterministic-compiler guarantee).
+- **Parallel, batched tool calls** — batch independent reads/searches/edits
+  into one round instead of issuing them sequentially.
+- **Targeted reads** — read only the relevant line ranges of large files;
+  don't dump whole files into context when a section will do.
+- **Scoped validation** — run tests/lint/typecheck scoped to the affected
+  package(s) (`pnpm --filter <pkg>`) while iterating; run the full
+  `pnpm run validate` once per work cycle before finishing, not after every
+  edit.
+- **Sub-agent delegation** — delegate exploratory, repetitive, or read-only
+  work to lightweight sub-agents/background tasks so the primary context
+  stays focused on decision-relevant material.
+- **Cached reference data** — reuse the pinned `.ontology/` cache instead of
+  re-fetching ontology data per session.
+- **Minimal blast radius** — keep changes scoped to the packages required by
+  the task, respecting the module layering
+  (`core → sparql/ontology → search → llm → api/web`); don't touch unrelated
+  layers speculatively.
+
+This applies identically to GitHub Copilot CLI, Claude Code, Codex, and any
+other AI coding agent operating in this repository.
+
 ## Standards Compliance (adhere to and reference the spec)
 
 Function and parameter definitions / schemas, APIs, and data formats in this
