@@ -37,7 +37,7 @@ import { normalizeReferences } from '@ontology-search/slots/slots'
 import { referenceFilterWireSchema } from '@ontology-search/slots/slot-wire-schema'
 ```
 
-The `@ontology-search/search` package re-exports the same symbols via its `.`, `./slots`, and `./slot-wire-schema` subpaths for back-compat, so existing consumers need no change.
+Import from this package directly and declare the dependency. `@ontology-search/search` used to re-export the same symbols for back-compat; those shims were removed once it emerged that every consumer was still going through them, leaving this package's own subpaths unused. `scripts/check-layers.mjs` now rejects a cross-package re-export from any published entry point.
 
 ## See also
 

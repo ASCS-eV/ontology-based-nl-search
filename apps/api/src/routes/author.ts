@@ -21,16 +21,14 @@
 import type { AuthoringRefineResponse } from '@ontology-search/api-types'
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { authoringIrWireSchema } from '@ontology-search/authoring-ir/scene-wire-schema'
-import { getConfig } from '@ontology-search/core/config'
 import { AppError, badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
 import { REQUEST_ID_HEADER, RequestLogger } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { runSceneAgent, runScenePipeline } from '@ontology-search/llm/authoring'
 import { Hono } from 'hono'
-import { streamSSE } from 'hono/streaming'
 
-import { sseErrorPayload } from '../middleware/error-handler.js'
 import type { AppEnv } from '../types.js'
+import { handleStreamRoute } from './stream-handler.js'
 
 export const authoringRoutes = new Hono<AppEnv>()
 
@@ -39,155 +37,74 @@ export const authoringRoutes = new Hono<AppEnv>()
  * interpretation, the authored IR, the emitted `.xosc`, and the per-gate
  * validation across repair attempts.
  */
-authoringRoutes.post('/stream', (c) => {
-  const requestId = c.get('requestId')
-  const streamLogger = new RequestLogger({ requestId })
-
-  // Compose the HTTP request signal and the SSE write-side abort into one
-  // signal so a disconnected client cancels the LLM turns and the gates.
-  const controller = new AbortController()
-  const requestSignal = c.req.raw.signal
-  if (requestSignal.aborted) controller.abort()
-  else requestSignal.addEventListener('abort', () => controller.abort(), { once: true })
-
-  return streamSSE(
-    c,
-    async (stream) => {
-      stream.onAbort(() => controller.abort())
-
-      let body: { query?: unknown; archetype?: unknown }
-      try {
-        body = await c.req.json()
-      } catch {
-        await stream.writeSSE({
-          event: SSE_EVENT.ERROR,
-          data: JSON.stringify(badRequest('Invalid JSON body').body),
-        })
-        return
-      }
-
-      const { query, archetype } = body
-      if (!query || typeof query !== 'string') {
-        await stream.writeSSE({
-          event: SSE_EVENT.ERROR,
-          data: JSON.stringify(badRequest('Missing or invalid "query" field').body),
-        })
-        return
-      }
+authoringRoutes.post('/stream', (c) =>
+  handleStreamRoute<{ archetype?: string }>(c, {
+    label: 'Authoring stream',
+    errorMessage: 'Authoring failed',
+    parseBody: (raw) => {
+      const archetype = raw['archetype']
       if (archetype !== undefined && typeof archetype !== 'string') {
-        await stream.writeSSE({
-          event: SSE_EVENT.ERROR,
-          data: JSON.stringify(badRequest('"archetype" must be a string').body),
-        })
-        return
+        return badRequest('"archetype" must be a string')
       }
-
-      const maxQueryChars = getConfig().API_MAX_QUERY_CHARS
-      if (query.length > maxQueryChars) {
-        await stream.writeSSE({
-          event: SSE_EVENT.ERROR,
-          data: JSON.stringify(
-            badRequest(`Query too long (${query.length} chars; max ${maxQueryChars}).`).body
-          ),
-        })
-        return
-      }
-
-      const logger = new RequestLogger({ requestId, query })
+      return archetype === undefined ? {} : { archetype }
+    },
+    handler: async ({ query, body, signal, logger, emit }) => {
+      const { archetype } = body
       logger.info('Authoring stream started', { archetype })
 
-      try {
-        const result = await runSceneAgent(query, {
-          ...(archetype ? { archetype } : {}),
-          signal: controller.signal,
-          onProgress: async (progress) => {
-            if (controller.signal.aborted) return
-            switch (progress.phase) {
-              case 'authoring':
-                await stream.writeSSE({
-                  event: SSE_EVENT.STATUS,
-                  data: JSON.stringify({ phase: 'authoring', message: 'Authoring scene…' }),
-                })
-                break
-              case 'repairing':
-                await stream.writeSSE({
-                  event: SSE_EVENT.STATUS,
-                  data: JSON.stringify({
-                    phase: 'repairing',
-                    message: `Repairing scene (attempt ${progress.attempt})…`,
-                  }),
-                })
-                break
-              case 'authored':
-                if (progress.interpretation) {
-                  await stream.writeSSE({
-                    event: SSE_EVENT.INTERPRETATION,
-                    data: JSON.stringify(progress.interpretation),
-                  })
-                }
-                break
-              case 'gated':
-                await stream.writeSSE({
-                  event: SSE_EVENT.VALIDATION,
-                  data: JSON.stringify({
-                    attempt: progress.attempt,
-                    valid: progress.valid,
-                    trace: progress.trace,
-                    gaps: progress.gaps,
-                  }),
-                })
-                break
-            }
-          },
-        })
-
-        if (controller.signal.aborted) return
-
-        await stream.writeSSE({ event: SSE_EVENT.SCENE, data: JSON.stringify(result.ir) })
-        if (result.xosc !== undefined) {
-          await stream.writeSSE({
-            event: SSE_EVENT.XOSC,
-            data: JSON.stringify({ xosc: result.xosc }),
-          })
-        }
-        await stream.writeSSE({ event: SSE_EVENT.GAPS, data: JSON.stringify(result.gaps) })
-        await stream.writeSSE({
-          event: SSE_EVENT.META,
-          data: JSON.stringify({
-            valid: result.valid,
-            attempts: result.attempts,
-            reportedGaps: result.reportedGaps,
-            trace: result.trace,
-          }),
-        })
-        await stream.writeSSE({ event: SSE_EVENT.DONE, data: '{}' })
-
-        logger.info('Authoring stream completed', {
-          valid: result.valid,
-          attempts: result.attempts,
-          gapCount: result.gaps.length,
-        })
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          logger.info('Authoring stream aborted by client')
-          return
-        }
-        logger.error('Authoring stream failed', error)
-        await stream.writeSSE({
-          event: SSE_EVENT.ERROR,
-          data: JSON.stringify(sseErrorPayload(error, 'Authoring failed')),
-        })
-      }
-    },
-    async (err, stream) => {
-      streamLogger.error('SSE stream error', err)
-      await stream.writeSSE({
-        event: SSE_EVENT.ERROR,
-        data: JSON.stringify(sseErrorPayload(err, 'Stream error')),
+      const result = await runSceneAgent(query, {
+        ...(archetype ? { archetype } : {}),
+        signal,
+        onProgress: async (progress) => {
+          if (signal.aborted) return
+          switch (progress.phase) {
+            case 'authoring':
+              await emit(SSE_EVENT.STATUS, { phase: 'authoring', message: 'Authoring scene…' })
+              break
+            case 'repairing':
+              await emit(SSE_EVENT.STATUS, {
+                phase: 'repairing',
+                message: `Repairing scene (attempt ${progress.attempt})…`,
+              })
+              break
+            case 'authored':
+              if (progress.interpretation) {
+                await emit(SSE_EVENT.INTERPRETATION, progress.interpretation)
+              }
+              break
+            case 'gated':
+              await emit(SSE_EVENT.VALIDATION, {
+                attempt: progress.attempt,
+                valid: progress.valid,
+                trace: progress.trace,
+                gaps: progress.gaps,
+              })
+              break
+          }
+        },
       })
-    }
-  )
-})
+
+      if (signal.aborted) return
+
+      await emit(SSE_EVENT.SCENE, result.ir)
+      if (result.xosc !== undefined) await emit(SSE_EVENT.XOSC, { xosc: result.xosc })
+      await emit(SSE_EVENT.GAPS, result.gaps)
+      await emit(SSE_EVENT.META, {
+        valid: result.valid,
+        attempts: result.attempts,
+        reportedGaps: result.reportedGaps,
+        trace: result.trace,
+      })
+      await emit(SSE_EVENT.DONE, {})
+
+      logger.info('Authoring stream completed', {
+        valid: result.valid,
+        attempts: result.attempts,
+        gapCount: result.gaps.length,
+      })
+    },
+  })
+)
 
 /**
  * Refine endpoint: gate + lower a pre-filled/edited scene IR with NO LLM.

@@ -14,13 +14,12 @@ import { referenceFilterWireSchema } from '@ontology-search/slots/slot-wire-sche
 import { normalizeReferences } from '@ontology-search/slots/slots'
 import { parse, validate } from 'graphql'
 import { Hono } from 'hono'
-import { streamSSE } from 'hono/streaming'
 import { z } from 'zod'
 
 import { getGraphQLContract } from '../graphql-schema.js'
-import { sseErrorPayload } from '../middleware/error-handler.js'
 import { searchNl, searchRefine } from '../search-factory.js'
 import type { AppEnv } from '../types.js'
+import { handleStreamRoute } from './stream-handler.js'
 
 /**
  * Property names whose filter values the GraphQL serializer should emit as enum
@@ -71,160 +70,71 @@ export const searchRoutes = new Hono<AppEnv>()
 /**
  * Streaming search: SSE endpoint that progressively sends results.
  */
-searchRoutes.post('/stream', (c) => {
-  const requestId = c.get('requestId')
-  const streamLogger = new RequestLogger({ requestId })
-
-  // Compose two abort sources into a single signal that propagates to the
-  // service: the underlying HTTP request signal (client closes the connection
-  // mid-flight) and the SSE write-side abort (Hono detects the writer is gone).
-  // Either source cancels the LLM call, store query, and count loop downstream
-  // so we don't burn compute on a request whose results no one is reading.
-  const controller = new AbortController()
-  const requestSignal = c.req.raw.signal
-  if (requestSignal.aborted) {
-    controller.abort()
-  } else {
-    requestSignal.addEventListener('abort', () => controller.abort(), { once: true })
-  }
-
-  return streamSSE(
-    c,
-    async (stream) => {
-      stream.onAbort(() => controller.abort())
-
-      let body: { query?: unknown }
-      try {
-        body = await c.req.json()
-      } catch {
-        await stream.writeSSE({
-          event: SSE_EVENT.ERROR,
-          data: JSON.stringify(badRequest('Invalid JSON body').body),
-        })
-        return
-      }
-
-      const { query } = body
-      if (!query || typeof query !== 'string') {
-        await stream.writeSSE({
-          event: SSE_EVENT.ERROR,
-          data: JSON.stringify(badRequest('Missing or invalid "query" field').body),
-        })
-        return
-      }
-
-      const maxQueryChars = getConfig().API_MAX_QUERY_CHARS
-      if (query.length > maxQueryChars) {
-        await stream.writeSSE({
-          event: SSE_EVENT.ERROR,
-          data: JSON.stringify(
-            badRequest(`Query too long (${query.length} chars; max ${maxQueryChars}).`).body
-          ),
-        })
-        return
-      }
-
-      const logger = new RequestLogger({ requestId, query: String(query) })
-      logger.info('Stream search started')
-
-      try {
-        const result = await searchNl({
-          query,
-          signal: controller.signal,
-          requestId,
-          onProgress: async (progress) => {
-            if (controller.signal.aborted) return
-            switch (progress.phase) {
-              case 'interpreting':
-                await stream.writeSSE({
-                  event: SSE_EVENT.STATUS,
-                  data: JSON.stringify({ phase: 'interpreting', message: 'Interpreting query…' }),
-                })
-                break
-              case 'interpreted':
-                if (progress.data) {
-                  await stream.writeSSE({
-                    event: SSE_EVENT.INTERPRETATION,
-                    data: JSON.stringify(progress.data.interpretation),
-                  })
-                  await stream.writeSSE({
-                    event: SSE_EVENT.GAPS,
-                    data: JSON.stringify(progress.data.gaps),
-                  })
-                  await stream.writeSSE({
-                    event: SSE_EVENT.SPARQL,
-                    data: JSON.stringify(progress.data.sparql),
-                  })
-                  // The validated slot IR. The refine round-trip posts this
-                  // back, so it ships unconditionally — a client that had to
-                  // re-derive it from `interpretation` could only guess, and
-                  // would lose multi-valued filters, ranges and references.
-                  if (progress.data.slots) {
-                    await stream.writeSSE({
-                      event: SSE_EVENT.SLOTS,
-                      data: JSON.stringify(progress.data.slots),
-                    })
-                  }
-                  // Emit GraphQL intermediate representation when feature is enabled
-                  if (getConfig().FEATURE_GRAPHQL_LAYER && progress.data.slots) {
-                    const enumProperties = await getEnumPropertyNames()
-                    const graphql = slotsToGraphQL(progress.data.slots, { enumProperties })
-                    await stream.writeSSE({
-                      event: SSE_EVENT.GRAPHQL,
-                      data: JSON.stringify(graphql),
-                    })
-                  }
+searchRoutes.post('/stream', (c) =>
+  handleStreamRoute(c, {
+    label: 'Stream search',
+    errorMessage: 'Search failed',
+    handler: async ({ query, signal, logger, emit }) => {
+      const result = await searchNl({
+        query,
+        signal,
+        requestId: c.get('requestId'),
+        onProgress: async (progress) => {
+          if (signal.aborted) return
+          switch (progress.phase) {
+            case 'interpreting':
+              await emit(SSE_EVENT.STATUS, {
+                phase: 'interpreting',
+                message: 'Interpreting query…',
+              })
+              break
+            case 'interpreted':
+              if (progress.data) {
+                await emit(SSE_EVENT.INTERPRETATION, progress.data.interpretation)
+                await emit(SSE_EVENT.GAPS, progress.data.gaps)
+                await emit(SSE_EVENT.SPARQL, progress.data.sparql)
+                // The validated slot IR. The refine round-trip posts this back,
+                // so it ships unconditionally — a client that had to re-derive
+                // it from `interpretation` could only guess, and would lose
+                // multi-valued filters, ranges and references.
+                if (progress.data.slots) await emit(SSE_EVENT.SLOTS, progress.data.slots)
+                // Emit GraphQL intermediate representation when feature is enabled
+                if (getConfig().FEATURE_GRAPHQL_LAYER && progress.data.slots) {
+                  const enumProperties = await getEnumPropertyNames()
+                  await emit(
+                    SSE_EVENT.GRAPHQL,
+                    slotsToGraphQL(progress.data.slots, { enumProperties })
+                  )
                 }
-                break
-              case 'executing':
-                await stream.writeSSE({
-                  event: SSE_EVENT.STATUS,
-                  data: JSON.stringify({ phase: 'executing', message: 'Executing SPARQL query…' }),
-                })
-                break
-            }
-          },
-        })
-
-        if (controller.signal.aborted) return
-
-        await stream.writeSSE({
-          event: SSE_EVENT.RESULTS,
-          data: JSON.stringify({
-            results: result.execution.results,
-            traceability: result.execution.traceability,
-            error: result.execution.error ? 'Query execution failed' : undefined,
-          }),
-        })
-        await stream.writeSSE({ event: SSE_EVENT.META, data: JSON.stringify(result.meta) })
-        await stream.writeSSE({ event: SSE_EVENT.DONE, data: '{}' })
-
-        logger.info('Stream search completed', {
-          matchCount: result.meta.matchCount,
-          totalMs: result.meta.executionTimeMs,
-        })
-      } catch (error) {
-        // Client-side abort isn't a server error — log at info and exit quietly.
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          logger.info('Stream search aborted by client')
-          return
-        }
-        logger.error('Stream search failed', error)
-        await stream.writeSSE({
-          event: SSE_EVENT.ERROR,
-          data: JSON.stringify(sseErrorPayload(error, 'Search failed')),
-        })
-      }
-    },
-    async (err, stream) => {
-      streamLogger.error('SSE stream error', err)
-      await stream.writeSSE({
-        event: SSE_EVENT.ERROR,
-        data: JSON.stringify(sseErrorPayload(err, 'Stream error')),
+              }
+              break
+            case 'executing':
+              await emit(SSE_EVENT.STATUS, {
+                phase: 'executing',
+                message: 'Executing SPARQL query…',
+              })
+              break
+          }
+        },
       })
-    }
-  )
-})
+
+      if (signal.aborted) return
+
+      await emit(SSE_EVENT.RESULTS, {
+        results: result.execution.results,
+        traceability: result.execution.traceability,
+        error: result.execution.error ? 'Query execution failed' : undefined,
+      })
+      await emit(SSE_EVENT.META, result.meta)
+      await emit(SSE_EVENT.DONE, {})
+
+      logger.info('Stream search completed', {
+        matchCount: result.meta.matchCount,
+        totalMs: result.meta.executionTimeMs,
+      })
+    },
+  })
+)
 
 /**
  * Refine endpoint: takes pre-filled slots, compiles SPARQL, executes.

@@ -53,7 +53,28 @@ interface OxigraphModule {
   namedNode(iri: string): OxigraphTerm
 }
 
-// ─── Binding conversion (duplicated from oxigraph-store.ts to avoid import) ──
+// ─── Binding conversion ──────────────────────────────────────────────────────
+//
+// Deliberately duplicated from `oxigraph-store.ts` rather than shared, and NOT
+// for the reason this comment used to give ("to avoid import"). Two real
+// constraints hold it here:
+//
+//   1. The conversion MUST run inside the worker. An Oxigraph term is a
+//      WASM-backed class instance whose only own property is `__wbg_ptr` — a
+//      pointer into this thread's WASM heap. `structuredClone` accepts it
+//      without complaint, so posting raw terms to the main thread would appear
+//      to work and yield garbage. Plain objects have to cross the boundary.
+//   2. In dev and test this file is executed as TypeScript via the worker's
+//      `--import tsx` loader (see `resolveWorkerPath`), and that loader does
+//      not resolve a relative `./x.js` specifier to its `.ts` source inside a
+//      worker thread. A shared sibling module fails with ERR_MODULE_NOT_FOUND;
+//      neither `tsx` nor `tsx/esm` fixes it. The worker therefore has no
+//      runtime relative imports at all.
+//
+// `__tests__/oxigraph-binding-parity.test.ts` pins the two copies against one
+// table of terms so they cannot drift while this stands. Removing the
+// duplication means making the worker always run built JS, which is a change
+// to `resolveWorkerPath`'s dev/prod probing and belongs on its own.
 
 const XSD_STRING_IRI = iri('xsd', 'string')
 
