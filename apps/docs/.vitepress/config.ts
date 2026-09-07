@@ -108,7 +108,10 @@ export default withMermaid(
             { text: 'Roadmap', link: '/roadmap' },
           ],
         },
-        { text: 'Search App', link: 'http://localhost:5174' },
+        {
+          text: 'Run Search App',
+          link: 'https://github.com/ASCS-eV/ontology-based-nl-search#quick-start',
+        },
       ],
       sidebar: [
         {

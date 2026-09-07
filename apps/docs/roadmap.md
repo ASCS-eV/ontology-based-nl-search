@@ -60,7 +60,7 @@
 ---
 
 <div style="text-align: center; margin-top: 3rem;">
-  <a href="http://localhost:5174" style="display: inline-block; padding: 0.75rem 2rem; background: #2563eb; color: white; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">Launch Search Demo →</a>
+  <a href="https://github.com/ASCS-eV/ontology-based-nl-search#quick-start" style="display: inline-block; padding: 0.75rem 2rem; background: #2563eb; color: white; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">Run Search App →</a>
   <span style="margin: 0 1rem; color: #9ca3af;">or</span>
   <a href="https://github.com/ASCS-eV/ontology-based-nl-search" style="color: #2563eb; text-decoration: none; font-weight: 500;">View on GitHub</a>
 </div>

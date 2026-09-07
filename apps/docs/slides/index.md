@@ -366,7 +366,11 @@ flowchart LR
   <h2>The LLM interprets; the ontology decides; the compiler executes.</h2>
   <p class="lead">Ask about HD maps, scenarios, or simulation assets in plain language — then inspect the interpretation, the gaps, the compiled SPARQL, and the per-row lineage in the live app.</p>
   <div class="cta-buttons">
-    <a href="http://localhost:5174" class="btn-primary">Launch live demo →</a>
+    <a
+      href="https://github.com/ASCS-eV/ontology-based-nl-search#quick-start"
+      class="btn-primary"
+      >Run the search app →</a
+    >
     <a href="/docs/architecture" class="btn-secondary">Read the architecture →</a>
   </div>
   <p class="subtitle">Try: “motorway HD maps in Germany” · “OpenDRIVE maps with right-hand traffic” · “Autobahnen mit Überholmanöver”</p>
