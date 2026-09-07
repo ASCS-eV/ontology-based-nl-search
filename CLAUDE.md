@@ -95,6 +95,37 @@ The LLM never writes SPARQL. It fills `SearchSlots` via a single tool call. The 
 - **Schema metadata is graph-driven**: `schema-queries.ts` discovers domains, properties, and shape groups from SHACL at runtime — do not hardcode domain metadata.
 - **Ontology-name budget is monotonically decreasing**: every change between now and the meta-model rework (tracked in `.playground/refactor-plan/21-discover-asset-path-from-shacl.md`) must **reduce, not increase**, the number of ontology-specific identifiers (domain names, prefixes, predicate names, class names, full IRIs of any specific ontology) in source files. Tests may name real properties to assert behavior, but production code paths and policy gates must not. When a fix tempts you to add a new literal like `'envited-x:hasFoo'` or `'gaia-x4plcaad'`, prefer the discovery / VALUES / full-IRI alternative even if it takes more lines.
 
+## Token Efficiency Policy
+
+Canonical version: `AGENTS.md` (repo root) — mirrored here so this applies
+even if only `CLAUDE.md` is loaded. Keep both copies in sync.
+
+- **Model tiering** — use the smallest model capable of the task: lightweight/
+  fast models for exploration, mechanical edits, and running tests/lint/build;
+  escalate to a higher-capability model only for cross-package architecture
+  work, ontology/standards-compliance reasoning, or changes touching the
+  invariants documented above (module layering, the ontology-name budget, the
+  deterministic-compiler guarantee).
+- **Parallel, batched tool calls** — batch independent reads/searches/edits
+  into one round instead of issuing them sequentially.
+- **Targeted reads** — read only the relevant line ranges of large files;
+  don't dump whole files into context when a section will do.
+- **Scoped validation** — run tests/lint/typecheck scoped to the affected
+  package(s) (`pnpm --filter <pkg>`) while iterating; run the full
+  `pnpm run validate` once per work cycle before finishing, not after every
+  edit.
+- **Sub-agent delegation** — delegate exploratory, repetitive, or read-only
+  work to lightweight sub-agents/background tasks so the primary context
+  stays focused on decision-relevant material.
+- **Cached reference data** — reuse the pinned `.ontology/` cache instead of
+  re-fetching ontology data per session.
+- **Minimal blast radius** — keep changes scoped to the packages required by
+  the task, respecting the module layering above; don't touch unrelated
+  layers speculatively.
+
+This applies identically to GitHub Copilot CLI, Claude Code, Codex, and any
+other AI coding agent operating in this repository.
+
 ## Code Quality Criteria
 
 This repository has 31 reviewable quality criteria (constants, architecture,
