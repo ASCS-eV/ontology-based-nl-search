@@ -36,6 +36,12 @@ import type {
 } from '@ontology-search/authoring-wasm'
 import { defaultRoad, entrySegment, travelSideLanes } from '@ontology-search/road-catalog'
 
+/**
+ * Simulation end time (seconds) when the IR carries none.
+ * [OSC-XSD] OpenSCENARIO 1.3 §StoryboardElement — `Storyboard.StopTrigger`.
+ */
+const DEFAULT_STOP_TIME = 30
+
 /** A standard passenger car — defaults for any vehicle field the IR omits. */
 const DEFAULT_CAR = {
   vehicleCategory: 'car',
@@ -268,7 +274,7 @@ function lowerScene(ir: AuthoringIR): { tree: EngineTree; dropped: DroppedAction
     },
     entities,
     init,
-    stopTime: 30,
+    stopTime: ir.stopTime ?? DEFAULT_STOP_TIME,
   }
   return {
     tree: {
