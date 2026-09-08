@@ -31,10 +31,16 @@ class MockFS implements EmscriptenFS {
 function mockFactory() {
   const registry = new HandleRegistry()
   const fs = new MockFS()
-  const construct = vi.fn(
-    (_xoscPath: string, _config: RawOpenScenarioConfig): OpenScenarioHandle =>
-      new MockHandle({ registry })
-  )
+  // A `function`, not an arrow, because production calls this with `new` —
+  // vitest's spy now enforces real JS constructor semantics, so an arrow
+  // implementation throws "is not a constructor" instead of the old
+  // (accidental) pass-through.
+  const construct = vi.fn(function (
+    _xoscPath: string,
+    _config: RawOpenScenarioConfig
+  ): OpenScenarioHandle {
+    return new MockHandle({ registry })
+  })
   const module: EsminiModule = {
     FS: fs,
     OpenScenario: construct as unknown as EsminiModule['OpenScenario'],
