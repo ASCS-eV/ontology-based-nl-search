@@ -54,8 +54,8 @@ describe('irToEngineTree', () => {
     expect(a1?.teleport?.relativeLane).toEqual({ entityRef: 'Ego', dLane: 0, ds: 84 })
   })
 
-  it('maps the LaneChangeAction to the single maneuver with its dynamics and target', () => {
-    const m = irToEngineTree(cutInIR()).maneuver
+  it('maps a LaneChangeAction to its own maneuver with its dynamics and target', () => {
+    const m = irToEngineTree(cutInIR()).maneuvers?.[0]
     expect(m?.actorRef).toBe('A2')
     expect(m?.startTime).toBe(2)
     expect(m?.laneChange.dynamics).toEqual({
@@ -64,6 +64,36 @@ describe('irToEngineTree', () => {
       value: 54.8,
     })
     expect(m?.laneChange.relativeTarget).toEqual({ entityRef: 'Ego', value: 0 })
+  })
+
+  it('lowers multiple LaneChangeActions into independent maneuvers, preserving order and actors', () => {
+    const ir: AuthoringIR = {
+      entities: [
+        { ref: 'Ego', type: 'Vehicle', properties: {} },
+        { ref: 'A1', type: 'Vehicle', properties: {} },
+        { ref: 'A2', type: 'Vehicle', properties: {} },
+      ],
+      actions: [
+        {
+          actor: 'A1',
+          kind: 'LaneChangeAction',
+          properties: { startTime: '1' },
+          references: { relativeTo: 'Ego' },
+        },
+        {
+          actor: 'A2',
+          kind: 'LaneChangeAction',
+          properties: { startTime: '3' },
+          references: { relativeTo: 'Ego' },
+        },
+      ],
+    }
+    const maneuvers = irToEngineTree(ir).maneuvers
+    expect(maneuvers).toHaveLength(2)
+    expect(maneuvers?.map((m) => m.actorRef)).toEqual(['A1', 'A2'])
+    expect(maneuvers?.map((m) => m.startTime)).toEqual([1, 3])
+    // Deterministic, non-colliding default names per index.
+    expect(maneuvers?.map((m) => m.groupName)).toEqual(['ManeuverGroup1', 'ManeuverGroup2'])
   })
 
   it('emits parameter declarations with inferred OpenSCENARIO types', () => {
@@ -80,7 +110,7 @@ describe('irToEngineTree', () => {
     const tree = irToEngineTree({ entities: [], actions: [] })
     expect(tree.parameters).toBeUndefined()
     expect(tree.roadNetwork).toBeUndefined()
-    expect(tree.maneuver).toBeUndefined()
+    expect(tree.maneuvers).toBeUndefined()
     expect(tree.entities).toEqual([])
   })
 
@@ -100,7 +130,7 @@ describe('irToEngineTree', () => {
 })
 
 describe('unexpressibleActions', () => {
-  it('reports the maneuvers and kinds the single-maneuver lowering omits', () => {
+  it('reports only unsupported action kinds — every LaneChangeAction is lowered', () => {
     const ir: AuthoringIR = {
       entities: [
         { ref: 'Ego', type: 'Vehicle', properties: {} },
@@ -113,7 +143,7 @@ describe('unexpressibleActions', () => {
           properties: {},
           references: { relativeTo: 'Ego' },
         },
-        // A second maneuver — only the first is lowered.
+        // A second maneuver, from the same actor — each lowers independently.
         {
           actor: 'A1',
           kind: 'LaneChangeAction',
@@ -125,10 +155,9 @@ describe('unexpressibleActions', () => {
       ],
     }
     const dropped = unexpressibleActions(ir)
-    expect(dropped.map((d) => d.kind)).toEqual(['LaneChangeAction', 'AcquirePositionAction'])
-    // The tree still lowers exactly the first maneuver — the drops are reported,
-    // not silently swallowed.
-    expect(irToEngineTree(ir).maneuver?.actorRef).toBe('A1')
+    expect(dropped.map((d) => d.kind)).toEqual(['AcquirePositionAction'])
+    // Both maneuvers survive the lowering — no drop gaps.
+    expect(irToEngineTree(ir).maneuvers).toHaveLength(2)
   })
 
   it('reports nothing when every action is expressible (the cut-in archetype)', () => {

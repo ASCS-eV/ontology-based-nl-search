@@ -16,9 +16,11 @@
  *                          (`properties.roadId/laneId/s/offset`) or one relative
  *                          to another entity (`references.relativeTo` +
  *                          `properties.dLane/ds/offset`).
- *   - `LaneChangeAction` → the single triggered maneuver. Actor changes lane
- *                          relative to `references.relativeTo`; `properties`
- *                          carry `targetLaneOffset`, `dynamicsShape`,
+ *   - `LaneChangeAction` → a triggered maneuver. Every `LaneChangeAction` in the
+ *                          IR lowers to its own `<ManeuverGroup>`, scoped to
+ *                          its own actor. Actor changes lane relative to
+ *                          `references.relativeTo`; `properties` carry
+ *                          `targetLaneOffset`, `dynamicsShape`,
  *                          `dynamicsDimension`, `dynamicsValue`, `targetValue`
  *                          and `startTime` (s).
  *
@@ -215,7 +217,7 @@ function lowerScene(ir: AuthoringIR): { tree: EngineTree; dropped: DroppedAction
     return entry
   }
 
-  let maneuver: EngineManeuver | undefined
+  const maneuvers: EngineManeuver[] = []
   ir.actions.forEach((action, index) => {
     switch (action.kind) {
       case 'SpeedAction':
@@ -228,18 +230,8 @@ function lowerScene(ir: AuthoringIR): { tree: EngineTree; dropped: DroppedAction
         ensureInit(action.actor).teleport = toPosition(action)
         break
       case 'LaneChangeAction':
-        // The single-maneuver archetype lowers only the first LaneChangeAction;
-        // any later one is dropped, not silently ignored.
-        if (maneuver === undefined) {
-          maneuver = toManeuver(action, index)
-        } else {
-          dropped.push({
-            actor: action.actor,
-            kind: action.kind,
-            reason:
-              'only the first LaneChangeAction is lowered; this additional maneuver was omitted',
-          })
-        }
+        // Every LaneChangeAction lowers to its own maneuver — none are dropped.
+        maneuvers.push(toManeuver(action, index))
         break
       default:
         dropped.push({
@@ -281,7 +273,7 @@ function lowerScene(ir: AuthoringIR): { tree: EngineTree; dropped: DroppedAction
       ...tree,
       ...(parameters && parameters.length > 0 ? { parameters } : {}),
       ...(ir.roadNetwork ? { roadNetwork: ir.roadNetwork } : {}),
-      ...(maneuver ? { maneuver } : {}),
+      ...(maneuvers.length > 0 ? { maneuvers } : {}),
     },
     dropped,
   }
@@ -296,10 +288,11 @@ export function irToEngineTree(ir: AuthoringIR): EngineTree {
 }
 
 /**
- * The actions the lowering could not express for this IR (unsupported kinds, and
- * maneuvers beyond the first). Empty when the whole IR is representable. The
- * pipeline turns each into a rule-attributed gap so an incomplete scenario is
- * never reported as fully valid.
+ * The actions the lowering could not express for this IR (unsupported action
+ * kinds only — every `LaneChangeAction` is lowered to its own maneuver).
+ * Empty when the whole IR is representable. The pipeline turns each into a
+ * rule-attributed gap so an incomplete scenario is never reported as fully
+ * valid.
  */
 export function unexpressibleActions(ir: AuthoringIR): DroppedAction[] {
   return lowerScene(ir).dropped

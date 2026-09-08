@@ -24,16 +24,17 @@ The lowering itself (`irToEngineTree`) is deterministic and pure: it maps an `Au
 
 ## Requirements & invariants
 
-| #   | Requirement / invariant                                                                                                                                                                             | Guarding test                        |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| A1  | `getAuthoringBackend()` selects on `AUTHORING_MODE` and returns the same instance for the process; `closeAuthoringBackend()` releases it and is idempotent.                                         | `__tests__/backend-factory.test.ts`  |
-| A2  | The null backend reports no engine and empty versions rather than pretending — a caller can always distinguish "not validated" from "validated clean".                                              | `__tests__/null-backend.test.ts`     |
-| A3  | The engine's reported versions must match `ENGINE_VERSIONS` (the pinned artifact's own `versions.json`), so a stale or mis-built `osc-engine.wasm` fails loudly at startup.                         | `__tests__/capability-probe.test.ts` |
-| A4  | A `describe()` that throws is surfaced as a `BackendCapabilityError`, not swallowed into a "no engine" answer.                                                                                      | `__tests__/capability-probe.test.ts` |
-| A5  | Golden conformance against the real WASM engine: a known-good scenario is accepted, a known-bad one is rejected **with a located diagnostic** (the gate has teeth), and repeated validations agree. | `__tests__/wasm-backend.test.ts`     |
-| A6  | Lowering is pure and deterministic — the same IR yields a deep-equal engine tree.                                                                                                                   | `__tests__/ir-to-engine.test.ts`     |
-| A7  | An IR action the single-maneuver lowering omits is REPORTED by `unexpressibleActions`, never silently dropped; an all-expressible scene reports nothing.                                            | `__tests__/ir-to-engine.test.ts`     |
-| A8  | An already-aborted signal is honoured before dispatch, so a cancelled request never enters the engine.                                                                                              | `__tests__/wasm-backend.test.ts`     |
+| #   | Requirement / invariant                                                                                                                                                                              | Guarding test                                 |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| A1  | `getAuthoringBackend()` selects on `AUTHORING_MODE` and returns the same instance for the process; `closeAuthoringBackend()` releases it and is idempotent.                                          | `__tests__/backend-factory.test.ts`           |
+| A2  | The null backend reports no engine and empty versions rather than pretending — a caller can always distinguish "not validated" from "validated clean".                                               | `__tests__/null-backend.test.ts`              |
+| A3  | The engine's reported versions must match `ENGINE_VERSIONS` (the pinned artifact's own `versions.json`), so a stale or mis-built `osc-engine.wasm` fails loudly at startup.                          | `__tests__/capability-probe.test.ts`          |
+| A4  | A `describe()` that throws is surfaced as a `BackendCapabilityError`, not swallowed into a "no engine" answer.                                                                                       | `__tests__/capability-probe.test.ts`          |
+| A5  | Golden conformance against the real WASM engine: a known-good scenario is accepted, a known-bad one is rejected **with a located diagnostic** (the gate has teeth), and repeated validations agree.  | `__tests__/wasm-backend.test.ts`              |
+| A6  | Lowering is pure and deterministic — the same IR yields a deep-equal engine tree.                                                                                                                    | `__tests__/ir-to-engine.test.ts`              |
+| A7  | An IR action of an unsupported kind is REPORTED by `unexpressibleActions`, never silently dropped; every `LaneChangeAction` lowers to its own maneuver and an all-expressible scene reports nothing. | `__tests__/ir-to-engine.test.ts`              |
+| A8  | An already-aborted signal is honoured before dispatch, so a cancelled request never enters the engine.                                                                                               | `__tests__/wasm-backend.test.ts`              |
+| A9  | Multiple `LaneChangeAction`s each lower to their own `<ManeuverGroup>`, scoped to their own actor, within one engine call — none are dropped or silently merged.                                     | `authoring-wasm/src/__tests__/engine.test.ts` |
 
 ## How to interface
 
