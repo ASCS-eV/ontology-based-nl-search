@@ -80,7 +80,7 @@ library registers them for nobody
 ([upstream #228](https://github.com/RA-Consulting-GmbH/openscenario.api.test/issues/228)).
 Phase 1 registers them all.
 
-Writer coverage is 49 of 295 writer types; the IR lowering understands four
+Writer coverage is 54 of 295 writer types; the IR lowering understands four
 action kinds and emits one maneuver per `LaneChangeAction`.
 
 **2. Rule identities must resolve where they claim to come from.** Measured from
@@ -226,9 +226,12 @@ yields one gap (the unsupported kind) and `valid: false`.
 - **Multiple events / maneuvers.** Every `LaneChangeAction` lowers to its own
   `<ManeuverGroup>`, scoped to its own actor, within one `<Act>`/`<Story>`;
   none are dropped.
-- Entity-based trigger conditions (`TimeHeadway`, `RelativeDistance`); the
-  archetype has only `SimulationTimeCondition`, which is not how a cut-in is
-  triggered in practice.
+- **Entity-based trigger conditions.** An event's `<StartTrigger>` can be a
+  `<ByEntityCondition>` over `TimeHeadwayCondition`/`RelativeDistanceCondition`
+  instead of only `SimulationTimeCondition`. The condition-kind dispatch in
+  `osc_engine_embind.cpp` is generated from the pinned SHACL's
+  `osc:EntityCondition` property shapes (`native/build.mjs`), never a
+  hand-typed class-name literal.
 - `stopTime` from the IR instead of the hardcoded `30` (`ir-to-engine.ts`).
 
 Keep the condition vocabulary SHACL-discovered — this is the budget-sensitive

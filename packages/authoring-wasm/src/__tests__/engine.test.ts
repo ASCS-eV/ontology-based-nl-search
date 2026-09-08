@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 import createOscEngine, { type OscEngineModule } from '../../wasm/osc-engine.mjs'
 import { loadOscEngine } from '../engine.js'
-import type { EngineTree, EngineVehicle, OscEngine } from '../types.js'
+import type { EngineManeuver, EngineTree, EngineVehicle, OscEngine } from '../types.js'
 
 const cutIn = readFileSync(
   fileURLToPath(new URL('../__fixtures__/cut-in.xosc', import.meta.url)),
@@ -346,6 +346,65 @@ describe('loadOscEngine', () => {
       const stopTrigger = /<StopTrigger>[\s\S]*?<\/StopTrigger>/.exec(xosc)?.[0]
       expect(stopTrigger).toMatch(/<SimulationTimeCondition rule="greaterThan" value="45"/)
       const result = engine.validate(xosc)
+      expect(result.ok).toBe(true)
+    })
+
+    it('emits a <ByEntityCondition>/<TimeHeadwayCondition> start trigger, validates clean, and survives a round-trip', () => {
+      const tree: EngineTree = {
+        ...cutInTree(),
+        maneuvers: [
+          {
+            ...(cutInTree().maneuvers?.[0] as EngineManeuver),
+            trigger: {
+              kind: 'timeHeadwayCondition',
+              triggeringEntityRef: 'A2',
+              entityRef: 'Ego',
+              rule: 'lessThan',
+              value: 1.5,
+              freespace: true,
+              relativeDistanceType: 'longitudinal',
+            },
+          },
+        ],
+      }
+      const xosc = engine.author(tree)
+      expect(xosc).toContain('<ByEntityCondition>')
+      expect(xosc).toMatch(
+        /<TimeHeadwayCondition\b[^>]*entityRef="Ego"[^>]*rule="lessThan"[^>]*value="1\.5"/
+      )
+      expect(xosc).toMatch(/<TriggeringEntities[^>]*>[\s\S]*?<EntityRef entityRef="A2"/)
+      const result = engine.validate(xosc)
+      expect(result.diagnostics.filter((d) => d.severity === 'error')).toHaveLength(0)
+      expect(result.ok).toBe(true)
+
+      // Survives a round-trip: parse the authored document back and re-emit it.
+      raw.FS.writeFile('/entity-trigger.xosc', xosc)
+      const reserialized = raw.roundtripExport('/entity-trigger.xosc')
+      raw.FS.unlink('/entity-trigger.xosc')
+      expect(reserialized).toContain('<ByEntityCondition>')
+      expect(reserialized).toMatch(/<TimeHeadwayCondition\b[^>]*entityRef="Ego"/)
+    })
+
+    it('emits a <RelativeDistanceCondition> start trigger and validates clean', () => {
+      const tree: EngineTree = {
+        ...cutInTree(),
+        maneuvers: [
+          {
+            ...(cutInTree().maneuvers?.[0] as EngineManeuver),
+            trigger: {
+              kind: 'relativeDistanceCondition',
+              triggeringEntityRef: 'A2',
+              entityRef: 'Ego',
+              rule: 'lessThan',
+              value: 5,
+            },
+          },
+        ],
+      }
+      const xosc = engine.author(tree)
+      expect(xosc).toMatch(/<RelativeDistanceCondition\b[^>]*entityRef="Ego"/)
+      const result = engine.validate(xosc)
+      expect(result.diagnostics.filter((d) => d.severity === 'error')).toHaveLength(0)
       expect(result.ok).toBe(true)
     })
 

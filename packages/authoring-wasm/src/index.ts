@@ -12,6 +12,7 @@ export type {
   Diagnostic,
   EngineAxle,
   EngineEntity,
+  EngineEntityTrigger,
   EngineFiles,
   EngineInfo,
   EngineInitPrivate,

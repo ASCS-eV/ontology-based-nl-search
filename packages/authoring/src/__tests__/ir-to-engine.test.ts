@@ -58,12 +58,64 @@ describe('irToEngineTree', () => {
     const m = irToEngineTree(cutInIR()).maneuvers?.[0]
     expect(m?.actorRef).toBe('A2')
     expect(m?.startTime).toBe(2)
+    expect(m?.trigger).toBeUndefined()
     expect(m?.laneChange.dynamics).toEqual({
       dynamicsShape: 'cubic',
       dynamicsDimension: 'distance',
       value: 54.8,
     })
     expect(m?.laneChange.relativeTarget).toEqual({ entityRef: 'Ego', value: 0 })
+  })
+
+  it('builds an entity-based trigger from triggerKind, forwarding the kind opaquely', () => {
+    const ir: AuthoringIR = {
+      entities: [
+        { ref: 'Ego', type: 'Vehicle', properties: {} },
+        { ref: 'A2', type: 'Vehicle', properties: {} },
+      ],
+      actions: [
+        {
+          actor: 'A2',
+          kind: 'LaneChangeAction',
+          properties: {
+            triggerKind: 'timeHeadwayCondition',
+            triggerValue: '1.5',
+            triggerRule: 'lessThan',
+            triggerFreespace: 'true',
+            triggerRelativeDistanceType: 'longitudinal',
+          },
+          references: { relativeTo: 'Ego' },
+        },
+      ],
+    }
+    const m = irToEngineTree(ir).maneuvers?.[0]
+    // startTime still defaults (unused by the engine once a trigger is present,
+    // but the field itself is just an ordinary numeric property).
+    expect(m?.trigger).toEqual({
+      kind: 'timeHeadwayCondition',
+      triggeringEntityRef: 'A2',
+      entityRef: 'Ego',
+      rule: 'lessThan',
+      value: 1.5,
+      freespace: true,
+      relativeDistanceType: 'longitudinal',
+    })
+  })
+
+  it('falls back to references.relativeTo for the trigger entityRef when triggerEntityRef is omitted', () => {
+    const ir: AuthoringIR = {
+      entities: [],
+      actions: [
+        {
+          actor: 'A2',
+          kind: 'LaneChangeAction',
+          properties: { triggerKind: 'relativeDistanceCondition', triggerValue: '5' },
+          references: { relativeTo: 'Ego', triggerEntityRef: 'A1' },
+        },
+      ],
+    }
+    const m = irToEngineTree(ir).maneuvers?.[0]
+    expect(m?.trigger?.entityRef).toBe('A1')
   })
 
   it('lowers multiple LaneChangeActions into independent maneuvers, preserving order and actors', () => {

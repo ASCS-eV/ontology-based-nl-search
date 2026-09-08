@@ -62,17 +62,34 @@ the \`submit_scene\` tool exactly once.
   \`vehicleCategory\` (see the enum in the SHACL, e.g. "car", "truck"),
   \`maxSpeed\`, \`width\`, \`length\`, \`height\` (metres / m·s⁻¹, as strings).
 
-### actions[] — initial state and the one maneuver
+### actions[] — initial state and maneuvers
 - SpeedAction — an entity's initial speed. \`actor\`=entity ref,
   \`properties.speed\` in m/s.
 - TeleportAction — an entity's start position. \`actor\`=entity ref, then EITHER
   an absolute lane (\`properties.roadId\`, \`laneId\`, \`s\`, \`offset\`) OR relative
   to another entity (\`references.relativeTo\`=other ref, \`properties.dLane\`,
   \`ds\`, \`offset\`).
-- LaneChangeAction — the single triggered maneuver. \`actor\`=the lane-changer,
+- LaneChangeAction — a triggered maneuver. Emit one per maneuver you need — each
+  becomes its own, independent maneuver, so a scene with two cars each changing
+  lanes needs two LaneChangeActions. \`actor\`=the lane-changer,
   \`references.relativeTo\`=the entity it targets, \`properties\`:
   \`targetLaneOffset\`, \`dynamicsShape\` (enum), \`dynamicsDimension\` (enum),
-  \`dynamicsValue\`, \`targetValue\`, \`startTime\` (s).
+  \`dynamicsValue\`, \`targetValue\`.
+
+  Its start trigger defaults to elapsed simulation time — set
+  \`properties.startTime\` (s). For a trigger based on another vehicle's state
+  instead (e.g. "cut in when the gap closes to 1.5s"), set
+  \`properties.triggerKind\` to the SHACL \`EntityCondition\` property local name
+  (e.g. \`"timeHeadwayCondition"\`, \`"relativeDistanceCondition"\` — see the SHACL
+  below for the full set the ontology defines; only these two are currently
+  wired to the writer) plus \`properties.triggerValue\`, \`properties.triggerRule\`
+  (\`"lessThan"\`/\`"greaterThan"\`/\`"equalTo"\`), and optionally
+  \`properties.triggerFreespace\` (\`"true"\`/\`"false"\`) and
+  \`properties.triggerRelativeDistanceType\` (\`"longitudinal"\`/\`"lateral"\`/
+  \`"euclidianDistance"\`/\`"cartesianDistance"\`). The other vehicle is
+  \`references.relativeTo\` unless you set \`references.triggerEntityRef\`
+  explicitly. Omit \`triggerKind\` entirely to keep the default \`startTime\`
+  trigger — do not set both.
 
 ### roadNetwork (REQUIRED — a fixed catalog road)
 The scenario runs on ONE curated road network described under "Road network"
