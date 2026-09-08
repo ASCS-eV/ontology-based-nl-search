@@ -24,12 +24,32 @@
  *                          `dynamicsDimension`, `dynamicsValue`, `targetValue`
  *                          and `startTime` (s).
  *
+ *                          The event's start trigger defaults to elapsed
+ *                          simulation time (`startTime`). Setting
+ *                          `properties.triggerKind` switches it to an
+ *                          entity-based trigger instead — a `<ByEntityCondition>`
+ *                          over this action's `actor` (the triggering entity)
+ *                          and `references.triggerEntityRef` (falling back to
+ *                          `references.relativeTo`, the reference entity).
+ *                          `triggerKind` is forwarded opaquely — never compared
+ *                          against a literal here — as the SHACL
+ *                          `osc:EntityCondition` property-shape local name
+ *                          (e.g. `"timeHeadwayCondition"`,
+ *                          `"relativeDistanceCondition"`); the native writer
+ *                          resolves it against constants generated from the
+ *                          pinned SHACL (`native/build.mjs`). Other trigger
+ *                          properties: `triggerValue`, `triggerRule`,
+ *                          `triggerFreespace`, `triggerRelativeDistanceType`,
+ *                          `triggerCoordinateSystem`, `triggerRoutingAlgorithm`,
+ *                          `triggerAlongRoute`.
+ *
  * [OSC-XSD] OpenSCENARIO 1.3 — the produced tree mirrors the standard's model
  * elements; the writer factory (packages/authoring-wasm) enforces order/choice.
  */
 import type { AuthoringIR, SceneAction } from '@ontology-search/authoring-ir'
 import type {
   EngineEntity,
+  EngineEntityTrigger,
   EngineInitPrivate,
   EngineManeuver,
   EnginePosition,
@@ -84,6 +104,12 @@ function num(props: PropertyBag, key: string, fallback: number): number {
 /** String property with a fallback. */
 function str(props: PropertyBag, key: string, fallback: string): string {
   return first(props, key) ?? fallback
+}
+
+/** Boolean property (`"true"`/`"false"`) with a fallback; omitted key = fallback. */
+function bool(props: PropertyBag, key: string): boolean | undefined {
+  const raw = first(props, key)
+  return raw === undefined ? undefined : raw === 'true'
 }
 
 /** Infer an OpenSCENARIO `ParameterType` literal from a declared value. */
@@ -152,8 +178,39 @@ function toPosition(action: SceneAction): EnginePosition {
   }
 }
 
+/**
+ * An entity-based start trigger for a `LaneChangeAction`'s event, when the IR
+ * declares one via `properties.triggerKind` — forwarded opaquely (never
+ * compared against a literal here; see the module doc). Undefined when the IR
+ * carries no `triggerKind`, so the lowering falls back to the default
+ * `startTime`-based trigger, unchanged.
+ */
+function toTrigger(action: SceneAction): EngineEntityTrigger | undefined {
+  const kind = first(action.properties, 'triggerKind')
+  if (kind === undefined) return undefined
+  const entityRef = action.references?.triggerEntityRef ?? action.references?.relativeTo ?? ''
+  const relativeDistanceType = first(action.properties, 'triggerRelativeDistanceType')
+  const coordinateSystem = first(action.properties, 'triggerCoordinateSystem')
+  const routingAlgorithm = first(action.properties, 'triggerRoutingAlgorithm')
+  const freespace = bool(action.properties, 'triggerFreespace')
+  const alongRoute = bool(action.properties, 'triggerAlongRoute')
+  return {
+    kind,
+    triggeringEntityRef: action.actor,
+    entityRef,
+    rule: str(action.properties, 'triggerRule', 'lessThan'),
+    value: num(action.properties, 'triggerValue', 0),
+    ...(freespace !== undefined ? { freespace } : {}),
+    ...(relativeDistanceType !== undefined ? { relativeDistanceType } : {}),
+    ...(coordinateSystem !== undefined ? { coordinateSystem } : {}),
+    ...(routingAlgorithm !== undefined ? { routingAlgorithm } : {}),
+    ...(alongRoute !== undefined ? { alongRoute } : {}),
+  }
+}
+
 function toManeuver(action: SceneAction, index: number): EngineManeuver {
   const target = action.references?.relativeTo ?? action.references?.targetRef ?? ''
+  const trigger = toTrigger(action)
   return {
     storyName: str(action.properties, 'storyName', 'Story1'),
     actName: str(action.properties, 'actName', 'Act1'),
@@ -164,6 +221,7 @@ function toManeuver(action: SceneAction, index: number): EngineManeuver {
     priority: str(action.properties, 'priority', 'override'),
     actorRef: action.actor,
     startTime: num(action.properties, 'startTime', 0),
+    ...(trigger ? { trigger } : {}),
     laneChange: {
       targetLaneOffset: num(action.properties, 'targetLaneOffset', 0),
       dynamics: {

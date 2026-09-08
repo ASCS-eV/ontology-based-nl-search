@@ -40,6 +40,10 @@ uses for Oxigraph.
   build pin). Activate it with `emsdk install 6.0.3 && emsdk activate 6.0.3`.
 - **JDK 11+** — `java`, to run the vendored ANTLR 4.8 jar for grammar codegen.
 - **CMake** — used only as a cross-platform archive extractor (`cmake -E tar`).
+- **The pinned ontology cache** (`.ontology/`) — `pnpm install` materializes it
+  (`pnpm run fetch:ontology`); the build reads
+  `.ontology/imports/openscenario/openscenario.shacl.ttl` to generate the
+  entity-condition dispatch below.
 
 ## Reproduce
 
@@ -56,8 +60,8 @@ pnpm --filter @ontology-search/authoring-wasm build:wasm
 3. **Generate** four grammars with the vendored jar (`-Dlanguage=Cpp -visitor
 -listener`): `XMLLexer`/`XMLParser` and `OscExprLexer`/`OscExprParser`
    (`-package OscExpression`).
-   Two small headers are generated alongside them, both **derived from pinned
-   inputs so they cannot drift**:
+   Three small headers are generated alongside them, all **derived from
+   pinned inputs so they cannot drift**:
    - `osc_versions_generated.h` — `describe()`'s payload plus `OSC_REV_MAJOR` /
      `OSC_REV_MINOR` for the version checker rule, from `versions.json`;
    - `osc_union_rules_generated.h` — one `Add<Type>CheckerRule(...)` call per
@@ -67,6 +71,14 @@ pnpm --filter @ontology-search/authoring-wasm build:wasm
      these classes anywhere, so the wiring is derived rather than transcribed;
      a rule class with no matching slot **fails the build** instead of being
      silently skipped.
+   - `osc_entity_conditions_generated.h` — the SHACL property-shape local name
+     (`timeHeadwayCondition`, `relativeDistanceCondition`) for each
+     entity-based trigger condition `osc_engine_embind.cpp` hand-implements,
+     read out of the pinned `.ontology/imports/openscenario/openscenario.shacl.ttl`
+     cache's `osc:EntityCondition` property shapes. The embind dispatch
+     compares against these generated constants rather than a class-name
+     literal typed into the `.cpp`; the build **fails** if the pin ever
+     renames, removes or re-targets either property shape.
 4. **Compile** (`em++ -std=c++17 -Oz -fexceptions -DSUPPORT_OSC_1_3
 -Wno-deprecated-declarations -Wno-inconsistent-missing-override`) three
    source sets:

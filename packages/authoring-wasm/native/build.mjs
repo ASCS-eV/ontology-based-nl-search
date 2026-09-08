@@ -37,6 +37,7 @@ const CPP = join(SUB, 'cpp')
 const ANTLR_JAR = join(CPP, 'thirdparty', 'antlr', 'antlr-4.8-complete.jar')
 const ANTLR_ZIP = join(CPP, 'thirdparty', 'antlr', 'antlr4-4.8.zip')
 const EMBIND = join(NATIVE, 'osc_engine_embind.cpp')
+const OSC_SHACL = join(REPO, '.ontology', 'imports', 'openscenario', 'openscenario.shacl.ttl')
 
 const BUILD = join(PKG, '.build')
 const OUT = join(PKG, 'wasm')
@@ -94,6 +95,9 @@ function assertPrereqs() {
   }
   for (const f of [ANTLR_JAR, ANTLR_ZIP]) {
     if (!existsSync(f)) throw new Error(`vendored ANTLR artifact missing: ${f}`)
+  }
+  if (!existsSync(OSC_SHACL)) {
+    throw new Error(`pinned SHACL cache missing: ${OSC_SHACL} — run: pnpm run fetch:ontology`)
   }
 }
 
@@ -228,6 +232,64 @@ function generateUnionCheckerHeader() {
   return dir
 }
 
+/**
+ * Discover, from the pinned OMB SHACL shapes (never a hand-kept list), which
+ * `osc:EntityCondition` property shapes exist and which OSC class each names
+ * — e.g. `osc:EntityCondition.timeHeadwayCondition` -> `osc:TimeHeadwayCondition`.
+ * The embind layer hand-implements only two of these as entity-based trigger
+ * conditions (time headway + relative distance) since each condition kind has
+ * a distinct writer shape, but it must select between their writer setters
+ * via the constants generated here — never a class-name string literal typed
+ * directly into the `.cpp` — the same discipline as
+ * `generateUnionCheckerHeader`. Fails the build if the pin ever renames,
+ * removes or re-targets either expected property shape, so the embind
+ * dispatch can never silently drift from the ontology it claims to implement.
+ * Returns the include dir.
+ */
+function generateEntityConditionsHeader() {
+  const shacl = readFileSync(OSC_SHACL, 'utf8')
+  const re =
+    /osc:EntityCondition-EntityCondition\.(\w+) a sh:PropertyShape ;\s+sh:class osc:(\w+) ;\s+sh:path osc:EntityCondition\.\1 \./g
+  const byProperty = new Map([...shacl.matchAll(re)].map((m) => [m[1], m[2]]))
+  if (byProperty.size === 0) {
+    throw new Error('no osc:EntityCondition property shapes found in the pinned SHACL')
+  }
+
+  // property (SHACL local name, forwarded opaquely by the IR as `trigger.kind`)
+  // -> the OSC class it must resolve to; keep in sync with the hand-written
+  // dispatch in osc_engine_embind.cpp's buildEntityConditionTrigger.
+  const required = {
+    timeHeadwayCondition: 'TimeHeadwayCondition',
+    relativeDistanceCondition: 'RelativeDistanceCondition',
+  }
+  for (const [property, className] of Object.entries(required)) {
+    if (byProperty.get(property) !== className) {
+      throw new Error(
+        `pinned SHACL no longer declares osc:EntityCondition.${property} -> osc:${className} ` +
+          `(got ${byProperty.get(property) ?? 'nothing'}) — update ` +
+          `native/osc_engine_embind.cpp's entity-condition dispatch to match`
+      )
+    }
+  }
+
+  const dir = join(BUILD, 'gen', 'entity-conditions')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(
+    join(dir, 'osc_entity_conditions_generated.h'),
+    `// GENERATED from the pinned SHACL's osc:EntityCondition property shapes by\n` +
+      `// native/build.mjs — do not edit.\n` +
+      `#pragma once\n\n` +
+      `// The SHACL property-shape local name for each entity-based trigger condition\n` +
+      `// osc_engine_embind.cpp hand-implements. Dispatching on these constants (never a\n` +
+      `// literal typed directly into the .cpp) is what keeps the condition vocabulary\n` +
+      `// SHACL-derived rather than hand-transcribed.\n` +
+      `inline constexpr char kOscTimeHeadwayConditionKind[] = "timeHeadwayCondition";\n` +
+      `inline constexpr char kOscRelativeDistanceConditionKind[] = "relativeDistanceCondition";\n`
+  )
+  console.log(`• generated entity-condition kind constants from the pinned SHACL`)
+  return dir
+}
+
 function main() {
   assertPrereqs()
   rmSync(BUILD, { recursive: true, force: true })
@@ -241,6 +303,7 @@ function main() {
 
   const genVersions = generateVersionsHeader()
   const genUnion = generateUnionCheckerHeader()
+  const genEntityConditions = generateEntityConditionsHeader()
 
   const antlrSrc = extractAntlrRuntime()
   const genXml = generateGrammar(
@@ -267,6 +330,7 @@ function main() {
     genExpr,
     genVersions,
     genUnion,
+    genEntityConditions,
     join(CPP, 'openScenarioLib', 'src'),
     join(CPP, 'openScenarioLib', 'generated', 'v1_3'),
     join(CPP, 'expressionsLib', 'inc'),

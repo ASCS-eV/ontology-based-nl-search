@@ -36,6 +36,7 @@
 #include "XmlScenarioImportLoaderFactoryV1_3.h"
 #include "XmlScenarioLoaderFactoryV1_3.h"
 #include "json.hpp"
+#include "osc_entity_conditions_generated.h"
 #include "osc_union_rules_generated.h"
 #include "osc_versions_generated.h"
 #include "tinyxml2.h"
@@ -449,6 +450,73 @@ std::shared_ptr<v::ITriggerWriter> buildSimTimeTrigger(
   return trigger;
 }
 
+// An entity-based start trigger — `<ByEntityCondition>` over the maneuver's own
+// actor (the `<TriggeringEntities>`) and a reference entity's `TimeHeadway` or
+// `RelativeDistance` (`t.kind`, dispatched against the SHACL-generated constants
+// in osc_entity_conditions_generated.h — never a literal class name typed here).
+// [OSC-XSD] OpenSCENARIO 1.3 §EntityCondition — a scenario that triggers on
+// closing gap rather than elapsed time, e.g. "cut in when the gap is 1.5s".
+std::shared_ptr<v::ITriggerWriter> buildEntityConditionTrigger(
+    Factory& f, const std::string& name, const json& t, const std::string& edge, double delay) {
+  const std::string kind = jstr(t, "kind");
+
+  auto entityCondition = f.CreateEntityConditionWriter();
+  if (kind == kOscTimeHeadwayConditionKind) {
+    auto thc = f.CreateTimeHeadwayConditionWriter();
+    thc->SetEntityRef(nref<v::IEntity>(jstr(t, "entityRef")));
+    thc->SetRule(enumOf<Rule>(jstr(t, "rule", "lessThan")));
+    thc->SetValue(jnum(t, "value"));
+    thc->SetFreespace(jbool(t, "freespace", true));
+    thc->SetRelativeDistanceType(
+        enumOf<RelativeDistanceType>(jstr(t, "relativeDistanceType", "longitudinal")));
+    thc->SetRoutingAlgorithm(enumOf<RoutingAlgorithm>(jstr(t, "routingAlgorithm", "undefined")));
+    thc->SetAlongRoute(jbool(t, "alongRoute", false));
+    if (t.contains("coordinateSystem")) {
+      thc->SetCoordinateSystem(enumOf<CoordinateSystem>(jstr(t, "coordinateSystem")));
+    }
+    entityCondition->SetTimeHeadwayCondition(thc);
+  } else if (kind == kOscRelativeDistanceConditionKind) {
+    auto rdc = f.CreateRelativeDistanceConditionWriter();
+    rdc->SetEntityRef(nref<v::IEntity>(jstr(t, "entityRef")));
+    rdc->SetRule(enumOf<Rule>(jstr(t, "rule", "lessThan")));
+    rdc->SetValue(jnum(t, "value"));
+    rdc->SetFreespace(jbool(t, "freespace", true));
+    rdc->SetRelativeDistanceType(
+        enumOf<RelativeDistanceType>(jstr(t, "relativeDistanceType", "longitudinal")));
+    rdc->SetRoutingAlgorithm(enumOf<RoutingAlgorithm>(jstr(t, "routingAlgorithm", "undefined")));
+    if (t.contains("coordinateSystem")) {
+      rdc->SetCoordinateSystem(enumOf<CoordinateSystem>(jstr(t, "coordinateSystem")));
+    }
+    entityCondition->SetRelativeDistanceCondition(rdc);
+  } else {
+    throw std::runtime_error("unsupported entity condition trigger kind: " + kind);
+  }
+
+  auto byEntity = f.CreateByEntityConditionWriter();
+  auto triggeringEntityRef = f.CreateEntityRefWriter();
+  triggeringEntityRef->SetEntityRef(nref<v::IEntity>(jstr(t, "triggeringEntityRef")));
+  std::vector<std::shared_ptr<v::IEntityRefWriter>> triggeringRefs{triggeringEntityRef};
+  auto triggeringEntities = f.CreateTriggeringEntitiesWriter();
+  triggeringEntities->SetTriggeringEntitiesRule(enumOf<TriggeringEntitiesRule>("any"));
+  triggeringEntities->SetEntityRefs(triggeringRefs);
+  byEntity->SetTriggeringEntities(triggeringEntities);
+  byEntity->SetEntityCondition(entityCondition);
+
+  auto cond = f.CreateConditionWriter();
+  cond->SetName(name);
+  cond->SetDelay(delay);
+  cond->SetConditionEdge(enumOf<ConditionEdge>(edge));
+  cond->SetByEntityCondition(byEntity);
+
+  std::vector<std::shared_ptr<v::IConditionWriter>> conditions{cond};
+  auto group = f.CreateConditionGroupWriter();
+  group->SetConditions(conditions);
+  std::vector<std::shared_ptr<v::IConditionGroupWriter>> groups{group};
+  auto trigger = f.CreateTriggerWriter();
+  trigger->SetConditionGroups(groups);
+  return trigger;
+}
+
 // One `<ManeuverGroup>`/`<Maneuver>`/`<Event>`/`<Action>` for a single lane-change
 // maneuver, scoped to its own actor. `buildStory` below composes one of these per
 // entry in the IR's `maneuvers` array — one `<ManeuverGroup>` per maneuver.
@@ -478,8 +546,12 @@ std::shared_ptr<v::IManeuverGroupWriter> buildManeuverGroup(Factory& f, const js
   event->SetName(jstr(m, "eventName", "Event1"));
   event->SetPriority(enumOf<Priority>(jstr(m, "priority", "override")));
   event->SetActions(eventActions);
-  event->SetStartTrigger(buildSimTimeTrigger(f, "EventStart", jnum(m, "startTime", 0.0),
-                                             "greaterThan", "rising", 0.0));
+  if (m.contains("trigger") && !m["trigger"].is_null()) {
+    event->SetStartTrigger(buildEntityConditionTrigger(f, "EventStart", m["trigger"], "rising", 0.0));
+  } else {
+    event->SetStartTrigger(buildSimTimeTrigger(f, "EventStart", jnum(m, "startTime", 0.0),
+                                               "greaterThan", "rising", 0.0));
+  }
   std::vector<std::shared_ptr<v::IEventWriter>> events{event};
 
   auto maneuver = f.CreateManeuverWriter();

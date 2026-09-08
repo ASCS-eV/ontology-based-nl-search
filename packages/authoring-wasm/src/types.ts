@@ -164,6 +164,32 @@ export interface EngineInitPrivate {
   readonly teleport?: EnginePosition
 }
 
+/**
+ * An entity-based `<ByEntityCondition>` for an event's `<StartTrigger>` — the
+ * alternative to the default `SimulationTimeCondition` start trigger. `kind` is
+ * the SHACL `osc:EntityCondition` property-shape local name (e.g.
+ * `"timeHeadwayCondition"`, `"relativeDistanceCondition"`) forwarded opaquely
+ * from the IR; the embind layer resolves which condition writer to build from
+ * constants generated from the pinned SHACL (`native/build.mjs`), never a
+ * literal typed into the lowering.
+ * [OSC-XSD] OpenSCENARIO 1.3 §EntityCondition / §ByEntityCondition.
+ */
+export interface EngineEntityTrigger {
+  readonly kind: string
+  /** The entity whose state is evaluated (`<TriggeringEntities>`). */
+  readonly triggeringEntityRef: string
+  /** The condition's own reference entity (e.g. the vehicle ahead). */
+  readonly entityRef: string
+  readonly rule: string
+  readonly value: number
+  readonly freespace?: boolean
+  readonly relativeDistanceType?: string
+  readonly coordinateSystem?: string
+  readonly routingAlgorithm?: string
+  /** `TimeHeadwayCondition`-only; ignored for other condition kinds. */
+  readonly alongRoute?: boolean
+}
+
 /** A lane-change maneuver → `<Story>/<Act>/<ManeuverGroup>/…/<LaneChangeAction>`. */
 export interface EngineManeuver {
   readonly storyName?: string
@@ -175,6 +201,11 @@ export interface EngineManeuver {
   readonly priority?: string
   readonly actorRef: string
   readonly startTime?: number
+  /**
+   * An entity-based start trigger, overriding the default
+   * `startTime`/`SimulationTimeCondition` trigger when present.
+   */
+  readonly trigger?: EngineEntityTrigger
   readonly laneChange: {
     readonly targetLaneOffset: number
     readonly dynamics: {
