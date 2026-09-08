@@ -314,15 +314,17 @@ describe('loadOscEngine', () => {
           teleport: { relativeLane: { entityRef: 'Ego', dLane: 1, ds: -100 } },
         },
       ],
-      maneuver: {
-        actorRef: 'A2',
-        startTime: 2,
-        laneChange: {
-          targetLaneOffset: 0,
-          dynamics: { dynamicsShape: 'cubic', dynamicsDimension: 'distance', value: 54.8 },
-          relativeTarget: { entityRef: 'Ego', value: 0 },
+      maneuvers: [
+        {
+          actorRef: 'A2',
+          startTime: 2,
+          laneChange: {
+            targetLaneOffset: 0,
+            dynamics: { dynamicsShape: 'cubic', dynamicsDimension: 'distance', value: 54.8 },
+            relativeTarget: { entityRef: 'Ego', value: 0 },
+          },
         },
-      },
+      ],
       stopTime: 30,
     })
 
@@ -344,6 +346,35 @@ describe('loadOscEngine', () => {
       const stopTrigger = /<StopTrigger>[\s\S]*?<\/StopTrigger>/.exec(xosc)?.[0]
       expect(stopTrigger).toMatch(/<SimulationTimeCondition rule="greaterThan" value="45"/)
       const result = engine.validate(xosc)
+      expect(result.ok).toBe(true)
+    })
+
+    it('emits one <ManeuverGroup> per maneuver, none dropped, and validates clean', () => {
+      const tree: EngineTree = {
+        ...cutInTree(),
+        maneuvers: [
+          ...(cutInTree().maneuvers ?? []),
+          {
+            actorRef: 'A1',
+            startTime: 4,
+            groupName: 'ManeuverGroup2',
+            maneuverName: 'Maneuver2',
+            eventName: 'Event2',
+            actionName: 'Action2',
+            laneChange: {
+              targetLaneOffset: 0,
+              dynamics: { dynamicsShape: 'cubic', dynamicsDimension: 'distance', value: 40 },
+              relativeTarget: { entityRef: 'Ego', value: 1 },
+            },
+          },
+        ],
+      }
+      const xosc = engine.author(tree)
+      expect([...xosc.matchAll(/<ManeuverGroup\b/g)]).toHaveLength(2)
+      expect([...xosc.matchAll(/<Maneuver\b[^>]*name="Maneuver1"/g)]).toHaveLength(1)
+      expect([...xosc.matchAll(/<Maneuver\b[^>]*name="Maneuver2"/g)]).toHaveLength(1)
+      const result = engine.validate(xosc)
+      expect(result.diagnostics.filter((d) => d.severity === 'error')).toHaveLength(0)
       expect(result.ok).toBe(true)
     })
 

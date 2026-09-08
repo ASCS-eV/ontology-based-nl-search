@@ -81,7 +81,7 @@ library registers them for nobody
 Phase 1 registers them all.
 
 Writer coverage is 49 of 295 writer types; the IR lowering understands four
-action kinds and emits at most one maneuver.
+action kinds and emits one maneuver per `LaneChangeAction`.
 
 **2. Rule identities must resolve where they claim to come from.** Measured from
 the pinned bundle lists, `qc-opendrive` publishes 26 rules and
@@ -206,23 +206,26 @@ before parameter resolution, so the checkers see resolved values.
 
 ### 2.1 Report what the lowering cannot express — **done**
 
-The archetype lowers four action kinds and one maneuver, so an IR can carry more
-than the lowering can emit. `lowerScene` returns the dropped actions alongside
-the tree and is the single source for both `irToEngineTree` and
-`unexpressibleActions`, so the two cannot disagree about what "supported" means.
-`runScenePipeline` emits one rule-attributed `SceneGap` per drop, which makes the
-result `valid: false` and gives the bounded repair loop something to act on.
+The archetype lowers four action kinds; each `LaneChangeAction` becomes its own
+maneuver, so an IR can still carry action kinds the lowering can't emit at all.
+`lowerScene` returns the dropped actions alongside the tree and is the single
+source for both `irToEngineTree` and `unexpressibleActions`, so the two cannot
+disagree about what "supported" means. `runScenePipeline` emits one
+rule-attributed `SceneGap` per drop, which makes the result `valid: false` and
+gives the bounded repair loop something to act on.
 
 Detection belongs here rather than in the model's self-report: the prompt asks
 the LLM to report what it cannot express, but the deterministic lowering is what
 knows.
 
 **Test** — an IR with two `LaneChangeAction`s and one `AcquirePositionAction`
-yields two gaps and `valid: false`.
+yields one gap (the unsupported kind) and `valid: false`.
 
 ### 2.2 Widen the archetype — open (#183)
 
-- Multiple events / maneuvers rather than one.
+- **Multiple events / maneuvers.** Every `LaneChangeAction` lowers to its own
+  `<ManeuverGroup>`, scoped to its own actor, within one `<Act>`/`<Story>`;
+  none are dropped.
 - Entity-based trigger conditions (`TimeHeadway`, `RelativeDistance`); the
   archetype has only `SimulationTimeCondition`, which is not how a cut-in is
   triggered in practice.

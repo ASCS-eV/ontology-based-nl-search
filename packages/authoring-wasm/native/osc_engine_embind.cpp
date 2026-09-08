@@ -449,7 +449,10 @@ std::shared_ptr<v::ITriggerWriter> buildSimTimeTrigger(
   return trigger;
 }
 
-std::shared_ptr<v::IStoryWriter> buildStory(Factory& f, const json& m) {
+// One `<ManeuverGroup>`/`<Maneuver>`/`<Event>`/`<Action>` for a single lane-change
+// maneuver, scoped to its own actor. `buildStory` below composes one of these per
+// entry in the IR's `maneuvers` array — one `<ManeuverGroup>` per maneuver.
+std::shared_ptr<v::IManeuverGroupWriter> buildManeuverGroup(Factory& f, const json& m) {
   // The lane-change event.
   const json& lc = m.value("laneChange", json::object());
   auto lcAction = f.CreateLaneChangeActionWriter();
@@ -496,17 +499,28 @@ std::shared_ptr<v::IStoryWriter> buildStory(Factory& f, const json& m) {
   group->SetName(jstr(m, "groupName", "ManeuverGroup1"));
   group->SetActors(actors);
   group->SetManeuvers(maneuvers);
-  std::vector<std::shared_ptr<v::IManeuverGroupWriter>> groups{group};
+  return group;
+}
 
+// A single `<Story>`/`<Act>` holding one `<ManeuverGroup>` per entry of `maneuvers`
+// (a non-empty JSON array) — the Act-level start/stop triggers stay simulation-time
+// based; only the maneuver groups vary in count. `storyName`/`actName` are read from
+// the first maneuver so the whole story shares one name even when several maneuvers
+// (with independent group/maneuver/event/action names) compose it.
+std::shared_ptr<v::IStoryWriter> buildStory(Factory& f, const json& maneuvers) {
+  std::vector<std::shared_ptr<v::IManeuverGroupWriter>> groups;
+  for (const json& m : maneuvers) groups.push_back(buildManeuverGroup(f, m));
+
+  const json& first = maneuvers.front();
   auto act = f.CreateActWriter();
-  act->SetName(jstr(m, "actName", "Act1"));
+  act->SetName(jstr(first, "actName", "Act1"));
   act->SetManeuverGroups(groups);
   act->SetStartTrigger(
       buildSimTimeTrigger(f, "ActStart", 0.0, "greaterThan", "rising", 0.0));
   std::vector<std::shared_ptr<v::IActWriter>> acts{act};
 
   auto story = f.CreateStoryWriter();
-  story->SetName(jstr(m, "storyName", "Story1"));
+  story->SetName(jstr(first, "storyName", "Story1"));
   story->SetActs(acts);
   return story;
 }
@@ -573,8 +587,8 @@ std::string authorImpl(const std::string& treeJson) {
   init->SetActions(initActions);
   storyboard->SetInit(init);
 
-  if (ir.contains("maneuver")) {
-    std::vector<std::shared_ptr<v::IStoryWriter>> stories{buildStory(f, ir["maneuver"])};
+  if (ir.contains("maneuvers") && ir["maneuvers"].is_array() && !ir["maneuvers"].empty()) {
+    std::vector<std::shared_ptr<v::IStoryWriter>> stories{buildStory(f, ir["maneuvers"])};
     storyboard->SetStories(stories);
   }
 

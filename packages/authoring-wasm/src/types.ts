@@ -164,7 +164,7 @@ export interface EngineInitPrivate {
   readonly teleport?: EnginePosition
 }
 
-/** The single lane-change maneuver → `<Story>/<Act>/…/<LaneChangeAction>`. */
+/** A lane-change maneuver → `<Story>/<Act>/<ManeuverGroup>/…/<LaneChangeAction>`. */
 export interface EngineManeuver {
   readonly storyName?: string
   readonly actName?: string
@@ -203,6 +203,10 @@ export interface EngineTree {
   readonly roadNetwork?: { readonly logicFile?: string; readonly sceneGraphFile?: string }
   readonly entities?: readonly EngineEntity[]
   readonly init?: readonly EngineInitPrivate[]
-  readonly maneuver?: EngineManeuver
+  /**
+   * One `<ManeuverGroup>` per maneuver, each scoped to its own `actorRef`, all
+   * within a single `<Act>`/`<Story>`. Empty/omitted = no `<Storyboard>` story.
+   */
+  readonly maneuvers?: readonly EngineManeuver[]
   readonly stopTime?: number
 }
