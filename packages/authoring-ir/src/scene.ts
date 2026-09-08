@@ -48,6 +48,12 @@ export interface AuthoringIR {
   actions: SceneAction[]
   /** Archetype selector (e.g. `"cut-in"`) — picks the lowering template. */
   archetype?: string
+  /**
+   * Simulation end time in seconds → the `<StopTrigger>`'s `SimulationTimeCondition`
+   * value. Omitted = the lowering falls back to a default (see `ir-to-engine.ts`).
+   * [OSC-XSD] OpenSCENARIO 1.3 §StoryboardElement — `Storyboard.StopTrigger`.
+   */
+  stopTime?: number
 }
 
 /** Create an empty scene, optionally tagged with an archetype. */

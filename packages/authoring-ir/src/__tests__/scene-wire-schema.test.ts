@@ -33,6 +33,15 @@ describe('authoringIrWireSchema', () => {
     expect(parsed.roadNetwork?.logicFile).toBe('SampleDatabase.xodr')
   })
 
+  it('accepts an optional numeric stopTime and leaves it undefined when omitted', () => {
+    expect(authoringIrWireSchema.parse({ ...cutIn, stopTime: 45 }).stopTime).toBe(45)
+    expect(authoringIrWireSchema.parse(cutIn).stopTime).toBeUndefined()
+  })
+
+  it('rejects a non-numeric stopTime', () => {
+    expect(() => authoringIrWireSchema.parse({ ...cutIn, stopTime: '45' })).toThrow()
+  })
+
   it('applies defaults for omitted entities/actions/properties', () => {
     const parsed = authoringIrWireSchema.parse({})
     expect(parsed.entities).toEqual([])

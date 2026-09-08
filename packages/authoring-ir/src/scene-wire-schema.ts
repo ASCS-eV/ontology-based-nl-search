@@ -55,6 +55,10 @@ export const authoringIrWireSchema = z.strictObject({
   entities: z.array(sceneEntityWireSchema).default([]),
   actions: z.array(sceneActionWireSchema).default([]),
   archetype: z.string().optional().describe('Archetype selector, e.g. "cut-in".'),
+  stopTime: z
+    .number()
+    .optional()
+    .describe('Simulation end time in seconds → the <StopTrigger> condition value.'),
 })
 
 export type SceneEntityWire = z.infer<typeof sceneEntityWireSchema>

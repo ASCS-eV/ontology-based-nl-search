@@ -338,6 +338,15 @@ describe('loadOscEngine', () => {
       expect(engine.author(cutInTree())).toBe(engine.author(cutInTree()))
     })
 
+    it('emits an IR-supplied stopTime as the <StopTrigger> SimulationTimeCondition value', () => {
+      const tree = { ...cutInTree(), stopTime: 45 }
+      const xosc = engine.author(tree)
+      const stopTrigger = /<StopTrigger>[\s\S]*?<\/StopTrigger>/.exec(xosc)?.[0]
+      expect(stopTrigger).toMatch(/<SimulationTimeCondition rule="greaterThan" value="45"/)
+      const result = engine.validate(xosc)
+      expect(result.ok).toBe(true)
+    })
+
     it('faithfully emits values so the range gate has teeth (maxSteering > PI)', () => {
       const tree = cutInTree()
       const tampered: EngineTree = {

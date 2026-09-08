@@ -89,6 +89,14 @@ describe('irToEngineTree', () => {
       logicFile: 'german_highway_short.xodr',
     })
   })
+
+  it('defaults stopTime to 30s when the IR carries none', () => {
+    expect(irToEngineTree({ entities: [], actions: [] }).stopTime).toBe(30)
+  })
+
+  it('carries an IR-supplied stopTime through to the engine tree', () => {
+    expect(irToEngineTree({ entities: [], actions: [], stopTime: 45 }).stopTime).toBe(45)
+  })
 })
 
 describe('unexpressibleActions', () => {
