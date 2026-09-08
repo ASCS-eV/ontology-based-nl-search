@@ -320,7 +320,11 @@ flowchart LR
   <h2>The LLM describes; the ontology constrains; the engine writes.</h2>
   <p class="lead">Ask for a scenario in plain language — then inspect the interpretation, each gate pass, the structured scene, the compiled <code>.xosc</code>, and the rendered playback in the live app.</p>
   <div class="cta-buttons">
-    <a href="http://localhost:5174/author" class="btn-primary">Open the authoring app →</a>
+    <a
+      href="https://github.com/ASCS-eV/ontology-based-nl-search#quick-start"
+      class="btn-primary"
+      >Run the authoring app →</a
+    >
     <a href="/docs/architecture" class="btn-secondary">Read the architecture →</a>
   </div>
   <p class="subtitle">Try: “a car cuts in front of me on a two-lane highway” · “ego at 30 m/s, a van changes into my lane after 4 s”</p>
