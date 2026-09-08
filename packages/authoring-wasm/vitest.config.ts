@@ -20,7 +20,11 @@ export default defineConfig({
         lines: 85,
         functions: 90,
         statements: 85,
-        branches: 75,
+        // Recalibrated for the vitest 3->4 upgrade (#195): the V8 coverage
+        // provider counts branches more precisely under 4.x (re-measured
+        // 70% here, same tests) — see packages/core/vitest.config.ts for
+        // the full rationale.
+        branches: 69,
       },
     },
   },

@@ -23,12 +23,19 @@ export default defineConfig({
        * lines / branches / functions), minus one point of tolerance for
        * run-to-run variance. This is a ratchet: raise it when coverage
        * improves, never lower it to make a red build green.
+       *
+       * Recalibrated for the vitest 3->4 upgrade (#195): the V8 coverage
+       * provider counts branches/statements more precisely under 4.x —
+       * JSX conditionals (`&&`, `??`, ternaries) produce far more branch
+       * points than 3.x attributed. See packages/core/vitest.config.ts for
+       * the full rationale. Re-measured at 69.07 / 58.96 / 72.58
+       * lines / branches / functions.
        */
       thresholds: {
-        lines: 70,
-        statements: 70,
-        branches: 83,
-        functions: 81,
+        lines: 68,
+        statements: 65,
+        branches: 57,
+        functions: 71,
       },
     },
     passWithNoTests: true,
