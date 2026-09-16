@@ -46,7 +46,38 @@ overrides:
   # Reached under `--audit-level=moderate --prod` via eslint-config's
   # typescript-eslint → eslint → @eslint/eslintrc; dev-tooling only, no runtime
   # consumer, but it fails the audit gate on every PR until floored.
-  js-yaml@4: ^4.3.1
+  '@babel/core@<=7.29.0': ^7.29.6
+  baseline-browser-mapping@>=2.0.0 <2.11.0: ^2.11.0
+  browserslist@<=4.28.6: ^4.28.7
+  dompurify@<3.4.7: ^3.4.7
+  dompurify@<3.4.9: ^3.4.9
+  dompurify@<=3.4.10: ^3.4.11
+  dompurify@<=3.4.11: ^3.4.12
+  dompurify@<=3.4.12: ^3.4.13
+  dompurify@<=3.4.5: ^3.4.6
+  dompurify@<=3.4.6: ^3.4.7
+  dompurify@>=3.0.0 <=3.4.7: ^3.4.8
+  esbuild@<=0.24.2: ^0.25.0
+  esbuild@>=0.27.3 <0.28.1: ^0.28.1
+  fast-uri@>=3.0.0 <3.1.3: ^3.1.3
+  fast-uri@>=3.0.0 <3.1.5: ^3.1.5
+  fast-uri@>=3.0.0 <3.1.6: ^3.1.6
+  fast-uri@>=3.0.0 <=3.1.3: ^3.1.4
+  fast-uri@>=3.1.2 <3.1.6: ^3.1.6
+  hono@<4.13.5: ^4.13.5
+  js-yaml@>=4.0.0 <4.3.2: ^4.3.2
+  mermaid@>=11.0.0-alpha.1 <11.16.1: ^11.16.1
+  mermaid@>=11.0.0-alpha.1 <=11.14.0: ^11.15.0
+  mermaid@>=11.5.0 <11.16.1: ^11.16.1
+  mermaid@>=11.6.0 <11.16.1: ^11.16.1
+  nanoid@<3.3.16: ^3.3.16
+  nanoid@<3.3.18: ^3.3.18
+  postcss@<=8.5.17: ^8.5.18
+  postcss@<=8.5.22: ^8.5.23
+  tar@<=7.5.20: ^7.5.21
+  vite@<=6.4.2: ^6.4.3
+  ws@>=8.0.0 <8.20.1: ^8.20.1
+  ws@>=8.0.0 <8.21.0: ^8.21.0
   #
   # NOT overridden: @ai-sdk/provider-utils (GHSA-866g-f22w-33x8, LOW).
   # The only stable patched line is 4.x, but `ai`@5 / @ai-sdk@2 require
