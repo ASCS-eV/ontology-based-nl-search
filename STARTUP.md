@@ -186,6 +186,20 @@ If you keep your ontology elsewhere, point `ONTOLOGY_ARTIFACTS_PATH` at it or
 create an `ontology-sources.json` (see `ontology-sources.example.json` as
 template).
 
+### Issue: local Ollama model never returns results (falls back to "LLM did not extract specific filters" every time)
+
+**Cause**: Ollama's OpenAI-compatible endpoint (`OLLAMA_BASE_URL`) ignores any
+`num_ctx` sent in the request — the model's context window is fixed at
+whatever it was loaded with, commonly a 4096-token default. This app's static
+prompt instructions plus its tool schemas alone need ~7k tokens, so a
+4096-token model silently truncates the "always call a tool" instruction and
+degrades to prose instead of calling `submit_slots`. Provider warmup still
+reports the endpoint as reachable, since it never checks context size.
+
+**Solution**: give the local model a bigger context window via a derived
+Modelfile, and optionally shrink the app's retrieval budget. See the
+"Ollama context window" section in `.env.example` for the exact commands.
+
 ### Note: sample instance data
 
 During warmup, the API loads 5 sample TTL files: `sample-assets.ttl`, `sample-scenarios.ttl`, `sample-ositrace.ttl`, `sample-environment-models.ttl`, and `sample-surface-models.ttl`.
