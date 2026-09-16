@@ -46,7 +46,6 @@ overrides:
   # Reached under `--audit-level=moderate --prod` via eslint-config's
   # typescript-eslint → eslint → @eslint/eslintrc; dev-tooling only, no runtime
   # consumer, but it fails the audit gate on every PR until floored.
-  js-yaml@4: ^4.3.1
   '@babel/core@<=7.29.0': ^7.29.6
   baseline-browser-mapping@>=2.0.0 <2.11.0: ^2.11.0
   browserslist@<=4.28.6: ^4.28.7
@@ -76,7 +75,6 @@ overrides:
   postcss@<=8.5.17: ^8.5.18
   postcss@<=8.5.22: ^8.5.23
   tar@<=7.5.20: ^7.5.21
-  vite@<=6.4.1: ^6.4.2
   vite@<=6.4.2: ^6.4.3
   ws@>=8.0.0 <8.20.1: ^8.20.1
   ws@>=8.0.0 <8.21.0: ^8.21.0
