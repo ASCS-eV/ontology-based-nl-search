@@ -25,13 +25,17 @@ governs, e.g. `[SPARQL11] §18.2`.
 | Data          | Instance data, `@context`   | **JSON-LD 1.1**, **RDF 1.1**, **Turtle** (W3C)           |
 | Ontology      | Shapes / classes            | **SHACL**, **OWL 2**, **RDFS** (W3C)                     |
 | Vocabulary    | Concept expansion           | **SKOS** (W3C)                                           |
+| Vocabulary    | Asset metadata terms        | **Gaia-X Trust Framework** `[GX]`                        |
 | Identity      | Asset IRIs (`did:web:`)     | **DID Core 1.0** (W3C)                                   |
 | Config        | `ontology-sources.json`     | **JSON Schema 2020-12** (`ontology-sources.schema.json`) |
 
 The ontology, query, data, and identity layers are W3C/IETF standards directly.
-The one layer that is not itself a published standard is the **slot
-intermediate representation**, whose wire contract is nonetheless governed by
-JSON Schema (below).
+The **Gaia-X Trust Framework**, which governs the asset metadata vocabulary, is
+an industry framework rather than a W3C/IETF specification, so its normative
+source is pinned as machine-readable artifacts (`[GX]`) in the same way as the
+ASAM standards below. The one layer that is not itself a published standard is
+the **slot intermediate representation**, whose wire contract is nonetheless
+governed by JSON Schema (below).
 
 ## Authoring interfaces (NL → OpenSCENARIO `.xosc`)
 
