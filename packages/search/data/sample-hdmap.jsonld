@@ -5,6 +5,7 @@
     "georeference": "https://w3id.org/ascs-ev/envited-x/georeference/v5/",
     "manifest": "https://w3id.org/ascs-ev/envited-x/manifest/v5/",
     "gx": "https://w3id.org/gaia-x/development#",
+    "schema": "https://schema.org/",
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "openlabel_v2": "https://w3id.org/ascs-ev/envited-x/openlabel/v2/"
@@ -179,8 +180,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Karlsruhe Motorway HD Map",
-        "gx:description": "Motorway HD map for Karlsruhe, Baden-Wuerttemberg with sidewalk lane semantics.",
+        "schema:name": "Karlsruhe Motorway HD Map",
+        "schema:description": "Motorway HD map for Karlsruhe, Baden-Wuerttemberg with sidewalk lane semantics.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -350,8 +351,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hamburg Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Hamburg, Hamburg with shoulder lane semantics.",
+        "schema:name": "Hamburg Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Hamburg, Hamburg with shoulder lane semantics.",
         "gx:version": "2.3.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -517,8 +518,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Dresden Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Dresden, Saxony with biking lane semantics.",
+        "schema:name": "Dresden Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Dresden, Saxony with biking lane semantics.",
         "gx:version": "3.6.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -665,8 +666,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Detroit Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Detroit, Michigan with border lane semantics.",
+        "schema:name": "Detroit Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Detroit, Michigan with border lane semantics.",
         "gx:version": "4.9.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -818,8 +819,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Shanghai Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Shanghai, Shanghai with median lane semantics.",
+        "schema:name": "Shanghai Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Shanghai, Shanghai with median lane semantics.",
         "gx:version": "5.2.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -968,8 +969,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Paris Motorway HD Map",
-        "gx:description": "Motorway HD map for Paris, Ile-de-France with driving lane semantics.",
+        "schema:name": "Paris Motorway HD Map",
+        "schema:description": "Motorway HD map for Paris, Ile-de-France with driving lane semantics.",
         "gx:version": "1.5.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -1115,8 +1116,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Seoul Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Seoul, Seoul with entry lane semantics.",
+        "schema:name": "Seoul Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Seoul, Seoul with entry lane semantics.",
         "gx:version": "2.8.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -1250,8 +1251,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Munich, Bavaria with parking lane semantics.",
+        "schema:name": "Munich Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Munich, Bavaria with parking lane semantics.",
         "gx:version": "3.1.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -1397,8 +1398,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Frankfurt Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Frankfurt, Hesse with exit lane semantics.",
+        "schema:name": "Frankfurt Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Frankfurt, Hesse with exit lane semantics.",
         "gx:version": "4.4.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -1527,8 +1528,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hanover Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Hanover, Lower Saxony with sidewalk lane semantics.",
+        "schema:name": "Hanover Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Hanover, Lower Saxony with sidewalk lane semantics.",
         "gx:version": "5.7.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -1677,8 +1678,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Austin Motorway HD Map",
-        "gx:description": "Motorway HD map for Austin, Texas with shoulder lane semantics.",
+        "schema:name": "Austin Motorway HD Map",
+        "schema:description": "Motorway HD map for Austin, Texas with shoulder lane semantics.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -1824,8 +1825,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Vienna Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Vienna, Vienna with biking lane semantics.",
+        "schema:name": "Vienna Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Vienna, Vienna with biking lane semantics.",
         "gx:version": "2.3.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -1977,8 +1978,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "London Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for London, Greater London with border lane semantics.",
+        "schema:name": "London Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for London, Greater London with border lane semantics.",
         "gx:version": "3.6.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -2120,8 +2121,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stuttgart Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Stuttgart, Baden-Wuerttemberg with median lane semantics.",
+        "schema:name": "Stuttgart Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Stuttgart, Baden-Wuerttemberg with median lane semantics.",
         "gx:version": "4.9.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -2264,8 +2265,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Berlin Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Berlin, Berlin with driving lane semantics.",
+        "schema:name": "Berlin Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Berlin, Berlin with driving lane semantics.",
         "gx:version": "5.2.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -2407,8 +2408,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Cologne Motorway HD Map",
-        "gx:description": "Motorway HD map for Cologne, North Rhine-Westphalia with entry lane semantics.",
+        "schema:name": "Cologne Motorway HD Map",
+        "schema:description": "Motorway HD map for Cologne, North Rhine-Westphalia with entry lane semantics.",
         "gx:version": "1.5.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -2557,8 +2558,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "San Francisco Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for San Francisco, California with parking lane semantics.",
+        "schema:name": "San Francisco Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for San Francisco, California with parking lane semantics.",
         "gx:version": "2.8.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -2693,8 +2694,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Tokyo Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Tokyo, Kanto with exit lane semantics.",
+        "schema:name": "Tokyo Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Tokyo, Kanto with exit lane semantics.",
         "gx:version": "3.1.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -2834,8 +2835,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stockholm Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Stockholm, Stockholm with sidewalk lane semantics.",
+        "schema:name": "Stockholm Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Stockholm, Stockholm with sidewalk lane semantics.",
         "gx:version": "4.4.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -2963,8 +2964,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Milan Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Milan, Lombardy with shoulder lane semantics.",
+        "schema:name": "Milan Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Milan, Lombardy with shoulder lane semantics.",
         "gx:version": "5.7.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -3139,8 +3140,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Karlsruhe Motorway HD Map",
-        "gx:description": "Motorway HD map for Karlsruhe, Baden-Wuerttemberg with biking lane semantics.",
+        "schema:name": "Karlsruhe Motorway HD Map",
+        "schema:description": "Motorway HD map for Karlsruhe, Baden-Wuerttemberg with biking lane semantics.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -3310,8 +3311,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hamburg Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Hamburg, Hamburg with border lane semantics.",
+        "schema:name": "Hamburg Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Hamburg, Hamburg with border lane semantics.",
         "gx:version": "2.3.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -3477,8 +3478,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Dresden Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Dresden, Saxony with median lane semantics.",
+        "schema:name": "Dresden Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Dresden, Saxony with median lane semantics.",
         "gx:version": "3.6.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -3625,8 +3626,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Detroit Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Detroit, Michigan with driving lane semantics.",
+        "schema:name": "Detroit Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Detroit, Michigan with driving lane semantics.",
         "gx:version": "4.9.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -3778,8 +3779,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Shanghai Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Shanghai, Shanghai with entry lane semantics.",
+        "schema:name": "Shanghai Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Shanghai, Shanghai with entry lane semantics.",
         "gx:version": "5.2.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -3928,8 +3929,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Paris Motorway HD Map",
-        "gx:description": "Motorway HD map for Paris, Ile-de-France with parking lane semantics.",
+        "schema:name": "Paris Motorway HD Map",
+        "schema:description": "Motorway HD map for Paris, Ile-de-France with parking lane semantics.",
         "gx:version": "1.5.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -4075,8 +4076,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Seoul Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Seoul, Seoul with exit lane semantics.",
+        "schema:name": "Seoul Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Seoul, Seoul with exit lane semantics.",
         "gx:version": "2.8.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -4210,8 +4211,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Munich, Bavaria with sidewalk lane semantics.",
+        "schema:name": "Munich Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Munich, Bavaria with sidewalk lane semantics.",
         "gx:version": "3.1.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -4357,8 +4358,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Frankfurt Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Frankfurt, Hesse with shoulder lane semantics.",
+        "schema:name": "Frankfurt Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Frankfurt, Hesse with shoulder lane semantics.",
         "gx:version": "4.4.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -4487,8 +4488,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hanover Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Hanover, Lower Saxony with biking lane semantics.",
+        "schema:name": "Hanover Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Hanover, Lower Saxony with biking lane semantics.",
         "gx:version": "5.7.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -4637,8 +4638,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Austin Motorway HD Map",
-        "gx:description": "Motorway HD map for Austin, Texas with border lane semantics.",
+        "schema:name": "Austin Motorway HD Map",
+        "schema:description": "Motorway HD map for Austin, Texas with border lane semantics.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -4784,8 +4785,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Vienna Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Vienna, Vienna with median lane semantics.",
+        "schema:name": "Vienna Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Vienna, Vienna with median lane semantics.",
         "gx:version": "2.3.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -4937,8 +4938,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "London Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for London, Greater London with driving lane semantics.",
+        "schema:name": "London Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for London, Greater London with driving lane semantics.",
         "gx:version": "3.6.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -5080,8 +5081,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stuttgart Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Stuttgart, Baden-Wuerttemberg with entry lane semantics.",
+        "schema:name": "Stuttgart Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Stuttgart, Baden-Wuerttemberg with entry lane semantics.",
         "gx:version": "4.9.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -5224,8 +5225,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Berlin Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Berlin, Berlin with parking lane semantics.",
+        "schema:name": "Berlin Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Berlin, Berlin with parking lane semantics.",
         "gx:version": "5.2.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -5367,8 +5368,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Cologne Motorway HD Map",
-        "gx:description": "Motorway HD map for Cologne, North Rhine-Westphalia with exit lane semantics.",
+        "schema:name": "Cologne Motorway HD Map",
+        "schema:description": "Motorway HD map for Cologne, North Rhine-Westphalia with exit lane semantics.",
         "gx:version": "1.5.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -5517,8 +5518,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "San Francisco Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for San Francisco, California with sidewalk lane semantics.",
+        "schema:name": "San Francisco Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for San Francisco, California with sidewalk lane semantics.",
         "gx:version": "2.8.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -5653,8 +5654,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Tokyo Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Tokyo, Kanto with shoulder lane semantics.",
+        "schema:name": "Tokyo Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Tokyo, Kanto with shoulder lane semantics.",
         "gx:version": "3.1.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -5794,8 +5795,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stockholm Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Stockholm, Stockholm with biking lane semantics.",
+        "schema:name": "Stockholm Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Stockholm, Stockholm with biking lane semantics.",
         "gx:version": "4.4.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -5923,8 +5924,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Milan Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Milan, Lombardy with border lane semantics.",
+        "schema:name": "Milan Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Milan, Lombardy with border lane semantics.",
         "gx:version": "5.7.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -6099,8 +6100,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Karlsruhe Motorway HD Map",
-        "gx:description": "Motorway HD map for Karlsruhe, Baden-Wuerttemberg with median lane semantics.",
+        "schema:name": "Karlsruhe Motorway HD Map",
+        "schema:description": "Motorway HD map for Karlsruhe, Baden-Wuerttemberg with median lane semantics.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -6270,8 +6271,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hamburg Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Hamburg, Hamburg with driving lane semantics.",
+        "schema:name": "Hamburg Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Hamburg, Hamburg with driving lane semantics.",
         "gx:version": "2.3.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -6437,8 +6438,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Dresden Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Dresden, Saxony with entry lane semantics.",
+        "schema:name": "Dresden Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Dresden, Saxony with entry lane semantics.",
         "gx:version": "3.6.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -6585,8 +6586,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Detroit Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Detroit, Michigan with parking lane semantics.",
+        "schema:name": "Detroit Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Detroit, Michigan with parking lane semantics.",
         "gx:version": "4.9.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -6738,8 +6739,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Shanghai Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Shanghai, Shanghai with exit lane semantics.",
+        "schema:name": "Shanghai Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Shanghai, Shanghai with exit lane semantics.",
         "gx:version": "5.2.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -6888,8 +6889,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Paris Motorway HD Map",
-        "gx:description": "Motorway HD map for Paris, Ile-de-France with sidewalk lane semantics.",
+        "schema:name": "Paris Motorway HD Map",
+        "schema:description": "Motorway HD map for Paris, Ile-de-France with sidewalk lane semantics.",
         "gx:version": "1.5.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -7035,8 +7036,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Seoul Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Seoul, Seoul with shoulder lane semantics.",
+        "schema:name": "Seoul Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Seoul, Seoul with shoulder lane semantics.",
         "gx:version": "2.8.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -7170,8 +7171,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Munich, Bavaria with biking lane semantics.",
+        "schema:name": "Munich Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Munich, Bavaria with biking lane semantics.",
         "gx:version": "3.1.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -7317,8 +7318,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Frankfurt Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Frankfurt, Hesse with border lane semantics.",
+        "schema:name": "Frankfurt Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Frankfurt, Hesse with border lane semantics.",
         "gx:version": "4.4.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -7447,8 +7448,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hanover Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Hanover, Lower Saxony with median lane semantics.",
+        "schema:name": "Hanover Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Hanover, Lower Saxony with median lane semantics.",
         "gx:version": "5.7.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -7597,8 +7598,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Austin Motorway HD Map",
-        "gx:description": "Motorway HD map for Austin, Texas with driving lane semantics.",
+        "schema:name": "Austin Motorway HD Map",
+        "schema:description": "Motorway HD map for Austin, Texas with driving lane semantics.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -7744,8 +7745,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Vienna Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Vienna, Vienna with entry lane semantics.",
+        "schema:name": "Vienna Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Vienna, Vienna with entry lane semantics.",
         "gx:version": "2.3.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -7897,8 +7898,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "London Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for London, Greater London with parking lane semantics.",
+        "schema:name": "London Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for London, Greater London with parking lane semantics.",
         "gx:version": "3.6.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -8040,8 +8041,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stuttgart Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Stuttgart, Baden-Wuerttemberg with exit lane semantics.",
+        "schema:name": "Stuttgart Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Stuttgart, Baden-Wuerttemberg with exit lane semantics.",
         "gx:version": "4.9.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -8184,8 +8185,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Berlin Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Berlin, Berlin with sidewalk lane semantics.",
+        "schema:name": "Berlin Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Berlin, Berlin with sidewalk lane semantics.",
         "gx:version": "5.2.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -8327,8 +8328,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Cologne Motorway HD Map",
-        "gx:description": "Motorway HD map for Cologne, North Rhine-Westphalia with shoulder lane semantics.",
+        "schema:name": "Cologne Motorway HD Map",
+        "schema:description": "Motorway HD map for Cologne, North Rhine-Westphalia with shoulder lane semantics.",
         "gx:version": "1.5.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -8477,8 +8478,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "San Francisco Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for San Francisco, California with biking lane semantics.",
+        "schema:name": "San Francisco Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for San Francisco, California with biking lane semantics.",
         "gx:version": "2.8.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -8613,8 +8614,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Tokyo Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Tokyo, Kanto with border lane semantics.",
+        "schema:name": "Tokyo Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Tokyo, Kanto with border lane semantics.",
         "gx:version": "3.1.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -8754,8 +8755,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stockholm Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Stockholm, Stockholm with median lane semantics.",
+        "schema:name": "Stockholm Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Stockholm, Stockholm with median lane semantics.",
         "gx:version": "4.4.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -8883,8 +8884,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Milan Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Milan, Lombardy with driving lane semantics.",
+        "schema:name": "Milan Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Milan, Lombardy with driving lane semantics.",
         "gx:version": "5.7.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -9059,8 +9060,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Karlsruhe Motorway HD Map",
-        "gx:description": "Motorway HD map for Karlsruhe, Baden-Wuerttemberg with entry lane semantics.",
+        "schema:name": "Karlsruhe Motorway HD Map",
+        "schema:description": "Motorway HD map for Karlsruhe, Baden-Wuerttemberg with entry lane semantics.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -9230,8 +9231,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hamburg Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Hamburg, Hamburg with parking lane semantics.",
+        "schema:name": "Hamburg Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Hamburg, Hamburg with parking lane semantics.",
         "gx:version": "2.3.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -9397,8 +9398,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Dresden Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Dresden, Saxony with exit lane semantics.",
+        "schema:name": "Dresden Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Dresden, Saxony with exit lane semantics.",
         "gx:version": "3.6.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -9545,8 +9546,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Detroit Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Detroit, Michigan with sidewalk lane semantics.",
+        "schema:name": "Detroit Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Detroit, Michigan with sidewalk lane semantics.",
         "gx:version": "4.9.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -9698,8 +9699,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Shanghai Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Shanghai, Shanghai with shoulder lane semantics.",
+        "schema:name": "Shanghai Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Shanghai, Shanghai with shoulder lane semantics.",
         "gx:version": "5.2.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -9848,8 +9849,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Paris Motorway HD Map",
-        "gx:description": "Motorway HD map for Paris, Ile-de-France with biking lane semantics.",
+        "schema:name": "Paris Motorway HD Map",
+        "schema:description": "Motorway HD map for Paris, Ile-de-France with biking lane semantics.",
         "gx:version": "1.5.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -9995,8 +9996,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Seoul Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Seoul, Seoul with border lane semantics.",
+        "schema:name": "Seoul Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Seoul, Seoul with border lane semantics.",
         "gx:version": "2.8.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -10130,8 +10131,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Munich, Bavaria with median lane semantics.",
+        "schema:name": "Munich Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Munich, Bavaria with median lane semantics.",
         "gx:version": "3.1.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -10277,8 +10278,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Frankfurt Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Frankfurt, Hesse with driving lane semantics.",
+        "schema:name": "Frankfurt Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Frankfurt, Hesse with driving lane semantics.",
         "gx:version": "4.4.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -10407,8 +10408,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hanover Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Hanover, Lower Saxony with entry lane semantics.",
+        "schema:name": "Hanover Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Hanover, Lower Saxony with entry lane semantics.",
         "gx:version": "5.7.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -10557,8 +10558,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Austin Motorway HD Map",
-        "gx:description": "Motorway HD map for Austin, Texas with parking lane semantics.",
+        "schema:name": "Austin Motorway HD Map",
+        "schema:description": "Motorway HD map for Austin, Texas with parking lane semantics.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -10704,8 +10705,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Vienna Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Vienna, Vienna with exit lane semantics.",
+        "schema:name": "Vienna Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Vienna, Vienna with exit lane semantics.",
         "gx:version": "2.3.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -10857,8 +10858,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "London Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for London, Greater London with sidewalk lane semantics.",
+        "schema:name": "London Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for London, Greater London with sidewalk lane semantics.",
         "gx:version": "3.6.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -11000,8 +11001,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stuttgart Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Stuttgart, Baden-Wuerttemberg with shoulder lane semantics.",
+        "schema:name": "Stuttgart Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Stuttgart, Baden-Wuerttemberg with shoulder lane semantics.",
         "gx:version": "4.9.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -11144,8 +11145,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Berlin Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Berlin, Berlin with biking lane semantics.",
+        "schema:name": "Berlin Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Berlin, Berlin with biking lane semantics.",
         "gx:version": "5.2.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -11287,8 +11288,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Cologne Motorway HD Map",
-        "gx:description": "Motorway HD map for Cologne, North Rhine-Westphalia with border lane semantics.",
+        "schema:name": "Cologne Motorway HD Map",
+        "schema:description": "Motorway HD map for Cologne, North Rhine-Westphalia with border lane semantics.",
         "gx:version": "1.5.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -11437,8 +11438,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "San Francisco Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for San Francisco, California with median lane semantics.",
+        "schema:name": "San Francisco Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for San Francisco, California with median lane semantics.",
         "gx:version": "2.8.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -11573,8 +11574,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Tokyo Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Tokyo, Kanto with driving lane semantics.",
+        "schema:name": "Tokyo Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Tokyo, Kanto with driving lane semantics.",
         "gx:version": "3.1.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -11714,8 +11715,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stockholm Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Stockholm, Stockholm with entry lane semantics.",
+        "schema:name": "Stockholm Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Stockholm, Stockholm with entry lane semantics.",
         "gx:version": "4.4.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -11843,8 +11844,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Milan Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Milan, Lombardy with parking lane semantics.",
+        "schema:name": "Milan Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Milan, Lombardy with parking lane semantics.",
         "gx:version": "5.7.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -12019,8 +12020,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Karlsruhe Motorway HD Map",
-        "gx:description": "Motorway HD map for Karlsruhe, Baden-Wuerttemberg with exit lane semantics.",
+        "schema:name": "Karlsruhe Motorway HD Map",
+        "schema:description": "Motorway HD map for Karlsruhe, Baden-Wuerttemberg with exit lane semantics.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -12190,8 +12191,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hamburg Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Hamburg, Hamburg with sidewalk lane semantics.",
+        "schema:name": "Hamburg Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Hamburg, Hamburg with sidewalk lane semantics.",
         "gx:version": "2.3.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -12357,8 +12358,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Dresden Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Dresden, Saxony with shoulder lane semantics.",
+        "schema:name": "Dresden Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Dresden, Saxony with shoulder lane semantics.",
         "gx:version": "3.6.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -12505,8 +12506,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Detroit Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Detroit, Michigan with biking lane semantics.",
+        "schema:name": "Detroit Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Detroit, Michigan with biking lane semantics.",
         "gx:version": "4.9.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -12658,8 +12659,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Shanghai Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Shanghai, Shanghai with border lane semantics.",
+        "schema:name": "Shanghai Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Shanghai, Shanghai with border lane semantics.",
         "gx:version": "5.2.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -12808,8 +12809,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Paris Motorway HD Map",
-        "gx:description": "Motorway HD map for Paris, Ile-de-France with median lane semantics.",
+        "schema:name": "Paris Motorway HD Map",
+        "schema:description": "Motorway HD map for Paris, Ile-de-France with median lane semantics.",
         "gx:version": "1.5.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -12955,8 +12956,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Seoul Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Seoul, Seoul with driving lane semantics.",
+        "schema:name": "Seoul Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Seoul, Seoul with driving lane semantics.",
         "gx:version": "2.8.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -13090,8 +13091,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Munich, Bavaria with entry lane semantics.",
+        "schema:name": "Munich Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Munich, Bavaria with entry lane semantics.",
         "gx:version": "3.1.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -13237,8 +13238,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Frankfurt Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Frankfurt, Hesse with parking lane semantics.",
+        "schema:name": "Frankfurt Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Frankfurt, Hesse with parking lane semantics.",
         "gx:version": "4.4.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -13367,8 +13368,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hanover Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Hanover, Lower Saxony with exit lane semantics.",
+        "schema:name": "Hanover Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Hanover, Lower Saxony with exit lane semantics.",
         "gx:version": "5.7.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -13517,8 +13518,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Austin Motorway HD Map",
-        "gx:description": "Motorway HD map for Austin, Texas with sidewalk lane semantics.",
+        "schema:name": "Austin Motorway HD Map",
+        "schema:description": "Motorway HD map for Austin, Texas with sidewalk lane semantics.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -13664,8 +13665,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Vienna Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for Vienna, Vienna with shoulder lane semantics.",
+        "schema:name": "Vienna Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for Vienna, Vienna with shoulder lane semantics.",
         "gx:version": "2.3.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -13817,8 +13818,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "London Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for London, Greater London with biking lane semantics.",
+        "schema:name": "London Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for London, Greater London with biking lane semantics.",
         "gx:version": "3.6.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -13960,8 +13961,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stuttgart Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Stuttgart, Baden-Wuerttemberg with border lane semantics.",
+        "schema:name": "Stuttgart Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Stuttgart, Baden-Wuerttemberg with border lane semantics.",
         "gx:version": "4.9.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -14104,8 +14105,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Berlin Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Berlin, Berlin with median lane semantics.",
+        "schema:name": "Berlin Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Berlin, Berlin with median lane semantics.",
         "gx:version": "5.2.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -14247,8 +14248,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Cologne Motorway HD Map",
-        "gx:description": "Motorway HD map for Cologne, North Rhine-Westphalia with driving lane semantics.",
+        "schema:name": "Cologne Motorway HD Map",
+        "schema:description": "Motorway HD map for Cologne, North Rhine-Westphalia with driving lane semantics.",
         "gx:version": "1.5.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -14397,8 +14398,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "San Francisco Parking Garage HD Map",
-        "gx:description": "Parking Garage HD map for San Francisco, California with entry lane semantics.",
+        "schema:name": "San Francisco Parking Garage HD Map",
+        "schema:description": "Parking Garage HD map for San Francisco, California with entry lane semantics.",
         "gx:version": "2.8.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -14533,8 +14534,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Tokyo Urban Corridor HD Map",
-        "gx:description": "Urban Corridor HD map for Tokyo, Kanto with parking lane semantics.",
+        "schema:name": "Tokyo Urban Corridor HD Map",
+        "schema:description": "Urban Corridor HD map for Tokyo, Kanto with parking lane semantics.",
         "gx:version": "3.1.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -14674,8 +14675,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stockholm Highway Interchange HD Map",
-        "gx:description": "Highway Interchange HD map for Stockholm, Stockholm with exit lane semantics.",
+        "schema:name": "Stockholm Highway Interchange HD Map",
+        "schema:description": "Highway Interchange HD map for Stockholm, Stockholm with exit lane semantics.",
         "gx:version": "4.4.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -14803,8 +14804,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Milan Rural Route HD Map",
-        "gx:description": "Rural Route HD map for Milan, Lombardy with sidewalk lane semantics.",
+        "schema:name": "Milan Rural Route HD Map",
+        "schema:description": "Rural Route HD map for Milan, Lombardy with sidewalk lane semantics.",
         "gx:version": "5.7.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -14875,8 +14876,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Urban Bus Lane Map",
-        "gx:description": "Munich Urban Bus Lane Map for ADAS testing.",
+        "schema:name": "Munich Urban Bus Lane Map",
+        "schema:description": "Munich Urban Bus Lane Map for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -14947,8 +14948,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Berlin City Bus Lane Map",
-        "gx:description": "Berlin City Bus Lane Map for ADAS testing.",
+        "schema:name": "Berlin City Bus Lane Map",
+        "schema:description": "Berlin City Bus Lane Map for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15019,8 +15020,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hamburg Bus Lane Urban Map",
-        "gx:description": "Hamburg Bus Lane Urban Map for ADAS testing.",
+        "schema:name": "Hamburg Bus Lane Urban Map",
+        "schema:description": "Hamburg Bus Lane Urban Map for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15091,8 +15092,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Bavaria Rural Bidirectional Road",
-        "gx:description": "Bavaria Rural Bidirectional Road for ADAS testing.",
+        "schema:name": "Bavaria Rural Bidirectional Road",
+        "schema:description": "Bavaria Rural Bidirectional Road for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15163,8 +15164,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Alsace Bidirectional Rural Road",
-        "gx:description": "Alsace Bidirectional Rural Road for ADAS testing.",
+        "schema:name": "Alsace Bidirectional Rural Road",
+        "schema:description": "Alsace Bidirectional Rural Road for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15235,8 +15236,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "A5 Motorway On-Ramp Section",
-        "gx:description": "A5 Motorway On-Ramp Section for ADAS testing.",
+        "schema:name": "A5 Motorway On-Ramp Section",
+        "schema:description": "A5 Motorway On-Ramp Section for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15307,8 +15308,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "A5 Motorway Off-Ramp Section",
-        "gx:description": "A5 Motorway Off-Ramp Section for ADAS testing.",
+        "schema:name": "A5 Motorway Off-Ramp Section",
+        "schema:description": "A5 Motorway Off-Ramp Section for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15379,8 +15380,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Berlin Alexanderplatz Tram Lane Map",
-        "gx:description": "Berlin Alexanderplatz Tram Lane Map for ADAS testing.",
+        "schema:name": "Berlin Alexanderplatz Tram Lane Map",
+        "schema:description": "Berlin Alexanderplatz Tram Lane Map for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15451,8 +15452,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Restricted Zone Map",
-        "gx:description": "Munich Restricted Zone Map for ADAS testing.",
+        "schema:name": "Munich Restricted Zone Map",
+        "schema:description": "Munich Restricted Zone Map for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15523,8 +15524,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hamburg Harbour Urban HD Map",
-        "gx:description": "Hamburg Harbour Urban HD Map for ADAS testing.",
+        "schema:name": "Hamburg Harbour Urban HD Map",
+        "schema:description": "Hamburg Harbour Urban HD Map for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15595,8 +15596,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "A9 Bavaria Motorway HD Map",
-        "gx:description": "A9 Bavaria Motorway HD Map for ADAS testing.",
+        "schema:name": "A9 Bavaria Motorway HD Map",
+        "schema:description": "A9 Bavaria Motorway HD Map for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15667,8 +15668,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Normandy Rural Road Map",
-        "gx:description": "Normandy Rural Road Map for ADAS testing.",
+        "schema:name": "Normandy Rural Road Map",
+        "schema:description": "Normandy Rural Road Map for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15739,8 +15740,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Tokyo Metropolitan Expressway Map",
-        "gx:description": "Tokyo Metropolitan Expressway Map for ADAS testing.",
+        "schema:name": "Tokyo Metropolitan Expressway Map",
+        "schema:description": "Tokyo Metropolitan Expressway Map for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15811,8 +15812,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Airport Parking Garage Map",
-        "gx:description": "Munich Airport Parking Garage Map for ADAS testing.",
+        "schema:name": "Munich Airport Parking Garage Map",
+        "schema:description": "Munich Airport Parking Garage Map for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -15883,8 +15884,8 @@
       },
       "hdmap:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "A8 Motorway Exit Section Munich",
-        "gx:description": "A8 Motorway Exit Section Munich for ADAS testing.",
+        "schema:name": "A8 Motorway Exit Section Munich",
+        "schema:description": "A8 Motorway Exit Section Munich for ADAS testing.",
         "gx:version": "1.0.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false

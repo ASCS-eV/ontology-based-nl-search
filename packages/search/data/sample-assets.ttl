@@ -3,6 +3,7 @@
 @prefix georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/> .
 @prefix manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/> .
 @prefix gx: <https://w3id.org/gaia-x/development#> .
+@prefix schema: <https://schema.org/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
@@ -12,8 +13,8 @@
   rdfs:label "Karlsruhe Parking Garage HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Karlsruhe Parking Garage HD Map" ;
-    gx:description "Multi-level parking structure in Karlsruhe, Baden-Wuerttemberg. 18 intersections, 54 signs." ;
+    schema:name "Karlsruhe Parking Garage HD Map" ;
+    schema:description "Multi-level parking structure in Karlsruhe, Baden-Wuerttemberg. 18 intersections, 54 signs." ;
     gx:version "1.5.2" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -82,8 +83,8 @@
   rdfs:label "Cologne Tunnel HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Cologne Tunnel HD Map" ;
-    gx:description "Highway tunnel section in Cologne, North Rhine-Westphalia. 9 intersections, 104 signs." ;
+    schema:name "Cologne Tunnel HD Map" ;
+    schema:description "Highway tunnel section in Cologne, North Rhine-Westphalia. 9 intersections, 104 signs." ;
     gx:version "2.2.2" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -152,8 +153,8 @@
   rdfs:label "Berlin Mixed Urban HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Berlin Mixed Urban HD Map" ;
-    gx:description "Mixed-use urban district in Berlin, Berlin. 6 intersections, 260 signs." ;
+    schema:name "Berlin Mixed Urban HD Map" ;
+    schema:description "Mixed-use urban district in Berlin, Berlin. 6 intersections, 260 signs." ;
     gx:version "2.2.6" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -222,8 +223,8 @@
   rdfs:label "Hannover Rural Road HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hannover Rural Road HD Map" ;
-    gx:description "Country road in Hannover, Lower Saxony. 16 intersections, 199 signs." ;
+    schema:name "Hannover Rural Road HD Map" ;
+    schema:description "Country road in Hannover, Lower Saxony. 16 intersections, 199 signs." ;
     gx:version "2.5.2" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -292,8 +293,8 @@
   rdfs:label "Hamburg Tunnel HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg Tunnel HD Map" ;
-    gx:description "Highway tunnel section in Hamburg, Hamburg. 11 intersections, 22 signs." ;
+    schema:name "Hamburg Tunnel HD Map" ;
+    schema:description "Highway tunnel section in Hamburg, Hamburg. 11 intersections, 22 signs." ;
     gx:version "4.8.3" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -362,8 +363,8 @@
   rdfs:label "Vienna Tunnel HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Vienna Tunnel HD Map" ;
-    gx:description "Highway tunnel section in Vienna, Vienna. 17 intersections, 453 signs." ;
+    schema:name "Vienna Tunnel HD Map" ;
+    schema:description "Highway tunnel section in Vienna, Vienna. 17 intersections, 453 signs." ;
     gx:version "4.0.5" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -432,8 +433,8 @@
   rdfs:label "Beijing Mixed Urban HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Beijing Mixed Urban HD Map" ;
-    gx:description "Mixed-use urban district in Beijing, Beijing. 11 intersections, 488 signs." ;
+    schema:name "Beijing Mixed Urban HD Map" ;
+    schema:description "Mixed-use urban district in Beijing, Beijing. 11 intersections, 488 signs." ;
     gx:version "5.8.5" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -502,8 +503,8 @@
   rdfs:label "Hamburg Roundabout HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg Roundabout HD Map" ;
-    gx:description "Multi-lane roundabout in Hamburg, Hamburg. 10 intersections, 346 signs." ;
+    schema:name "Hamburg Roundabout HD Map" ;
+    schema:description "Multi-lane roundabout in Hamburg, Hamburg. 10 intersections, 346 signs." ;
     gx:version "1.5.5" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -572,8 +573,8 @@
   rdfs:label "Hamburg Residential HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg Residential HD Map" ;
-    gx:description "Residential neighborhood streets in Hamburg, Hamburg. 20 intersections, 68 signs." ;
+    schema:name "Hamburg Residential HD Map" ;
+    schema:description "Residential neighborhood streets in Hamburg, Hamburg. 20 intersections, 68 signs." ;
     gx:version "1.6.9" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -642,8 +643,8 @@
   rdfs:label "Beijing Industrial HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Beijing Industrial HD Map" ;
-    gx:description "Industrial area roads in Beijing, Beijing. 4 intersections, 410 signs." ;
+    schema:name "Beijing Industrial HD Map" ;
+    schema:description "Industrial area roads in Beijing, Beijing. 4 intersections, 410 signs." ;
     gx:version "5.2.4" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -712,8 +713,8 @@
   rdfs:label "Singapore Parking Garage HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Singapore Parking Garage HD Map" ;
-    gx:description "Multi-level parking structure in Singapore, Singapore. 9 intersections, 30 signs." ;
+    schema:name "Singapore Parking Garage HD Map" ;
+    schema:description "Multi-level parking structure in Singapore, Singapore. 9 intersections, 30 signs." ;
     gx:version "5.6.0" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -782,8 +783,8 @@
   rdfs:label "Dallas Roundabout HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Dallas Roundabout HD Map" ;
-    gx:description "Multi-lane roundabout in Dallas, Texas. 8 intersections, 296 signs." ;
+    schema:name "Dallas Roundabout HD Map" ;
+    schema:description "Multi-lane roundabout in Dallas, Texas. 8 intersections, 296 signs." ;
     gx:version "5.3.2" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -852,8 +853,8 @@
   rdfs:label "Barcelona School Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Barcelona School Zone HD Map" ;
-    gx:description "School zone with crossings in Barcelona, Madrid. 0 intersections, 184 signs." ;
+    schema:name "Barcelona School Zone HD Map" ;
+    schema:description "School zone with crossings in Barcelona, Madrid. 0 intersections, 184 signs." ;
     gx:version "5.2.5" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -922,8 +923,8 @@
   rdfs:label "Helsinki Parking Garage HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Helsinki Parking Garage HD Map" ;
-    gx:description "Multi-level parking structure in Helsinki, Uusimaa. 6 intersections, 178 signs." ;
+    schema:name "Helsinki Parking Garage HD Map" ;
+    schema:description "Multi-level parking structure in Helsinki, Uusimaa. 6 intersections, 178 signs." ;
     gx:version "4.1.8" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -992,8 +993,8 @@
   rdfs:label "Los Angeles School Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Los Angeles School Zone HD Map" ;
-    gx:description "School zone with crossings in Los Angeles, California. 1 intersections, 368 signs." ;
+    schema:name "Los Angeles School Zone HD Map" ;
+    schema:description "School zone with crossings in Los Angeles, California. 1 intersections, 368 signs." ;
     gx:version "4.2.9" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -1062,8 +1063,8 @@
   rdfs:label "Ann Arbor Residential HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Ann Arbor Residential HD Map" ;
-    gx:description "Residential neighborhood streets in Ann Arbor, Michigan. 8 intersections, 103 signs." ;
+    schema:name "Ann Arbor Residential HD Map" ;
+    schema:description "Residential neighborhood streets in Ann Arbor, Michigan. 8 intersections, 103 signs." ;
     gx:version "1.0.7" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -1132,8 +1133,8 @@
   rdfs:label "Hamburg Rural Road HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg Rural Road HD Map" ;
-    gx:description "Country road in Hamburg, Hamburg. 1 intersections, 361 signs." ;
+    schema:name "Hamburg Rural Road HD Map" ;
+    schema:description "Country road in Hamburg, Hamburg. 1 intersections, 361 signs." ;
     gx:version "3.6.6" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -1202,8 +1203,8 @@
   rdfs:label "Melbourne Test Track HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Melbourne Test Track HD Map" ;
-    gx:description "Proving ground test track in Melbourne, Victoria. 15 intersections, 232 signs." ;
+    schema:name "Melbourne Test Track HD Map" ;
+    schema:description "Proving ground test track in Melbourne, Victoria. 15 intersections, 232 signs." ;
     gx:version "3.3.3" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1272,8 +1273,8 @@
   rdfs:label "Los Angeles Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Los Angeles Bridge HD Map" ;
-    gx:description "Bridge crossing in Los Angeles, California. 8 intersections, 207 signs." ;
+    schema:name "Los Angeles Bridge HD Map" ;
+    schema:description "Bridge crossing in Los Angeles, California. 8 intersections, 207 signs." ;
     gx:version "1.6.1" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -1342,8 +1343,8 @@
   rdfs:label "Milan Parking Garage HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan Parking Garage HD Map" ;
-    gx:description "Multi-level parking structure in Milan, Lombardy. 15 intersections, 499 signs." ;
+    schema:name "Milan Parking Garage HD Map" ;
+    schema:description "Multi-level parking structure in Milan, Lombardy. 15 intersections, 499 signs." ;
     gx:version "5.4.5" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -1412,8 +1413,8 @@
   rdfs:label "Bern Highway HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Bern Highway HD Map" ;
-    gx:description "Highway stretch in Bern, Zurich. 17 intersections, 435 signs." ;
+    schema:name "Bern Highway HD Map" ;
+    schema:description "Highway stretch in Bern, Zurich. 17 intersections, 435 signs." ;
     gx:version "4.2.1" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -1482,8 +1483,8 @@
   rdfs:label "Toyota City Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Toyota City Bridge HD Map" ;
-    gx:description "Bridge crossing in Toyota City, Aichi. 8 intersections, 175 signs." ;
+    schema:name "Toyota City Bridge HD Map" ;
+    schema:description "Bridge crossing in Toyota City, Aichi. 8 intersections, 175 signs." ;
     gx:version "5.9.6" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -1552,8 +1553,8 @@
   rdfs:label "San Francisco Parking Garage HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco Parking Garage HD Map" ;
-    gx:description "Multi-level parking structure in San Francisco, California. 12 intersections, 231 signs." ;
+    schema:name "San Francisco Parking Garage HD Map" ;
+    schema:description "Multi-level parking structure in San Francisco, California. 12 intersections, 231 signs." ;
     gx:version "3.3.5" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -1622,8 +1623,8 @@
   rdfs:label "Detroit Industrial HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Detroit Industrial HD Map" ;
-    gx:description "Industrial area roads in Detroit, Michigan. 14 intersections, 289 signs." ;
+    schema:name "Detroit Industrial HD Map" ;
+    schema:description "Industrial area roads in Detroit, Michigan. 14 intersections, 289 signs." ;
     gx:version "3.9.1" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -1692,8 +1693,8 @@
   rdfs:label "Shibuya Construction Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Shibuya Construction Zone HD Map" ;
-    gx:description "Road with construction zone in Shibuya, Tokyo. 16 intersections, 424 signs." ;
+    schema:name "Shibuya Construction Zone HD Map" ;
+    schema:description "Road with construction zone in Shibuya, Tokyo. 16 intersections, 424 signs." ;
     gx:version "3.4.2" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -1762,8 +1763,8 @@
   rdfs:label "Darmstadt Test Track HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Darmstadt Test Track HD Map" ;
-    gx:description "Proving ground test track in Darmstadt, Hesse. 8 intersections, 62 signs." ;
+    schema:name "Darmstadt Test Track HD Map" ;
+    schema:description "Proving ground test track in Darmstadt, Hesse. 8 intersections, 62 signs." ;
     gx:version "5.1.2" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -1832,8 +1833,8 @@
   rdfs:label "Hamburg School Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg School Zone HD Map" ;
-    gx:description "School zone with crossings in Hamburg, Hamburg. 20 intersections, 491 signs." ;
+    schema:name "Hamburg School Zone HD Map" ;
+    schema:description "School zone with crossings in Hamburg, Hamburg. 20 intersections, 491 signs." ;
     gx:version "2.1.6" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -1902,8 +1903,8 @@
   rdfs:label "Seoul Highway Ramp HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Seoul Highway Ramp HD Map" ;
-    gx:description "Highway on/off ramp in Seoul, Seoul. 2 intersections, 127 signs." ;
+    schema:name "Seoul Highway Ramp HD Map" ;
+    schema:description "Highway on/off ramp in Seoul, Seoul. 2 intersections, 127 signs." ;
     gx:version "2.3.6" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -1972,8 +1973,8 @@
   rdfs:label "Frankfurt Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Frankfurt Bridge HD Map" ;
-    gx:description "Bridge crossing in Frankfurt, Hesse. 5 intersections, 376 signs." ;
+    schema:name "Frankfurt Bridge HD Map" ;
+    schema:description "Bridge crossing in Frankfurt, Hesse. 5 intersections, 376 signs." ;
     gx:version "2.7.2" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -2042,8 +2043,8 @@
   rdfs:label "Berlin Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Berlin Bridge HD Map" ;
-    gx:description "Bridge crossing in Berlin, Berlin. 11 intersections, 249 signs." ;
+    schema:name "Berlin Bridge HD Map" ;
+    schema:description "Bridge crossing in Berlin, Berlin. 11 intersections, 249 signs." ;
     gx:version "2.7.9" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -2112,8 +2113,8 @@
   rdfs:label "Nuremberg School Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Nuremberg School Zone HD Map" ;
-    gx:description "School zone with crossings in Nuremberg, Bavaria. 8 intersections, 257 signs." ;
+    schema:name "Nuremberg School Zone HD Map" ;
+    schema:description "School zone with crossings in Nuremberg, Bavaria. 8 intersections, 257 signs." ;
     gx:version "3.8.3" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -2182,8 +2183,8 @@
   rdfs:label "Los Angeles Residential HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Los Angeles Residential HD Map" ;
-    gx:description "Residential neighborhood streets in Los Angeles, California. 8 intersections, 396 signs." ;
+    schema:name "Los Angeles Residential HD Map" ;
+    schema:description "Residential neighborhood streets in Los Angeles, California. 8 intersections, 396 signs." ;
     gx:version "3.2.6" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -2252,8 +2253,8 @@
   rdfs:label "Houston Highway Ramp HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Houston Highway Ramp HD Map" ;
-    gx:description "Highway on/off ramp in Houston, Texas. 12 intersections, 215 signs." ;
+    schema:name "Houston Highway Ramp HD Map" ;
+    schema:description "Highway on/off ramp in Houston, Texas. 12 intersections, 215 signs." ;
     gx:version "2.4.9" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -2322,8 +2323,8 @@
   rdfs:label "Paris Test Track HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Paris Test Track HD Map" ;
-    gx:description "Proving ground test track in Paris, Ile-de-France. 4 intersections, 248 signs." ;
+    schema:name "Paris Test Track HD Map" ;
+    schema:description "Proving ground test track in Paris, Ile-de-France. 4 intersections, 248 signs." ;
     gx:version "4.3.2" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -2392,8 +2393,8 @@
   rdfs:label "Beijing Tunnel HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Beijing Tunnel HD Map" ;
-    gx:description "Highway tunnel section in Beijing, Beijing. 6 intersections, 313 signs." ;
+    schema:name "Beijing Tunnel HD Map" ;
+    schema:description "Highway tunnel section in Beijing, Beijing. 6 intersections, 313 signs." ;
     gx:version "3.9.4" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -2462,8 +2463,8 @@
   rdfs:label "Helsinki Industrial HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Helsinki Industrial HD Map" ;
-    gx:description "Industrial area roads in Helsinki, Uusimaa. 17 intersections, 75 signs." ;
+    schema:name "Helsinki Industrial HD Map" ;
+    schema:description "Industrial area roads in Helsinki, Uusimaa. 17 intersections, 75 signs." ;
     gx:version "2.3.4" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -2532,8 +2533,8 @@
   rdfs:label "Darmstadt Construction Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Darmstadt Construction Zone HD Map" ;
-    gx:description "Road with construction zone in Darmstadt, Hesse. 9 intersections, 78 signs." ;
+    schema:name "Darmstadt Construction Zone HD Map" ;
+    schema:description "Road with construction zone in Darmstadt, Hesse. 9 intersections, 78 signs." ;
     gx:version "4.8.5" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -2602,8 +2603,8 @@
   rdfs:label "Amsterdam Residential HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Amsterdam Residential HD Map" ;
-    gx:description "Residential neighborhood streets in Amsterdam, North Holland. 16 intersections, 60 signs." ;
+    schema:name "Amsterdam Residential HD Map" ;
+    schema:description "Residential neighborhood streets in Amsterdam, North Holland. 16 intersections, 60 signs." ;
     gx:version "4.0.9" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -2672,8 +2673,8 @@
   rdfs:label "Amsterdam Highway HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Amsterdam Highway HD Map" ;
-    gx:description "Highway stretch in Amsterdam, North Holland. 20 intersections, 356 signs." ;
+    schema:name "Amsterdam Highway HD Map" ;
+    schema:description "Highway stretch in Amsterdam, North Holland. 20 intersections, 356 signs." ;
     gx:version "1.3.4" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -2742,8 +2743,8 @@
   rdfs:label "Shanghai Rural Road HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Shanghai Rural Road HD Map" ;
-    gx:description "Country road in Shanghai, Shanghai. 13 intersections, 19 signs." ;
+    schema:name "Shanghai Rural Road HD Map" ;
+    schema:description "Country road in Shanghai, Shanghai. 13 intersections, 19 signs." ;
     gx:version "3.7.7" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -2812,8 +2813,8 @@
   rdfs:label "Beijing Mixed Urban HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Beijing Mixed Urban HD Map" ;
-    gx:description "Mixed-use urban district in Beijing, Beijing. 16 intersections, 161 signs." ;
+    schema:name "Beijing Mixed Urban HD Map" ;
+    schema:description "Mixed-use urban district in Beijing, Beijing. 16 intersections, 161 signs." ;
     gx:version "3.1.2" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -2882,8 +2883,8 @@
   rdfs:label "Paris Highway HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Paris Highway HD Map" ;
-    gx:description "Highway stretch in Paris, Ile-de-France. 15 intersections, 500 signs." ;
+    schema:name "Paris Highway HD Map" ;
+    schema:description "Highway stretch in Paris, Ile-de-France. 15 intersections, 500 signs." ;
     gx:version "3.6.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -2952,8 +2953,8 @@
   rdfs:label "Braunschweig Tunnel HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Braunschweig Tunnel HD Map" ;
-    gx:description "Highway tunnel section in Braunschweig, Lower Saxony. 16 intersections, 308 signs." ;
+    schema:name "Braunschweig Tunnel HD Map" ;
+    schema:description "Highway tunnel section in Braunschweig, Lower Saxony. 16 intersections, 308 signs." ;
     gx:version "5.5.2" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -3022,8 +3023,8 @@
   rdfs:label "Stockholm Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Stockholm Bridge HD Map" ;
-    gx:description "Bridge crossing in Stockholm, Stockholm. 5 intersections, 354 signs." ;
+    schema:name "Stockholm Bridge HD Map" ;
+    schema:description "Bridge crossing in Stockholm, Stockholm. 5 intersections, 354 signs." ;
     gx:version "3.9.8" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -3092,8 +3093,8 @@
   rdfs:label "Dusseldorf Urban Intersection HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Dusseldorf Urban Intersection HD Map" ;
-    gx:description "Complex urban intersection in Dusseldorf, North Rhine-Westphalia. 7 intersections, 77 signs." ;
+    schema:name "Dusseldorf Urban Intersection HD Map" ;
+    schema:description "Complex urban intersection in Dusseldorf, North Rhine-Westphalia. 7 intersections, 77 signs." ;
     gx:version "2.1.1" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -3162,8 +3163,8 @@
   rdfs:label "Shanghai Test Track HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Shanghai Test Track HD Map" ;
-    gx:description "Proving ground test track in Shanghai, Shanghai. 16 intersections, 105 signs." ;
+    schema:name "Shanghai Test Track HD Map" ;
+    schema:description "Proving ground test track in Shanghai, Shanghai. 16 intersections, 105 signs." ;
     gx:version "2.3.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -3232,8 +3233,8 @@
   rdfs:label "Regensburg Mixed Urban HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Regensburg Mixed Urban HD Map" ;
-    gx:description "Mixed-use urban district in Regensburg, Bavaria. 4 intersections, 170 signs." ;
+    schema:name "Regensburg Mixed Urban HD Map" ;
+    schema:description "Mixed-use urban district in Regensburg, Bavaria. 4 intersections, 170 signs." ;
     gx:version "1.8.6" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -3302,8 +3303,8 @@
   rdfs:label "Beijing Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Beijing Bridge HD Map" ;
-    gx:description "Bridge crossing in Beijing, Beijing. 11 intersections, 322 signs." ;
+    schema:name "Beijing Bridge HD Map" ;
+    schema:description "Bridge crossing in Beijing, Beijing. 11 intersections, 322 signs." ;
     gx:version "5.5.9" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -3372,8 +3373,8 @@
   rdfs:label "San Francisco Parking Garage HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco Parking Garage HD Map" ;
-    gx:description "Multi-level parking structure in San Francisco, California. 10 intersections, 174 signs." ;
+    schema:name "San Francisco Parking Garage HD Map" ;
+    schema:description "Multi-level parking structure in San Francisco, California. 10 intersections, 174 signs." ;
     gx:version "1.3.4" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -3442,8 +3443,8 @@
   rdfs:label "Detroit Mixed Urban HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Detroit Mixed Urban HD Map" ;
-    gx:description "Mixed-use urban district in Detroit, Michigan. 2 intersections, 381 signs." ;
+    schema:name "Detroit Mixed Urban HD Map" ;
+    schema:description "Mixed-use urban district in Detroit, Michigan. 2 intersections, 381 signs." ;
     gx:version "2.8.1" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -3512,8 +3513,8 @@
   rdfs:label "Frankfurt Rural Road HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Frankfurt Rural Road HD Map" ;
-    gx:description "Country road in Frankfurt, Hesse. 3 intersections, 353 signs." ;
+    schema:name "Frankfurt Rural Road HD Map" ;
+    schema:description "Country road in Frankfurt, Hesse. 3 intersections, 353 signs." ;
     gx:version "3.4.5" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -3582,8 +3583,8 @@
   rdfs:label "Melbourne Highway Ramp HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Melbourne Highway Ramp HD Map" ;
-    gx:description "Highway on/off ramp in Melbourne, Victoria. 19 intersections, 92 signs." ;
+    schema:name "Melbourne Highway Ramp HD Map" ;
+    schema:description "Highway on/off ramp in Melbourne, Victoria. 19 intersections, 92 signs." ;
     gx:version "3.3.2" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -3652,8 +3653,8 @@
   rdfs:label "Ann Arbor Urban Intersection HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Ann Arbor Urban Intersection HD Map" ;
-    gx:description "Complex urban intersection in Ann Arbor, Michigan. 15 intersections, 399 signs." ;
+    schema:name "Ann Arbor Urban Intersection HD Map" ;
+    schema:description "Complex urban intersection in Ann Arbor, Michigan. 15 intersections, 399 signs." ;
     gx:version "2.1.7" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -3722,8 +3723,8 @@
   rdfs:label "Stockholm Tunnel HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Stockholm Tunnel HD Map" ;
-    gx:description "Highway tunnel section in Stockholm, Stockholm. 12 intersections, 244 signs." ;
+    schema:name "Stockholm Tunnel HD Map" ;
+    schema:description "Highway tunnel section in Stockholm, Stockholm. 12 intersections, 244 signs." ;
     gx:version "1.1.6" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -3792,8 +3793,8 @@
   rdfs:label "Phoenix Rural Road HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Phoenix Rural Road HD Map" ;
-    gx:description "Country road in Phoenix, Arizona. 4 intersections, 55 signs." ;
+    schema:name "Phoenix Rural Road HD Map" ;
+    schema:description "Country road in Phoenix, Arizona. 4 intersections, 55 signs." ;
     gx:version "4.4.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -3862,8 +3863,8 @@
   rdfs:label "San Jose Highway HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Jose Highway HD Map" ;
-    gx:description "Highway stretch in San Jose, California. 9 intersections, 116 signs." ;
+    schema:name "San Jose Highway HD Map" ;
+    schema:description "Highway stretch in San Jose, California. 9 intersections, 116 signs." ;
     gx:version "2.3.2" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -3932,8 +3933,8 @@
   rdfs:label "Shibuya Rural Road HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Shibuya Rural Road HD Map" ;
-    gx:description "Country road in Shibuya, Tokyo. 13 intersections, 144 signs." ;
+    schema:name "Shibuya Rural Road HD Map" ;
+    schema:description "Country road in Shibuya, Tokyo. 13 intersections, 144 signs." ;
     gx:version "2.2.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -4002,8 +4003,8 @@
   rdfs:label "London Mixed Urban HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "London Mixed Urban HD Map" ;
-    gx:description "Mixed-use urban district in London, London. 0 intersections, 292 signs." ;
+    schema:name "London Mixed Urban HD Map" ;
+    schema:description "Mixed-use urban district in London, London. 0 intersections, 292 signs." ;
     gx:version "4.6.6" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -4072,8 +4073,8 @@
   rdfs:label "Vienna Tunnel HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Vienna Tunnel HD Map" ;
-    gx:description "Highway tunnel section in Vienna, Vienna. 12 intersections, 54 signs." ;
+    schema:name "Vienna Tunnel HD Map" ;
+    schema:description "Highway tunnel section in Vienna, Vienna. 12 intersections, 54 signs." ;
     gx:version "4.7.2" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -4142,8 +4143,8 @@
   rdfs:label "Milan Highway Ramp HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan Highway Ramp HD Map" ;
-    gx:description "Highway on/off ramp in Milan, Lombardy. 6 intersections, 483 signs." ;
+    schema:name "Milan Highway Ramp HD Map" ;
+    schema:description "Highway on/off ramp in Milan, Lombardy. 6 intersections, 483 signs." ;
     gx:version "3.3.8" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -4212,8 +4213,8 @@
   rdfs:label "Phoenix Parking Garage HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Phoenix Parking Garage HD Map" ;
-    gx:description "Multi-level parking structure in Phoenix, Arizona. 5 intersections, 60 signs." ;
+    schema:name "Phoenix Parking Garage HD Map" ;
+    schema:description "Multi-level parking structure in Phoenix, Arizona. 5 intersections, 60 signs." ;
     gx:version "3.0.2" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -4282,8 +4283,8 @@
   rdfs:label "Vienna Tunnel HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Vienna Tunnel HD Map" ;
-    gx:description "Highway tunnel section in Vienna, Vienna. 2 intersections, 191 signs." ;
+    schema:name "Vienna Tunnel HD Map" ;
+    schema:description "Highway tunnel section in Vienna, Vienna. 2 intersections, 191 signs." ;
     gx:version "1.8.7" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -4352,8 +4353,8 @@
   rdfs:label "London Residential HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "London Residential HD Map" ;
-    gx:description "Residential neighborhood streets in London, London. 11 intersections, 98 signs." ;
+    schema:name "London Residential HD Map" ;
+    schema:description "Residential neighborhood streets in London, London. 11 intersections, 98 signs." ;
     gx:version "2.8.2" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -4422,8 +4423,8 @@
   rdfs:label "Frankfurt Urban Intersection HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Frankfurt Urban Intersection HD Map" ;
-    gx:description "Complex urban intersection in Frankfurt, Hesse. 14 intersections, 276 signs." ;
+    schema:name "Frankfurt Urban Intersection HD Map" ;
+    schema:description "Complex urban intersection in Frankfurt, Hesse. 14 intersections, 276 signs." ;
     gx:version "2.2.4" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -4492,8 +4493,8 @@
   rdfs:label "Melbourne Test Track HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Melbourne Test Track HD Map" ;
-    gx:description "Proving ground test track in Melbourne, Victoria. 0 intersections, 427 signs." ;
+    schema:name "Melbourne Test Track HD Map" ;
+    schema:description "Proving ground test track in Melbourne, Victoria. 0 intersections, 427 signs." ;
     gx:version "4.1.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -4562,8 +4563,8 @@
   rdfs:label "Tokyo Mixed Urban HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Tokyo Mixed Urban HD Map" ;
-    gx:description "Mixed-use urban district in Tokyo, Tokyo. 17 intersections, 489 signs." ;
+    schema:name "Tokyo Mixed Urban HD Map" ;
+    schema:description "Mixed-use urban district in Tokyo, Tokyo. 17 intersections, 489 signs." ;
     gx:version "5.7.6" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -4632,8 +4633,8 @@
   rdfs:label "Singapore Urban Intersection HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Singapore Urban Intersection HD Map" ;
-    gx:description "Complex urban intersection in Singapore, Singapore. 9 intersections, 225 signs." ;
+    schema:name "Singapore Urban Intersection HD Map" ;
+    schema:description "Complex urban intersection in Singapore, Singapore. 9 intersections, 225 signs." ;
     gx:version "1.1.6" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -4702,8 +4703,8 @@
   rdfs:label "Hamburg Tunnel HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg Tunnel HD Map" ;
-    gx:description "Highway tunnel section in Hamburg, Hamburg. 2 intersections, 364 signs." ;
+    schema:name "Hamburg Tunnel HD Map" ;
+    schema:description "Highway tunnel section in Hamburg, Hamburg. 2 intersections, 364 signs." ;
     gx:version "3.9.4" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -4772,8 +4773,8 @@
   rdfs:label "Gothenburg Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Gothenburg Bridge HD Map" ;
-    gx:description "Bridge crossing in Gothenburg, Stockholm. 6 intersections, 21 signs." ;
+    schema:name "Gothenburg Bridge HD Map" ;
+    schema:description "Bridge crossing in Gothenburg, Stockholm. 6 intersections, 21 signs." ;
     gx:version "4.9.2" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -4842,8 +4843,8 @@
   rdfs:label "Shanghai Test Track HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Shanghai Test Track HD Map" ;
-    gx:description "Proving ground test track in Shanghai, Shanghai. 12 intersections, 496 signs." ;
+    schema:name "Shanghai Test Track HD Map" ;
+    schema:description "Proving ground test track in Shanghai, Shanghai. 12 intersections, 496 signs." ;
     gx:version "4.0.1" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -4912,8 +4913,8 @@
   rdfs:label "Detroit Industrial HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Detroit Industrial HD Map" ;
-    gx:description "Industrial area roads in Detroit, Michigan. 0 intersections, 117 signs." ;
+    schema:name "Detroit Industrial HD Map" ;
+    schema:description "Industrial area roads in Detroit, Michigan. 0 intersections, 117 signs." ;
     gx:version "4.4.2" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -4982,8 +4983,8 @@
   rdfs:label "Gothenburg Industrial HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Gothenburg Industrial HD Map" ;
-    gx:description "Industrial area roads in Gothenburg, Stockholm. 14 intersections, 302 signs." ;
+    schema:name "Gothenburg Industrial HD Map" ;
+    schema:description "Industrial area roads in Gothenburg, Stockholm. 14 intersections, 302 signs." ;
     gx:version "4.0.9" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -5052,8 +5053,8 @@
   rdfs:label "San Francisco Construction Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco Construction Zone HD Map" ;
-    gx:description "Road with construction zone in San Francisco, California. 4 intersections, 377 signs." ;
+    schema:name "San Francisco Construction Zone HD Map" ;
+    schema:description "Road with construction zone in San Francisco, California. 4 intersections, 377 signs." ;
     gx:version "2.7.9" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -5122,8 +5123,8 @@
   rdfs:label "Houston School Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Houston School Zone HD Map" ;
-    gx:description "School zone with crossings in Houston, Texas. 8 intersections, 98 signs." ;
+    schema:name "Houston School Zone HD Map" ;
+    schema:description "School zone with crossings in Houston, Texas. 8 intersections, 98 signs." ;
     gx:version "4.9.4" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -5192,8 +5193,8 @@
   rdfs:label "Los Angeles Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Los Angeles Bridge HD Map" ;
-    gx:description "Bridge crossing in Los Angeles, California. 10 intersections, 425 signs." ;
+    schema:name "Los Angeles Bridge HD Map" ;
+    schema:description "Bridge crossing in Los Angeles, California. 10 intersections, 425 signs." ;
     gx:version "3.3.4" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -5262,8 +5263,8 @@
   rdfs:label "Mannheim Rural Road HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Mannheim Rural Road HD Map" ;
-    gx:description "Country road in Mannheim, Baden-Wuerttemberg. 1 intersections, 144 signs." ;
+    schema:name "Mannheim Rural Road HD Map" ;
+    schema:description "Country road in Mannheim, Baden-Wuerttemberg. 1 intersections, 144 signs." ;
     gx:version "1.0.6" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -5332,8 +5333,8 @@
   rdfs:label "Helsinki Highway Ramp HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Helsinki Highway Ramp HD Map" ;
-    gx:description "Highway on/off ramp in Helsinki, Uusimaa. 3 intersections, 237 signs." ;
+    schema:name "Helsinki Highway Ramp HD Map" ;
+    schema:description "Highway on/off ramp in Helsinki, Uusimaa. 3 intersections, 237 signs." ;
     gx:version "4.4.6" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -5402,8 +5403,8 @@
   rdfs:label "Seoul Residential HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Seoul Residential HD Map" ;
-    gx:description "Residential neighborhood streets in Seoul, Seoul. 0 intersections, 90 signs." ;
+    schema:name "Seoul Residential HD Map" ;
+    schema:description "Residential neighborhood streets in Seoul, Seoul. 0 intersections, 90 signs." ;
     gx:version "1.2.1" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -5472,8 +5473,8 @@
   rdfs:label "Beijing School Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Beijing School Zone HD Map" ;
-    gx:description "School zone with crossings in Beijing, Beijing. 17 intersections, 154 signs." ;
+    schema:name "Beijing School Zone HD Map" ;
+    schema:description "School zone with crossings in Beijing, Beijing. 17 intersections, 154 signs." ;
     gx:version "5.6.6" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -5542,8 +5543,8 @@
   rdfs:label "Melbourne Industrial HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Melbourne Industrial HD Map" ;
-    gx:description "Industrial area roads in Melbourne, Victoria. 19 intersections, 286 signs." ;
+    schema:name "Melbourne Industrial HD Map" ;
+    schema:description "Industrial area roads in Melbourne, Victoria. 19 intersections, 286 signs." ;
     gx:version "5.9.0" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -5612,8 +5613,8 @@
   rdfs:label "Nagoya Mixed Urban HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Nagoya Mixed Urban HD Map" ;
-    gx:description "Mixed-use urban district in Nagoya, Aichi. 14 intersections, 305 signs." ;
+    schema:name "Nagoya Mixed Urban HD Map" ;
+    schema:description "Mixed-use urban district in Nagoya, Aichi. 14 intersections, 305 signs." ;
     gx:version "2.8.6" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -5682,8 +5683,8 @@
   rdfs:label "Barcelona Highway HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Barcelona Highway HD Map" ;
-    gx:description "Highway stretch in Barcelona, Madrid. 3 intersections, 64 signs." ;
+    schema:name "Barcelona Highway HD Map" ;
+    schema:description "Highway stretch in Barcelona, Madrid. 3 intersections, 64 signs." ;
     gx:version "1.0.6" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -5752,8 +5753,8 @@
   rdfs:label "Zurich Residential HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Zurich Residential HD Map" ;
-    gx:description "Residential neighborhood streets in Zurich, Zurich. 17 intersections, 440 signs." ;
+    schema:name "Zurich Residential HD Map" ;
+    schema:description "Residential neighborhood streets in Zurich, Zurich. 17 intersections, 440 signs." ;
     gx:version "3.8.0" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -5822,8 +5823,8 @@
   rdfs:label "Milan Roundabout HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan Roundabout HD Map" ;
-    gx:description "Multi-lane roundabout in Milan, Lombardy. 18 intersections, 334 signs." ;
+    schema:name "Milan Roundabout HD Map" ;
+    schema:description "Multi-lane roundabout in Milan, Lombardy. 18 intersections, 334 signs." ;
     gx:version "5.7.6" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -5892,8 +5893,8 @@
   rdfs:label "Madrid Rural Road HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Madrid Rural Road HD Map" ;
-    gx:description "Country road in Madrid, Madrid. 19 intersections, 148 signs." ;
+    schema:name "Madrid Rural Road HD Map" ;
+    schema:description "Country road in Madrid, Madrid. 19 intersections, 148 signs." ;
     gx:version "3.1.8" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -5962,8 +5963,8 @@
   rdfs:label "Milan School Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan School Zone HD Map" ;
-    gx:description "School zone with crossings in Milan, Lombardy. 17 intersections, 214 signs." ;
+    schema:name "Milan School Zone HD Map" ;
+    schema:description "School zone with crossings in Milan, Lombardy. 17 intersections, 214 signs." ;
     gx:version "5.9.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -6032,8 +6033,8 @@
   rdfs:label "Stockholm Test Track HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Stockholm Test Track HD Map" ;
-    gx:description "Proving ground test track in Stockholm, Stockholm. 8 intersections, 470 signs." ;
+    schema:name "Stockholm Test Track HD Map" ;
+    schema:description "Proving ground test track in Stockholm, Stockholm. 8 intersections, 470 signs." ;
     gx:version "3.4.2" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -6102,8 +6103,8 @@
   rdfs:label "Helsinki Roundabout HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Helsinki Roundabout HD Map" ;
-    gx:description "Multi-lane roundabout in Helsinki, Uusimaa. 20 intersections, 421 signs." ;
+    schema:name "Helsinki Roundabout HD Map" ;
+    schema:description "Multi-lane roundabout in Helsinki, Uusimaa. 20 intersections, 421 signs." ;
     gx:version "1.7.4" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -6172,8 +6173,8 @@
   rdfs:label "Paris Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Paris Bridge HD Map" ;
-    gx:description "Bridge crossing in Paris, Ile-de-France. 14 intersections, 499 signs." ;
+    schema:name "Paris Bridge HD Map" ;
+    schema:description "Bridge crossing in Paris, Ile-de-France. 14 intersections, 499 signs." ;
     gx:version "2.5.5" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -6242,8 +6243,8 @@
   rdfs:label "Darmstadt Parking Garage HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Darmstadt Parking Garage HD Map" ;
-    gx:description "Multi-level parking structure in Darmstadt, Hesse. 4 intersections, 205 signs." ;
+    schema:name "Darmstadt Parking Garage HD Map" ;
+    schema:description "Multi-level parking structure in Darmstadt, Hesse. 4 intersections, 205 signs." ;
     gx:version "4.8.7" ;
     gx:license "EPL-2.0" ;
     gx:containsPII false
@@ -6312,8 +6313,8 @@
   rdfs:label "Los Angeles Mixed Urban HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Los Angeles Mixed Urban HD Map" ;
-    gx:description "Mixed-use urban district in Los Angeles, California. 16 intersections, 275 signs." ;
+    schema:name "Los Angeles Mixed Urban HD Map" ;
+    schema:description "Mixed-use urban district in Los Angeles, California. 16 intersections, 275 signs." ;
     gx:version "2.7.9" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -6382,8 +6383,8 @@
   rdfs:label "Dortmund Industrial HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Dortmund Industrial HD Map" ;
-    gx:description "Industrial area roads in Dortmund, North Rhine-Westphalia. 10 intersections, 71 signs." ;
+    schema:name "Dortmund Industrial HD Map" ;
+    schema:description "Industrial area roads in Dortmund, North Rhine-Westphalia. 10 intersections, 71 signs." ;
     gx:version "1.7.4" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -6452,8 +6453,8 @@
   rdfs:label "Wiesbaden Test Track HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Wiesbaden Test Track HD Map" ;
-    gx:description "Proving ground test track in Wiesbaden, Hesse. 11 intersections, 154 signs." ;
+    schema:name "Wiesbaden Test Track HD Map" ;
+    schema:description "Proving ground test track in Wiesbaden, Hesse. 11 intersections, 154 signs." ;
     gx:version "4.3.7" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -6522,8 +6523,8 @@
   rdfs:label "Paris Residential HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Paris Residential HD Map" ;
-    gx:description "Residential neighborhood streets in Paris, Ile-de-France. 2 intersections, 489 signs." ;
+    schema:name "Paris Residential HD Map" ;
+    schema:description "Residential neighborhood streets in Paris, Ile-de-France. 2 intersections, 489 signs." ;
     gx:version "1.8.4" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -6592,8 +6593,8 @@
   rdfs:label "Ann Arbor Tunnel HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Ann Arbor Tunnel HD Map" ;
-    gx:description "Highway tunnel section in Ann Arbor, Michigan. 13 intersections, 81 signs." ;
+    schema:name "Ann Arbor Tunnel HD Map" ;
+    schema:description "Highway tunnel section in Ann Arbor, Michigan. 13 intersections, 81 signs." ;
     gx:version "2.6.6" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -6662,8 +6663,8 @@
   rdfs:label "Toyota City Highway HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Toyota City Highway HD Map" ;
-    gx:description "Highway stretch in Toyota City, Aichi. 10 intersections, 14 signs." ;
+    schema:name "Toyota City Highway HD Map" ;
+    schema:description "Highway stretch in Toyota City, Aichi. 10 intersections, 14 signs." ;
     gx:version "1.4.7" ;
     gx:license "CC0-1.0" ;
     gx:containsPII false
@@ -6732,8 +6733,8 @@
   rdfs:label "London Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "London Bridge HD Map" ;
-    gx:description "Bridge crossing in London, London. 5 intersections, 242 signs." ;
+    schema:name "London Bridge HD Map" ;
+    schema:description "Bridge crossing in London, London. 5 intersections, 242 signs." ;
     gx:version "1.4.4" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -6802,8 +6803,8 @@
   rdfs:label "Phoenix Bridge HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Phoenix Bridge HD Map" ;
-    gx:description "Bridge crossing in Phoenix, Arizona. 1 intersections, 192 signs." ;
+    schema:name "Phoenix Bridge HD Map" ;
+    schema:description "Bridge crossing in Phoenix, Arizona. 1 intersections, 192 signs." ;
     gx:version "2.1.9" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -6872,8 +6873,8 @@
   rdfs:label "Madrid Residential HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Madrid Residential HD Map" ;
-    gx:description "Residential neighborhood streets in Madrid, Madrid. 3 intersections, 159 signs." ;
+    schema:name "Madrid Residential HD Map" ;
+    schema:description "Residential neighborhood streets in Madrid, Madrid. 3 intersections, 159 signs." ;
     gx:version "1.8.4" ;
     gx:license "CC-BY-SA-4.0" ;
     gx:containsPII false
@@ -6942,8 +6943,8 @@
   rdfs:label "Bern Construction Zone HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Bern Construction Zone HD Map" ;
-    gx:description "Road with construction zone in Bern, Zurich. 16 intersections, 64 signs." ;
+    schema:name "Bern Construction Zone HD Map" ;
+    schema:description "Road with construction zone in Bern, Zurich. 16 intersections, 64 signs." ;
     gx:version "3.4.8" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false

@@ -51,7 +51,7 @@ Each asset in the demo dataset follows the ENVITED-X pattern:
   rdfs:label "Karlsruhe Parking Garage HD Map"@en ;
   hdmap:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Karlsruhe Parking Garage HD Map" ;
+    schema:name "Karlsruhe Parking Garage HD Map" ;
     gx:license "CC0-1.0"
   ] ;
   hdmap:hasDomainSpecification [

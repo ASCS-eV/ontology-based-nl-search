@@ -5,6 +5,7 @@
     "georeference": "https://w3id.org/ascs-ev/envited-x/georeference/v5/",
     "manifest": "https://w3id.org/ascs-ev/envited-x/manifest/v5/",
     "gx": "https://w3id.org/gaia-x/development#",
+    "schema": "https://schema.org/",
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "openlabel_v2": "https://w3id.org/ascs-ev/envited-x/openlabel/v2/"
@@ -19,8 +20,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Dresden Town OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Dresden, Saxony.",
+        "schema:name": "Dresden Town OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Dresden, Saxony.",
         "gx:version": "3.2.2",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -190,8 +191,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Detroit Motorway OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Detroit, Michigan.",
+        "schema:name": "Detroit Motorway OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Detroit, Michigan.",
         "gx:version": "4.5.9",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -356,8 +357,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Shanghai Highway OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Shanghai, Shanghai.",
+        "schema:name": "Shanghai Highway OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Shanghai, Shanghai.",
         "gx:version": "5.8.6",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -518,8 +519,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Paris Custom OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Paris, Ile-de-France.",
+        "schema:name": "Paris Custom OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Paris, Ile-de-France.",
         "gx:version": "1.1.3",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -661,8 +662,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Seoul Rural OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Seoul, Seoul.",
+        "schema:name": "Seoul Rural OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Seoul, Seoul.",
         "gx:version": "2.4.0",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -809,8 +810,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Town OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Munich, Bavaria.",
+        "schema:name": "Munich Town OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Munich, Bavaria.",
         "gx:version": "3.7.7",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -954,8 +955,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Frankfurt Motorway OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Frankfurt, Hesse.",
+        "schema:name": "Frankfurt Motorway OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Frankfurt, Hesse.",
         "gx:version": "4.0.4",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -1096,8 +1097,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hanover Highway OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Hanover, Lower Saxony.",
+        "schema:name": "Hanover Highway OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Hanover, Lower Saxony.",
         "gx:version": "5.3.1",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -1226,8 +1227,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Austin Custom OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Austin, Texas.",
+        "schema:name": "Austin Custom OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Austin, Texas.",
         "gx:version": "1.6.8",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -1368,8 +1369,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Vienna Rural OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Vienna, Vienna.",
+        "schema:name": "Vienna Rural OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Vienna, Vienna.",
         "gx:version": "2.9.5",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -1493,8 +1494,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "London Town OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for London, Greater London.",
+        "schema:name": "London Town OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for London, Greater London.",
         "gx:version": "3.2.2",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -1638,8 +1639,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stuttgart Motorway OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Stuttgart, Baden-Wuerttemberg.",
+        "schema:name": "Stuttgart Motorway OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Stuttgart, Baden-Wuerttemberg.",
         "gx:version": "4.5.9",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -1780,8 +1781,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Berlin Highway OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Berlin, Berlin.",
+        "schema:name": "Berlin Highway OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Berlin, Berlin.",
         "gx:version": "5.8.6",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -1928,8 +1929,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Cologne Custom OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Cologne, North Rhine-Westphalia.",
+        "schema:name": "Cologne Custom OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Cologne, North Rhine-Westphalia.",
         "gx:version": "1.1.3",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -2066,8 +2067,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "San Francisco Rural OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for San Francisco, California.",
+        "schema:name": "San Francisco Rural OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for San Francisco, California.",
         "gx:version": "2.4.0",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -2205,8 +2206,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Tokyo Town OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Tokyo, Kanto.",
+        "schema:name": "Tokyo Town OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Tokyo, Kanto.",
         "gx:version": "3.7.7",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -2343,8 +2344,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stockholm Motorway OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Stockholm, Stockholm.",
+        "schema:name": "Stockholm Motorway OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Stockholm, Stockholm.",
         "gx:version": "4.0.4",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -2488,8 +2489,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Milan Highway OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Milan, Lombardy.",
+        "schema:name": "Milan Highway OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Milan, Lombardy.",
         "gx:version": "5.3.1",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -2619,8 +2620,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Karlsruhe Custom OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Karlsruhe, Baden-Wuerttemberg.",
+        "schema:name": "Karlsruhe Custom OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Karlsruhe, Baden-Wuerttemberg.",
         "gx:version": "1.6.8",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -2755,8 +2756,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hamburg Rural OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Hamburg, Hamburg.",
+        "schema:name": "Hamburg Rural OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Hamburg, Hamburg.",
         "gx:version": "2.9.5",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -2879,8 +2880,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Dresden Town OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Dresden, Saxony.",
+        "schema:name": "Dresden Town OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Dresden, Saxony.",
         "gx:version": "3.2.2",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -3050,8 +3051,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Detroit Motorway OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Detroit, Michigan.",
+        "schema:name": "Detroit Motorway OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Detroit, Michigan.",
         "gx:version": "4.5.9",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -3216,8 +3217,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Shanghai Highway OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Shanghai, Shanghai.",
+        "schema:name": "Shanghai Highway OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Shanghai, Shanghai.",
         "gx:version": "5.8.6",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -3378,8 +3379,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Paris Custom OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Paris, Ile-de-France.",
+        "schema:name": "Paris Custom OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Paris, Ile-de-France.",
         "gx:version": "1.1.3",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -3521,8 +3522,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Seoul Rural OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Seoul, Seoul.",
+        "schema:name": "Seoul Rural OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Seoul, Seoul.",
         "gx:version": "2.4.0",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -3669,8 +3670,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Town OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Munich, Bavaria.",
+        "schema:name": "Munich Town OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Munich, Bavaria.",
         "gx:version": "3.7.7",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -3814,8 +3815,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Frankfurt Motorway OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Frankfurt, Hesse.",
+        "schema:name": "Frankfurt Motorway OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Frankfurt, Hesse.",
         "gx:version": "4.0.4",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -3956,8 +3957,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hanover Highway OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Hanover, Lower Saxony.",
+        "schema:name": "Hanover Highway OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Hanover, Lower Saxony.",
         "gx:version": "5.3.1",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -4086,8 +4087,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Austin Custom OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Austin, Texas.",
+        "schema:name": "Austin Custom OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Austin, Texas.",
         "gx:version": "1.6.8",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -4228,8 +4229,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Vienna Rural OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Vienna, Vienna.",
+        "schema:name": "Vienna Rural OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Vienna, Vienna.",
         "gx:version": "2.9.5",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -4353,8 +4354,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "London Town OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for London, Greater London.",
+        "schema:name": "London Town OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for London, Greater London.",
         "gx:version": "3.2.2",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -4498,8 +4499,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stuttgart Motorway OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Stuttgart, Baden-Wuerttemberg.",
+        "schema:name": "Stuttgart Motorway OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Stuttgart, Baden-Wuerttemberg.",
         "gx:version": "4.5.9",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -4640,8 +4641,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Berlin Highway OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Berlin, Berlin.",
+        "schema:name": "Berlin Highway OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Berlin, Berlin.",
         "gx:version": "5.8.6",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -4788,8 +4789,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Cologne Custom OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Cologne, North Rhine-Westphalia.",
+        "schema:name": "Cologne Custom OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Cologne, North Rhine-Westphalia.",
         "gx:version": "1.1.3",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -4926,8 +4927,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "San Francisco Rural OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for San Francisco, California.",
+        "schema:name": "San Francisco Rural OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for San Francisco, California.",
         "gx:version": "2.4.0",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -5065,8 +5066,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Tokyo Town OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Tokyo, Kanto.",
+        "schema:name": "Tokyo Town OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Tokyo, Kanto.",
         "gx:version": "3.7.7",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -5203,8 +5204,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stockholm Motorway OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Stockholm, Stockholm.",
+        "schema:name": "Stockholm Motorway OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Stockholm, Stockholm.",
         "gx:version": "4.0.4",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -5348,8 +5349,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Milan Highway OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Milan, Lombardy.",
+        "schema:name": "Milan Highway OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Milan, Lombardy.",
         "gx:version": "5.3.1",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -5479,8 +5480,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Karlsruhe Custom OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Karlsruhe, Baden-Wuerttemberg.",
+        "schema:name": "Karlsruhe Custom OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Karlsruhe, Baden-Wuerttemberg.",
         "gx:version": "1.6.8",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -5615,8 +5616,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hamburg Rural OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Hamburg, Hamburg.",
+        "schema:name": "Hamburg Rural OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Hamburg, Hamburg.",
         "gx:version": "2.9.5",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -5739,8 +5740,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Dresden Town OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Dresden, Saxony.",
+        "schema:name": "Dresden Town OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Dresden, Saxony.",
         "gx:version": "3.2.2",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -5910,8 +5911,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Detroit Motorway OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Detroit, Michigan.",
+        "schema:name": "Detroit Motorway OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Detroit, Michigan.",
         "gx:version": "4.5.9",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -6076,8 +6077,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Shanghai Highway OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Shanghai, Shanghai.",
+        "schema:name": "Shanghai Highway OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Shanghai, Shanghai.",
         "gx:version": "5.8.6",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -6238,8 +6239,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Paris Custom OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Paris, Ile-de-France.",
+        "schema:name": "Paris Custom OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Paris, Ile-de-France.",
         "gx:version": "1.1.3",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -6381,8 +6382,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Seoul Rural OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Seoul, Seoul.",
+        "schema:name": "Seoul Rural OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Seoul, Seoul.",
         "gx:version": "2.4.0",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -6529,8 +6530,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Town OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Munich, Bavaria.",
+        "schema:name": "Munich Town OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Munich, Bavaria.",
         "gx:version": "3.7.7",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -6674,8 +6675,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Frankfurt Motorway OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Frankfurt, Hesse.",
+        "schema:name": "Frankfurt Motorway OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Frankfurt, Hesse.",
         "gx:version": "4.0.4",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -6816,8 +6817,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hanover Highway OSI Trace",
-        "gx:description": "ASAM OSI SensorView capture for Hanover, Lower Saxony.",
+        "schema:name": "Hanover Highway OSI Trace",
+        "schema:description": "ASAM OSI SensorView capture for Hanover, Lower Saxony.",
         "gx:version": "5.3.1",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -6946,8 +6947,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Austin Custom OSI Trace",
-        "gx:description": "ASAM OSI SensorData capture for Austin, Texas.",
+        "schema:name": "Austin Custom OSI Trace",
+        "schema:description": "ASAM OSI SensorData capture for Austin, Texas.",
         "gx:version": "1.6.8",
         "gx:license": "CC0-1.0",
         "gx:containsPII": false
@@ -7088,8 +7089,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Vienna Rural OSI Trace",
-        "gx:description": "ASAM OSI GroundTruth capture for Vienna, Vienna.",
+        "schema:name": "Vienna Rural OSI Trace",
+        "schema:description": "ASAM OSI GroundTruth capture for Vienna, Vienna.",
         "gx:version": "2.9.5",
         "gx:license": "EPL-2.0",
         "gx:containsPII": false
@@ -7213,8 +7214,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Paris Motorway OSI Trace",
-        "gx:description": "SensorView trace of motorway road in Paris, Ile-de-France.",
+        "schema:name": "Paris Motorway OSI Trace",
+        "schema:description": "SensorView trace of motorway road in Paris, Ile-de-France.",
         "gx:version": "3.7.0",
         "gx:license": "MIT",
         "gx:containsPII": false
@@ -7287,8 +7288,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Lyon Motorway OSI Trace",
-        "gx:description": "GroundTruth trace of motorway road in Lyon, Auvergne-Rhone-Alpes.",
+        "schema:name": "Lyon Motorway OSI Trace",
+        "schema:description": "GroundTruth trace of motorway road in Lyon, Auvergne-Rhone-Alpes.",
         "gx:version": "2.5.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -7361,8 +7362,8 @@
       },
       "ositrace:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Marseille Motorway OSI Trace",
-        "gx:description": "SensorData trace of motorway road in Marseille, Provence-Alpes-Cote d'Azur.",
+        "schema:name": "Marseille Motorway OSI Trace",
+        "schema:description": "SensorData trace of motorway road in Marseille, Provence-Alpes-Cote d'Azur.",
         "gx:version": "4.0.1",
         "gx:license": "Apache-2.0",
         "gx:containsPII": false

@@ -3,6 +3,7 @@
 @prefix georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/> .
 @prefix manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/> .
 @prefix gx: <https://w3id.org/gaia-x/development#> .
+@prefix schema: <https://schema.org/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
@@ -12,8 +13,8 @@
   rdfs:label "San Francisco Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of San Francisco for digital twin" ;
+    schema:name "San Francisco Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of San Francisco for digital twin" ;
     gx:version "1.3.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -68,8 +69,8 @@
   rdfs:label "Amsterdam High Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Amsterdam High Detail Environment Model" ;
-    gx:description "High detail 3D environment model of Amsterdam for lidar simulation" ;
+    schema:name "Amsterdam High Detail Environment Model" ;
+    schema:description "High detail 3D environment model of Amsterdam for lidar simulation" ;
     gx:version "2.4.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -124,8 +125,8 @@
   rdfs:label "Shanghai High Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Shanghai High Detail Environment Model" ;
-    gx:description "High detail 3D environment model of Shanghai for digital twin" ;
+    schema:name "Shanghai High Detail Environment Model" ;
+    schema:description "High detail 3D environment model of Shanghai for digital twin" ;
     gx:version "1.2.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -180,8 +181,8 @@
   rdfs:label "San Francisco Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of San Francisco for sensor simulation" ;
+    schema:name "San Francisco Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of San Francisco for sensor simulation" ;
     gx:version "3.4.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -236,8 +237,8 @@
   rdfs:label "London High Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "London High Detail Environment Model" ;
-    gx:description "High detail 3D environment model of London for scenario visualization" ;
+    schema:name "London High Detail Environment Model" ;
+    schema:description "High detail 3D environment model of London for scenario visualization" ;
     gx:version "2.8.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -292,8 +293,8 @@
   rdfs:label "Detroit High Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Detroit High Detail Environment Model" ;
-    gx:description "High detail 3D environment model of Detroit for sensor simulation" ;
+    schema:name "Detroit High Detail Environment Model" ;
+    schema:description "High detail 3D environment model of Detroit for sensor simulation" ;
     gx:version "1.2.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -348,8 +349,8 @@
   rdfs:label "Paris Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Paris Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of Paris for camera simulation" ;
+    schema:name "Paris Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of Paris for camera simulation" ;
     gx:version "3.8.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -404,8 +405,8 @@
   rdfs:label "Detroit Medium Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Detroit Medium Detail Environment Model" ;
-    gx:description "Medium detail 3D environment model of Detroit for scenario visualization" ;
+    schema:name "Detroit Medium Detail Environment Model" ;
+    schema:description "Medium detail 3D environment model of Detroit for scenario visualization" ;
     gx:version "1.1.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -460,8 +461,8 @@
   rdfs:label "Amsterdam Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Amsterdam Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of Amsterdam for sensor simulation" ;
+    schema:name "Amsterdam Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of Amsterdam for sensor simulation" ;
     gx:version "1.2.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -516,8 +517,8 @@
   rdfs:label "Detroit Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Detroit Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of Detroit for digital twin" ;
+    schema:name "Detroit Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of Detroit for digital twin" ;
     gx:version "2.5.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -572,8 +573,8 @@
   rdfs:label "Tokyo Medium Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Tokyo Medium Detail Environment Model" ;
-    gx:description "Medium detail 3D environment model of Tokyo for HiL testing" ;
+    schema:name "Tokyo Medium Detail Environment Model" ;
+    schema:description "Medium detail 3D environment model of Tokyo for HiL testing" ;
     gx:version "1.9.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -628,8 +629,8 @@
   rdfs:label "London High Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "London High Detail Environment Model" ;
-    gx:description "High detail 3D environment model of London for scenario visualization" ;
+    schema:name "London High Detail Environment Model" ;
+    schema:description "High detail 3D environment model of London for scenario visualization" ;
     gx:version "1.1.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -684,8 +685,8 @@
   rdfs:label "Detroit Medium Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Detroit Medium Detail Environment Model" ;
-    gx:description "Medium detail 3D environment model of Detroit for visual validation" ;
+    schema:name "Detroit Medium Detail Environment Model" ;
+    schema:description "Medium detail 3D environment model of Detroit for visual validation" ;
     gx:version "1.1.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -740,8 +741,8 @@
   rdfs:label "Munich Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Munich Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of Munich for visual validation" ;
+    schema:name "Munich Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of Munich for visual validation" ;
     gx:version "3.6.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -796,8 +797,8 @@
   rdfs:label "Milan Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of Milan for camera simulation" ;
+    schema:name "Milan Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of Milan for camera simulation" ;
     gx:version "3.1.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -852,8 +853,8 @@
   rdfs:label "Gothenburg Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Gothenburg Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of Gothenburg for scenario visualization" ;
+    schema:name "Gothenburg Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of Gothenburg for scenario visualization" ;
     gx:version "1.3.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -908,8 +909,8 @@
   rdfs:label "Paris High Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Paris High Detail Environment Model" ;
-    gx:description "High detail 3D environment model of Paris for camera simulation" ;
+    schema:name "Paris High Detail Environment Model" ;
+    schema:description "High detail 3D environment model of Paris for camera simulation" ;
     gx:version "2.0.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -964,8 +965,8 @@
   rdfs:label "Stuttgart Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Stuttgart Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of Stuttgart for visual validation" ;
+    schema:name "Stuttgart Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of Stuttgart for visual validation" ;
     gx:version "3.9.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -1020,8 +1021,8 @@
   rdfs:label "Gothenburg Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Gothenburg Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of Gothenburg for lidar simulation" ;
+    schema:name "Gothenburg Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of Gothenburg for lidar simulation" ;
     gx:version "3.7.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1076,8 +1077,8 @@
   rdfs:label "Amsterdam Medium Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Amsterdam Medium Detail Environment Model" ;
-    gx:description "Medium detail 3D environment model of Amsterdam for sensor simulation" ;
+    schema:name "Amsterdam Medium Detail Environment Model" ;
+    schema:description "Medium detail 3D environment model of Amsterdam for sensor simulation" ;
     gx:version "1.7.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1132,8 +1133,8 @@
   rdfs:label "London Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "London Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of London for visual validation" ;
+    schema:name "London Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of London for visual validation" ;
     gx:version "2.5.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1188,8 +1189,8 @@
   rdfs:label "Paris Medium Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Paris Medium Detail Environment Model" ;
-    gx:description "Medium detail 3D environment model of Paris for visual validation" ;
+    schema:name "Paris Medium Detail Environment Model" ;
+    schema:description "Medium detail 3D environment model of Paris for visual validation" ;
     gx:version "1.6.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -1244,8 +1245,8 @@
   rdfs:label "Tokyo Low Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Tokyo Low Detail Environment Model" ;
-    gx:description "Low detail 3D environment model of Tokyo for scenario visualization" ;
+    schema:name "Tokyo Low Detail Environment Model" ;
+    schema:description "Low detail 3D environment model of Tokyo for scenario visualization" ;
     gx:version "3.3.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -1300,8 +1301,8 @@
   rdfs:label "Detroit Medium Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Detroit Medium Detail Environment Model" ;
-    gx:description "Medium detail 3D environment model of Detroit for sensor simulation" ;
+    schema:name "Detroit Medium Detail Environment Model" ;
+    schema:description "Medium detail 3D environment model of Detroit for sensor simulation" ;
     gx:version "1.8.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1356,8 +1357,8 @@
   rdfs:label "Stuttgart Medium Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Stuttgart Medium Detail Environment Model" ;
-    gx:description "Medium detail 3D environment model of Stuttgart for camera simulation" ;
+    schema:name "Stuttgart Medium Detail Environment Model" ;
+    schema:description "Medium detail 3D environment model of Stuttgart for camera simulation" ;
     gx:version "2.5.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -1412,8 +1413,8 @@
   rdfs:label "Munich High Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Munich High Detail Environment Model" ;
-    gx:description "High detail 3D environment model of Munich for scenario visualization" ;
+    schema:name "Munich High Detail Environment Model" ;
+    schema:description "High detail 3D environment model of Munich for scenario visualization" ;
     gx:version "1.3.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1468,8 +1469,8 @@
   rdfs:label "San Francisco Medium Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco Medium Detail Environment Model" ;
-    gx:description "Medium detail 3D environment model of San Francisco for visual validation" ;
+    schema:name "San Francisco Medium Detail Environment Model" ;
+    schema:description "Medium detail 3D environment model of San Francisco for visual validation" ;
     gx:version "1.2.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1524,8 +1525,8 @@
   rdfs:label "San Francisco High Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco High Detail Environment Model" ;
-    gx:description "High detail 3D environment model of San Francisco for camera simulation" ;
+    schema:name "San Francisco High Detail Environment Model" ;
+    schema:description "High detail 3D environment model of San Francisco for camera simulation" ;
     gx:version "2.9.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -1580,8 +1581,8 @@
   rdfs:label "Gothenburg Medium Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Gothenburg Medium Detail Environment Model" ;
-    gx:description "Medium detail 3D environment model of Gothenburg for SiL testing" ;
+    schema:name "Gothenburg Medium Detail Environment Model" ;
+    schema:description "Medium detail 3D environment model of Gothenburg for SiL testing" ;
     gx:version "3.7.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -1636,8 +1637,8 @@
   rdfs:label "Milan Medium Detail Environment Model"@en ;
   environment-model:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan Medium Detail Environment Model" ;
-    gx:description "Medium detail 3D environment model of Milan for sensor simulation" ;
+    schema:name "Milan Medium Detail Environment Model" ;
+    schema:description "Medium detail 3D environment model of Milan for sensor simulation" ;
     gx:version "2.9.0" ;
     gx:license "proprietary" ;
     gx:containsPII false

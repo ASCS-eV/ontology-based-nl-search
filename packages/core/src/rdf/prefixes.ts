@@ -23,7 +23,7 @@ import zazukoPrefixes from '@zazuko/prefixes/prefixes.js'
 
 /** Project-specific prefixes the community list does not include. */
 const CUSTOM_PREFIXES = {
-  /** GAIA-X development namespace (`gx:name`, `gx:license`, …). */
+  /** GAIA-X development namespace (`gx:license`, `gx:version`, …). */
   gx: 'https://w3id.org/gaia-x/development#',
 } as const
 
