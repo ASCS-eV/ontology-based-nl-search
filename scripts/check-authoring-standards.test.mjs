@@ -45,7 +45,11 @@ test('standards-audit.md registers the authoring interfaces', () => {
 
 test('references/README.md registers the ASAM tags with their in-repo source', () => {
   const readme = read('docs/specs/references/README.md')
-  assert.match(readme, /ASAM standards/i, 'expected an ASAM standards section')
+  // Structural guard, not a heading literal: what enforces registration is the
+  // per-tag assertions below, and the table they read from. Matching a
+  // standards-family name here made the gate fail when the section was
+  // renamed to cover the non-ASAM standards it already listed.
+  assert.match(readme, /\|\s*Tag\s*\|\s*Standard\s*\|/, 'expected the pinned-standards tag table')
   assert.match(readme, /RangeCheckerRulesV1_3/, 'expected the RangeCheckerRules source cited')
   assert.match(readme, /OpenSCENARIO\.xsd/, 'expected the OpenSCENARIO XSD source cited')
   for (const tag of ASAM_TAGS) {
