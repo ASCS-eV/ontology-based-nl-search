@@ -3,6 +3,7 @@
 @prefix georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/> .
 @prefix manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/> .
 @prefix gx: <https://w3id.org/gaia-x/development#> .
+@prefix schema: <https://schema.org/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
@@ -12,8 +13,8 @@
   rdfs:label "San Francisco town OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco town OSI Trace" ;
-    gx:description "SensorData trace of town road in San Francisco, California" ;
+    schema:name "San Francisco town OSI Trace" ;
+    schema:description "SensorData trace of town road in San Francisco, California" ;
     gx:version "1.2.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -71,8 +72,8 @@
   rdfs:label "Berlin town OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Berlin town OSI Trace" ;
-    gx:description "SensorView trace of town road in Berlin, Berlin" ;
+    schema:name "Berlin town OSI Trace" ;
+    schema:description "SensorView trace of town road in Berlin, Berlin" ;
     gx:version "1.3.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -130,8 +131,8 @@
   rdfs:label "Stuttgart unknown OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Stuttgart unknown OSI Trace" ;
-    gx:description "SensorView trace of unknown road in Stuttgart, Baden-Wuerttemberg" ;
+    schema:name "Stuttgart unknown OSI Trace" ;
+    schema:description "SensorView trace of unknown road in Stuttgart, Baden-Wuerttemberg" ;
     gx:version "1.4.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -189,8 +190,8 @@
   rdfs:label "Amsterdam pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Amsterdam pedestrian OSI Trace" ;
-    gx:description "SensorData trace of pedestrian road in Amsterdam, North Holland" ;
+    schema:name "Amsterdam pedestrian OSI Trace" ;
+    schema:description "SensorData trace of pedestrian road in Amsterdam, North Holland" ;
     gx:version "1.1.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -248,8 +249,8 @@
   rdfs:label "Milan town Expressway OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan town Expressway OSI Trace" ;
-    gx:description "SensorView trace of townExpressway road in Milan, Lombardy" ;
+    schema:name "Milan town Expressway OSI Trace" ;
+    schema:description "SensorView trace of townExpressway road in Milan, Lombardy" ;
     gx:version "2.3.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -307,8 +308,8 @@
   rdfs:label "Hamburg unknown OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg unknown OSI Trace" ;
-    gx:description "SensorView trace of unknown road in Hamburg, Hamburg" ;
+    schema:name "Hamburg unknown OSI Trace" ;
+    schema:description "SensorView trace of unknown road in Hamburg, Hamburg" ;
     gx:version "1.5.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -366,8 +367,8 @@
   rdfs:label "Gothenburg pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Gothenburg pedestrian OSI Trace" ;
-    gx:description "SensorData trace of pedestrian road in Gothenburg, Stockholm" ;
+    schema:name "Gothenburg pedestrian OSI Trace" ;
+    schema:description "SensorData trace of pedestrian road in Gothenburg, Stockholm" ;
     gx:version "1.3.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -425,8 +426,8 @@
   rdfs:label "Paris rural OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Paris rural OSI Trace" ;
-    gx:description "SensorView trace of rural road in Paris, Ile-de-France" ;
+    schema:name "Paris rural OSI Trace" ;
+    schema:description "SensorView trace of rural road in Paris, Ile-de-France" ;
     gx:version "1.0.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -484,8 +485,8 @@
   rdfs:label "Berlin motorway OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Berlin motorway OSI Trace" ;
-    gx:description "SensorView trace of motorway road in Berlin, Berlin" ;
+    schema:name "Berlin motorway OSI Trace" ;
+    schema:description "SensorView trace of motorway road in Berlin, Berlin" ;
     gx:version "3.7.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -543,8 +544,8 @@
   rdfs:label "San Francisco town Collector OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco town Collector OSI Trace" ;
-    gx:description "SensorView trace of townCollector road in San Francisco, California" ;
+    schema:name "San Francisco town Collector OSI Trace" ;
+    schema:description "SensorView trace of townCollector road in San Francisco, California" ;
     gx:version "2.9.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -602,8 +603,8 @@
   rdfs:label "Frankfurt unknown OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Frankfurt unknown OSI Trace" ;
-    gx:description "GroundTruth trace of unknown road in Frankfurt, Hesse" ;
+    schema:name "Frankfurt unknown OSI Trace" ;
+    schema:description "GroundTruth trace of unknown road in Frankfurt, Hesse" ;
     gx:version "2.1.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -661,8 +662,8 @@
   rdfs:label "Munich town Expressway OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Munich town Expressway OSI Trace" ;
-    gx:description "SensorView trace of townExpressway road in Munich, Bavaria" ;
+    schema:name "Munich town Expressway OSI Trace" ;
+    schema:description "SensorView trace of townExpressway road in Munich, Bavaria" ;
     gx:version "1.8.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -720,8 +721,8 @@
   rdfs:label "Seoul town OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Seoul town OSI Trace" ;
-    gx:description "SensorData trace of town road in Seoul, Seoul" ;
+    schema:name "Seoul town OSI Trace" ;
+    schema:description "SensorData trace of town road in Seoul, Seoul" ;
     gx:version "2.2.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -779,8 +780,8 @@
   rdfs:label "Seoul unknown OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Seoul unknown OSI Trace" ;
-    gx:description "GroundTruth trace of unknown road in Seoul, Seoul" ;
+    schema:name "Seoul unknown OSI Trace" ;
+    schema:description "GroundTruth trace of unknown road in Seoul, Seoul" ;
     gx:version "2.0.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -838,8 +839,8 @@
   rdfs:label "Shanghai town Arterial OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Shanghai town Arterial OSI Trace" ;
-    gx:description "SensorView trace of townArterial road in Shanghai, Shanghai" ;
+    schema:name "Shanghai town Arterial OSI Trace" ;
+    schema:description "SensorView trace of townArterial road in Shanghai, Shanghai" ;
     gx:version "1.9.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -897,8 +898,8 @@
   rdfs:label "Amsterdam rural OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Amsterdam rural OSI Trace" ;
-    gx:description "GroundTruth trace of rural road in Amsterdam, North Holland" ;
+    schema:name "Amsterdam rural OSI Trace" ;
+    schema:description "GroundTruth trace of rural road in Amsterdam, North Holland" ;
     gx:version "2.1.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -956,8 +957,8 @@
   rdfs:label "Detroit pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Detroit pedestrian OSI Trace" ;
-    gx:description "SensorData trace of pedestrian road in Detroit, Michigan" ;
+    schema:name "Detroit pedestrian OSI Trace" ;
+    schema:description "SensorData trace of pedestrian road in Detroit, Michigan" ;
     gx:version "3.2.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -1015,8 +1016,8 @@
   rdfs:label "Gothenburg town OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Gothenburg town OSI Trace" ;
-    gx:description "SensorView trace of town road in Gothenburg, Stockholm" ;
+    schema:name "Gothenburg town OSI Trace" ;
+    schema:description "SensorView trace of town road in Gothenburg, Stockholm" ;
     gx:version "1.1.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -1074,8 +1075,8 @@
   rdfs:label "Gothenburg pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Gothenburg pedestrian OSI Trace" ;
-    gx:description "SensorView trace of pedestrian road in Gothenburg, Stockholm" ;
+    schema:name "Gothenburg pedestrian OSI Trace" ;
+    schema:description "SensorView trace of pedestrian road in Gothenburg, Stockholm" ;
     gx:version "2.8.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1133,8 +1134,8 @@
   rdfs:label "San Francisco town OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco town OSI Trace" ;
-    gx:description "SensorData trace of town road in San Francisco, California" ;
+    schema:name "San Francisco town OSI Trace" ;
+    schema:description "SensorData trace of town road in San Francisco, California" ;
     gx:version "2.6.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -1192,8 +1193,8 @@
   rdfs:label "Tokyo motorway OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Tokyo motorway OSI Trace" ;
-    gx:description "SensorData trace of motorway road in Tokyo, Tokyo" ;
+    schema:name "Tokyo motorway OSI Trace" ;
+    schema:description "SensorData trace of motorway road in Tokyo, Tokyo" ;
     gx:version "3.2.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1251,8 +1252,8 @@
   rdfs:label "Milan pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan pedestrian OSI Trace" ;
-    gx:description "GroundTruth trace of pedestrian road in Milan, Lombardy" ;
+    schema:name "Milan pedestrian OSI Trace" ;
+    schema:description "GroundTruth trace of pedestrian road in Milan, Lombardy" ;
     gx:version "3.5.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -1310,8 +1311,8 @@
   rdfs:label "Hamburg pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg pedestrian OSI Trace" ;
-    gx:description "GroundTruth trace of pedestrian road in Hamburg, Hamburg" ;
+    schema:name "Hamburg pedestrian OSI Trace" ;
+    schema:description "GroundTruth trace of pedestrian road in Hamburg, Hamburg" ;
     gx:version "3.1.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -1369,8 +1370,8 @@
   rdfs:label "San Francisco pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco pedestrian OSI Trace" ;
-    gx:description "SensorView trace of pedestrian road in San Francisco, California" ;
+    schema:name "San Francisco pedestrian OSI Trace" ;
+    schema:description "SensorView trace of pedestrian road in San Francisco, California" ;
     gx:version "2.2.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1428,8 +1429,8 @@
   rdfs:label "Detroit pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Detroit pedestrian OSI Trace" ;
-    gx:description "GroundTruth trace of pedestrian road in Detroit, Michigan" ;
+    schema:name "Detroit pedestrian OSI Trace" ;
+    schema:description "GroundTruth trace of pedestrian road in Detroit, Michigan" ;
     gx:version "3.2.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -1487,8 +1488,8 @@
   rdfs:label "San Francisco unknown OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco unknown OSI Trace" ;
-    gx:description "GroundTruth trace of unknown road in San Francisco, California" ;
+    schema:name "San Francisco unknown OSI Trace" ;
+    schema:description "GroundTruth trace of unknown road in San Francisco, California" ;
     gx:version "3.1.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1546,8 +1547,8 @@
   rdfs:label "Shanghai unknown OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Shanghai unknown OSI Trace" ;
-    gx:description "SensorData trace of unknown road in Shanghai, Shanghai" ;
+    schema:name "Shanghai unknown OSI Trace" ;
+    schema:description "SensorData trace of unknown road in Shanghai, Shanghai" ;
     gx:version "2.8.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1605,8 +1606,8 @@
   rdfs:label "San Francisco town Arterial OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "San Francisco town Arterial OSI Trace" ;
-    gx:description "SensorData trace of townArterial road in San Francisco, California" ;
+    schema:name "San Francisco town Arterial OSI Trace" ;
+    schema:description "SensorData trace of townArterial road in San Francisco, California" ;
     gx:version "2.0.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -1664,8 +1665,8 @@
   rdfs:label "Milan pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan pedestrian OSI Trace" ;
-    gx:description "GroundTruth trace of pedestrian road in Milan, Lombardy" ;
+    schema:name "Milan pedestrian OSI Trace" ;
+    schema:description "GroundTruth trace of pedestrian road in Milan, Lombardy" ;
     gx:version "1.9.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -1723,8 +1724,8 @@
   rdfs:label "Frankfurt low Speed OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Frankfurt low Speed OSI Trace" ;
-    gx:description "SensorView trace of lowSpeed road in Frankfurt, Hesse" ;
+    schema:name "Frankfurt low Speed OSI Trace" ;
+    schema:description "SensorView trace of lowSpeed road in Frankfurt, Hesse" ;
     gx:version "2.5.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -1782,8 +1783,8 @@
   rdfs:label "Stuttgart rural OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Stuttgart rural OSI Trace" ;
-    gx:description "GroundTruth trace of rural road in Stuttgart, Baden-Wuerttemberg" ;
+    schema:name "Stuttgart rural OSI Trace" ;
+    schema:description "GroundTruth trace of rural road in Stuttgart, Baden-Wuerttemberg" ;
     gx:version "3.4.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -1841,8 +1842,8 @@
   rdfs:label "Seoul town Collector OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Seoul town Collector OSI Trace" ;
-    gx:description "SensorView trace of townCollector road in Seoul, Seoul" ;
+    schema:name "Seoul town Collector OSI Trace" ;
+    schema:description "SensorView trace of townCollector road in Seoul, Seoul" ;
     gx:version "2.2.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -1900,8 +1901,8 @@
   rdfs:label "London town Expressway OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "London town Expressway OSI Trace" ;
-    gx:description "SensorView trace of townExpressway road in London, London" ;
+    schema:name "London town Expressway OSI Trace" ;
+    schema:description "SensorView trace of townExpressway road in London, London" ;
     gx:version "1.6.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -1959,8 +1960,8 @@
   rdfs:label "Frankfurt rural OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Frankfurt rural OSI Trace" ;
-    gx:description "SensorData trace of rural road in Frankfurt, Hesse" ;
+    schema:name "Frankfurt rural OSI Trace" ;
+    schema:description "SensorData trace of rural road in Frankfurt, Hesse" ;
     gx:version "2.9.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -2018,8 +2019,8 @@
   rdfs:label "Berlin bicycle OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Berlin bicycle OSI Trace" ;
-    gx:description "SensorData trace of bicycle road in Berlin, Berlin" ;
+    schema:name "Berlin bicycle OSI Trace" ;
+    schema:description "SensorData trace of bicycle road in Berlin, Berlin" ;
     gx:version "1.1.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -2077,8 +2078,8 @@
   rdfs:label "Hamburg town Collector OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg town Collector OSI Trace" ;
-    gx:description "GroundTruth trace of townCollector road in Hamburg, Hamburg" ;
+    schema:name "Hamburg town Collector OSI Trace" ;
+    schema:description "GroundTruth trace of townCollector road in Hamburg, Hamburg" ;
     gx:version "1.2.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -2136,8 +2137,8 @@
   rdfs:label "Hamburg rural OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg rural OSI Trace" ;
-    gx:description "SensorData trace of rural road in Hamburg, Hamburg" ;
+    schema:name "Hamburg rural OSI Trace" ;
+    schema:description "SensorData trace of rural road in Hamburg, Hamburg" ;
     gx:version "1.6.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -2195,8 +2196,8 @@
   rdfs:label "Seoul rural OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Seoul rural OSI Trace" ;
-    gx:description "GroundTruth trace of rural road in Seoul, Seoul" ;
+    schema:name "Seoul rural OSI Trace" ;
+    schema:description "GroundTruth trace of rural road in Seoul, Seoul" ;
     gx:version "2.9.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -2254,8 +2255,8 @@
   rdfs:label "Berlin town Collector OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Berlin town Collector OSI Trace" ;
-    gx:description "SensorData trace of townCollector road in Berlin, Berlin" ;
+    schema:name "Berlin town Collector OSI Trace" ;
+    schema:description "SensorData trace of townCollector road in Berlin, Berlin" ;
     gx:version "3.7.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -2313,8 +2314,8 @@
   rdfs:label "Hamburg pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Hamburg pedestrian OSI Trace" ;
-    gx:description "SensorData trace of pedestrian road in Hamburg, Hamburg" ;
+    schema:name "Hamburg pedestrian OSI Trace" ;
+    schema:description "SensorData trace of pedestrian road in Hamburg, Hamburg" ;
     gx:version "2.1.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -2372,8 +2373,8 @@
   rdfs:label "Berlin rural OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Berlin rural OSI Trace" ;
-    gx:description "GroundTruth trace of rural road in Berlin, Berlin" ;
+    schema:name "Berlin rural OSI Trace" ;
+    schema:description "GroundTruth trace of rural road in Berlin, Berlin" ;
     gx:version "2.6.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -2431,8 +2432,8 @@
   rdfs:label "Munich town Expressway OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Munich town Expressway OSI Trace" ;
-    gx:description "SensorData trace of townExpressway road in Munich, Bavaria" ;
+    schema:name "Munich town Expressway OSI Trace" ;
+    schema:description "SensorData trace of townExpressway road in Munich, Bavaria" ;
     gx:version "3.1.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -2490,8 +2491,8 @@
   rdfs:label "Frankfurt town Expressway OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Frankfurt town Expressway OSI Trace" ;
-    gx:description "GroundTruth trace of townExpressway road in Frankfurt, Hesse" ;
+    schema:name "Frankfurt town Expressway OSI Trace" ;
+    schema:description "GroundTruth trace of townExpressway road in Frankfurt, Hesse" ;
     gx:version "3.5.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -2549,8 +2550,8 @@
   rdfs:label "Milan rural OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan rural OSI Trace" ;
-    gx:description "SensorView trace of rural road in Milan, Lombardy" ;
+    schema:name "Milan rural OSI Trace" ;
+    schema:description "SensorView trace of rural road in Milan, Lombardy" ;
     gx:version "1.3.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -2608,8 +2609,8 @@
   rdfs:label "Stuttgart rural OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Stuttgart rural OSI Trace" ;
-    gx:description "SensorData trace of rural road in Stuttgart, Baden-Wuerttemberg" ;
+    schema:name "Stuttgart rural OSI Trace" ;
+    schema:description "SensorData trace of rural road in Stuttgart, Baden-Wuerttemberg" ;
     gx:version "3.1.0" ;
     gx:license "proprietary" ;
     gx:containsPII false
@@ -2667,8 +2668,8 @@
   rdfs:label "Gothenburg town OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Gothenburg town OSI Trace" ;
-    gx:description "GroundTruth trace of town road in Gothenburg, Stockholm" ;
+    schema:name "Gothenburg town OSI Trace" ;
+    schema:description "GroundTruth trace of town road in Gothenburg, Stockholm" ;
     gx:version "2.5.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -2726,8 +2727,8 @@
   rdfs:label "London pedestrian OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "London pedestrian OSI Trace" ;
-    gx:description "SensorView trace of pedestrian road in London, London" ;
+    schema:name "London pedestrian OSI Trace" ;
+    schema:description "SensorView trace of pedestrian road in London, London" ;
     gx:version "1.5.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -2785,8 +2786,8 @@
   rdfs:label "Paris town Arterial OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Paris town Arterial OSI Trace" ;
-    gx:description "GroundTruth trace of townArterial road in Paris, Ile-de-France" ;
+    schema:name "Paris town Arterial OSI Trace" ;
+    schema:description "GroundTruth trace of townArterial road in Paris, Ile-de-France" ;
     gx:version "2.9.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -2844,8 +2845,8 @@
   rdfs:label "Gothenburg bicycle OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Gothenburg bicycle OSI Trace" ;
-    gx:description "SensorData trace of bicycle road in Gothenburg, Stockholm" ;
+    schema:name "Gothenburg bicycle OSI Trace" ;
+    schema:description "SensorData trace of bicycle road in Gothenburg, Stockholm" ;
     gx:version "3.4.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -2903,8 +2904,8 @@
   rdfs:label "Milan bicycle OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Milan bicycle OSI Trace" ;
-    gx:description "SensorData trace of bicycle road in Milan, Lombardy" ;
+    schema:name "Milan bicycle OSI Trace" ;
+    schema:description "SensorData trace of bicycle road in Milan, Lombardy" ;
     gx:version "3.6.0" ;
     gx:license "CC-BY-NC-4.0" ;
     gx:containsPII false
@@ -2963,8 +2964,8 @@
   rdfs:label "Paris motorway OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Paris motorway OSI Trace" ;
-    gx:description "SensorView trace of motorway road in Paris, Ile-de-France" ;
+    schema:name "Paris motorway OSI Trace" ;
+    schema:description "SensorView trace of motorway road in Paris, Ile-de-France" ;
     gx:version "3.7.0" ;
     gx:license "MIT" ;
     gx:containsPII false
@@ -3022,8 +3023,8 @@
   rdfs:label "Lyon motorway OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Lyon motorway OSI Trace" ;
-    gx:description "GroundTruth trace of motorway road in Lyon, Auvergne-Rhone-Alpes" ;
+    schema:name "Lyon motorway OSI Trace" ;
+    schema:description "GroundTruth trace of motorway road in Lyon, Auvergne-Rhone-Alpes" ;
     gx:version "2.5.0" ;
     gx:license "CC-BY-4.0" ;
     gx:containsPII false
@@ -3081,8 +3082,8 @@
   rdfs:label "Marseille motorway OSI Trace"@en ;
   ositrace:hasResourceDescription [
     a envited-x:ResourceDescription ;
-    gx:name "Marseille motorway OSI Trace" ;
-    gx:description "SensorData trace of motorway road in Marseille, Provence-Alpes-Cote-d-Azur" ;
+    schema:name "Marseille motorway OSI Trace" ;
+    schema:description "SensorData trace of motorway road in Marseille, Provence-Alpes-Cote-d-Azur" ;
     gx:version "1.0.0" ;
     gx:license "proprietary" ;
     gx:containsPII false

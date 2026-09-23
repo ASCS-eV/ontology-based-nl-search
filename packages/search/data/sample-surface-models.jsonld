@@ -5,6 +5,7 @@
     "georeference": "https://w3id.org/ascs-ev/envited-x/georeference/v5/",
     "manifest": "https://w3id.org/ascs-ev/envited-x/manifest/v5/",
     "gx": "https://w3id.org/gaia-x/development#",
+    "schema": "https://schema.org/",
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "openlabel_v2": "https://w3id.org/ascs-ev/envited-x/openlabel/v2/"
@@ -19,8 +20,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "San Francisco ASAM OpenCRG Surface Model",
-        "gx:description": "roughness profile surface model for San Francisco, California.",
+        "schema:name": "San Francisco ASAM OpenCRG Surface Model",
+        "schema:description": "roughness profile surface model for San Francisco, California.",
         "gx:version": "4.3.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -163,8 +164,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Tokyo HDF5 Surface Model",
-        "gx:description": "texture map surface model for Tokyo, Kanto.",
+        "schema:name": "Tokyo HDF5 Surface Model",
+        "schema:description": "texture map surface model for Tokyo, Kanto.",
         "gx:version": "5.6.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -308,8 +309,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stockholm Custom Binary Surface Model",
-        "gx:description": "friction map surface model for Stockholm, Stockholm.",
+        "schema:name": "Stockholm Custom Binary Surface Model",
+        "schema:description": "friction map surface model for Stockholm, Stockholm.",
         "gx:version": "1.9.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -443,8 +444,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Milan ASAM OpenCRG Surface Model",
-        "gx:description": "Height surface model for Milan, Lombardy.",
+        "schema:name": "Milan ASAM OpenCRG Surface Model",
+        "schema:description": "Height surface model for Milan, Lombardy.",
         "gx:version": "2.2.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -568,8 +569,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Karlsruhe HDF5 Surface Model",
-        "gx:description": "roughness profile surface model for Karlsruhe, Baden-Wuerttemberg.",
+        "schema:name": "Karlsruhe HDF5 Surface Model",
+        "schema:description": "roughness profile surface model for Karlsruhe, Baden-Wuerttemberg.",
         "gx:version": "3.5.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -692,8 +693,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hamburg Custom Binary Surface Model",
-        "gx:description": "texture map surface model for Hamburg, Hamburg.",
+        "schema:name": "Hamburg Custom Binary Surface Model",
+        "schema:description": "texture map surface model for Hamburg, Hamburg.",
         "gx:version": "4.8.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -819,8 +820,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Dresden ASAM OpenCRG Surface Model",
-        "gx:description": "friction map surface model for Dresden, Saxony.",
+        "schema:name": "Dresden ASAM OpenCRG Surface Model",
+        "schema:description": "friction map surface model for Dresden, Saxony.",
         "gx:version": "5.1.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -937,8 +938,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Detroit HDF5 Surface Model",
-        "gx:description": "Height surface model for Detroit, Michigan.",
+        "schema:name": "Detroit HDF5 Surface Model",
+        "schema:description": "Height surface model for Detroit, Michigan.",
         "gx:version": "1.4.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -1049,8 +1050,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Shanghai Custom Binary Surface Model",
-        "gx:description": "roughness profile surface model for Shanghai, Shanghai.",
+        "schema:name": "Shanghai Custom Binary Surface Model",
+        "schema:description": "roughness profile surface model for Shanghai, Shanghai.",
         "gx:version": "2.7.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -1167,8 +1168,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Paris ASAM OpenCRG Surface Model",
-        "gx:description": "texture map surface model for Paris, Ile-de-France.",
+        "schema:name": "Paris ASAM OpenCRG Surface Model",
+        "schema:description": "texture map surface model for Paris, Ile-de-France.",
         "gx:version": "3.0.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -1274,8 +1275,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Seoul HDF5 Surface Model",
-        "gx:description": "friction map surface model for Seoul, Seoul.",
+        "schema:name": "Seoul HDF5 Surface Model",
+        "schema:description": "friction map surface model for Seoul, Seoul.",
         "gx:version": "4.3.3",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -1392,8 +1393,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Munich Custom Binary Surface Model",
-        "gx:description": "Height surface model for Munich, Bavaria.",
+        "schema:name": "Munich Custom Binary Surface Model",
+        "schema:description": "Height surface model for Munich, Bavaria.",
         "gx:version": "5.6.0",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -1513,8 +1514,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Frankfurt ASAM OpenCRG Surface Model",
-        "gx:description": "roughness profile surface model for Frankfurt, Hesse.",
+        "schema:name": "Frankfurt ASAM OpenCRG Surface Model",
+        "schema:description": "roughness profile surface model for Frankfurt, Hesse.",
         "gx:version": "1.9.7",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -1634,8 +1635,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Hanover HDF5 Surface Model",
-        "gx:description": "texture map surface model for Hanover, Lower Saxony.",
+        "schema:name": "Hanover HDF5 Surface Model",
+        "schema:description": "texture map surface model for Hanover, Lower Saxony.",
         "gx:version": "2.2.4",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -1754,8 +1755,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Austin Custom Binary Surface Model",
-        "gx:description": "friction map surface model for Austin, Texas.",
+        "schema:name": "Austin Custom Binary Surface Model",
+        "schema:description": "friction map surface model for Austin, Texas.",
         "gx:version": "3.5.1",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -1869,8 +1870,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Vienna ASAM OpenCRG Surface Model",
-        "gx:description": "Height surface model for Vienna, Vienna.",
+        "schema:name": "Vienna ASAM OpenCRG Surface Model",
+        "schema:description": "Height surface model for Vienna, Vienna.",
         "gx:version": "4.8.8",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -1989,8 +1990,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "London HDF5 Surface Model",
-        "gx:description": "roughness profile surface model for London, Greater London.",
+        "schema:name": "London HDF5 Surface Model",
+        "schema:description": "roughness profile surface model for London, Greater London.",
         "gx:version": "5.1.5",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -2110,8 +2111,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Stuttgart Custom Binary Surface Model",
-        "gx:description": "texture map surface model for Stuttgart, Baden-Wuerttemberg.",
+        "schema:name": "Stuttgart Custom Binary Surface Model",
+        "schema:description": "texture map surface model for Stuttgart, Baden-Wuerttemberg.",
         "gx:version": "1.4.2",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
@@ -2223,8 +2224,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Berlin ASAM OpenCRG Surface Model",
-        "gx:description": "friction map surface model for Berlin, Berlin.",
+        "schema:name": "Berlin ASAM OpenCRG Surface Model",
+        "schema:description": "friction map surface model for Berlin, Berlin.",
         "gx:version": "2.7.9",
         "gx:license": "proprietary",
         "gx:containsPII": false
@@ -2335,8 +2336,8 @@
       },
       "surface-model:hasResourceDescription": {
         "@type": "envited-x:ResourceDescription",
-        "gx:name": "Cologne HDF5 Surface Model",
-        "gx:description": "Height surface model for Cologne, North Rhine-Westphalia.",
+        "schema:name": "Cologne HDF5 Surface Model",
+        "schema:description": "Height surface model for Cologne, North Rhine-Westphalia.",
         "gx:version": "3.0.6",
         "gx:license": "CC-BY-4.0",
         "gx:containsPII": false
