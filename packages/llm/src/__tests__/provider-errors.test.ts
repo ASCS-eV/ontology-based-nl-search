@@ -138,12 +138,11 @@ describe('toProviderAgentError', () => {
     expect(translated?.message).toContain('Run `claude` to re-authenticate')
   })
 
-  it('points each remaining provider at its own credential', () => {
+  it('points key-based providers at their own credential', () => {
     const cases = [
       { provider: 'openai' as const, expected: 'OPENAI_API_KEY' },
       { provider: 'anthropic' as const, expected: 'ANTHROPIC_API_KEY' },
       { provider: 'vibe-cli' as const, expected: 'vibe --setup' },
-      { provider: 'copilot' as const, expected: 'GITHUB_TOKEN' },
     ]
     for (const { provider, expected } of cases) {
       const translated = toProviderAgentError(apiCallError('unauthorized', 401), {
@@ -152,6 +151,16 @@ describe('toProviderAgentError', () => {
       })
       expect(translated?.message).toContain(expected)
     }
+  })
+
+  it('offers the Copilot CLI login before the optional overriding token', () => {
+    const translated = toProviderAgentError(apiCallError('unauthorized', 401), {
+      provider: 'copilot',
+      model: 'some-model',
+    })
+    expect(translated?.message).toContain('copilot login')
+    expect(translated?.message).toContain('optional GITHUB_TOKEN')
+    expect(translated?.message).toContain('takes precedence')
   })
 
   it('never translates an abort — a cancelled request is not a fault', () => {

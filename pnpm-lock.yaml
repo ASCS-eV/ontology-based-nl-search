@@ -790,7 +790,7 @@ importers:
         specifier: ^4.0.24
         version: 4.0.24(zod@4.4.3)
       '@github/copilot-sdk':
-        specifier: ^1.0.14
+        specifier: 1.0.14
         version: 1.0.14
       '@ontology-search/api-types':
         specifier: workspace:*
