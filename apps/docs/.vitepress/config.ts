@@ -62,6 +62,11 @@ export default withMermaid(
       /^\/PORT_CONFIGURATION/,
     ],
     vite: {
+      // The plugin injects Mermaid after the initial dependency scan. Prebundle
+      // it explicitly so its CommonJS dependencies are converted for the browser.
+      optimizeDeps: {
+        include: ['mermaid'],
+      },
       resolve: vscodeJsonrpcDir
         ? {
             alias: [
@@ -83,8 +88,10 @@ export default withMermaid(
         {
           text: 'Slides',
           items: [
-            { text: 'Architecture Overview', link: '/slides/' },
-            { text: 'Scenario Authoring', link: '/slides/authoring' },
+            { text: 'Conference Talk', link: '/slides/' },
+            { text: 'Speaker Guide + Demo', link: '/slides/conference' },
+            { text: 'Research Brief', link: '/slides/research' },
+            { text: 'Authoring Technical Appendix', link: '/slides/authoring' },
           ],
         },
         {
@@ -117,8 +124,10 @@ export default withMermaid(
         {
           text: 'Presentation',
           items: [
-            { text: 'Architecture Overview', link: '/slides/' },
-            { text: 'Scenario Authoring', link: '/slides/authoring' },
+            { text: 'Conference Talk', link: '/slides/' },
+            { text: 'Speaker Guide + Demo', link: '/slides/conference' },
+            { text: 'Research Brief', link: '/slides/research' },
+            { text: 'Authoring Technical Appendix', link: '/slides/authoring' },
           ],
         },
         {

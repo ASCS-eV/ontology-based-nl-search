@@ -1,381 +1,172 @@
 ---
 layout: page
-pageClass: slide-page
-title: Presentation
+pageClass: slide-page conference-page
+title: Is this the scenario I meant?
 ---
 
-<SlideProvider :total-slides="12">
+<script setup>
+import RoadSketch from '../.vitepress/theme/components/RoadSketch.vue'
+import '../.vitepress/theme/conference.css'
+</script>
+
+<SlideProvider :total-slides="8">
 <SlideDeck>
 
 <Slide :index="0" variant="title">
-  <div class="badge">Architecture Overview</div>
-  <p class="eyebrow">A trustworthy natural-language interface over any ontology-described data space</p>
-  <h1>Ontology-Based<br /><span class="accent">Natural Language Search</span></h1>
-  <p class="lead">Plain-language questions become deterministic, ontology-compliant SPARQL — and the only thing that has to change to support a new domain is the ontology, not the code.</p>
-  <div class="metrics-grid">
-    <div class="metric">
-      <strong>0</strong>
-      <span>lines of LLM-written SPARQL — the model fills typed slots, a compiler emits the query</span>
-    </div>
-    <div class="metric">
-      <strong>0</strong>
-      <span>hardcoded ontology terms — domains, predicates, or class IRIs — in pipeline code</span>
-    </div>
-    <div class="metric">
-      <strong>1</strong>
-      <span>source of truth — the OWL + SHACL artifacts drive every layer</span>
-    </div>
-  </div>
-  <p class="subtitle">Press → or Space to navigate · 1) purpose · 2) architecture &amp; standards · 3) the ontology-artifact core</p>
+  <p class="eyebrow">ENVITED-X · Search + scenario authoring</p>
+  <h1>Is this the <span class="accent">scenario I meant?</span></h1>
+  <RoadSketch />
+  <p class="takeaway">A highway cut-in. An engineering decision.</p>
 </Slide>
 
 <Slide :index="1">
-  <p class="eyebrow">Purpose · 30 seconds</p>
-  <h2>Make rich, governed metadata reachable in plain language — without sacrificing trust.</h2>
-  <p class="lead">Data spaces like ENVITED-X already publish deeply structured asset metadata as ontologies (OWL) and constraints (SHACL). That richness is wasted if reaching it requires SPARQL, prefixes, and schema expertise.</p>
-  <div class="story-grid">
-    <div class="story-card">
-      <h3>The asset</h3>
-      <p>Governed, standards-based metadata: classes, shapes, allowed values, cross-references — already curated for interoperability.</p>
-    </div>
-    <div class="story-card">
-      <h3>The barrier</h3>
-      <p>Users think in "German motorways with 3 lanes", not in <code>sh:targetClass</code>, prefixes, and hand-assembled graph patterns.</p>
-    </div>
-    <div class="story-card">
-      <h3>The non-negotiable</h3>
-      <p>Search must stay explainable, safe, and reproducible — convenience cannot come at the cost of correctness.</p>
-    </div>
+  <p class="eyebrow">The prototype boundary</p>
+  <h2>Two capabilities.<br />One engineering task.</h2>
+  <div class="demo-routes" aria-label="Two independent paths, not a connected asset handoff">
+    <div class="demo-route"><strong>Search</strong><small>Ask about existing assets</small><small>Inspect matching metadata</small></div>
+    <div class="demo-route"><strong>Author</strong><small>Describe a new scenario</small><small>Uses its own road catalog</small></div>
   </div>
+  <p class="takeaway">Separate paths today; no selected-road handoff.</p>
 </Slide>
 
 <Slide :index="2">
-  <p class="eyebrow">Why it's innovative</p>
-  <h2>Flexibility in front, determinism underneath — and the ontology drives both.</h2>
-  <p class="lead">The usual choice is "LLM writes the query (flexible but unsafe)" or "rigid forms (safe but rigid)". This system refuses the trade-off with two ideas working together.</p>
-  <div class="compare-grid">
-    <div class="compare-card compare-card--good">
-      <span class="compare-label">Idea 1 · the boundary</span>
-      <h3>The LLM never writes SPARQL</h3>
-      <ul class="tight-list">
-        <li>It fills one typed <code>submit_slots</code> tool call — a structured intermediate representation.</li>
-        <li>A deterministic compiler turns those slots into SPARQL: the same slots always produce the identical query.</li>
-        <li>No prompt injection can produce an arbitrary query — there is no path from text to the store.</li>
-      </ul>
-    </div>
-    <div class="compare-card compare-card--impact">
-      <span class="compare-label">Idea 2 · the source of truth</span>
-      <h3>Everything is derived from the ontology</h3>
-      <ul class="tight-list">
-        <li>Prompt vocabulary, slot values, predicate paths, cross-reference joins, validation — all read from OWL + SHACL at runtime.</li>
-        <li>No domain knowledge is baked into the query path — domains, predicates, and class IRIs are discovered, not hardcoded.</li>
-        <li>Swap the ontology and the query engine adapts with no code change — only UI branding stays domain-specific.</li>
-      </ul>
-    </div>
+  <p class="eyebrow">The design principle</p>
+  <h2>Make the interpretation inspectable.</h2>
+  <div class="pipeline" aria-label="Schematic: German highways with three lanes becomes explicit criteria before compilation">
+    <div><strong>Your words</strong><small>“German highways with 3 lanes”</small></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="intent-box"><strong>Explicit criteria</strong><small>Supported filters + gaps</small></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div><strong>Compile</strong><small>From checked structure</small></div>
   </div>
-  <div class="callout">The result: an AI search experience with the safety profile of a compiler and the reach of the ontology behind it.</div>
+  <p class="takeaway">Inspect the interpretation before trusting the result.</p>
+  <p class="source-line">Schematic · the model interprets; application code compiles.</p>
 </Slide>
 
-<Slide :index="3" variant="diagram">
-  <p class="eyebrow">Architecture · the module graph</p>
-  <h2>A strictly layered monorepo — small packages, one-way dependencies, no cycles.</h2>
-
-```mermaid
-flowchart TD
-    subgraph L0["Leaf contracts (rank 0)"]
-      AT["api-types<br/>wire JSON shapes"]
-      SL["slots<br/>the search IR + Zod schema"]
-    end
-    CORE["core<br/>config · logging · RDF prefixes · SSE · LRU"]
-    subgraph L2["Capability layer (rank 2)"]
-      SP["sparql<br/>Oxigraph + remote + policy gate"]
-      ONT["ontology<br/>SHACL discovery + validation"]
-      GIR["graphql-ir<br/>slot ↔ GraphQL codec"]
-    end
-    SEARCH["search<br/>compiler · discovery · lineage · service"]
-    LLM["llm<br/>SHACL prompt · slot validation · agents"]
-    APPS["apps · api (Hono SSE) + web (React)"]
-
-    CORE --> SP & ONT & GIR
-    SL --> GIR
-    AT & SL & SP & ONT & GIR --> SEARCH
-    SEARCH --> LLM
-    LLM --> APPS
-    AT --> APPS
-
-    classDef leaf fill:#e0e7ff,stroke:#6366f1,color:#0f172a;
-    classDef core fill:#ccfbf1,stroke:#0d9488,color:#0f172a;
-    classDef cap fill:#dcfce7,stroke:#22c55e,color:#0f172a;
-    classDef hub fill:#fef3c7,stroke:#f59e0b,color:#0f172a;
-    classDef app fill:#dbeafe,stroke:#2563eb,color:#0f172a;
-    class AT,SL leaf;
-    class CORE core;
-    class SP,ONT,GIR cap;
-    class SEARCH,LLM hub;
-    class APPS app;
-```
-
-  <div class="callout">The arrows show what each package provides to the layer below; an actual dependency runs the other way (e.g. sparql depends on core). A CI layer-gate rejects any dependency that isn't strictly downward by layer rank, plus any cycle — so the graph can never grow a cycle. Each box is an independently publishable, separately tested package.</div>
+<Slide :index="3">
+  <p class="eyebrow">01 / Find</p>
+  <h2>Why did this asset match?</h2>
+  <div class="search-proof" aria-label="Excerpt from recorded run: only the country criterion survived validation">
+    <div><strong>I asked</strong><small>Germany</small><small>Highway · 3 lanes</small></div>
+    <div><strong>It retained</strong><small>Country = DE</small><small>No lane-count filter</small></div>
+    <div><strong>I received</strong><small>81 metadata matches</small><small>Not 81 three-lane roads</small></div>
+  </div>
+  <p class="takeaway">A metadata match is a candidate—not a certified map.</p>
+  <p class="source-line">Excerpt from recorded run · 24 Sep 2026 · <a href="./rehearsal" target="_blank" rel="noopener noreferrer">Evidence + limits</a></p>
 </Slide>
 
-<Slide :index="4" variant="diagram">
-  <p class="eyebrow">Architecture · the request pipeline</p>
-  <h2>One query, end to end — and where each module does its job.</h2>
-
-```mermaid
-flowchart LR
-    Q(["🗣️ query"]) --> PB["llm: prompt-builder<br/>embeds raw SHACL"]
-    PB --> AG["llm: agent<br/>submit_slots only"]
-    AG --> SV["llm: slot-validator<br/>fuzzy + SHACL gate"]
-    SV --> CO["search: compiler<br/>SHACL-discovered paths"]
-    CO --> PG["sparql: policy gate<br/>sandbox boundary"]
-    PG --> OX[("Oxigraph<br/>WASM, off-thread")]
-    OX --> SVC["search: service<br/>+ traceability"]
-    SVC --> SSE(["📊 SSE stream<br/>interpretation · gaps · SPARQL · results (+ per-row traceability)"])
-
-    DISC[("ontology + search<br/>warmup artifacts")] -.->|raw SHACL| PB
-    DISC -.-> SV
-    DISC -.-> CO
-
-    classDef llm fill:#6366f1,stroke:#4f46e5,color:#ffffff;
-    classDef search fill:#dcfce7,stroke:#22c55e,color:#0f172a;
-    classDef guard fill:#fef3c7,stroke:#f59e0b,color:#0f172a;
-    classDef store fill:#ccfbf1,stroke:#0d9488,color:#0f172a;
-    classDef io fill:#dbeafe,stroke:#2563eb,color:#0f172a;
-    class PB,AG,SV llm;
-    class CO,SVC search;
-    class PG guard;
-    class OX,DISC store;
-    class Q,SSE io;
-```
-
-  <div class="signal-grid">
-    <div class="signal-card">
-      <h3>Two-stage validation</h3>
-      <p>The validator fuzzy-corrects values against <code>sh:in</code>, then a SHACL gate drops anything that violates a real constraint — surfaced to the user as gaps.</p>
-    </div>
-    <div class="signal-card">
-      <h3>Deterministic compile</h3>
-      <p>The compiler walks SHACL-discovered predicate paths and reference chains — no fixed predicate names — and emits one reproducible query.</p>
-    </div>
-    <div class="signal-card">
-      <h3>Streamed transparency</h3>
-      <p>Most phases stream as SSE events: users see the interpretation, gaps, and the exact SPARQL before results, with per-row lineage carried alongside the results.</p>
-    </div>
+<Slide :index="4">
+  <p class="eyebrow">02 / Create</p>
+  <h2>What did the model decide?</h2>
+  <p class="takeaway">“A cut-in on a three-lane highway.”</p>
+  <div class="demo-routes" aria-label="Excerpt from recorded run: requested three lanes versus two driving lanes per direction on the bound road">
+    <div class="demo-route"><strong>I requested</strong><small>Cut-in maneuver</small><small>Three-lane highway</small></div>
+    <div class="demo-route"><strong>The bound road</strong><small>2 driving lanes / direction</small><small>Decision: reject this road</small></div>
   </div>
+  <p class="source-line">Excerpt from recorded run · <a href="./rehearsal" target="_blank" rel="noopener noreferrer">Recorded evidence</a> · OpenSCENARIO XSD 1.3.0.</p>
 </Slide>
 
 <Slide :index="5">
-  <p class="eyebrow">Architecture · the modules</p>
-  <h2>Each package owns one responsibility, with a contract its tests pin.</h2>
-  <div class="stack-grid">
-    <div class="stack-card">
-      <span>slots · rank 0</span>
-      <strong>The search IR</strong>
-      <p><code>SearchSlots</code> + the Zod wire schema. The system's central contract; held to JSON Schema 2020-12.</p>
-    </div>
-    <div class="stack-card">
-      <span>api-types · rank 0</span>
-      <strong>Wire shapes</strong>
-      <p>Zero-dependency, browser-safe HTTP/SSE types shared by server and client — drift is impossible by construction.</p>
-    </div>
-    <div class="stack-card">
-      <span>core · rank 1</span>
-      <strong>Foundations</strong>
-      <p>Zod config, structured logging, typed errors, the canonical RDF prefix map, SSE framing, a bounded LRU.</p>
-    </div>
-    <div class="stack-card">
-      <span>sparql · rank 2</span>
-      <strong>Execution + sandbox</strong>
-      <p>Oxigraph (WASM, in a worker thread) or a remote SPARQL 1.1 store (Apache Jena Fuseki in production) behind one cache — and the policy gate, the system's security boundary.</p>
-    </div>
-    <div class="stack-card">
-      <span>ontology · rank 2</span>
-      <strong>Discovery + validation</strong>
-      <p>Domain registry from <code>sh:targetClass</code> + <code>rdfs:subClassOf</code>; SHACL Core validation; source resolution.</p>
-    </div>
-    <div class="stack-card">
-      <span>graphql-ir · rank 2</span>
-      <strong>Slot ↔ GraphQL codec</strong>
-      <p>Serializes slots to a spec-valid GraphQL query and parses it back — the editable surface the web app mirrors.</p>
-    </div>
-    <div class="stack-card">
-      <span>search · rank 3</span>
-      <strong>Compiler + pipeline</strong>
-      <p>Deterministic SPARQL compilation, schema discovery, lineage, and the orchestration service.</p>
-    </div>
-    <div class="stack-card">
-      <span>llm · rank 4</span>
-      <strong>Interpretation</strong>
-      <p>SHACL-grounded prompt, fuzzy + SHACL slot validation, and a multi-provider agent restricted to one tool.</p>
-    </div>
+  <p class="eyebrow">03 / Inspect</p>
+  <h2>Valid structure is not verified intent.</h2>
+  <div class="evidence-steps check-grid" aria-label="Four separate observations, not a ladder to safety assurance">
+    <div><strong>Reference integrity</strong><span>Semantic gate: pass</span></div>
+    <div><strong>Document structure</strong><span>Structural gate: pass</span></div>
+    <div><strong>Road geometry</strong><span>Pass; 2 rules skipped</span></div>
+    <div><strong>Playback</strong><span>Playing; XML exported</span></div>
   </div>
+  <p class="takeaway">Valid file. Wrong road for this request.</p>
+  <p class="source-line">Excerpt from recorded run · Skipped ≠ checked. Valid ≠ safe. <a href="./rehearsal" target="_blank" rel="noopener noreferrer">Check scope</a></p>
 </Slide>
 
 <Slide :index="6">
-  <p class="eyebrow">Standards · not invention</p>
-  <h2>Every boundary speaks a standard.</h2>
-  <p class="lead">The system is glue between well-specified contracts. Each interface cites its normative spec, audited in <code>apps/docs/standards-audit.md</code>.</p>
-  <div class="card-grid">
-    <div class="card">
-      <div class="card-icon">◆</div>
-      <h3>The graph</h3>
-      <p><strong>RDF 1.1 · OWL · SHACL</strong> describe and constrain the data; <strong>SKOS</strong> gives concept hierarchies for query expansion.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">◆</div>
-      <h3>The query</h3>
-      <p><strong>SPARQL 1.1</strong> is the only thing that touches the store — compiled, escaped to grammar, and policy-checked.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">◆</div>
-      <h3>The contracts</h3>
-      <p><strong>JSON Schema 2020-12</strong> grounds the slot tool call; <strong>GraphQL</strong> is the editable query surface; <strong>RFC 8259 / 9110 / SSE</strong> carry it over the wire.</p>
-    </div>
+  <p class="eyebrow">Contribution + evaluation</p>
+  <h2>What this prototype demonstrates—and what remains open.</h2>
+  <div class="demo-routes" aria-label="Implemented capabilities versus questions requiring evaluation">
+    <div class="demo-route"><strong>Implemented</strong><small>Inspectable search</small><small>Scene → checked file</small></div>
+    <div class="demo-route"><strong>Still to evaluate</strong><small>Intent agreement</small><small>Engineer task outcomes</small></div>
   </div>
-  <div class="mono-block">
-    <span class="mono-label">Why it matters</span><br />
-    Standards-pinned boundaries mean each layer is independently testable, swappable, and partner-consumable — and "is this correct?" reduces to "does it conform to the spec?".
-  </div>
+  <p class="source-line">Research-informed design: ClinSKOS-ICU · Talk2Traffic · TrafficAlign. <a href="./research" target="_blank" rel="noopener noreferrer">Research brief</a></p>
 </Slide>
 
-<Slide :index="7">
-  <p class="eyebrow">Open source · leverage, don't reinvent</p>
-  <h2>Best-in-class libraries do the heavy lifting.</h2>
-  <div class="stack-grid">
-    <div class="stack-card">
-      <span>SPARQL engine</span>
-      <strong>Oxigraph (WASM)</strong>
-      <p>In-process SPARQL 1.1, run off the main thread in a worker; a remote Apache Jena Fuseki store swaps in for production.</p>
-    </div>
-    <div class="stack-card">
-      <span>SHACL + RDF</span>
-      <strong>rdf-validate-shacl · N3 · rdfjs</strong>
-      <p>Zazuko's validator, the N3 Turtle parser, and the RDF/JS dataset model parse and check the shapes graph.</p>
-    </div>
-    <div class="stack-card">
-      <span>Query tooling</span>
-      <strong>sparqljs · graphql-js 17 · @zazuko/prefixes</strong>
-      <p>SPARQL parsing/validation, the GraphQL codec, and the canonical prefix map — single sources of truth.</p>
-    </div>
-    <div class="stack-card">
-      <span>AI</span>
-      <strong>Vercel AI SDK + GitHub Copilot SDK</strong>
-      <p>Five providers (OpenAI, Anthropic, claude-cli, vibe-cli/Mistral, Ollama) plus Copilot — one validation pipeline behind them all.</p>
-    </div>
-    <div class="stack-card">
-      <span>App platform</span>
-      <strong>Hono · Vite · React 19 · TanStack Router</strong>
-      <p>An SSE-native API and a streaming React UI, built and orchestrated by pnpm workspaces + Turborepo.</p>
-    </div>
-    <div class="stack-card">
-      <span>Deliberate keeps</span>
-      <strong>SSE parser · LRU · Levenshtein</strong>
-      <p>Three small bespoke utilities, each justified in an ADR — kept because the library alternatives are not drop-in or add no measurable benefit.</p>
-    </div>
+<Slide :index="7" variant="cta">
+  <p class="eyebrow">Live demonstration · 10 minutes</p>
+  <h2>Judge the demo on three questions.</h2>
+  <div class="evidence-steps" aria-label="Three questions for judging the demonstration">
+    <div><strong>Interpretation</strong><span>What was understood?</span></div>
+    <div><strong>Checks</strong><span>What was established?</span></div>
+    <div><strong>Decision</strong><span>What must I review?</span></div>
   </div>
-</Slide>
-
-<Slide :index="8">
-  <p class="eyebrow">The security model</p>
-  <h2>Two gates make the AI path safe by construction.</h2>
-  <div class="panel-grid">
-    <div class="panel panel--quote">
-      <h3>Gate 1 · the slot IR</h3>
-      <p class="query-quote">text → typed slots → SPARQL</p>
-      <ul class="tight-list">
-        <li>The model's only output channel is the <code>submit_slots</code> tool — prose is ignored.</li>
-        <li>Slots are validated and corrected against the live SHACL vocabulary before they reach the compiler.</li>
-        <li>The compiler is the sole, deterministic SPARQL author.</li>
-      </ul>
-    </div>
-    <div class="panel">
-      <h3>Gate 2 · the policy sandbox</h3>
-      <ul class="tight-list">
-        <li>Only <code>SELECT</code> runs; writes, <code>SERVICE</code>, and graph redirection are rejected.</li>
-        <li>The gate's prefix allowlist shares its sources with what the compiler emits — standard prefixes plus the same ontology namespaces from the domain registry — so the two cannot drift.</li>
-        <li>A <code>LIMIT</code> ceiling is enforced; literals are escaped to the SPARQL 1.1 grammar (fuzz-tested).</li>
-      </ul>
-    </div>
-  </div>
-  <div class="callout">Neither gate trusts the model. Prompt injection can change <em>what</em> is asked, never <em>what query runs</em>.</div>
-</Slide>
-
-<Slide :index="9" variant="diagram">
-  <p class="eyebrow">The beautiful core</p>
-  <h2>The ontology artifacts are the program.</h2>
-  <p class="lead">One set of OWL + SHACL files, discovered once at warmup, becomes every moving part below. Nothing about a specific ontology is written in code.</p>
-
-```mermaid
-flowchart LR
-    ART[("OWL + SHACL<br/>artifacts")]:::art
-    ART --> D1["domain registry<br/>targetClass · subClassOf"]
-    ART --> D2["property paths<br/>asset → leaf chains"]
-    ART --> D3["reference chains<br/>cross-asset joins"]
-    ART --> D4["vocabulary<br/>sh:in · ranges"]
-    ART --> D5["SKOS concepts<br/>query expansion"]
-
-    ART -->|raw SHACL| P["LLM prompt"]
-    D4 --> V["slot validator"]
-    D5 --> V
-    D1 --> C["SPARQL compiler"]
-    D2 --> C
-    D3 --> C
-    D4 --> G["GraphQL schema"]
-
-    classDef art fill:#f59e0b,stroke:#b45309,color:#0f172a;
-    classDef d fill:#dcfce7,stroke:#22c55e,color:#0f172a;
-    classDef use fill:#dbeafe,stroke:#2563eb,color:#0f172a;
-    class D1,D2,D3,D4,D5 d;
-    class P,V,C,G use;
-```
-
-  <div class="mono-block">
-    <span class="mono-label">Discovery, not configuration</span><br />
-    Predicate paths and reference signatures <code>(sourceClass, path, targetClass)</code> are found by walking the shapes graph and typed instances at warmup — so the meta-model is read, never assumed.
-  </div>
-</Slide>
-
-<Slide :index="10">
-  <p class="eyebrow">What this enables · long run</p>
-  <h2>Generality is the product.</h2>
-  <p class="lead">Because the artifacts are the source of truth, the same engine generalizes far beyond ENVITED-X — and the model it discovers can itself become a published asset.</p>
-  <div class="card-grid">
-    <div class="card">
-      <div class="card-icon">♻️</div>
-      <h3>Any data space, for free</h3>
-      <p>Point it at a retail, biomedical, or industrial ontology and "waterproof boots under €100" works with no code change. The data space's governance artifacts <em>become</em> its search interface.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">📦</div>
-      <h3>The discovered model as an artifact</h3>
-      <p>The search surface the system derives — domains, paths, vocabulary, and an in-memory GraphQL schema — could be published and versioned as a cacheable, partner-consumable contract that warm-starts the engine (planned; today the model is rediscovered at each boot).</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">🤝</div>
-      <h3>Standard partner contracts</h3>
-      <p>Because the query surface is expressed as GraphQL over a standard SPARQL 1.1 store (e.g. Apache Jena Fuseki), an executable GraphQL endpoint is a natural next step — partners would integrate through interfaces they already know, with no bespoke API to learn.</p>
-    </div>
-  </div>
-  <div class="callout">Today it answers questions about simulation assets. The architecture's real claim is that <strong>publishing a good ontology is enough to get a trustworthy natural-language interface over your data.</strong></div>
-</Slide>
-
-<Slide :index="11" variant="cta">
-  <div class="badge">Live Demo</div>
-  <p class="eyebrow">The whole architecture in one sentence</p>
-  <h2>The LLM interprets; the ontology decides; the compiler executes.</h2>
-  <p class="lead">Ask about HD maps, scenarios, or simulation assets in plain language — then inspect the interpretation, the gaps, the compiled SPARQL, and the per-row lineage in the live app.</p>
-  <div class="cta-buttons">
-    <a
-      href="https://github.com/ASCS-eV/ontology-based-nl-search#quick-start"
-      class="btn-primary"
-      >Run the search app →</a
-    >
-    <a href="/docs/architecture" class="btn-secondary">Read the architecture →</a>
-  </div>
-  <p class="subtitle">Try: “motorway HD maps in Germany” · “OpenDRIVE maps with right-hand traffic” · “Autobahnen mit Überholmanöver”</p>
+  <p class="takeaway">Search and authoring: two separate app views.</p>
+  <p class="source-line"><a href="./conference" target="_blank" rel="noopener noreferrer">Demo runbook + rehearsal guide</a></p>
 </Slide>
 
 </SlideDeck>
+
+<SlideNotes :index="0" title="Is this the scenario I meant?" timing="0:00–1:30 · 90 seconds">
+  <p>Imagine asking an assistant for a highway cut-in scenario. A vehicle changes into the lane ahead of the ego vehicle. A file appears, and perhaps a preview runs. We have produced something. But have we produced the test we actually meant?</p>
+  <p>The drawing is a schematic, not a generated result. It leaves important questions unanswered: which road, which actors, and which initial conditions? A short request cannot settle every engineering choice. The interesting question is whether we can see the choices that were made before deciding to use the result.</p>
+  <p>This prototype explores two places where that matters: discovering simulation assets and authoring an OpenSCENARIO scenario. In both, language becomes an explicit representation that the application can process and the engineer can inspect.</p>
+  <p>For fifteen minutes, I will explain that boundary using this cut-in task. Then we will spend ten minutes in the application. Keep one question in mind: is this the scenario I meant?</p>
+  <p>[Cue: point to the two vehicles; identify the drawing as a schematic. Transition: “First, here is exactly what the prototype connects—and what it does not.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="1" title="Two capabilities. One engineering task." timing="1:30–3:30 · 2 minutes">
+  <p>An engineer preparing this test has two different questions. What suitable assets already exist? And how can I describe the maneuver I want to create? The prototype supports both questions, through separate application views.</p>
+  <p>On the left is search. It interprets a request against the vocabulary used to describe simulation assets. Our reference deployment uses ENVITED-X metadata. I can ask for German highways with three lanes, then inspect the criteria and matching metadata.</p>
+  <p>On the right is authoring. It interprets a scenario description, creates a structured scene, and produces an OpenSCENARIO document through the application’s engine. It resolves a road from its own curated catalog.</p>
+  <p>The boundary on the slide is important: selecting a search result does not carry that road into authoring. These are two capabilities for the same engineering task, not a completed end-to-end asset handoff. That missing connection is an integration opportunity, not something I will pretend the demo already does.</p>
+  <p>What connects the two today is the design question. Can an engineer compare their words with the system’s explicit interpretation, rather than judge only the final answer? That is the contribution we can inspect here.</p>
+  <p>[Cue: point to the parallel panels, then read the handoff disclosure once. Transition: “The useful boundary is between interpretation and compilation.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="2" title="Make the interpretation inspectable." timing="3:30–5:30 · 2 minutes">
+  <p>Consider the request on the left: German highways with three lanes. The center shows supported filters and gaps, not a promise that every word becomes a filter. This is a schematic of the process, not a screenshot of a model response. We compare the interpretation with the sentence before relying on the result.</p>
+  <p>The ontology supplies the vocabulary and relationships the search pipeline understands. Constraints describe what values and structures are allowed. Technically, the search path reads OWL and SHACL, and the application compiles the checked search representation into SPARQL. The model does not write that query directly.</p>
+  <p>Authoring applies a related pattern to actors and actions. The model submits a scene representation; application code lowers it into the engine’s document structure. It does not ask the model to write the final XML. The two paths share a design principle, not an identical implementation.</p>
+  <p>This boundary gives us something concrete to test. Under fixed schema and compiler versions, the same validated structure produces the same compilation. Repeating the sentence can still produce a different interpretation. And a supported value can still be the wrong choice for my request.</p>
+  <p>[Cue: compare the sentence with supported filters and gaps. Transition: “Here is what happened when we actually made that request.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="3" title="Why did this asset match?" timing="5:30–7:30 · 2 minutes">
+  <p>This is an excerpt from a real recorded run, not an idealized example. I asked for German highways with three lanes. The interpretation summary described exactly that. But the validated criteria retained only country equals DE, within the map domain. Highway classification and lane count were reported as unsupported.</p>
+  <p>The application returned eighty-one metadata matches. That does not mean eighty-one three-lane highways. A displayed result had country DE, which supports the retained country filter; its returned fields did not establish the requested lane count. The count describes this dataset and this run, not a promise for the next request.</p>
+  <p>Here is the engineering decision: treat these as candidates, not as answers satisfying the entire sentence. Before choosing a road for my test, I need evidence for the criteria the query could not represent. A confident summary is not a substitute for that evidence.</p>
+  <p>This is why the explicit structure matters. It lets me compare the request, executable criteria, reported gaps, and returned metadata. The boundary remains metadata retrieval, not independent verification of road geometry or simulator suitability. And none of these search results is automatically transferred into authoring.</p>
+  <p>[Cue: contrast the request with country-only filtering and 81 matches. Transition: “The authoring run exposed an equally concrete boundary.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="4" title="What did the model decide?" timing="7:30–9:30 · 2 minutes">
+  <p>Now the real authoring request: a cut-in on a three-lane highway. The recorded output contained two vehicles and five actions. It supplied a speed of twenty-five meters per second, a two-second start time, and a three-second lane-change duration. The model also reported those unspecified values as assumptions. They are actual returned scene values, not values invented for this slide.</p>
+  <p>But the more decisive detail is the road. The scene and exported file reference german highway short. Its pinned catalog geometry has two driving lanes per direction, not the three requested. The interpretation summary nevertheless called it a three-lane highway.</p>
+  <p>My decision is to reject this road for the requested test. I can inspect the generated maneuver, but I cannot approve the artifact as satisfying that road requirement. The final scene shows the bound road; it does not establish whether the raw model selected it or catalog fallback supplied it. I will not attribute that choice without evidence.</p>
+  <p>The application generated a document with its pinned XSD 1.3.0 engine, and the preview and export worked. Those successes matter, but they do not remove the mismatch. This page supports inspection, not an in-place scene or XML correction workflow.</p>
+  <p>[Cue: compare three requested lanes with two catalog driving lanes per direction. Transition: “The validation badge was green. Here is exactly what that meant.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="5" title="Valid structure is not verified intent." timing="9:30–11:30 · 2 minutes">
+  <p>In the recorded run, semantic and structural checks passed on the first authoring attempt. The overall badge said Valid. Reference integrity concerns relationships inside the representation. Document structure concerns the emitted file and pinned engine. Neither checked that the road fulfilled the three-lane request.</p>
+  <p>The residual gate also displayed pass, but marked two simulation rules as skipped: collision at the start and reaching the target within the time horizon. Zero reported gaps is not evidence that those rules passed. The overall Valid value combines semantic and structural outcomes; residual findings are separate. Read the individual outcomes and skipped markers, not just the headline.</p>
+  <p>The esmini preview entered playing state, and the two captured frames showed moving vehicles. The downloaded XML matched the emitted response. That establishes playback and export in this environment, not universal behavior, absence of collisions, or intended scenario correctness. ASAM also cautions that results can differ across simulators.</p>
+  <p>These observations are separate pieces of evidence, not a ladder to safety. The road mismatch remains. My decision is therefore unchanged: do not accept this as the requested three-lane test. Inspection has made the reason concrete and auditable, even though the file is valid.</p>
+  <p>[Cue: point to the four equal-level checks, then the human decision below. Transition: “What can we claim from this prototype, and what still needs an experiment?”]</p>
+</SlideNotes>
+
+<SlideNotes :index="6" title="What this prototype demonstrates—and what remains open." timing="11:30–13:30 · 2 minutes">
+  <p>What does this work add? It implements two concrete applications of the same controlled-generation pattern for simulation engineers: ontology-driven asset search, and scene-based OpenSCENARIO authoring with visible checks. The interfaces expose representations and artifacts. Whether that makes engineering work faster or more accurate is a separate evaluation question.</p>
+  <p>Recent research supports the design choices. ClinSKOS-ICU, in the 2026 KG-LLM workshop proceedings, studies ontology-grounded query generation in a different domain. Talk2Traffic, at the 2025 CVPR workshops, uses structured representations and interactive feedback for scenario generation. TrafficAlign, at CVPR 2026, studies traffic-scenario generation with validation and model alignment.</p>
+  <p>Those are precedents, not results we inherit. Talk2Traffic’s interactive editing is not a feature claim about this page, and TrafficAlign’s evaluation is not an evaluation of our prototype. The research brief gives the full sources and differences.</p>
+  <p>The next experiment should use fixed schema and catalog versions and expert-defined requests. Measure agreement with intended meaning, unsupported-request handling, execution in a specified simulator, latency, and engineer task outcomes. Compare against the existing workflow. Today’s demonstration is a worked example of what can be inspected, not a claim that those measurements have already been completed.</p>
+  <p>[Cue: distinguish implemented capabilities from evaluation questions; give only one sentence per research strand. Transition: “Here are the three questions to judge the demonstration by.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="7" title="Judge the demo on three questions." timing="13:30–15:00 · 90 seconds">
+  <p>Keep the cut-in task in mind as we open the application. First, we will search for assets and compare one result with the interpreted request. Then we will switch to the independent authoring view. The selected search road is not passed across; authoring uses its own catalog.</p>
+  <p>Judge what follows by three questions. What was understood? What did the checks actually establish? And what remains an engineering decision? In authoring, I want to connect one visible detail in the output to that final question, then inspect the gates, preview, and exported file.</p>
+  <p>We have ten minutes, including room for loading and recovery. If the live path becomes unavailable, I have a genuine recording of the technical rehearsal. I will identify it as recorded, pause at the relevant evidence, and distinguish its observed values from whatever the live run returns.</p>
+  <p>The proposition is modest and testable: make the interpretation and its limits visible enough to support the next decision. Let us see what the application exposes.</p>
+  <p>[Cue: switch to the prepared search tab at 15:00. Follow the eight-minute core demo with two minutes reserved for recovery. Keep authoring and the engineering decision; omit query-editor exploration if behind.]</p>
+</SlideNotes>
+
 <SlideControls />
 </SlideProvider>

@@ -4,6 +4,7 @@ import type { Theme } from 'vitepress'
 import Slide from './components/Slide.vue'
 import SlideControls from './components/SlideControls.vue'
 import SlideDeck from './components/SlideDeck.vue'
+import SlideNotes from './components/SlideNotes.vue'
 import SlideProvider from './components/SlideProvider.vue'
 import { installMermaidFit } from './mermaid-fit'
 import { installMermaidZoom } from './mermaid-zoom'
@@ -16,6 +17,7 @@ export default {
     app.component('SlideProvider', SlideProvider)
     app.component('SlideDeck', SlideDeck)
     app.component('Slide', Slide)
+    app.component('SlideNotes', SlideNotes)
     app.component('SlideControls', SlideControls)
     installMermaidFit() // column-fit for docs-page diagrams
     installMermaidZoom() // pan/zoom canvas for slide diagrams
