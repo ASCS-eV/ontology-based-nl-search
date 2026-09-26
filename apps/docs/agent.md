@@ -75,7 +75,8 @@ adapter mirrors this by advertising exactly the same tool set via `availableTool
 
 ## Architecture: SDK Adapter Pattern
 
-Both adapters share a single policy and context layer:
+Both tool-calling adapters share a single policy and context layer (the Claude Code
+adapter reads the same policy for its model and retrieval budgets; see Provider Flexibility):
 
 ```
 ┌─────────────────────────────────┐
@@ -160,10 +161,37 @@ graph TD
 | **OpenAI**         | Vercel AI SDK             | Cloud, highest quality                                     |
 | **Anthropic**      | `@ai-sdk/anthropic`       | Direct Claude API access                                   |
 | **claude-cli**     | `@ai-sdk/anthropic` + CLI | Reuses the local `claude` CLI's OAuth session (no API key) |
+| **claude-code**    | headless `claude` binary  | Your own Claude Code and Claude subscription — Sonnet/Opus |
 | **vibe-cli**       | `@ai-sdk/openai`-compat   | Routes through the local `vibe` CLI (Mistral models)       |
 | **Ollama**         | Vercel AI SDK             | Local, privacy-first                                       |
 
 All providers share the same validation pipeline. Selected via the `AI_PROVIDER` env var; the model is selected by `AI_MODEL`.
+
+### Claude Code: your subscription, through Claude Code itself
+
+`AI_PROVIDER=claude-code` runs the user's own, unmodified `claude` binary headless for every
+request (`src/claude-code-cli.ts`). The app holds no credential: Claude Code signs itself in,
+so any model the user's Claude plan includes works — Sonnet and Opus included, which the
+Anthropic API refuses to the bare subscription token outside Claude Code. This follows
+Anthropic's rule for subscription sign-in: it is meant for Claude Code itself, and apps may not
+"collect, store, or intermediate Claude.ai credentials or session tokens"
+([legal and compliance](https://code.claude.com/docs/en/legal-and-compliance)). It is meant for
+individual local use; a shared or hosted deployment should use `AI_PROVIDER=anthropic` with an
+API key.
+
+A query is untrusted input, so the session it runs in has nothing to act with:
+`--safe-mode` (no CLAUDE.md, hooks, plugins or MCP servers), `--tools ""` (no built-in tools),
+`--strict-mcp-config`, `--permission-prompts none`, `--no-session-persistence`, in a fresh empty
+directory. The app's own credentials are withheld from the child; `ANTHROPIC_API_KEY` in
+particular would switch it from the subscription to API billing. The model's only output is
+the `--json-schema` structured output, which the adapter validates against the same
+`slotSubmissionSchema` (or `sceneSubmissionSchema`) before the shared pipeline sees it.
+
+Trade-offs: one turn and **no lookup tools** — the CLI offers extra tools only through an MCP
+server, and bridging it to the in-process store is separate work; the retrieved schema context
+in the prompt carries the query. Each request starts a process (~0.4 s with
+`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, which the runner sets) and a larger model, so a
+search takes ~10–20 s. Startup verification runs `claude auth status` — no model call.
 
 ### Tuning knobs
 

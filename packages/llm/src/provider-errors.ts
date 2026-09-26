@@ -181,6 +181,10 @@ function credentialAdvice(provider: ProviderContext['provider']): string {
         'that wording does not mean a key is misconfigured. Run `claude` to re-authenticate, ' +
         'then restart the API.'
       )
+    case 'claude-code':
+      // The app holds no credential here: Claude Code signs itself in, and a
+      // fresh process per request picks up a new login without a restart.
+      return 'Run `claude` and sign in with your Claude account (or `claude auth login`).'
     case 'vibe-cli':
       return 'Run `vibe --setup` to refresh the Mistral key in ~/.vibe/.env, then restart the API.'
     case 'copilot':

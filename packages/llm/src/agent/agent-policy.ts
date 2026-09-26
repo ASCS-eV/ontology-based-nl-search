@@ -3,7 +3,9 @@
  *
  * Both the Vercel AI SDK adapter and the Copilot SDK adapter consume this
  * policy, ensuring any change to tool choice, temperature, reasoning config,
- * or step limits propagates uniformly. Without this module the two adapters
+ * or step limits propagates uniformly. The Claude Code adapter reads the model
+ * and retrieval budgets from it too; it runs one structured-output turn, so
+ * tool choice and the step budget do not apply there. Without this module the two adapters
  * diverged: the Vercel path forced `submit_slots` via `toolChoice` while the
  * Copilot path exposed 6 tools with no equivalent constraint.
  *
