@@ -176,6 +176,15 @@ describe('toProviderAgentError', () => {
   it('leaves an unrecognized failure alone', () => {
     expect(toProviderAgentError(new Error('boom'), OLLAMA)).toBeUndefined()
   })
+
+  it('sends a rejected claude-code login to `claude`, not to a key the app never held', () => {
+    const translated = toProviderAgentError(apiCallError('unauthorized', 401), {
+      provider: 'claude-code',
+      model: 'claude-sonnet-5',
+    })
+    expect(translated?.message).toContain('claude auth login')
+    expect(translated?.message).not.toContain('API_KEY')
+  })
 })
 
 describe('withProviderErrorTranslation', () => {

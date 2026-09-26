@@ -8,17 +8,17 @@ Concretely: a user types a query like _"show me all German highways with 3 lanes
 
 ## Tech Stack
 
-| Layer                   | Technology                                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------- |
-| **Frontend**            | Vite, React 19, TanStack Router, Tailwind 4                                                 |
-| **API**                 | Hono (SSE streaming)                                                                        |
-| **LLM Integration**     | Vercel AI SDK (OpenAI, Ollama, Anthropic, Claude CLI, vibe-cli/Mistral), GitHub Copilot SDK |
-| **SPARQL Store (dev)**  | Oxigraph WASM (in-memory, zero setup)                                                       |
-| **SPARQL Store (prod)** | Apache Jena Fuseki (remote endpoint)                                                        |
-| **Ontology Source**     | ontology-management-base, pinned by version + sha256, cached in `.ontology/`                |
-| **Testing**             | Vitest (unit/integration), Playwright (E2E)                                                 |
-| **Monorepo**            | pnpm workspaces, Turborepo                                                                  |
-| **Quality**             | ESLint, Prettier, Husky, lint-staged, GitHub Actions CI                                     |
+| Layer                   | Technology                                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Frontend**            | Vite, React 19, TanStack Router, Tailwind 4                                                                       |
+| **API**                 | Hono (SSE streaming)                                                                                              |
+| **LLM Integration**     | Vercel AI SDK (OpenAI, Ollama, Anthropic, Claude CLI, vibe-cli/Mistral), GitHub Copilot SDK, headless Claude Code |
+| **SPARQL Store (dev)**  | Oxigraph WASM (in-memory, zero setup)                                                                             |
+| **SPARQL Store (prod)** | Apache Jena Fuseki (remote endpoint)                                                                              |
+| **Ontology Source**     | ontology-management-base, pinned by version + sha256, cached in `.ontology/`                                      |
+| **Testing**             | Vitest (unit/integration), Playwright (E2E)                                                                       |
+| **Monorepo**            | pnpm workspaces, Turborepo                                                                                        |
+| **Quality**             | ESLint, Prettier, Husky, lint-staged, GitHub Actions CI                                                           |
 
 ## Quick Start
 
@@ -75,6 +75,8 @@ cp .env.example .env.local
 # - "claude-cli" (uses ~/.claude/.credentials.json; run `claude` once to log in)
 # - "vibe-cli"   (Mistral; reuses the key the Mistral `vibe` CLI stored)
 # - "copilot"    (requires Copilot access; use `copilot login` or a token)
+# - "claude-code" (your own `claude`, run headless: your Claude subscription,
+#                 Sonnet/Opus included; run `claude` once to sign in)
 ```
 
 ### 3. Start development servers
@@ -220,11 +222,12 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `SPARQL_MODE`               | `memory` (Oxigraph WASM) or `remote` (Fuseki)                                                                               | `memory`                                 |
 | `SPARQL_ENDPOINT`           | Remote SPARQL endpoint URL                                                                                                  | —                                        |
-| `AI_PROVIDER`               | LLM provider: `openai`, `ollama`, `anthropic`, `claude-cli`, `vibe-cli`, `copilot`                                          | `openai` (`.env.example` ships `ollama`) |
+| `AI_PROVIDER`               | LLM provider: `openai`, `ollama`, `anthropic`, `claude-cli`, `claude-code`, `vibe-cli`, `copilot`                           | `openai` (`.env.example` ships `ollama`) |
 | `AI_MODEL`                  | Model identifier (see `.env.example` for per-provider model lists)                                                          | `qwen3:8b`                               |
 | `OPENAI_API_KEY`            | OpenAI API key (when `AI_PROVIDER=openai`)                                                                                  | —                                        |
 | `ANTHROPIC_API_KEY`         | Anthropic API key (when `AI_PROVIDER=anthropic`; `claude-cli` uses OAuth instead)                                           | —                                        |
 | `OLLAMA_BASE_URL`           | Ollama server URL                                                                                                           | `http://localhost:11434/v1`              |
+| `CLAUDE_CODE_EXECUTABLE`    | Claude Code binary the `claude-code` provider runs (a bare name is resolved on `PATH`)                                      | `claude`                                 |
 | `API_KEY`                   | Optional API key; when set, every route except `/health` must present it                                                    | — (open)                                 |
 | `API_ALLOW_UNAUTHENTICATED` | Explicit opt-out to run open in production (e.g. behind an authenticating gateway); otherwise production requires `API_KEY` | `false`                                  |
 | `CORS_ALLOWED_ORIGINS`      | Comma-separated allowed origins; wildcard `*` is rejected in production                                                     | `*`                                      |

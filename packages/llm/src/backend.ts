@@ -22,15 +22,18 @@
 import { getConfig } from '@ontology-search/core/config'
 import type { LlmStructuredResponse } from '@ontology-search/search/types'
 
+import { runClaudeCodeAgent } from './agent/claude-code-agent.js'
 import {
   getPersistentSession,
   primeCacheInBackground,
   runCopilotAgent,
 } from './agent/copilot-agent.js'
 import { runSparqlAgent } from './agent/index.js'
+import { fillSceneClaudeCode } from './authoring/fill-scene-claude-code.js'
 import { fillSceneCopilot } from './authoring/fill-scene-copilot.js'
 import { fillSceneVercel } from './authoring/fill-scene-vercel.js'
 import type { SceneSubmissionParams } from './authoring/scene-tool.js'
+import { verifyClaudeCodeLogin } from './claude-code-cli.js'
 import { verifyProviderAccess } from './provider-access.js'
 
 /** Options every slot-filling run takes, whichever backend serves it. */
@@ -80,6 +83,19 @@ const copilotBackend: AgentBackend = {
   fillScene: fillSceneCopilot,
 }
 
+/**
+ * The user's own Claude Code binary, run headless: their Claude subscription,
+ * any model their plan includes. See `claude-code-cli.ts`.
+ */
+const claudeCodeBackend: AgentBackend = {
+  id: 'claude-code',
+  // `claude auth status`: the binary runs and is signed in — no model call.
+  verify: () => verifyClaudeCodeLogin(),
+  fillSlots: (query, { domain, signal }) =>
+    runSparqlAgentCompatible(runClaudeCodeAgent, query, domain, signal),
+  fillScene: fillSceneClaudeCode,
+}
+
 /** Everything else (openai, anthropic, ollama, claude-cli, vibe-cli). */
 const vercelBackend: AgentBackend = {
   id: 'vercel',
@@ -111,10 +127,18 @@ function runSparqlAgentCompatible(
 /**
  * The backend selected by validated config.
  *
- * Synchronous and stateless — both implementations are module constants, so
+ * Synchronous and stateless — every implementation is a module constant, so
  * there is nothing to cache and no lifecycle to manage (the Copilot session is
- * owned by `copilot-agent.ts`, which already memoizes it).
+ * owned by `copilot-agent.ts`, which already memoizes it; Claude Code starts a
+ * fresh process per request).
  */
 export function getAgentBackend(): AgentBackend {
-  return getConfig().AI_PROVIDER === 'copilot' ? copilotBackend : vercelBackend
+  switch (getConfig().AI_PROVIDER) {
+    case 'copilot':
+      return copilotBackend
+    case 'claude-code':
+      return claudeCodeBackend
+    default:
+      return vercelBackend
+  }
 }
