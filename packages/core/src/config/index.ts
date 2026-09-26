@@ -129,7 +129,7 @@ const envSchema = z.object({
   AUTHORING_REASONING_EFFORT: reasoningEffortSchema.default('medium'),
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
-  /** GitHub token for the Copilot SDK. Sourced from env or `gh auth token`. */
+  /** Optional explicit Copilot SDK token; when unset, the SDK can use its CLI login. */
   GITHUB_TOKEN: z.string().optional(),
   OLLAMA_BASE_URL: z.string().url().default('http://localhost:11434/v1'),
   /**

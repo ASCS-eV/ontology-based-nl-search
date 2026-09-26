@@ -74,7 +74,7 @@ cp .env.example .env.local
 # - "anthropic"  (requires ANTHROPIC_API_KEY)
 # - "claude-cli" (uses ~/.claude/.credentials.json; run `claude` once to log in)
 # - "vibe-cli"   (Mistral; reuses the key the Mistral `vibe` CLI stored)
-# - "copilot"    (requires GitHub Copilot Enterprise)
+# - "copilot"    (requires Copilot access; use `copilot login` or a token)
 ```
 
 ### 3. Start development servers

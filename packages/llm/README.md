@@ -18,6 +18,36 @@ Turns a natural-language query into a structured `SearchSlots` IR. It builds the
 
 The `agent/` subdirectory (provider adapters, tool schema, Copilot session, submission router) is intentionally **not** exported — consumers go through the facade so internals can be refactored freely. Providers: OpenAI, Anthropic, claude-cli, vibe-cli/Mistral, Ollama (via the Vercel AI SDK) plus the GitHub Copilot SDK.
 
+## Copilot SDK compatibility
+
+The Copilot SDK is pinned to one tested version because it ships a matching
+native runtime and speaks a versioned protocol. CI runs the installed SDK and
+its bundled runtime without credentials:
+
+```bash
+pnpm --filter @ontology-search/llm test:copilot-sdk
+```
+
+That check proves the platform package loads and the SDK can start and ping its
+bundled runtime. It cannot prove Copilot authentication or model inference.
+After changing the SDK version, run the authenticated probe with an available
+Copilot model. It lists models and checks both search and authoring tool turns,
+including search's `reasoningEffort: "none"` wire value, which the SDK does not
+include in its published TypeScript union:
+
+```bash
+copilot login  # for GitHub Enterprise Cloud: copilot login --host HOSTNAME
+AI_MODEL=claude-sonnet-4.6 pnpm --filter @ontology-search/llm exec node scripts/copilot-sdk-compat.mjs --live --cli-login
+```
+
+`--cli-login` requires the SDK to report a stored user login and fails if a
+token environment variable could override it. Set `COPILOT_EXPECTED_HOST` to
+the Enterprise host URL to verify that account's host as well. Use `--live`
+alone when intentionally checking token authentication.
+Set `AUTHORING_AI_MODEL` and `AUTHORING_REASONING_EFFORT` as deployed to test
+different authoring settings. Record the OS, Node, CLI login host, model, and
+result in the SDK update PR; the credentialed probe is not run on public PRs.
+
 ## Requirements & invariants
 
 Each contract below is guarded by a named test. The security model rests on L1–L4: the LLM only ever fills a single `submit_slots` tool call, the agent reads that tool channel and never the model's prose, and every value is validated against the live SHACL graph before the deterministic compiler emits SPARQL — so no prompt injection can produce an arbitrary query.

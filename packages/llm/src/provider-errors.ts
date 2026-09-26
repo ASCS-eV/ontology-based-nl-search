@@ -118,7 +118,7 @@ function credentialAdvice(provider: ProviderContext['provider']): string {
     case 'vibe-cli':
       return 'Run `vibe --setup` to refresh the Mistral key in ~/.vibe/.env, then restart the API.'
     case 'copilot':
-      return 'Set GITHUB_TOKEN in .env.local (get one with `gh auth token`).'
+      return 'Run `copilot login` to refresh your CLI session, or check the optional GITHUB_TOKEN in .env.local. An explicit token takes precedence over the CLI login.'
     case 'ollama':
       return 'Ollama normally needs no credentials — check whether OLLAMA_BASE_URL points at a gateway that does.'
   }
