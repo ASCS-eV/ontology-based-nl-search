@@ -92,6 +92,43 @@ test.describe('Search Page', () => {
     await expect(button).toBeEnabled()
   })
 
+  /**
+   * Regression: the field was a single-line input with the Search button laid
+   * over its right edge, so a long query scrolled out of sight and its end ran
+   * under the button. It must wrap and grow instead, with the button beside it.
+   */
+  test('keeps a long query fully visible — the field grows, the button never covers it', async ({
+    page,
+  }) => {
+    await page.route('/api/stats', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ totalAssets: 8, features: { graphqlLayer: true } }),
+      })
+    })
+    await page.goto('/')
+
+    const searchInput = page.getByLabel('Natural language search query')
+    const oneLine = await searchInput.boundingBox()
+    await searchInput.fill(
+      'scenarios with pedestrians crossing at night that reference HD maps in Germany, ' +
+        'on motorways with at least three lanes, recorded in rain or fog, with an ego ' +
+        'vehicle that brakes hard for a cut-in from the left lane'
+    )
+
+    const grown = await searchInput.boundingBox()
+    const button = await page.getByRole('button', { name: /^search$/i }).boundingBox()
+    expect(oneLine && grown && button).toBeTruthy()
+    // Wraps onto several lines instead of scrolling sideways…
+    expect(grown!.height).toBeGreaterThan(oneLine!.height * 1.5)
+    // …and shows all of them: nothing is scrolled out of view.
+    const hidden = await searchInput.evaluate((field) => field.scrollHeight - field.clientHeight)
+    expect(hidden).toBeLessThanOrEqual(1)
+    // The button sits beside the text, not on top of it.
+    expect(grown!.x + grown!.width).toBeLessThanOrEqual(button!.x)
+  })
+
   test('should show error when API is unavailable', async ({ page }) => {
     await page.route('/api/search/stream', (route) => {
       route.fulfill({

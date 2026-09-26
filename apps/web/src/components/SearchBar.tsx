@@ -1,4 +1,23 @@
-import { FormEvent, useEffect, useRef, useState } from 'react'
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
+
+/**
+ * Grow the field to fit its text; its CSS `max-height` caps the growth and it
+ * scrolls beyond that. A field measured while hidden (a collapsed step) reads
+ * 0 — it is left at its natural one-row height rather than pinned to nothing,
+ * and refitted once it becomes visible.
+ */
+function fitToContent(field: HTMLTextAreaElement | null): void {
+  if (!field) return
+  field.style.height = 'auto'
+  if (field.scrollHeight > 0) field.style.height = `${field.scrollHeight}px`
+}
 
 interface SearchBarProps {
   onSearch: (query: string) => void
@@ -31,14 +50,48 @@ export function SearchBar({
   const [input, setInput] = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const fieldRef = useRef<HTMLTextAreaElement>(null)
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    if (input.trim() && !loading && !disabled) {
-      onSearch(input.trim())
+  const submit = () => {
+    const query = input.trim()
+    if (query && !loading && !disabled) {
+      onSearch(query)
       setShowHistory(false)
     }
   }
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    submit()
+  }
+
+  // Enter submits, like the single-line field this replaces; Shift+Enter adds
+  // a line break. Never while an IME composition is open — there Enter
+  // confirms the composed characters.
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault()
+      submit()
+    }
+  }
+
+  useLayoutEffect(() => fitToContent(fieldRef.current), [input])
+
+  // Refit when the field's width changes: a window resize rewraps the text,
+  // and a field first measured while hidden gets its real height once shown.
+  // Only the width is compared, so the refit's own height change cannot loop.
+  useEffect(() => {
+    const field = fieldRef.current
+    if (!field || typeof ResizeObserver === 'undefined') return
+    let width = field.clientWidth
+    const observer = new ResizeObserver(() => {
+      if (field.clientWidth === width) return
+      width = field.clientWidth
+      fitToContent(field)
+    })
+    observer.observe(field)
+    return () => observer.disconnect()
+  }, [])
 
   const selectHistory = (query: string) => {
     setInput(query)
@@ -60,29 +113,37 @@ export function SearchBar({
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl" role="search">
       <div className="relative" ref={wrapperRef}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onFocus={() => history.length > 0 && setShowHistory(true)}
-          placeholder={placeholder}
-          className="w-full px-6 py-4 text-lg border border-gray-300 rounded-full shadow-sm hover:shadow-md focus:shadow-md focus:outline-none focus:border-blue-400 transition-shadow dark:bg-gray-900 dark:border-gray-700 dark:text-white"
-          disabled={loading || disabled}
-          aria-label={inputAriaLabel}
-          autoComplete="off"
-        />
-        <button
-          type="submit"
-          disabled={loading || disabled || !input.trim()}
-          className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          aria-label={loading ? loadingLabel : buttonLabel}
-        >
-          {loading ? (
-            <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            buttonLabel
-          )}
-        </button>
+        {/* The field wraps and grows with its text (up to ~8 lines, then it
+            scrolls), and the button sits beside it rather than over it — so a
+            long query is always fully readable. */}
+        <div className="flex items-end gap-2 w-full pl-6 pr-2 py-2 bg-white border border-gray-300 rounded-[31px] shadow-sm hover:shadow-md focus-within:shadow-md focus-within:border-blue-400 transition-shadow dark:bg-gray-900 dark:border-gray-700">
+          <textarea
+            ref={fieldRef}
+            rows={1}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => history.length > 0 && setShowHistory(true)}
+            placeholder={placeholder}
+            className="flex-1 min-w-0 max-h-60 py-2 text-lg leading-7 bg-transparent resize-none overflow-y-auto focus:outline-none disabled:cursor-not-allowed dark:text-white"
+            disabled={loading || disabled}
+            aria-label={inputAriaLabel}
+            autoComplete="off"
+            enterKeyHint="search"
+          />
+          <button
+            type="submit"
+            disabled={loading || disabled || !input.trim()}
+            className="shrink-0 mb-0.5 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label={loading ? loadingLabel : buttonLabel}
+          >
+            {loading ? (
+              <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              buttonLabel
+            )}
+          </button>
+        </div>
 
         {/* History dropdown */}
         {showHistory && history.length > 0 && (

@@ -1,10 +1,52 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { SearchBar } from '../SearchBar'
 
 describe('SearchBar', () => {
+  /**
+   * Regression: the field was a single-line <input> with the submit button
+   * positioned over its right edge, so a long query scrolled out of sight and
+   * its end sat under the button. It is now a multi-line field that wraps and
+   * grows; the layout half (wrapping, growing, no overlap) needs a real
+   * browser and is pinned in apps/e2e/tests/search.spec.ts.
+   */
+  it('holds a multi-line query: Shift+Enter adds a line break instead of submitting', async () => {
+    const user = userEvent.setup()
+    const onSearch = vi.fn()
+    render(<SearchBar onSearch={onSearch} />)
+    const field = screen.getByLabelText(/natural language search query/i)
+
+    await user.type(field, 'HD maps in Germany{Shift>}{Enter}{/Shift}with over 10 intersections')
+
+    expect(field).toHaveValue('HD maps in Germany\nwith over 10 intersections')
+    expect(onSearch).not.toHaveBeenCalled()
+  })
+
+  it('submits on Enter, like the single-line field it replaces, without adding a line break', async () => {
+    const user = userEvent.setup()
+    const onSearch = vi.fn()
+    render(<SearchBar onSearch={onSearch} />)
+    const field = screen.getByLabelText(/natural language search query/i)
+
+    await user.type(field, 'motorways in Germany{Enter}')
+
+    expect(onSearch).toHaveBeenCalledWith('motorways in Germany')
+    expect(field).toHaveValue('motorways in Germany')
+  })
+
+  it('does not submit on Enter while an IME composition is open', () => {
+    const onSearch = vi.fn()
+    render(<SearchBar onSearch={onSearch} />)
+    const field = screen.getByLabelText(/natural language search query/i)
+
+    fireEvent.change(field, { target: { value: 'とうきょう' } })
+    fireEvent.keyDown(field, { key: 'Enter', isComposing: true })
+
+    expect(onSearch).not.toHaveBeenCalled()
+  })
+
   it('fires onSearch with the trimmed query on submit', async () => {
     const user = userEvent.setup()
     const onSearch = vi.fn()
