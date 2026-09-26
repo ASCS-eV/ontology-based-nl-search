@@ -12,6 +12,10 @@
  *     rejected credential, including the OAuth bearer token the `claude-cli`
  *     provider sends — where there is no `x-api-key` header at all. Operators
  *     go looking for a key they never configured.
+ *   - `429 rate_limit_error: Error` is how the Anthropic endpoint refuses the
+ *     `claude-cli` subscription token a model it does not serve that token
+ *     outside Claude Code. It reads as an exhausted quota, the SDK retries it
+ *     three times, and the API answered only "Search failed".
  *
  * So every provider failure is classified once, here, and re-thrown as an
  * {@link AgentError} whose message names the provider, the setting that
@@ -26,7 +30,11 @@ import type { AppConfig } from '@ontology-search/core/config'
 import { AgentError } from '@ontology-search/core/errors'
 
 /** What went wrong, at the level an operator can act on. */
-export type ProviderFailureKind = 'unreachable' | 'unauthorized' | 'model-not-found'
+export type ProviderFailureKind =
+  | 'unreachable'
+  | 'unauthorized'
+  | 'model-not-found'
+  | 'model-not-permitted'
 
 export interface ProviderContext {
   provider: AppConfig['AI_PROVIDER']
@@ -39,9 +47,26 @@ export interface ProviderContext {
 interface NestedError {
   message?: unknown
   statusCode?: unknown
+  responseHeaders?: unknown
   cause?: unknown
   lastError?: unknown
   errors?: unknown
+}
+
+/** What an error chain says about the failure, flattened. */
+export interface ErrorFacts {
+  text: string
+  statusCode: number | undefined
+  /**
+   * The message and response headers of the error that carried `statusCode`,
+   * kept together so a classifier never pairs one response's status with
+   * another link's headers. Absent when no link carried a status.
+   */
+  response?: { message: string; headers: Readonly<Record<string, string>> | undefined }
+}
+
+function headersOf(value: unknown): Readonly<Record<string, string>> | undefined {
+  return value !== null && typeof value === 'object' ? (value as Record<string, string>) : undefined
 }
 
 /**
@@ -51,10 +76,7 @@ interface NestedError {
  * an `AI_APICallError` holding both a `statusCode` and a `cause` — the actual
  * `ECONNREFUSED`. Classifying only the outermost message misses all of it.
  */
-export function collectErrorFacts(
-  error: unknown,
-  depth = 0
-): { text: string; statusCode: number | undefined } {
+export function collectErrorFacts(error: unknown, depth = 0): ErrorFacts {
   if (depth > 5 || error === null || error === undefined) {
     return { text: '', statusCode: undefined }
   }
@@ -63,16 +85,22 @@ export function collectErrorFacts(
 
   const node = error as NestedError
   const parts: string[] = []
-  if (typeof node.message === 'string') parts.push(node.message)
+  const message = typeof node.message === 'string' ? node.message : ''
+  if (message) parts.push(message)
   let statusCode = typeof node.statusCode === 'number' ? node.statusCode : undefined
+  let response: ErrorFacts['response'] =
+    statusCode === undefined ? undefined : { message, headers: headersOf(node.responseHeaders) }
 
   const nested = [node.cause, node.lastError, ...(Array.isArray(node.errors) ? node.errors : [])]
   for (const child of nested) {
     const facts = collectErrorFacts(child, depth + 1)
     if (facts.text) parts.push(facts.text)
-    statusCode ??= facts.statusCode
+    if (statusCode === undefined && facts.statusCode !== undefined) {
+      statusCode = facts.statusCode
+      response = facts.response
+    }
   }
-  return { text: parts.join(' | '), statusCode }
+  return { text: parts.join(' | '), statusCode, ...(response ? { response } : {}) }
 }
 
 /** Network-level failures: nothing answered, so there is no status code. */
@@ -86,14 +114,52 @@ const MODEL_NOT_FOUND =
   /model .*not found|not found.*model|unknown model|does not exist|no such model|try pulling it first/i
 
 /**
- * Classify a provider failure, or return undefined when it is not one of the
- * three configuration faults this module can advise on.
+ * The header Anthropic's subscription usage limiter sets on every response it
+ * judged, a genuine usage-limit 429 included (value `rejected`). Observed on
+ * the wire; the public API reference does not document it.
  */
-export function classifyProviderFailure(error: unknown): ProviderFailureKind | undefined {
-  const { text, statusCode } = collectErrorFacts(error)
+const SUBSCRIPTION_LIMIT_STATUS_HEADER = 'anthropic-ratelimit-unified-status'
+
+/**
+ * Whether a `claude-cli` failure is the endpoint refusing the subscription
+ * token this model, rather than a usage limit.
+ *
+ * The refusal arrives as `429` with error type `rate_limit_error`
+ * [ANTHROPIC-MSG] § Errors, so the status alone cannot tell it from a real
+ * limit. Two facts can: the message is the bare word "Error", and the
+ * subscription limiter's status header is missing — it never judged the
+ * request. Both are required, and headers must be present to prove the
+ * absence; anything less is left unclassified, since advising "not a quota
+ * problem" on a real quota rejection would be the misdirection this module
+ * exists to remove. (Observed with `claude-sonnet-5` and `claude-sonnet-4-5`
+ * refused while `claude-haiku-4-5-20251001` was served on the same token, at 6%
+ * of its five-hour allowance.)
+ */
+function isSubscriptionModelRefusal({ statusCode, response }: ErrorFacts): boolean {
+  if (statusCode !== 429 || !response?.headers) return false
+  const judgedByLimiter = Object.keys(response.headers).some(
+    (name) => name.toLowerCase() === SUBSCRIPTION_LIMIT_STATUS_HEADER
+  )
+  return !judgedByLimiter && response.message.trim() === 'Error'
+}
+
+/**
+ * Classify a provider failure, or return undefined when it is not one of the
+ * configuration faults this module can advise on.
+ *
+ * `provider` scopes the classifications that only one provider's endpoint
+ * produces; without it they are never made.
+ */
+export function classifyProviderFailure(
+  error: unknown,
+  provider?: ProviderContext['provider']
+): ProviderFailureKind | undefined {
+  const facts = collectErrorFacts(error)
+  const { text, statusCode } = facts
   if (statusCode === 401 || statusCode === 403) return 'unauthorized'
   if (UNAUTHORIZED.test(text)) return 'unauthorized'
   if (statusCode === 404 || MODEL_NOT_FOUND.test(text)) return 'model-not-found'
+  if (provider === 'claude-cli' && isSubscriptionModelRefusal(facts)) return 'model-not-permitted'
   if (statusCode === undefined && UNREACHABLE.test(text)) return 'unreachable'
   return undefined
 }
@@ -164,6 +230,34 @@ function modelAdvice(ctx: ProviderContext): string {
 }
 
 /**
+ * What to do when the claude-cli subscription token is refused the model.
+ * Naming the quota would be the misdirection here: usage is not the problem,
+ * and waiting for a reset never helps.
+ */
+function subscriptionModelAdvice(ctx: ProviderContext): string {
+  return (
+    `The Anthropic API does not serve "${ctx.model}" to the Claude CLI subscription token ` +
+    'outside Claude Code. It reports this as "429 rate_limit_error: Error", but it is not a ' +
+    'usage limit — retrying or waiting will not help. Set AI_MODEL to a model the token is ' +
+    'served (such as claude-haiku-4-5-20251001), or switch to AI_PROVIDER=anthropic with ' +
+    'ANTHROPIC_API_KEY to use this model.'
+  )
+}
+
+function adviceFor(kind: ProviderFailureKind, ctx: ProviderContext): string {
+  switch (kind) {
+    case 'unauthorized':
+      return `The ${ctx.provider} provider rejected the credentials. ${credentialAdvice(ctx.provider)}`
+    case 'unreachable':
+      return reachabilityAdvice(ctx)
+    case 'model-not-found':
+      return modelAdvice(ctx)
+    case 'model-not-permitted':
+      return subscriptionModelAdvice(ctx)
+  }
+}
+
+/**
  * Convert a provider failure into an {@link AgentError} that names the cause
  * and the fix, or return undefined to leave the original error alone.
  *
@@ -175,15 +269,10 @@ export function toProviderAgentError(error: unknown, ctx: ProviderContext): Agen
   // raised before the request is even built).
   if (error instanceof AgentError) return undefined
 
-  const kind = classifyProviderFailure(error)
+  const kind = classifyProviderFailure(error, ctx.provider)
   if (!kind) return undefined
 
-  const advice =
-    kind === 'unauthorized'
-      ? `The ${ctx.provider} provider rejected the credentials. ${credentialAdvice(ctx.provider)}`
-      : kind === 'unreachable'
-        ? reachabilityAdvice(ctx)
-        : modelAdvice(ctx)
+  const advice = adviceFor(kind, ctx)
 
   return new AgentError(`${advice} (AI_PROVIDER=${ctx.provider}, AI_MODEL=${ctx.model})`, {
     cause: error,
