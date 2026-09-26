@@ -44,7 +44,11 @@ export interface AgentPolicy {
    * compiler, not from greedy decoding.
    */
   readonly temperature: number | undefined
-  /** Max tool-call steps before the agent is cut off. */
+  /**
+   * Max tool-call steps before the agent is cut off. On the Vercel adapter
+   * the last of them is reserved for the submission: lookups may run on the
+   * steps before it, never on the final one.
+   */
   readonly maxSteps: number
   /**
    * Anthropic reasoning mode, or `null` when disabled (`LLM_THINKING=off`, or
@@ -71,8 +75,10 @@ export interface AgentPolicy {
   /**
    * The single SUBMISSION tool — the only way the model's output becomes
    * a search. Lookup tools may run first (bounded by maxSteps), but no
-   * result exists until this tool is called; a budget exhausted without
-   * it falls back deterministically.
+   * result exists until this tool's call is ACCEPTED. A call the schema
+   * rejects is answered with the validation error and the model may try
+   * again (both adapters); only a budget that ends without an accepted
+   * submission falls back deterministically.
    */
   readonly forcedTool: 'submit_slots'
   /**
