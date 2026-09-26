@@ -24,6 +24,7 @@ export const AI_PROVIDERS = [
   'copilot',
   'anthropic',
   'claude-cli',
+  'claude-code',
   'vibe-cli',
 ] as const
 const aiProviderSchema = z.enum(AI_PROVIDERS)
@@ -131,6 +132,12 @@ const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   /** Optional explicit Copilot SDK token; when unset, the SDK can use its CLI login. */
   GITHUB_TOKEN: z.string().optional(),
+  /**
+   * The Claude Code executable the `claude-code` provider runs, headless, for
+   * every request. A bare name is resolved on `PATH`; set a full path when the
+   * API process does not inherit the shell's `PATH` (a service manager, say).
+   */
+  CLAUDE_CODE_EXECUTABLE: z.string().min(1).default('claude'),
   OLLAMA_BASE_URL: z.string().url().default('http://localhost:11434/v1'),
   /**
    * Base URL for the Mistral OpenAI-compatible API, used by the

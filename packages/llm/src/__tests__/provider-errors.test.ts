@@ -39,6 +39,30 @@ const OLLAMA = {
   endpoint: 'http://localhost:11434/v1',
 }
 
+const CLAUDE_CLI = { provider: 'claude-cli' as const, model: 'claude-sonnet-5' }
+
+/**
+ * The 429 the Anthropic endpoint returned for `claude-sonnet-5` on a Claude
+ * subscription token: bare "Error", and none of the subscription limiter's
+ * headers (the request id and retry hint are the headers it did carry).
+ */
+function subscriptionRefusal(overrides: { message?: string; headers?: Record<string, string> }) {
+  return Object.assign(new Error(overrides.message ?? 'Error'), {
+    name: 'AI_APICallError',
+    statusCode: 429,
+    responseHeaders: overrides.headers ?? {
+      'request-id': 'req_011CfSHmij3KU4apTGjxR87x',
+      'x-should-retry': 'true',
+    },
+  })
+}
+
+/** A genuine subscription usage-limit rejection: the limiter judged it. */
+const USAGE_LIMIT_HEADERS = {
+  'anthropic-ratelimit-unified-status': 'rejected',
+  'anthropic-ratelimit-unified-reset': '1790451600',
+}
+
 describe('collectErrorFacts', () => {
   it('reaches the real cause through the SDK retry/API-call wrappers', () => {
     const error = retryError(
@@ -57,6 +81,13 @@ describe('collectErrorFacts', () => {
     expect(collectErrorFacts(retryError(apiCallError('invalid x-api-key', 401))).statusCode).toBe(
       401
     )
+  })
+
+  it('keeps the message and headers of the link that carried the status', () => {
+    const facts = collectErrorFacts(retryError(subscriptionRefusal({})))
+    expect(facts.statusCode).toBe(429)
+    expect(facts.response?.message).toBe('Error')
+    expect(facts.response?.headers?.['x-should-retry']).toBe('true')
   })
 
   it('terminates on a self-referencing cause chain', () => {
@@ -93,6 +124,32 @@ describe('classifyProviderFailure', () => {
   it('leaves anything else unclassified rather than guessing', () => {
     expect(classifyProviderFailure(new Error('Unexpected token < in JSON'))).toBeUndefined()
     expect(classifyProviderFailure(apiCallError('overloaded', 529))).toBeUndefined()
+  })
+
+  it('classifies the claude-cli subscription refusal as model-not-permitted, not a usage limit', () => {
+    // Exactly what the SDK threw for `AI_MODEL=claude-sonnet-5`: three
+    // retried attempts wrapping the same disguised 429.
+    expect(classifyProviderFailure(retryError(subscriptionRefusal({})), 'claude-cli')).toBe(
+      'model-not-permitted'
+    )
+  })
+
+  it('never calls a genuine subscription usage limit a model refusal', () => {
+    // The limiter's status header proves it judged the request: a real quota.
+    const usageLimit = subscriptionRefusal({ headers: USAGE_LIMIT_HEADERS })
+    expect(classifyProviderFailure(retryError(usageLimit), 'claude-cli')).toBeUndefined()
+  })
+
+  it('makes the refusal classification only when every signal is present', () => {
+    // No headers recorded: the limiter's absence cannot be proven.
+    const headerless = Object.assign(new Error('Error'), { statusCode: 429 })
+    expect(classifyProviderFailure(headerless, 'claude-cli')).toBeUndefined()
+    // A descriptive message is already actionable on its own.
+    const descriptive = subscriptionRefusal({ message: 'Number of requests exceeded' })
+    expect(classifyProviderFailure(descriptive, 'claude-cli')).toBeUndefined()
+    // Other providers' 429s are ordinary rate limits.
+    expect(classifyProviderFailure(subscriptionRefusal({}), 'anthropic')).toBeUndefined()
+    expect(classifyProviderFailure(subscriptionRefusal({}))).toBeUndefined()
   })
 })
 
@@ -138,6 +195,18 @@ describe('toProviderAgentError', () => {
     expect(translated?.message).toContain('Run `claude` to re-authenticate')
   })
 
+  it('tells a claude-cli user the model is refused, not rate-limited, and how to proceed', () => {
+    const error = retryError(subscriptionRefusal({}))
+    const translated = toProviderAgentError(error, CLAUDE_CLI)
+
+    expect(translated).toBeInstanceOf(AgentError)
+    expect(translated?.message).toContain('does not serve "claude-sonnet-5"')
+    expect(translated?.message).toContain('not a usage limit')
+    expect(translated?.message).toContain('claude-haiku-4-5-20251001')
+    expect(translated?.message).toContain('AI_PROVIDER=anthropic with ANTHROPIC_API_KEY')
+    expect(translated?.cause).toBe(error)
+  })
+
   it('points key-based providers at their own credential', () => {
     const cases = [
       { provider: 'openai' as const, expected: 'OPENAI_API_KEY' },
@@ -175,6 +244,15 @@ describe('toProviderAgentError', () => {
 
   it('leaves an unrecognized failure alone', () => {
     expect(toProviderAgentError(new Error('boom'), OLLAMA)).toBeUndefined()
+  })
+
+  it('sends a rejected claude-code login to `claude`, not to a key the app never held', () => {
+    const translated = toProviderAgentError(apiCallError('unauthorized', 401), {
+      provider: 'claude-code',
+      model: 'claude-sonnet-5',
+    })
+    expect(translated?.message).toContain('claude auth login')
+    expect(translated?.message).not.toContain('API_KEY')
   })
 })
 
