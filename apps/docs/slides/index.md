@@ -212,7 +212,15 @@ import '../.vitepress/theme/conference.css'
   <p class="eyebrow">Backup · recorded run · authoring 2 of 2</p>
   <h2 class="backup-title">The generated scenario, played by esmini</h2>
   <div class="screen screen--fit">
-    <img src="./demo-backup/6-author-preview.png" alt="The esmini preview of the generated scenario: the cut-in vehicle ahead of the ego vehicle" />
+    <video
+      src="./demo-backup/6-author-preview.webm"
+      poster="./demo-backup/6-author-preview.png"
+      autoplay
+      loop
+      muted
+      playsinline
+      aria-label="Recording of the esmini preview: the vehicle 30 m ahead in the neighbouring lane moves into the ego vehicle's lane"
+    ></video>
   </div>
 </Slide>
 
@@ -351,7 +359,7 @@ import '../.vitepress/theme/conference.css'
 </SlideNotes>
 
 <SlideNotes :index="16" title="The generated scenario, played by esmini" timing="20:30–20:30 · backup, only if the live demo fails">
-  <p>Recorded run. Say: “This is a recorded run of the same flow.” The esmini preview of the generated file, captured while playing.</p>
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” The recording of the esmini preview loops: the vehicle 30 metres ahead starts its lane change into my lane after two seconds.</p>
   <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
 </SlideNotes>
 

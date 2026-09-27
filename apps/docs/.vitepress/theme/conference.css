@@ -382,9 +382,12 @@
   overflow: visible;
   border: 0;
 }
-.Layout.slide-page.conference-page .screen.screen--fit img {
+.Layout.slide-page.conference-page .screen.screen--fit img,
+.Layout.slide-page.conference-page .screen.screen--fit video {
+  display: block;
   width: auto;
   max-width: 100%;
+  max-height: calc(100vh - 300px);
   margin: 0 auto;
   border: 1px solid var(--brand-gray);
   border-radius: var(--slide-radius);

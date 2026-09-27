@@ -1,16 +1,17 @@
 import { expect, test } from '@playwright/test'
 
-// Backup slides after each live demo, one per recorded step.
+// Backup slides after each live demo, one per recorded step: full-page
+// captures that scroll like the browser, and a recording of the preview.
 const backups = [
-  { slide: 8, scrolls: true },
-  { slide: 9, scrolls: true },
-  { slide: 10, scrolls: true },
-  { slide: 11, scrolls: true },
-  { slide: 16, scrolls: true },
-  { slide: 17, scrolls: false },
+  { slide: 8, media: 'capture' },
+  { slide: 9, media: 'capture' },
+  { slide: 10, media: 'capture' },
+  { slide: 11, media: 'capture' },
+  { slide: 16, media: 'capture' },
+  { slide: 17, media: 'recording' },
 ] as const
 
-test('backup slides show each recorded run in a frame that scrolls like the browser', async ({
+test('backup slides show each recorded run: scrollable captures and a playing recording', async ({
   page,
 }) => {
   const errors: string[] = []
@@ -21,16 +22,31 @@ test('backup slides show each recorded run in a frame that scrolls like the brow
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto('slides/')
 
-  for (const { slide, scrolls } of backups) {
+  for (const { slide, media } of backups) {
     await page.getByRole('tab', { name: `Slide ${slide}`, exact: true }).click()
     const active = page.locator('.slide--active')
     await expect(active.locator('.eyebrow')).toContainText('recorded run')
+
+    if (media === 'recording') {
+      // Muted autoplay loops the esmini recording without a click.
+      const video = active.locator('.screen video')
+      await expect
+        .poll(() =>
+          video.evaluate(
+            (element: HTMLVideoElement) =>
+              !element.paused && element.currentTime > 0 && element.videoWidth > 0
+          )
+        )
+        .toBe(true)
+      expect(await video.evaluate((element: HTMLVideoElement) => element.loop)).toBe(true)
+      continue
+    }
+
     const image = active.locator('.screen img')
     await expect
       .poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
       .toBeGreaterThan(0)
     await expect(image).toHaveAttribute('alt', /\S/)
-    if (!scrolls) continue
 
     // The wheel scrolls the screenshot, not the deck.
     const screen = active.locator('.screen')
