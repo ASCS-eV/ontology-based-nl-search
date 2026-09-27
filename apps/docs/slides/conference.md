@@ -1,103 +1,131 @@
 ---
 title: Conference speaker guide
-description: A 15-minute talk and 10-minute demonstration of ontology-driven search and scenario authoring.
+description: Storyline, timing, live-demo runbook and Q&A for the talk "Formal models are the dictionary. LLMs are the translator."
 ---
 
-# Is this the scenario I meant?
+# Speaker guide: the dictionary and the translator
 
-Concept prepared on 24 September 2026 for Monday, 28 September. Working assumptions: English, a mixed automotive simulation and research audience, 15 minutes of speaking followed by 10 minutes of demonstration. This is a 25-minute slot without a separate Q&A allocation.
+A 25-minute talk with two live demos: search and scenario authoring. The thesis fits in one sentence. **Formal models are the dictionary and the grammar, LLMs are the translator, and agents close the loop with humans in it.**
 
-[Open the conference deck](./) · [Research and references](./research) · [Rehearsal evidence](./rehearsal)
+[Open the deck](./) · [Architecture appendix](./architecture) · [Authoring appendix](./authoring)
 
-**Technical rehearsal recorded.** Search, authoring, preview, and export completed with the configured provider on 24 September. Slides 4–6 use labeled excerpts from that run; the opening illustration and process diagram remain schematics. The [evidence record](./rehearsal) documents the actual values, road mismatch, skipped checks, and local fallback recording. A full spoken ten-minute rehearsal and physical-projector check remain pending.
+## Presenting
 
-For presentation, build the documentation and serve the built site:
+Serve the built site rather than the dev server:
 
 ```bash
 pnpm --filter @ontology-search/docs build
 pnpm --filter @ontology-search/docs preview --host 127.0.0.1 --port 5183
 ```
 
-Open `http://127.0.0.1:5183/docs/slides/`. This serves the bundled presentation, including its local vector visuals and notes. The research links need internet access; the deck itself does not fetch external images or fonts. The live application and its model provider have separate runtime requirements.
+Open `http://127.0.0.1:5183/docs/slides/`. The deck loads no external images or fonts. Press **P** to open the presenter window. It shows the script and the planned clock, and its Previous/Next buttons also move the audience deck. Put the presenter window on the laptop and share only the audience window. Keyboard: Right/Space moves forward, Left moves back, Home jumps to the start and End to the close.
 
-## The story
+## Branding
 
-An engineer asks for a highway cut-in. A file can be structurally valid without expressing the test they intended. The story follows the question **“It produced a scenario—but is it the one I meant?”** through two separate capabilities: searching asset metadata and authoring an OpenSCENARIO scenario.
+The talk presents results that BMW created in the EU project SYNERGIES. It uses the ENVITED-X brand of the ASCS brand book (2025): Open Sans, uppercase headings, brand blue `#7891BB` with green `#60AC24` and navy `#111727`, and the ENVITED-X logo on the blue corner tab. Cards and chips use the ENVITED-X design system's tone tokens, re-toned to that palette. The SYNERGIES logo and the EU emblem are on every slide, and the EU funding disclaimer is on the first and last slides.
 
-The audience should leave with one idea: **inspect an explicit interpretation, understand the limits of its checks, then make an engineering decision.** The demo should connect one actual scene detail to an accept, reject, or investigate decision. Authoring is central to the talk and receives most of the demo time.
+## The storyline
 
-This is a prototype demonstration of a shared design pattern, not a completed end-to-end handoff or a novelty/performance claim. Search and authoring are separate views; authoring resolves its own catalog road. The audience sees this boundary on slide 2, before either capability is presented in detail.
+Nine messages, in four acts. Each slide makes one claim, and the notes carry the argument.
 
-## Timing and visual plan
+| Act          | Slide                    | Message                                                                                          | Evidence you can point to                                                                                                                                    |
+| ------------ | ------------------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Opening      | 1 · Title                | Formal models are the dictionary. LLMs are the translator.                                       | Everything that follows.                                                                                                                                     |
+| I · Model    | 2 · 01 Modelling         | Formal modelling is decades old. Generators and agents fluent in it make it cheap.               | OMB `linkml/<domain>/<domain>.yaml` → `just generate` (gen-owl, gen-shacl, gen-jsonld-context).                                                              |
+|              | 3 · 02 Human in the loop | Agents do best against a specification. A model diff is something a human can review.            | Every OMB change is a reviewable Turtle or LinkML diff in a pull request.                                                                                    |
+|              | 4 · 03 Closed loops      | Model → generator → artifacts → example data → validator → model.                                | OMB CI: LinkML artifacts must regenerate byte-identical; `tests/data/<domain>` holds valid and failing fixtures. Probe measurements are in `linkml/GAPS.md`. |
+| II · Use     | 5 · 04 Leverage          | Formal data plugs into open source: graph databases, SPARQL, SHACL, GraphQL, JSON Schema.        | [Standards audit](../standards-audit): every boundary cites its specification. Oxigraph for development, Fuseki in production.                               |
+|              | 6 · 05 Translation       | The LLM translates into typed slots. A deterministic compiler writes the SPARQL.                 | `packages/llm/src/prompt/compose.ts` (retrieved SHACL fragments), `slot-validator.ts`, `packages/search/src/compiler.ts`.                                    |
+|              | 7 · **Demo: search**     | Show the translation, the gaps and the lineage live.                                             | The running app.                                                                                                                                             |
+|              | 8 · 06 Learn from users  | Gaps are user research for the ontology backlog.                                                 | `OntologyGapsDisplay.tsx`: gaps are unmapped, recognized or limitation.                                                                                      |
+|              | 9 · 07 Lineage           | References are typed links, so lineage is a graph walk.                                          | `GET /api/traceability` (`apps/api/src/routes/traceability.ts`), `LineageExplorer.tsx`.                                                                      |
+| III · Invert | 10 · 08 The inverse      | Search, run backwards, gives generation: words → scene → OpenSCENARIO → checks → playback.       | `scene-agent.ts`, `ir-to-engine.ts`, `run-scene-pipeline.ts`; engine pin in `packages/authoring-wasm/versions.json`.                                         |
+|              | 11 · **Demo: authoring** | Show the scene, assumptions, gates, preview and export live.                                     | The running app.                                                                                                                                             |
+| IV · Future  | 12 · 09 Standardization  | One ASAM OpenX ontology; standards modelled with agents; open pipelines generate every artifact. | asam-openx-standards pipeline (UML → ShapeChange → OWL → owl2shacl → SHACL); OpenSCENARIO.xsd regenerated byte-identical.                                    |
+| Close        | 13 · Close the loop      | Restate the thesis and invite people to contribute.                                              | The repositories.                                                                                                                                            |
 
-| Slide                                                      | Clock       | Time  | Spoken purpose                                                   | Visual anchor                                                    |
-| ---------------------------------------------------------- | ----------- | ----- | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
-| 1. Is this the scenario I meant?                           | 0:00–1:30   | 1:30  | Establish the cut-in task and the question of intended behavior. | Labeled cut-in schematic.                                        |
-| 2. Two capabilities. One engineering task.                 | 1:30–3:30   | 2:00  | Disclose the two independent app paths.                          | Parallel Search and Author panels; visible no-handoff boundary.  |
-| 3. Make the interpretation inspectable.                    | 3:30–5:30   | 2:00  | Explain the model/compiler boundary using one request.           | Words → explicit criteria → compilation.                         |
-| 4. Why did this asset match?                               | 5:30–7:30   | 2:00  | Contrast the requested criteria with the country-only query.     | Recorded excerpt: 81 matches, but no lane-count filter.          |
-| 5. What did the model decide?                              | 7:30–9:30   | 2:00  | Reject a road that fails the requested three-lane condition.     | Three requested lanes versus two driving lanes per direction.    |
-| 6. Valid structure is not verified intent.                 | 9:30–11:30  | 2:00  | Show actual passes, skipped rules, playback, and the decision.   | Four equal-level observations; valid file does not fix the road. |
-| 7. What this prototype demonstrates—and what remains open. | 11:30–13:30 | 2:00  | State contribution, related research, and evaluation limits.     | Implemented capabilities versus evaluation questions.            |
-| 8. Judge the demo on three questions.                      | 13:30–15:00 | 1:30  | Give the audience observable criteria for the demo.              | Interpretation, checks, decision.                                |
-| Live demonstration                                         | 15:00–25:00 | 10:00 | Inspect two capabilities and one concrete engineering decision.  | Eight-minute core sequence; two-minute recovery reserve.         |
+## Timing
 
-Slides 4–6 contain faithful typeset excerpts from the recorded run, not screenshots or fresh live output. The evidence page records their provenance and limits. The opening road illustration and process diagram remain explanatory schematics. Large assertion headlines carry one idea each; the argument belongs in the notes. The separate [authoring technical deck](./authoring) is an older appendix, outside the 15-minute story; consult the current research brief for its claim/version caveats.
+| Clock       | Slides    | Duration | Note                                      |
+| ----------- | --------- | -------- | ----------------------------------------- |
+| 0:00–1:00   | 1         | 1:00     | Say the thesis early.                     |
+| 1:00–7:00   | 2–5       | 6:00     | 90 seconds each.                          |
+| 7:00–8:30   | 6         | 1:30     | Ends with “Let me show you.”              |
+| 8:30–12:30  | 7 · demo  | 4:00     | Hard stop at 12:30.                       |
+| 12:30–15:00 | 8–9       | 2:30     | Refer back to what the audience just saw. |
+| 15:00–16:30 | 10        | 1:30     | Ends with “Let me show you.”              |
+| 16:30–20:30 | 11 · demo | 4:00     | Hard stop at 20:30.                       |
+| 20:30–24:00 | 12–13     | 3:30     | Land the thesis, then stop talking.       |
+| 24:00–25:00 | –         | 1:00     | Buffer.                                   |
 
-## Speaker notes and rehearsal
+**If the slot is shorter.** For 20 minutes, cut each demo to 3 minutes and skip slide 9 (lineage is shown in the demo). For 15 minutes, drop slide 3 into slide 2's notes, show one search prompt only, and keep the authoring demo: it is the strongest moment.
 
-Full spoken notes, stage cues and cumulative timing are embedded in all eight slides. Press **P**, or use **Presenter notes**, to open a separate presenter window. Its Previous/Next controls and arrow keys advance the audience deck too. Keep the presenter window on the laptop and share only the audience window on the projector. This requires an extended display or sharing a specific window; screen mirroring shows both windows when switched.
+Aim for about 110 spoken words per minute. The notes are drafts to speak from, not text to read out.
 
-Use Right/Space and Left to navigate the deck, Home to return to the opening, and End to jump to the demo handoff. Allow the local site to open a popup if the browser blocks the notes window. The popup shows planned timing, not an elapsed-time stopwatch; use a separate timer. The complete script is also readable in the source at `apps/docs/slides/index.md` inside the `SlideNotes` elements.
+## Live demo runbook
 
-Rehearse around 105–120 spoken words per minute, leaving room to point at a diagram and pause. The notes are a spoken draft, not a measured duration or an instruction to fill every second. The hard milestone is entering the application at 15:00. If behind, keep the engineering decision and shorten the research discussion; omit query-editor exploration from the demo.
+Open two tabs before the talk: search at `http://localhost:5174/` and authoring at `http://localhost:5174/author`. Warm both up with one request each, because the first request after startup is slower. Keep the authoring prompt in the clipboard; it is too long to type on stage.
 
-## Ten-minute demonstration
+### Demo 1 · Search (8:30–12:30)
 
-Use the existing running environment and configured provider. The default local web URL is `http://localhost:5174/`; authoring is `/author`. The docs default to `http://localhost:5173/docs/slides/`. Deployment hosts and configured ports may differ; open both app views in advance instead of relying on hardcoded links from the deck.
+| Step | Prompt / action                                   | Show                                                    | Say                                                           |
+| ---- | ------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------- |
+| 1    | `motorway HD maps in Germany`                     | Interpretation: road type motorway, country DE; 19 maps | “This is the translation: values that exist in the ontology.” |
+| 2    | Expand the GraphQL and SPARQL panels              | The compiled query                                      | “The model did not write this. The compiler did.”             |
+| 3    | `HD-Karten von Autobahnen in Deutschland`         | The same two filters, the same 19 maps                  | “Same dictionary, another language.”                          |
+| 4    | `motorway HD maps in Germany with potholes`       | The same 19 maps, plus “potholes” under Not in ontology | “Not silently dropped. Reported. That is my next slide.”      |
+| 5    | `cut-in scenarios and the HD maps they reference` | First result card → Explore lineage: 7 assets reachable | “Everything this scenario depends on, through typed links.”   |
 
-| Demo clock | Action                                                                           | Say / establish                                                                                                                        |
-| ---------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 0:00–2:00  | Submit **German highways with 3 lanes**; compare interpretation with one result. | “What criteria were preserved, and which metadata supports this match?” No fixed result count.                                         |
-| 2:00–2:30  | Switch to Author.                                                                | “This separate path uses its own road catalog; the search result is not carried over.”                                                 |
-| 2:30–4:30  | Submit **a cut-in on a three-lane highway**; inspect the returned scene.         | Identify actors, actions, and the actual bound road. Do not anticipate unobserved values.                                              |
-| 4:30–5:30  | Inspect one actual scene detail and state a decision.                            | “The request specified X; the output contains Y; I accept, reject, or investigate it because Z.” Use only a genuine rehearsed example. |
-| 5:30–6:30  | Open individual gate results and gaps.                                           | “Reference and structural checks determine Valid; geometry is separate. Skipped means unchecked.”                                      |
-| 6:30–7:30  | Preview, inspect the XML, and export.                                            | State what behavior was actually observed and identify the scenario's road dependency.                                                 |
-| 7:30–8:00  | Close with the result and next evaluation.                                       | “What did we establish, and what remains my engineering responsibility?”                                                               |
-| 8:00–10:00 | Reserve for loading, transitions, and recovery.                                  | This is contingency time, not an extra feature tour.                                                                                   |
+### Demo 2 · Authoring (16:30–20:30)
 
-Both exact prompts were submitted in the recorded technical rehearsal. Search took 11.643 seconds and authoring 13.178 seconds from the browser's submit action to completed response stream. These are one-run observations, not latency guarantees. The author-viewer E2E test separately mocks its stream; it is not the source of this evidence. The current page does not expose iterative scene refinement or an XML editor, so neither appears in this demonstration. Do not invent a deliberate invalid-edit step in the live UI.
+Prompt: `A cut-in on a highway: a vehicle 30 m ahead of the ego vehicle in the neighbouring lane changes into the ego's lane.`
 
-The recorded inspection example is concrete: search retained only `country = DE` and returned 81 metadata matches, while authoring bound `german_highway_short.xodr`, which has two driving lanes per direction despite the three-lane request. Reject that road for this test. The scene also contains 25 m/s initial speeds, a 2 s start and a 3 s lane-change duration, explicitly reported as model assumptions. Do not attribute the bound-road selection itself to the model; the final scene does not distinguish raw selection from catalog fallback.
+| Step | Action                           | Show                                                       | Say                                                                    |
+| ---- | -------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 1    | Paste the prompt and submit      | The streaming pipeline                                     | “The model fills a typed scene. It may not write XML.”                 |
+| 2    | Scene and interpretation         | Two vehicles, the 30 m offset, the speed and timing chosen | “What I did not specify, the model chose, and it tells me what.”       |
+| 3    | Validation gates                 | Semantic, structural and residual pass; 2 skipped rules    | “Three independent checks. Skipped means not checked, and it says so.” |
+| 4    | Preview, then XML, then download | esmini playback and the `.xosc` file                       | “A standard OpenSCENARIO file. Any compliant tool opens it.”           |
 
-The recorded semantic and structural gates passed. Residual geometry displayed pass with two skipped simulation rules. Hover the skipped chip to inspect the rule names; the headline “All gates passed” does not establish those checks. Preview played and the downloaded XML matched the streamed output. In a new live run, inspect the values actually returned instead of assuming this recording will repeat.
+State the position in the prompt. Without it, the model sometimes starts the other vehicle behind the ego, and the lane change then happens behind it. That file still passes every gate, because the gates check form, not intent. If it happens live, say exactly that: it is the human-in-the-loop argument of slide 3.
 
-The technical sequence lasted 74.207 seconds; the silent recording lasts 75.160 seconds. This automated walkthrough does not establish human presentation pacing. Keep the eight-minute core plus two-minute reserve, and rehearse the explanation aloud.
+The authoring road catalog holds one road, `german_highway_short.xodr`, with two driving lanes per direction. A request for three lanes still binds to it, so avoid lane counts in live prompts.
 
-## Before Monday
+### Measured reliability
 
-1. Run `pnpm run check:setup` with the pinned `.ontology/` cache available. Use the existing services if already running. The root `pnpm dev` script cleans configured service ports; for a fresh isolated startup, see the repository quick-start instructions.
-2. Check `http://localhost:3003/health` at the configured API port. Review warnings privately: a healthy response alone does not prove that the chosen LLM or a separate authoring model is available.
-3. Rehearse both exact prompts with the actual provider, model, road catalog, browser and display. Confirm actors/actions, resolved road, gate results, visible motion, and the downloaded file. Record latency rather than guessing how long to narrate generation.
-4. Check the `.xosc` references the expected catalog road. Keep the corresponding `.xodr` available for any external simulator. A standalone `.xosc` download is not a complete asset bundle.
-5. Open the existing fallback before presenting: `.playground/conference-rehearsal-2026-09-24/technical-rehearsal.webm`. The same local directory holds the scene/gate/preview captures, `scenario.xosc`, and matching `german_highway_short.xodr`. These are gitignored and not deployed with the docs. Review returned asset metadata before public distribution; keep raw traces private.
-6. Load the deck and both app tabs in advance. Test presenter-popup placement, browser zoom and projector contrast. Disable notifications and keep credentials, terminals and unrelated tabs off the shared screen.
+Measured on 27 September 2026 on the local stack with `claude-haiku-4-5` through `claude-cli`, three runs per prompt:
 
-## Failure and time budget
+| Prompt                                            | Outcome                                          | Latency |
+| ------------------------------------------------- | ------------------------------------------------ | ------- |
+| `motorway HD maps in Germany`                     | 3/3 identical: 2 filters, 19 maps, no gaps       | ~3 s    |
+| `HD-Karten von Autobahnen in Deutschland`         | 3/3 identical to the English prompt              | ~3 s    |
+| `motorway HD maps in Germany with potholes`       | 3/3: 19 maps and one “potholes” gap              | ~5 s    |
+| `cut-in scenarios and the HD maps they reference` | 3/3: 5 matches with references and lineage       | ~3 s    |
+| Authoring prompt above                            | 3/3 valid, other vehicle 30 m ahead in every run | ~12 s   |
 
-If a live request errors or exceeds its rehearsed budget, allow at most about 30 seconds of visible recovery. Switch to the saved recording and say, “This is a recorded run of the same workflow.” Walk through the saved interpretation, checks and artifact. Never present the mocked browser-test stream as a live generation result.
+Avoid `Autobahnen mit Überholmanöver` and `German highways with 3 lanes` live. Both vary between runs: domains change, and one run in three returns no filters at all. Use them as spoken examples instead.
 
-Use the silent local recording with your own narration. Pause around 0:14 for search, 0:45–0:54 for scene inspection, 0:59 for gates/preview, and 1:08 for export. It records genuine provider responses, but the three-lane requirement was not fulfilled; retain that engineering conclusion when presenting the fallback.
+### When something fails
 
-If no recording has been prepared, use the deck schematics and state that the live path is unavailable. A saved XML file may be inspected in an editor, but this UI does not provide an arbitrary-file import workflow. If preview fails, continue with the scene, gate results and exported file, and say that playback has not been shown successfully.
+Resubmit once. Allow at most 30 seconds of visible recovery, then say “Here is the same flow from the rehearsal” and switch to the saved screenshots. Never present a mocked or recorded output as live. If preview fails, continue with the scene, the gates and the exported file, and say that playback did not run.
+
+## Before going on stage
+
+1. `pnpm run check:setup`, then `pnpm dev`. Wait until `http://localhost:3003/health` returns 200. A healthy API does not prove that the model provider answers, so submit one real request.
+2. Run every demo prompt once with the actual provider, browser and display.
+3. Save screenshots of each demo step as the fallback, and keep them one click away.
+4. Load the deck and both app tabs. Test the presenter window on the venue display, check zoom and projector contrast, turn off notifications, and close terminals and unrelated tabs.
 
 ## Likely questions
 
-- **Is this GraphRAG?** It is schema-driven structured retrieval: the model emits slots and a compiler produces SPARQL. Describe that mechanism rather than adopting a broader label that obscures it.
-- **Is the result deterministic?** The compilation of the same validated structure is deterministic under fixed schema/compiler versions. Natural-language interpretation can vary.
-- **Is it safe against every prompt attack?** The typed contract and query policy restrict the executable path. They do not prove correct interpretation or universal security.
-- **Can I use the latest OpenSCENARIO version?** This checkout pins XSD 1.3.0. ASAM's current release is 1.4.0; support requires separate verification and an engine/schema update.
-- **Does Valid mean the scenario is safe?** It summarizes semantic and structural checks. Inspect residual findings and skipped rules separately, and evaluate behavior and safety with appropriate downstream methods.
-- **Does search feed authoring automatically?** Not yet. They are complementary views in this prototype; authoring binds its own catalog road.
-- **What would you measure next?** Interpretation correctness, unsupported-request handling, success in a fixed simulator, agreement with expert intent, latency, and engineer task completion against the existing workflow.
+- **Isn't this just an LLM writing SPARQL?** No. The model fills typed slots through one tool call. A deterministic compiler writes the SPARQL, so the same slots always give the same query. The model never has a path to the database.
+- **Is the answer deterministic?** Compilation is deterministic for fixed ontology and compiler versions. Interpreting the sentence can vary between runs. That is why the interpretation and the gaps are shown before the results.
+- **What about prompt injection?** Injection can change what is asked. It cannot change what runs: only compiled `SELECT` queries pass the policy gate, and writes, `SERVICE` and graph redirection are rejected.
+- **Why not fine-tune a model on the ontology?** The ontology changes with every release. Retrieving the relevant SHACL at query time means a new release works without retraining. Any tool-calling model can do the translation, including local models.
+- **How do you know the LinkML port matches the hand-written ontology?** It is measured, not assumed: adversarial instances are derived from every existing shape and we count how many the new shapes still catch. The remaining differences are listed per domain.
+- **Does this work for other domains?** No domain names are hardcoded in the query path. Domains, properties and vocabularies are discovered from SHACL at startup. The claim is that a good ontology is enough to get this interface.
+- **Why is lane count a gap?** The HD-map shapes describe lane types, not a lane count. The concept exists in OpenLABEL's operational-design-domain vocabulary. One overarching ASAM OpenX ontology would close exactly this kind of gap.
+- **Which OpenSCENARIO version?** The engine pins XSD 1.3.0. ASAM's current release is OpenSCENARIO XML 1.4.0. Supporting it means updating the pinned engine and schema.
+- **Does “valid” mean the scenario is safe?** No. It means the document passed the semantic and structural checks. Behaviour and safety need simulation-based evaluation, and ASAM itself notes that different simulators can produce different results from the same file.
+- **Is ASAM doing this?** Not yet as a process. The model-based pipeline for OpenSCENARIO and OpenDRIVE is open work in progress on ASAM's published UML models, with fixes contributed to ShapeChange and owl2shacl. The proposal is to make it the way standards are produced.
+- **Related work?** Ontology-grounded query generation: ClinSKOS-ICU (KG-LLM workshop, LREC 2026), which also separates entity extraction from deterministic query generation. Language-to-scenario generation: Talk2Traffic (CVPR Workshops 2025), TrafficAlign (CVPR 2026), TARGET (IEEE TSE 2025) and Txt2Sce (arXiv 2025).

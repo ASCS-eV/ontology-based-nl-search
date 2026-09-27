@@ -14,9 +14,11 @@ test('development docs render and link to working slides and diagrams', async ({
 
   await page.getByRole('link', { name: 'View Presentation' }).click()
   await expect(page.getByRole('button', { name: 'Next slide', exact: true })).toBeVisible()
-  await expect(page.locator('.counter')).toHaveText('1 / 8')
+  await expect(page.locator('.counter')).toHaveText('1 / 13')
   await page.getByRole('button', { name: 'Next slide', exact: true }).click()
-  await expect(page.locator('.counter')).toHaveText('2 / 8')
+  await expect(page.locator('.counter')).toHaveText('2 / 13')
+  // Let the slide assets finish loading: leaving mid-request aborts them.
+  await page.waitForLoadState('networkidle')
 
   await page.goto('architecture')
   await expect(page.locator('.mermaid svg').first()).toBeVisible()

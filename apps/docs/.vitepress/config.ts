@@ -90,8 +90,8 @@ export default withMermaid(
           items: [
             { text: 'Conference Talk', link: '/slides/' },
             { text: 'Speaker Guide + Demo', link: '/slides/conference' },
-            { text: 'Research Brief', link: '/slides/research' },
-            { text: 'Authoring Technical Appendix', link: '/slides/authoring' },
+            { text: 'Architecture Appendix', link: '/slides/architecture' },
+            { text: 'Authoring Appendix', link: '/slides/authoring' },
           ],
         },
         {
@@ -126,8 +126,8 @@ export default withMermaid(
           items: [
             { text: 'Conference Talk', link: '/slides/' },
             { text: 'Speaker Guide + Demo', link: '/slides/conference' },
-            { text: 'Research Brief', link: '/slides/research' },
-            { text: 'Authoring Technical Appendix', link: '/slides/authoring' },
+            { text: 'Architecture Appendix', link: '/slides/architecture' },
+            { text: 'Authoring Appendix', link: '/slides/authoring' },
           ],
         },
         {

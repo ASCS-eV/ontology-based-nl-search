@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+const SLIDES = 13
+
 const sizes = [
   { width: 1280, height: 720 },
   { width: 1920, height: 1080 },
@@ -20,9 +22,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.setViewportSize(size)
       await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
       await page.goto('slides/')
-      await expect(page.locator('.counter')).toHaveText('1 / 8')
+      await expect(page.locator('.counter')).toHaveText(`1 / ${SLIDES}`)
 
-      for (let slideNumber = 1; slideNumber <= 8; slideNumber++) {
+      for (let slideNumber = 1; slideNumber <= SLIDES; slideNumber++) {
         await page.getByRole('tab', { name: `Slide ${slideNumber}`, exact: true }).click()
         const active = page.locator('.conference-page .slide--active')
         await expect(active).toHaveAttribute('aria-hidden', 'false')
@@ -65,7 +67,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
           if (!controls) throw new Error('Slide controls missing')
           const textElements = Array.from(
             slide.querySelectorAll<HTMLElement>(
-              'h1, h2, .accent, .eyebrow, .takeaway, .source-line, .journey span, .schema-spine, .pipeline strong, .pipeline small, .search-proof strong, .search-proof small, .evidence-steps strong, .evidence-steps span, .demo-route strong, .demo-route small, .road-sketch figcaption span'
+              'h1, h2, .accent, .eyebrow, .takeaway, .source-line, .acts span, .card-title, .card-text, .loop-center, .mirror-label, .mirror-row, .prompts li, .prompts small, .watch span, .thesis span'
             )
           )
           const results = textElements.map((element) => {
@@ -75,9 +77,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
             const light = luminance(foreground.rgb)
             const dark = luminance(background(element))
             const rect = element.getBoundingClientRect()
+            const fontSize = Number.parseFloat(style.fontSize)
             return {
               text: element.textContent?.trim() ?? '',
-              fontSize: Number.parseFloat(style.fontSize),
+              fontSize,
+              // WCAG 2.2 SC 1.4.3 large-scale text: at least 24px, or 18.66px bold.
+              large: fontSize >= 24 || (fontSize >= 18.66 && Number(style.fontWeight) >= 700),
               contrast: (Math.max(light, dark) + 0.05) / (Math.min(light, dark) + 0.05),
               withinSlide:
                 rect.left >= -1 &&
@@ -85,7 +90,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
                 rect.top >= -1 &&
                 rect.bottom < controls.top - 1,
               secondary: element.matches(
-                '.takeaway, .journey span, .schema-spine, .pipeline strong, .pipeline small, .search-proof strong, .search-proof small, .evidence-steps strong, .evidence-steps span, .demo-route strong, .demo-route small, .road-sketch figcaption span'
+                '.takeaway, .acts span, .card-title, .card-text, .loop-center, .mirror-label, .mirror-row, .prompts li, .prompts small, .watch span, .thesis span'
               ),
               source: element.matches('.source-line'),
             }
@@ -100,8 +105,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
         expect(report.results.length).toBeGreaterThan(0)
         for (const result of report.results) {
           const label = `slide ${slideNumber}: ${result.text}`
+          // WCAG 2.2 SC 1.4.3 (AA): 3:1 for large-scale text, 4.5:1 otherwise.
+          // The brand blue (#7891BB) reaches 3.2:1 on white, so the deck uses it
+          // for large text only.
           expect(result.contrast, `${label} contrast`).toBeGreaterThanOrEqual(
-            result.source ? 4.5 : 7
+            result.large ? 3 : 4.5
           )
           if (result.secondary && size.width === 1280) {
             expect(result.fontSize, `${label} size`).toBeGreaterThanOrEqual(24)
@@ -113,7 +121,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         if (
           process.env.DOCS_CAPTURE_SLIDES === '1' &&
           colorScheme === 'light' &&
-          [1, 5, 6, 7, 8].includes(slideNumber)
+          [1, 4, 6, 10, 12].includes(slideNumber)
         ) {
           await page.screenshot({
             path: `/tmp/conference-readability-${size.width}x${size.height}-slide-${slideNumber}.png`,
@@ -131,7 +139,7 @@ test('conference readability: presenter notes remain readable and synchronized',
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('slides/')
-  await expect(page.locator('.counter')).toHaveText('1 / 8')
+  await expect(page.locator('.counter')).toHaveText(`1 / ${SLIDES}`)
   const popupPromise = page.waitForEvent('popup')
   await page.keyboard.press('p')
   const popup = await popupPromise
@@ -167,8 +175,8 @@ test('conference readability: presenter notes remain readable and synchronized',
   }
   await expect(popup.getByRole('button', { name: 'Next slide' })).toBeVisible()
   await popup.keyboard.press('ArrowRight')
-  await expect(page.locator('.counter')).toHaveText('2 / 8')
-  await expect(popup.locator('#presenter-position')).toHaveText('Slide 2 of 8')
+  await expect(page.locator('.counter')).toHaveText(`2 / ${SLIDES}`)
+  await expect(popup.locator('#presenter-position')).toHaveText(`Slide 2 of ${SLIDES}`)
   await popup.setViewportSize({ width: 480, height: 400 })
   expect(
     await popup.evaluate(() => {

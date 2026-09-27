@@ -1,17 +1,25 @@
 import { expect, test } from '@playwright/test'
 
 const headings = [
-  'Is this the scenario I meant?',
-  'Two capabilities. One engineering task.',
-  'Make the interpretation inspectable.',
-  'Why did this asset match?',
-  'What did the model decide?',
-  'Valid structure is not verified intent.',
-  'What this prototype demonstrates—and what remains open.',
-  'Judge the demo on three questions.',
+  'Formal models are the dictionary. LLMs are the translator.',
+  'Formal modelling is nothing new. Writing it just got cheap.',
+  'Agents excel against specs. Specs keep humans in the loop.',
+  'Build circles, not pipelines.',
+  'Stop building proprietary tools. Plug into open standards.',
+  'LLMs translate. OWL + SHACL are dictionary and grammar.',
+  'Ask in your own words.',
+  'Every gap shows what the ontology cannot say yet.',
+  'Data lineage has never been easier.',
+  'If we can search it, we can generate it.',
+  'Describe it. Get a valid OpenSCENARIO file.',
+  'Standardize in models, not in prose.',
+  'Model. Generate. Validate. Translate. Create. Standardize.',
 ]
+// Slides handing over to the live application; their notes are a click script.
+const demoSlides = new Set([6, 10])
+const SLOT_SECONDS = 25 * 60
 
-test('conference storyline keeps eight synchronized scripts and an honest handoff', async ({
+test('conference storyline keeps synchronized scripts inside the 25-minute slot', async ({
   page,
 }) => {
   const errors: string[] = []
@@ -22,7 +30,7 @@ test('conference storyline keeps eight synchronized scripts and an honest handof
 
   await page.goto('slides/')
   await expect(page.locator('.slide--active h1')).toBeVisible()
-  await expect(page.locator('.slide')).toHaveCount(8)
+  await expect(page.locator('.slide')).toHaveCount(headings.length)
   const notes = await page.locator('.slide-notes-source').evaluateAll((elements) =>
     elements.map((element) => ({
       index: Number(element.getAttribute('data-slide-note')),
@@ -34,28 +42,29 @@ test('conference storyline keeps eight synchronized scripts and an honest handof
         .join(' '),
     }))
   )
-  expect(notes).toHaveLength(8)
-  expect(notes.map((note) => note.index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7])
+  expect(notes.map((note) => note.index)).toEqual(headings.map((_, index) => index))
   expect(notes.map((note) => note.title)).toEqual(headings)
 
+  // Contiguous timings, speakable at ~110 words per minute, ending before the slot.
   let elapsed = 0
+  let spokenWords = 0
   for (const [index, note] of notes.entries()) {
     const timing = note.timing.match(/^(\d+):(\d+)–(\d+):(\d+)/)
     expect(timing, `Timing for slide ${index + 1}`).not.toBeNull()
     const start = Number(timing![1]) * 60 + Number(timing![2])
     const end = Number(timing![3]) * 60 + Number(timing![4])
-    expect(start).toBe(elapsed)
-    expect(end - start).toBe(index === 0 || index === 7 ? 90 : 120)
+    expect(start, `slide ${index + 1} starts where the previous ended`).toBe(elapsed)
+    const words = note.spoken.split(/\s+/).length
+    if (!demoSlides.has(index)) {
+      spokenWords += words
+      expect(words, `slide ${index + 1} fits its time`).toBeLessThanOrEqual(
+        ((end - start) / 60) * 130
+      )
+    }
     elapsed = end
-    expect(note.spoken.split(/\s+/).length).toBeGreaterThanOrEqual(140)
   }
-  expect(elapsed).toBe(900)
-  const words = notes
-    .map((note) => note.spoken)
-    .join(' ')
-    .split(/\s+/).length
-  expect(words).toBeGreaterThanOrEqual(1300)
-  expect(words).toBeLessThanOrEqual(1800)
+  expect(elapsed).toBeLessThan(SLOT_SECONDS)
+  expect(spokenWords).toBeGreaterThanOrEqual(1400)
 
   const popupPromise = page.waitForEvent('popup')
   await page.getByRole('button', { name: 'Open presenter notes (P)' }).click()
@@ -63,27 +72,21 @@ test('conference storyline keeps eight synchronized scripts and an honest handof
   popup.on('pageerror', (error) => errors.push(error.message))
   for (const [index, title] of headings.entries()) {
     await expect
+      // textContent, not innerText: headings are uppercased by CSS only.
       .poll(async () =>
-        (await page.locator('.slide--active').getByRole('heading').innerText())
+        ((await page.locator('.slide--active').getByRole('heading').first().textContent()) ?? '')
           .replace(/\s+/g, ' ')
           .trim()
       )
       .toBe(title)
     await expect(popup.locator('#presenter-title')).toHaveText(title)
-    await expect(popup.locator('#presenter-position')).toHaveText(`Slide ${index + 1} of 8`)
+    await expect(popup.locator('#presenter-position')).toHaveText(
+      `Slide ${index + 1} of ${headings.length}`
+    )
     await expect(popup.locator('#presenter-script')).toContainText(
       notes[index]!.spoken.slice(0, 70)
     )
-    if (index === 1) {
-      await expect(page.locator('.slide--active')).toContainText(
-        'Separate paths today; no selected-road handoff.'
-      )
-    }
-    if (index === 5) {
-      await expect(page.locator('.slide--active')).toContainText('Reference integrity')
-      await expect(page.locator('.slide--active')).not.toContainText('Meaning')
-    }
-    if (index < 7) await popup.getByRole('button', { name: 'Next slide' }).click()
+    if (index < headings.length - 1) await popup.getByRole('button', { name: 'Next slide' }).click()
   }
   await popup.close()
   expect(errors).toEqual([])

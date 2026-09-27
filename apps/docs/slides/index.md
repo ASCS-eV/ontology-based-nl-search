@@ -1,171 +1,296 @@
 ---
 layout: page
 pageClass: slide-page conference-page
-title: Is this the scenario I meant?
+title: The dictionary and the translator
 ---
 
 <script setup>
-import RoadSketch from '../.vitepress/theme/components/RoadSketch.vue'
+import SlideBrand from '../.vitepress/theme/components/SlideBrand.vue'
+import TitleArt from '../.vitepress/theme/components/TitleArt.vue'
 import '../.vitepress/theme/conference.css'
 </script>
 
-<SlideProvider :total-slides="8">
+<SlideProvider :total-slides="13">
+<SlideBrand />
 <SlideDeck>
 
 <Slide :index="0" variant="title">
-  <p class="eyebrow">ENVITED-X · Search + scenario authoring</p>
-  <h1>Is this the <span class="accent">scenario I meant?</span></h1>
-  <RoadSketch />
-  <p class="takeaway">A highway cut-in. An engineering decision.</p>
+  <div class="title-grid">
+    <div class="title-text">
+      <p class="eyebrow">EU project SYNERGIES · Results by BMW</p>
+      <h1>Formal models are the dictionary. <span class="accent">LLMs are the translator.</span></h1>
+      <p class="takeaway">Agent-assisted modelling, natural-language search and synthetic scenarios, built on open standards.</p>
+      <div class="acts" aria-label="The five parts of the talk">
+        <span>Model</span><span>Loop</span><span>Use</span><span>Invert</span><span>Standardize</span>
+      </div>
+    </div>
+    <TitleArt />
+  </div>
+  <p class="source-line">Funded by the European Union. Views and opinions expressed are those of the author(s) only and do not necessarily reflect those of the EU or CINEA. Neither the EU nor the granting authority can be held responsible for them.</p>
 </Slide>
 
 <Slide :index="1">
-  <p class="eyebrow">The prototype boundary</p>
-  <h2>Two capabilities.<br />One engineering task.</h2>
-  <div class="demo-routes" aria-label="Two independent paths, not a connected asset handoff">
-    <div class="demo-route"><strong>Search</strong><small>Ask about existing assets</small><small>Inspect matching metadata</small></div>
-    <div class="demo-route"><strong>Author</strong><small>Describe a new scenario</small><small>Uses its own road catalog</small></div>
+  <p class="eyebrow">01 · Modelling</p>
+  <h2>Formal modelling is nothing new. <span class="accent">Writing it just got cheap.</span></h2>
+  <div class="timeline" aria-label="Modelling languages by year of first standardization">
+    <div class="card"><span class="card-title">1997</span><span class="card-text">UML</span></div>
+    <div class="card"><span class="card-title">2001</span><span class="card-text">XML Schema</span></div>
+    <div class="card"><span class="card-title">2004</span><span class="card-text">OWL</span></div>
+    <div class="card"><span class="card-title">2008</span><span class="card-text">SPARQL</span></div>
+    <div class="card"><span class="card-title">2017</span><span class="card-text">SHACL</span></div>
+    <div class="card tone-info"><span class="card-title">Now</span><span class="card-text">Agents write them fluently. Generators derive the rest.</span></div>
   </div>
-  <p class="takeaway">Separate paths today; no selected-road handoff.</p>
+  <p class="takeaway">One LinkML schema → OWL + SHACL + JSON-LD context. One UML model → XSD + OWL + SHACL.</p>
+  <p class="source-line">Generators in use: LinkML (gen-owl, gen-shacl, gen-jsonld-context) · ShapeChange · owl2shacl</p>
 </Slide>
 
 <Slide :index="2">
-  <p class="eyebrow">The design principle</p>
-  <h2>Make the interpretation inspectable.</h2>
-  <div class="pipeline" aria-label="Schematic: German highways with three lanes becomes explicit criteria before compilation">
-    <div><strong>Your words</strong><small>“German highways with 3 lanes”</small></div>
+  <p class="eyebrow">02 · Human in the loop</p>
+  <h2>Agents excel against specs. <span class="accent">Specs keep humans in the loop.</span></h2>
+  <div class="flow" aria-label="The specification defines correctness, the agent drafts, the human reviews">
+    <div class="card"><span class="card-title">Specification</span><span class="card-text">Defines what “correct” means: W3C, ASAM</span></div>
     <span class="flow-arrow" aria-hidden="true">→</span>
-    <div class="intent-box"><strong>Explicit criteria</strong><small>Supported filters + gaps</small></div>
+    <div class="card"><span class="card-title">Agent</span><span class="card-text">Drafts the model, the examples, the tests</span></div>
     <span class="flow-arrow" aria-hidden="true">→</span>
-    <div><strong>Compile</strong><small>From checked structure</small></div>
+    <div class="card tone-info"><span class="card-title">Human</span><span class="card-text">Reviews a small, declarative model diff</span></div>
   </div>
-  <p class="takeaway">Inspect the interpretation before trusting the result.</p>
-  <p class="source-line">Schematic · the model interprets; application code compiles.</p>
+  <p class="takeaway">Review what the model means, not thousands of lines of code.</p>
 </Slide>
 
 <Slide :index="3">
-  <p class="eyebrow">01 / Find</p>
-  <h2>Why did this asset match?</h2>
-  <div class="search-proof" aria-label="Excerpt from recorded run: only the country criterion survived validation">
-    <div><strong>I asked</strong><small>Germany</small><small>Highway · 3 lanes</small></div>
-    <div><strong>It retained</strong><small>Country = DE</small><small>No lane-count filter</small></div>
-    <div><strong>I received</strong><small>81 metadata matches</small><small>Not 81 three-lane roads</small></div>
+  <p class="eyebrow">03 · Closed loops</p>
+  <h2>Build circles, not pipelines.</h2>
+  <div class="loop" aria-label="Loop: model, generator, artifacts, example data, validator, back to model">
+    <div class="card"><span class="card-title">Model</span><span class="card-text">LinkML · UML</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">Generator</span><span class="card-text">gen-owl · ShapeChange</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">Artifacts</span><span class="card-text">OWL · SHACL · XSD</span></div>
+    <span class="arrow" aria-hidden="true">↑</span>
+    <p class="loop-center">AI drafts at every station. A machine checks every turn.</p>
+    <span class="arrow" aria-hidden="true">↓</span>
+    <div class="card tone-success"><span class="card-title">Validator</span><span class="card-text">OMB, in CI</span></div>
+    <span class="return" aria-hidden="true"></span>
+    <div class="card"><span class="card-title">Example data</span><span class="card-text">Valid + broken on purpose</span></div>
   </div>
-  <p class="takeaway">A metadata match is a candidate—not a certified map.</p>
-  <p class="source-line">Excerpt from recorded run · 24 Sep 2026 · <a href="./rehearsal" target="_blank" rel="noopener noreferrer">Evidence + limits</a></p>
+  <p class="source-line">Ontology Management Base: LinkML artifacts must regenerate byte-identical; each domain's example data is SHACL-validated.</p>
 </Slide>
 
 <Slide :index="4">
-  <p class="eyebrow">02 / Create</p>
-  <h2>What did the model decide?</h2>
-  <p class="takeaway">“A cut-in on a three-lane highway.”</p>
-  <div class="demo-routes" aria-label="Excerpt from recorded run: requested three lanes versus two driving lanes per direction on the bound road">
-    <div class="demo-route"><strong>I requested</strong><small>Cut-in maneuver</small><small>Three-lane highway</small></div>
-    <div class="demo-route"><strong>The bound road</strong><small>2 driving lanes / direction</small><small>Decision: reject this road</small></div>
+  <p class="eyebrow">04 · Leverage</p>
+  <h2>Stop building proprietary tools. <span class="accent">Plug into open standards.</span></h2>
+  <div class="tool-grid" aria-label="Standards and the open-source tools they unlock">
+    <div class="card"><span class="card-title">RDF · JSON-LD</span><span class="card-text">Any graph database</span></div>
+    <div class="card"><span class="card-title">SPARQL 1.1</span><span class="card-text">Oxigraph · Apache Jena Fuseki</span></div>
+    <div class="card"><span class="card-title">SHACL</span><span class="card-text">Validation is a library call</span></div>
+    <div class="card"><span class="card-title">GraphQL</span><span class="card-text">The API developers already know</span></div>
+    <div class="card"><span class="card-title">JSON Schema</span><span class="card-text">Typed tool calls for agents</span></div>
+    <div class="card"><span class="card-title">OWL 2</span><span class="card-text">Editors, reasoners, generators</span></div>
   </div>
-  <p class="source-line">Excerpt from recorded run · <a href="./rehearsal" target="_blank" rel="noopener noreferrer">Recorded evidence</a> · OpenSCENARIO XSD 1.3.0.</p>
+  <p class="takeaway">The code we wrote is glue between standards.</p>
 </Slide>
 
 <Slide :index="5">
-  <p class="eyebrow">03 / Inspect</p>
-  <h2>Valid structure is not verified intent.</h2>
-  <div class="evidence-steps check-grid" aria-label="Four separate observations, not a ladder to safety assurance">
-    <div><strong>Reference integrity</strong><span>Semantic gate: pass</span></div>
-    <div><strong>Document structure</strong><span>Structural gate: pass</span></div>
-    <div><strong>Road geometry</strong><span>Pass; 2 rules skipped</span></div>
-    <div><strong>Playback</strong><span>Playing; XML exported</span></div>
+  <p class="eyebrow">05 · Translation</p>
+  <h2>LLMs translate. <span class="accent">OWL + SHACL are dictionary and grammar.</span></h2>
+  <div class="flow" aria-label="A sentence is translated into typed slots, which a compiler turns into SPARQL">
+    <div class="card"><span class="card-title">Your words</span><span class="card-text">“HD-Karten von Autobahnen in Deutschland”</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card tone-info"><span class="card-title">LLM + ontology</span><span class="card-text">Dictionary: classes, allowed values. Grammar: shapes.</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">Typed slots</span><span class="card-text">One tool call, checked against SHACL</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">Compiler</span><span class="card-text">Deterministic SPARQL</span></div>
   </div>
-  <p class="takeaway">Valid file. Wrong road for this request.</p>
-  <p class="source-line">Excerpt from recorded run · Skipped ≠ checked. Valid ≠ safe. <a href="./rehearsal" target="_blank" rel="noopener noreferrer">Check scope</a></p>
+  <p class="takeaway">The LLM never writes the query. A prompt injection can change what is asked, never what runs.</p>
 </Slide>
 
-<Slide :index="6">
-  <p class="eyebrow">Contribution + evaluation</p>
-  <h2>What this prototype demonstrates—and what remains open.</h2>
-  <div class="demo-routes" aria-label="Implemented capabilities versus questions requiring evaluation">
-    <div class="demo-route"><strong>Implemented</strong><small>Inspectable search</small><small>Scene → checked file</small></div>
-    <div class="demo-route"><strong>Still to evaluate</strong><small>Intent agreement</small><small>Engineer task outcomes</small></div>
+<Slide :index="6" variant="cta">
+  <p class="eyebrow">Live demo · Search</p>
+  <h2>Ask in your own words.</h2>
+  <ol class="prompts prompts--compact" aria-label="Search prompts for the live demo">
+    <li>motorway HD maps in Germany<small>SPARQL · GraphQL · 19 maps</small></li>
+    <li>HD-Karten von Autobahnen in Deutschland<small>the identical query</small></li>
+    <li>motorway HD maps in Germany with potholes<small>plus one gap</small></li>
+    <li>cut-in scenarios and the HD maps they reference<small>lineage</small></li>
+  </ol>
+  <div class="watch" aria-label="What to watch for">
+    <span class="watch-label">Watch for</span><span>Interpretation</span><span>Gaps</span><span>SPARQL</span><span>Lineage</span>
   </div>
-  <p class="source-line">Research-informed design: ClinSKOS-ICU · Talk2Traffic · TrafficAlign. <a href="./research" target="_blank" rel="noopener noreferrer">Research brief</a></p>
 </Slide>
 
-<Slide :index="7" variant="cta">
-  <p class="eyebrow">Live demonstration · 10 minutes</p>
-  <h2>Judge the demo on three questions.</h2>
-  <div class="evidence-steps" aria-label="Three questions for judging the demonstration">
-    <div><strong>Interpretation</strong><span>What was understood?</span></div>
-    <div><strong>Checks</strong><span>What was established?</span></div>
-    <div><strong>Decision</strong><span>What must I review?</span></div>
+<Slide :index="7">
+  <p class="eyebrow">06 · Learn from users</p>
+  <h2>Every gap shows <span class="accent">what the ontology cannot say yet.</span></h2>
+  <div class="columns" aria-label="Three kinds of gaps reported to the user">
+    <div class="card tone-warning"><span class="card-title">Not in ontology</span><span class="card-text">The concept does not exist yet</span></div>
+    <div class="card tone-info"><span class="card-title">Understood, not filtered</span><span class="card-text">Recognized, but no property to filter on</span></div>
+    <div class="card tone-neutral"><span class="card-title">Query limitation</span><span class="card-text">The engine cannot express it yet</span></div>
   </div>
-  <p class="takeaway">Search and authoring: two separate app views.</p>
-  <p class="source-line"><a href="./conference" target="_blank" rel="noopener noreferrer">Demo runbook + rehearsal guide</a></p>
+  <p class="takeaway">Experts model the language first. Users then show where it needs to grow.</p>
+</Slide>
+
+<Slide :index="8">
+  <p class="eyebrow">07 · Lineage</p>
+  <h2>Data lineage has never been easier.</h2>
+  <div class="flow" aria-label="References in the graph form the lineage of an asset">
+    <div class="card"><span class="card-title">Scenario</span><span class="card-text">Cut-in in Frankfurt</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">OSI trace</span><span class="card-text">Frankfurt motorway</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">HD maps</span><span class="card-text">Frankfurt interchange</span></div>
+  </div>
+  <p class="takeaway">A reference is a typed link, not free text. Lineage is a graph walk, not a feature you build.</p>
+  <p class="source-line">From the demo data: one scenario reaches 7 assets through its manifest, each with a did:web identifier.</p>
+</Slide>
+
+<Slide :index="9">
+  <p class="eyebrow">08 · The inverse</p>
+  <h2>If we can search it, <span class="accent">we can generate it.</span></h2>
+  <div class="mirror" aria-label="Search and authoring use the same pattern in opposite directions">
+    <span class="mirror-label">Search</span>
+    <div class="mirror-row card tone-info">words → typed slots → SPARQL → existing assets</div>
+    <span class="mirror-label">Author</span>
+    <div class="mirror-row card tone-success">words → typed scene → OpenSCENARIO XML → checks → playback</div>
+  </div>
+  <p class="takeaway">The future: synthetic data that is valid by construction and described by the same ontology.</p>
+  <p class="source-line">Checks: SHACL from ASAM's OpenSCENARIO model · XSD 1.3.0 via the open-source OpenSCENARIO API (WebAssembly) · road rules · esmini</p>
+</Slide>
+
+<Slide :index="10" variant="cta">
+  <p class="eyebrow">Live demo · Authoring</p>
+  <h2>Describe it. Get a valid OpenSCENARIO file.</h2>
+  <ol class="prompts" aria-label="Authoring prompt for the live demo">
+    <li>A cut-in on a highway: a vehicle 30 m ahead of the ego vehicle in the neighbouring lane changes into the ego's lane.<small>Actors, actions, and the road the scene binds to</small></li>
+  </ol>
+  <div class="watch" aria-label="What to watch for">
+    <span class="watch-label">Watch for</span><span>Model choices</span><span>Semantic · structural · road checks</span><span>esmini preview</span><span>.xosc export</span>
+  </div>
+</Slide>
+
+<Slide :index="11">
+  <p class="eyebrow">09 · Standardization</p>
+  <h2>Standardize in models, <span class="accent">not in prose.</span></h2>
+  <div class="columns" aria-label="Standardization today and with model-based pipelines">
+    <div class="card tone-neutral"><span class="card-title">Today</span><span class="card-text">Text + XSD per standard. Ontologies derived afterwards, one silo each.</span></div>
+    <div class="card tone-info"><span class="card-title">Next</span><span class="card-text">One ASAM OpenX ontology. Models authored with agents, reviewed like code.</span></div>
+    <div class="card tone-success"><span class="card-title">Open pipelines</span><span class="card-text">Generate XSD, OWL, SHACL and docs from one source.</span></div>
+  </div>
+  <p class="takeaway">Already working: OpenSCENARIO.xsd regenerated byte-identical from ASAM's UML model.</p>
+  <p class="source-line">UML → ShapeChange → OWL → owl2shacl → SHACL · fixes contributed upstream to both tools</p>
+</Slide>
+
+<Slide :index="12" variant="cta">
+  <p class="eyebrow">Close the loop</p>
+  <h2>Model. Generate. Validate. <span class="accent">Translate. Create. Standardize.</span></h2>
+  <div class="thesis card tone-info">
+    <span>Formal models are the dictionary.</span>
+    <span>LLMs are the translator.</span>
+    <span>Agents close the loop, and humans stay in it.</span>
+  </div>
+  <p class="source-line">synergies-ccam.eu · github.com/ASCS-eV/ontology-based-nl-search · github.com/ASCS-eV/ontology-management-base</p>
+  <p class="source-line">Funded by the European Union. Views and opinions expressed are those of the author(s) only and do not necessarily reflect those of the EU or CINEA. Neither the EU nor the granting authority can be held responsible for them.</p>
 </Slide>
 
 </SlideDeck>
 
-<SlideNotes :index="0" title="Is this the scenario I meant?" timing="0:00–1:30 · 90 seconds">
-  <p>Imagine asking an assistant for a highway cut-in scenario. A vehicle changes into the lane ahead of the ego vehicle. A file appears, and perhaps a preview runs. We have produced something. But have we produced the test we actually meant?</p>
-  <p>The drawing is a schematic, not a generated result. It leaves important questions unanswered: which road, which actors, and which initial conditions? A short request cannot settle every engineering choice. The interesting question is whether we can see the choices that were made before deciding to use the result.</p>
-  <p>This prototype explores two places where that matters: discovering simulation assets and authoring an OpenSCENARIO scenario. In both, language becomes an explicit representation that the application can process and the engineer can inspect.</p>
-  <p>For fifteen minutes, I will explain that boundary using this cut-in task. Then we will spend ten minutes in the application. Keep one question in mind: is this the scenario I meant?</p>
-  <p>[Cue: point to the two vehicles; identify the drawing as a schematic. Transition: “First, here is exactly what the prototype connects—and what it does not.”]</p>
+<SlideNotes :index="0" title="Formal models are the dictionary. LLMs are the translator." timing="0:00–1:00 · 60 seconds">
+  <p>I am presenting results that BMW created in the EU research project SYNERGIES.</p>
+  <p>For twenty-five years we have been able to describe data formally. And for twenty-five years most of that rigor stayed locked away: in models only experts could write, and in data hardly anyone could query.</p>
+  <p>Today I want to show you why that has changed. Formal models are the dictionary and the grammar. Large language models are the translator. Put them together in closed loops, with a human reviewing every turn, and you get search in plain language, synthetic data that is valid by construction, and standards that are modelled instead of written.</p>
+  <p>Five parts, two live demos.</p>
+  <p>[Cue: name SYNERGIES and BMW first, then read the headline slowly and point along the five parts. Transition: “Let me start with a confession.”]</p>
 </SlideNotes>
 
-<SlideNotes :index="1" title="Two capabilities. One engineering task." timing="1:30–3:30 · 2 minutes">
-  <p>An engineer preparing this test has two different questions. What suitable assets already exist? And how can I describe the maneuver I want to create? The prototype supports both questions, through separate application views.</p>
-  <p>On the left is search. It interprets a request against the vocabulary used to describe simulation assets. Our reference deployment uses ENVITED-X metadata. I can ask for German highways with three lanes, then inspect the criteria and matching metadata.</p>
-  <p>On the right is authoring. It interprets a scenario description, creates a structured scene, and produces an OpenSCENARIO document through the application’s engine. It resolves a road from its own curated catalog.</p>
-  <p>The boundary on the slide is important: selecting a search result does not carry that road into authoring. These are two capabilities for the same engineering task, not a completed end-to-end asset handoff. That missing connection is an integration opportunity, not something I will pretend the demo already does.</p>
-  <p>What connects the two today is the design question. Can an engineer compare their words with the system’s explicit interpretation, rather than judge only the final answer? That is the contribution we can inspect here.</p>
-  <p>[Cue: point to the parallel panels, then read the handoff disclosure once. Transition: “The useful boundary is between interpretation and compilation.”]</p>
+<SlideNotes :index="1" title="Formal modelling is nothing new. Writing it just got cheap." timing="1:00–2:30 · 90 seconds">
+  <p>Let me start with a confession: nothing on this timeline is new. From UML in 1997 to SHACL in 2017, we have had precise, machine-checkable modelling languages for a generation.</p>
+  <p>What held us back was the cost of writing them. A good ontology needed a rare expert and a lot of patience, and it drifted away from the code around it.</p>
+  <p>Two things changed. First, the generators matured. With LinkML I write one schema and derive OWL, SHACL and a JSON-LD context from it. ShapeChange and owl2shacl do the same from a UML model. Second, these languages are exactly what language models are good at: small, precisely specified, and documented in public in great detail. An agent drafts a SHACL shape the way it drafts a function.</p>
+  <p>So modelling becomes a conversation with an assistant, not a solo expert task. That is how we are re-modelling the domains of the Ontology Management Base in LinkML right now: an agent at the keyboard, a human deciding.</p>
+  <p>[Cue: sweep left to right along the years, stop on “Now”. Transition: “Why does an agent do this well?”]</p>
 </SlideNotes>
 
-<SlideNotes :index="2" title="Make the interpretation inspectable." timing="3:30–5:30 · 2 minutes">
-  <p>Consider the request on the left: German highways with three lanes. The center shows supported filters and gaps, not a promise that every word becomes a filter. This is a schematic of the process, not a screenshot of a model response. We compare the interpretation with the sentence before relying on the result.</p>
-  <p>The ontology supplies the vocabulary and relationships the search pipeline understands. Constraints describe what values and structures are allowed. Technically, the search path reads OWL and SHACL, and the application compiles the checked search representation into SPARQL. The model does not write that query directly.</p>
-  <p>Authoring applies a related pattern to actors and actions. The model submits a scene representation; application code lowers it into the engine’s document structure. It does not ask the model to write the final XML. The two paths share a design principle, not an identical implementation.</p>
-  <p>This boundary gives us something concrete to test. Under fixed schema and compiler versions, the same validated structure produces the same compilation. Repeating the sentence can still produce a different interpretation. And a supported value can still be the wrong choice for my request.</p>
-  <p>[Cue: compare the sentence with supported filters and gaps. Transition: “Here is what happened when we actually made that request.”]</p>
+<SlideNotes :index="2" title="Agents excel against specs. Specs keep humans in the loop." timing="2:30–4:00 · 90 seconds">
+  <p>Why does this work so well? Because agents are at their best when there is a specification to develop against. The specification tells the agent what correct means, and it tells me how to check the result. That is the difference between an agent that improvises and an agent that engineers.</p>
+  <p>It also gives us something we are often afraid of losing: the human in the loop. When an agent writes thousands of lines of imperative code, I can test it, but I can hardly review it. When an agent changes a model, the diff is small and declarative. A new class. A new allowed value. A cardinality. I can read that. My domain experts can read that. We can discuss it in a pull request.</p>
+  <p>So the division of labour is simple. The specification defines correctness. The agent does the typing: the model, the examples, the tests. The human decides what the model should mean. We still understand what is happening, and that is the precondition for trusting anything that comes afterwards.</p>
+  <p>[Cue: point to the three boxes in order; rest on “Human”. Transition: “But a model on its own proves nothing.”]</p>
 </SlideNotes>
 
-<SlideNotes :index="3" title="Why did this asset match?" timing="5:30–7:30 · 2 minutes">
-  <p>This is an excerpt from a real recorded run, not an idealized example. I asked for German highways with three lanes. The interpretation summary described exactly that. But the validated criteria retained only country equals DE, within the map domain. Highway classification and lane count were reported as unsupported.</p>
-  <p>The application returned eighty-one metadata matches. That does not mean eighty-one three-lane highways. A displayed result had country DE, which supports the retained country filter; its returned fields did not establish the requested lane count. The count describes this dataset and this run, not a promise for the next request.</p>
-  <p>Here is the engineering decision: treat these as candidates, not as answers satisfying the entire sentence. Before choosing a road for my test, I need evidence for the criteria the query could not represent. A confident summary is not a substitute for that evidence.</p>
-  <p>This is why the explicit structure matters. It lets me compare the request, executable criteria, reported gaps, and returned metadata. The boundary remains metadata retrieval, not independent verification of road geometry or simulator suitability. And none of these search results is automatically transferred into authoring.</p>
-  <p>[Cue: contrast the request with country-only filtering and 81 matches. Transition: “The authoring run exposed an equally concrete boundary.”]</p>
+<SlideNotes :index="3" title="Build circles, not pipelines." timing="4:00–5:30 · 90 seconds">
+  <p>A model on its own proves nothing. So the third ingredient is the most important one: we build circles, not pipelines.</p>
+  <p>The model feeds a generator. The generator produces artifacts: OWL, SHACL, JSON-LD contexts, and in the ASAM case, XML Schemas. Then we need example data: valid instances, and instances that are broken on purpose. And a validator checks that data against the artifacts. In our case that is the Ontology Management Base, OMB, which validates the example data of every domain in continuous integration. Whatever fails goes back to the model, and the loop turns again.</p>
+  <p>The AI helps at every station. It drafts the model, writes examples, explains a violation. But every turn is checked by a machine. OMB regenerates its LinkML artifacts in CI and fails on a single byte of difference. And when we port a hand-written ontology to LinkML, we measure it: we derive adversarial instances from every existing shape and count how many the new shapes still catch.</p>
+  <p>That is how an agent can work fast while we still trust the result.</p>
+  <p>[Cue: trace the loop with your hand, clockwise from Model back to Model. Transition: “Once you trust your models, something interesting happens.”]</p>
 </SlideNotes>
 
-<SlideNotes :index="4" title="What did the model decide?" timing="7:30–9:30 · 2 minutes">
-  <p>Now the real authoring request: a cut-in on a three-lane highway. The recorded output contained two vehicles and five actions. It supplied a speed of twenty-five meters per second, a two-second start time, and a three-second lane-change duration. The model also reported those unspecified values as assumptions. They are actual returned scene values, not values invented for this slide.</p>
-  <p>But the more decisive detail is the road. The scene and exported file reference german highway short. Its pinned catalog geometry has two driving lanes per direction, not the three requested. The interpretation summary nevertheless called it a three-lane highway.</p>
-  <p>My decision is to reject this road for the requested test. I can inspect the generated maneuver, but I cannot approve the artifact as satisfying that road requirement. The final scene shows the bound road; it does not establish whether the raw model selected it or catalog fallback supplied it. I will not attribute that choice without evidence.</p>
-  <p>The application generated a document with its pinned XSD 1.3.0 engine, and the preview and export worked. Those successes matter, but they do not remove the mismatch. This page supports inspection, not an in-place scene or XML correction workflow.</p>
-  <p>[Cue: compare three requested lanes with two catalog driving lanes per direction. Transition: “The validation badge was green. Here is exactly what that meant.”]</p>
+<SlideNotes :index="4" title="Stop building proprietary tools. Plug into open standards." timing="5:30–7:00 · 90 seconds">
+  <p>Now we have formal data models, and we are confident in working with them. This is where the payoff starts. We do not have to build tooling any more. We plug in.</p>
+  <p>Our data is RDF, so any graph database can hold it. Oxigraph runs in-process during development, Apache Jena Fuseki in production. Both speak SPARQL 1.1: one standard query language for all of it. The constraints are SHACL, so validation is a library call, not a project. The same shapes give us a GraphQL surface that every web developer already knows. And the agents build on the same foundations: their tool calls are typed with JSON Schema, one more open standard.</p>
+  <p>Think about what this replaces. In our industry, many organizations have spent years building proprietary databases, query builders and validators for simulation data. Here, the code we wrote is glue between standards, and every boundary cites its specification. Ask whether a component is correct, and the question becomes: does it conform to the standard?</p>
+  <p>[Cue: point to two or three tiles, not all six. Transition: “Which brings me to natural language.”]</p>
 </SlideNotes>
 
-<SlideNotes :index="5" title="Valid structure is not verified intent." timing="9:30–11:30 · 2 minutes">
-  <p>In the recorded run, semantic and structural checks passed on the first authoring attempt. The overall badge said Valid. Reference integrity concerns relationships inside the representation. Document structure concerns the emitted file and pinned engine. Neither checked that the road fulfilled the three-lane request.</p>
-  <p>The residual gate also displayed pass, but marked two simulation rules as skipped: collision at the start and reaching the target within the time horizon. Zero reported gaps is not evidence that those rules passed. The overall Valid value combines semantic and structural outcomes; residual findings are separate. Read the individual outcomes and skipped markers, not just the headline.</p>
-  <p>The esmini preview entered playing state, and the two captured frames showed moving vehicles. The downloaded XML matched the emitted response. That establishes playback and export in this environment, not universal behavior, absence of collisions, or intended scenario correctness. ASAM also cautions that results can differ across simulators.</p>
-  <p>These observations are separate pieces of evidence, not a ladder to safety. The road mismatch remains. My decision is therefore unchanged: do not accept this as the requested three-lane test. Inspection has made the reason concrete and auditable, even though the file is valid.</p>
-  <p>[Cue: point to the four equal-level checks, then the human decision below. Transition: “What can we claim from this prototype, and what still needs an experiment?”]</p>
+<SlideNotes :index="5" title="LLMs translate. OWL + SHACL are dictionary and grammar." timing="7:00–8:30 · 90 seconds">
+  <p>Which brings me to natural language. The distance between how people talk and how formal models are written has always been the last mile. Here is the insight: that distance is a translation problem, and translating is what large language models are genuinely great at.</p>
+  <p>So we give the model a dictionary and a grammar. The dictionary is the ontology: classes, properties, allowed values. The grammar is SHACL: which property belongs to which shape, with which datatype. For every question we look up the right pages, and the matching SHACL fragments go into the prompt. The model's only job is to translate a sentence, in any language, into typed slots through one tool call. Then the slots are checked against the same shapes.</p>
+  <p>What the model never does is write SPARQL. A deterministic compiler does, so the same slots always produce the same query. That is also our security model: a prompt injection can change what is asked, but never what runs against the database. Let me show you.</p>
+  <p>[Cue: follow the four boxes; pause on “Compiler”. Transition: switch to the prepared search tab.]</p>
 </SlideNotes>
 
-<SlideNotes :index="6" title="What this prototype demonstrates—and what remains open." timing="11:30–13:30 · 2 minutes">
-  <p>What does this work add? It implements two concrete applications of the same controlled-generation pattern for simulation engineers: ontology-driven asset search, and scene-based OpenSCENARIO authoring with visible checks. The interfaces expose representations and artifacts. Whether that makes engineering work faster or more accurate is a separate evaluation question.</p>
-  <p>Recent research supports the design choices. ClinSKOS-ICU, in the 2026 KG-LLM workshop proceedings, studies ontology-grounded query generation in a different domain. Talk2Traffic, at the 2025 CVPR workshops, uses structured representations and interactive feedback for scenario generation. TrafficAlign, at CVPR 2026, studies traffic-scenario generation with validation and model alignment.</p>
-  <p>Those are precedents, not results we inherit. Talk2Traffic’s interactive editing is not a feature claim about this page, and TrafficAlign’s evaluation is not an evaluation of our prototype. The research brief gives the full sources and differences.</p>
-  <p>The next experiment should use fixed schema and catalog versions and expert-defined requests. Measure agreement with intended meaning, unsupported-request handling, execution in a specified simulator, latency, and engineer task outcomes. Compare against the existing workflow. Today’s demonstration is a worked example of what can be inspected, not a claim that those measurements have already been completed.</p>
-  <p>[Cue: distinguish implemented capabilities from evaluation questions; give only one sentence per research strand. Transition: “Here are the three questions to judge the demonstration by.”]</p>
+<SlideNotes :index="6" title="Ask in your own words." timing="8:30–12:30 · 4 minutes">
+  <p>Switch to the search tab. Submit “motorway HD maps in Germany”. While it streams, say: “Watch the pipeline. The model interprets, the slots are validated, the compiler writes the query.” Open the interpretation and point at the two filters: road type motorway, country DE. “This is the translation: values that exist in the ontology.” Expand the GraphQL and SPARQL panels: “The model did not write this. The compiler did.” Point at the 19 maps.</p>
+  <p>Submit “HD-Karten von Autobahnen in Deutschland”. “Same dictionary, another language.” Point out that the filters and the 19 maps are identical.</p>
+  <p>Submit “motorway HD maps in Germany with potholes”. Open the gaps panel: “Same 19 maps, plus one term the ontology cannot express. Not silently dropped, reported. Remember this; it is my next slide.”</p>
+  <p>Submit “cut-in scenarios and the HD maps they reference”. On the first result card, open “Explore lineage”: “Seven assets, reached by following typed links through the graph.” Then return to the deck.</p>
+  <p>[Cue: at most 30 seconds of recovery if a request fails: resubmit once, then use the saved screenshots and say so. Transition: “What you just saw in the gaps panel is the most underrated part.”]</p>
 </SlideNotes>
 
-<SlideNotes :index="7" title="Judge the demo on three questions." timing="13:30–15:00 · 90 seconds">
-  <p>Keep the cut-in task in mind as we open the application. First, we will search for assets and compare one result with the interpreted request. Then we will switch to the independent authoring view. The selected search road is not passed across; authoring uses its own catalog.</p>
-  <p>Judge what follows by three questions. What was understood? What did the checks actually establish? And what remains an engineering decision? In authoring, I want to connect one visible detail in the output to that final question, then inspect the gates, preview, and exported file.</p>
-  <p>We have ten minutes, including room for loading and recovery. If the live path becomes unavailable, I have a genuine recording of the technical rehearsal. I will identify it as recorded, pause at the relevant evidence, and distinguish its observed values from whatever the live run returns.</p>
-  <p>The proposition is modest and testable: make the interpretation and its limits visible enough to support the next decision. Let us see what the application exposes.</p>
-  <p>[Cue: switch to the prepared search tab at 15:00. Follow the eight-minute core demo with two minutes reserved for recovery. Keep authoring and the engineering decision; omit query-editor exploration if behind.]</p>
+<SlideNotes :index="7" title="Every gap shows what the ontology cannot say yet." timing="12:30–14:00 · 90 seconds">
+  <p>What you just saw in the gaps panel is, for me, the most underrated part of this work. The expert models the language first. But the users are the ones who reveal what the language cannot say yet.</p>
+  <p>Every query that mentions something the ontology does not cover produces a gap, and there are three kinds: not in the ontology, understood but not filterable, or a limitation of the query engine. None of this is silently dropped.</p>
+  <p>Here is a real one. Ask for German highways with three lanes, and the answer is: the HD-map ontology has no lane count. The concept exists, but in OpenLABEL's vocabulary, not where the maps are described. Keep that in mind for the end of the talk.</p>
+  <p>Now imagine collecting those gaps across all users of a data space. That is user research nobody had to organize, in the users' own words. The expert still decides how to model each one, but the backlog writes itself, and every improvement flows back through the loop.</p>
+  <p>[Cue: point to the three columns, then make a circular gesture for the loop. Transition: “And one more thing you saw: lineage.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="8" title="Data lineage has never been easier." timing="14:00–15:00 · 60 seconds">
+  <p>One more thing you saw: lineage. In a formal graph, a reference is not a string in a comment field. It is a typed link to another resource, declared in the asset's manifest.</p>
+  <p>In the demo, one cut-in scenario in Frankfurt reached seven assets: the HD maps it uses, and an OSI sensor trace that points to the maps it was recorded on. Every one of them has a decentralized identifier. So lineage is not a feature we had to build. It is a graph walk: a query we run, as deep as you want to follow it.</p>
+  <p>[Cue: follow the chain left to right. Transition: “Now the crown.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="9" title="If we can search it, we can generate it." timing="15:00–16:30 · 90 seconds">
+  <p>Now the crown. If we can search ontology-conform data, we can also create it. We run the same idea backwards.</p>
+  <p>In search, words become slots and slots become SPARQL. In authoring, words become a scene: actors, a road, actions. Again a typed intermediate representation, never raw XML from the model. Application code lowers the scene into ASAM OpenSCENARIO XML.</p>
+  <p>And the circle from earlier comes back. The scene is checked against SHACL shapes generated from ASAM's own OpenSCENARIO model. The document is validated against the official XML Schema by the open-source OpenSCENARIO API, compiled to WebAssembly and running inside the application. Residual rules check the scenario against the road. And esmini plays it back in the browser.</p>
+  <p>This is where I believe the future is: artificial data that is valid by construction and described by the same ontology. The next step is to feed it back into the data space, where the same search can find it. Let me show you.</p>
+  <p>[Cue: point to the two rows as mirror images. Transition: switch to the prepared authoring tab.]</p>
+</SlideNotes>
+
+<SlideNotes :index="10" title="Describe it. Get a valid OpenSCENARIO file." timing="16:30–20:30 · 4 minutes">
+  <p>Switch to the authoring tab. Paste the prompt and submit it. While it streams, say: “The model fills a typed scene. It is not allowed to write XML.”</p>
+  <p>Open the scene. Name the two vehicles and the actions, and point at the 30 metres I asked for. Read the summary: “Speed and lane-change timing I did not specify. The model chose them, and it tells me what it chose.” Name the road the scene is bound to.</p>
+  <p>Open the gate results: “Three independent checks. Semantic, against ASAM's OpenSCENARIO shapes. Structural, against the official schema. Residual, against the road.” Point at the two skipped rules: “Skipped means not checked, and the tool says so.”</p>
+  <p>Start the preview: “This is esmini, playing the generated file in the browser. The car ahead moves into my lane.” Then show the XML and download the .xosc: “A standard OpenSCENARIO file. Any compliant tool can open it.” Return to the deck.</p>
+  <p>[Cue: at most 30 seconds of recovery if generation fails: resubmit once, then use the saved screenshots and say so. Transition: “Let me end with where this leads.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="11" title="Standardize in models, not in prose." timing="20:30–22:30 · 2 minutes">
+  <p>Let me end with where this leads for standardization. Today, an ASAM OpenX standard is primarily a text document plus an XML Schema. Ontologies are derived afterwards, and every standard lives in its own silo. OpenSCENARIO, OpenDRIVE, OSI, OpenLABEL: each with its own idea of a road, a lane, a vehicle.</p>
+  <p>Everything in this talk points to a different way. First, one overarching ASAM OpenX ontology, where a lane is the same concept whether it appears in a map, a scenario or a sensor trace. Second, standards are modelled, not written: agent-assisted, in formal models that the working group reviews like code. Third, open pipelines generate every artifact from that one source: the XML Schema, the OWL, the SHACL, the documentation. Text and schema can no longer drift apart.</p>
+  <p>This is not hypothetical. We have taken ASAM's UML models for OpenSCENARIO and OpenDRIVE through ShapeChange and owl2shacl, regenerated the OpenSCENARIO XML Schema byte-identical from the model, and contributed fixes upstream to both tools. And because those ontologies are consistent, a real OpenSCENARIO file can be lifted into RDF completely, without a single hardcoded element name.</p>
+  <p>That is the pipeline I would like us to build together, in the open.</p>
+  <p>[Cue: left to right across the three columns; land on the byte-identical claim. Transition: “So, to bring it together.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="12" title="Model. Generate. Validate. Translate. Create. Standardize." timing="22:30–24:00 · 90 seconds">
+  <p>So, to bring it together. Formal modelling is old. What is new is that agents can write it with us, against specifications, while we stay in the loop. We close every loop with generators, example data and validators.</p>
+  <p>Once the models are formal, decades of open-source tooling come for free. Language models do what they are best at: translating between our words and the formal language. Users show us what the ontology is still missing. Lineage comes straight from the graph. The same models let us generate valid synthetic data. And finally, we can do standardization itself this way.</p>
+  <p>Formal models are the dictionary. LLMs are the translator. Agents close the loop, and humans stay in it.</p>
+  <p>This work was created by BMW in SYNERGIES, funded by the European Union, and everything you saw is open source. If you work on a data space, an ontology, or an ASAM standard, bring your gaps, your models and your use cases. Thank you.</p>
+  <p>[Cue: read the three thesis lines slowly, then stop talking. One minute of buffer remains before 25:00.]</p>
 </SlideNotes>
 
 <SlideControls />
