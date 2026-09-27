@@ -49,6 +49,11 @@ describe('getAgentBackend', () => {
     expect(getAgentBackend().id).toBe('copilot')
   })
 
+  it('selects the Claude Code backend for AI_PROVIDER=claude-code', () => {
+    useProvider('claude-code')
+    expect(getAgentBackend().id).toBe('claude-code')
+  })
+
   it.each(['openai', 'anthropic', 'ollama', 'claude-cli', 'vibe-cli'])(
     'selects the Vercel backend for AI_PROVIDER=%s',
     (provider) => {
@@ -62,7 +67,7 @@ describe('getAgentBackend', () => {
    * scene; when those were selected independently, nothing prevented one from
    * resolving to Copilot and the other to Vercel.
    */
-  it.each(['copilot', 'ollama'])(
+  it.each(['copilot', 'claude-code', 'ollama'])(
     'serves slot-filling and scene-filling from the SAME backend (%s)',
     (provider) => {
       useProvider(provider)

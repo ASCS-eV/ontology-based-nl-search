@@ -129,6 +129,37 @@ jobs:
       - name: Check coverage floors
         run: pnpm run coverage
 
+  copilot-runtime:
+    name: Copilot runtime (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            node: '22'
+          - os: ubuntu-latest
+            node: '24'
+          - os: macos-latest
+            node: '22'
+          - os: windows-latest
+            node: '22'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'pnpm'
+
+      - name: Install locked LLM dependencies without build scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter "@ontology-search/llm..."
+
+      - name: Start bundled runtime and verify SDK protocol
+        run: pnpm --filter "@ontology-search/llm" test:copilot-sdk
+
   first-run:
     name: First run (clean machine)
     runs-on: ubuntu-latest

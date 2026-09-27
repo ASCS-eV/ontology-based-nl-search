@@ -14,6 +14,7 @@ engineStrict: true
 allowBuilds:
   '@swc/core': true
   esbuild: true
+  koffi: false
 minimumReleaseAgeExclude:
   # Security fix adopted ahead of the release-age hold: 4.12.34 patches the
   # CORS-middleware ReDoS (GHSA-8j4g-w8fx-2239, moderate). Waiting out the hold

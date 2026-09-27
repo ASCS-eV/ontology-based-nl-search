@@ -21,10 +21,30 @@ let server: Server | undefined
 let baseUrl: string
 let repoRoot: string
 let requestCount = 0
+let conversationCount = 0
 
-/** Alternates a well-formed submission with one the scorer cannot use. */
-function submissionFor(index: number): unknown {
-  return index % 2 === 0
+type SubmissionKind = 'valid' | 'malformed'
+
+interface ChatRequestBody {
+  messages?: Array<{ tool_calls?: Array<{ id: string }> }>
+}
+
+/**
+ * Alternates conversations that submit well-formed slots with ones that only
+ * ever submit what the scorer cannot use. Decided per CONVERSATION, not per
+ * request: the agent answers a rejected submission with the validation error
+ * and lets the model try again, so a per-request alternation would hand every
+ * malformed attempt a well-formed retry and leave no sample unscoreable. The
+ * kind rides along in the tool-call id, so a retry keeps it.
+ */
+function kindFor(body: ChatRequestBody): SubmissionKind {
+  const earlier = body.messages?.flatMap((message) => message.tool_calls ?? []).at(-1)?.id
+  if (earlier) return earlier.includes('malformed') ? 'malformed' : 'valid'
+  return conversationCount++ % 2 === 0 ? 'valid' : 'malformed'
+}
+
+function submissionFor(kind: SubmissionKind): unknown {
+  return kind === 'valid'
     ? {
         slots: { domains: ['hdmap'], filters: { country: 'DE' }, ranges: {} },
         interpretation: { summary: 'ok', mappedTerms: [] },
@@ -45,6 +65,7 @@ beforeAll(async () => {
     request.on('data', (chunk: Buffer) => chunks.push(chunk))
     request.on('end', () => {
       const index = requestCount++
+      const kind = kindFor(JSON.parse(Buffer.concat(chunks).toString('utf8')) as ChatRequestBody)
       response.setHeader('content-type', 'application/json')
       response.end(
         JSON.stringify({
@@ -60,11 +81,11 @@ beforeAll(async () => {
                 content: null,
                 tool_calls: [
                   {
-                    id: `submit-${index}`,
+                    id: `submit-${kind}-${index}`,
                     type: 'function',
                     function: {
                       name: 'submit_slots',
-                      arguments: JSON.stringify(submissionFor(index)),
+                      arguments: JSON.stringify(submissionFor(kind)),
                     },
                   },
                 ],

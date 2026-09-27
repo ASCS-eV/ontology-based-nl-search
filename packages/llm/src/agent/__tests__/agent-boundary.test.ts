@@ -283,13 +283,11 @@ describe('runSparqlAgent — agent boundary', () => {
   })
 
   /**
-   * Regression: `toolChoice` must target `submit_slots` by name, not the
-   * generic `'required'` (which lets the model pick any tool). When set
-   * to `'required'`, Claude Haiku consistently spent its full
-   * step budget on `discover_*` exploration tools and never reached
-   * `submit_slots`, returning the empty-slot fallback. Pinning the
-   * tool name forces a structured-output call on step 1, regardless
-   * of the model's "explore first" inclinations.
+   * Every step demands a tool call (`'required'`), so lookups can run before
+   * the submission. Under `'required'` alone Claude Haiku spent its full step
+   * budget on lookups and never reached `submit_slots`, so the final step
+   * names `submit_slots` instead — pinned against the real SDK loop in
+   * `submission-recovery.test.ts`.
    */
   it('demands a tool call every step, with submit_slots as the only submission tool', async () => {
     mockLlmResult([{ toolResults: [{ toolName: 'submit_slots', output: fakeSubmission() }] }])
