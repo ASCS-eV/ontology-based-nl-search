@@ -8,15 +8,22 @@ const headings = [
   'Stop building proprietary tools. Plug into open standards.',
   'LLMs translate. OWL + SHACL are dictionary and grammar.',
   'Ask in your own words.',
+  'motorway HD maps in Germany',
+  'HD-Karten von Autobahnen in Deutschland',
+  'motorway HD maps in Germany with potholes',
+  'cut-in scenarios and the HD maps they reference',
   'Every gap shows what the ontology cannot say yet.',
   'Data lineage has never been easier.',
   'If we can search it, we can generate it.',
   'Describe it. Get a valid OpenSCENARIO file.',
+  "A cut-in on a highway: a vehicle 30 m ahead of the ego vehicle in the neighbouring lane changes into the ego's lane.",
+  'The generated scenario, played by esmini',
   'Standardize in models, not in prose.',
   'Model. Generate. Validate. Translate. Create. Standardize.',
 ]
-// Slides handing over to the live application; their notes are a click script.
-const demoSlides = new Set([6, 10])
+// Live-demo slides and their recorded backups: their notes are a click
+// script, not spoken text, and the backups take no time unless a demo fails.
+const unscriptedSlides = new Set([6, 7, 8, 9, 10, 14, 15, 16])
 const SLOT_SECONDS = 25 * 60
 
 test('conference storyline keeps synchronized scripts inside the 25-minute slot', async ({
@@ -55,7 +62,7 @@ test('conference storyline keeps synchronized scripts inside the 25-minute slot'
     const end = Number(timing![3]) * 60 + Number(timing![4])
     expect(start, `slide ${index + 1} starts where the previous ended`).toBe(elapsed)
     const words = note.spoken.split(/\s+/).length
-    if (!demoSlides.has(index)) {
+    if (!unscriptedSlides.has(index)) {
       spokenWords += words
       expect(words, `slide ${index + 1} fits its time`).toBeLessThanOrEqual(
         ((end - start) / 60) * 130

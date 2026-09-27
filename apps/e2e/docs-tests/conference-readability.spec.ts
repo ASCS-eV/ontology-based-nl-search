@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-const SLIDES = 13
+const SLIDES = 19
 
 const sizes = [
   { width: 1280, height: 720 },

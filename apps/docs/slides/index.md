@@ -10,7 +10,7 @@ import TitleArt from '../.vitepress/theme/components/TitleArt.vue'
 import '../.vitepress/theme/conference.css'
 </script>
 
-<SlideProvider :total-slides="13">
+<SlideProvider :total-slides="19">
 <SlideBrand />
 <SlideDeck>
 
@@ -119,7 +119,39 @@ import '../.vitepress/theme/conference.css'
   </div>
 </Slide>
 
-<Slide :index="7">
+<Slide :index="7" variant="cta">
+  <p class="eyebrow">Backup · recorded run · search 1 of 4</p>
+  <h2 class="backup-title">motorway HD maps in Germany</h2>
+  <div class="screen" tabindex="0" role="region" aria-label="Recorded run; scroll to see the whole page">
+    <img src="./demo-backup/1-search-motorway.png" alt="Recorded search: the interpretation with road type motorway and country DE, the GraphQL and SPARQL queries, and 19 matching HD maps" />
+  </div>
+</Slide>
+
+<Slide :index="8" variant="cta">
+  <p class="eyebrow">Backup · recorded run · search 2 of 4</p>
+  <h2 class="backup-title">HD-Karten von Autobahnen in Deutschland</h2>
+  <div class="screen" tabindex="0" role="region" aria-label="Recorded run; scroll to see the whole page">
+    <img src="./demo-backup/2-search-german.png" alt="Recorded search in German: the same two filters and the same 19 HD maps" />
+  </div>
+</Slide>
+
+<Slide :index="9" variant="cta">
+  <p class="eyebrow">Backup · recorded run · search 3 of 4</p>
+  <h2 class="backup-title">motorway HD maps in Germany with potholes</h2>
+  <div class="screen" tabindex="0" role="region" aria-label="Recorded run; scroll to see the whole page">
+    <img src="./demo-backup/3-search-gap.png" alt="Recorded search with potholes: the same 19 maps and potholes reported under Not in ontology" />
+  </div>
+</Slide>
+
+<Slide :index="10" variant="cta">
+  <p class="eyebrow">Backup · recorded run · search 4 of 4</p>
+  <h2 class="backup-title">cut-in scenarios and the HD maps they reference</h2>
+  <div class="screen" tabindex="0" role="region" aria-label="Recorded run; scroll to see the whole page">
+    <img src="./demo-backup/4-search-lineage.png" alt="Recorded search for cut-in scenarios: five results with their references, the first expanded into a lineage tree of seven assets" />
+  </div>
+</Slide>
+
+<Slide :index="11">
   <p class="eyebrow">06 · Learn from users</p>
   <h2>Every gap shows <span class="accent">what the ontology cannot say yet.</span></h2>
   <div class="columns" aria-label="Three kinds of gaps reported to the user">
@@ -130,7 +162,7 @@ import '../.vitepress/theme/conference.css'
   <p class="takeaway">Experts model the language first. Users then show where it needs to grow.</p>
 </Slide>
 
-<Slide :index="8">
+<Slide :index="12">
   <p class="eyebrow">07 · Lineage</p>
   <h2>Data lineage has never been easier.</h2>
   <div class="flow" aria-label="References in the graph form the lineage of an asset">
@@ -144,7 +176,7 @@ import '../.vitepress/theme/conference.css'
   <p class="source-line">From the demo data: one scenario reaches 7 assets through its manifest, each with a did:web identifier.</p>
 </Slide>
 
-<Slide :index="9">
+<Slide :index="13">
   <p class="eyebrow">08 · The inverse</p>
   <h2>If we can search it, <span class="accent">we can generate it.</span></h2>
   <div class="mirror" aria-label="Search and authoring use the same pattern in opposite directions">
@@ -157,7 +189,7 @@ import '../.vitepress/theme/conference.css'
   <p class="source-line">Checks: SHACL from ASAM's OpenSCENARIO model · XSD 1.3.0 via the open-source OpenSCENARIO API (WebAssembly) · road rules · esmini</p>
 </Slide>
 
-<Slide :index="10" variant="cta">
+<Slide :index="14" variant="cta">
   <p class="eyebrow">Live demo · Authoring</p>
   <h2>Describe it. Get a valid OpenSCENARIO file.</h2>
   <ol class="prompts" aria-label="Authoring prompt for the live demo">
@@ -168,7 +200,23 @@ import '../.vitepress/theme/conference.css'
   </div>
 </Slide>
 
-<Slide :index="11">
+<Slide :index="15" variant="cta">
+  <p class="eyebrow">Backup · recorded run · authoring 1 of 2</p>
+  <h2 class="backup-title">A cut-in on a highway: a vehicle 30 m ahead of the ego vehicle in the neighbouring lane changes into the ego's lane.</h2>
+  <div class="screen" tabindex="0" role="region" aria-label="Recorded run; scroll to see the whole page">
+    <img src="./demo-backup/5-author.png" alt="Recorded authoring run: the interpretation, the scene with two vehicles, three passing validation gates, the OpenSCENARIO XML and the esmini preview" />
+  </div>
+</Slide>
+
+<Slide :index="16" variant="cta">
+  <p class="eyebrow">Backup · recorded run · authoring 2 of 2</p>
+  <h2 class="backup-title">The generated scenario, played by esmini</h2>
+  <div class="screen screen--fit">
+    <img src="./demo-backup/6-author-preview.png" alt="The esmini preview of the generated scenario: the cut-in vehicle ahead of the ego vehicle" />
+  </div>
+</Slide>
+
+<Slide :index="17">
   <p class="eyebrow">09 · Standardization</p>
   <h2>Standardize in models, <span class="accent">not in prose.</span></h2>
   <div class="columns" aria-label="Standardization today and with model-based pipelines">
@@ -180,7 +228,7 @@ import '../.vitepress/theme/conference.css'
   <p class="source-line">UML → ShapeChange → OWL → owl2shacl → SHACL · fixes contributed upstream to both tools</p>
 </Slide>
 
-<Slide :index="12" variant="cta">
+<Slide :index="18" variant="cta">
   <p class="eyebrow">Close the loop</p>
   <h2>Model. Generate. Validate. <span class="accent">Translate. Create. Standardize.</span></h2>
   <div class="thesis card tone-info">
@@ -244,10 +292,30 @@ import '../.vitepress/theme/conference.css'
   <p>Submit “HD-Karten von Autobahnen in Deutschland”. “Same dictionary, another language.” Point out that the filters and the 19 maps are identical.</p>
   <p>Submit “motorway HD maps in Germany with potholes”. Open the gaps panel: “Same 19 maps, plus one term the ontology cannot express. Not silently dropped, reported. Remember this; it is my next slide.”</p>
   <p>Submit “cut-in scenarios and the HD maps they reference”. On the first result card, open “Explore lineage”: “Seven assets, reached by following typed links through the graph.” Then return to the deck.</p>
-  <p>[Cue: at most 30 seconds of recovery if a request fails: resubmit once, then use the saved screenshots and say so. Transition: “What you just saw in the gaps panel is the most underrated part.”]</p>
+  <p>[Cue: at most 30 seconds of recovery if a request fails: resubmit once, then press → for the four recorded backup slides. If the demo ran live, press → five times to skip them. Transition: “What you just saw in the gaps panel is the most underrated part.”]</p>
 </SlideNotes>
 
-<SlideNotes :index="7" title="Every gap shows what the ontology cannot say yet." timing="12:30–14:00 · 90 seconds">
+<SlideNotes :index="7" title="motorway HD maps in Germany" timing="12:30–12:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” Scroll down: the interpretation with its two filters, the GraphQL query, the SPARQL the compiler wrote, and the 19 maps.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="8" title="HD-Karten von Autobahnen in Deutschland" timing="12:30–12:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” The German query produced the same two filters and the same 19 maps.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="9" title="motorway HD maps in Germany with potholes" timing="12:30–12:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” Scroll to the gaps panel: “potholes” under Not in ontology, next to the same 19 maps.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="10" title="cut-in scenarios and the HD maps they reference" timing="12:30–12:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” Scroll to the first result card: its references, then the lineage tree with seven reachable assets.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="11" title="Every gap shows what the ontology cannot say yet." timing="12:30–14:00 · 90 seconds">
   <p>What you just saw in the gaps panel is, for me, the most underrated part of this work. The expert models the language first. But the users are the ones who reveal what the language cannot say yet.</p>
   <p>Every query that mentions something the ontology does not cover produces a gap, and there are three kinds: not in the ontology, understood but not filterable, or a limitation of the query engine. None of this is silently dropped.</p>
   <p>Here is a real one. Ask for German highways with three lanes, and the answer is: the HD-map ontology has no lane count. The concept exists, but in OpenLABEL's vocabulary, not where the maps are described. Keep that in mind for the end of the talk.</p>
@@ -255,13 +323,13 @@ import '../.vitepress/theme/conference.css'
   <p>[Cue: point to the three columns, then make a circular gesture for the loop. Transition: “And one more thing you saw: lineage.”]</p>
 </SlideNotes>
 
-<SlideNotes :index="8" title="Data lineage has never been easier." timing="14:00–15:00 · 60 seconds">
+<SlideNotes :index="12" title="Data lineage has never been easier." timing="14:00–15:00 · 60 seconds">
   <p>One more thing you saw: lineage. In a formal graph, a reference is not a string in a comment field. It is a typed link to another resource, declared in the asset's manifest.</p>
   <p>In the demo, one cut-in scenario in Frankfurt reached seven assets: the HD maps it uses, and an OSI sensor trace that points to the maps it was recorded on. Every one of them has a decentralized identifier. So lineage is not a feature we had to build. It is a graph walk: a query we run, as deep as you want to follow it.</p>
   <p>[Cue: follow the chain left to right. Transition: “Now the crown.”]</p>
 </SlideNotes>
 
-<SlideNotes :index="9" title="If we can search it, we can generate it." timing="15:00–16:30 · 90 seconds">
+<SlideNotes :index="13" title="If we can search it, we can generate it." timing="15:00–16:30 · 90 seconds">
   <p>Now the crown. If we can search ontology-conform data, we can also create it. We run the same idea backwards.</p>
   <p>In search, words become slots and slots become SPARQL. In authoring, words become a scene: actors, a road, actions. Again a typed intermediate representation, never raw XML from the model. Application code lowers the scene into ASAM OpenSCENARIO XML.</p>
   <p>And the circle from earlier comes back. The scene is checked against SHACL shapes generated from ASAM's own OpenSCENARIO model. The document is validated against the official XML Schema by the open-source OpenSCENARIO API, compiled to WebAssembly and running inside the application. Residual rules check the scenario against the road. And esmini plays it back in the browser.</p>
@@ -269,15 +337,25 @@ import '../.vitepress/theme/conference.css'
   <p>[Cue: point to the two rows as mirror images. Transition: switch to the prepared authoring tab.]</p>
 </SlideNotes>
 
-<SlideNotes :index="10" title="Describe it. Get a valid OpenSCENARIO file." timing="16:30–20:30 · 4 minutes">
+<SlideNotes :index="14" title="Describe it. Get a valid OpenSCENARIO file." timing="16:30–20:30 · 4 minutes">
   <p>Switch to the authoring tab. Paste the prompt and submit it. While it streams, say: “The model fills a typed scene. It is not allowed to write XML.”</p>
   <p>Open the scene. Name the two vehicles and the actions, and point at the 30 metres I asked for. Read the summary: “Speed and lane-change timing I did not specify. The model chose them, and it tells me what it chose.” Name the road the scene is bound to.</p>
   <p>Open the gate results: “Three independent checks. Semantic, against ASAM's OpenSCENARIO shapes. Structural, against the official schema. Residual, against the road.” Point at the two skipped rules: “Skipped means not checked, and the tool says so.”</p>
   <p>Start the preview: “This is esmini, playing the generated file in the browser. The car ahead moves into my lane.” Then show the XML and download the .xosc: “A standard OpenSCENARIO file. Any compliant tool can open it.” Return to the deck.</p>
-  <p>[Cue: at most 30 seconds of recovery if generation fails: resubmit once, then use the saved screenshots and say so. Transition: “Let me end with where this leads.”]</p>
+  <p>[Cue: at most 30 seconds of recovery if generation fails: resubmit once, then press → for the two recorded backup slides. If the demo ran live, press → three times to skip them. Transition: “Let me end with where this leads.”]</p>
 </SlideNotes>
 
-<SlideNotes :index="11" title="Standardize in models, not in prose." timing="20:30–22:30 · 2 minutes">
+<SlideNotes :index="15" title="A cut-in on a highway: a vehicle 30 m ahead of the ego vehicle in the neighbouring lane changes into the ego's lane." timing="20:30–20:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” Scroll down: the interpretation, the scene with two vehicles, the validation gates with the two skipped rules, the OpenSCENARIO file, and the esmini preview at the bottom.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="16" title="The generated scenario, played by esmini" timing="20:30–20:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” The esmini preview of the generated file, captured while playing.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="17" title="Standardize in models, not in prose." timing="20:30–22:30 · 2 minutes">
   <p>Let me end with where this leads for standardization. Today, an ASAM OpenX standard is primarily a text document plus an XML Schema. Ontologies are derived afterwards, and every standard lives in its own silo. OpenSCENARIO, OpenDRIVE, OSI, OpenLABEL: each with its own idea of a road, a lane, a vehicle.</p>
   <p>Everything in this talk points to a different way. First, one overarching ASAM OpenX ontology, where a lane is the same concept whether it appears in a map, a scenario or a sensor trace. Second, standards are modelled, not written: agent-assisted, in formal models that the working group reviews like code. Third, open pipelines generate every artifact from that one source: the XML Schema, the OWL, the SHACL, the documentation. Text and schema can no longer drift apart.</p>
   <p>This is not hypothetical. We have taken ASAM's UML models for OpenSCENARIO and OpenDRIVE through ShapeChange and owl2shacl, regenerated the OpenSCENARIO XML Schema byte-identical from the model, and contributed fixes upstream to both tools. And because those ontologies are consistent, a real OpenSCENARIO file can be lifted into RDF completely, without a single hardcoded element name.</p>
@@ -285,7 +363,7 @@ import '../.vitepress/theme/conference.css'
   <p>[Cue: left to right across the three columns; land on the byte-identical claim. Transition: “So, to bring it together.”]</p>
 </SlideNotes>
 
-<SlideNotes :index="12" title="Model. Generate. Validate. Translate. Create. Standardize." timing="22:30–24:00 · 90 seconds">
+<SlideNotes :index="18" title="Model. Generate. Validate. Translate. Create. Standardize." timing="22:30–24:00 · 90 seconds">
   <p>So, to bring it together. Formal modelling is old. What is new is that agents can write it with us, against specifications, while we stay in the loop. We close every loop with generators, example data and validators.</p>
   <p>Once the models are formal, decades of open-source tooling come for free. Language models do what they are best at: translating between our words and the formal language. Users show us what the ontology is still missing. Lineage comes straight from the graph. The same models let us generate valid synthetic data. And finally, we can do standardization itself this way.</p>
   <p>Formal models are the dictionary. LLMs are the translator. Agents close the loop, and humans stay in it.</p>

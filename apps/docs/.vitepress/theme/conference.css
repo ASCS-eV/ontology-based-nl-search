@@ -350,8 +350,53 @@
   color: var(--slide-fg);
 }
 
-/* Two-digit slide totals must not wrap the counter in the control bar. */
-.Layout.slide-page.conference-page .counter {
+/* Backup slides: a recorded run, scrollable like the browser it came from.
+   The heading shows the prompt as typed, so it is not uppercased. */
+.Layout.slide-page.conference-page .slide h2.backup-title {
+  font-size: clamp(24px, 2.2vw, 32px);
+  font-weight: 600;
+  text-transform: none;
+}
+.Layout.slide-page.conference-page .screen {
+  height: calc(100vh - 300px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--brand-gray);
+  border-radius: var(--slide-radius);
+  background: #fff;
+}
+.Layout.slide-page.conference-page .screen:focus-visible {
+  outline: 3px solid var(--brand-blue);
+  outline-offset: 2px;
+}
+.Layout.slide-page.conference-page .screen img {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+}
+
+/* A small capture is shown at its natural size, not stretched. */
+.Layout.slide-page.conference-page .screen.screen--fit {
+  height: auto;
+  overflow: visible;
+  border: 0;
+}
+.Layout.slide-page.conference-page .screen.screen--fit img {
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
+  border: 1px solid var(--brand-gray);
+  border-radius: var(--slide-radius);
+}
+
+/* The control bar holds a dot per slide, backups included: widen it so its
+   labels and counter stay on one line and it keeps its height. */
+.Layout.slide-page.conference-page .slide-controls {
+  width: min(720px, calc(100vw - 1.5rem));
+}
+.Layout.slide-page.conference-page .counter,
+.Layout.slide-page.conference-page .presenter-btn {
   white-space: nowrap;
 }
 
