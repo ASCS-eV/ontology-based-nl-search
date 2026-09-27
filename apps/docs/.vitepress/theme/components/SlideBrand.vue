@@ -4,7 +4,7 @@
 // design system's brand assets (`envitedBrand` in
 // packages/design-system/src/themes/envited/brand.ts); the web app's public
 // directory holds their single published copy, so the deck imports them there.
-import euEmblem from '../../../../web/public/logos/funded-by-eu.svg'
+import euEmblem from '../../../../web/public/logos/funded-by-eu.png'
 import envitedLogoWhite from '../../../../web/public/logos/envited-x-white.png'
 import synergiesLogo from '../../../../web/public/logos/synergies.svg'
 </script>

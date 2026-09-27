@@ -13,7 +13,7 @@ export const envitedBrand: BrandConfig = {
   theme: 'envited-x',
   headerLogo: { src: '/logos/envited-x-colour.png', alt: 'ENVITED-X' },
   footerLogos: [
-    { src: '/logos/funded-by-eu.svg', alt: 'Funded by the European Union' },
+    { src: '/logos/funded-by-eu.png', alt: 'Funded by the European Union' },
     { src: '/logos/synergies.svg', alt: 'SYNERGIES project', href: 'https://synergies-ccam.eu' },
   ],
   links: [
@@ -27,8 +27,11 @@ export const envitedBrand: BrandConfig = {
     },
   ],
   copyright: `© ${new Date().getFullYear()} Automotive Solution Center for Simulation e.V.`,
+  // The funding statement as the SYNERGIES project publishes it; the emblem is
+  // the Commission's official "Funded by the European Union" artwork.
   disclaimer:
-    'Funded by the European Union. Views and opinions expressed are those of the author(s) only ' +
-    'and do not necessarily reflect those of the EU or CINEA. Neither the EU nor the granting ' +
-    'authority can be held responsible for them.',
+    'Funded by the European Union. Views and opinions expressed are however those of the ' +
+    'author(s) only and do not necessarily reflect those of the European Union or the European ' +
+    'Climate, Infrastructure and Environment Executive Agency (CINEA). Neither the European ' +
+    'Union nor CINEA can be held responsible for them.',
 }

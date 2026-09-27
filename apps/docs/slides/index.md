@@ -26,7 +26,7 @@ import '../.vitepress/theme/conference.css'
     </div>
     <TitleArt />
   </div>
-  <p class="source-line">Funded by the European Union. Views and opinions expressed are those of the author(s) only and do not necessarily reflect those of the EU or CINEA. Neither the EU nor the granting authority can be held responsible for them.</p>
+  <p class="source-line">Funded by the European Union. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Climate, Infrastructure and Environment Executive Agency (CINEA). Neither the European Union nor CINEA can be held responsible for them.</p>
 </Slide>
 
 <Slide :index="1">
@@ -245,7 +245,7 @@ import '../.vitepress/theme/conference.css'
     <span>Agents close the loop, and humans stay in it.</span>
   </div>
   <p class="source-line">synergies-ccam.eu · github.com/ASCS-eV/ontology-based-nl-search · github.com/ASCS-eV/ontology-management-base</p>
-  <p class="source-line">Funded by the European Union. Views and opinions expressed are those of the author(s) only and do not necessarily reflect those of the EU or CINEA. Neither the EU nor the granting authority can be held responsible for them.</p>
+  <p class="source-line">Funded by the European Union. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Climate, Infrastructure and Environment Executive Agency (CINEA). Neither the European Union nor CINEA can be held responsible for them.</p>
 </Slide>
 
 </SlideDeck>
