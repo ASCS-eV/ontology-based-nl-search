@@ -66,12 +66,16 @@ Slot shape: there are no top-level `location` or `license` objects — both flow
 ### Forced tool choice
 
 The agent runs with `toolChoice: 'required'` (Vercel AI SDK) — every step **must** be a
-tool call, so prose-only turns are impossible — and stops the moment `submit_slots` is
-called (`stopWhen: [stepCountIs(maxSteps), hasToolCall('submit_slots')]`). The Copilot SDK
-adapter mirrors this by advertising exactly the same tool set via `availableTools`
-(`[...lookupTools, 'submit_slots']`). Both adapters read this constraint from the shared
-`AgentPolicy` module, so they can never diverge. A step budget spent without a
-`submit_slots` call degrades to a deterministic fallback.
+tool call, so prose-only turns are impossible — and stops the moment a `submit_slots` call
+is accepted (`stopWhen: [isStepCount(maxSteps), hasAcceptedSubmission('submit_slots')]`).
+A call whose arguments the schema rejects does not stop the loop: the SDK returns the
+validation error to the model as that call's result, and the model corrects it on the
+next step. The final step of the budget offers `submit_slots` alone, so a model that keeps
+exploring still ends in a submission. The scene-authoring agent stops on an accepted
+`submit_scene` the same way. The Copilot SDK adapter mirrors the tool set via
+`availableTools` (`[...lookupTools, 'submit_slots']`). Both adapters read this constraint
+from the shared `AgentPolicy` module, so they can never diverge. A step budget spent
+without an accepted `submit_slots` call degrades to a deterministic fallback.
 
 ## Architecture: SDK Adapter Pattern
 

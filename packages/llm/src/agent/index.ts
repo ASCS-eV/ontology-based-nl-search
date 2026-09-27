@@ -27,6 +27,7 @@ import {
 } from './evaluation-types.js'
 import type { SlotPipelineSubmission } from './run-slot-pipeline.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
+import { hasAcceptedSubmission } from './stop-conditions.js'
 import {
   agentTools,
   lookupTools,
@@ -265,19 +266,6 @@ interface GenerateResultLike {
   finishReason: unknown
   usage?: unknown
   steps: ReadonlyArray<StepLike>
-}
-
-/**
- * Stop once `submit_slots` has been ACCEPTED: a tool result, not merely a
- * call. A call whose arguments the schema rejects is still a tool call, so the
- * SDK's `hasToolCall` ended the run on it and threw the model's next move away.
- * Here the SDK answers that call with the validation error as its result and
- * the model gets another step to correct it — what the Copilot adapter's
- * `{ accepted: false, error }` reply already allows.
- */
-function hasAcceptedSubmission(toolName: string) {
-  return ({ steps }: { steps: ReadonlyArray<StepLike> }): boolean =>
-    steps.at(-1)?.toolResults?.some((result) => result.toolName === toolName) ?? false
 }
 
 /**
