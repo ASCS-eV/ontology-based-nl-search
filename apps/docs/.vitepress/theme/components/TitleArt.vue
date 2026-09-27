@@ -1,7 +1,8 @@
 <!-- Title visual after the ASCS brand book (2025) cover: a hexagon framed by a
-     blue and a navy bracket and crossed by a green bar. Instead of the cover's
-     licensed stock photo, the hexagon shows the talk's demo scenario: a vehicle
-     in the neighbouring lane cuts in ahead of the ego vehicle. -->
+     blue and a navy bracket. Instead of the cover's licensed stock photo, the
+     hexagon shows the talk's demo scenario: a vehicle in the neighbouring lane
+     cuts in ahead of the ego vehicle. The cover's green bar is left out, since
+     over a road it would read as part of the scene. -->
 <template>
   <svg
     class="title-art"
@@ -71,16 +72,6 @@
       stroke-width="22"
       stroke-linecap="round"
       stroke-linejoin="round"
-    />
-    <line
-      x1="150"
-      y1="352"
-      x2="430"
-      y2="498"
-      stroke="#60ac24"
-      stroke-width="34"
-      stroke-linecap="round"
-      opacity="0.85"
     />
   </svg>
 </template>

@@ -2,24 +2,24 @@ import { expect, test } from '@playwright/test'
 
 const headings = [
   'Formal models are the dictionary. LLMs are the translator.',
-  'Formal modelling is nothing new. Writing it just got cheap.',
-  'Agents excel against specs. Specs keep humans in the loop.',
+  'Formal modelling is nothing new. Writing it just got fast.',
+  'Agents work best against specs. Specs keep humans in the loop.',
   'Build circles, not pipelines.',
-  'Stop building proprietary tools. Plug into open standards.',
+  'Build on open standards. Compete on what you build on top.',
   'LLMs translate. OWL + SHACL are dictionary and grammar.',
   'Ask in your own words.',
   'motorway HD maps in Germany',
   'HD-Karten von Autobahnen in Deutschland',
   'motorway HD maps in Germany with potholes',
   'cut-in scenarios and the HD maps they reference',
-  'Every gap shows what the ontology cannot say yet.',
+  'Gaps show where the language needs to grow.',
   'Data lineage has never been easier.',
   'If we can search it, we can generate it.',
   'Describe it. Get a valid OpenSCENARIO file.',
   "A cut-in on a highway: a vehicle 30 m ahead of the ego vehicle in the neighbouring lane changes into the ego's lane.",
   'The generated scenario, played by esmini',
   'Standardize in models, not in prose.',
-  'Model. Generate. Validate. Translate. Create. Standardize.',
+  'Model. Loop. Use. Invert. Standardize.',
 ]
 // Live-demo slides and their recorded backups: their notes are a click
 // script, not spoken text, and the backups take no time unless a demo fails.
