@@ -219,6 +219,89 @@ describe('validateSlots', () => {
     expect(result.gaps[0]!.reason).toContain('not a valid value')
   })
 
+  it('anchors a term to the compiled slot value when its explanation describes it', () => {
+    // `mapped` is free text: the model sometimes writes an expression instead
+    // of the value. The compiled filter is valid, so this is no gap.
+    const response: LlmStructuredResponse = {
+      interpretation: {
+        summary: 'test',
+        mappedTerms: [
+          {
+            input: 'cut-in scenarios',
+            mapped: "scenarioCategory = 'cut-in'",
+            confidence: 'low',
+            property: 'scenarioCategory',
+          },
+        ],
+      },
+      gaps: [],
+      sparql: 'SELECT * WHERE { }',
+      slots: { domains: ['scenario'], filters: { scenarioCategory: 'cut-in' }, ranges: {} },
+    }
+
+    const result = validateSlots(response, testVocabulary)
+    expect(result.gaps).toEqual([])
+    expect(result.interpretation.mappedTerms[0]).toMatchObject({
+      mapped: 'cut-in',
+      confidence: 'high',
+    })
+  })
+
+  it('reads the values of reference-scoped filters', () => {
+    const response: LlmStructuredResponse = {
+      interpretation: {
+        summary: 'test',
+        mappedTerms: [
+          {
+            input: 'on highways',
+            mapped: 'the road types of the referenced map',
+            confidence: 'medium',
+            property: 'roadTypes',
+          },
+        ],
+      },
+      gaps: [],
+      sparql: 'SELECT * WHERE { }',
+      slots: {
+        domains: ['scenario'],
+        filters: {},
+        ranges: {},
+        references: [{ domain: 'hdmap', filters: { roadTypes: ['motorway', 'rural'] } }],
+      },
+    }
+
+    const result = validateSlots(response, testVocabulary)
+    expect(result.gaps).toEqual([])
+    expect(result.interpretation.mappedTerms[0]).toMatchObject({
+      mapped: 'motorway, rural',
+      confidence: 'high',
+    })
+  })
+
+  it('still reports a gap when the slots hold no allowed value for the property', () => {
+    const response: LlmStructuredResponse = {
+      interpretation: {
+        summary: 'test',
+        mappedTerms: [
+          {
+            input: 'takeover',
+            mapped: 'vehicle-takeover',
+            confidence: 'high',
+            property: 'scenarioCategory',
+          },
+        ],
+      },
+      gaps: [],
+      sparql: 'SELECT * WHERE { }',
+      slots: { domains: ['scenario'], filters: { weatherSummary: 'rain' }, ranges: {} },
+    }
+
+    const result = validateSlots(response, testVocabulary)
+    expect(result.interpretation.mappedTerms[0]!.confidence).toBe('low')
+    expect(result.gaps).toHaveLength(1)
+    expect(result.gaps[0]!.reason).toContain('not a valid value')
+  })
+
   it('enriches gaps with suggestions from vocabulary', () => {
     const response: LlmStructuredResponse = {
       interpretation: { summary: 'test', mappedTerms: [] },

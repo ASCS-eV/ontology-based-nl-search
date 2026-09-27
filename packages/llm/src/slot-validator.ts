@@ -41,15 +41,18 @@ export type { InstanceValueLookup, ShaclSlotValidationResult } from './slot-vali
 export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-validator-shacl.js'
 
 /**
- * Validate and correct LLM-submitted slots against the ontology vocabulary.
+ * Grade the interpretation's mapped terms against the ontology vocabulary.
  *
- * This is the core self-correction layer:
- * 1. For each filter value, check against sh:in allowed values
- * 2. Exact match → high confidence, keep as-is
- * 3. Fuzzy match → medium confidence, correct to nearest valid value
- * 4. No match → remove from filters, add to gaps with suggestions
- * 5. Rewrite interpretation.mappedTerms with objective confidence
- * 6. Enrich gaps with suggestions from real vocabulary
+ * The slots themselves are already corrected and SHACL-gated; this pass
+ * rewrites the consumer-facing interpretation:
+ * 1. A term whose `mapped` value is in the property's `sh:in` → high confidence
+ * 2. A fuzzy match → medium confidence, corrected to the nearest valid value
+ * 3. Otherwise the compiled slots decide: `mapped` is the model's free-text
+ *    explanation and may describe the value instead of stating it
+ *    ("scenarioCategory = 'cut-in'"). When the slots hold allowed values for
+ *    the property, the term is anchored to them at high confidence.
+ * 4. Neither → low confidence, reported as a gap with suggestions
+ * 5. The model's own gaps are enriched with vocabulary suggestions
  */
 export function validateSlots(
   response: LlmStructuredResponse,
@@ -58,11 +61,8 @@ export function validateSlots(
   const allowedIndex = buildAllowedValuesIndex(vocabulary)
   const numericProps = buildNumericPropertySet(vocabulary)
 
-  // Parse the filters from the SPARQL (we need the original slots structure)
-  // We work with interpretation.mappedTerms and gaps — the consumer-facing output
   const validatedTerms: MappedTerm[] = []
   const validatedGaps: OntologyGap[] = []
-  const correctedFilters = new Map<string, string | string[]>()
 
   // Track which mapped terms we've validated
   for (const term of response.interpretation.mappedTerms) {
@@ -95,7 +95,23 @@ export function validateSlots(
           mapped: result.match,
           confidence: objectiveConfidence,
         })
-        correctedFilters.set(propertyName, result.match)
+        continue
+      }
+
+      const slotValues = slotValuesFor(response.slots, propertyName).filter((value) =>
+        allowedValues.includes(value)
+      )
+      if (slotValues.length > 0) {
+        // The compiled slots are authoritative. Prefer the values the
+        // explanation names; otherwise show every value the query used.
+        const cited = slotValues.filter((value) =>
+          term.mapped.toLowerCase().includes(value.toLowerCase())
+        )
+        validatedTerms.push({
+          ...term,
+          mapped: [...new Set(cited.length > 0 ? cited : slotValues)].join(', '),
+          confidence: 'high',
+        })
       } else {
         // No match — keep as low-confidence mapped term so it stays in refine UI
         const suggestions = getSuggestions(term.mapped, allowedValues)
@@ -129,7 +145,6 @@ export function validateSlots(
               mapped: valueMatch.match,
               confidence: 'medium',
             })
-            correctedFilters.set(correctedPropName, valueMatch.match)
             continue
           }
         }
@@ -299,6 +314,25 @@ export function correctDomains(
 
   // Merge required domains with existing
   return [...new Set([...domains, ...requiredDomains])]
+}
+
+/** The filter part of a slot scope: the top-level slots or one reference. */
+interface FilterScope {
+  filters?: Record<string, string | string[]>
+  references?: readonly FilterScope[]
+}
+
+/**
+ * Every value the slots hold for `property`: the top-level filters and the
+ * reference-scoped filters at any depth, the values the compiler used.
+ */
+function slotValuesFor(scope: FilterScope | undefined, property: string): string[] {
+  if (!scope) return []
+  const own = scope.filters?.[property]
+  return [
+    ...(own === undefined ? [] : Array.isArray(own) ? own : [own]),
+    ...(scope.references ?? []).flatMap((reference) => slotValuesFor(reference, property)),
+  ]
 }
 
 /**
