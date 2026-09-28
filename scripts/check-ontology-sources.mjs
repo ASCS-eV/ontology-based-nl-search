@@ -18,11 +18,15 @@
  * so it cannot import the (TypeScript) ontology package.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import { loadEnvFileIntoProcess } from './check-env.mjs'
 
 const strict = process.argv.includes('--strict')
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+// The server reads ONTOLOGY_SOURCES_FILE / ONTOLOGY_ARTIFACTS_PATH from .env.local too.
+loadEnvFileIntoProcess(root)
 
 /**
  * Resolve the artifact roots the server would search, in the same order:
@@ -41,16 +45,18 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DEFAULT_CACHE_SEGMENTS = ['.ontology', 'artifacts']
 
 function resolveArtifactRoots() {
-  const manifestPath = join(root, 'ontology-sources.json')
+  const override = process.env.ONTOLOGY_SOURCES_FILE
+  const manifestPath = override ? resolve(root, override) : join(root, 'ontology-sources.json')
   if (existsSync(manifestPath)) {
     try {
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
       const sources = Array.isArray(manifest?.sources) ? manifest.sources : []
+      const baseDir = dirname(manifestPath)
       const asSet = (list) => (Array.isArray(list) ? new Set(list) : undefined)
       const roots = sources
         .filter((s) => typeof s?.path === 'string')
         .map((s) => ({
-          path: join(root, s.path),
+          path: isAbsolute(s.path) ? s.path : resolve(baseDir, s.path),
           allow: asSet(s.domains),
           deny: asSet(s.excludeDomains),
         }))
@@ -59,6 +65,8 @@ function resolveArtifactRoots() {
       // A malformed manifest is reported loudly by the server at startup
       // (OntologySourcesError); the preflight just falls through.
     }
+  } else if (override) {
+    return [{ path: manifestPath }]
   }
   const envOverride = process.env.ONTOLOGY_ARTIFACTS_PATH
   if (envOverride) return [{ path: envOverride }]
@@ -136,7 +144,8 @@ if (missingSubmoduleRoot) {
 }
 lines.push(
   '     • Or set ONTOLOGY_ARTIFACTS_PATH to a directory of ontology artifacts,',
-  '     • Or declare sources in ontology-sources.json ({ sources: [{ path }] }).',
+  '     • Or declare sources in ontology-sources.json ({ sources: [{ path }] })',
+  '       or in the manifest ONTOLOGY_SOURCES_FILE points at.',
   ''
 )
 process.stderr.write(lines.join('\n'))
