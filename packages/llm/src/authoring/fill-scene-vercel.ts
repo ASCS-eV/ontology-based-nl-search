@@ -9,9 +9,10 @@
  * @see ./scene-agent.ts — the repair-loop orchestrator that drives this
  */
 
-import { generateText, hasToolCall, isStepCount } from 'ai'
+import { generateText, isStepCount } from 'ai'
 
 import { getAgentPolicy } from '../agent/agent-policy.js'
+import { hasAcceptedSubmission } from '../agent/stop-conditions.js'
 import { getModel } from '../provider.js'
 import { getSceneStaticCore } from './scene-prompt.js'
 import { sceneAgentTools, type SceneSubmissionParams } from './scene-tool.js'
@@ -19,8 +20,8 @@ import { sceneAgentTools, type SceneSubmissionParams } from './scene-tool.js'
 /**
  * Run one scene-fill turn. The static core is the system prompt; `requestMessage`
  * (archetype hint + optional repair feedback + the user request) is the user
- * prompt. Returns the submitted scene, or `null` when the model never called
- * `submit_scene` (the orchestrator surfaces that as a gap).
+ * prompt. Returns the submitted scene, or `null` when no `submit_scene` call was
+ * accepted within the step budget (the orchestrator surfaces that as a gap).
  */
 export async function fillSceneVercel(
   requestMessage: string,
@@ -48,7 +49,9 @@ export async function fillSceneVercel(
     prompt: requestMessage,
     tools: sceneAgentTools,
     toolChoice: 'required',
-    stopWhen: [isStepCount(policy.maxSteps), hasToolCall('submit_scene')],
+    // Stop on an ACCEPTED scene, as the search adapter does: a rejected
+    // submission goes back to the model as a tool error to correct.
+    stopWhen: [isStepCount(policy.maxSteps), hasAcceptedSubmission('submit_scene')],
     ...(signal ? { abortSignal: signal } : {}),
     // Omitted unless explicitly configured — see the search adapter and
     // {@link AgentPolicy.temperature}: post-4.7 Anthropic models 400 on it.
