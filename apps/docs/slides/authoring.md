@@ -325,7 +325,7 @@ flowchart LR
       class="btn-primary"
       >Run the authoring app →</a
     >
-    <a href="/docs/architecture" class="btn-secondary">Read the architecture →</a>
+    <a href="../architecture" class="btn-secondary">Read the architecture →</a>
   </div>
   <p class="subtitle">Try: “a car cuts in front of me on a two-lane highway” · “ego at 30 m/s, a van changes into my lane after 4 s”</p>
 </Slide>
