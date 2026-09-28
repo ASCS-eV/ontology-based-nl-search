@@ -1,381 +1,388 @@
 ---
 layout: page
-pageClass: slide-page
-title: Presentation
+pageClass: slide-page conference-page
+title: The dictionary and the translator
 ---
 
-<SlideProvider :total-slides="12">
+<script setup>
+import SlideBrand from '../.vitepress/theme/components/SlideBrand.vue'
+import TitleArt from '../.vitepress/theme/components/TitleArt.vue'
+import '../.vitepress/theme/conference.css'
+</script>
+
+<SlideProvider :total-slides="19">
+<SlideBrand />
 <SlideDeck>
 
 <Slide :index="0" variant="title">
-  <div class="badge">Architecture Overview</div>
-  <p class="eyebrow">A trustworthy natural-language interface over any ontology-described data space</p>
-  <h1>Ontology-Based<br /><span class="accent">Natural Language Search</span></h1>
-  <p class="lead">Plain-language questions become deterministic, ontology-compliant SPARQL — and the only thing that has to change to support a new domain is the ontology, not the code.</p>
-  <div class="metrics-grid">
-    <div class="metric">
-      <strong>0</strong>
-      <span>lines of LLM-written SPARQL — the model fills typed slots, a compiler emits the query</span>
+  <div class="title-grid">
+    <div class="title-text">
+      <p class="eyebrow">EU project SYNERGIES</p>
+      <h1>Formal models are the dictionary. <span class="accent">LLMs are the translator.</span></h1>
+      <p class="takeaway">Agent-assisted modelling, natural-language search and synthetic scenarios, built on open standards.</p>
+      <div class="acts" aria-label="The five parts of the talk">
+        <span>Model</span><span>Loop</span><span>Use</span><span>Invert</span><span>Standardize</span>
+      </div>
     </div>
-    <div class="metric">
-      <strong>0</strong>
-      <span>hardcoded ontology terms — domains, predicates, or class IRIs — in pipeline code</span>
-    </div>
-    <div class="metric">
-      <strong>1</strong>
-      <span>source of truth — the OWL + SHACL artifacts drive every layer</span>
-    </div>
+    <TitleArt />
   </div>
-  <p class="subtitle">Press → or Space to navigate · 1) purpose · 2) architecture &amp; standards · 3) the ontology-artifact core</p>
+  <p class="source-line">Funded by the European Union. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Climate, Infrastructure and Environment Executive Agency (CINEA). Neither the European Union nor CINEA can be held responsible for them.</p>
 </Slide>
 
 <Slide :index="1">
-  <p class="eyebrow">Purpose · 30 seconds</p>
-  <h2>Make rich, governed metadata reachable in plain language — without sacrificing trust.</h2>
-  <p class="lead">Data spaces like ENVITED-X already publish deeply structured asset metadata as ontologies (OWL) and constraints (SHACL). That richness is wasted if reaching it requires SPARQL, prefixes, and schema expertise.</p>
-  <div class="story-grid">
-    <div class="story-card">
-      <h3>The asset</h3>
-      <p>Governed, standards-based metadata: classes, shapes, allowed values, cross-references — already curated for interoperability.</p>
-    </div>
-    <div class="story-card">
-      <h3>The barrier</h3>
-      <p>Users think in "German motorways with 3 lanes", not in <code>sh:targetClass</code>, prefixes, and hand-assembled graph patterns.</p>
-    </div>
-    <div class="story-card">
-      <h3>The non-negotiable</h3>
-      <p>Search must stay explainable, safe, and reproducible — convenience cannot come at the cost of correctness.</p>
-    </div>
+  <p class="eyebrow">Model · 01 · Languages</p>
+  <h2>Formal modelling is nothing new. <span class="accent">Writing it just got fast.</span></h2>
+  <div class="timeline" aria-label="Modelling languages by year of first standardization">
+    <div class="card"><span class="card-title">1994</span><span class="card-text">EXPRESS (STEP)</span></div>
+    <div class="card"><span class="card-title">1997</span><span class="card-text">UML</span></div>
+    <div class="card"><span class="card-title">2001</span><span class="card-text">XML Schema</span></div>
+    <div class="card"><span class="card-title">2004</span><span class="card-text">OWL</span></div>
+    <div class="card"><span class="card-title">2017</span><span class="card-text">SHACL</span></div>
+    <div class="card tone-info"><span class="card-title">Now</span><span class="card-text">Agents draft. Generators derive. Validators check.</span></div>
   </div>
+  <p class="takeaway">One LinkML schema → OWL + SHACL + JSON-LD context. One UML model → XSD + OWL + SHACL.</p>
+  <p class="source-line">Generators in use: LinkML (gen-owl, gen-shacl, gen-jsonld-context) · ShapeChange · owl2shacl</p>
 </Slide>
 
 <Slide :index="2">
-  <p class="eyebrow">Why it's innovative</p>
-  <h2>Flexibility in front, determinism underneath — and the ontology drives both.</h2>
-  <p class="lead">The usual choice is "LLM writes the query (flexible but unsafe)" or "rigid forms (safe but rigid)". This system refuses the trade-off with two ideas working together.</p>
-  <div class="compare-grid">
-    <div class="compare-card compare-card--good">
-      <span class="compare-label">Idea 1 · the boundary</span>
-      <h3>The LLM never writes SPARQL</h3>
-      <ul class="tight-list">
-        <li>It fills one typed <code>submit_slots</code> tool call — a structured intermediate representation.</li>
-        <li>A deterministic compiler turns those slots into SPARQL: the same slots always produce the identical query.</li>
-        <li>No prompt injection can produce an arbitrary query — there is no path from text to the store.</li>
-      </ul>
-    </div>
-    <div class="compare-card compare-card--impact">
-      <span class="compare-label">Idea 2 · the source of truth</span>
-      <h3>Everything is derived from the ontology</h3>
-      <ul class="tight-list">
-        <li>Prompt vocabulary, slot values, predicate paths, cross-reference joins, validation — all read from OWL + SHACL at runtime.</li>
-        <li>No domain knowledge is baked into the query path — domains, predicates, and class IRIs are discovered, not hardcoded.</li>
-        <li>Swap the ontology and the query engine adapts with no code change — only UI branding stays domain-specific.</li>
-      </ul>
-    </div>
+  <p class="eyebrow">Model · 02 · Human in the loop</p>
+  <h2>Agents work best against specs. <span class="accent">Specs keep humans in the loop.</span></h2>
+  <div class="flow" aria-label="The specification defines correctness, the agent drafts, the human reviews">
+    <div class="card"><span class="card-title">Specification</span><span class="card-text">Defines what “correct” means: W3C, ASAM</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">Agent</span><span class="card-text">Drafts the model, the examples, the tests</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card tone-info"><span class="card-title">Human</span><span class="card-text">Reviews a small, declarative model diff</span></div>
   </div>
-  <div class="callout">The result: an AI search experience with the safety profile of a compiler and the reach of the ontology behind it.</div>
+  <p class="takeaway">Review what the model means, not thousands of lines of code.</p>
+  <p class="source-line">Measured: the four OMB domains being re-modelled in LinkML catch 963 of 999 adversarial probes derived from the hand-written shapes (work in progress).</p>
 </Slide>
 
-<Slide :index="3" variant="diagram">
-  <p class="eyebrow">Architecture · the module graph</p>
-  <h2>A strictly layered monorepo — small packages, one-way dependencies, no cycles.</h2>
-
-```mermaid
-flowchart TD
-    subgraph L0["Leaf contracts (rank 0)"]
-      AT["api-types<br/>wire JSON shapes"]
-      SL["slots<br/>the search IR + Zod schema"]
-    end
-    CORE["core<br/>config · logging · RDF prefixes · SSE · LRU"]
-    subgraph L2["Capability layer (rank 2)"]
-      SP["sparql<br/>Oxigraph + remote + policy gate"]
-      ONT["ontology<br/>SHACL discovery + validation"]
-      GIR["graphql-ir<br/>slot ↔ GraphQL codec"]
-    end
-    SEARCH["search<br/>compiler · discovery · lineage · service"]
-    LLM["llm<br/>SHACL prompt · slot validation · agents"]
-    APPS["apps · api (Hono SSE) + web (React)"]
-
-    CORE --> SP & ONT & GIR
-    SL --> GIR
-    AT & SL & SP & ONT & GIR --> SEARCH
-    SEARCH --> LLM
-    LLM --> APPS
-    AT --> APPS
-
-    classDef leaf fill:#e0e7ff,stroke:#6366f1,color:#0f172a;
-    classDef core fill:#ccfbf1,stroke:#0d9488,color:#0f172a;
-    classDef cap fill:#dcfce7,stroke:#22c55e,color:#0f172a;
-    classDef hub fill:#fef3c7,stroke:#f59e0b,color:#0f172a;
-    classDef app fill:#dbeafe,stroke:#2563eb,color:#0f172a;
-    class AT,SL leaf;
-    class CORE core;
-    class SP,ONT,GIR cap;
-    class SEARCH,LLM hub;
-    class APPS app;
-```
-
-  <div class="callout">The arrows show what each package provides to the layer below; an actual dependency runs the other way (e.g. sparql depends on core). A CI layer-gate rejects any dependency that isn't strictly downward by layer rank, plus any cycle — so the graph can never grow a cycle. Each box is an independently publishable, separately tested package.</div>
+<Slide :index="3">
+  <p class="eyebrow">Loop · 03 · Validation</p>
+  <h2>Build circles, not pipelines.</h2>
+  <div class="loop" aria-label="Loop: model, generator, artifacts, example data, validator, back to model">
+    <div class="card"><span class="card-title">Model</span><span class="card-text">LinkML · UML</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">Generator</span><span class="card-text">gen-owl · ShapeChange</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">Artifacts</span><span class="card-text">OWL · SHACL · XSD</span></div>
+    <span class="arrow" aria-hidden="true">↑</span>
+    <p class="loop-center">AI can help at every station. A machine checks every turn.</p>
+    <span class="arrow" aria-hidden="true">↓</span>
+    <div class="card tone-success"><span class="card-title">Validator</span><span class="card-text">OMB, in CI</span></div>
+    <span class="return" aria-hidden="true"></span>
+    <div class="card"><span class="card-title">Example data</span><span class="card-text">Valid + broken on purpose</span></div>
+  </div>
+  <p class="source-line">Ontology Management Base: LinkML artifacts must regenerate byte-identical; each domain's example data is SHACL-validated.</p>
 </Slide>
 
-<Slide :index="4" variant="diagram">
-  <p class="eyebrow">Architecture · the request pipeline</p>
-  <h2>One query, end to end — and where each module does its job.</h2>
-
-```mermaid
-flowchart LR
-    Q(["🗣️ query"]) --> PB["llm: prompt-builder<br/>embeds raw SHACL"]
-    PB --> AG["llm: agent<br/>submit_slots only"]
-    AG --> SV["llm: slot-validator<br/>fuzzy + SHACL gate"]
-    SV --> CO["search: compiler<br/>SHACL-discovered paths"]
-    CO --> PG["sparql: policy gate<br/>sandbox boundary"]
-    PG --> OX[("Oxigraph<br/>WASM, off-thread")]
-    OX --> SVC["search: service<br/>+ traceability"]
-    SVC --> SSE(["📊 SSE stream<br/>interpretation · gaps · SPARQL · results (+ per-row traceability)"])
-
-    DISC[("ontology + search<br/>warmup artifacts")] -.->|raw SHACL| PB
-    DISC -.-> SV
-    DISC -.-> CO
-
-    classDef llm fill:#6366f1,stroke:#4f46e5,color:#ffffff;
-    classDef search fill:#dcfce7,stroke:#22c55e,color:#0f172a;
-    classDef guard fill:#fef3c7,stroke:#f59e0b,color:#0f172a;
-    classDef store fill:#ccfbf1,stroke:#0d9488,color:#0f172a;
-    classDef io fill:#dbeafe,stroke:#2563eb,color:#0f172a;
-    class PB,AG,SV llm;
-    class CO,SVC search;
-    class PG guard;
-    class OX,DISC store;
-    class Q,SSE io;
-```
-
-  <div class="signal-grid">
-    <div class="signal-card">
-      <h3>Two-stage validation</h3>
-      <p>The validator fuzzy-corrects values against <code>sh:in</code>, then a SHACL gate drops anything that violates a real constraint — surfaced to the user as gaps.</p>
-    </div>
-    <div class="signal-card">
-      <h3>Deterministic compile</h3>
-      <p>The compiler walks SHACL-discovered predicate paths and reference chains — no fixed predicate names — and emits one reproducible query.</p>
-    </div>
-    <div class="signal-card">
-      <h3>Streamed transparency</h3>
-      <p>Most phases stream as SSE events: users see the interpretation, gaps, and the exact SPARQL before results, with per-row lineage carried alongside the results.</p>
-    </div>
+<Slide :index="4">
+  <p class="eyebrow">Use · 04 · Open standards</p>
+  <h2>Build on open standards. <span class="accent">Compete on what you build on top.</span></h2>
+  <div class="tool-grid" aria-label="Standards and the open-source tools they unlock">
+    <div class="card"><span class="card-title">RDF · JSON-LD</span><span class="card-text">Any RDF triple store</span></div>
+    <div class="card"><span class="card-title">SPARQL 1.1</span><span class="card-text">Oxigraph · Apache Jena Fuseki</span></div>
+    <div class="card"><span class="card-title">SHACL</span><span class="card-text">Validation is a library call</span></div>
+    <div class="card"><span class="card-title">GraphQL</span><span class="card-text">The API developers already know</span></div>
+    <div class="card"><span class="card-title">JSON Schema</span><span class="card-text">Typed tool calls for agents</span></div>
+    <div class="card"><span class="card-title">OWL 2</span><span class="card-text">Editors, reasoners, generators</span></div>
   </div>
+  <p class="takeaway">The code we wrote is glue between standards.</p>
 </Slide>
 
 <Slide :index="5">
-  <p class="eyebrow">Architecture · the modules</p>
-  <h2>Each package owns one responsibility, with a contract its tests pin.</h2>
-  <div class="stack-grid">
-    <div class="stack-card">
-      <span>slots · rank 0</span>
-      <strong>The search IR</strong>
-      <p><code>SearchSlots</code> + the Zod wire schema. The system's central contract; held to JSON Schema 2020-12.</p>
-    </div>
-    <div class="stack-card">
-      <span>api-types · rank 0</span>
-      <strong>Wire shapes</strong>
-      <p>Zero-dependency, browser-safe HTTP/SSE types shared by server and client — drift is impossible by construction.</p>
-    </div>
-    <div class="stack-card">
-      <span>core · rank 1</span>
-      <strong>Foundations</strong>
-      <p>Zod config, structured logging, typed errors, the canonical RDF prefix map, SSE framing, a bounded LRU.</p>
-    </div>
-    <div class="stack-card">
-      <span>sparql · rank 2</span>
-      <strong>Execution + sandbox</strong>
-      <p>Oxigraph (WASM, in a worker thread) or a remote SPARQL 1.1 store (Apache Jena Fuseki in production) behind one cache — and the policy gate, the system's security boundary.</p>
-    </div>
-    <div class="stack-card">
-      <span>ontology · rank 2</span>
-      <strong>Discovery + validation</strong>
-      <p>Domain registry from <code>sh:targetClass</code> + <code>rdfs:subClassOf</code>; SHACL Core validation; source resolution.</p>
-    </div>
-    <div class="stack-card">
-      <span>graphql-ir · rank 2</span>
-      <strong>Slot ↔ GraphQL codec</strong>
-      <p>Serializes slots to a spec-valid GraphQL query and parses it back — the editable surface the web app mirrors.</p>
-    </div>
-    <div class="stack-card">
-      <span>search · rank 3</span>
-      <strong>Compiler + pipeline</strong>
-      <p>Deterministic SPARQL compilation, schema discovery, lineage, and the orchestration service.</p>
-    </div>
-    <div class="stack-card">
-      <span>llm · rank 4</span>
-      <strong>Interpretation</strong>
-      <p>SHACL-grounded prompt, fuzzy + SHACL slot validation, and a multi-provider agent restricted to one tool.</p>
-    </div>
+  <p class="eyebrow">Use · 05 · Translation</p>
+  <h2>LLMs translate. <span class="accent">OWL + SHACL are dictionary and grammar.</span></h2>
+  <div class="flow" aria-label="A sentence is translated into typed slots, which a compiler turns into SPARQL">
+    <div class="card"><span class="card-title">Your words</span><span class="card-text">“HD-Karten von Autobahnen in Deutschland”</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card tone-info"><span class="card-title">LLM + ontology</span><span class="card-text">Dictionary: classes, allowed values. Grammar: shapes.</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">Typed slots</span><span class="card-text">One tool call, checked against SHACL</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">Compiler</span><span class="card-text">Deterministic SPARQL</span></div>
+  </div>
+  <p class="takeaway">The LLM never writes the query. A prompt injection can change what is asked, never how the query is built.</p>
+</Slide>
+
+<Slide :index="6" variant="cta">
+  <p class="eyebrow">Use · Live demo · Search</p>
+  <h2>Ask in your own words.</h2>
+  <ol class="prompts prompts--compact" aria-label="Search prompts for the live demo">
+    <li>motorway HD maps in Germany<small>SPARQL · GraphQL · 19 maps</small></li>
+    <li>HD-Karten von Autobahnen in Deutschland<small>the identical query</small></li>
+    <li>motorway HD maps in Germany with potholes<small>plus one gap</small></li>
+    <li>cut-in scenarios and the HD maps they reference<small>lineage</small></li>
+  </ol>
+  <div class="watch" aria-label="What to watch for">
+    <span class="watch-label">Watch for</span><span>Interpretation</span><span>Gaps</span><span>SPARQL</span><span>Lineage</span>
   </div>
 </Slide>
 
-<Slide :index="6">
-  <p class="eyebrow">Standards · not invention</p>
-  <h2>Every boundary speaks a standard.</h2>
-  <p class="lead">The system is glue between well-specified contracts. Each interface cites its normative spec, audited in <code>apps/docs/standards-audit.md</code>.</p>
-  <div class="card-grid">
-    <div class="card">
-      <div class="card-icon">◆</div>
-      <h3>The graph</h3>
-      <p><strong>RDF 1.1 · OWL · SHACL</strong> describe and constrain the data; <strong>SKOS</strong> gives concept hierarchies for query expansion.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">◆</div>
-      <h3>The query</h3>
-      <p><strong>SPARQL 1.1</strong> is the only thing that touches the store — compiled, escaped to grammar, and policy-checked.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">◆</div>
-      <h3>The contracts</h3>
-      <p><strong>JSON Schema 2020-12</strong> grounds the slot tool call; <strong>GraphQL</strong> is the editable query surface; <strong>RFC 8259 / 9110 / SSE</strong> carry it over the wire.</p>
-    </div>
-  </div>
-  <div class="mono-block">
-    <span class="mono-label">Why it matters</span><br />
-    Standards-pinned boundaries mean each layer is independently testable, swappable, and partner-consumable — and "is this correct?" reduces to "does it conform to the spec?".
+<Slide :index="7" variant="cta">
+  <p class="eyebrow">Backup · recorded run · search 1 of 4</p>
+  <h2 class="backup-title">motorway HD maps in Germany</h2>
+  <div class="screen" tabindex="0" role="region" aria-label="Recorded run; scroll to see the whole page">
+    <img src="./demo-backup/1-search-motorway.png" alt="Recorded search: the interpretation with road type motorway and country DE, the GraphQL and SPARQL queries, and 19 matching HD maps" />
   </div>
 </Slide>
 
-<Slide :index="7">
-  <p class="eyebrow">Open source · leverage, don't reinvent</p>
-  <h2>Best-in-class libraries do the heavy lifting.</h2>
-  <div class="stack-grid">
-    <div class="stack-card">
-      <span>SPARQL engine</span>
-      <strong>Oxigraph (WASM)</strong>
-      <p>In-process SPARQL 1.1, run off the main thread in a worker; a remote Apache Jena Fuseki store swaps in for production.</p>
-    </div>
-    <div class="stack-card">
-      <span>SHACL + RDF</span>
-      <strong>rdf-validate-shacl · N3 · rdfjs</strong>
-      <p>Zazuko's validator, the N3 Turtle parser, and the RDF/JS dataset model parse and check the shapes graph.</p>
-    </div>
-    <div class="stack-card">
-      <span>Query tooling</span>
-      <strong>sparqljs · graphql-js 17 · @zazuko/prefixes</strong>
-      <p>SPARQL parsing/validation, the GraphQL codec, and the canonical prefix map — single sources of truth.</p>
-    </div>
-    <div class="stack-card">
-      <span>AI</span>
-      <strong>Vercel AI SDK + GitHub Copilot SDK</strong>
-      <p>Five providers (OpenAI, Anthropic, claude-cli, vibe-cli/Mistral, Ollama) plus Copilot — one validation pipeline behind them all.</p>
-    </div>
-    <div class="stack-card">
-      <span>App platform</span>
-      <strong>Hono · Vite · React 19 · TanStack Router</strong>
-      <p>An SSE-native API and a streaming React UI, built and orchestrated by pnpm workspaces + Turborepo.</p>
-    </div>
-    <div class="stack-card">
-      <span>Deliberate keeps</span>
-      <strong>SSE parser · LRU · Levenshtein</strong>
-      <p>Three small bespoke utilities, each justified in an ADR — kept because the library alternatives are not drop-in or add no measurable benefit.</p>
-    </div>
+<Slide :index="8" variant="cta">
+  <p class="eyebrow">Backup · recorded run · search 2 of 4</p>
+  <h2 class="backup-title">HD-Karten von Autobahnen in Deutschland</h2>
+  <div class="screen" tabindex="0" role="region" aria-label="Recorded run; scroll to see the whole page">
+    <img src="./demo-backup/2-search-german.png" alt="Recorded search in German: the same two filters and the same 19 HD maps" />
   </div>
 </Slide>
 
-<Slide :index="8">
-  <p class="eyebrow">The security model</p>
-  <h2>Two gates make the AI path safe by construction.</h2>
-  <div class="panel-grid">
-    <div class="panel panel--quote">
-      <h3>Gate 1 · the slot IR</h3>
-      <p class="query-quote">text → typed slots → SPARQL</p>
-      <ul class="tight-list">
-        <li>The model's only output channel is the <code>submit_slots</code> tool — prose is ignored.</li>
-        <li>Slots are validated and corrected against the live SHACL vocabulary before they reach the compiler.</li>
-        <li>The compiler is the sole, deterministic SPARQL author.</li>
-      </ul>
-    </div>
-    <div class="panel">
-      <h3>Gate 2 · the policy sandbox</h3>
-      <ul class="tight-list">
-        <li>Only <code>SELECT</code> runs; writes, <code>SERVICE</code>, and graph redirection are rejected.</li>
-        <li>The gate's prefix allowlist shares its sources with what the compiler emits — standard prefixes plus the same ontology namespaces from the domain registry — so the two cannot drift.</li>
-        <li>A <code>LIMIT</code> ceiling is enforced; literals are escaped to the SPARQL 1.1 grammar (fuzz-tested).</li>
-      </ul>
-    </div>
-  </div>
-  <div class="callout">Neither gate trusts the model. Prompt injection can change <em>what</em> is asked, never <em>what query runs</em>.</div>
-</Slide>
-
-<Slide :index="9" variant="diagram">
-  <p class="eyebrow">The beautiful core</p>
-  <h2>The ontology artifacts are the program.</h2>
-  <p class="lead">One set of OWL + SHACL files, discovered once at warmup, becomes every moving part below. Nothing about a specific ontology is written in code.</p>
-
-```mermaid
-flowchart LR
-    ART[("OWL + SHACL<br/>artifacts")]:::art
-    ART --> D1["domain registry<br/>targetClass · subClassOf"]
-    ART --> D2["property paths<br/>asset → leaf chains"]
-    ART --> D3["reference chains<br/>cross-asset joins"]
-    ART --> D4["vocabulary<br/>sh:in · ranges"]
-    ART --> D5["SKOS concepts<br/>query expansion"]
-
-    ART -->|raw SHACL| P["LLM prompt"]
-    D4 --> V["slot validator"]
-    D5 --> V
-    D1 --> C["SPARQL compiler"]
-    D2 --> C
-    D3 --> C
-    D4 --> G["GraphQL schema"]
-
-    classDef art fill:#f59e0b,stroke:#b45309,color:#0f172a;
-    classDef d fill:#dcfce7,stroke:#22c55e,color:#0f172a;
-    classDef use fill:#dbeafe,stroke:#2563eb,color:#0f172a;
-    class D1,D2,D3,D4,D5 d;
-    class P,V,C,G use;
-```
-
-  <div class="mono-block">
-    <span class="mono-label">Discovery, not configuration</span><br />
-    Predicate paths and reference signatures <code>(sourceClass, path, targetClass)</code> are found by walking the shapes graph and typed instances at warmup — so the meta-model is read, never assumed.
+<Slide :index="9" variant="cta">
+  <p class="eyebrow">Backup · recorded run · search 3 of 4</p>
+  <h2 class="backup-title">motorway HD maps in Germany with potholes</h2>
+  <div class="screen" tabindex="0" role="region" aria-label="Recorded run; scroll to see the whole page">
+    <img src="./demo-backup/3-search-gap.png" alt="Recorded search with potholes: the same 19 maps and potholes reported under Not in ontology" />
   </div>
 </Slide>
 
-<Slide :index="10">
-  <p class="eyebrow">What this enables · long run</p>
-  <h2>Generality is the product.</h2>
-  <p class="lead">Because the artifacts are the source of truth, the same engine generalizes far beyond ENVITED-X — and the model it discovers can itself become a published asset.</p>
-  <div class="card-grid">
-    <div class="card">
-      <div class="card-icon">♻️</div>
-      <h3>Any data space, for free</h3>
-      <p>Point it at a retail, biomedical, or industrial ontology and "waterproof boots under €100" works with no code change. The data space's governance artifacts <em>become</em> its search interface.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">📦</div>
-      <h3>The discovered model as an artifact</h3>
-      <p>The search surface the system derives — domains, paths, vocabulary, and an in-memory GraphQL schema — could be published and versioned as a cacheable, partner-consumable contract that warm-starts the engine (planned; today the model is rediscovered at each boot).</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">🤝</div>
-      <h3>Standard partner contracts</h3>
-      <p>Because the query surface is expressed as GraphQL over a standard SPARQL 1.1 store (e.g. Apache Jena Fuseki), an executable GraphQL endpoint is a natural next step — partners would integrate through interfaces they already know, with no bespoke API to learn.</p>
-    </div>
+<Slide :index="10" variant="cta">
+  <p class="eyebrow">Backup · recorded run · search 4 of 4</p>
+  <h2 class="backup-title">cut-in scenarios and the HD maps they reference</h2>
+  <div class="screen" tabindex="0" role="region" aria-label="Recorded run; scroll to see the whole page">
+    <img src="./demo-backup/4-search-lineage.png" alt="Recorded search for cut-in scenarios: five results with their references, the first expanded into a lineage tree of seven assets" />
   </div>
-  <div class="callout">Today it answers questions about simulation assets. The architecture's real claim is that <strong>publishing a good ontology is enough to get a trustworthy natural-language interface over your data.</strong></div>
 </Slide>
 
-<Slide :index="11" variant="cta">
-  <div class="badge">Live Demo</div>
-  <p class="eyebrow">The whole architecture in one sentence</p>
-  <h2>The LLM interprets; the ontology decides; the compiler executes.</h2>
-  <p class="lead">Ask about HD maps, scenarios, or simulation assets in plain language — then inspect the interpretation, the gaps, the compiled SPARQL, and the per-row lineage in the live app.</p>
-  <div class="cta-buttons">
-    <a
-      href="https://github.com/ASCS-eV/ontology-based-nl-search#quick-start"
-      class="btn-primary"
-      >Run the search app →</a
-    >
-    <a href="/docs/architecture" class="btn-secondary">Read the architecture →</a>
+<Slide :index="11">
+  <p class="eyebrow">Use · 06 · Gaps</p>
+  <h2>Gaps show <span class="accent">where the language needs to grow.</span></h2>
+  <div class="columns" aria-label="Three kinds of gaps reported to the user">
+    <div class="card tone-warning"><span class="card-title">Not in ontology</span><span class="card-text">The concept does not exist yet</span></div>
+    <div class="card tone-info"><span class="card-title">Understood, not filtered</span><span class="card-text">Recognized, but no property to filter on</span></div>
+    <div class="card tone-neutral"><span class="card-title">Query limitation</span><span class="card-text">The engine cannot express it yet</span></div>
   </div>
-  <p class="subtitle">Try: “motorway HD maps in Germany” · “OpenDRIVE maps with right-hand traffic” · “Autobahnen mit Überholmanöver”</p>
+  <p class="takeaway">Experts model the language first. Users then show what it cannot say yet.</p>
+</Slide>
+
+<Slide :index="12">
+  <p class="eyebrow">Use · 07 · Lineage</p>
+  <h2>Data lineage has never been easier.</h2>
+  <div class="flow" aria-label="References in the graph form the lineage of an asset">
+    <div class="card"><span class="card-title">Scenario</span><span class="card-text">Cut-in in Frankfurt</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">OSI trace</span><span class="card-text">Frankfurt motorway</span></div>
+    <span class="flow-arrow" aria-hidden="true">→</span>
+    <div class="card"><span class="card-title">HD maps</span><span class="card-text">Frankfurt interchange</span></div>
+  </div>
+  <p class="takeaway">A reference is a typed link, not free text, so lineage is a query, not a separate system.</p>
+  <p class="source-line">From the synthetic sample data: one scenario reaches 7 assets through its manifest, each with a did:web identifier.</p>
+</Slide>
+
+<Slide :index="13">
+  <p class="eyebrow">Invert · 08 · Generation</p>
+  <h2>If we can search it, <span class="accent">we can generate it.</span></h2>
+  <div class="mirror" aria-label="Search and authoring use the same pattern in opposite directions">
+    <span class="mirror-label">Search</span>
+    <div class="mirror-row card tone-info">words → typed slots → SPARQL → existing assets</div>
+    <span class="mirror-label">Author</span>
+    <div class="mirror-row card tone-success">words → typed scene → OpenSCENARIO XML → checks → playback</div>
+  </div>
+  <p class="takeaway">Synthetic scenarios, valid by construction and described by the same ontology.</p>
+  <p class="source-line">Checks: SHACL from ASAM's OpenSCENARIO model · XSD 1.3.0 via the open-source OpenSCENARIO API (WebAssembly) · road rules. Playback: esmini.</p>
+</Slide>
+
+<Slide :index="14" variant="cta">
+  <p class="eyebrow">Invert · Live demo · Authoring</p>
+  <h2>Describe it. Get a valid OpenSCENARIO file.</h2>
+  <ol class="prompts" aria-label="Authoring prompt for the live demo">
+    <li>A cut-in on a highway: a vehicle 30 m ahead of the ego vehicle in the neighbouring lane changes into the ego's lane.<small>Actors, actions, and the road the scene binds to</small></li>
+  </ol>
+  <div class="watch" aria-label="What to watch for">
+    <span class="watch-label">Watch for</span><span>Model choices</span><span>Semantic · structural · road checks</span><span>esmini preview</span><span>.xosc export</span>
+  </div>
+</Slide>
+
+<Slide :index="15" variant="cta">
+  <p class="eyebrow">Backup · recorded run · authoring 1 of 2</p>
+  <h2 class="backup-title">A cut-in on a highway: a vehicle 30 m ahead of the ego vehicle in the neighbouring lane changes into the ego's lane.</h2>
+  <div class="screen" tabindex="0" role="region" aria-label="Recorded run; scroll to see the whole page">
+    <img src="./demo-backup/5-author.png" alt="Recorded authoring run: the interpretation, the scene with two vehicles, three passing validation gates, the OpenSCENARIO XML and the esmini preview" />
+  </div>
+</Slide>
+
+<Slide :index="16" variant="cta">
+  <p class="eyebrow">Backup · recorded run · authoring 2 of 2</p>
+  <h2 class="backup-title">The generated scenario, played by esmini</h2>
+  <div class="screen screen--fit">
+    <video
+      src="./demo-backup/6-author-preview.webm"
+      poster="./demo-backup/6-author-preview.png"
+      autoplay
+      loop
+      muted
+      playsinline
+      aria-label="Recording of the esmini preview: the vehicle 30 m ahead in the neighbouring lane moves into the ego vehicle's lane"
+    ></video>
+  </div>
+</Slide>
+
+<Slide :index="17">
+  <p class="eyebrow">Standardize · 09 · ASAM OpenX</p>
+  <h2>Standardize in models, <span class="accent">not in prose.</span></h2>
+  <div class="columns" aria-label="Standardization today and with model-based pipelines">
+    <div class="card tone-neutral"><span class="card-title">Today</span><span class="card-text">UML plus prose, the XSD built in a proprietary tool. Ontologies come later, one silo each.</span></div>
+    <div class="card tone-info"><span class="card-title">Next</span><span class="card-text">One ASAM OpenX ontology. Models authored with agents, reviewed like code.</span></div>
+    <div class="card tone-success"><span class="card-title">Open pipelines</span><span class="card-text">Generate XSD, OWL, SHACL and docs from one source.</span></div>
+  </div>
+  <p class="takeaway">Already working: OpenSCENARIO.xsd regenerated byte-identical from ASAM's UML model, in an open pipeline outside Enterprise Architect.</p>
+  <p class="source-line">UML → ShapeChange → OWL → owl2shacl → SHACL · fixes submitted upstream to both tools</p>
+</Slide>
+
+<Slide :index="18" variant="cta">
+  <p class="eyebrow">Close the loop</p>
+  <h2>Model. Loop. Use. <span class="accent">Invert. Standardize.</span></h2>
+  <div class="thesis card tone-info">
+    <span>Formal models are the dictionary.</span>
+    <span>LLMs are the translator.</span>
+    <span>Agents close the loop, and humans stay in it.</span>
+  </div>
+  <p class="takeaway">So far: about 20 ontology domains searchable · no LLM-written SPARQL · OpenSCENARIO.xsd rebuilt byte-identical · 12 of 12 rehearsal scenarios valid</p>
+  <p class="source-line">synergies-ccam.eu · github.com/ASCS-eV/ontology-based-nl-search · github.com/ASCS-eV/ontology-management-base</p>
+  <p class="source-line">Funded by the European Union. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Climate, Infrastructure and Environment Executive Agency (CINEA). Neither the European Union nor CINEA can be held responsible for them.</p>
 </Slide>
 
 </SlideDeck>
+
+<SlideNotes :index="0" title="Formal models are the dictionary. LLMs are the translator." timing="0:00–1:00 · 60 seconds">
+  <p>These are results from the EU project SYNERGIES, which aims at a federated scenario data space and at real-world and synthetic scenarios for testing automated driving. Finding and creating the right scenario is still slow expert work.</p>
+  <p>For more than thirty years we have been able to describe data formally, but most of that rigor stayed locked in models only experts could write.</p>
+  <p>My claim: formal models are the dictionary and the grammar, and large language models are the translator. In closed loops, with a human reviewing every turn, that gives us search in plain language, synthetic scenarios that are valid by construction, and standards that are modelled instead of written.</p>
+  <p>Five parts, two live demos.</p>
+  <p>[Cue: name SYNERGIES first, then read the headline slowly and point along the five parts. Transition: “Let me start with a confession.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="1" title="Formal modelling is nothing new. Writing it just got fast." timing="1:00–2:30 · 90 seconds">
+  <p>Let me start with a confession: nothing on this timeline is new. From EXPRESS in 1994, the language of STEP, to SHACL in 2017, we have had precise, machine-checkable modelling languages for a generation.</p>
+  <p>What held us back was the effort of writing them. A good ontology needed a rare expert and a lot of patience, and it drifted away from the code around it.</p>
+  <p>Two things changed. First, the generators matured. With LinkML I write one schema and derive OWL, SHACL and a JSON-LD context from it. ShapeChange and owl2shacl do the same from a UML model. Second, these languages suit language models well: small, precisely specified, and documented in public in great detail. An agent drafts a SHACL shape the way it drafts a function.</p>
+  <p>So modelling becomes a conversation with an assistant, not a solo expert task. That is how we are re-modelling domains of the Ontology Management Base in LinkML right now: an agent at the keyboard, a human deciding.</p>
+  <p>[Cue: sweep left to right along the years, stop on “Now”. Transition: “Why does an agent do this well?”]</p>
+</SlideNotes>
+
+<SlideNotes :index="2" title="Agents work best against specs. Specs keep humans in the loop." timing="2:30–4:00 · 90 seconds">
+  <p>Why does this work so well? Because agents are at their best when there is a specification to develop against. The specification tells the agent what correct means, and it tells me how to check the result.</p>
+  <p>It also keeps the human in the loop. Reviewing thousands of lines of generated code takes a long time. When an agent changes a model, the diff is small and declarative: a new class, a new allowed value, a cardinality. My domain experts can read that, and we discuss it in a pull request.</p>
+  <p>And it is measurable. The four OMB domains we are re-modelling in LinkML catch 963 of 999 adversarial probes derived from the hand-written shapes. The specification defines correctness, the agent does the typing, and the human decides what the model should mean.</p>
+  <p>One distinction for the rest of the talk: agents are the assistants we build with. At runtime, a language model only translates.</p>
+  <p>[Cue: point to the three boxes in order; rest on “Human”, then on the measured line. Transition: “But a model on its own proves nothing.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="3" title="Build circles, not pipelines." timing="4:00–5:30 · 90 seconds">
+  <p>A model on its own proves nothing. So the third ingredient is the most important one: we build circles, not pipelines.</p>
+  <p>The model feeds a generator. The generator produces artifacts: OWL, SHACL, JSON-LD contexts, and in the ASAM case, XML Schemas. Then we need example data: valid instances, and instances that are broken on purpose. And a validator checks that data against the artifacts. In our case that is the Ontology Management Base, OMB, which validates the example data of every domain in continuous integration. Whatever fails goes back to the model, and the loop turns again.</p>
+  <p>The AI can help at every station: it drafts the model, writes examples, explains a violation. But every turn is checked by a machine. OMB regenerates its LinkML artifacts in CI and fails on a single byte of difference.</p>
+  <p>That is how an agent can work fast while we still trust the result.</p>
+  <p>[Cue: trace the loop with your hand, clockwise from Model back to Model. Transition: “Once you trust your models, something interesting happens.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="4" title="Build on open standards. Compete on what you build on top." timing="5:30–7:00 · 90 seconds">
+  <p>Now we have formal data models, and we are confident in working with them. This is where the payoff starts: we do not have to rebuild the foundation. We plug in.</p>
+  <p>Our data is RDF, so any RDF triple store can hold it. Oxigraph runs in-process during development, Apache Jena Fuseki in production. Both speak SPARQL 1.1: one standard query language for all of it. The constraints are SHACL, so validation is a library call, not a project. The same shapes give us a GraphQL surface that every web developer already knows. And the agents build on the same foundations: their tool calls are typed with JSON Schema.</p>
+  <p>Think about what this frees up. Instead of every organization rebuilding databases, query builders and validators for simulation data, we share the foundation and compete on what we build on top. The code we wrote is glue between standards, and every boundary cites its specification. Is a component correct? That becomes: does it conform to the standard?</p>
+  <p>[Cue: point to two or three tiles, not all six. Transition: “Which brings me to natural language.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="5" title="LLMs translate. OWL + SHACL are dictionary and grammar." timing="7:00–8:30 · 90 seconds">
+  <p>Which brings me to natural language. The distance between how people talk and how formal models are written has always been the last mile. Here is the insight: that distance is a translation problem, and translating is what large language models are genuinely great at.</p>
+  <p>So we give the model a dictionary and a grammar. The dictionary is the ontology: classes, properties, allowed values. The grammar is SHACL: which property belongs to which shape, with which datatype. For every question we look up the right pages, and the matching SHACL fragments go into the prompt. The model's only job is to translate a sentence, in any language it speaks, into typed slots through one tool call. Then the slots are checked against the same shapes.</p>
+  <p>What the model never does is write SPARQL. A deterministic compiler does, so the same slots always produce the same query. That is also our security model: a prompt injection can change what is asked, never how the query is built. Only a compiled, read-only query reaches the database. Let me show you.</p>
+  <p>[Cue: follow the four boxes; pause on “Compiler”. Transition: switch to the prepared search tab.]</p>
+</SlideNotes>
+
+<SlideNotes :index="6" title="Ask in your own words." timing="8:30–12:30 · 4 minutes">
+  <p>Switch to the search tab. Say: “This is the access layer a federated scenario data space needs, one of the SYNERGIES goals. The data is synthetic: 358 generated sample assets in the shape of real ENVITED-X metadata.”</p>
+  <p>Submit “motorway HD maps in Germany”. While it streams, say: “Watch the pipeline. The model interprets, the slots are validated, the compiler writes the query.” Open the interpretation and point at the two filters: road type motorway, country DE. “This is the translation: values that exist in the ontology.” Expand the GraphQL and SPARQL panels: “The model did not write this. The compiler did.” Point at the 19 maps.</p>
+  <p>Submit “HD-Karten von Autobahnen in Deutschland”. “Same dictionary, another language.” Point out that the filters and the 19 maps are identical.</p>
+  <p>Submit “motorway HD maps in Germany with potholes”. Open the gaps panel: “Same 19 maps, plus one term the ontology cannot express. Not silently dropped, reported. Remember this; it is my next slide.”</p>
+  <p>Submit “cut-in scenarios and the HD maps they reference”. On the first result card, open “Explore lineage”: “Seven assets, reached by following typed links through the graph.” Then return to the deck.</p>
+  <p>[Cue: at most 30 seconds of recovery if a request fails: resubmit once, then press → for the four recorded backup slides. If the demo ran live, press → five times to skip them. Transition: “What you just saw in the gaps panel is the most underrated part.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="7" title="motorway HD maps in Germany" timing="12:30–12:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” Scroll down: the interpretation with its two filters, the GraphQL query, the SPARQL the compiler wrote, and the 19 maps.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="8" title="HD-Karten von Autobahnen in Deutschland" timing="12:30–12:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” The German query produced the same two filters and the same 19 maps.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="9" title="motorway HD maps in Germany with potholes" timing="12:30–12:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” Scroll to the gaps panel: “potholes” under Not in ontology, next to the same 19 maps.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="10" title="cut-in scenarios and the HD maps they reference" timing="12:30–12:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” Scroll to the first result card: its references, then the lineage tree with seven reachable assets.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="11" title="Gaps show where the language needs to grow." timing="12:30–14:00 · 90 seconds">
+  <p>The gaps panel is, for me, the most underrated part of this work. The expert models the language first. But the users are the ones who reveal what the language cannot say yet.</p>
+  <p>Every query that mentions something the ontology does not cover produces a gap, and there are three kinds: not in the ontology, understood but not filterable, or a limitation of the query engine. None of this is silently dropped. A gap can also be the model's own mistake, so each one is a lead to check, not a verdict.</p>
+  <p>Here is a real one. Ask for German highways with three lanes, and the answer is: the HD-map ontology has no lane count. The concept exists, but in OpenLABEL's vocabulary, not where the maps are described. Keep that in mind for the end of the talk.</p>
+  <p>Now imagine collecting those gaps across all users of a data space. That is user research nobody had to organize, in the users' own words. The expert still decides how to model each one, but the backlog writes itself.</p>
+  <p>[Cue: point to the three columns, then make a circular gesture for the loop. Transition: “And one more thing you saw: lineage.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="12" title="Data lineage has never been easier." timing="14:00–15:00 · 60 seconds">
+  <p>One more thing you saw: lineage. In a formal graph, a reference is not a string in a comment field. It is a typed link, declared in the asset's manifest and checked by its shape.</p>
+  <p>In the demo, one cut-in scenario reached seven assets: the HD maps it uses, and an OSI trace that points to the maps it was recorded on. Lineage needs no separate system; it is a query over the graph. And it answers what a safety case asks: which map and which recording does this test rest on?</p>
+  <p>[Cue: follow the chain left to right. Transition: “Now the crown.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="13" title="If we can search it, we can generate it." timing="15:00–16:30 · 90 seconds">
+  <p>Now the crown. If we can search ontology-conform data, we can also create it. We run the same idea backwards.</p>
+  <p>In search, words become slots and slots become SPARQL. In authoring, words become a scene: actors, a road, actions. Again a typed intermediate representation, never raw XML from the model. Application code lowers the scene into ASAM OpenSCENARIO XML.</p>
+  <p>And the circle from earlier comes back. The scene is checked against SHACL shapes generated from ASAM's own OpenSCENARIO model. The document is validated against the official XML Schema by the open-source OpenSCENARIO API, compiled to WebAssembly and running inside the application. Residual rules check the scenario against the road. And esmini plays it back in the browser.</p>
+  <p>This is the second SYNERGIES goal: not only finding real-world scenarios, but generating synthetic ones, valid by construction and described by the same ontology. Valid is not the same as intended, though: whether it is the scenario I meant stays my decision, which is why you see the preview. Let me show you.</p>
+  <p>[Cue: point to the two rows as mirror images. Transition: switch to the prepared authoring tab.]</p>
+</SlideNotes>
+
+<SlideNotes :index="14" title="Describe it. Get a valid OpenSCENARIO file." timing="16:30–20:30 · 4 minutes">
+  <p>Switch to the authoring tab. Paste the prompt and submit it. While it streams, say: “The model fills a typed scene. It is not allowed to write XML.”</p>
+  <p>Open the scene. Name the two vehicles and the actions, and point at the 30 metres I asked for. Read the summary: “Speed and lane-change timing I did not specify. The model chose them, and it tells me what it chose.” Name the road the scene is bound to.</p>
+  <p>Open the gate results: “Three independent checks. Semantic, against ASAM's OpenSCENARIO shapes. Structural, against the official schema. Residual, against the road.” Point at the two skipped rules: “Skipped means not checked, and the tool says so.”</p>
+  <p>Start the preview: “This is esmini, playing the generated file in the browser. The car ahead moves into my lane.” Then show the XML and download the .xosc: “A standard OpenSCENARIO file. Any compliant tool can open it.” Return to the deck.</p>
+  <p>[Cue: at most 30 seconds of recovery if generation fails: resubmit once, then press → for the two recorded backup slides. If the demo ran live, press → three times to skip them. Transition: “Let me end with where this leads.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="15" title="A cut-in on a highway: a vehicle 30 m ahead of the ego vehicle in the neighbouring lane changes into the ego's lane." timing="20:30–20:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” Scroll down: the interpretation, the scene with two vehicles, the validation gates with the two skipped rules, the OpenSCENARIO file, and the esmini preview at the bottom.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="16" title="The generated scenario, played by esmini" timing="20:30–20:30 · backup, only if the live demo fails">
+  <p>Recorded run. Say: “This is a recorded run of the same flow.” The recording of the esmini preview loops: the vehicle 30 metres ahead starts its lane change into my lane after two seconds.</p>
+  <p>[Cue: scroll the screenshot with the mouse wheel or trackpad.]</p>
+</SlideNotes>
+
+<SlideNotes :index="17" title="Standardize in models, not in prose." timing="20:30–22:30 · 2 minutes">
+  <p>Let me end with where this leads for standardization. Today, an ASAM OpenX standard is a UML model plus prose, and its XML Schema is generated inside a proprietary modelling tool. Ontologies are derived afterwards, and every standard lives in its own silo. OpenSCENARIO, OpenDRIVE, OSI, OpenLABEL: each with its own idea of a road, a lane, a vehicle.</p>
+  <p>Everything in this talk points to a different way. First, one overarching ASAM OpenX ontology, where a lane is the same concept whether it appears in a map, a scenario or a sensor trace. Second, standards are modelled, not written: agent-assisted, in formal models that the working group reviews like code. Third, open pipelines generate every artifact from that one source: the XML Schema, the OWL, the SHACL, the documentation. Text and schema can no longer drift apart.</p>
+  <p>This is not hypothetical. An open pipeline regenerates the OpenSCENARIO XML Schema from ASAM's UML model, byte-identical, outside Enterprise Architect. ShapeChange and owl2shacl turn the same models into OWL and SHACL, and we have submitted fixes upstream to both tools. In a prototype, a real OpenSCENARIO file lifts into RDF completely, without a single hardcoded element name.</p>
+  <p>That is the pipeline I would like us to build together, in the open.</p>
+  <p>[Cue: left to right across the three columns; land on the byte-identical claim. Transition: “So, to bring it together.”]</p>
+</SlideNotes>
+
+<SlideNotes :index="18" title="Model. Loop. Use. Invert. Standardize." timing="22:30–24:00 · 90 seconds">
+  <p>So, to bring it together. Model: formal modelling is old, but agents now write it with us, against specifications. Loop: every model goes round generators, example data and validators.</p>
+  <p>Use: once the models are formal, open-source tooling comes for free, language models translate our words into the formal language, users show us what is missing, and lineage comes from the graph. Invert: the same models generate valid synthetic scenarios. Standardize: the standards themselves can be built this way.</p>
+  <p>What is not solved yet: the checks prove a file is valid, not that it is the scenario you meant; the authoring catalog has a single road; and we still have to measure all of this with users.</p>
+  <p>Formal models are the dictionary. LLMs are the translator. Agents close the loop, and humans stay in it.</p>
+  <p>This work was created in SYNERGIES, funded by the European Union. Everything you saw is open source except the language model, and that is swappable, including local open-weight models. Bring your gaps, your models and your use cases. Thank you.</p>
+  <p>[Cue: name the five acts along the headline, read the three thesis lines slowly, then stop talking. One minute of buffer remains before 25:00.]</p>
+</SlideNotes>
+
 <SlideControls />
 </SlideProvider>

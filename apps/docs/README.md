@@ -48,6 +48,7 @@ For more details, see [PORT_CONFIGURATION.md](/PORT_CONFIGURATION.md).
 pnpm --filter @ontology-search/docs dev       # local docs server (:5173, or DOCS_PORT if set)
 pnpm --filter @ontology-search/docs build     # static build
 pnpm --filter @ontology-search/docs preview   # preview the static build
+pnpm --filter @ontology-search/e2e test:docs   # Chromium smoke test of the dev site (isolated :5188)
 ```
 
 ## See also

@@ -9,6 +9,8 @@ const slides = inject<{
   goTo: (i: number) => void
   isFirst: ComputedRef<boolean>
   isLast: ComputedRef<boolean>
+  openPresenter: () => void
+  presenterStatus: Ref<string>
 }>('slides')!
 
 const dots = computed(() => Array.from({ length: slides.totalSlides }, (_, i) => i))
@@ -16,6 +18,16 @@ const dots = computed(() => Array.from({ length: slides.totalSlides }, (_, i) =>
 
 <template>
   <div class="slide-controls">
+    <button
+      class="presenter-btn"
+      aria-label="Open presenter notes (P)"
+      @click="slides.openPresenter()"
+    >
+      Presenter notes <kbd>P</kbd>
+    </button>
+    <span v-if="slides.presenterStatus.value" class="presenter-status" role="status">
+      {{ slides.presenterStatus.value }}
+    </span>
     <button
       class="nav-btn"
       :disabled="slides.isFirst.value"
@@ -78,6 +90,31 @@ const dots = computed(() => Array.from({ length: slides.totalSlides }, (_, i) =>
   color: #9ca3af;
   cursor: pointer;
   transition: all 150ms;
+}
+.presenter-btn {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.8);
+  color: #374151;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+}
+.presenter-btn:hover {
+  background: #f3f4f6;
+}
+.presenter-status {
+  max-width: 22rem;
+  color: #b45309;
+  font-size: 0.75rem;
+}
+kbd {
+  margin-left: 0.25rem;
+  padding: 0.05rem 0.25rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.2rem;
+  font: inherit;
 }
 .nav-btn:hover:not(:disabled) {
   background: #f3f4f6;

@@ -1,0 +1,426 @@
+/* Conference talk in the ENVITED-X brand: the ASCS brand book (2025) palette
+   and typography (Open Sans, uppercase headings, blue subheadlines), and the
+   ENVITED-X design system's tone tokens re-toned to that palette. The deck
+   stays white in light and dark mode so it survives a washed-out projector.
+   Technical appendix decks keep their own layout. */
+@import '@fontsource-variable/open-sans/index.css';
+@import '@ontology-search/design-system/tokens.css';
+
+.Layout.slide-page.conference-page .slide,
+.Layout.slide-page.conference-page .slide--title,
+.Layout.slide-page.conference-page .slide--cta {
+  /* Top padding keeps content clear of the brand frame (SlideBrand.vue). */
+  padding: 84px 5vw 100px;
+  background: #fff;
+  font-family: 'Open Sans Variable', 'Open Sans', system-ui, sans-serif;
+  /* Brand book colours. */
+  --brand-blue: #7891bb;
+  --brand-green: #60ac24;
+  --brand-gray: #c5cac8;
+  --brand-navy: #111727;
+  --slide-bg: #fff;
+  --slide-fg: var(--brand-navy);
+  --slide-muted: var(--brand-navy);
+  --slide-subtle: var(--brand-navy);
+  --slide-lead: var(--brand-navy);
+  --slide-accent: var(--brand-blue);
+  --slide-radius: 6px;
+  /* The design system's tone tokens, re-toned to the brand (its documented
+     per-theme override point). Warning keeps the design-system default. */
+  --ds-tone-info-bg: #dde3ee;
+  --ds-tone-info-bg-subtle: #eef1f7;
+  --ds-tone-info-border: var(--brand-blue);
+  --ds-tone-success-bg: #dcecd0;
+  --ds-tone-success-bg-subtle: #eff6e9;
+  --ds-tone-success-border: var(--brand-green);
+  --ds-tone-neutral-bg: #e8eaea;
+  --ds-tone-neutral-bg-subtle: #f5f6f6;
+  --ds-tone-neutral-border: var(--brand-gray);
+}
+.Layout.slide-page.conference-page .slide::before,
+.Layout.slide-page.conference-page .slide::after {
+  display: none;
+}
+.Layout.slide-page.conference-page .slide .slide-content {
+  width: min(1280px, 100%);
+  gap: clamp(14px, 2.4vh, 30px);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  align-items: stretch;
+  text-align: left;
+}
+/* Headings are uppercase and bold. */
+.Layout.slide-page.conference-page .slide h1,
+.Layout.slide-page.conference-page .slide h2 {
+  max-width: none;
+  font-size: clamp(30px, 3.3vw, 50px);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--slide-fg);
+  border: 0;
+  padding: 0;
+}
+.Layout.slide-page.conference-page .slide h1 {
+  font-size: clamp(34px, 3.5vw, 54px);
+}
+/* Page titles and subheadlines: uppercase, bold, brand blue. */
+.Layout.slide-page.conference-page .slide .eyebrow {
+  font-size: clamp(20px, 1.8vw, 26px);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--slide-accent);
+}
+.Layout.slide-page.conference-page .slide .accent {
+  color: var(--slide-accent);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+.Layout.slide-page.conference-page .slide .takeaway {
+  font-size: clamp(24px, 2vw, 31px);
+  line-height: 1.3;
+  color: var(--slide-fg);
+}
+.Layout.slide-page.conference-page .slide .source-line {
+  font-size: clamp(18px, 1.4vw, 21px);
+  line-height: 1.35;
+  color: var(--slide-subtle);
+}
+.Layout.slide-page.conference-page .slide .source-line a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.Layout.slide-page.conference-page code {
+  font-size: 0.9em;
+  color: var(--slide-fg);
+  background: var(--ds-tone-neutral-bg);
+  padding: 0 0.25em;
+  border-radius: 4px;
+}
+
+/* Cards follow the design system's Card: bordered and rounded. Tone classes
+   tint a card with the (re-toned) semantic tokens; text stays navy. */
+.Layout.slide-page.conference-page .card {
+  padding: 16px 20px;
+  border: 1px solid var(--ds-tone-neutral-border);
+  border-top: 4px solid var(--brand-blue);
+  border-radius: var(--slide-radius);
+  background: #fff;
+  box-shadow: none;
+}
+.Layout.slide-page.conference-page .tone-info {
+  background: var(--ds-tone-info-bg-subtle);
+  border-color: var(--ds-tone-info-border);
+}
+.Layout.slide-page.conference-page .tone-success {
+  background: var(--ds-tone-success-bg-subtle);
+  border-color: var(--ds-tone-success-border);
+}
+.Layout.slide-page.conference-page .tone-warning {
+  background: var(--ds-tone-warning-bg-subtle);
+  border-color: var(--ds-tone-warning-border);
+  border-top-color: var(--ds-tone-warning-fg);
+}
+.Layout.slide-page.conference-page .tone-neutral {
+  background: var(--ds-tone-neutral-bg-subtle);
+  border-color: var(--ds-tone-neutral-border);
+  border-top-color: var(--brand-gray);
+}
+.Layout.slide-page.conference-page .card-title {
+  display: block;
+  font-size: clamp(24px, 1.9vw, 29px);
+  line-height: 1.2;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slide-fg);
+}
+.Layout.slide-page.conference-page .card-text {
+  display: block;
+  margin-top: 8px;
+  font-size: clamp(24px, 1.8vw, 27px);
+  line-height: 1.3;
+  color: var(--slide-muted);
+}
+
+/* Title slide: text beside the brand-cover visual, disclaimer below. */
+.Layout.slide-page.conference-page .title-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 3vw;
+  align-items: center;
+}
+.Layout.slide-page.conference-page .title-text {
+  display: grid;
+  gap: clamp(14px, 2.4vh, 26px);
+}
+.Layout.slide-page.conference-page .acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 0;
+  padding-top: 14px;
+  border-top: 4px solid var(--brand-blue);
+}
+.Layout.slide-page.conference-page .acts span {
+  font-size: clamp(24px, 1.7vw, 26px);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slide-fg);
+}
+.Layout.slide-page.conference-page .acts span + span::before {
+  content: '→';
+  margin: 0 0.35em;
+  color: var(--brand-blue);
+}
+
+/* 01 · Timeline of the modelling languages. */
+.Layout.slide-page.conference-page .timeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) 1.6fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* Equal columns of cards. */
+.Layout.slide-page.conference-page .columns {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 2vw;
+}
+
+/* Left-to-right flow of cards separated by arrows. */
+.Layout.slide-page.conference-page .flow {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(8px, 1.2vw, 18px);
+}
+.Layout.slide-page.conference-page .flow > .card {
+  flex: 1;
+  min-width: 0;
+}
+.Layout.slide-page.conference-page .flow-arrow {
+  align-self: center;
+  font-size: 36px;
+  color: var(--brand-blue);
+}
+
+/* 03 · The closed loop, drawn as a racetrack: top row forward, bottom back. */
+.Layout.slide-page.conference-page .loop {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  grid-template-rows: auto auto auto;
+  align-items: center;
+  column-gap: clamp(8px, 1.2vw, 18px);
+  row-gap: 4px;
+}
+.Layout.slide-page.conference-page .loop .arrow {
+  font-size: 34px;
+  line-height: 1;
+  text-align: center;
+  color: var(--brand-blue);
+}
+.Layout.slide-page.conference-page .loop .return {
+  grid-column: 2 / 5;
+  position: relative;
+  height: 4px;
+  margin: 0 4px 0 18px;
+  background: var(--brand-blue);
+}
+.Layout.slide-page.conference-page .loop .return::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 11px solid transparent;
+  border-bottom: 11px solid transparent;
+  border-right: 18px solid var(--brand-blue);
+}
+.Layout.slide-page.conference-page .loop .loop-center {
+  grid-column: 2 / 5;
+  text-align: center;
+  font-size: clamp(24px, 1.9vw, 28px);
+  font-weight: 700;
+  color: var(--slide-fg);
+}
+
+/* 04 · Standard → the open-source tools it unlocks. */
+.Layout.slide-page.conference-page .tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 1.6vw;
+}
+
+/* 08 · Search and authoring as mirror images. */
+.Layout.slide-page.conference-page .mirror {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px 28px;
+  align-items: center;
+}
+.Layout.slide-page.conference-page .mirror .mirror-label {
+  font-size: clamp(24px, 2.1vw, 33px);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slide-accent);
+}
+.Layout.slide-page.conference-page .mirror .mirror-row {
+  font-size: clamp(24px, 1.9vw, 29px);
+  line-height: 1.3;
+  color: var(--slide-fg);
+}
+
+/* Live-demo slides: the exact prompts, and what to watch. */
+.Layout.slide-page.conference-page .prompts {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.Layout.slide-page.conference-page .prompts li {
+  padding: 12px 20px;
+  border: 1px solid var(--brand-gray);
+  border-left: 6px solid var(--brand-blue);
+  border-radius: var(--slide-radius);
+  background: #fff;
+  font-size: clamp(24px, 2vw, 31px);
+  line-height: 1.3;
+  color: var(--slide-fg);
+}
+.Layout.slide-page.conference-page .prompts li small {
+  display: block;
+  font-size: clamp(24px, 1.6vw, 25px);
+  color: var(--slide-muted);
+}
+.Layout.slide-page.conference-page .prompts--compact li {
+  padding: 8px 20px;
+}
+.Layout.slide-page.conference-page .prompts--compact li small {
+  display: inline;
+  margin-left: 0.5em;
+}
+.Layout.slide-page.conference-page .prompts--compact li small::before {
+  content: '→ ';
+  color: var(--brand-blue);
+}
+/* The brand book's outlined button, used as the design system's Pill. */
+.Layout.slide-page.conference-page .watch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: baseline;
+}
+.Layout.slide-page.conference-page .watch span {
+  padding: 4px 16px;
+  border: 2px solid var(--brand-blue);
+  border-radius: var(--slide-radius);
+  font-size: clamp(24px, 1.6vw, 25px);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slide-fg);
+  background: #fff;
+}
+.Layout.slide-page.conference-page .watch .watch-label {
+  padding-left: 0;
+  border: 0;
+  color: var(--slide-accent);
+  background: none;
+}
+
+/* Closing thesis. */
+.Layout.slide-page.conference-page .thesis {
+  display: grid;
+  gap: 8px;
+  padding: 22px 26px;
+  border-left: 6px solid var(--brand-blue);
+}
+.Layout.slide-page.conference-page .thesis span {
+  font-size: clamp(26px, 2.4vw, 36px);
+  line-height: 1.2;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slide-fg);
+}
+
+/* Backup slides: a recorded run, scrollable like the browser it came from.
+   The heading shows the prompt as typed, so it is not uppercased. */
+.Layout.slide-page.conference-page .slide h2.backup-title {
+  font-size: clamp(24px, 2.2vw, 32px);
+  font-weight: 600;
+  text-transform: none;
+}
+.Layout.slide-page.conference-page .screen {
+  height: calc(100vh - 300px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--brand-gray);
+  border-radius: var(--slide-radius);
+  background: #fff;
+}
+.Layout.slide-page.conference-page .screen:focus-visible {
+  outline: 3px solid var(--brand-blue);
+  outline-offset: 2px;
+}
+.Layout.slide-page.conference-page .screen img {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+}
+
+/* A small capture is shown at its natural size, not stretched. */
+.Layout.slide-page.conference-page .screen.screen--fit {
+  height: auto;
+  overflow: visible;
+  border: 0;
+}
+.Layout.slide-page.conference-page .screen.screen--fit img,
+.Layout.slide-page.conference-page .screen.screen--fit video {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 300px);
+  margin: 0 auto;
+  border: 1px solid var(--brand-gray);
+  border-radius: var(--slide-radius);
+}
+
+/* The control bar holds a dot per slide, backups included: widen it so its
+   labels and counter stay on one line and it keeps its height. */
+.Layout.slide-page.conference-page .slide-controls {
+  width: min(720px, calc(100vw - 1.5rem));
+}
+.Layout.slide-page.conference-page .counter,
+.Layout.slide-page.conference-page .presenter-btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .Layout.slide-page.conference-page .slide {
+    padding: 64px 22px 110px;
+  }
+  .Layout.slide-page.conference-page .flow {
+    flex-direction: column;
+  }
+  .Layout.slide-page.conference-page .flow-arrow {
+    transform: rotate(90deg);
+  }
+  .Layout.slide-page.conference-page .timeline,
+  .Layout.slide-page.conference-page .tool-grid,
+  .Layout.slide-page.conference-page .mirror,
+  .Layout.slide-page.conference-page .title-grid {
+    grid-template-columns: 1fr;
+  }
+  .Layout.slide-page.conference-page .columns {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr;
+  }
+}

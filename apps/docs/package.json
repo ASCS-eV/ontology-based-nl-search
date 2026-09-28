@@ -11,6 +11,8 @@
   },
   "devDependencies": {
     "@braintree/sanitize-url": "^7.1.2",
+    "@fontsource-variable/open-sans": "^5.3.0",
+    "@ontology-search/design-system": "workspace:*",
     "cytoscape": "^3.33.3",
     "cytoscape-cose-bilkent": "^4.1.0",
     "dayjs": "^1.11.20",
