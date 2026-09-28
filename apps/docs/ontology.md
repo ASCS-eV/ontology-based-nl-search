@@ -137,10 +137,10 @@ When a user searches for "scenarios on German motorways", the compiler generates
 ## Ontology Sources & the `imports/` Opt-In
 
 The stack loads its artifacts from the roots declared in `ontology-sources.json`
-(validated by `ontology-sources.schema.json`, JSON Schema 2020-12). Without a
-manifest it falls back to `ONTOLOGY_ARTIFACTS_PATH`, then to the default
-submodule path. Multiple roots are supported, each with an optional per-root
-`domains` allowlist.
+(validated by `ontology-sources.schema.json`, JSON Schema 2020-12), or in the
+manifest `ONTOLOGY_SOURCES_FILE` points at. Without a manifest it falls back to
+`ONTOLOGY_ARTIFACTS_PATH`, then to the pinned `.ontology/artifacts` cache.
+Multiple roots are supported, each with an optional per-root `domains` allowlist.
 
 OMB also ships `imports/` — the foundation vocabularies its ontologies build on
 (`cred`, `cs`, `dcterms`, `did`, `foaf`, `org`, `owl`, `prov`, `rdf`, `rdfs`,
@@ -175,3 +175,98 @@ add a second source to `ontology-sources.json`:
 No code change is involved; the loader, term index, retrieval, and compiler
 are root-agnostic by construction. `OpenDrive`/`OpenScenario` under `imports/`
 contain only XSD schemas (no RDF) and cannot be loaded.
+
+## Using your own ontology
+
+Any OWL + SHACL ontology can replace the demo one, including a private one
+that must not be referenced from this repository. Nothing about it is
+committed here: the manifest, artifacts and instance data all live next to
+your ontology, and a single git-ignored setting points the stack at them.
+
+### Prerequisites
+
+- **Artifacts in the per-domain layout** the loader discovers:
+  `<root>/<domain>/<domain>.shacl.ttl`, plus optional `<domain>.owl.ttl` and
+  `<domain>.context.jsonld`. Tools that generate an
+  [OMB](https://github.com/ASCS-eV/ontology-management-base)-style bundle
+  (e.g. LinkML `gen-owl` / `gen-shacl` / `gen-jsonld-context` per module)
+  produce exactly this.
+- **SHACL node shapes** with `sh:targetClass` in the domain's namespace; nested
+  structure via `sh:node` or `sh:class`; enumerations via `sh:in`. The
+  searchable vocabulary is derived from these shapes alone.
+- **Instance data** (JSON-LD or Turtle) whose asset nodes are typed with the
+  root class. `rdfs:label` is used as the display name when present; it is not
+  required (closed shapes cannot carry it).
+
+### Configure
+
+1. Write a manifest next to your ontology checkout. Relative paths resolve
+   against the manifest's own directory; absolute paths are used as-is.
+
+   ```json
+   {
+     "sources": [
+       {
+         "name": "my-asset",
+         "path": "build/artifacts",
+         "domains": ["module-a", "module-b"],
+         "data": "examples/search-data"
+       }
+     ]
+   }
+   ```
+
+   - `domains` — list the per-module bundles and leave out an umbrella bundle
+     that re-declares every module's shapes, or those shapes load twice.
+   - `data` — once any source declares it, the built-in demo data is not
+     loaded. A source's `name` is promoted to a searchable asset domain.
+
+2. Point the stack at it in `.env.local` (git-ignored):
+
+   ```bash
+   ONTOLOGY_SOURCES_FILE=../my-ontology/ontology-sources.json
+   ```
+
+3. Verify and start:
+
+   ```bash
+   pnpm run check:setup     # counts the shape files the manifest resolves to
+   pnpm run build && pnpm run --filter @ontology-search/api start
+   curl localhost:3003/stats        # asset counts per discovered domain
+   curl localhost:3003/vocabulary   # searchable properties + sh:in values
+   ```
+
+The pinned OMB distribution is still fetched on `pnpm install`; the authoring
+features use its `imports/`, search does not.
+
+### Instance data notes
+
+- **Remote `@context`.** A context IRI is resolved offline against the
+  `*.context.jsonld` files of the source's `path`, matched by their `@vocab`
+  / `@base`. The catalog form `<ontology-iri>/context` (or `#context`) matches
+  the context whose `@vocab` is `<ontology-iri>/`.
+- **Relative IRIs** in schema Turtle files resolve against the file location
+  ([TURTLE] §6.3), so generator output without `@base` still loads.
+- **Validate before loading.** OMB's suite checks data against the same
+  bundle:
+
+  ```bash
+  python -m omb.validators.validation_suite --run check-data-conformance \
+    --data-paths <data-dir> --artifacts <artifacts-root> --inference-mode rdfs
+  ```
+
+  Give nested objects an explicit `@type` when their properties carry no
+  `rdfs:range` in the OWL (class-scoped attributes), and type literals whose
+  term has no datatype coercion in the context
+  (`{"@value": "120.0", "@type": "xsd:float"}`), or RDFS inference cannot type
+  them and `sh:class` / `sh:datatype` constraints fail.
+
+### Known limitation: value-object wrappers
+
+Filters are keyed by a property's local name. Ontologies that wrap many
+categorical properties in value objects sharing one leaf property (e.g.
+`colour → ColourValue → value`, `size → SizeValue → value`) expose all of them as
+a single `value` leaf with a merged `sh:in`, and the compiler resolves it to
+one path. Properties that carry their enumeration directly are searchable;
+wrapped ones currently surface as gaps. Resolving the leaf per path by its own
+`sh:in` is the follow-up.

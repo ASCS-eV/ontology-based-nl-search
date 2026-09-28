@@ -15,6 +15,8 @@ import {
   discoverShapeFiles,
   formatMissingSourcesError,
   getArtifactRoots,
+  getDataSources,
+  getOntologySourcesManifestPath,
   getWorkspaceRoot,
   loadOntologySourcesManifest,
   type OntologySourcesDiagnostics,
@@ -52,6 +54,7 @@ describe('ontology source-tree discovery (sources.ts)', () => {
     workspaceRoot = mkdtempSync(join(tmpdir(), 'ontology-sources-test-'))
     setWorkspaceRoot(workspaceRoot)
     delete process.env['ONTOLOGY_ARTIFACTS_PATH']
+    delete process.env['ONTOLOGY_SOURCES_FILE']
     resetConfig()
   })
 
@@ -59,6 +62,7 @@ describe('ontology source-tree discovery (sources.ts)', () => {
     rmSync(workspaceRoot, { recursive: true, force: true })
     delete process.env['ONTOLOGY_ROOT']
     delete process.env['ONTOLOGY_ARTIFACTS_PATH']
+    delete process.env['ONTOLOGY_SOURCES_FILE']
     resetConfig()
   })
 
@@ -96,6 +100,7 @@ describe('ontology source-tree discovery (sources.ts)', () => {
       const manifest = loadOntologySourcesManifest()
       expect(manifest).toEqual({
         sources: [{ path: 'artifacts-a' }, { path: 'artifacts-b' }],
+        baseDir: workspaceRoot,
       })
     })
 
@@ -179,6 +184,58 @@ describe('ontology source-tree discovery (sources.ts)', () => {
       expect(roots).toHaveLength(1)
       expect(roots[0]?.path).toBe(join(workspaceRoot, 'omb-root'))
       expect(roots[0]?.domainAllowlist).toEqual(new Set(['hdmap', 'scenario']))
+    })
+
+    it('uses absolute manifest paths as-is instead of nesting them under the workspace', () => {
+      const external = mkdtempSync(join(tmpdir(), 'ontology-external-'))
+      try {
+        writeFileSync(
+          join(workspaceRoot, 'ontology-sources.json'),
+          JSON.stringify({ sources: [{ path: external }] })
+        )
+        expect(getArtifactRoots()).toEqual([{ path: external, domainAllowlist: undefined }])
+      } finally {
+        rmSync(external, { recursive: true, force: true })
+      }
+    })
+  })
+
+  describe('ONTOLOGY_SOURCES_FILE', () => {
+    it('defaults to ontology-sources.json in the workspace root', () => {
+      expect(getOntologySourcesManifestPath()).toBe(join(workspaceRoot, 'ontology-sources.json'))
+    })
+
+    it('reads the manifest it points at and resolves paths against that manifest', () => {
+      const privateDir = join(workspaceRoot, 'private', 'my-ontology')
+      mkdirSync(privateDir, { recursive: true })
+      writeFileSync(
+        join(privateDir, 'sources.json'),
+        JSON.stringify({ sources: [{ name: 'own', path: 'artifacts', data: '../data' }] })
+      )
+      // A root manifest must be ignored once the override is set.
+      writeFileSync(
+        join(workspaceRoot, 'ontology-sources.json'),
+        JSON.stringify({ sources: [{ path: 'should-be-ignored' }] })
+      )
+      process.env['ONTOLOGY_SOURCES_FILE'] = 'private/my-ontology/sources.json'
+      resetConfig()
+
+      expect(getArtifactRoots()).toEqual([
+        { path: join(privateDir, 'artifacts'), domainAllowlist: undefined },
+      ])
+      expect(getDataSources()).toEqual([
+        {
+          dataDir: join(workspaceRoot, 'private', 'data'),
+          artifactsDir: join(privateDir, 'artifacts'),
+        },
+      ])
+    })
+
+    it('fails fast when the configured manifest does not exist', () => {
+      process.env['ONTOLOGY_SOURCES_FILE'] = 'nowhere/sources.json'
+      resetConfig()
+      expect(() => loadOntologySourcesManifest()).toThrow(OntologySourcesError)
+      expect(() => loadOntologySourcesManifest()).toThrow(/ONTOLOGY_SOURCES_FILE/)
     })
   })
 

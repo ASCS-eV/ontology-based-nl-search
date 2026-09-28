@@ -244,6 +244,13 @@ const envSchema = z.object({
    */
   ONTOLOGY_ARTIFACTS_PATH: z.string().optional(),
   /**
+   * Path to an ontology-sources manifest used instead of
+   * `<workspace>/ontology-sources.json`, e.g. one kept next to a private
+   * ontology checkout. Relative to the workspace root; paths inside the
+   * manifest resolve against the manifest's own directory.
+   */
+  ONTOLOGY_SOURCES_FILE: z.string().optional(),
+  /**
    * Override the workspace root for ontology source discovery. Used by tests
    * that seed a temp workspace, and by deployments that mount the artifacts
    * at a non-default path.
