@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/ASCS-eV/ontology-based-nl-search/ontology-sources.schema.json",
   "title": "Ontology sources manifest",
-  "description": "Declares the artifact roots the search stack loads. Each source points at a directory of {domain}/{domain}.{owl,shacl}.ttl (+ optional *.context.jsonld) subdirectories. Multiple roots are supported; per-root domain allowlists scope large roots.",
+  "description": "Declares the artifact roots the search stack loads. Each source points at a directory of {domain}/{domain}.{owl,shacl}.ttl (+ optional *.context.jsonld) subdirectories. Multiple roots are supported; per-root domain allowlists scope large roots. Read from ./ontology-sources.json, or from the file ONTOLOGY_SOURCES_FILE names.",
   "type": "object",
   "required": ["sources"],
   "properties": {
@@ -22,11 +22,11 @@
           },
           "path": {
             "type": "string",
-            "description": "Workspace-relative path to an artifacts directory containing domain subdirectories."
+            "description": "Path to an artifacts directory containing domain subdirectories. Relative paths resolve against the directory of this manifest; absolute paths are used as-is."
           },
           "data": {
             "type": "string",
-            "description": "Optional workspace-relative path to instance data (JSON-LD/Turtle). When any source declares data, built-in sample data is not loaded."
+            "description": "Optional path to instance data (JSON-LD/Turtle), resolved like `path`. When any source declares data, built-in sample data is not loaded."
           },
           "domains": {
             "type": "array",

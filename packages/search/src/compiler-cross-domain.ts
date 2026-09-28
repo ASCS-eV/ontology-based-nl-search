@@ -24,7 +24,7 @@ import {
   isNonEmpty,
   prefixedPredicate,
 } from './compiler-helpers-primitives.js'
-import { assembleQuery } from './compiler-helpers-query.js'
+import { assembleQuery, ASSET_LABEL_PATTERN } from './compiler-helpers-query.js'
 import { type CompilerVocab } from './compiler-vocab.js'
 import { type PropertyPath } from './property-paths.js'
 
@@ -93,9 +93,9 @@ export async function compilePeerDomainUnion(
     const armOptionals: string[] = []
     const armSelectVars = new Set<string>()
 
-    // Base pattern — asset type + label
-    armPatterns.push(`?asset a ${domain.targetClass} ;`)
-    armPatterns.push('  rdfs:label ?name .')
+    // Base pattern — asset type; the label is optional (see ASSET_LABEL_PATTERN)
+    armPatterns.push(`?asset a ${domain.targetClass} .`)
+    armOptionals.push(ASSET_LABEL_PATTERN)
 
     // Build domain-specific patterns
     const foreignDomains = buildDomainPatterns(
@@ -188,13 +188,11 @@ export function compileCrossDomainQuery(
   // Base pattern — match any instance of a known asset target class.
   if (targetClassIris.length > 0) {
     patterns.push(`VALUES ?assetClass { ${targetClassIris.join(' ')} }`)
-    patterns.push('?asset a ?assetClass ;')
-    patterns.push('  rdfs:label ?name .')
   } else {
     patterns.push('VALUES ?assetClass {}')
-    patterns.push('?asset a ?assetClass ;')
-    patterns.push('  rdfs:label ?name .')
   }
+  patterns.push('?asset a ?assetClass .')
+  optionals.push(ASSET_LABEL_PATTERN)
 
   // Generic filter emission — location and license are ordinary
   // `slots.filters` entries keyed by their SHACL leaf local names. For

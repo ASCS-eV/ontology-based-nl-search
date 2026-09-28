@@ -48,7 +48,7 @@ import {
   partitionRangesByDomain,
   resolvePrimaryDomain,
 } from './compiler-helpers-domains.js'
-import { assembleQuery } from './compiler-helpers-query.js'
+import { assembleQuery, ASSET_LABEL_PATTERN } from './compiler-helpers-query.js'
 import {
   emitReferencedDomainJoins,
   emitReferenceNode,
@@ -259,9 +259,9 @@ export async function compileSlotsWithTrace(
   const optionals: string[] = []
   const selectVars = new Set(['?asset', '?name'])
 
-  // Base pattern — primary asset type + label
-  patterns.push(`?asset a ${domain.targetClass} ;`)
-  patterns.push('  rdfs:label ?name .')
+  // Base pattern — primary asset type; the label is optional (see ASSET_LABEL_PATTERN)
+  patterns.push(`?asset a ${domain.targetClass} .`)
+  optionals.push(ASSET_LABEL_PATTERN)
 
   // Build patterns for the primary domain's own filters
   const primaryFilters = filtersByDomain[primaryDomain] || {}
