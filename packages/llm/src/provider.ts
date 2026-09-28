@@ -163,13 +163,15 @@ export function parseMistralKeyFromEnv(content: string): string | null {
 }
 
 /**
- * Get the configured AI model based on validated application config.
+ * Get a model of the configured AI provider. `modelId` defaults to `AI_MODEL`;
+ * the authoring agent passes its policy's model, which honours
+ * `AUTHORING_AI_MODEL`.
  * Supports: openai, ollama, anthropic, claude-cli, vibe-cli (copilot
  * handled via @github/copilot-sdk separately).
  */
-export function getModel(): LanguageModel {
+export function getModel(modelId: string = getConfig().AI_MODEL): LanguageModel {
   const config = getConfig()
-  const { AI_PROVIDER: provider, AI_MODEL: modelId } = config
+  const provider = config.AI_PROVIDER
 
   switch (provider) {
     case 'openai': {

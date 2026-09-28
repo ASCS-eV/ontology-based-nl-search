@@ -28,7 +28,8 @@ export async function fillSceneVercel(
   signal?: AbortSignal
 ): Promise<SceneSubmissionParams | null> {
   const policy = getAgentPolicy('authoring')
-  const model = getModel()
+  // The policy's model honours AUTHORING_AI_MODEL, as in the other adapters.
+  const model = getModel(policy.model)
 
   // See the search adapter: `adaptive` and a fixed budget are different request
   // shapes, each a 400 on the other's model generation, so the policy decides.
