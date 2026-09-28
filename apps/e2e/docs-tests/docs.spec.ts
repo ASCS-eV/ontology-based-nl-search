@@ -22,5 +22,20 @@ test('development docs render and link to working slides and diagrams', async ({
 
   await page.goto('architecture')
   await expect(page.locator('.mermaid svg').first()).toBeVisible()
+
+  // The appendix decks link to the architecture page relative to the site, so
+  // the link also resolves under the GitHub Pages base path. Each page settles
+  // before the next navigation, which would otherwise abort its prefetches.
+  await page.waitForLoadState('networkidle')
+  for (const deck of ['slides/architecture', 'slides/authoring']) {
+    await page.goto(deck)
+    await expect(page.locator('.slide--active')).toBeVisible()
+    await page.keyboard.press('End')
+    const link = page.getByRole('link', { name: 'Read the architecture →' })
+    await expect(link).toBeVisible()
+    const target = new URL((await link.getAttribute('href'))!, page.url()).toString()
+    expect((await page.request.get(target)).status(), `${deck} links ${target}`).toBe(200)
+    await page.waitForLoadState('networkidle')
+  }
   expect(errors).toEqual([])
 })

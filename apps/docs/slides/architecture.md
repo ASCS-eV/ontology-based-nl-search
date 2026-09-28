@@ -371,7 +371,7 @@ flowchart LR
       class="btn-primary"
       >Run the search app →</a
     >
-    <a href="/docs/architecture" class="btn-secondary">Read the architecture →</a>
+    <a href="../architecture" class="btn-secondary">Read the architecture →</a>
   </div>
   <p class="subtitle">Try: “motorway HD maps in Germany” · “OpenDRIVE maps with right-hand traffic” · “Autobahnen mit Überholmanöver”</p>
 </Slide>
