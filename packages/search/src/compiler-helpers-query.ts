@@ -34,6 +34,14 @@ export function pruneUnusedPrefixes(prefixes: string, body: string): string {
 }
 
 /**
+ * Asset display label. OPTIONAL because `rdfs:label` is an annotation, not a
+ * constraint: an ontology whose asset shapes are `sh:closed` cannot carry it
+ * ([RDFS] §3.6; [SHACL] §4.8.1), and a required pattern would drop every such
+ * asset. Clients fall back to the asset IRI when `?name` is unbound.
+ */
+export const ASSET_LABEL_PATTERN = 'OPTIONAL { ?asset rdfs:label ?name }'
+
+/**
  * Assemble a complete SPARQL SELECT query from its constituent parts.
  * Centralizes the query-tail pattern used by both single-domain and
  * cross-domain compilation.
