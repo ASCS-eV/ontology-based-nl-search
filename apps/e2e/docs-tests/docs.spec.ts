@@ -29,10 +29,13 @@ test('development docs render and link to working slides and diagrams', async ({
   await page.waitForLoadState('networkidle')
   for (const deck of ['slides/architecture', 'slides/authoring']) {
     await page.goto(deck)
-    await expect(page.locator('.slide--active')).toBeVisible()
-    await page.keyboard.press('End')
     const link = page.getByRole('link', { name: 'Read the architecture →' })
-    await expect(link).toBeVisible()
+    // The server-rendered deck is visible before its script handles keys;
+    // repeat End until the hydrated deck has moved to the last slide.
+    await expect(async () => {
+      await page.keyboard.press('End')
+      await expect(link).toBeVisible({ timeout: 1_000 })
+    }).toPass()
     const target = new URL((await link.getAttribute('href'))!, page.url()).toString()
     expect((await page.request.get(target)).status(), `${deck} links ${target}`).toBe(200)
     await page.waitForLoadState('networkidle')
