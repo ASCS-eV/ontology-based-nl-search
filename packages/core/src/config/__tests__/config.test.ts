@@ -315,6 +315,23 @@ describe('config', () => {
       resetConfig()
       expect(getConfig().FEATURE_GAP_LOG).toBe(false)
     })
+
+    it('refuses to start in production with the log on and no maintainer key', () => {
+      Object.assign(process.env, {
+        AI_PROVIDER: 'ollama',
+        NODE_ENV: 'production',
+        CORS_ALLOWED_ORIGINS: 'https://app.example.com',
+        API_KEY: 'search-key',
+        FEATURE_GAP_LOG: 'true',
+      })
+      delete process.env.GAP_LOG_API_KEY
+      resetConfig()
+      expect(() => getConfig()).toThrow(/GAP_LOG_API_KEY/)
+
+      process.env.GAP_LOG_API_KEY = 'maintainer-key'
+      resetConfig()
+      expect(getConfig().GAP_LOG_API_KEY).toBe('maintainer-key')
+    })
   })
 
   describe('rate-limit knobs', () => {

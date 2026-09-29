@@ -54,12 +54,13 @@ export interface SearchDependencies {
    */
   validateSlots?: (slots: SearchSlots) => Promise<SearchSlots>
   /**
-   * Receive the gaps of every natural-language search, with the domains it
-   * was scoped to: the feed of the ontology gap log (`./gap-log.js`).
-   * Optional; when omitted, gaps only travel back to the caller. The search
-   * result never depends on it, so a failure here is logged, not raised.
+   * Receive the gaps of every interpreted natural-language search, with the
+   * domains it was scoped to: the feed of the ontology gap log
+   * (`./gap-log.js`). Optional; when omitted, gaps only travel back to the
+   * caller. The search result never depends on it and never waits for it: a
+   * recorder that throws, or returns a promise that rejects, is logged.
    */
-  recordGaps?: (gaps: readonly OntologyGap[], context: GapContext) => void
+  recordGaps?: (gaps: readonly OntologyGap[], context: GapContext) => void | Promise<void>
 }
 
 // ─── Result Types ────────────────────────────────────────────────────────────

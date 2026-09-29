@@ -88,19 +88,6 @@ export class LruCache<K, V> {
     this.entries.set(key, { value, timestamp: Date.now() })
   }
 
-  /**
-   * Live values, least- to most-recently used, WITHOUT recording an access:
-   * reading a snapshot must not change which entry the next eviction drops.
-   * Expired entries are skipped and left for `get`/`has` to evict.
-   */
-  *values(): Generator<V, void, undefined> {
-    const now = Date.now()
-    for (const entry of this.entries.values()) {
-      if (this.ttlMs !== undefined && now - entry.timestamp > this.ttlMs) continue
-      yield entry.value
-    }
-  }
-
   /** Remove a single entry; returns true iff something was deleted. */
   delete(key: K): boolean {
     return this.entries.delete(key)

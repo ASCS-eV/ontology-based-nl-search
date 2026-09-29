@@ -21,6 +21,9 @@ import type { AppEnv } from './types.js'
 
 const config = getConfig()
 
+/** Mount path of the ontology gap log. */
+const GAP_LOG_PATH = '/gaps'
+
 /**
  * Parse the CORS_ALLOWED_ORIGINS env var into a value the `cors`
  * middleware understands. `*` means "any origin" (development).
@@ -50,7 +53,14 @@ app.use(
 )
 app.use('*', requestId())
 // Optional API-key gate. No-op unless API_KEY is set; `/health` stays open.
-app.use('*', apiKeyAuth({ apiKey: config.API_KEY }))
+// With a maintainer key, `/gaps` is guarded by that key instead of API_KEY,
+// so holding the search key is not enough to read what others typed.
+const hasGapLogKey = Boolean(config.GAP_LOG_API_KEY?.trim())
+app.use(
+  '*',
+  apiKeyAuth({ apiKey: config.API_KEY, exemptPaths: hasGapLogKey ? [GAP_LOG_PATH] : [] })
+)
+app.use(GAP_LOG_PATH, apiKeyAuth({ apiKey: config.GAP_LOG_API_KEY }))
 app.use(
   '/search/*',
   bodyLimit({
@@ -86,7 +96,7 @@ app.get('/health', (c) => {
 
 app.route('/metadata', metadataRoutes)
 app.route('/author', authoringRoutes)
-app.route('/gaps', gapRoutes)
+app.route(GAP_LOG_PATH, gapRoutes)
 app.route('/search', searchRoutes)
 app.route('/stats', statsRoutes)
 app.route('/traceability', traceabilityRoutes)

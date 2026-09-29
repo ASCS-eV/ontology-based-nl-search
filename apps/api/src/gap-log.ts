@@ -5,8 +5,10 @@
  * ontology, so one log counts the gaps of every search it answers. The search
  * service writes to it through the `recordGaps` dependency wired in
  * `search-factory.ts`; `GET /gaps` (`routes/gaps.ts`) reads it. Both happen
- * only while `FEATURE_GAP_LOG` is on. `resetGapLog` exists for tests.
+ * only while `FEATURE_GAP_LOG` is on, checked at the moment of each.
+ * `resetGapLog` exists for tests.
  */
+import { getConfig } from '@ontology-search/core/config'
 import type { SearchDependencies } from '@ontology-search/search'
 import { GapLog } from '@ontology-search/search'
 
@@ -24,11 +26,13 @@ export function resetGapLog(): void {
 }
 
 /**
- * The search service's `recordGaps` dependency: feeds the process-wide log
- * while the feature is on, and is absent while it is off, so a disabled log
- * never sees a term.
+ * The search service's `recordGaps` dependency. It reads `FEATURE_GAP_LOG` on
+ * every call, the same moment `GET /gaps` reads it, so recording and serving
+ * cannot disagree: while the flag is off, no term reaches the log.
  */
-export function gapLogRecorder(enabled: boolean): SearchDependencies['recordGaps'] {
-  if (!enabled) return undefined
-  return (gaps, context) => getGapLog().record(gaps, context)
+export const recordGapsWhenEnabled: NonNullable<SearchDependencies['recordGaps']> = (
+  gaps,
+  context
+) => {
+  if (getConfig().FEATURE_GAP_LOG) getGapLog().record(gaps, context)
 }

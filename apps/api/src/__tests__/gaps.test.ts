@@ -1,14 +1,14 @@
 /**
- * `GET /gaps`: the ontology gap log is opt-in, and while on it serves the
- * per-term counts the search service recorded.
+ * `GET /gaps` and the recorder behind it: the ontology gap log is opt-in,
+ * records nothing while off, and with a maintainer key is readable only with
+ * that key, not the search key.
  */
 import type { GapLogResponse } from '@ontology-search/api-types'
-import { getConfig, resetConfig } from '@ontology-search/core/config'
+import { resetConfig } from '@ontology-search/core/config'
 import { ERROR_CODE } from '@ontology-search/core/errors'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { app } from '../app.js'
-import { gapLogRecorder, resetGapLog } from '../gap-log.js'
+import { getGapLog, recordGapsWhenEnabled, resetGapLog } from '../gap-log.js'
 
 // The routes under test never reach the search pipeline or the authoring
 // engine; mock them so importing the app loads neither the LLM nor the WASM.
@@ -18,19 +18,35 @@ vi.mock('@ontology-search/llm/authoring', () => ({
   runScenePipeline: vi.fn(),
 }))
 
-/** Run `fn` with FEATURE_GAP_LOG set, restoring the environment afterwards. */
-async function withGapLog<T>(value: string, fn: () => Promise<T>): Promise<T> {
-  const previous = process.env.FEATURE_GAP_LOG
-  process.env.FEATURE_GAP_LOG = value
+type Env = Record<string, string | undefined>
+
+/** Run `fn` with the given variables set (undefined = unset), restoring them after. */
+async function withEnv<T>(env: Env, fn: () => Promise<T>): Promise<T> {
+  const previous: Env = {}
+  for (const [key, value] of Object.entries(env)) {
+    previous[key] = process.env[key]
+    if (value === undefined) delete process.env[key]
+    else process.env[key] = value
+  }
   resetConfig()
   try {
     return await fn()
   } finally {
-    if (previous === undefined) delete process.env.FEATURE_GAP_LOG
-    else process.env.FEATURE_GAP_LOG = previous
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
     resetConfig()
   }
 }
+
+/** A fresh app module, built from the environment as it is now. */
+async function freshApp() {
+  vi.resetModules()
+  return (await import('../app.js')).app
+}
+
+const GAP = { term: 'potholes', reason: 'Not a defined ontology property' }
 
 afterEach(() => {
   resetGapLog()
@@ -38,29 +54,22 @@ afterEach(() => {
 
 describe('GET /gaps', () => {
   it('is off by default and answers 404', async () => {
-    expect(getConfig().FEATURE_GAP_LOG).toBe(false)
-    const res = await app.request('/gaps')
-    expect(res.status).toBe(404)
-    expect(await res.json()).toEqual({
-      error: 'The gap log is not enabled',
-      code: ERROR_CODE.NOT_FOUND,
+    await withEnv({ FEATURE_GAP_LOG: undefined }, async () => {
+      const res = await (await freshApp()).request('/gaps')
+      expect(res.status).toBe(404)
+      expect(await res.json()).toEqual({
+        error: 'The gap log is not enabled',
+        code: ERROR_CODE.NOT_FOUND,
+      })
     })
   })
 
-  it('records nothing while off', () => {
-    expect(gapLogRecorder(false)).toBeUndefined()
-  })
-
   it('serves what searches recorded while on', async () => {
-    await withGapLog('true', async () => {
-      const record = gapLogRecorder(getConfig().FEATURE_GAP_LOG)
-      expect(record).toBeDefined()
-      record?.([{ term: 'Potholes', reason: 'Not a defined ontology property' }], {
-        domains: ['hdmap'],
-      })
-      record?.([{ term: 'potholes', reason: 'Not a defined ontology property' }], {
-        domains: ['hdmap'],
-      })
+    await withEnv({ FEATURE_GAP_LOG: 'true' }, async () => {
+      const app = await freshApp()
+      const { recordGapsWhenEnabled: record } = await import('../gap-log.js')
+      await record([{ ...GAP, term: 'Potholes' }], { domains: ['hdmap'] })
+      await record([GAP], { domains: ['hdmap'] })
 
       const res = await app.request('/gaps')
       expect(res.status).toBe(200)
@@ -73,7 +82,99 @@ describe('GET /gaps', () => {
         domains: ['hdmap'],
       })
       expect(body.entries[0]?.firstSeen).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-      expect(body.capacity).toBeGreaterThan(0)
+    })
+  })
+})
+
+describe('recordGapsWhenEnabled', () => {
+  it('records nothing while FEATURE_GAP_LOG is off', async () => {
+    await withEnv({ FEATURE_GAP_LOG: 'false' }, async () => {
+      await recordGapsWhenEnabled([GAP], { domains: ['hdmap'] })
+      expect(getGapLog().snapshot().entries).toEqual([])
+    })
+  })
+
+  it('reads the flag on every call, the moment GET /gaps does', async () => {
+    await withEnv({ FEATURE_GAP_LOG: 'true' }, async () => {
+      await recordGapsWhenEnabled([GAP], { domains: [] })
+    })
+    await withEnv({ FEATURE_GAP_LOG: 'false' }, async () => {
+      await recordGapsWhenEnabled([{ ...GAP, term: 'tunnels' }], { domains: [] })
+    })
+    expect(
+      getGapLog()
+        .snapshot()
+        .entries.map((e) => e.term)
+    ).toEqual(['potholes'])
+  })
+
+  it('is the recorder the production search service is built with', async () => {
+    vi.resetModules()
+    const constructed = vi.fn()
+    vi.doMock('@ontology-search/llm', () => ({ generateStructuredSearch: vi.fn() }))
+    vi.doMock('@ontology-search/search', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('@ontology-search/search')>()),
+      SearchService: vi.fn(function (this: unknown, deps: unknown) {
+        constructed(deps)
+      }),
+    }))
+    try {
+      const factory =
+        await vi.importActual<typeof import('../search-factory.js')>('../search-factory.js')
+      const { recordGapsWhenEnabled: wired } = await import('../gap-log.js')
+      factory.resetSearchService()
+      await factory.getSearchService()
+      expect(constructed).toHaveBeenCalledWith(expect.objectContaining({ recordGaps: wired }))
+    } finally {
+      vi.doUnmock('@ontology-search/llm')
+      vi.doUnmock('@ontology-search/search')
+      vi.resetModules()
+    }
+  })
+})
+
+describe('GET /gaps with a maintainer key', () => {
+  const SEARCH_KEY = 'search-key'
+  const GAP_KEY = 'maintainer-key'
+  const keys = { FEATURE_GAP_LOG: 'true', API_KEY: SEARCH_KEY, GAP_LOG_API_KEY: GAP_KEY }
+
+  it('refuses the search key', async () => {
+    await withEnv(keys, async () => {
+      const res = await (
+        await freshApp()
+      ).request('/gaps', {
+        headers: { authorization: `Bearer ${SEARCH_KEY}` },
+      })
+      expect(res.status).toBe(401)
+    })
+  })
+
+  it('accepts the maintainer key', async () => {
+    await withEnv(keys, async () => {
+      const res = await (await freshApp()).request('/gaps', { headers: { 'x-api-key': GAP_KEY } })
+      expect(res.status).toBe(200)
+    })
+  })
+
+  it('does not open other routes to the maintainer key', async () => {
+    await withEnv(keys, async () => {
+      const res = await (
+        await freshApp()
+      ).request('/stats', {
+        headers: { 'x-api-key': GAP_KEY },
+      })
+      expect(res.status).toBe(401)
+    })
+  })
+
+  it('does not serve the log under a trailing-slash path with the search key', async () => {
+    await withEnv(keys, async () => {
+      const res = await (
+        await freshApp()
+      ).request('/gaps/', {
+        headers: { 'x-api-key': SEARCH_KEY },
+      })
+      expect(res.status).not.toBe(200)
     })
   })
 })

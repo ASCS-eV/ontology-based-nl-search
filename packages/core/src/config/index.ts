@@ -328,6 +328,14 @@ const envSchema = z.object({
    * session or request id, and lives in memory only.
    */
   FEATURE_GAP_LOG: z.stringbool().default(false),
+  /**
+   * Key the ontology's maintainers present to read `GET /gaps`, as
+   * `Authorization: Bearer <key>` or `x-api-key: <key>`. When set, `/gaps`
+   * accepts this key and not the search `API_KEY`, so a client allowed to
+   * search cannot read what everyone else typed. Required in production
+   * while `FEATURE_GAP_LOG` is on (cross-validated below).
+   */
+  GAP_LOG_API_KEY: z.string().optional(),
 
   // Runtime (set by the process manager / test runner, never by the operator)
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -424,6 +432,17 @@ export function getConfig(): AppConfig {
           'or set API_ALLOW_UNAUTHENTICATED=true to run open deliberately (e.g. behind a ' +
           'gateway that authenticates). /search invokes an LLM per request, so an ' +
           'unauthenticated public endpoint is a cost/abuse risk.'
+      )
+    }
+    if (
+      result.data.NODE_ENV === 'production' &&
+      result.data.FEATURE_GAP_LOG &&
+      !result.data.GAP_LOG_API_KEY?.trim()
+    ) {
+      throw new ConfigError(
+        'FEATURE_GAP_LOG is on in production without GAP_LOG_API_KEY. The gap log holds ' +
+          'fragments of what users typed; set GAP_LOG_API_KEY so only the ontology maintainers ' +
+          'who hold it can read /gaps.'
       )
     }
   }

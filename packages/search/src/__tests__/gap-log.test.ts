@@ -5,7 +5,12 @@
 import type { OntologyGap } from '@ontology-search/api-types'
 import { describe, expect, it } from 'vitest'
 
-import { GapLog, MAX_GAP_TERM_CHARS, normalizeGapTerm } from '../gap-log.js'
+import {
+  GapLog,
+  MAX_GAP_TERM_CHARS,
+  MAX_GAP_TERMS_PER_SEARCH,
+  normalizeGapTerm,
+} from '../gap-log.js'
 
 const DAY_1 = new Date('2026-09-28T09:15:00Z')
 const DAY_2 = new Date('2026-09-29T17:40:00Z')
@@ -33,10 +38,17 @@ describe('normalizeGapTerm', () => {
     expect(normalizeGapTerm('Schlaglöcher')).toBe(normalizeGapTerm('Schlaglöcher'))
   })
 
-  it('does not record empty terms or terms longer than the cap', () => {
+  it('folds compatibility forms and drops invisible format characters', () => {
+    expect(normalizeGapTerm('\uFF50\uFF4F\uFF54\uFF48\uFF4F\uFF4C\uFF45\uFF53')).toBe('potholes') // full-width
+    expect(normalizeGapTerm('pot\u200Bholes')).toBe('potholes') // zero-width space
+  })
+
+  it('does not record empty terms or terms longer than the cap, counted in code points', () => {
     expect(normalizeGapTerm('   ')).toBeUndefined()
     expect(normalizeGapTerm('x'.repeat(MAX_GAP_TERM_CHARS))).toHaveLength(MAX_GAP_TERM_CHARS)
     expect(normalizeGapTerm('x'.repeat(MAX_GAP_TERM_CHARS + 1))).toBeUndefined()
+    // An astral-plane character is one code point but two UTF-16 units.
+    expect(normalizeGapTerm('\u{1F6A7}'.repeat(MAX_GAP_TERM_CHARS))).toBeDefined()
   })
 })
 
@@ -120,25 +132,46 @@ describe('GapLog', () => {
     ])
   })
 
-  it('stays within capacity by dropping the least recently reported term', () => {
+  it('drops the least reported term when full, so recurring terms survive a flood of one-offs', () => {
     const { log } = logAt(DAY_1, 2)
     log.record([gap('potholes')], { domains: [] })
+    log.record([gap('potholes')], { domains: [] })
     log.record([gap('tunnels')], { domains: [] })
-    log.record([gap('potholes')], { domains: [] }) // 'tunnels' is now the least recent
-    log.record([gap('bridges')], { domains: [] })
+    log.record([gap('bridges')], { domains: [] }) // replaces 'tunnels' (1), not 'potholes' (2)
+    log.record([gap('ferries')], { domains: [] }) // replaces 'bridges'
 
     const snapshot = log.snapshot()
     expect(snapshot.capacity).toBe(2)
-    expect(snapshot.entries.map((e) => e.term)).toEqual(['potholes', 'bridges'])
+    expect(snapshot.entries.map((e) => [e.term, e.count])).toEqual([
+      ['potholes', 2],
+      ['ferries', 1],
+    ])
   })
 
-  it('reading a snapshot does not change which term is dropped next', () => {
-    const { log } = logAt(DAY_1, 2)
-    log.record([gap('potholes')], { domains: [] })
+  it('among equally reported terms, drops the one seen longest ago', () => {
+    const { log, setNow } = logAt(DAY_1, 2)
     log.record([gap('tunnels')], { domains: [] })
-    log.snapshot()
+    setNow(DAY_2)
     log.record([gap('bridges')], { domains: [] })
+    log.record([gap('ferries')], { domains: [] }) // 'tunnels' was last seen on DAY_1
 
-    expect(log.snapshot().entries.map((e) => e.term)).toEqual(['bridges', 'tunnels'])
+    expect(log.snapshot().entries.map((e) => e.term)).toEqual(['bridges', 'ferries'])
+  })
+
+  it('records at most MAX_GAP_TERMS_PER_SEARCH terms from one search', () => {
+    const { log } = logAt(DAY_1)
+    const flood = Array.from({ length: MAX_GAP_TERMS_PER_SEARCH + 5 }, (_, i) => gap(`term ${i}`))
+    log.record(flood, { domains: [] })
+    expect(log.snapshot().entries).toHaveLength(MAX_GAP_TERMS_PER_SEARCH)
+  })
+
+  it('does not record limitation gaps: they are engine limits, not missing concepts', () => {
+    const { log } = logAt(DAY_1)
+    log.record([gap('scenario', 'limitation'), gap('potholes', 'unmapped')], { domains: [] })
+    expect(log.snapshot().entries.map((e) => e.term)).toEqual(['potholes'])
+  })
+
+  it('rejects a non-positive capacity', () => {
+    expect(() => new GapLog({ capacity: 0 })).toThrow(/capacity must be positive/)
   })
 })

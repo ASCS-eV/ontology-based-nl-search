@@ -25,6 +25,7 @@ statsRoutes.get('/', (c) =>
         availableDomains,
         features: {
           graphqlLayer: getConfig().FEATURE_GRAPHQL_LAYER,
+          gapLog: getConfig().FEATURE_GAP_LOG,
         },
       }
     },

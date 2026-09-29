@@ -73,4 +73,19 @@ describe('apiKeyAuth middleware', () => {
       expect(res.status).toBe(401)
     })
   })
+  describe('exemptPaths', () => {
+    it('leaves an exempt path to its own gate, and guards every other path', async () => {
+      const app = new Hono<AppEnv>()
+      app.use('*', apiKeyAuth({ apiKey: KEY, exemptPaths: ['/own'] }))
+      app.use('/own', apiKeyAuth({ apiKey: 'other-key' }))
+      app.get('/own', (c) => c.json({ ok: true }))
+      app.get('/ok', (c) => c.json({ ok: true }))
+
+      expect((await app.request('/own', { headers: { 'x-api-key': KEY } })).status).toBe(401)
+      expect((await app.request('/own', { headers: { 'x-api-key': 'other-key' } })).status).toBe(
+        200
+      )
+      expect((await app.request('/ok', { headers: { 'x-api-key': 'other-key' } })).status).toBe(401)
+    })
+  })
 })

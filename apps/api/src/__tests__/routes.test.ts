@@ -1,4 +1,5 @@
 import type { VocabularyResponse } from '@ontology-search/api-types'
+import { getConfig } from '@ontology-search/core/config'
 import { CompileError } from '@ontology-search/core/errors'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -787,6 +788,8 @@ describe('GET /stats', () => {
     const json = await res.json()
     expect(json.totalAssets).toBeGreaterThan(0)
     expect(json.availableDomains).toContain('hdmap')
+    // The client discloses the gap log from this flag.
+    expect(json.features.gapLog).toBe(getConfig().FEATURE_GAP_LOG)
   })
 })
 

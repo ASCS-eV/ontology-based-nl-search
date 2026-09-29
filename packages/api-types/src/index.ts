@@ -233,6 +233,11 @@ export interface StatsResponse {
   features?: {
     /** Whether the GraphQL intermediate layer is enabled. */
     graphqlLayer?: boolean
+    /**
+     * Whether unmapped search terms are counted in the ontology gap log, so
+     * the client can tell the people searching.
+     */
+    gapLog?: boolean
   }
 }
 
