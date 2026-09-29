@@ -55,6 +55,6 @@
     "tar": "^7.5.20",
     "turbo": "^2.10.13",
     "typescript-eslint": "^8.59.2",
-    "undici": "^8.9.0"
+    "undici": "^8.10.2"
   }
 }

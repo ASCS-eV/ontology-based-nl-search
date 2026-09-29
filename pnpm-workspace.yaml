@@ -47,6 +47,11 @@ overrides:
   # Reached under `--audit-level=moderate --prod` via eslint-config's
   # typescript-eslint → eslint → @eslint/eslintrc; dev-tooling only, no runtime
   # consumer, but it fails the audit gate on every PR until floored.
+  # GHSA-3wwx-pv8p-q78v (undici DoS via an unhandled error in WebSocket
+  # permessage-deflate decompression, moderate), patched in 7.29.1 and 8.10.2.
+  # The direct dependencies are floored at ^8.10.2; the 7.x line arrives through
+  # @ai-sdk/provider-utils (`^7.29.0`), so floor it here.
+  undici@>=7.28.0 <7.29.1: ^7.29.1
   '@babel/core@<=7.29.0': ^7.29.6
   baseline-browser-mapping@>=2.0.0 <2.11.0: ^2.11.0
   browserslist@<=4.28.6: ^4.28.7
