@@ -4,7 +4,12 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { bfsFromRoots, buildAncestorClosure, pathStepsTo } from '../property-paths-graph.js'
+import {
+  bfsFromRoots,
+  buildAncestorClosure,
+  pathStepsTo,
+  reachedByInheritance,
+} from '../property-paths-graph.js'
 
 type Edges = Map<string, { predicate: string; child: string }[]>
 
@@ -81,6 +86,38 @@ describe('bfsFromRoots', () => {
     ])
     const reached = bfsFromRoots(['Asset'], twoSubclasses, closure)
     // Edge order puts SubB first, so Tag is inherited through SubB.
-    expect(reached.get('Tag')).toEqual({ parent: 'SubB', predicate: '', inherited: true })
+    expect(reached.get('Tag')).toEqual({
+      parent: 'SubB',
+      predicate: '',
+      inherited: true,
+      viaInheritance: true,
+    })
+  })
+
+  it('gives a class reached only through inheritance its shortest path', () => {
+    // X is reachable through T1 (inherited at depth 1, then 3 hops: 4 total)
+    // and through T2 (inherited at depth 5, then 1 hop: 6 total). Reach order
+    // alone would pick whichever inherited class the walk met first; the
+    // shorter chain must win.
+    const graph = edges([
+      ['Asset', 'a', 'C1'],
+      ['T1', 'b', 'Y1'],
+      ['Y1', 'c', 'Y2'],
+      ['Y2', 'd', 'X'],
+      ['Asset', 'e', 'D1'],
+      ['D1', 'f', 'D2'],
+      ['D2', 'g', 'D3'],
+      ['D3', 'h', 'D4'],
+      ['D4', 'i', 'C5'],
+      ['T2', 'j', 'X'],
+    ])
+    const closure = buildAncestorClosure([
+      { sub: 'C1', super: 'T1' },
+      { sub: 'C5', super: 'T2' },
+    ])
+    const reached = bfsFromRoots(['Asset'], graph, closure)
+    expect(predicatesOf(pathStepsTo('X', reached, 'leaf'))).toEqual(['a', 'b', 'c', 'd', 'leaf'])
+    expect(reachedByInheritance('X', reached)).toBe(true)
+    expect(reachedByInheritance('D4', reached)).toBe(false)
   })
 })

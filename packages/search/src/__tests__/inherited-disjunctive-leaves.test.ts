@@ -13,7 +13,7 @@
  * asset shape (a content item that is either the asset's own content or a
  * tag), in a neutral namespace so no real ontology name enters the test.
  */
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
 import { buildCompilerVocabFrom, compileSlotsWithTrace } from '../compiler.js'
@@ -142,7 +142,10 @@ async function loadStore(): Promise<OxigraphStore> {
 
 const localName = (iri: string) => iri.slice(NS.length)
 
-async function discover() {
+/** One store and one discovery for the whole suite (Oxigraph WASM is slow to start). */
+let discovered: Awaited<ReturnType<typeof runDiscovery>>
+
+async function runDiscovery() {
   const store = await loadStore()
   // `as any`: the synthetic registry stands in for the disk-derived
   // DomainRegistry, as in the flat-ontology genericity tests.
@@ -151,6 +154,12 @@ async function discover() {
   const byName = new Map(paths.map((p) => [p.propertyName, p]))
   return { store, registry, paths, byName }
 }
+
+beforeAll(async () => {
+  discovered = await runDiscovery()
+}, 30_000)
+
+const discover = async () => discovered
 
 describe('leaves inherited at an intermediate class, and disjunctive leaves', () => {
   it('reaches a leaf declared on the superclass of an intermediate class', async () => {

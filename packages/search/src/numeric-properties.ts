@@ -12,6 +12,15 @@
  *
  * Properties with `sh:in` are enumerations, not ranges, in both forms.
  *
+ * A range filter compares the literal form only: an asset that records a
+ * disjunctive property through its node alternative (a range node with its
+ * own bounds) is not matched by a range on the property itself.
+ *
+ * The disjunctive result does not depend on the order the store returns
+ * rows in: a path is numeric when any of its `sh:or` shapes is, `float` wins
+ * over `integer` across those shapes, and the name and description come
+ * from the shape that sorts first by them.
+ *
  * @see https://www.w3.org/TR/shacl/#DatatypeConstraintComponent — [SHACL] §4.1.1 sh:datatype
  * @see https://www.w3.org/TR/shacl/#OrConstraintComponent — [SHACL] §4.6.3 sh:or
  */
@@ -152,9 +161,9 @@ async function queryDisjunctiveNumericLeaves(store: SparqlStore): Promise<Numeri
   }
   const numericByPath = new Map<string, NumericProperty['datatype']>()
   for (const { path, datatypes } of byShape.values()) {
-    if (numericByPath.has(path)) continue
     if (![...datatypes].every((d) => NUMERIC_DATATYPES.has(d))) continue
-    numericByPath.set(path, [...datatypes].every((d) => d === XSD_INTEGER) ? 'integer' : 'float')
+    const datatype = [...datatypes].every((d) => d === XSD_INTEGER) ? 'integer' : 'float'
+    if (numericByPath.get(path) !== 'float') numericByPath.set(path, datatype)
   }
   if (numericByPath.size === 0) return []
 
@@ -164,18 +173,30 @@ async function queryDisjunctiveNumericLeaves(store: SparqlStore): Promise<Numeri
     store,
     [...numericByPath.keys()].filter(isIri)
   )
-  return [...numericByPath].map(([path, datatype]) => ({
-    iri: path,
-    datatype,
-    ...annotations.get(path),
-  }))
+  return [...numericByPath]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([path, datatype]) => ({ iri: path, datatype, ...annotations.get(path) }))
+}
+
+interface Annotation {
+  name?: string
+  description?: string
+}
+
+/** Named before unnamed, then by name, then by description. */
+function compareAnnotations(a: Annotation, b: Annotation): number {
+  if ((a.name === undefined) !== (b.name === undefined)) return a.name === undefined ? 1 : -1
+  return (
+    (a.name ?? '').localeCompare(b.name ?? '') ||
+    (a.description ?? '').localeCompare(b.description ?? '')
+  )
 }
 
 /** `sh:name` / `sh:description` of the `sh:or` property shapes for `paths`. */
 async function queryDisjunctiveAnnotations(
   store: SparqlStore,
   paths: string[]
-): Promise<Map<string, { name?: string; description?: string }>> {
+): Promise<Map<string, Annotation>> {
   if (paths.length === 0) return new Map()
   const sparql = `
     ${sparqlPrefixes('sh')}
@@ -191,13 +212,17 @@ async function queryDisjunctiveAnnotations(
     }
   `
   const results = await store.query(sparql)
-  const out = new Map<string, { name?: string; description?: string }>()
+  // Several shapes can annotate one path; keep the one that sorts first by
+  // (name, description), with an unnamed shape last, whatever the row order.
+  const out = new Map<string, Annotation>()
   for (const row of results.results.bindings) {
     const path = row['path']?.value
-    if (!path || out.has(path)) continue
+    if (!path) continue
     const name = row['name']?.value
     const description = row['description']?.value
-    out.set(path, { ...(name ? { name } : {}), ...(description ? { description } : {}) })
+    const candidate = { ...(name ? { name } : {}), ...(description ? { description } : {}) }
+    const current = out.get(path)
+    if (!current || compareAnnotations(candidate, current) < 0) out.set(path, candidate)
   }
   return out
 }

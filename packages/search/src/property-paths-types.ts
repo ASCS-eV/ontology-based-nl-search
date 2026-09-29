@@ -61,9 +61,9 @@ export interface PropertyPath {
   /**
    * The path needs a discovery extension: its leaf's owning class is
    * reached only by `rdfs:subClassOf` inheritance below the asset class, or
-   * the leaf is a literal only through an `sh:or` member. Consumers that
-   * already resolve the property another way keep doing so (see
-   * `buildCompilerVocabFrom`), so such a path only ever adds a property.
+   * the leaf is a literal only through an `sh:or` member. Such paths exist
+   * only for property names nothing else resolves, and never become
+   * reference chains, so they only ever add filterable properties.
    */
   extended?: true
 }
