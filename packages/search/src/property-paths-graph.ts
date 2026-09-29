@@ -9,6 +9,14 @@ import { type PathStep } from './property-paths-types.js'
 export interface PredecessorLink {
   parent: string
   predicate: string
+  /**
+   * The class was reached as an `rdfs:subClassOf` ancestor of `parent`, not
+   * through a predicate: a node of `parent` is also an instance of this
+   * class, so there is no hop and no path step.
+   */
+  inherited?: boolean
+  /** The walk from a root to this class crosses at least one inherited link. */
+  viaInheritance?: boolean
 }
 
 /**
@@ -53,31 +61,105 @@ export function buildAncestorClosure(
  * direct properties of the asset (zero intermediate hops) and the
  * superclass's composition edges are inherited too. Seeding every
  * ancestor as a zero-hop root makes both fall out of the same BFS.
+ *
+ * The same holds below the root: a class-based target covers every SHACL
+ * instance of the class, subclasses included ([SHACL] §2.1.3.2), so a node
+ * reached as class C is also constrained by the shapes that target C's
+ * ancestors. When `ancestorsOf` is given, those ancestors are reached too,
+ * through `inherited` links that add no hop.
+ *
+ * Two phases keep inheritance from re-routing anything:
+ *
+ *  1. A breadth-first walk over predicates only, exactly as without
+ *     `ancestorsOf`. Every class it reaches keeps this link, so existing
+ *     paths — and the SPARQL compiled from them — do not change.
+ *  2. A 0-1 BFS over the remaining classes: an ancestor link costs 0 hops,
+ *     a predicate edge 1, and phase-1 classes are never relabelled. Each
+ *     newly reached class gets its shortest path in hops; ties go to the
+ *     first reached (phase-1 order, then ancestors sorted, then the sorted
+ *     edge order), so the result is deterministic.
  */
 
 export function bfsFromRoots(
   roots: Iterable<string>,
-  forwardEdges: Map<string, { predicate: string; child: string }[]>
+  forwardEdges: Map<string, { predicate: string; child: string }[]>,
+  ancestorsOf?: (cls: string) => Set<string>
 ): Map<string, PredecessorLink> {
   const visited = new Map<string, PredecessorLink>()
-  const queue: string[] = []
+  const depth = new Map<string, number>()
+  const order: string[] = []
   // Each root has no predecessor; mark it visited with a sentinel so the
   // BFS doesn't loop back. A leaf owned by any root yields a direct path.
   for (const root of roots) {
     if (visited.has(root)) continue
     visited.set(root, { parent: '', predicate: '' })
-    queue.push(root)
+    depth.set(root, 0)
+    order.push(root)
   }
-  while (queue.length > 0) {
-    const current = queue.shift()!
-    const edges = forwardEdges.get(current) ?? []
-    for (const { predicate, child } of edges) {
+  for (let head = 0; head < order.length; head++) {
+    const current = order[head]!
+    for (const { predicate, child } of forwardEdges.get(current) ?? []) {
       if (visited.has(child)) continue
       visited.set(child, { parent: current, predicate })
-      queue.push(child)
+      depth.set(child, depth.get(current)! + 1)
+      order.push(child)
     }
   }
+  if (ancestorsOf) inheritBelowRoots(order, visited, depth, forwardEdges, ancestorsOf)
   return visited
+}
+
+/**
+ * Phase 2 of {@link bfsFromRoots}: extend `visited` with the classes reached
+ * through `rdfs:subClassOf` ancestors, without relabelling a phase-1 class.
+ * `phaseOne` is in breadth-first (non-decreasing depth) order, which is the
+ * order a 0-1 BFS deque needs to start from.
+ */
+function inheritBelowRoots(
+  phaseOne: string[],
+  visited: Map<string, PredecessorLink>,
+  depth: Map<string, number>,
+  forwardEdges: Map<string, { predicate: string; child: string }[]>,
+  ancestorsOf: (cls: string) => Set<string>
+): void {
+  const settled = new Set(phaseOne)
+  const deque = [...phaseOne]
+  const done = new Set<string>()
+  const improves = (cls: string, d: number) =>
+    !settled.has(cls) && (!depth.has(cls) || d < depth.get(cls)!)
+  while (deque.length > 0) {
+    const current = deque.shift()!
+    if (done.has(current)) continue
+    done.add(current)
+    const d = depth.get(current)!
+    for (const ancestor of [...ancestorsOf(current)].sort()) {
+      if (ancestor === current || !improves(ancestor, d)) continue
+      visited.set(ancestor, {
+        parent: current,
+        predicate: '',
+        inherited: true,
+        viaInheritance: true,
+      })
+      depth.set(ancestor, d)
+      deque.unshift(ancestor)
+    }
+    // A phase-1 class's predicate edges were all walked in phase 1.
+    if (settled.has(current)) continue
+    for (const { predicate, child } of forwardEdges.get(current) ?? []) {
+      if (!improves(child, d + 1)) continue
+      visited.set(child, { parent: current, predicate, viaInheritance: true })
+      depth.set(child, d + 1)
+      deque.push(child)
+    }
+  }
+}
+
+/** True when the walk from a root to `target` crosses an `inherited` link. */
+export function reachedByInheritance(
+  target: string,
+  predecessors: Map<string, PredecessorLink>
+): boolean {
+  return predecessors.get(target)?.viaInheritance === true
 }
 
 export function pathStepsTo(
@@ -95,7 +177,9 @@ export function pathStepsTo(
     const link = predecessors.get(cursor)
     // Reached the root: link.parent === '' (the sentinel).
     if (!link || link.parent === '') break
-    intermediates.unshift({ predicate: link.predicate, intermediate: cursor })
+    // An inherited link is an is-a, not a hop: the step that reached
+    // `link.parent` already lands on this node.
+    if (!link.inherited) intermediates.unshift({ predicate: link.predicate, intermediate: cursor })
     cursor = link.parent
   }
   intermediates.push({ predicate: leafPredicate })
@@ -113,5 +197,7 @@ export function pathStepsTo(
  * intermediate predicates along the way.
  *
  * Picks one path per (asset, leaf) pair via BFS; if the schema has
- * multiple parallel paths, only the shortest is emitted.
+ * multiple parallel paths, only the shortest is emitted — among
+ * predicate-only paths first (see {@link bfsFromRoots} for how paths that
+ * need inheritance are chosen).
  */

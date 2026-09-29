@@ -160,8 +160,18 @@ export async function buildCompilerVocabFrom(
   // Index property paths by (domain, propertyLocalName) for O(1) lookup
   // when emitting triples. A property local name may legitimately appear in
   // multiple asset domains; each domain gets its own path.
+  //
+  // An `extended` path (a leaf reached only through inheritance below the
+  // asset class, or literal only through an `sh:or` member) never carries a
+  // shape-group property name. Shape-group emission takes its hops from the
+  // path of ANY property in the group (`lookupStepPredicate`), and such a
+  // name can resolve through its group without a path of its own, so a new
+  // path for it — one inherited from a superclass shape, say — would change
+  // the hops of queries that compiled before. (`buildPropertyPaths` already
+  // keeps extended paths off every name that has a plain path.)
   const paths = new Map<string, PropertyPath>()
   for (const path of propertyPaths) {
+    if (path.extended && shapeGroupPropertyNames.has(path.propertyName)) continue
     paths.set(`${path.domain}:${path.propertyName}`, path)
   }
 

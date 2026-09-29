@@ -15,9 +15,15 @@ import { extractDomain, extractLocalName } from '@ontology-search/core/rdf/iri'
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
-import { bfsFromRoots, buildAncestorClosure, pathStepsTo } from './property-paths-graph.js'
+import {
+  bfsFromRoots,
+  buildAncestorClosure,
+  pathStepsTo,
+  reachedByInheritance,
+} from './property-paths-graph.js'
 import {
   enrichLeafKinds,
+  type LeafRow,
   queryLeafProperties,
   queryResolvedEdges,
 } from './property-paths-queries.js'
@@ -86,22 +92,7 @@ export async function buildPropertyPaths(
   // For each asset class, walk forward and emit one PropertyPath per leaf
   // whose owning class is reachable.
   const bfsEnd = log.time('property-paths/bfs')
-  const out: PropertyPath[] = []
-  for (const assetClass of assetClasses) {
-    const predecessors = bfsFromRoots(ancestorsOf(assetClass), forwardEdges)
-    for (const { owningClass, propertyIri, leafKind } of leaves) {
-      const steps = pathStepsTo(owningClass, predecessors, propertyIri)
-      if (!steps) continue
-      out.push({
-        domain: extractDomainFromRegistry(assetClass, registry),
-        propertyName: extractLocalName(propertyIri),
-        propertyIri,
-        assetClass,
-        steps,
-        leafKind,
-      })
-    }
-  }
+  const out = emitPaths(assetClasses, leaves, forwardEdges, ancestorsOf, registry)
   bfsEnd()
 
   // Second pass: enrich leafKind from the schema graph for the leaves
@@ -125,6 +116,60 @@ export async function buildPropertyPaths(
 }
 
 /**
+ * One PropertyPath per (asset class, reachable leaf).
+ *
+ * Paths that need either discovery extension — a leaf whose owning class is
+ * reached only by inheritance below the root, or a leaf that is literal only
+ * through an `sh:or` member — are flagged `extended` and added last, only
+ * for property local names that no plain path has in ANY domain, and once
+ * per (domain, name). The compiler resolves properties by local name, not
+ * only per domain: it picks the owning domains of a name (`ownersOf`), the
+ * cross-domain OPTIONAL for a domain-less filter, and the validator's domain
+ * correction all read every domain's paths. A new path for a name another
+ * domain already resolves would change those queries; a new name cannot.
+ * `buildCompilerVocabFrom` additionally keeps them off shape-group names.
+ */
+function emitPaths(
+  assetClasses: string[],
+  leaves: LeafRow[],
+  forwardEdges: Map<string, { predicate: string; child: string }[]>,
+  ancestorsOf: (cls: string) => Set<string>,
+  registry: DomainRegistry | undefined
+): PropertyPath[] {
+  const out: PropertyPath[] = []
+  const extended: PropertyPath[] = []
+  for (const assetClass of assetClasses) {
+    const predecessors = bfsFromRoots(ancestorsOf(assetClass), forwardEdges, ancestorsOf)
+    for (const { owningClass, propertyIri, leafKind, viaDisjunction } of leaves) {
+      const steps = pathStepsTo(owningClass, predecessors, propertyIri)
+      if (!steps) continue
+      const path: PropertyPath = {
+        domain: extractDomainFromRegistry(assetClass, registry),
+        propertyName: extractLocalName(propertyIri),
+        propertyIri,
+        assetClass,
+        steps,
+        leafKind,
+      }
+      if (viaDisjunction || reachedByInheritance(owningClass, predecessors)) {
+        extended.push({ ...path, extended: true })
+      } else {
+        out.push(path)
+      }
+    }
+  }
+  const plainNames = new Set(out.map((p) => p.propertyName))
+  const added = new Set<string>()
+  for (const path of extended) {
+    const key = `${path.domain}:${path.propertyName}`
+    if (plainNames.has(path.propertyName) || added.has(key)) continue
+    added.add(key)
+    out.push(path)
+  }
+  return out
+}
+
+/**
  * Derive cross-domain {@link ReferenceChain}s from discovered property paths —
  * the IRI/class-typed leaves that let the compiler join a parent asset to a
  * child asset domain. See {@link ReferenceChain} for the two flavours.
@@ -137,6 +182,10 @@ export function buildReferenceChains(
   const out: ReferenceChain[] = []
   for (const path of paths) {
     if (path.leafKind === 'literal') continue
+    // The compiler joins through the shortest chain, so a chain that needs a
+    // discovery extension could replace the join an existing cross-reference
+    // compiles to. Extended paths only ever add filterable properties.
+    if (path.extended) continue
     const parentDomain = path.domain || extractDomainFromRegistry(path.assetClass, registry)
     if (!parentDomain) continue
 

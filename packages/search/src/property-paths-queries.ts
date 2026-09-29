@@ -206,6 +206,8 @@ export interface LeafRow {
   owningClass: string
   propertyIri: string
   leafKind: LeafKind
+  /** The property is a literal leaf only through an `sh:or` member's datatype. */
+  viaDisjunction?: boolean
 }
 
 /**
@@ -213,6 +215,13 @@ export interface LeafRow {
  * leaves of every property path. A leaf is a property shape with a
  * literal `sh:path` and NO `sh:node` (its values are RDF literals,
  * IRIs, or typed instances, not sub-resources to recurse into).
+ *
+ * A property shape with an `sh:or` is a leaf too when one of its members
+ * constrains `sh:datatype`: a value conforming to that member is a literal
+ * ([SHACL] §4.6.3 `sh:or`, §4.1.1 `sh:datatype`). Such a property can be an
+ * edge as well — another member may `sh:node` a sub-resource, like a range
+ * node beside a plain number — and then it is both. Members without a
+ * datatype contribute nothing here.
  *
  * Returns each leaf annotated with its {@link LeafKind} so the
  * compiler can distinguish literal-value leaves (used for filters
@@ -253,15 +262,57 @@ export async function queryLeafProperties(store: SparqlStore): Promise<LeafRow[]
       }
     }
   `
-  const leafResult = await store.query(leafSparql)
+  // The `sh:or` form walks the member list with a property path, so it runs
+  // as its own query (see the `queryResolvedEdges` header: Oxigraph WASM
+  // traps on UNION + property path) and is merged below.
+  const disjunctiveLeafSparql = `
+    ${sparqlPrefixes('sh', 'rdf')}
 
+    SELECT DISTINCT ?owningClass ?propertyIri WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        ?owningShape sh:targetClass ?owningClass .
+        ?owningShape sh:property ?propShape .
+        ?propShape sh:path ?propertyIri .
+        FILTER(isIRI(?propertyIri))
+        FILTER NOT EXISTS { ?propShape sh:node ?anyNode }
+        ?propShape sh:or ?list .
+        ?list rdf:rest*/rdf:first ?member .
+        ?member sh:datatype ?memberDatatype .
+      }
+    }
+  `
+  const [leafResult, disjunctiveResult] = await Promise.all([
+    store.query(leafSparql),
+    store.query(disjunctiveLeafSparql),
+  ])
+
+  // Plain leaves first, in the order the query returns them, so the paths
+  // built from them are the paths discovery produced before disjunctive
+  // leaves existed. Disjunctive rows are sorted, because SPARQL leaves the
+  // order of property-path results unspecified.
   const leaves: LeafRow[] = []
+  const seen = new Set<string>()
+  const collect = (owningClass: string, propertyIri: string, viaDisjunction: boolean) => {
+    const key = `${owningClass}|${propertyIri}`
+    if (seen.has(key)) return
+    seen.add(key)
+    leaves.push({
+      owningClass,
+      propertyIri,
+      leafKind: 'literal',
+      ...(viaDisjunction ? { viaDisjunction } : {}),
+    })
+  }
   for (const row of leafResult.results.bindings) {
     const owningClass = row['owningClass']?.value
     const propertyIri = row['propertyIri']?.value
-    if (!owningClass || !propertyIri) continue
-    leaves.push({ owningClass, propertyIri, leafKind: 'literal' })
+    if (owningClass && propertyIri) collect(owningClass, propertyIri, false)
   }
+  const disjunctive = disjunctiveResult.results.bindings
+    .map((row) => [row['owningClass']?.value, row['propertyIri']?.value] as const)
+    .filter((pair): pair is readonly [string, string] => Boolean(pair[0] && pair[1]))
+    .sort(([ca, pa], [cb, pb]) => ca.localeCompare(cb) || pa.localeCompare(pb))
+  for (const [owningClass, propertyIri] of disjunctive) collect(owningClass, propertyIri, true)
   return leaves
 }
 
