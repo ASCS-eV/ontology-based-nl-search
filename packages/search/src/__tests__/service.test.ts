@@ -340,6 +340,58 @@ describe('SearchService.searchNl', () => {
       sparql: mockLlmResponse.sparql,
     })
   })
+
+  describe('gap log feed', () => {
+    const withGaps: LlmStructuredResponse = {
+      ...mockLlmResponse,
+      interpretation: { ...mockLlmResponse.interpretation, domains: ['hdmap'] },
+      gaps: [{ term: 'potholes', reason: 'Not a defined ontology property', kind: 'unmapped' }],
+    }
+
+    it('hands every search’s gaps and domains to recordGaps', async () => {
+      const recordGaps = vi.fn()
+      const deps = createMockDeps({
+        interpretQuery: vi.fn().mockResolvedValue(withGaps),
+        recordGaps,
+      })
+
+      await new SearchService(deps).searchNl({ query: 'motorway HD maps with potholes' })
+
+      expect(recordGaps).toHaveBeenCalledTimes(1)
+      expect(recordGaps).toHaveBeenCalledWith(withGaps.gaps, { domains: ['hdmap'] })
+    })
+
+    it('records nothing for a search aborted during interpretation', async () => {
+      const controller = new AbortController()
+      const recordGaps = vi.fn()
+      const deps = createMockDeps({
+        interpretQuery: vi.fn().mockImplementation(async () => {
+          controller.abort()
+          return withGaps
+        }),
+        recordGaps,
+      })
+
+      await expect(
+        new SearchService(deps).searchNl({ query: 'test', signal: controller.signal })
+      ).rejects.toThrow('Aborted')
+      expect(recordGaps).not.toHaveBeenCalled()
+    })
+
+    it('still answers the search when recordGaps throws', async () => {
+      const deps = createMockDeps({
+        interpretQuery: vi.fn().mockResolvedValue(withGaps),
+        recordGaps: vi.fn(() => {
+          throw new Error('gap log unavailable')
+        }),
+      })
+
+      const result = await new SearchService(deps).searchNl({ query: 'test' })
+
+      expect(result.gaps).toEqual(withGaps.gaps)
+      expect(result.execution.error).toBeUndefined()
+    })
+  })
 })
 
 describe('SearchService.searchRefine', () => {

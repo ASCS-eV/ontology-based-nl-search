@@ -102,6 +102,41 @@ describe('LruCache — TTL', () => {
   })
 })
 
+describe('LruCache — iteration', () => {
+  it('yields live values from least- to most-recently used', () => {
+    const cache = new LruCache<string, number>({ maxSize: 3 })
+    cache.set('a', 1)
+    cache.set('b', 2)
+    cache.set('c', 3)
+    cache.get('a') // promote: order is now b, c, a
+    expect([...cache.values()]).toEqual([2, 3, 1])
+  })
+
+  it('does not record an access, so iterating leaves the eviction order intact', () => {
+    const cache = new LruCache<string, number>({ maxSize: 2 })
+    cache.set('a', 1)
+    cache.set('b', 2)
+    expect([...cache.values()]).toEqual([1, 2])
+    cache.set('c', 3) // 'a' is still the least recently used
+    expect(cache.has('a')).toBe(false)
+    expect([...cache.values()]).toEqual([2, 3])
+  })
+
+  it('skips entries past their TTL', () => {
+    vi.useFakeTimers()
+    try {
+      const cache = new LruCache<string, number>({ maxSize: 2, ttlMs: 100 })
+      cache.set('a', 1)
+      vi.advanceTimersByTime(60)
+      cache.set('b', 2)
+      vi.advanceTimersByTime(60) // 'a' is 120 ms old, 'b' 60 ms
+      expect([...cache.values()]).toEqual([2])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('LruCache — mutation', () => {
   it('delete returns true when an entry was present', () => {
     const cache = new LruCache<string, number>({ maxSize: 2 })

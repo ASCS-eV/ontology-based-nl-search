@@ -4,6 +4,7 @@
  * out so `service.ts` (the class) stays under CONTRIBUTING #15. Pure types.
  */
 import type {
+  OntologyGap,
   ResultRow,
   ResultTraceStep,
   RowTraceability,
@@ -14,6 +15,7 @@ import type { CompileResult, SearchSlots } from '@ontology-search/slots/slots'
 import type { PolicyResult } from '@ontology-search/sparql/policy'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
+import type { GapContext } from './gap-log.js'
 import type { LlmStructuredResponse } from './types.js'
 
 // Re-export the wire row/step types so any intra-package reference keeps
@@ -51,6 +53,13 @@ export interface SearchDependencies {
    * slots flow through unchanged (matches the pre-Phase-1 behaviour).
    */
   validateSlots?: (slots: SearchSlots) => Promise<SearchSlots>
+  /**
+   * Receive the gaps of every natural-language search, with the domains it
+   * was scoped to: the feed of the ontology gap log (`./gap-log.js`).
+   * Optional; when omitted, gaps only travel back to the caller. The search
+   * result never depends on it, so a failure here is logged, not raised.
+   */
+  recordGaps?: (gaps: readonly OntologyGap[], context: GapContext) => void
 }
 
 // ─── Result Types ────────────────────────────────────────────────────────────

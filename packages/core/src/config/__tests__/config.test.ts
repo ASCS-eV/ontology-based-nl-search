@@ -297,6 +297,26 @@ describe('config', () => {
     })
   })
 
+  describe('FEATURE_GAP_LOG flag', () => {
+    it('is off by default: the log records user terms, so it is opt-in', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      delete process.env.FEATURE_GAP_LOG
+      resetConfig()
+      expect(getConfig().FEATURE_GAP_LOG).toBe(false)
+    })
+
+    it('parses "true" and "false" by meaning, not truthiness', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      process.env.FEATURE_GAP_LOG = 'true'
+      resetConfig()
+      expect(getConfig().FEATURE_GAP_LOG).toBe(true)
+
+      process.env.FEATURE_GAP_LOG = 'false'
+      resetConfig()
+      expect(getConfig().FEATURE_GAP_LOG).toBe(false)
+    })
+  })
+
   describe('rate-limit knobs', () => {
     it('defaults RATE_LIMIT_RPS to 0 (disabled)', () => {
       process.env.AI_PROVIDER = 'ollama'

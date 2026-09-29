@@ -11,6 +11,7 @@ import { rateLimit } from './middleware/rate-limit.js'
 import { requestId } from './middleware/request-id.js'
 import { getReadiness } from './readiness.js'
 import { authoringRoutes } from './routes/author.js'
+import { gapRoutes } from './routes/gaps.js'
 import { metadataRoutes } from './routes/metadata.js'
 import { searchRoutes } from './routes/search.js'
 import { statsRoutes } from './routes/stats.js'
@@ -85,6 +86,7 @@ app.get('/health', (c) => {
 
 app.route('/metadata', metadataRoutes)
 app.route('/author', authoringRoutes)
+app.route('/gaps', gapRoutes)
 app.route('/search', searchRoutes)
 app.route('/stats', statsRoutes)
 app.route('/traceability', traceabilityRoutes)

@@ -12,6 +12,7 @@
  * than receiving one from here, so this module chooses WHICH implementation
  * runs but does not own its lifetime. ADR 0008 records why that was left as is.
  */
+import { getConfig } from '@ontology-search/core/config'
 import { generateStructuredSearch } from '@ontology-search/llm'
 import type {
   NlSearchOptions,
@@ -28,6 +29,7 @@ import {
 } from '@ontology-search/search'
 import { enforceSparqlPolicy } from '@ontology-search/sparql/policy'
 
+import { gapLogRecorder } from './gap-log.js'
 import { validateSlots } from './services/validate-slots.js'
 
 let instance: SearchService | null = null
@@ -45,6 +47,7 @@ export async function getSearchService(): Promise<SearchService> {
     compileCountQueries: compileAllCountQueries,
     enforcePolicy: enforceSparqlPolicy,
     validateSlots,
+    recordGaps: gapLogRecorder(getConfig().FEATURE_GAP_LOG),
   }
 
   instance = new SearchService(deps)

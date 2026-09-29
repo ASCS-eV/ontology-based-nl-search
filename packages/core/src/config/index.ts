@@ -318,6 +318,16 @@ const envSchema = z.object({
    * omits the `graphql` event, UI hides the editor step).
    */
   FEATURE_GRAPHQL_LAYER: z.stringbool().default(true),
+  /**
+   * Keep the ontology gap log: a per-term count of what natural-language
+   * searches could not map, served at `GET /gaps` for the ontology's
+   * maintainers. Off by default, because the terms are fragments of what
+   * people typed: turning it on is a deployment decision (data protection,
+   * and in many organisations a works-council one). While off, nothing is
+   * recorded and `/gaps` answers 404. The log holds no query text, user,
+   * session or request id, and lives in memory only.
+   */
+  FEATURE_GAP_LOG: z.stringbool().default(false),
 
   // Runtime (set by the process manager / test runner, never by the operator)
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

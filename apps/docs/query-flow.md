@@ -152,3 +152,31 @@ Results are sent as **Server-Sent Events** (SSE) — the UI updates progressivel
 `matchCount` is the number of **distinct primary assets**, not result rows — a cross-reference JOIN fans out to one row per referenced asset, so the UI groups rows by `?asset` and the count reflects assets (rows ≥ matches). When the query contains a reference JOIN, the `results` payload also carries a per-row, per-reference `traceability` breadcrumb.
 
 Users see the interpretation immediately while SPARQL execution happens in the background — perceived latency is dramatically reduced.
+
+## After the search: the gap log
+
+The `gaps` event tells the person who searched which parts of the query did not become a filter. The **gap log** tells the people who maintain the ontology the same thing, counted across searches, so they can decide what to model next from what users actually asked for.
+
+It is off by default. Set `FEATURE_GAP_LOG=true` and the search service counts every search's gaps per term; `GET /gaps` returns them, most reported first:
+
+```json
+{
+  "capacity": 1000,
+  "entries": [
+    {
+      "term": "potholes",
+      "count": 12,
+      "kinds": { "unmapped": 12 },
+      "domains": ["hdmap"],
+      "firstSeen": "2026-09-28",
+      "lastSeen": "2026-09-29"
+    }
+  ]
+}
+```
+
+What an entry holds is fixed, not configurable: the normalized term (trimmed, whitespace collapsed, lower-cased), the number of searches that reported it, its gap kinds (`unmapped`, `recognized`, `limitation`), the domains those searches were scoped to, and the first and last day it was seen. It never holds the query, a user, a session or a request id, and dates are kept at day precision as RFC 3339 `full-date`s (the JSON Schema 2020-12 `date` format). Terms longer than 80 characters are not recorded. The log is in memory and bounded: past 1,000 distinct terms, the least recently reported one is dropped.
+
+Because it records fragments of what people typed, turning it on is a deployment decision. Check data protection first, and, in organisations that have one, the works council.
+
+Not every gap is a missing concept. A term can be a synonym of an existing value, a value missing from an `sh:in` list, a concept the ontology already has but no asset carries, a misreading by the model, or out of scope. The log is a queue of leads for the ontology's maintainers to check, not a list of changes to apply.

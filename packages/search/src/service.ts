@@ -29,6 +29,8 @@ import { generateRequestId, RequestLogger } from '@ontology-search/core/logging'
 import type { TraceabilityPlan } from '@ontology-search/slots/slots'
 import type { SparqlBinding } from '@ontology-search/sparql/types'
 
+import type { LlmStructuredResponse } from './types.js'
+
 export type {
   ExecutionResult,
   NlSearchOptions,
@@ -94,6 +96,8 @@ export class SearchService {
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
+    this.recordGaps(structured, logger)
+
     // Emit interpretation as soon as it's available (before SPARQL execution)
     await onProgress?.({
       phase: 'interpreted',
@@ -132,6 +136,22 @@ export class SearchService {
       sparql: structured.sparql,
       execution,
       meta,
+    }
+  }
+
+  /**
+   * Feed the gap log, once the interpretation stands and whether or not the
+   * query later returns rows: a gap is about what the ontology could not
+   * express, not about the data. Non-critical, like the dataset count.
+   */
+  private recordGaps(structured: LlmStructuredResponse, logger: RequestLogger): void {
+    if (!this.deps.recordGaps) return
+    try {
+      this.deps.recordGaps(structured.gaps, { domains: structured.interpretation.domains ?? [] })
+    } catch (error) {
+      logger.warn('Gap log did not record this search; the search continues', {
+        error: error instanceof Error ? error.message : String(error),
+      })
     }
   }
 

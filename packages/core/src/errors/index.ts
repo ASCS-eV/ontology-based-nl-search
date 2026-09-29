@@ -11,6 +11,10 @@
  * API's error handler maps them to HTTP status by `instanceof`, so renaming
  * an error message in a library cannot accidentally change the wire
  * contract. Plain `Error` instances escape to a generic 500.
+ *
+ * STANDARDS — the status codes below carry their meaning from
+ *   [RFC9110] HTTP Semantics — docs/specs/references/rfc9110-http.md
+ *             https://www.rfc-editor.org/rfc/rfc9110 (§15 status codes)
  */
 
 /**
@@ -21,6 +25,7 @@
 export const ERROR_CODE = {
   BAD_REQUEST: 'BAD_REQUEST',
   UNAUTHORIZED: 'UNAUTHORIZED',
+  NOT_FOUND: 'NOT_FOUND',
   UNPROCESSABLE_ENTITY: 'UNPROCESSABLE_ENTITY',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
@@ -36,7 +41,7 @@ export interface ApiErrorResponse {
 }
 
 /** HTTP status codes used by error responses */
-export type HttpErrorStatus = 400 | 422 | 500 | 503
+export type HttpErrorStatus = 400 | 404 | 422 | 500 | 503
 
 /** Structured error with HTTP status for use by any framework's response builder */
 export interface HttpError {
@@ -160,6 +165,14 @@ export class BackendCapabilityError extends AppError {
 /** Create a 400 Bad Request error */
 export function badRequest(message: string, details?: string[]): HttpError {
   return { status: 400, body: { error: message, code: ERROR_CODE.BAD_REQUEST, details } }
+}
+
+/**
+ * Create a 404 Not Found error: the resource does not exist, or the server is
+ * not willing to disclose that it does (a disabled feature) — [RFC9110] §15.5.5.
+ */
+export function notFound(message: string): HttpError {
+  return { status: 404, body: { error: message, code: ERROR_CODE.NOT_FOUND } }
 }
 
 /** Create a 422 Unprocessable Entity error (valid syntax, semantic error) */
