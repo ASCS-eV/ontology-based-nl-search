@@ -58,6 +58,14 @@ export interface PropertyPath {
    * (paths whose leaf binds a literal).
    */
   leafKind: LeafKind
+  /**
+   * The path needs a discovery extension: its leaf's owning class is
+   * reached only by `rdfs:subClassOf` inheritance below the asset class, or
+   * the leaf is a literal only through an `sh:or` member. Consumers that
+   * already resolve the property another way keep doing so (see
+   * `buildCompilerVocabFrom`), so such a path only ever adds a property.
+   */
+  extended?: true
 }
 
 /**

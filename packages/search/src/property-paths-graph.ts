@@ -9,6 +9,12 @@ import { type PathStep } from './property-paths-types.js'
 export interface PredecessorLink {
   parent: string
   predicate: string
+  /**
+   * The class was reached as an `rdfs:subClassOf` ancestor of `parent`, not
+   * through a predicate: a node of `parent` is also an instance of this
+   * class, so there is no hop and no path step.
+   */
+  inherited?: boolean
 }
 
 /**
@@ -53,14 +59,29 @@ export function buildAncestorClosure(
  * direct properties of the asset (zero intermediate hops) and the
  * superclass's composition edges are inherited too. Seeding every
  * ancestor as a zero-hop root makes both fall out of the same BFS.
+ *
+ * The same holds below the root: a class-based target covers every SHACL
+ * instance of the class, subclasses included ([SHACL] §2.1.3.2), so a node
+ * reached as class C is also constrained by the shapes that target C's
+ * ancestors. When `ancestorsOf` is given, each class the walk reaches
+ * brings its unvisited ancestors along as `inherited` links (no hop).
+ *
+ * Inheritance only ever adds classes; it never re-routes one. The walk
+ * runs in rounds: the first follows predicates exactly as a walk without
+ * `ancestorsOf` would, and each later round first adds the unvisited
+ * ancestors of every class reached so far (in reach order, ancestors
+ * sorted), then follows predicates from them. A class reachable through
+ * predicates alone therefore keeps the path it has without inheritance,
+ * and existing paths — and the SPARQL compiled from them — do not change.
  */
 
 export function bfsFromRoots(
   roots: Iterable<string>,
-  forwardEdges: Map<string, { predicate: string; child: string }[]>
+  forwardEdges: Map<string, { predicate: string; child: string }[]>,
+  ancestorsOf?: (cls: string) => Set<string>
 ): Map<string, PredecessorLink> {
   const visited = new Map<string, PredecessorLink>()
-  const queue: string[] = []
+  let queue: string[] = []
   // Each root has no predecessor; mark it visited with a sentinel so the
   // BFS doesn't loop back. A leaf owned by any root yields a direct path.
   for (const root of roots) {
@@ -68,6 +89,27 @@ export function bfsFromRoots(
     visited.set(root, { parent: '', predicate: '' })
     queue.push(root)
   }
+  while (queue.length > 0) {
+    walkPredicates(queue, forwardEdges, visited)
+    if (!ancestorsOf) break
+    queue = []
+    for (const reached of [...visited.keys()]) {
+      for (const ancestor of [...ancestorsOf(reached)].sort()) {
+        if (visited.has(ancestor)) continue
+        visited.set(ancestor, { parent: reached, predicate: '', inherited: true })
+        queue.push(ancestor)
+      }
+    }
+  }
+  return visited
+}
+
+/** Breadth-first over predicate edges from `queue`, recording first reaches. */
+function walkPredicates(
+  queue: string[],
+  forwardEdges: Map<string, { predicate: string; child: string }[]>,
+  visited: Map<string, PredecessorLink>
+): void {
   while (queue.length > 0) {
     const current = queue.shift()!
     const edges = forwardEdges.get(current) ?? []
@@ -77,7 +119,19 @@ export function bfsFromRoots(
       queue.push(child)
     }
   }
-  return visited
+}
+
+/** True when the walk back from `target` to a root crosses an `inherited` link. */
+export function reachedByInheritance(
+  target: string,
+  predecessors: Map<string, PredecessorLink>
+): boolean {
+  let link = predecessors.get(target)
+  while (link && link.parent !== '') {
+    if (link.inherited) return true
+    link = predecessors.get(link.parent)
+  }
+  return false
 }
 
 export function pathStepsTo(
@@ -95,7 +149,9 @@ export function pathStepsTo(
     const link = predecessors.get(cursor)
     // Reached the root: link.parent === '' (the sentinel).
     if (!link || link.parent === '') break
-    intermediates.unshift({ predicate: link.predicate, intermediate: cursor })
+    // An inherited link is an is-a, not a hop: the step that reached
+    // `link.parent` already lands on this node.
+    if (!link.inherited) intermediates.unshift({ predicate: link.predicate, intermediate: cursor })
     cursor = link.parent
   }
   intermediates.push({ predicate: leafPredicate })

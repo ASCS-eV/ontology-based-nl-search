@@ -15,9 +15,15 @@ import { extractDomain, extractLocalName } from '@ontology-search/core/rdf/iri'
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
-import { bfsFromRoots, buildAncestorClosure, pathStepsTo } from './property-paths-graph.js'
+import {
+  bfsFromRoots,
+  buildAncestorClosure,
+  pathStepsTo,
+  reachedByInheritance,
+} from './property-paths-graph.js'
 import {
   enrichLeafKinds,
+  type LeafRow,
   queryLeafProperties,
   queryResolvedEdges,
 } from './property-paths-queries.js'
@@ -86,22 +92,7 @@ export async function buildPropertyPaths(
   // For each asset class, walk forward and emit one PropertyPath per leaf
   // whose owning class is reachable.
   const bfsEnd = log.time('property-paths/bfs')
-  const out: PropertyPath[] = []
-  for (const assetClass of assetClasses) {
-    const predecessors = bfsFromRoots(ancestorsOf(assetClass), forwardEdges)
-    for (const { owningClass, propertyIri, leafKind } of leaves) {
-      const steps = pathStepsTo(owningClass, predecessors, propertyIri)
-      if (!steps) continue
-      out.push({
-        domain: extractDomainFromRegistry(assetClass, registry),
-        propertyName: extractLocalName(propertyIri),
-        propertyIri,
-        assetClass,
-        steps,
-        leafKind,
-      })
-    }
-  }
+  const out = emitPaths(assetClasses, leaves, forwardEdges, ancestorsOf, registry)
   bfsEnd()
 
   // Second pass: enrich leafKind from the schema graph for the leaves
@@ -121,6 +112,57 @@ export async function buildPropertyPaths(
     enrichedLeaves: enriched.size,
     durationMs: Date.now() - t0,
   })
+  return out
+}
+
+/**
+ * One PropertyPath per (asset class, reachable leaf).
+ *
+ * Paths that need either discovery extension — a leaf whose owning class is
+ * reached only by inheritance below the root, or a leaf that is literal only
+ * through an `sh:or` member — are held back and added last, and only for a
+ * (domain, property) the plain discovery has no path for. The compiler
+ * indexes one path per (domain, property local name), the last one winning,
+ * so appending them freely could re-route a property that already compiled.
+ * They are flagged `extended` so the compiler vocabulary can also keep them
+ * away from what it resolves by other means (shape groups, reference chains).
+ */
+function emitPaths(
+  assetClasses: string[],
+  leaves: LeafRow[],
+  forwardEdges: Map<string, { predicate: string; child: string }[]>,
+  ancestorsOf: (cls: string) => Set<string>,
+  registry: DomainRegistry | undefined
+): PropertyPath[] {
+  const out: PropertyPath[] = []
+  const extended: PropertyPath[] = []
+  for (const assetClass of assetClasses) {
+    const predecessors = bfsFromRoots(ancestorsOf(assetClass), forwardEdges, ancestorsOf)
+    for (const { owningClass, propertyIri, leafKind, viaDisjunction } of leaves) {
+      const steps = pathStepsTo(owningClass, predecessors, propertyIri)
+      if (!steps) continue
+      const path: PropertyPath = {
+        domain: extractDomainFromRegistry(assetClass, registry),
+        propertyName: extractLocalName(propertyIri),
+        propertyIri,
+        assetClass,
+        steps,
+        leafKind,
+      }
+      if (viaDisjunction || reachedByInheritance(owningClass, predecessors)) {
+        extended.push({ ...path, extended: true })
+      } else {
+        out.push(path)
+      }
+    }
+  }
+  const covered = new Set(out.map((p) => `${p.domain}:${p.propertyName}`))
+  for (const path of extended) {
+    const key = `${path.domain}:${path.propertyName}`
+    if (covered.has(key)) continue
+    covered.add(key)
+    out.push(path)
+  }
   return out
 }
 

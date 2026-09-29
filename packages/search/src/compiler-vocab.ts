@@ -160,19 +160,35 @@ export async function buildCompilerVocabFrom(
   // Index property paths by (domain, propertyLocalName) for O(1) lookup
   // when emitting triples. A property local name may legitimately appear in
   // multiple asset domains; each domain gets its own path.
+  //
+  // An `extended` path (a leaf reached only through inheritance below the
+  // asset class, or literal only through an `sh:or` member) is indexed only
+  // when nothing resolves its name yet. Shape-group emission takes its hops
+  // from the path of ANY property in the group (`lookupStepPredicate`), so a
+  // new path for a shape-group property name — `license` inherited from a
+  // superclass, say — would change the hops of queries that compiled before.
   const paths = new Map<string, PropertyPath>()
   for (const path of propertyPaths) {
-    paths.set(`${path.domain}:${path.propertyName}`, path)
+    const key = `${path.domain}:${path.propertyName}`
+    if (path.extended && (paths.has(key) || shapeGroupPropertyNames.has(path.propertyName))) {
+      continue
+    }
+    paths.set(key, path)
   }
 
   // Discover cross-domain reference chains from the property paths, so
   // cross-references are emitted without hard-coding any reference-predicate
-  // chain.
+  // chain. Extended paths are left out: the chosen chain is the shortest, so
+  // a new one could replace the join an existing cross-reference compiles to.
   const assetClassIris = new Set<string>()
   for (const desc of registry.domains.values()) {
     assetClassIris.add(desc.targetClassIri)
   }
-  const referenceChainList = buildReferenceChains(propertyPaths, registry, assetClassIris)
+  const referenceChainList = buildReferenceChains(
+    propertyPaths.filter((path) => !path.extended),
+    registry,
+    assetClassIris
+  )
   const referenceChains = new Map<string, ReferenceChain[]>()
   // Sort deterministically by chain length (shorter chains preferred)
   // then by joined predicate string, so the compiler picks the same
