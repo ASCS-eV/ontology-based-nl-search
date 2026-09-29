@@ -318,6 +318,24 @@ const envSchema = z.object({
    * omits the `graphql` event, UI hides the editor step).
    */
   FEATURE_GRAPHQL_LAYER: z.stringbool().default(true),
+  /**
+   * Keep the ontology gap log: a per-term count of what natural-language
+   * searches could not map, served at `GET /gaps` for the ontology's
+   * maintainers. Off by default, because the terms are fragments of what
+   * people typed: turning it on is a deployment decision (data protection,
+   * and in many organisations a works-council one). While off, nothing is
+   * recorded and `/gaps` answers 404. The log holds no query text, user,
+   * session or request id, and lives in memory only.
+   */
+  FEATURE_GAP_LOG: z.stringbool().default(false),
+  /**
+   * Key the ontology's maintainers present to read `GET /gaps`, as
+   * `Authorization: Bearer <key>` or `x-api-key: <key>`. When set, `/gaps`
+   * accepts this key and not the search `API_KEY`, so a client allowed to
+   * search cannot read what everyone else typed. Required in production
+   * while `FEATURE_GAP_LOG` is on (cross-validated below).
+   */
+  GAP_LOG_API_KEY: z.string().optional(),
 
   // Runtime (set by the process manager / test runner, never by the operator)
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -414,6 +432,17 @@ export function getConfig(): AppConfig {
           'or set API_ALLOW_UNAUTHENTICATED=true to run open deliberately (e.g. behind a ' +
           'gateway that authenticates). /search invokes an LLM per request, so an ' +
           'unauthenticated public endpoint is a cost/abuse risk.'
+      )
+    }
+    if (
+      result.data.NODE_ENV === 'production' &&
+      result.data.FEATURE_GAP_LOG &&
+      !result.data.GAP_LOG_API_KEY?.trim()
+    ) {
+      throw new ConfigError(
+        'FEATURE_GAP_LOG is on in production without GAP_LOG_API_KEY. The gap log holds ' +
+          'fragments of what users typed; set GAP_LOG_API_KEY so only the ontology maintainers ' +
+          'who hold it can read /gaps.'
       )
     }
   }

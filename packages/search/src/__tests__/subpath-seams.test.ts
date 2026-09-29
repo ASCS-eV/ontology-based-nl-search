@@ -21,6 +21,7 @@ import * as lineage from '../lineage.js'
 
 const ROOT_EXPORTS = [
   'DEFAULT_LINEAGE_DEPTH',
+  'GapLog',
   'MAX_LINEAGE_DEPTH',
   'SCHEMA_GRAPH',
   'SearchService',

@@ -340,6 +340,128 @@ describe('SearchService.searchNl', () => {
       sparql: mockLlmResponse.sparql,
     })
   })
+
+  describe('gap log feed', () => {
+    const withGaps: LlmStructuredResponse = {
+      ...mockLlmResponse,
+      interpretation: { ...mockLlmResponse.interpretation, domains: ['hdmap'] },
+      gaps: [{ term: 'potholes', reason: 'Not a defined ontology property', kind: 'unmapped' }],
+      slots: { domains: ['hdmap'], filters: { roadTypes: 'motorway' }, ranges: {} },
+    }
+
+    it('hands every search’s gaps and domains to recordGaps', async () => {
+      const recordGaps = vi.fn()
+      const deps = createMockDeps({
+        interpretQuery: vi.fn().mockResolvedValue(withGaps),
+        recordGaps,
+      })
+
+      await new SearchService(deps).searchNl({ query: 'motorway HD maps with potholes' })
+
+      expect(recordGaps).toHaveBeenCalledTimes(1)
+      expect(recordGaps).toHaveBeenCalledWith(withGaps.gaps, { domains: ['hdmap'] })
+    })
+
+    it('records nothing for a search aborted during interpretation', async () => {
+      const controller = new AbortController()
+      const recordGaps = vi.fn()
+      const deps = createMockDeps({
+        interpretQuery: vi.fn().mockImplementation(async () => {
+          controller.abort()
+          return withGaps
+        }),
+        recordGaps,
+      })
+
+      await expect(
+        new SearchService(deps).searchNl({ query: 'test', signal: controller.signal })
+      ).rejects.toThrow('Aborted')
+      expect(recordGaps).not.toHaveBeenCalled()
+    })
+
+    it('records nothing for a search the model did not interpret (no slots)', async () => {
+      // The empty-slot fallback reports the whole query as its gap.
+      const recordGaps = vi.fn()
+      const fallback: LlmStructuredResponse = {
+        ...mockLlmResponse,
+        gaps: [{ term: 'roads near my house in Berlin', reason: 'Could not extract filters.' }],
+      }
+      const deps = createMockDeps({
+        interpretQuery: vi.fn().mockResolvedValue(fallback),
+        recordGaps,
+      })
+
+      await new SearchService(deps).searchNl({ query: 'roads near my house in Berlin' })
+
+      expect(recordGaps).not.toHaveBeenCalled()
+    })
+
+    it('never hands over a gap whose term is the whole query', async () => {
+      const recordGaps = vi.fn()
+      const deps = createMockDeps({
+        interpretQuery: vi.fn().mockResolvedValue({
+          ...withGaps,
+          gaps: [...withGaps.gaps, { term: '  Motorway maps with POTHOLES ', reason: 'Unclear.' }],
+        }),
+        recordGaps,
+      })
+
+      await new SearchService(deps).searchNl({ query: 'motorway maps with potholes' })
+
+      expect(recordGaps).toHaveBeenCalledWith(withGaps.gaps, { domains: ['hdmap'] })
+    })
+
+    it('counts referenced domains, nested ones included', async () => {
+      const recordGaps = vi.fn()
+      const deps = createMockDeps({
+        interpretQuery: vi.fn().mockResolvedValue({
+          ...withGaps,
+          slots: {
+            ...withGaps.slots!,
+            references: [{ domain: 'scenario', references: [{ domain: 'ositrace' }] }],
+          },
+        }),
+        recordGaps,
+      })
+
+      await new SearchService(deps).searchNl({ query: 'maps used by scenarios with traces' })
+
+      expect(recordGaps).toHaveBeenCalledWith(withGaps.gaps, {
+        domains: ['hdmap', 'scenario', 'ositrace'],
+      })
+    })
+
+    it('handles a recorder promise that rejects, instead of leaving it unhandled', async () => {
+      let handled: ReturnType<typeof vi.spyOn> | undefined
+      const deps = createMockDeps({
+        interpretQuery: vi.fn().mockResolvedValue(withGaps),
+        recordGaps: vi.fn(() => {
+          const rejection = Promise.reject(new Error('gap store unavailable'))
+          handled = vi.spyOn(rejection, 'catch')
+          return rejection
+        }),
+      })
+
+      const result = await new SearchService(deps).searchNl({ query: 'test' })
+
+      expect(result.gaps).toEqual(withGaps.gaps)
+      expect(handled).toHaveBeenCalledTimes(1)
+    })
+
+    it('still answers the search when recordGaps throws', async () => {
+      const deps = createMockDeps({
+        interpretQuery: vi.fn().mockResolvedValue(withGaps),
+        recordGaps: vi.fn(() => {
+          throw new Error('gap log unavailable')
+        }),
+      })
+
+      const result = await new SearchService(deps).searchNl({ query: 'test' })
+
+      expect(result.gaps).toEqual(withGaps.gaps)
+      expect(result.execution.error).toBeUndefined()
+    })
+  })
 })
 
 describe('SearchService.searchRefine', () => {

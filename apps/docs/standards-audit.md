@@ -22,6 +22,7 @@ governs, e.g. `[SPARQL11] §18.2`.
 | LLM transport | Tool / function calling     | Provider APIs, parameters typed as JSON Schema           |
 | API transport | `/search/stream`            | **Server-Sent Events** (W3C / WHATWG)                    |
 | API transport | JSON bodies, HTTP semantics | **RFC 8259**, **RFC 9110** (IETF)                        |
+| API transport | `/gaps` dates               | **JSON Schema 2020-12** `date` format (RFC 3339)         |
 | Data          | Instance data, `@context`   | **JSON-LD 1.1**, **RDF 1.1**, **Turtle** (W3C)           |
 | Ontology      | Shapes / classes            | **SHACL**, **OWL 2**, **RDFS** (W3C)                     |
 | Vocabulary    | Concept expansion           | **SKOS** (W3C)                                           |

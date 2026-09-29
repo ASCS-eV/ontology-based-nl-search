@@ -50,8 +50,16 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb)
 }
 
-export function apiKeyAuth(options: { apiKey: string | undefined }) {
+export function apiKeyAuth(options: {
+  apiKey: string | undefined
+  /**
+   * Paths this gate leaves to another one — a route with its own key, which
+   * registers its own `apiKeyAuth`. Matched exactly, like `/health`.
+   */
+  exemptPaths?: readonly string[]
+}) {
   const expected = options.apiKey?.trim() ?? ''
+  const exempt = new Set([HEALTH_PATH, ...(options.exemptPaths ?? [])])
 
   // Disabled path: open API, zero-cost passthrough.
   if (expected === '') {
@@ -61,8 +69,9 @@ export function apiKeyAuth(options: { apiKey: string | undefined }) {
   }
 
   return createMiddleware<AppEnv>(async (c, next) => {
-    // Readiness probe stays open so orchestrators can route on health.
-    if (c.req.path === HEALTH_PATH) {
+    // Readiness probe stays open so orchestrators can route on health; an
+    // exempt path is guarded by its own gate.
+    if (exempt.has(c.req.path)) {
       await next()
       return
     }

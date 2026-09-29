@@ -152,3 +152,40 @@ Results are sent as **Server-Sent Events** (SSE) — the UI updates progressivel
 `matchCount` is the number of **distinct primary assets**, not result rows — a cross-reference JOIN fans out to one row per referenced asset, so the UI groups rows by `?asset` and the count reflects assets (rows ≥ matches). When the query contains a reference JOIN, the `results` payload also carries a per-row, per-reference `traceability` breadcrumb.
 
 Users see the interpretation immediately while SPARQL execution happens in the background — perceived latency is dramatically reduced.
+
+## After the search: the gap log
+
+The `gaps` event tells the person who searched which parts of the query did not become a filter. The **gap log** tells the people who maintain the ontology the same thing, counted across searches, so they can decide what to model next from what users actually asked for.
+
+It is off by default. Set `FEATURE_GAP_LOG=true` and the search service counts every search's gaps per term; `GET /gaps` returns them, most reported first:
+
+```json
+{
+  "capacity": 1000,
+  "entries": [
+    {
+      "term": "potholes",
+      "count": 12,
+      "kinds": { "unmapped": 12 },
+      "domains": ["hdmap"],
+      "firstSeen": "2026-09-28",
+      "lastSeen": "2026-09-29"
+    }
+  ]
+}
+```
+
+What an entry holds is fixed, not configurable: the normalized term (Unicode NFKC, invisible characters removed, whitespace collapsed, lower-cased), the number of searches that reported it, its gap kinds, the domains those searches were scoped to (referenced domains included), and the first and last day it was seen. It never holds the query, a user, a session or a request id, and dates are kept at day precision as RFC 3339 `full-date`s (the JSON Schema 2020-12 `date` format).
+
+What is not recorded:
+
+- terms longer than 80 characters, and a term that is the whole query;
+- searches the model did not interpret (no slots were submitted, so the only gap is the query itself);
+- `limitation` gaps, which report an engine limit on a concept the ontology has, not a missing concept;
+- more than 10 terms from one search.
+
+The log is in memory and bounded at 1,000 distinct terms. A new term replaces the least reported one (the one seen longest ago among equals), so a stream of one-off terms cannot push out the terms that recur.
+
+Because it records fragments of what people typed, turning it on is a deployment decision. Check data protection first, and, in organisations that have one, the works council. Set `GAP_LOG_API_KEY` so that only the ontology's maintainers can read `/gaps`: with it set, `/gaps` accepts that key and not the search `API_KEY`, and in production the API refuses to start with the log on and no maintainer key. While the log is on, `/stats` reports `features.gapLog: true` and the search UI tells people, under their gaps, that unmapped terms are counted.
+
+Not every gap is a missing concept. A term can be a synonym of an existing value, a value missing from an `sh:in` list, a concept the ontology already has but no asset carries, a misreading by the model, or out of scope. The log is a queue of leads for the ontology's maintainers to check, not a list of changes to apply.

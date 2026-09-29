@@ -26,8 +26,11 @@
  */
 import type { ResultRow, ResultTraceStep, RowTraceability } from '@ontology-search/api-types'
 import { generateRequestId, RequestLogger } from '@ontology-search/core/logging'
-import type { TraceabilityPlan } from '@ontology-search/slots/slots'
+import type { ReferenceFilter, TraceabilityPlan } from '@ontology-search/slots/slots'
 import type { SparqlBinding } from '@ontology-search/sparql/types'
+
+import { normalizeGapTerm } from './gap-log.js'
+import type { LlmStructuredResponse } from './types.js'
 
 export type {
   ExecutionResult,
@@ -50,6 +53,14 @@ import type {
   SearchMeta,
   SearchResult,
 } from './service-types.js'
+
+/** The domains of `references` and of the references nested in them. */
+function referencedDomains(references: readonly ReferenceFilter[] | undefined): string[] {
+  return (references ?? []).flatMap((reference) => [
+    reference.domain,
+    ...referencedDomains(reference.references),
+  ])
+}
 
 export class SearchService {
   private readonly deps: SearchDependencies
@@ -94,6 +105,8 @@ export class SearchService {
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
+    this.recordGaps(query, structured, logger)
+
     // Emit interpretation as soon as it's available (before SPARQL execution)
     await onProgress?.({
       phase: 'interpreted',
@@ -132,6 +145,43 @@ export class SearchService {
       sparql: structured.sparql,
       execution,
       meta,
+    }
+  }
+
+  /**
+   * Feed the gap log, once the interpretation stands and whether or not the
+   * query later returns rows: a gap is about what the ontology could not
+   * express, not about the data. Non-critical, like the dataset count: a
+   * recorder that throws or rejects is logged, and the search continues.
+   *
+   * Two things never reach the log. A search without slots was not
+   * interpreted at all (the model did not submit any; the fallback reports
+   * the whole query as its gap), so it says nothing about the ontology. And a
+   * gap whose term is the whole query would store the query itself.
+   */
+  private recordGaps(
+    query: string,
+    structured: LlmStructuredResponse,
+    logger: RequestLogger
+  ): void {
+    const record = this.deps.recordGaps
+    if (!record || !structured.slots) return
+    const wholeQuery = normalizeGapTerm(query)
+    const gaps = structured.gaps.filter((gap) => normalizeGapTerm(gap.term) !== wholeQuery)
+    // Reference-scoped gaps belong to the referenced domain, so it counts too.
+    const domains = [
+      ...(structured.interpretation.domains ?? []),
+      ...referencedDomains(structured.slots.references),
+    ]
+    const warn = (error: unknown) =>
+      logger.warn('Gap log did not record this search; the search continues', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    try {
+      const pending = record(gaps, { domains: [...new Set(domains)] })
+      if (pending) pending.catch(warn)
+    } catch (error) {
+      warn(error)
     }
   }
 

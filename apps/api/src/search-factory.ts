@@ -28,6 +28,7 @@ import {
 } from '@ontology-search/search'
 import { enforceSparqlPolicy } from '@ontology-search/sparql/policy'
 
+import { recordGapsWhenEnabled } from './gap-log.js'
 import { validateSlots } from './services/validate-slots.js'
 
 let instance: SearchService | null = null
@@ -45,6 +46,7 @@ export async function getSearchService(): Promise<SearchService> {
     compileCountQueries: compileAllCountQueries,
     enforcePolicy: enforceSparqlPolicy,
     validateSlots,
+    recordGaps: recordGapsWhenEnabled,
   }
 
   instance = new SearchService(deps)

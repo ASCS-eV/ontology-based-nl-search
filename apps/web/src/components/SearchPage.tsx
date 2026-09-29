@@ -83,6 +83,7 @@ export function SearchPage() {
 
   const hasResponse = interpretation || gaps || sparql || results
   const showGraphQLFeature = stats?.features?.graphqlLayer !== false
+  const gapLogEnabled = stats?.features?.gapLog === true
 
   // Determine which step is currently active (by step ID)
   const activeStepId = useMemo(() => {
@@ -146,7 +147,7 @@ export function SearchPage() {
         label: 'Ontology Gaps',
         summary: gaps && gaps.length > 0 ? `${gaps.length} gap(s) detected` : undefined,
         hasContent: !!(gaps && gaps.length > 0),
-        content: gaps ? <OntologyGapsDisplay gaps={gaps} /> : null,
+        content: gaps ? <OntologyGapsDisplay gaps={gaps} logged={gapLogEnabled} /> : null,
       },
       {
         id: 'graphql',
@@ -188,6 +189,7 @@ export function SearchPage() {
       handleRefine,
       handleGraphQLRun,
       vocabulary,
+      gapLogEnabled,
     ]
   )
 
@@ -234,7 +236,7 @@ export function SearchPage() {
               {slots && hasEditableSlots(slots) && (
                 <QueryRefinement slots={slots} onRerun={handleRefine} loading={loading} />
               )}
-              {gaps && <OntologyGapsDisplay gaps={gaps} />}
+              {gaps && <OntologyGapsDisplay gaps={gaps} logged={gapLogEnabled} />}
               {sparql && <SparqlPreview sparql={sparql} />}
               {results && <ResultsDisplay results={results} traceability={traceability} />}
             </div>

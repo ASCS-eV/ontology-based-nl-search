@@ -95,4 +95,25 @@ describe('OntologyGapsDisplay', () => {
     expect(screen.getByText('A subterranean passage for vehicles')).toBeInTheDocument()
     expect(screen.getByText(/consider modeling as infrastructure/i)).toBeInTheDocument()
   })
+  it('says the terms are counted when the deployment keeps the gap log', () => {
+    render(
+      <OntologyGapsDisplay gaps={[{ term: 'potholes', reason: 'Not a defined property' }]} logged />
+    )
+    expect(screen.getByText(/are counted, without your query or who you are/)).toBeInTheDocument()
+  })
+
+  it('says nothing about counting when the log is off, or for limitations only', () => {
+    const { rerender } = render(
+      <OntologyGapsDisplay gaps={[{ term: 'potholes', reason: 'Not a defined property' }]} />
+    )
+    expect(screen.queryByText(/are counted/)).not.toBeInTheDocument()
+
+    rerender(
+      <OntologyGapsDisplay
+        gaps={[{ term: 'scenario', reason: 'One cross-reference per query', kind: 'limitation' }]}
+        logged
+      />
+    )
+    expect(screen.queryByText(/are counted/)).not.toBeInTheDocument()
+  })
 })

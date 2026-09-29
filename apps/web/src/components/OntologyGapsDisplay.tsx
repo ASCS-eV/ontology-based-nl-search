@@ -4,6 +4,11 @@ import type { GapKind, OntologyGap } from '../api-types'
 
 interface OntologyGapsDisplayProps {
   gaps: OntologyGap[]
+  /**
+   * The deployment keeps the ontology gap log (`/stats` `features.gapLog`).
+   * When set, the display says so beneath gaps the log counts.
+   */
+  logged?: boolean
 }
 
 /**
@@ -54,8 +59,10 @@ const SECTIONS: {
 /** Gaps default to `unmapped` when the server omits `kind` (back-compat). */
 const gapKind = (gap: OntologyGap): GapKind => gap.kind ?? 'unmapped'
 
-export function OntologyGapsDisplay({ gaps }: OntologyGapsDisplayProps) {
+export function OntologyGapsDisplay({ gaps, logged = false }: OntologyGapsDisplayProps) {
   if (gaps.length === 0) return null
+  // The log counts unmapped and recognized terms, not engine limitations.
+  const showLogNotice = logged && gaps.some((g) => gapKind(g) !== 'limitation')
 
   return (
     <div className="w-full space-y-4" role="region" aria-label="Ontology gaps" aria-live="polite">
@@ -121,6 +128,12 @@ export function OntologyGapsDisplay({ gaps }: OntologyGapsDisplayProps) {
           </div>
         )
       })}
+      {showLogNotice && (
+        <p className="text-xs text-gray-500">
+          Terms the ontology could not express are counted, without your query or who you are, so
+          the ontology&rsquo;s maintainers can see what is missing.
+        </p>
+      )}
     </div>
   )
 }

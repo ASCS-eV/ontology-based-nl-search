@@ -7,6 +7,7 @@ import {
   ERROR_CODE,
   extractErrorMessage,
   internalError,
+  notFound,
   OntologySourcesError,
   serviceUnavailable,
   StoreUnavailableError,
@@ -23,6 +24,12 @@ describe('API error utilities', () => {
   it('badRequest includes details when provided', () => {
     const result = badRequest('Validation failed', ['field1: required', 'field2: too long'])
     expect(result.body.details).toEqual(['field1: required', 'field2: too long'])
+  })
+
+  it('notFound returns 404 with the NOT_FOUND code', () => {
+    const result = notFound('Gap log is disabled')
+    expect(result.status).toBe(404)
+    expect(result.body).toEqual({ error: 'Gap log is disabled', code: ERROR_CODE.NOT_FOUND })
   })
 
   it('unprocessable returns 422', () => {

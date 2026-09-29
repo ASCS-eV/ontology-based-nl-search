@@ -31,6 +31,8 @@
  *             https://www.w3.org/TR/eventsource/ (the `/search/stream` frames carrying these)
  *   [RFC9110] HTTP Semantics — docs/specs/references/rfc9110-http.md
  *             https://www.rfc-editor.org/rfc/rfc9110 (methods, status, content negotiation)
+ *   [JSON-SCHEMA-VAL] JSON Schema Validation — docs/specs/references/json-schema-validation.md
+ *             (§7.3.1 the `date` format: an RFC 3339 `full-date`, used by `GapLogEntry`)
  */
 
 /** A single term mapped from user input to an ontology concept. */
@@ -79,6 +81,41 @@ export interface OntologyGap {
   scopeNote?: string
   /** Whether this is a recognised domain concept (just not filterable). */
   isDomainConcept?: boolean
+}
+
+/**
+ * One term that natural-language searches could not turn into a filter,
+ * counted across searches for the people who maintain the ontology. Holds no
+ * query text, user, session or request id.
+ */
+export interface GapLogEntry {
+  /** The term, trimmed, whitespace-collapsed and lower-cased. */
+  term: string
+  /** Number of searches that reported the term as a gap. */
+  count: number
+  /**
+   * Searches per {@link GapKind}. The same term can be classified differently
+   * from one search to another; a search that reports it under two kinds
+   * counts once in `count` and once under each kind.
+   */
+  kinds: Partial<Record<GapKind, number>>
+  /** The SHACL domain names the reporting searches were scoped to, sorted. */
+  domains: string[]
+  /** First day the term was reported (UTC), [JSON-SCHEMA-VAL] §7.3.1 `date`. */
+  firstSeen: string
+  /** Last day the term was reported (UTC), [JSON-SCHEMA-VAL] §7.3.1 `date`. */
+  lastSeen: string
+}
+
+/** The `GET /gaps` body. */
+export interface GapLogResponse {
+  /**
+   * Most distinct terms the log keeps; beyond it the least recently reported
+   * term is dropped.
+   */
+  capacity: number
+  /** Most reported first, then most recently reported, then by term. */
+  entries: GapLogEntry[]
 }
 
 /** The LLM's structured interpretation of a user query. */
@@ -196,6 +233,11 @@ export interface StatsResponse {
   features?: {
     /** Whether the GraphQL intermediate layer is enabled. */
     graphqlLayer?: boolean
+    /**
+     * Whether unmapped search terms are counted in the ontology gap log, so
+     * the client can tell the people searching.
+     */
+    gapLog?: boolean
   }
 }
 

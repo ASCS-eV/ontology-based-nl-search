@@ -297,6 +297,43 @@ describe('config', () => {
     })
   })
 
+  describe('FEATURE_GAP_LOG flag', () => {
+    it('is off by default: the log records user terms, so it is opt-in', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      delete process.env.FEATURE_GAP_LOG
+      resetConfig()
+      expect(getConfig().FEATURE_GAP_LOG).toBe(false)
+    })
+
+    it('parses "true" and "false" by meaning, not truthiness', () => {
+      process.env.AI_PROVIDER = 'ollama'
+      process.env.FEATURE_GAP_LOG = 'true'
+      resetConfig()
+      expect(getConfig().FEATURE_GAP_LOG).toBe(true)
+
+      process.env.FEATURE_GAP_LOG = 'false'
+      resetConfig()
+      expect(getConfig().FEATURE_GAP_LOG).toBe(false)
+    })
+
+    it('refuses to start in production with the log on and no maintainer key', () => {
+      Object.assign(process.env, {
+        AI_PROVIDER: 'ollama',
+        NODE_ENV: 'production',
+        CORS_ALLOWED_ORIGINS: 'https://app.example.com',
+        API_KEY: 'search-key',
+        FEATURE_GAP_LOG: 'true',
+      })
+      delete process.env.GAP_LOG_API_KEY
+      resetConfig()
+      expect(() => getConfig()).toThrow(/GAP_LOG_API_KEY/)
+
+      process.env.GAP_LOG_API_KEY = 'maintainer-key'
+      resetConfig()
+      expect(getConfig().GAP_LOG_API_KEY).toBe('maintainer-key')
+    })
+  })
+
   describe('rate-limit knobs', () => {
     it('defaults RATE_LIMIT_RPS to 0 (disabled)', () => {
       process.env.AI_PROVIDER = 'ollama'

@@ -9,6 +9,8 @@ export {
 export type { ConceptExpansionIndex } from './concept-expansion.js'
 export { expandFilterConcepts, getConceptExpansionIndex } from './concept-expansion.js'
 export { preferDomainsNamedInQuery } from './domain-preference.js'
+export type { GapContext, GapLogOptions } from './gap-log.js'
+export { GapLog } from './gap-log.js'
 export { getInitializedStore } from './init.js'
 export type {
   AssetMetadata,
