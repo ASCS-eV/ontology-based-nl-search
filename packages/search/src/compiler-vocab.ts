@@ -162,33 +162,27 @@ export async function buildCompilerVocabFrom(
   // multiple asset domains; each domain gets its own path.
   //
   // An `extended` path (a leaf reached only through inheritance below the
-  // asset class, or literal only through an `sh:or` member) is indexed only
-  // when nothing resolves its name yet. Shape-group emission takes its hops
-  // from the path of ANY property in the group (`lookupStepPredicate`), so a
-  // new path for a shape-group property name — `license` inherited from a
-  // superclass, say — would change the hops of queries that compiled before.
+  // asset class, or literal only through an `sh:or` member) never carries a
+  // shape-group property name. Shape-group emission takes its hops from the
+  // path of ANY property in the group (`lookupStepPredicate`), and such a
+  // name can resolve through its group without a path of its own, so a new
+  // path for it — one inherited from a superclass shape, say — would change
+  // the hops of queries that compiled before. (`buildPropertyPaths` already
+  // keeps extended paths off every name that has a plain path.)
   const paths = new Map<string, PropertyPath>()
   for (const path of propertyPaths) {
-    const key = `${path.domain}:${path.propertyName}`
-    if (path.extended && (paths.has(key) || shapeGroupPropertyNames.has(path.propertyName))) {
-      continue
-    }
-    paths.set(key, path)
+    if (path.extended && shapeGroupPropertyNames.has(path.propertyName)) continue
+    paths.set(`${path.domain}:${path.propertyName}`, path)
   }
 
   // Discover cross-domain reference chains from the property paths, so
   // cross-references are emitted without hard-coding any reference-predicate
-  // chain. Extended paths are left out: the chosen chain is the shortest, so
-  // a new one could replace the join an existing cross-reference compiles to.
+  // chain.
   const assetClassIris = new Set<string>()
   for (const desc of registry.domains.values()) {
     assetClassIris.add(desc.targetClassIri)
   }
-  const referenceChainList = buildReferenceChains(
-    propertyPaths.filter((path) => !path.extended),
-    registry,
-    assetClassIris
-  )
+  const referenceChainList = buildReferenceChains(propertyPaths, registry, assetClassIris)
   const referenceChains = new Map<string, ReferenceChain[]>()
   // Sort deterministically by chain length (shorter chains preferred)
   // then by joined predicate string, so the compiler picks the same

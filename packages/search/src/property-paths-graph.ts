@@ -15,6 +15,8 @@ export interface PredecessorLink {
    * class, so there is no hop and no path step.
    */
   inherited?: boolean
+  /** The walk from a root to this class crosses at least one inherited link. */
+  viaInheritance?: boolean
 }
 
 /**
@@ -63,16 +65,19 @@ export function buildAncestorClosure(
  * The same holds below the root: a class-based target covers every SHACL
  * instance of the class, subclasses included ([SHACL] §2.1.3.2), so a node
  * reached as class C is also constrained by the shapes that target C's
- * ancestors. When `ancestorsOf` is given, each class the walk reaches
- * brings its unvisited ancestors along as `inherited` links (no hop).
+ * ancestors. When `ancestorsOf` is given, those ancestors are reached too,
+ * through `inherited` links that add no hop.
  *
- * Inheritance only ever adds classes; it never re-routes one. The walk
- * runs in rounds: the first follows predicates exactly as a walk without
- * `ancestorsOf` would, and each later round first adds the unvisited
- * ancestors of every class reached so far (in reach order, ancestors
- * sorted), then follows predicates from them. A class reachable through
- * predicates alone therefore keeps the path it has without inheritance,
- * and existing paths — and the SPARQL compiled from them — do not change.
+ * Two phases keep inheritance from re-routing anything:
+ *
+ *  1. A breadth-first walk over predicates only, exactly as without
+ *     `ancestorsOf`. Every class it reaches keeps this link, so existing
+ *     paths — and the SPARQL compiled from them — do not change.
+ *  2. A 0-1 BFS over the remaining classes: an ancestor link costs 0 hops,
+ *     a predicate edge 1, and phase-1 classes are never relabelled. Each
+ *     newly reached class gets its shortest path in hops; ties go to the
+ *     first reached (phase-1 order, then ancestors sorted, then the sorted
+ *     edge order), so the result is deterministic.
  */
 
 export function bfsFromRoots(
@@ -81,57 +86,80 @@ export function bfsFromRoots(
   ancestorsOf?: (cls: string) => Set<string>
 ): Map<string, PredecessorLink> {
   const visited = new Map<string, PredecessorLink>()
-  let queue: string[] = []
+  const depth = new Map<string, number>()
+  const order: string[] = []
   // Each root has no predecessor; mark it visited with a sentinel so the
   // BFS doesn't loop back. A leaf owned by any root yields a direct path.
   for (const root of roots) {
     if (visited.has(root)) continue
     visited.set(root, { parent: '', predicate: '' })
-    queue.push(root)
+    depth.set(root, 0)
+    order.push(root)
   }
-  while (queue.length > 0) {
-    walkPredicates(queue, forwardEdges, visited)
-    if (!ancestorsOf) break
-    queue = []
-    for (const reached of [...visited.keys()]) {
-      for (const ancestor of [...ancestorsOf(reached)].sort()) {
-        if (visited.has(ancestor)) continue
-        visited.set(ancestor, { parent: reached, predicate: '', inherited: true })
-        queue.push(ancestor)
-      }
+  for (let head = 0; head < order.length; head++) {
+    const current = order[head]!
+    for (const { predicate, child } of forwardEdges.get(current) ?? []) {
+      if (visited.has(child)) continue
+      visited.set(child, { parent: current, predicate })
+      depth.set(child, depth.get(current)! + 1)
+      order.push(child)
     }
   }
+  if (ancestorsOf) inheritBelowRoots(order, visited, depth, forwardEdges, ancestorsOf)
   return visited
 }
 
-/** Breadth-first over predicate edges from `queue`, recording first reaches. */
-function walkPredicates(
-  queue: string[],
+/**
+ * Phase 2 of {@link bfsFromRoots}: extend `visited` with the classes reached
+ * through `rdfs:subClassOf` ancestors, without relabelling a phase-1 class.
+ * `phaseOne` is in breadth-first (non-decreasing depth) order, which is the
+ * order a 0-1 BFS deque needs to start from.
+ */
+function inheritBelowRoots(
+  phaseOne: string[],
+  visited: Map<string, PredecessorLink>,
+  depth: Map<string, number>,
   forwardEdges: Map<string, { predicate: string; child: string }[]>,
-  visited: Map<string, PredecessorLink>
+  ancestorsOf: (cls: string) => Set<string>
 ): void {
-  while (queue.length > 0) {
-    const current = queue.shift()!
-    const edges = forwardEdges.get(current) ?? []
-    for (const { predicate, child } of edges) {
-      if (visited.has(child)) continue
-      visited.set(child, { parent: current, predicate })
-      queue.push(child)
+  const settled = new Set(phaseOne)
+  const deque = [...phaseOne]
+  const done = new Set<string>()
+  const improves = (cls: string, d: number) =>
+    !settled.has(cls) && (!depth.has(cls) || d < depth.get(cls)!)
+  while (deque.length > 0) {
+    const current = deque.shift()!
+    if (done.has(current)) continue
+    done.add(current)
+    const d = depth.get(current)!
+    for (const ancestor of [...ancestorsOf(current)].sort()) {
+      if (ancestor === current || !improves(ancestor, d)) continue
+      visited.set(ancestor, {
+        parent: current,
+        predicate: '',
+        inherited: true,
+        viaInheritance: true,
+      })
+      depth.set(ancestor, d)
+      deque.unshift(ancestor)
+    }
+    // A phase-1 class's predicate edges were all walked in phase 1.
+    if (settled.has(current)) continue
+    for (const { predicate, child } of forwardEdges.get(current) ?? []) {
+      if (!improves(child, d + 1)) continue
+      visited.set(child, { parent: current, predicate, viaInheritance: true })
+      depth.set(child, d + 1)
+      deque.push(child)
     }
   }
 }
 
-/** True when the walk back from `target` to a root crosses an `inherited` link. */
+/** True when the walk from a root to `target` crosses an `inherited` link. */
 export function reachedByInheritance(
   target: string,
   predecessors: Map<string, PredecessorLink>
 ): boolean {
-  let link = predecessors.get(target)
-  while (link && link.parent !== '') {
-    if (link.inherited) return true
-    link = predecessors.get(link.parent)
-  }
-  return false
+  return predecessors.get(target)?.viaInheritance === true
 }
 
 export function pathStepsTo(
@@ -169,5 +197,7 @@ export function pathStepsTo(
  * intermediate predicates along the way.
  *
  * Picks one path per (asset, leaf) pair via BFS; if the schema has
- * multiple parallel paths, only the shortest is emitted.
+ * multiple parallel paths, only the shortest is emitted — among
+ * predicate-only paths first (see {@link bfsFromRoots} for how paths that
+ * need inheritance are chosen).
  */

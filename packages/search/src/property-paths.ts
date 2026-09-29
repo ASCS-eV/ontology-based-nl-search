@@ -120,12 +120,14 @@ export async function buildPropertyPaths(
  *
  * Paths that need either discovery extension — a leaf whose owning class is
  * reached only by inheritance below the root, or a leaf that is literal only
- * through an `sh:or` member — are held back and added last, and only for a
- * (domain, property) the plain discovery has no path for. The compiler
- * indexes one path per (domain, property local name), the last one winning,
- * so appending them freely could re-route a property that already compiled.
- * They are flagged `extended` so the compiler vocabulary can also keep them
- * away from what it resolves by other means (shape groups, reference chains).
+ * through an `sh:or` member — are flagged `extended` and added last, only
+ * for property local names that no plain path has in ANY domain, and once
+ * per (domain, name). The compiler resolves properties by local name, not
+ * only per domain: it picks the owning domains of a name (`ownersOf`), the
+ * cross-domain OPTIONAL for a domain-less filter, and the validator's domain
+ * correction all read every domain's paths. A new path for a name another
+ * domain already resolves would change those queries; a new name cannot.
+ * `buildCompilerVocabFrom` additionally keeps them off shape-group names.
  */
 function emitPaths(
   assetClasses: string[],
@@ -156,11 +158,12 @@ function emitPaths(
       }
     }
   }
-  const covered = new Set(out.map((p) => `${p.domain}:${p.propertyName}`))
+  const plainNames = new Set(out.map((p) => p.propertyName))
+  const added = new Set<string>()
   for (const path of extended) {
     const key = `${path.domain}:${path.propertyName}`
-    if (covered.has(key)) continue
-    covered.add(key)
+    if (plainNames.has(path.propertyName) || added.has(key)) continue
+    added.add(key)
     out.push(path)
   }
   return out
@@ -179,6 +182,10 @@ export function buildReferenceChains(
   const out: ReferenceChain[] = []
   for (const path of paths) {
     if (path.leafKind === 'literal') continue
+    // The compiler joins through the shortest chain, so a chain that needs a
+    // discovery extension could replace the join an existing cross-reference
+    // compiles to. Extended paths only ever add filterable properties.
+    if (path.extended) continue
     const parentDomain = path.domain || extractDomainFromRegistry(path.assetClass, registry)
     if (!parentDomain) continue
 
