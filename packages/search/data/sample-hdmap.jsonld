@@ -8,7 +8,7 @@
     "schema": "https://schema.org/",
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
-    "openlabel_v2": "https://w3id.org/ascs-ev/envited-x/openlabel/v2/"
+    "openlabel": "https://openlabel.asam.net/V1-0-0/ontologies/"
   },
   "@graph": [
     {
@@ -34,59 +34,41 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionIcy"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionIcy"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneRegion"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionCrossroad"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneRegion"
-            },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionCrossroad"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:CommunicationV2i"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGlonass"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
-            },
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "30",
-              "@type": "xsd:integer"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -210,55 +192,37 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionContamination"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionContamination"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneGeoFenced"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionTJunction"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneGeoFenced"
-            },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionTJunction"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:V2iWifi"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGalileo"
-            },
-            "openlabel_v2:HorizontalStraights": true,
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "41",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -381,51 +345,37 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionStandingWater"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionStandingWater"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneSchool"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneSchool"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructurePedestrianCrossing"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionGradeSeperated"
             },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionGradeSeperated"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:V2vSatellite"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGps"
-            },
-            "openlabel_v2:HorizontalCurves": true,
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "52",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -548,31 +498,20 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "5",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
-            },
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
-            },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
-            },
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "31",
-              "@type": "xsd:integer"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             }
           }
         ],
@@ -696,36 +635,29 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryTemporaryStructure": {
+              "@id": "openlabel:TemporaryStructureConstructionDetour"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
-            },
-            "openlabel_v2:SceneryTemporaryStructure": {
-              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -849,34 +781,28 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
-            },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
-            },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -999,31 +925,26 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:WeatherSnow": true,
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
-            },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -1146,18 +1067,18 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureTollPlaza"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureTollPlaza"
             },
-            "openlabel_v2:JunctionRoundabout": {
-              "@id": "openlabel_v2:RoundaboutMiniNosignal"
+            "openlabel:JunctionRoundabout": {
+              "@id": "openlabel:RoundaboutMiniNosignal"
             }
           }
         ],
@@ -1281,30 +1202,18 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
-            },
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "66",
-              "@type": "xsd:integer"
-            },
-            "openlabel_v2:EnvironmentParticulates": {
-              "@id": "openlabel_v2:ParticulatesWater"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -1428,14 +1337,14 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -1558,34 +1467,34 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionMirage"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionMirage"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -1708,30 +1617,29 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionFlooded"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionFlooded"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             }
           }
         ],
@@ -1855,36 +1763,32 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionWet"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionWet"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureAutoAccess"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureAutoAccess"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -2008,27 +1912,22 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "5",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:HorizontalStraights": true,
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "11",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -2151,28 +2050,28 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:SceneryTemporaryStructure": {
-              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
+            "openlabel:SceneryTemporaryStructure": {
+              "@id": "openlabel:TemporaryStructureConstructionDetour"
             },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -2295,26 +2194,26 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             }
           }
         ],
@@ -2438,33 +2337,27 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:WeatherSnow": true,
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -2588,20 +2481,20 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructurePedestrianCrossing"
             },
-            "openlabel_v2:JunctionRoundabout": {
-              "@id": "openlabel_v2:RoundaboutNormalNosignal"
+            "openlabel:JunctionRoundabout": {
+              "@id": "openlabel:RoundaboutNormalNosignal"
             },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -2724,25 +2617,17 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:HorizontalCurves": true,
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "46",
-              "@type": "xsd:integer"
-            },
-            "openlabel_v2:EnvironmentParticulates": {
-              "@id": "openlabel_v2:ParticulatesWater"
-            }
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -2865,12 +2750,12 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             }
           }
         ],
@@ -2994,59 +2879,41 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionSnow"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionSnow"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneRegion"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionCrossroad"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneRegion"
-            },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionCrossroad"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:CommunicationV2v"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGps"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
-            },
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "50",
-              "@type": "xsd:integer"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -3170,55 +3037,37 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionIcy"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionIcy"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneGeoFenced"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionTJunction"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneGeoFenced"
-            },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionTJunction"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:V2vWifi"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGlonass"
-            },
-            "openlabel_v2:HorizontalStraights": true,
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "61",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -3341,51 +3190,37 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionContamination"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionContamination"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneSchool"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneSchool"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureTollPlaza"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureTollPlaza"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionGradeSeperated"
             },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionGradeSeperated"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:V2iSatellite"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGalileo"
-            },
-            "openlabel_v2:HorizontalCurves": true,
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "72",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -3508,31 +3343,20 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "5",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
-            },
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
-            },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
-            },
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "81",
-              "@type": "xsd:integer"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             }
           }
         ],
@@ -3656,36 +3480,29 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryTemporaryStructure": {
+              "@id": "openlabel:TemporaryStructureConstructionDetour"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
-            },
-            "openlabel_v2:SceneryTemporaryStructure": {
-              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -3809,34 +3626,28 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
-            },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
-            },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -3959,31 +3770,26 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:WeatherSnow": true,
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
-            },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -4106,18 +3912,18 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureAutoAccess"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureAutoAccess"
             },
-            "openlabel_v2:JunctionRoundabout": {
-              "@id": "openlabel_v2:RoundaboutMiniNosignal"
+            "openlabel:JunctionRoundabout": {
+              "@id": "openlabel:RoundaboutMiniNosignal"
             }
           }
         ],
@@ -4241,30 +4047,18 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
-            },
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "26",
-              "@type": "xsd:integer"
-            },
-            "openlabel_v2:EnvironmentParticulates": {
-              "@id": "openlabel_v2:ParticulatesWater"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -4388,14 +4182,14 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -4518,34 +4312,34 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionStandingWater"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionStandingWater"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -4668,30 +4462,29 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionMirage"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionMirage"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             }
           }
         ],
@@ -4815,36 +4608,32 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionFlooded"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionFlooded"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructurePedestrianCrossing"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -4968,27 +4757,22 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "5",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:HorizontalStraights": true,
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "61",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -5111,28 +4895,28 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:SceneryTemporaryStructure": {
-              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
+            "openlabel:SceneryTemporaryStructure": {
+              "@id": "openlabel:TemporaryStructureConstructionDetour"
             },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -5255,26 +5039,26 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             }
           }
         ],
@@ -5398,33 +5182,27 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:WeatherSnow": true,
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -5548,20 +5326,20 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureTollPlaza"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureTollPlaza"
             },
-            "openlabel_v2:JunctionRoundabout": {
-              "@id": "openlabel_v2:RoundaboutNormalNosignal"
+            "openlabel:JunctionRoundabout": {
+              "@id": "openlabel:RoundaboutNormalNosignal"
             },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -5684,25 +5462,17 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:HorizontalCurves": true,
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "96",
-              "@type": "xsd:integer"
-            },
-            "openlabel_v2:EnvironmentParticulates": {
-              "@id": "openlabel_v2:ParticulatesWater"
-            }
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -5825,12 +5595,12 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             }
           }
         ],
@@ -5954,59 +5724,41 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionWet"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionWet"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneRegion"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionCrossroad"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneRegion"
-            },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionCrossroad"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:CommunicationV2i"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGalileo"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
-            },
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "70",
-              "@type": "xsd:integer"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -6130,55 +5882,37 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionSnow"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionSnow"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneGeoFenced"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionTJunction"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneGeoFenced"
-            },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionTJunction"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:V2iWifi"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGps"
-            },
-            "openlabel_v2:HorizontalStraights": true,
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "81",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -6301,51 +6035,37 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionIcy"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionIcy"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneSchool"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneSchool"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureAutoAccess"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureAutoAccess"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionGradeSeperated"
             },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionGradeSeperated"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:V2vSatellite"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGlonass"
-            },
-            "openlabel_v2:HorizontalCurves": true,
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "92",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -6468,31 +6188,20 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "5",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
-            },
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
-            },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
-            },
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "41",
-              "@type": "xsd:integer"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             }
           }
         ],
@@ -6616,36 +6325,29 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryTemporaryStructure": {
+              "@id": "openlabel:TemporaryStructureConstructionDetour"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
-            },
-            "openlabel_v2:SceneryTemporaryStructure": {
-              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -6769,34 +6471,28 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
-            },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
-            },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -6919,31 +6615,26 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:WeatherSnow": true,
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
-            },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -7066,18 +6757,18 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructurePedestrianCrossing"
             },
-            "openlabel_v2:JunctionRoundabout": {
-              "@id": "openlabel_v2:RoundaboutMiniNosignal"
+            "openlabel:JunctionRoundabout": {
+              "@id": "openlabel:RoundaboutMiniNosignal"
             }
           }
         ],
@@ -7201,30 +6892,18 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
-            },
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "76",
-              "@type": "xsd:integer"
-            },
-            "openlabel_v2:EnvironmentParticulates": {
-              "@id": "openlabel_v2:ParticulatesWater"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -7348,14 +7027,14 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -7478,34 +7157,34 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionContamination"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionContamination"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -7628,30 +7307,29 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionStandingWater"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionStandingWater"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             }
           }
         ],
@@ -7775,36 +7453,32 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionMirage"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionMirage"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureTollPlaza"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureTollPlaza"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -7928,27 +7602,22 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "5",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:HorizontalStraights": true,
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "21",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -8071,28 +7740,28 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:SceneryTemporaryStructure": {
-              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
+            "openlabel:SceneryTemporaryStructure": {
+              "@id": "openlabel:TemporaryStructureConstructionDetour"
             },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -8215,26 +7884,26 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             }
           }
         ],
@@ -8358,33 +8027,27 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:WeatherSnow": true,
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -8508,20 +8171,20 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureAutoAccess"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureAutoAccess"
             },
-            "openlabel_v2:JunctionRoundabout": {
-              "@id": "openlabel_v2:RoundaboutNormalNosignal"
+            "openlabel:JunctionRoundabout": {
+              "@id": "openlabel:RoundaboutNormalNosignal"
             },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -8644,25 +8307,17 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:HorizontalCurves": true,
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "56",
-              "@type": "xsd:integer"
-            },
-            "openlabel_v2:EnvironmentParticulates": {
-              "@id": "openlabel_v2:ParticulatesWater"
-            }
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -8785,12 +8440,12 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             }
           }
         ],
@@ -8914,59 +8569,41 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionFlooded"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionFlooded"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneRegion"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionCrossroad"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneRegion"
-            },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionCrossroad"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:CommunicationV2v"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGlonass"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
-            },
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "90",
-              "@type": "xsd:integer"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -9090,55 +8727,37 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionWet"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionWet"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneGeoFenced"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionTJunction"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneGeoFenced"
-            },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionTJunction"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:V2vWifi"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGalileo"
-            },
-            "openlabel_v2:HorizontalStraights": true,
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "101",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -9261,51 +8880,37 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionSnow"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionSnow"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneSchool"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneSchool"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructurePedestrianCrossing"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionGradeSeperated"
             },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionGradeSeperated"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:V2iSatellite"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGps"
-            },
-            "openlabel_v2:HorizontalCurves": true,
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "112",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -9428,31 +9033,20 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "5",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
-            },
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
-            },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
-            },
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "91",
-              "@type": "xsd:integer"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             }
           }
         ],
@@ -9576,36 +9170,29 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryTemporaryStructure": {
+              "@id": "openlabel:TemporaryStructureConstructionDetour"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
-            },
-            "openlabel_v2:SceneryTemporaryStructure": {
-              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -9729,34 +9316,28 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
-            },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
-            },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -9879,31 +9460,26 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:WeatherSnow": true,
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
-            },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -10026,18 +9602,18 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureTollPlaza"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureTollPlaza"
             },
-            "openlabel_v2:JunctionRoundabout": {
-              "@id": "openlabel_v2:RoundaboutMiniNosignal"
+            "openlabel:JunctionRoundabout": {
+              "@id": "openlabel:RoundaboutMiniNosignal"
             }
           }
         ],
@@ -10161,30 +9737,18 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
-            },
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "36",
-              "@type": "xsd:integer"
-            },
-            "openlabel_v2:EnvironmentParticulates": {
-              "@id": "openlabel_v2:ParticulatesWater"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -10308,14 +9872,14 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -10438,34 +10002,34 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionIcy"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionIcy"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -10588,30 +10152,29 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionContamination"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionContamination"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             }
           }
         ],
@@ -10735,36 +10298,32 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionStandingWater"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionStandingWater"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureAutoAccess"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureAutoAccess"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -10888,27 +10447,22 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "5",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:HorizontalStraights": true,
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "71",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -11031,28 +10585,28 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:SceneryTemporaryStructure": {
-              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
+            "openlabel:SceneryTemporaryStructure": {
+              "@id": "openlabel:TemporaryStructureConstructionDetour"
             },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -11175,26 +10729,26 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             }
           }
         ],
@@ -11318,33 +10872,27 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:WeatherSnow": true,
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -11468,20 +11016,20 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructurePedestrianCrossing"
             },
-            "openlabel_v2:JunctionRoundabout": {
-              "@id": "openlabel_v2:RoundaboutNormalNosignal"
+            "openlabel:JunctionRoundabout": {
+              "@id": "openlabel:RoundaboutNormalNosignal"
             },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -11604,25 +11152,17 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:HorizontalCurves": true,
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "16",
-              "@type": "xsd:integer"
-            },
-            "openlabel_v2:EnvironmentParticulates": {
-              "@id": "openlabel_v2:ParticulatesWater"
-            }
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -11745,12 +11285,12 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             }
           }
         ],
@@ -11874,59 +11414,41 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionMirage"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionMirage"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneRegion"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionCrossroad"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneRegion"
-            },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionCrossroad"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:CommunicationV2i"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGps"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
-            },
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "110",
-              "@type": "xsd:integer"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -12050,55 +11572,37 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionFlooded"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionFlooded"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneGeoFenced"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionTJunction"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneGeoFenced"
-            },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionTJunction"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:V2iWifi"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGlonass"
-            },
-            "openlabel_v2:HorizontalStraights": true,
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "121",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -12221,51 +11725,37 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "3",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionWet"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionWet"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryZone": {
+              "@id": "openlabel:ZoneSchool"
             },
-            "openlabel_v2:SceneryZone": {
-              "@id": "openlabel_v2:ZoneSchool"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureTollPlaza"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureTollPlaza"
+            "openlabel:JunctionIntersection": {
+              "@id": "openlabel:IntersectionGradeSeperated"
             },
-            "openlabel_v2:JunctionIntersection": {
-              "@id": "openlabel_v2:IntersectionGradeSeperated"
-            },
-            "openlabel_v2:ConnectivityCommunication": {
-              "@id": "openlabel_v2:V2vSatellite"
-            },
-            "openlabel_v2:ConnectivityPositioning": {
-              "@id": "openlabel_v2:PositioningGalileo"
-            },
-            "openlabel_v2:HorizontalCurves": true,
-            "openlabel_v2:SubjectVehicleSpeed": true,
-            "openlabel_v2:subjectVehicleSpeedValue": {
-              "@value": "32",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -12388,31 +11878,20 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "5",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
-            },
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
-            },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
-            },
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "51",
-              "@type": "xsd:integer"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             }
           }
         ],
@@ -12536,36 +12015,29 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryTemporaryStructure": {
+              "@id": "openlabel:TemporaryStructureConstructionDetour"
             },
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
-            },
-            "openlabel_v2:SceneryTemporaryStructure": {
-              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -12689,34 +12161,28 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:IlluminationLowLight": {
-              "@id": "openlabel_v2:LowLightNight"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             },
-            "openlabel_v2:IlluminationArtificial": {
-              "@id": "openlabel_v2:ArtificialVehicleLighting"
-            },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
-            },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -12839,31 +12305,26 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:WeatherSnow": true,
-            "openlabel_v2:DaySunPosition": {
-              "@id": "openlabel_v2:SunPositionBehind"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
-            },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -12986,18 +12447,18 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureAutoAccess"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureAutoAccess"
             },
-            "openlabel_v2:JunctionRoundabout": {
-              "@id": "openlabel_v2:RoundaboutMiniNosignal"
+            "openlabel:JunctionRoundabout": {
+              "@id": "openlabel:RoundaboutMiniNosignal"
             }
           }
         ],
@@ -13121,30 +12582,18 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
-            },
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "86",
-              "@type": "xsd:integer"
-            },
-            "openlabel_v2:EnvironmentParticulates": {
-              "@id": "openlabel_v2:ParticulatesWater"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -13268,14 +12717,14 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -13398,34 +12847,34 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionSnow"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionSnow"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -13548,30 +12997,29 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayManaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayManaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionIcy"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionIcy"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeNone"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeNone"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             }
           }
         ],
@@ -13695,36 +13143,32 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeSlip"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeSlip"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "1",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:DrivableAreaSurfaceCondition": {
-              "@id": "openlabel_v2:SurfaceConditionContamination"
+            "openlabel:DrivableAreaSurfaceCondition": {
+              "@id": "openlabel:SurfaceConditionContamination"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructurePedestrianCrossing"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -13848,27 +13292,22 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeRadial"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeRadial"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "5",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:HorizontalStraights": true,
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "31",
-              "@type": "xsd:integer"
-            }
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -13991,28 +13430,28 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMinor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMinor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeLoose"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeLoose"
             },
-            "openlabel_v2:SceneryTemporaryStructure": {
-              "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
+            "openlabel:SceneryTemporaryStructure": {
+              "@id": "openlabel:TemporaryStructureConstructionDetour"
             },
-            "openlabel_v2:HorizontalCurves": true
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -14135,26 +13574,26 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:MotorwayUnmanaged"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:MotorwayUnmanaged"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:LaneSpecificationLaneCount": true,
-            "openlabel_v2:laneSpecificationLaneCountValue": {
+            "openlabel:LaneSpecificationLaneCount": true,
+            "openlabel:laneSpecificationLaneCountValue": {
               "@value": "2",
               "@type": "xsd:integer"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeSpecial"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeSpecial"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeTemporaryLineMarkers"
             },
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureVegetation"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureVegetation"
             }
           }
         ],
@@ -14278,33 +13717,27 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeMotorway"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeMotorway"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:LaneSpecificationType": {
-              "@id": "openlabel_v2:LaneTypeBus"
+            "openlabel:LaneSpecificationType": {
+              "@id": "openlabel:LaneTypeBus"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeSegmented"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeSegmented"
             },
-            "openlabel_v2:DrivableAreaEdge": {
-              "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
+            "openlabel:DrivableAreaEdge": {
+              "@id": "openlabel:EdgeShoulderPavedOrGravel"
             },
-            "openlabel_v2:WeatherRain": true,
-            "openlabel_v2:RainType": {
-              "@id": "openlabel_v2:RainTypeConvective"
+            "openlabel:SceneryFixedStructure": {
+              "@id": "openlabel:FixedStructureStreetFurniture"
             },
-            "openlabel_v2:WeatherWind": true,
-            "openlabel_v2:WeatherSnow": true,
-            "openlabel_v2:SceneryFixedStructure": {
-              "@id": "openlabel_v2:FixedStructureStreetFurniture"
-            },
-            "openlabel_v2:GeometryTransverse": {
-              "@id": "openlabel_v2:TransverseDivided"
+            "openlabel:GeometryTransverse": {
+              "@id": "openlabel:TransverseDivided"
             }
           }
         ],
@@ -14428,20 +13861,20 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeShared"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeShared"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             },
-            "openlabel_v2:ScenerySpecialStructure": {
-              "@id": "openlabel_v2:SpecialStructureTollPlaza"
+            "openlabel:ScenerySpecialStructure": {
+              "@id": "openlabel:SpecialStructureTollPlaza"
             },
-            "openlabel_v2:JunctionRoundabout": {
-              "@id": "openlabel_v2:RoundaboutNormalNosignal"
+            "openlabel:JunctionRoundabout": {
+              "@id": "openlabel:RoundaboutNormalNosignal"
             },
-            "openlabel_v2:HorizontalStraights": true
+            "openlabel:HorizontalStraights": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -14564,25 +13997,17 @@
             "hdmap:trafficDirection": "right-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeParking"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeParking"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionLeft"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionLeft"
             },
-            "openlabel_v2:DrivableAreaSurfaceType": {
-              "@id": "openlabel_v2:SurfaceTypeUniform"
+            "openlabel:DrivableAreaSurfaceType": {
+              "@id": "openlabel:SurfaceTypeUniform"
             },
-            "openlabel_v2:HorizontalCurves": true,
-            "openlabel_v2:TrafficAgentDensity": true,
-            "openlabel_v2:trafficAgentDensityValue": {
-              "@value": "66",
-              "@type": "xsd:integer"
-            },
-            "openlabel_v2:EnvironmentParticulates": {
-              "@id": "openlabel_v2:ParticulatesWater"
-            }
+            "openlabel:HorizontalCurves": true
           }
         ],
         "hdmap:hasQuantity": {
@@ -14705,12 +14130,12 @@
             "hdmap:trafficDirection": "left-hand"
           },
           {
-            "@type": "openlabel_v2:Odd",
-            "openlabel_v2:DrivableAreaType": {
-              "@id": "openlabel_v2:RoadTypeDistributor"
+            "@type": "openlabel:OddScenery",
+            "openlabel:DrivableAreaType": {
+              "@id": "openlabel:RoadTypeDistributor"
             },
-            "openlabel_v2:LaneSpecificationTravelDirection": {
-              "@id": "openlabel_v2:TravelDirectionRight"
+            "openlabel:LaneSpecificationTravelDirection": {
+              "@id": "openlabel:TravelDirectionRight"
             }
           }
         ],

@@ -12,6 +12,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { compileSlots, getCompilerVocab } from '../compiler.js'
+import { getInitializedStore } from '../init.js'
 
 const localName = (iri: string) => iri.split(/[/#]/).pop()
 
@@ -27,6 +28,22 @@ describe('extended property paths on the pinned ontology', () => {
       'hasContent',
       'laneSpecificationLaneCountValue',
     ])
+  }, 120_000)
+
+  it('find the HD maps whose sample data records at least three lanes', async () => {
+    // The sample data annotates HD maps with the OpenLABEL version the pinned
+    // HD-map shapes link, so the discovered path reaches real values.
+    const store = await getInitializedStore()
+    const sparql = await compileSlots({
+      domains: ['hdmap'],
+      filters: {},
+      ranges: { laneSpecificationLaneCountValue: { min: 3 } },
+    })
+    const rows = (await store.query(sparql)).results.bindings
+    expect(new Set(rows.map((row) => row['asset']?.value)).size).toBeGreaterThan(0)
+    for (const row of rows) {
+      expect(Number(row['laneSpecificationLaneCountValue']?.value)).toBeGreaterThanOrEqual(3)
+    }
   }, 120_000)
 
   it('never carry a name that a plain path or a shape group already resolves', async () => {
