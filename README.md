@@ -233,6 +233,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 | `CORS_ALLOWED_ORIGINS`      | Comma-separated allowed origins; wildcard `*` is rejected in production                                                     | `*`                                      |
 | `RATE_LIMIT_RPS`            | Token-bucket rate limit (requests/sec); `0` disables                                                                        | `0`                                      |
 | `ONTOLOGY_ARTIFACTS_PATH`   | Directory of ontology artifacts, overriding the pinned `.ontology/` cache                                                   | — (uses the pin)                         |
+| `ONTOLOGY_SOURCES_FILE`     | Sources manifest to use instead of `./ontology-sources.json` (see [Using your own ontology](apps/docs/ontology.md))         | `ontology-sources.json`                  |
 
 ## License
 

@@ -184,7 +184,9 @@ Node does not read them on its own.
 
 If you keep your ontology elsewhere, point `ONTOLOGY_ARTIFACTS_PATH` at it or
 create an `ontology-sources.json` (see `ontology-sources.example.json` as
-template).
+template). To keep the manifest outside this repo (e.g. next to a private
+ontology), set `ONTOLOGY_SOURCES_FILE` — see "Using your own ontology" in
+`apps/docs/ontology.md`.
 
 ### Issue: local Ollama model never returns results (falls back to "LLM did not extract specific filters" every time)
 

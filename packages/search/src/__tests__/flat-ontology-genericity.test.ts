@@ -349,4 +349,28 @@ describe('genericity proof — compiler emission on a flat schema', () => {
     }
     expect(sparql).not.toContain('?domSpec')
   }, 30_000)
+
+  /**
+   * Closed asset shapes (`sh:closed true`, as LinkML-generated SHACL emits)
+   * cannot carry `rdfs:label`, so a required label pattern dropped every such
+   * asset from every result set. The label must be OPTIONAL.
+   */
+  it('returns assets that carry no rdfs:label', async () => {
+    const store = await loadFixture()
+    const registry = libraryRegistry()
+    const vocabIndex = await buildCompilerVocabFrom(store, registry as any)
+    await store.loadTurtle(`
+      @prefix library: <http://example.org/library/v1/> .
+      <urn:book:unlabelled> a library:Book ; library:genre "fiction" .
+    `)
+
+    const { sparql } = await compileSlotsWithTrace(
+      { domains: ['library'], filters: { genre: 'fiction' }, ranges: {} },
+      { registry: registry as any, vocabIndex }
+    )
+    const result = await store.query(sparql)
+
+    expect(result.results.bindings.map((b) => b['asset']?.value)).toEqual(['urn:book:unlabelled'])
+    expect(result.results.bindings[0]?.['name']).toBeUndefined()
+  }, 30_000)
 })

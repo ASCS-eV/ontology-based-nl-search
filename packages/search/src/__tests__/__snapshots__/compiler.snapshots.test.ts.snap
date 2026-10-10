@@ -7,8 +7,7 @@ PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 SELECT ?asset ?name ?city ?country ?region ?state WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasGeoreference ?_d0_1 .
   ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
@@ -16,6 +15,7 @@ SELECT ?asset ?name ?city ?country ?region ?state WHERE {
   ?_d0_2 georeference:country ?country .
   ?_d0_2 georeference:region ?region .
   ?_d0_2 georeference:state ?state .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?city = "Munich")
   FILTER(?country = "DE")
   FILTER(?region = "Oberbayern")
@@ -31,12 +31,12 @@ PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 SELECT ?asset ?name ?country WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasGeoreference ?_d0_1 .
   ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
   ?_d0_2 georeference:country ?country .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?country IN ("DE", "FR", "IT"))
 }
 LIMIT 100"
@@ -49,12 +49,12 @@ PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 SELECT ?asset ?name ?country WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasGeoreference ?_d0_1 .
   ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
   ?_d0_2 georeference:country ?country .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?country = "DE")
 }
 LIMIT 100"
@@ -67,12 +67,12 @@ PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 SELECT ?asset ?name ?country WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasGeoreference ?_d0_1 .
   ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
   ?_d0_2 georeference:country ?country .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?country = "DE")
 }
 LIMIT 100"
@@ -84,8 +84,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
+  OPTIONAL { ?asset rdfs:label ?name }
 }
 LIMIT 100"
 `;
@@ -96,8 +96,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
+  OPTIONAL { ?asset rdfs:label ?name }
 }
 LIMIT 100"
 `;
@@ -108,8 +108,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
+  OPTIONAL { ?asset rdfs:label ?name }
 }
 LIMIT 100"
 `;
@@ -120,8 +120,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
 SELECT ?asset ?name WHERE {
-  ?asset a ositrace:OSITrace ;
-    rdfs:label ?name .
+  ?asset a ositrace:OSITrace .
+  OPTIONAL { ?asset rdfs:label ?name }
 }
 LIMIT 100"
 `;
@@ -132,8 +132,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 SELECT ?asset ?name WHERE {
-  ?asset a scenario:Scenario ;
-    rdfs:label ?name .
+  ?asset a scenario:Scenario .
+  OPTIONAL { ?asset rdfs:label ?name }
 }
 LIMIT 100"
 `;
@@ -144,8 +144,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 SELECT ?asset ?name WHERE {
   VALUES ?assetClass { <https://w3id.org/gaia-x4plcaad/ontologies/automotive-simulator/v2/AutomotiveSimulator> <https://w3id.org/ascs-ev/envited-x/environment-model/v5/EnvironmentModel> <https://w3id.org/ascs-ev/envited-x/hdmap/v6/HdMap> <https://w3id.org/gaia-x4plcaad/ontologies/leakage-test/v3/LeakageTest> <https://w3id.org/ascs-ev/envited-x/ositrace/v6/OSITrace> <https://w3id.org/ascs-ev/envited-x/scenario/v6/Scenario> <https://w3id.org/gaia-x4plcaad/ontologies/service/v2/Service> <https://w3id.org/gaia-x4plcaad/ontologies/simulated-sensor/v2/SimulatedSensor> <https://w3id.org/gaia-x4plcaad/ontologies/simulation-model/v3/SimulationModel> <https://w3id.org/ascs-ev/envited-x/surface-model/v6/SurfaceModel> <https://w3id.org/gaia-x4plcaad/ontologies/survey/v6/SurveyResultDataOffering> <https://w3id.org/ascs-ev/envited-x/tzip21/v1/Asset> <https://w3id.org/gaia-x4plcaad/ontologies/vv-report/v2/VvReport> }
-  ?asset a ?assetClass ;
-    rdfs:label ?name .
+  ?asset a ?assetClass .
+  OPTIONAL { ?asset rdfs:label ?name }
 }
 LIMIT 100"
 `;
@@ -156,11 +156,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?formatType WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasFormat ?format .
   ?format hdmap:formatType ?formatType .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?formatType = "ASAM OpenDRIVE")
 }
 LIMIT 100"
@@ -172,11 +172,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?roadTypes WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?roadTypes IN ("motorway", "urban"))
 }
 LIMIT 100"
@@ -188,11 +188,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?numberIntersections WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasQuantity ?quantity .
   ?quantity hdmap:numberIntersections ?numberIntersections .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(xsd:float(?numberIntersections) >= 5)
   FILTER(xsd:float(?numberIntersections) <= 50)
 }
@@ -205,11 +205,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?numberIntersections WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasQuantity ?quantity .
   ?quantity hdmap:numberIntersections ?numberIntersections .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(xsd:float(?numberIntersections) >= 5)
 }
 LIMIT 100"
@@ -221,11 +221,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?numberIntersections WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasQuantity ?quantity .
   ?quantity hdmap:numberIntersections ?numberIntersections .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(xsd:float(?numberIntersections) <= 50)
 }
 LIMIT 100"
@@ -237,11 +237,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?roadTypes WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?roadTypes = "motorway")
 }
 LIMIT 100"
@@ -253,12 +253,12 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?numberIntersections ?numberTrafficLights WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasQuantity ?quantity .
   ?quantity hdmap:numberIntersections ?numberIntersections .
   ?quantity hdmap:numberTrafficLights ?numberTrafficLights .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(xsd:float(?numberIntersections) >= 5)
   FILTER(xsd:float(?numberTrafficLights) <= 100)
 }
@@ -271,12 +271,12 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?roadTypes ?laneTypes WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
   ?content hdmap:laneTypes ?laneTypes .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?roadTypes = "motorway")
   FILTER(?laneTypes = "driving")
 }
@@ -291,8 +291,7 @@ PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/>
 PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 SELECT ?asset ?name ?roadTypes ?license ?numberIntersections ?country WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
@@ -303,6 +302,7 @@ SELECT ?asset ?name ?roadTypes ?license ?numberIntersections ?country WHERE {
   ?domSpec hdmap:hasGeoreference ?_d0_1 .
   ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
   ?_d0_2 georeference:country ?country .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?roadTypes = "motorway")
   FILTER(?license = "CC-BY-4.0")
   FILTER(xsd:float(?numberIntersections) >= 5)
@@ -319,13 +319,13 @@ PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/>
 SELECT ?asset ?name ?roadTypes ?license WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
   ?domSpec envited-x:hasQuality ?quality_envited_x .
   ?quality_envited_x envited-x:license ?license .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?roadTypes = "motorway")
   FILTER(?license = "CC-BY-4.0")
 }
@@ -339,11 +339,11 @@ PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX envited-x: <https://w3id.org/ascs-ev/envited-x/envited-x/v3/>
 SELECT ?asset ?name ?license WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec envited-x:hasQuality ?quality_envited_x .
   ?quality_envited_x envited-x:license ?license .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?license = "CC-BY-4.0")
 }
 LIMIT 100"
@@ -359,8 +359,7 @@ PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset1 ?refName1 ?ref1_step_1 ?ref1_step_2 WHERE {
   { SELECT DISTINCT ?asset WHERE {
-  ?asset a scenario:Scenario ;
-    rdfs:label ?name .
+  ?asset a scenario:Scenario .
   ?asset scenario:hasManifest ?ref_step_1 .
   ?ref_step_1 manifest:hasReferencedArtifacts ?ref_step_2 .
   ?ref_step_2 manifest:iri ?refAsset .
@@ -371,9 +370,9 @@ SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset1 ?refNa
   ?ref1_step_2 manifest:iri ?refAsset1 .
   ?refAsset1 a hdmap:HdMap .
   ?refAsset1 rdfs:label ?refName1 .
+  OPTIONAL { ?asset rdfs:label ?name }
   } LIMIT 100 }
-  ?asset a scenario:Scenario ;
-    rdfs:label ?name .
+  ?asset a scenario:Scenario .
   ?asset scenario:hasManifest ?ref_step_1 .
   ?ref_step_1 manifest:hasReferencedArtifacts ?ref_step_2 .
   ?ref_step_2 manifest:iri ?refAsset .
@@ -384,6 +383,7 @@ SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset1 ?refNa
   ?ref1_step_2 manifest:iri ?refAsset1 .
   ?refAsset1 a hdmap:HdMap .
   ?refAsset1 rdfs:label ?refName1 .
+  OPTIONAL { ?asset rdfs:label ?name }
 }
 LIMIT 500"
 `;
@@ -398,8 +398,7 @@ PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset_0 ?refName_0 ?ref_0_step_1 ?ref_0_step_2 WHERE {
   { SELECT DISTINCT ?asset WHERE {
-  ?asset a scenario:Scenario ;
-    rdfs:label ?name .
+  ?asset a scenario:Scenario .
   ?asset scenario:hasManifest ?ref_step_1 .
   ?ref_step_1 manifest:hasReferencedArtifacts ?ref_step_2 .
   ?ref_step_2 manifest:iri ?refAsset .
@@ -410,9 +409,9 @@ SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset_0 ?refN
   ?ref_0_step_2 manifest:iri ?refAsset_0 .
   ?refAsset_0 a hdmap:HdMap .
   ?refAsset_0 rdfs:label ?refName_0 .
+  OPTIONAL { ?asset rdfs:label ?name }
   } LIMIT 100 }
-  ?asset a scenario:Scenario ;
-    rdfs:label ?name .
+  ?asset a scenario:Scenario .
   ?asset scenario:hasManifest ?ref_step_1 .
   ?ref_step_1 manifest:hasReferencedArtifacts ?ref_step_2 .
   ?ref_step_2 manifest:iri ?refAsset .
@@ -423,6 +422,7 @@ SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset_0 ?refN
   ?ref_0_step_2 manifest:iri ?refAsset_0 .
   ?refAsset_0 a hdmap:HdMap .
   ?refAsset_0 rdfs:label ?refName_0 .
+  OPTIONAL { ?asset rdfs:label ?name }
 }
 LIMIT 500"
 `;
@@ -436,27 +436,27 @@ PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
 SELECT ?asset ?name ?roadTypes ?country WHERE {
     {
-    ?asset a hdmap:HdMap ;
-      rdfs:label ?name .
+    ?asset a hdmap:HdMap .
     ?asset hdmap:hasDomainSpecification ?domSpec .
     ?domSpec hdmap:hasContent ?content .
     ?content hdmap:roadTypes ?roadTypes .
     ?domSpec hdmap:hasGeoreference ?_d0_1 .
     ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
     ?_d0_2 georeference:country ?country .
+    OPTIONAL { ?asset rdfs:label ?name }
     FILTER(?roadTypes = "motorway")
     FILTER(?country = "FR")
   }
   UNION
   {
-    ?asset a ositrace:OSITrace ;
-      rdfs:label ?name .
+    ?asset a ositrace:OSITrace .
     ?asset ositrace:hasDomainSpecification ?domSpec .
     ?domSpec ositrace:hasContent ?content .
     ?content ositrace:roadTypes ?roadTypes .
     ?domSpec ositrace:hasGeoreference ?_d0_1 .
     ?_d0_1 georeference:hasProjectLocation ?_d0_2 .
     ?_d0_2 georeference:country ?country .
+    OPTIONAL { ?asset rdfs:label ?name }
     FILTER(?roadTypes = "motorway")
     FILTER(?country = "FR")
   }
@@ -472,20 +472,20 @@ PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX ositrace: <https://w3id.org/ascs-ev/envited-x/ositrace/v6/>
 SELECT ?asset ?name ?roadTypes WHERE {
     {
-    ?asset a hdmap:HdMap ;
-      rdfs:label ?name .
+    ?asset a hdmap:HdMap .
     ?asset hdmap:hasDomainSpecification ?domSpec .
     ?domSpec hdmap:hasContent ?content .
     ?content hdmap:roadTypes ?roadTypes .
+    OPTIONAL { ?asset rdfs:label ?name }
     FILTER(?roadTypes = "motorway")
   }
   UNION
   {
-    ?asset a ositrace:OSITrace ;
-      rdfs:label ?name .
+    ?asset a ositrace:OSITrace .
     ?asset ositrace:hasDomainSpecification ?domSpec .
     ?domSpec ositrace:hasContent ?content .
     ?content ositrace:roadTypes ?roadTypes .
+    OPTIONAL { ?asset rdfs:label ?name }
     FILTER(?roadTypes = "motorway")
   }
 }
@@ -498,11 +498,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?accuracySignals WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasQuality ?quality .
   ?quality hdmap:accuracySignals ?accuracySignals .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?accuracySignals = "0.1")
 }
 LIMIT 100"
@@ -515,11 +515,11 @@ PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?scenarioCategory WHERE {
-  ?asset a scenario:Scenario ;
-    rdfs:label ?name .
+  ?asset a scenario:Scenario .
   ?asset scenario:hasDomainSpecification ?domSpec .
   ?domSpec scenario:hasContent ?content .
   ?content scenario:scenarioCategory ?scenarioCategory .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?scenarioCategory = "urban")
 }
 LIMIT 100"
@@ -532,11 +532,11 @@ PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?scenarioCategory WHERE {
-  ?asset a scenario:Scenario ;
-    rdfs:label ?name .
+  ?asset a scenario:Scenario .
   ?asset scenario:hasDomainSpecification ?domSpec .
   ?domSpec scenario:hasContent ?content .
   ?content scenario:scenarioCategory ?scenarioCategory .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?scenarioCategory = "urban")
 }
 LIMIT 100"
@@ -548,11 +548,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 SELECT ?asset ?name ?entityTypes WHERE {
-  ?asset a scenario:Scenario ;
-    rdfs:label ?name .
+  ?asset a scenario:Scenario .
   ?asset scenario:hasDomainSpecification ?domSpec .
   ?domSpec scenario:hasContent ?content .
   ?content scenario:entityTypes ?entityTypes .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?entityTypes IN ("truck", "bicycle"))
 }
 LIMIT 100"
@@ -564,11 +564,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX gx: <https://w3id.org/gaia-x/development#>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
 SELECT ?asset ?name ?scenarioCategory WHERE {
-  ?asset a scenario:Scenario ;
-    rdfs:label ?name .
+  ?asset a scenario:Scenario .
   ?asset scenario:hasDomainSpecification ?domSpec .
   ?domSpec scenario:hasContent ?content .
   ?content scenario:scenarioCategory ?scenarioCategory .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?scenarioCategory = "urban")
 }
 LIMIT 100"
@@ -583,21 +583,21 @@ PREFIX manifest: <https://w3id.org/ascs-ev/envited-x/manifest/v5/>
 PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 WHERE {
   { SELECT DISTINCT ?asset WHERE {
-  ?asset a ositrace:OSITrace ;
-    rdfs:label ?name .
+  ?asset a ositrace:OSITrace .
   ?asset ositrace:hasManifest ?ref_step_1 .
   ?ref_step_1 manifest:hasReferencedArtifacts ?ref_step_2 .
   ?ref_step_2 manifest:iri ?refAsset .
   ?refAsset a hdmap:HdMap .
   ?refAsset rdfs:label ?refName .
+  OPTIONAL { ?asset rdfs:label ?name }
   } LIMIT 100 }
-  ?asset a ositrace:OSITrace ;
-    rdfs:label ?name .
+  ?asset a ositrace:OSITrace .
   ?asset ositrace:hasManifest ?ref_step_1 .
   ?ref_step_1 manifest:hasReferencedArtifacts ?ref_step_2 .
   ?ref_step_2 manifest:iri ?refAsset .
   ?refAsset a hdmap:HdMap .
   ?refAsset rdfs:label ?refName .
+  OPTIONAL { ?asset rdfs:label ?name }
 }
 LIMIT 500"
 `;

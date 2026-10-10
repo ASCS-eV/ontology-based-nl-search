@@ -117,11 +117,9 @@ function resolveLocalContext(jsonContent: string, contextMap: Map<string, unknow
     if (typeof doc['@context'] !== 'string') return jsonContent
 
     const remoteUrl = doc['@context']
-    // Try exact match, then with/without trailing slash
-    const localCtx =
-      contextMap.get(remoteUrl) ??
-      contextMap.get(remoteUrl + '/') ??
-      contextMap.get(remoteUrl.replace(/\/$/, ''))
+    const localCtx = contextUrlCandidates(remoteUrl)
+      .map((url) => contextMap.get(url))
+      .find((ctx) => ctx !== undefined)
 
     if (!localCtx) return jsonContent
 
@@ -131,6 +129,18 @@ function resolveLocalContext(jsonContent: string, contextMap: Map<string, unknow
   } catch {
     return jsonContent
   }
+}
+
+/**
+ * Keys a remote `@context` URL may be indexed under: the URL itself with and
+ * without a trailing slash, plus — for the `<ontology>/context` / `<ontology>#context`
+ * form that OMB-style catalogs publish — the ontology base IRI it names.
+ */
+export function contextUrlCandidates(remoteUrl: string): string[] {
+  const candidates = [remoteUrl, remoteUrl + '/', remoteUrl.replace(/\/$/, '')]
+  const base = remoteUrl.replace(/[/#]context\/?$/, '')
+  if (base !== remoteUrl) candidates.push(base + '/', base)
+  return candidates
 }
 
 /**

@@ -15,11 +15,23 @@ import {
 import type { SparqlStore } from '@ontology-search/sparql/types'
 import { readFileSync } from 'fs'
 import { basename } from 'path'
+import { pathToFileURL } from 'url'
 
 /** Named graph IRI for ontology schema triples */
 export const SCHEMA_GRAPH = 'urn:graph:schema'
 
 const log = createComponentLogger('schema-loader')
+
+/**
+ * Give a Turtle document its retrieval location as the base IRI, so relative
+ * IRIs resolve instead of failing the parse ([TURTLE] §6.3: absent `@base`, the
+ * base is the Retrieval URI). Emitted on the first line so parser error line
+ * numbers still match the file; an `@base` in the document itself still takes
+ * precedence for everything after it.
+ */
+export function withDocumentBase(ttl: string, filePath: string): string {
+  return `@base <${pathToFileURL(filePath).href}> . ${ttl}`
+}
 
 /**
  * Load all ontology schema files (OWL + SHACL) into the store's schema named graph.
@@ -40,16 +52,15 @@ export async function loadSchemaGraph(
 
   for (const { path: filePath, domain } of files) {
     try {
-      const ttl = readFileSync(filePath, 'utf-8')
+      const ttl = withDocumentBase(readFileSync(filePath, 'utf-8'), filePath)
       await store.loadTurtle(ttl, SCHEMA_GRAPH)
       domains.add(domain)
       fileCount++
       log.debug('Loaded schema file', { domain, file: basename(filePath) })
     } catch (err) {
-      log.error('Failed to load schema file — schema graph is incomplete', {
+      log.error('Failed to load schema file — schema graph is incomplete', err, {
         file: basename(filePath),
         domain,
-        error: String(err),
       })
     }
   }
