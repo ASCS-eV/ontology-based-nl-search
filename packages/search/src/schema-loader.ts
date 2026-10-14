@@ -8,6 +8,7 @@
  * @see https://www.w3.org/TR/sparql11-query/#namedGraphs
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
+import { iri } from '@ontology-search/core/rdf/prefixes'
 import {
   assertOntologySourcesAvailable,
   discoverShapeFiles,
@@ -61,6 +62,8 @@ export async function loadSchemaGraph(
     )
   }
 
+  await materializeValueHierarchy(store)
+
   log.info('Loaded schema files', {
     fileCount,
     domainCount: domains.size,
@@ -69,4 +72,37 @@ export async function loadSchemaGraph(
   })
 
   return { domains: [...domains], fileCount }
+}
+
+/**
+ * Schema predicates {@link materializeValueHierarchy} mirrors into the default
+ * graph — schema triples, not instance data.
+ */
+export const VALUE_HIERARCHY_PREDICATES: readonly string[] = [
+  iri('rdfs', 'subClassOf'),
+  iri('skos', 'broaderTransitive'),
+]
+
+/**
+ * Mirror the schema's value-hierarchy edges into the default graph.
+ *
+ * Compiled queries run against the default graph only — the SPARQL policy
+ * forbids `GRAPH` / `FROM` ([SPARQL11] §13.2 RDF dataset). An IRI filter
+ * value is matched with `(skos:broaderTransitive|rdfs:subClassOf)*`, so a
+ * broad value (a class or concept) also matches data that stores a narrower
+ * one ([RDF-SCHEMA] §3.4 rdfs:subClassOf transitivity; [SKOS] §8.1
+ * skos:broaderTransitive). Those edges live in {@link SCHEMA_GRAPH}; without
+ * this copy the walk only ever matched the value itself. Only IRI→IRI edges
+ * are copied — no shapes, restrictions, or blank nodes leave the schema graph.
+ */
+export async function materializeValueHierarchy(store: SparqlStore): Promise<void> {
+  const predicates = VALUE_HIERARCHY_PREDICATES.map((iri) => `<${iri}>`).join(' ')
+  await store.update(`
+    INSERT { ?s ?p ?o }
+    WHERE {
+      VALUES ?p { ${predicates} }
+      GRAPH <${SCHEMA_GRAPH}> { ?s ?p ?o }
+      FILTER(isIRI(?s) && isIRI(?o) && ?s != ?o)
+    }
+  `)
 }

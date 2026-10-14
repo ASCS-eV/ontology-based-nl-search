@@ -31,6 +31,37 @@ export function detectHierarchy(domains: string[], domainRefs: Map<string, Set<s
 }
 
 /**
+ * True when the domain set has a parent → child reference, at least one such
+ * child carries constraints, and EVERY constrained child's constraint keys
+ * are also constraint keys of its parent. In that case the child adds no
+ * condition the parent could not express on its own, so the domains are
+ * answered as peers (UNION) instead of a parent-child JOIN that would silently
+ * drop the child's own matches. Purely structural — no domain is named.
+ */
+export function referencedDomainsOnlyShareConstraints(
+  domains: string[],
+  domainRefs: Map<string, Set<string>>,
+  filtersByDomain: Record<string, Record<string, unknown>>,
+  rangesByDomain: Record<string, Record<string, unknown>>
+): boolean {
+  const keysOf = (d: string): Set<string> =>
+    new Set([...Object.keys(filtersByDomain[d] ?? {}), ...Object.keys(rangesByDomain[d] ?? {})])
+  const domainSet = new Set(domains)
+  let sharedChild = false
+  for (const parent of domains) {
+    const parentKeys = keysOf(parent)
+    for (const child of domainRefs.get(parent) ?? []) {
+      if (child === parent || !domainSet.has(child)) continue
+      const childKeys = keysOf(child)
+      if (childKeys.size === 0) continue
+      for (const key of childKeys) if (!parentKeys.has(key)) return false
+      sharedChild = true
+    }
+  }
+  return sharedChild
+}
+
+/**
  * Partition filters into per-domain groups based on ontology graph.
  * Uses the ontology's property definitions to determine which domain each filter belongs to.
  * Handles properties that exist in multiple domains by checking against detected domains.

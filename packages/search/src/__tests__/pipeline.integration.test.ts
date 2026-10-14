@@ -572,4 +572,140 @@ describe('SearchService — real pipeline integration', () => {
     expect(known).not.toContain('definitely-not-a-domain')
     if (nonAsset) expect(known).not.toContain(nonAsset)
   }, 120_000)
+
+  /**
+   * Regression: "OpenLabel only: …" made the LLM pick the non-asset
+   * vocabulary domain `openlabel` alone. It was dropped, leaving an empty
+   * domain list and an unfiltered query over every asset class. A request
+   * naming only a vocabulary must resolve to the asset domains whose
+   * discovered paths use that vocabulary's leaves.
+   */
+  it('resolveKnownDomains maps a vocabulary-only request to the asset domains using it', async () => {
+    // The vocabulary itself is kept so its standalone (asset-less) data is
+    // queried as an extra UNION arm.
+    expect((await resolveKnownDomains(['openlabel'])).sort()).toEqual([
+      'hdmap',
+      'openlabel',
+      'scenario',
+    ])
+    // The pipeline passes the LLM's original request separately: after the
+    // validator broadened `['openlabel']`, the request still governs.
+    expect(
+      (await resolveKnownDomains(['openlabel', 'hdmap', 'scenario'], ['openlabel'])).sort()
+    ).toEqual(['hdmap', 'openlabel', 'scenario'])
+    // A named asset domain is never broadened by a vocabulary next to it.
+    expect(await resolveKnownDomains(['scenario', 'openlabel'])).toEqual(['scenario'])
+    expect(await resolveKnownDomains(['unknown'])).toEqual([])
+  }, 120_000)
+
+  /**
+   * Regression for the OpenLABEL lane-keeping query ("straight motorway,
+   * stable lateral position, controlling speed"). Three defects each
+   * returned zero rows on their own:
+   *   - boolean leaves stored as `"true"^^xsd:boolean` never equalled the
+   *     compiled simple literal `"true"` ([SPARQL11] §17.4.1.7);
+   *   - the `rdfs:subClassOf*` walk ran against the default graph, where no
+   *     hierarchy lived, so `RoadTypeMotorway` missed `MotorwayManaged` data;
+   *   - ODD and Behaviour leaves were bound to ONE `hasContent` node though
+   *     they are separate `sh:or` items.
+   */
+  it('matches boolean OpenLABEL flags and narrower road-type classes', async () => {
+    const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
+    const sparql = await compileSlots({
+      domains: ['scenario'],
+      filters: {
+        DrivableAreaType: `${OL}RoadTypeMotorway`,
+        HorizontalStraights: 'true',
+        SubjectVehicleSpeed: 'true',
+        MotionDrive: 'true',
+      },
+      ranges: {},
+    })
+    const store = await getInitializedStore()
+    const rows = (await store.query(sparql)).results.bindings
+    const types = new Set(rows.map((r) => r['DrivableAreaType']?.value))
+    expect(rows.length).toBeGreaterThanOrEqual(2)
+    expect(types).toContain(`${OL}MotorwayManaged`)
+  }, 120_000)
+
+  /**
+   * Regression for "OpenLabel only: straight access-controlled motorway …".
+   *
+   * Problem 3 — the GraphQL view listed `hdmap` and `scenario` roots, but
+   * the compiler treated `scenario → hdmap` as a parent/child JOIN and,
+   * because both domains carried only the SAME shared OpenLABEL leaves,
+   * silently emitted the scenario arm alone. Shared constraints must be a
+   * peer UNION so each asset domain is matched on its own.
+   *
+   * Problem 2 — "OpenLabel only" must also find OpenLABEL tags that are not
+   * attached to any asset, via a standalone `?asset a <vocabulary root>`
+   * arm that excludes nodes referenced by another subject.
+   */
+  it('returns hdmap, scenario and standalone OpenLABEL rows for a vocabulary-only request', async () => {
+    const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
+    const domains = await resolveKnownDomains(['openlabel'])
+    const slots: SearchSlots = {
+      domains,
+      filters: { DrivableAreaType: `${OL}MotorwayManaged`, HorizontalStraights: 'true' },
+      ranges: {},
+    }
+    const { sparql } = await compileSlotsWithTrace(slots)
+    expect(() => enforceSparqlPolicy(sparql)).not.toThrow()
+    expect(sparql.match(/\bUNION\b/g)).toHaveLength(2)
+    expect(sparql).toContain('hdmap:HdMap')
+    expect(sparql).toContain('scenario:Scenario')
+    expect(sparql).toMatch(/\?asset a (openlabel:Tag|<[^>]*\/Tag>)/)
+    expect(sparql).toContain('FILTER NOT EXISTS')
+
+    const store = await getInitializedStore()
+    const rows = (await store.query(sparql)).results.bindings
+    const ids = rows.map((r) => r['asset']?.value ?? '')
+    expect(ids.some((id) => id.includes(':HdMap:'))).toBe(true)
+    expect(ids.some((id) => id.includes(':Scenario:'))).toBe(true)
+    // Every other row comes from the standalone arm, and only the
+    // unattached tags tagged MotorwayManaged + HorizontalStraights
+    // (see sample-openlabel.jsonld) match. Tags nested inside an asset's
+    // `hasContent` are excluded by the arm's incoming-reference guard.
+    const others = ids.filter((id) => !id.includes(':HdMap:') && !id.includes(':Scenario:'))
+    expect([...new Set(others)].sort()).toEqual([
+      'did:web:openlabel.example:Tag:standalone-001',
+      'did:web:openlabel.example:Tag:standalone-005',
+      'did:web:openlabel.example:Tag:standalone-006',
+      'did:web:openlabel.example:Tag:standalone-009',
+    ])
+  }, 120_000)
+
+  it('UNIONs referencing domains that share only the same constraints (no silent JOIN)', async () => {
+    const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
+    const { sparql } = await compileSlotsWithTrace({
+      domains: ['hdmap', 'scenario'],
+      filters: { DrivableAreaType: `${OL}MotorwayManaged`, HorizontalStraights: 'true' },
+      ranges: {},
+    })
+    expect(sparql.match(/\bUNION\b/g)).toHaveLength(1)
+    expect(sparql).toContain('hdmap:HdMap')
+    expect(sparql).toContain('scenario:Scenario')
+    const rows = (await (await getInitializedStore()).query(sparql)).results.bindings
+    const ids = rows.map((r) => r['asset']?.value ?? '')
+    expect(ids.some((id) => id.includes(':HdMap:'))).toBe(true)
+    expect(ids.some((id) => id.includes(':Scenario:'))).toBe(true)
+  }, 120_000)
+
+  it('compiles only the standalone vocabulary arm when no asset domain is requested', async () => {
+    const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
+    const sparql = await compileSlots({
+      domains: ['openlabel'],
+      filters: { DrivableAreaType: `${OL}MotorwayManaged`, HorizontalStraights: 'true' },
+      ranges: {},
+    })
+    expect(sparql).not.toMatch(/\bUNION\b/)
+    expect(sparql).toMatch(/\?asset a (openlabel:Tag|<[^>]*\/Tag>)/)
+    const rows = (await (await getInitializedStore()).query(sparql)).results.bindings
+    expect(rows.map((r) => r['asset']?.value).sort()).toEqual([
+      'did:web:openlabel.example:Tag:standalone-001',
+      'did:web:openlabel.example:Tag:standalone-005',
+      'did:web:openlabel.example:Tag:standalone-006',
+      'did:web:openlabel.example:Tag:standalone-009',
+    ])
+  }, 120_000)
 })

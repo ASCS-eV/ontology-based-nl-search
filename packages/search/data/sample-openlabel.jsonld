@@ -1,0 +1,408 @@
+{
+  "@context": {
+    "openlabel": "https://openlabel.asam.net/V1-0-0/ontologies/",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@graph": [
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-001",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 1 (lane keeping, managed motorway)",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true,
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@value": "80",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@value": "90",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanCyclist"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-002",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 2",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeShared"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionLaneChangeRight": true,
+        "openlabel:MotionAccelerate": true,
+        "openlabel:motionAccelerateValue": {
+          "@value": "2.7",
+          "@type": "xsd:decimal"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleTrailer"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanPassenger"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-003",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 3",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalCurves": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutOut": true,
+        "openlabel:MotionLaneChangeRight": true,
+        "openlabel:MotionAccelerate": true,
+        "openlabel:motionAccelerateValue": {
+          "@value": "3.9",
+          "@type": "xsd:decimal"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleBus"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanAnimalRider"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-004",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 4",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeMinor"
+        },
+        "openlabel:HorizontalCurves": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@value": "3.3",
+          "@type": "xsd:decimal"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleMotorcycle"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-005",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 5 (lane keeping, managed motorway)",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true,
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@value": "100",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@value": "94",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleAgricultural"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-006",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 6",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionOvertake": true,
+        "openlabel:MotionTurnLeft": true,
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@value": "5.7",
+          "@type": "xsd:decimal"
+        },
+        "openlabel:BehaviourCommunication": {
+          "@id": "openlabel:CommunicationWave"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleEmergency"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanDriver"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-007",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 7",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeMinor"
+        },
+        "openlabel:HorizontalCurves": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@value": "85",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleWheelchair"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanPedestrian"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-008",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 8",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeShared"
+        },
+        "openlabel:HorizontalCurves": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionTurnRight": true,
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@value": "25",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCycle"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanCyclist"
+        },
+        "openlabel:RoadUserAnimal": true
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-009",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 9 (lane keeping, managed motorway)",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true,
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@value": "120",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@value": "98",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleVan"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-010",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 10",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeMinor"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutIn": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleConstruction"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-011",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 11",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeShared"
+        },
+        "openlabel:HorizontalCurves": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionAccelerate": true,
+        "openlabel:motionAccelerateValue": {
+          "@value": "2.7",
+          "@type": "xsd:decimal"
+        },
+        "openlabel:MotionCutIn": true,
+        "openlabel:BehaviourCommunication": {
+          "@id": "openlabel:CommunicationSignalSlowing"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleTruck"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanMotorcyclist"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:standalone-012",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Standalone OpenLABEL tag 12",
+        "@language": "en"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalCurves": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionLaneChangeRight": true,
+        "openlabel:MotionAccelerate": true,
+        "openlabel:motionAccelerateValue": {
+          "@value": "3.9",
+          "@type": "xsd:decimal"
+        },
+        "openlabel:MotionCutIn": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanWheelchairUser"
+        }
+      }
+    }
+  ]
+}

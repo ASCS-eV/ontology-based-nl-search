@@ -145,7 +145,8 @@ const HIERARCHY_EXPANSION_PATH = `(<${iri('skos', 'broaderTransitive')}>|<${iri(
 /**
  * Add a FILTER (or graph pattern) for an enum value.
  *
- * - **Literal value(s)**: emits the existing `FILTER(?v = "lit")` form.
+ * - **Literal value(s)**: emits the existing `FILTER(?v = "lit")` form;
+ *   a single boolean value compares lexical forms (`STR(?v) = "true"`).
  * - **IRI value(s)**: emits a reflexive-transitive SPARQL property path,
  *   so the filter matches any concept narrower than the IRI in any
  *   `skos:broaderTransitive` or `rdfs:subClassOf` chain loaded into the
@@ -159,6 +160,11 @@ const HIERARCHY_EXPANSION_PATH = `(<${iri('skos', 'broaderTransitive')}>|<${iri(
  *   When no hierarchy edges are present in the data, the path matches only
  *   the IRI itself (reflexive case) — same semantics as plain equality.
  */
+/** `true` / `false` — the xsd:boolean lexical forms ([RDF11] §5 Datatypes). */
+function isBooleanLexical(value: string): boolean {
+  return /^(true|false)$/i.test(value.trim())
+}
+
 export function addEnumFilter(
   patterns: string[],
   filters: string[],
@@ -169,7 +175,14 @@ export function addEnumFilter(
   const iriValues = arr.filter(isIri)
   const literalValues = arr.filter((v) => !isIri(v))
 
-  if (literalValues.length === 1) {
+  // A boolean leaf stores `"true"^^xsd:boolean`, which is never RDF-term-equal
+  // to the simple literal `"true"` ([SPARQL11] §17.4.1.7 — `=` on literals of
+  // different datatypes is a type error, so the FILTER drops every row).
+  // Compare boolean lexical forms ([RDF11] §5 — xsd:boolean) by lexical value instead,
+  // which matches both typed and plain-string storage.
+  if (literalValues.length === 1 && isBooleanLexical(literalValues[0]!)) {
+    filters.push(`FILTER(STR(${varName}) = "${literalValues[0]!.trim().toLowerCase()}")`)
+  } else if (literalValues.length === 1) {
     filters.push(`FILTER(${varName} = "${escapeRdfLiteral(literalValues[0]!)}")`)
   } else if (literalValues.length > 1) {
     const values = literalValues.map((v) => `"${escapeRdfLiteral(v)}"`).join(', ')

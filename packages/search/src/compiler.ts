@@ -46,6 +46,7 @@ import {
   detectHierarchy,
   partitionFiltersByDomain,
   partitionRangesByDomain,
+  referencedDomainsOnlyShareConstraints,
   resolvePrimaryDomain,
 } from './compiler-helpers-domains.js'
 import { assembleQuery } from './compiler-helpers-query.js'
@@ -54,6 +55,7 @@ import {
   emitReferenceNode,
   type ReferenceEmitContext,
 } from './compiler-reference-emit.js'
+import { standaloneVocabularyDomains } from './compiler-standalone.js'
 import { type CompilerVocab, getCompilerVocab, getDomainReferences } from './compiler-vocab.js'
 
 // Re-export the extracted compiler submodules (ADR 0003, step 1) so the existing
@@ -103,30 +105,79 @@ export function normalizeDomainName(domain: string): string {
  *     the discovered subclass hierarchy. The compiler would otherwise emit
  *     a primary `?asset a <Class>` UNION arm using the registry's arbitrary
  *     `targetClass` pick (e.g. `gx:AccessControlManagement`), which has
- *     nothing to do with the query and returns zero rows.
+ *     nothing to do with the query and returns zero rows. When ONLY such
+ *     vocabularies were named, they resolve to the asset domains that use
+ *     them (see `assetDomainsUsingVocabularies`).
  *
  * Order-preserving and de-duplicated. Names are canonicalized to the
  * registry's directory key (so an IRI-segment input like `openlabel` maps
  * to the registry key `openlabel-v2`) before downstream lookup.
  *
+ * `requested` is the domain list the user/LLM originally asked for (before
+ * slot correction added the owners of the filter properties). When it names
+ * ONLY support vocabularies ("OpenLABEL only"), the vocabulary intent wins:
+ * the result is the asset domains using that vocabulary PLUS the vocabulary
+ * domains themselves when they have standalone entry classes, so documents
+ * of that vocabulary that are not attached to any asset are searched too
+ * (see `compiler-standalone.ts`). Defaults to `domains`.
+ *
  * Nothing about any specific ontology is hardcoded: the asset-domain set
  * comes from `getAssetDomains()`, which queries the graph.
  */
-export async function resolveKnownDomains(domains: string[]): Promise<string[]> {
+export async function resolveKnownDomains(
+  domains: string[],
+  requested: string[] = domains
+): Promise<string[]> {
   const registry = await buildDomainRegistry()
   const assetDomains = await getAssetDomains()
-  const seen = new Set<string>()
-  const known: string[] = []
-  for (const raw of domains) {
-    const name = normalizeDomainName(raw)
-    const canonical = registry.domains.has(name) ? name : registry.resolveByIriDomain(name)?.name
-    if (!canonical || seen.has(canonical)) continue
-    if (assetDomains.has(canonical)) {
+  const split = (names: string[]): { assets: string[]; vocabularies: string[] } => {
+    const seen = new Set<string>()
+    const assets: string[] = []
+    const vocabularies: string[] = []
+    for (const raw of names) {
+      const name = normalizeDomainName(raw)
+      const canonical = registry.domains.has(name) ? name : registry.resolveByIriDomain(name)?.name
+      if (!canonical || seen.has(canonical)) continue
       seen.add(canonical)
-      known.push(canonical)
+      if (assetDomains.has(canonical)) assets.push(canonical)
+      else vocabularies.push(canonical)
     }
+    return { assets, vocabularies }
   }
-  return known
+  const { assets: known } = split(domains)
+  const asked = split(requested)
+  if (asked.assets.length > 0 || asked.vocabularies.length === 0) return known
+
+  const vocabIndex = await getCompilerVocab()
+  const result = [...known]
+  for (const d of assetDomainsUsingVocabularies(asked.vocabularies, registry, vocabIndex)) {
+    if (!result.includes(d)) result.push(d)
+  }
+  return [...result, ...standaloneVocabularyDomains(asked.vocabularies, vocabIndex)]
+}
+
+/**
+ * A request naming ONLY a non-asset vocabulary ("OpenLABEL only", "gx …")
+ * means "assets described with that vocabulary" — not "no restriction".
+ * Resolve it to the asset domains whose SHACL-discovered property paths end
+ * in a leaf of that vocabulary ([SHACL] §2.3 property shapes reached via
+ * `sh:node`), in path-index order. Only applied when no asset domain was
+ * named, so a precise asset choice is never broadened by a support
+ * vocabulary that every asset happens to use.
+ */
+function assetDomainsUsingVocabularies(
+  vocabularies: string[],
+  registry: DomainRegistry,
+  vocabIndex: CompilerVocab
+): string[] {
+  const wanted = new Set(vocabularies)
+  const owners = new Set<string>()
+  for (const path of vocabIndex.paths.values()) {
+    if (!path.domain || owners.has(path.domain)) continue
+    const leafDomain = registry.domainForIri(path.propertyIri)
+    if (leafDomain && wanted.has(leafDomain)) owners.add(path.domain)
+  }
+  return [...owners].sort()
 }
 
 /**
@@ -197,7 +248,11 @@ export async function compileSlotsWithTrace(
     return { sparql: compileCrossDomainQuery(slots, registry, assetDomains, vocabIndex) }
   }
 
-  const detectedDomains = slots.domains
+  // Requested support vocabularies with standalone entry classes are answered
+  // by their own UNION arms (see `compiler-standalone.ts`); the remaining
+  // asset domains go through the usual partition below.
+  const standaloneDomains = standaloneVocabularyDomains(slots.domains, vocabIndex)
+  const detectedDomains = slots.domains.filter((d) => !standaloneDomains.includes(d))
 
   // Partition filters by domain
   const filtersByDomain = partitionFiltersByDomain(slots.filters, detectedDomains, vocabIndex)
@@ -211,11 +266,29 @@ export async function compileSlotsWithTrace(
   // Only multi-domain queries can have a parent-child hierarchy, so the
   // (global) reference index is consulted only then — a single-domain compile
   // stays free of the cross-domain discovery dependency.
-  const hasHierarchy =
-    detectedDomains.length > 1 && detectHierarchy(detectedDomains, await getDomainReferences())
+  //
+  // A schema-level reference alone does not make a JOIN: when every
+  // constraint the referenced (child) domain would carry is one the parent
+  // domain owns too, the request reads "either kind of asset matching these
+  // properties" — the same peer semantics as one GraphQL root per domain —
+  // not "parents referencing a matching child". Only a child-exclusive
+  // constraint (one the parent cannot express) forces the JOIN.
+  let hasHierarchy = false
+  if (detectedDomains.length > 1) {
+    const domainRefs = await getDomainReferences()
+    hasHierarchy =
+      detectHierarchy(detectedDomains, domainRefs) &&
+      !referencedDomainsOnlyShareConstraints(
+        detectedDomains,
+        domainRefs,
+        filtersByDomain,
+        rangesByDomain
+      )
+  }
 
-  if (!hasHierarchy && detectedDomains.length > 1) {
-    // Peer domains: generate UNION query that searches all domains independently
+  if ((!hasHierarchy && detectedDomains.length > 1) || standaloneDomains.length > 0) {
+    // Peer domains (and/or standalone vocabulary arms): generate a UNION query
+    // that searches every requested domain independently.
     return {
       sparql: await compilePeerDomainUnion(
         slots,
@@ -223,7 +296,8 @@ export async function compileSlotsWithTrace(
         filtersByDomain,
         rangesByDomain,
         registry,
-        vocabIndex
+        vocabIndex,
+        standaloneDomains
       ),
     }
   }

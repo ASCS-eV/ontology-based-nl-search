@@ -123,7 +123,8 @@ LIMIT 100
 - ✅ **Deterministic** — same slots always produce the same query
 - ✅ **Ontology-agnostic** — predicate chains discovered from SHACL, not hardcoded
 - ✅ **W3C-compliant** — `STR()` wrapping handles both literal and IRI-valued nodes
-- ✅ **Cross-domain** — referenced domains only join when they carry active filters
+- ✅ **Cross-domain** — referenced domains only join when they carry active filters that the referencing domain does not already carry; when a referenced domain's constraints are all shared with its parent (e.g. the same vocabulary leaf reachable from both), the domains are peers and each gets its own `UNION` arm, so no requested domain is dropped
+- ✅ **Standalone vocabularies** — a request scoped only to a support vocabulary (e.g. "OpenLABEL only") resolves to every asset domain whose discovered paths use that vocabulary **plus** the vocabulary itself. The vocabulary's entry classes are discovered from SHACL (classes of a non-asset domain that own properties but are never the value of a `sh:node`/`sh:class` nesting); each yields an extra `UNION` arm `?asset a <root>` guarded by `FILTER NOT EXISTS { ?_owner ?_ownerLink ?asset }`, so only unattached documents of that vocabulary match, never ones nested inside an asset
 - ✅ **Syntax-validated** — post-compilation validation catches structural errors
 
 ## Stage 6: Execution

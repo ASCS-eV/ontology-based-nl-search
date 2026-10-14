@@ -201,3 +201,59 @@ export function pathStepsTo(
  * predicate-only paths first (see {@link bfsFromRoots} for how paths that
  * need inheritance are chosen).
  */
+
+/** A top-level class of a non-asset vocabulary that instance data may use standalone. */
+export interface VocabularyRoot {
+  domain: string
+  rootClass: string
+}
+
+/**
+ * Discover the entry classes of the NON-asset vocabularies — the shapes a
+ * standalone document of that vocabulary would be typed with (e.g. a
+ * label/tag document published on its own, not nested inside any asset).
+ *
+ * A class qualifies when, purely from the shapes graph:
+ *   - it owns a composition edge or a leaf property ([SHACL] §2.3 property
+ *     shapes of a shape whose `sh:targetClass` is the class), and
+ *   - its registry domain is a known vocabulary that is NOT an asset domain,
+ *   - it is not an ancestor of an asset class (those are reached through the
+ *     asset already), and
+ *   - neither it nor any superclass is the value class of a composition edge
+ *     (`sh:node`/`sh:class` nesting, [SHACL] §4.8.1/§4.7.1) — a nested class is
+ *     part of something else, not an entry point.
+ *
+ * Nothing names a concrete ontology: the asset/vocabulary split comes from
+ * the discovered asset domains and the registry. Sorted for determinism.
+ */
+export function findVocabularyRoots(input: {
+  edges: { parentClass: string; childClass: string }[]
+  leafOwners: Iterable<string>
+  assetClasses: string[]
+  assetDomains: Set<string>
+  ancestorsOf: (cls: string) => Set<string>
+  domainOf: (iri: string) => string | undefined
+}): VocabularyRoot[] {
+  const { edges, leafOwners, assetClasses, assetDomains, ancestorsOf, domainOf } = input
+  const nested = new Set<string>()
+  const owners = new Set<string>(leafOwners)
+  for (const { parentClass, childClass } of edges) {
+    if (parentClass === childClass) continue
+    nested.add(childClass)
+    owners.add(parentClass)
+  }
+  const assetAncestors = new Set<string>()
+  for (const assetClass of assetClasses) {
+    for (const ancestor of ancestorsOf(assetClass)) assetAncestors.add(ancestor)
+  }
+  const roots: VocabularyRoot[] = []
+  for (const cls of owners) {
+    const domain = domainOf(cls)
+    if (!domain || assetDomains.has(domain) || assetAncestors.has(cls)) continue
+    if ([...ancestorsOf(cls)].some((ancestor) => nested.has(ancestor))) continue
+    roots.push({ domain, rootClass: cls })
+  }
+  return roots.sort(
+    (a, b) => a.domain.localeCompare(b.domain) || a.rootClass.localeCompare(b.rootClass)
+  )
+}

@@ -19,8 +19,8 @@ import { getAssetDomains } from './asset-domains.js'
 import { getConceptExpansionIndex } from './concept-expansion.js'
 import { getInitializedStore } from './init.js'
 import {
-  buildPropertyPaths,
   buildReferenceChains,
+  discoverPropertyPaths,
   type PropertyPath,
   type ReferenceChain,
 } from './property-paths.js'
@@ -77,6 +77,21 @@ export interface CompilerVocab {
    * chain) and the compiler picks deterministically.
    */
   referenceChains: Map<string, ReferenceChain[]>
+  /**
+   * Standalone entry classes of non-asset vocabularies, keyed by vocabulary
+   * domain, each with its leaf paths keyed by property local name. Lets the
+   * compiler find documents typed only with such a vocabulary (not attached
+   * to any asset). Sourced from `discoverPropertyPaths` /
+   * `findVocabularyRoots`; sorted by root class. Optional so hand-built
+   * fixture vocabs need not supply it.
+   */
+  vocabularyRoots?: Map<string, VocabularyRootPaths[]>
+}
+
+/** One standalone vocabulary entry class and the leaf paths it reaches. */
+export interface VocabularyRootPaths {
+  rootClass: string
+  paths: Map<string, PropertyPath>
 }
 
 /**
@@ -119,12 +134,13 @@ export async function buildCompilerVocabFrom(
   store: SparqlStore,
   registry: DomainRegistry
 ): Promise<CompilerVocab> {
-  const [propertyDomains, shapeGroupInfos, range2DInfos, propertyPaths] = await Promise.all([
+  const [propertyDomains, shapeGroupInfos, range2DInfos, discovered] = await Promise.all([
     queryPropertyDomains(store, registry),
     queryPropertyShapeGroups(store, registry),
     queryRange2DProperties(store, registry),
-    buildPropertyPaths(store, registry),
+    discoverPropertyPaths(store, registry),
   ])
+  const propertyPaths = discovered.assetPaths
 
   const properties = new Map<string, CompilerProperty>()
 
@@ -205,7 +221,34 @@ export async function buildCompilerVocabFrom(
     range2DProperties,
     paths,
     referenceChains,
+    vocabularyRoots: indexVocabularyRoots(discovered.vocabularyRootPaths),
   }
+}
+
+/**
+ * Group standalone-root paths by vocabulary domain → root class. The first
+ * path per (root, local name) wins, after sorting by property IRI, so the
+ * index is deterministic when two vocabularies share a local name.
+ */
+function indexVocabularyRoots(rootPaths: PropertyPath[]): Map<string, VocabularyRootPaths[]> {
+  const byDomain = new Map<string, Map<string, Map<string, PropertyPath>>>()
+  const sorted = [...rootPaths].sort((a, b) => a.propertyIri.localeCompare(b.propertyIri))
+  for (const path of sorted) {
+    const roots = byDomain.get(path.domain) ?? new Map<string, Map<string, PropertyPath>>()
+    byDomain.set(path.domain, roots)
+    const paths = roots.get(path.assetClass) ?? new Map<string, PropertyPath>()
+    roots.set(path.assetClass, paths)
+    if (!paths.has(path.propertyName)) paths.set(path.propertyName, path)
+  }
+  const out = new Map<string, VocabularyRootPaths[]>()
+  for (const domain of [...byDomain.keys()].sort()) {
+    const roots = byDomain.get(domain)!
+    out.set(
+      domain,
+      [...roots.keys()].sort().map((rootClass) => ({ rootClass, paths: roots.get(rootClass)! }))
+    )
+  }
+  return out
 }
 
 /**

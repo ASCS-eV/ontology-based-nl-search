@@ -24,6 +24,7 @@ import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { SchemaVocabulary } from '@ontology-search/search'
 import {
   expandFilterConcepts,
+  getAssetDomains,
   getConceptExpansionIndex,
   getInitializedStore,
   getInstanceValues,
@@ -192,14 +193,27 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   // only pollutes the interpretation with a phantom `domain:unknown` row
   // that never affected the SPARQL. Filtering here keeps the interpretation
   // honest about what was actually compiled.
-  const knownDomains = await resolveKnownDomains(correctedDomains)
+  //
+  // The LLM's own domain list is passed alongside: when it named only a
+  // support vocabulary ("OpenLABEL only"), the result keeps that vocabulary
+  // (searched standalone) next to the asset domains that use it.
+  const knownDomains = await resolveKnownDomains(
+    correctedDomains,
+    submission.slots.domains ?? [targetDomain]
+  )
 
   // 4b-ii. A property declared by several domains keeps them all — the safe
   // default. But when the query names one of those domains outright ("maps
   // …"), the others were never asked for, and answering from them buries the
   // asked-for results among assets the user had already ruled out. Narrows
   // only on a clear, unambiguous naming; every other case passes through.
-  const preferredDomains = preferDomainsNamedInQuery(knownDomains, query)
+  // A named support vocabulary is the SCOPE of the request, not its subject:
+  // its name would always win the tie-break and drop the asset domains that
+  // use it, so the tie-break is skipped whenever such a scope is present.
+  const assetDomains = await getAssetDomains()
+  const vocabularyScope = knownDomains.filter((d) => !assetDomains.has(d))
+  const preferredDomains =
+    vocabularyScope.length > 0 ? knownDomains : preferDomainsNamedInQuery(knownDomains, query)
 
   // 4c. references.* are cross-reference JOIN targets (parent → child via the
   // discovered chain), not peers of the primary domain. Normalize to an array,

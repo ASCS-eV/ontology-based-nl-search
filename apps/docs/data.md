@@ -86,6 +86,7 @@ Ontology schema files are resolved from `ontology-sources.json`. Runtime sample 
 - `sample-ositrace.jsonld` — OSI traces
 - `sample-environment-models.jsonld` — environment models
 - `sample-surface-models.jsonld` — surface models
+- `sample-openlabel.jsonld` — standalone OpenLABEL tags not attached to any asset (exercises the standalone-vocabulary `UNION` arm)
 
 Because the scenario file embeds the assets it references, the loaded store reports more HD maps (165) and environment models (70) than the standalone HD-map and environment-model files contain. Parallel `.ttl` files are kept as a fallback for environments without JSON-LD support.
 

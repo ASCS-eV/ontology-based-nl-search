@@ -101,6 +101,35 @@ describe('runSlotPipeline', () => {
     expect(response.interpretation.domains).toEqual(['hdmap', 'ositrace'])
   })
 
+  /**
+   * Regression for "OpenLabel only: … straight access-controlled motorway …".
+   * The LLM names only the support vocabulary. The pipeline must keep it as a
+   * standalone scope next to every asset domain that uses it, and the
+   * named-domain tie-break must not narrow the result to the vocabulary alone.
+   */
+  it('keeps a vocabulary-only request as a scope over its asset domains', async () => {
+    const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
+    const response = await runSlotPipeline({
+      submission: submission({
+        domains: ['openlabel'],
+        filters: { DrivableAreaType: `${OL}MotorwayManaged`, HorizontalStraights: 'true' },
+      }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      sw: new Stopwatch(),
+      query:
+        'OpenLabel only: The system travels on a straight access-controlled motorway and maintains a stable lateral position while controlling speed.',
+    })
+
+    expect([...(response.interpretation.domains ?? [])].sort()).toEqual([
+      'hdmap',
+      'openlabel',
+      'scenario',
+    ])
+    expect(response.sparql.match(/\bUNION\b/g)).toHaveLength(2)
+    expect(response.sparql).toContain('FILTER NOT EXISTS')
+  }, 120_000)
+
   it('drops a filter value that violates a declared SHACL constraint', async () => {
     const sw = new Stopwatch()
     // georeference:country requires the ISO two-letter pattern. A bogus

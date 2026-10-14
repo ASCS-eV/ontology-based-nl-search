@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import {
   bfsFromRoots,
   buildAncestorClosure,
+  findVocabularyRoots,
   pathStepsTo,
   reachedByInheritance,
 } from '../property-paths-graph.js'
@@ -119,5 +120,69 @@ describe('bfsFromRoots', () => {
     expect(predicatesOf(pathStepsTo('X', reached, 'leaf'))).toEqual(['a', 'b', 'c', 'd', 'leaf'])
     expect(reachedByInheritance('X', reached)).toBe(true)
     expect(reachedByInheritance('D4', reached)).toBe(false)
+  })
+})
+
+/**
+ * Standalone vocabulary entry points: a non-asset vocabulary class that owns
+ * properties but is never the value class of a composition edge
+ * ([SHACL] §4.8.1 `sh:node`) can be the type of an unattached document.
+ */
+describe('findVocabularyRoots', () => {
+  const domainOf = (iri: string): string | undefined => iri.split(':')[0]
+  const parents: Record<string, string[]> = {
+    'voc:SubTag': ['voc:Tag'],
+    'asset:Thing': ['base:Resource'],
+  }
+  const ancestorsOf = (cls: string): Set<string> => new Set([cls, ...(parents[cls] ?? [])])
+  const base = {
+    assetClasses: ['asset:Thing'],
+    assetDomains: new Set(['asset']),
+    ancestorsOf,
+    domainOf,
+  }
+
+  it('returns the top-level class of a non-asset vocabulary', () => {
+    const roots = findVocabularyRoots({
+      ...base,
+      edges: [
+        { parentClass: 'asset:Thing', childClass: 'asset:Content' },
+        { parentClass: 'voc:Tag', childClass: 'voc:Odd' },
+      ],
+      leafOwners: ['voc:Odd', 'asset:Content'],
+    })
+    expect(roots).toEqual([{ domain: 'voc', rootClass: 'voc:Tag' }])
+  })
+
+  it('excludes nested classes, including subclasses of a nested class', () => {
+    const roots = findVocabularyRoots({
+      ...base,
+      edges: [
+        { parentClass: 'asset:Content', childClass: 'voc:Tag' },
+        { parentClass: 'voc:Tag', childClass: 'voc:Odd' },
+      ],
+      leafOwners: ['voc:SubTag'],
+    })
+    expect(roots).toEqual([])
+  })
+
+  it('ignores asset domains, unknown domains and ancestors of asset classes', () => {
+    const roots = findVocabularyRoots({
+      ...base,
+      domainOf: (iri) => (iri.startsWith('ghost:') ? undefined : domainOf(iri)),
+      edges: [{ parentClass: 'voc:Tag', childClass: 'voc:Tag' }],
+      leafOwners: ['asset:Thing', 'base:Resource', 'ghost:Thing', 'voc:Tag'],
+    })
+    // A self-loop edge does not make `voc:Tag` nested.
+    expect(roots).toEqual([{ domain: 'voc', rootClass: 'voc:Tag' }])
+  })
+
+  it('is sorted by domain then class', () => {
+    const roots = findVocabularyRoots({
+      ...base,
+      edges: [],
+      leafOwners: ['zz:B', 'aa:Z', 'zz:A'],
+    })
+    expect(roots.map((r) => r.rootClass)).toEqual(['aa:Z', 'zz:A', 'zz:B'])
   })
 })

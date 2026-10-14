@@ -25,6 +25,7 @@ import {
   prefixedPredicate,
 } from './compiler-helpers-primitives.js'
 import { assembleQuery } from './compiler-helpers-query.js'
+import { buildStandaloneArms } from './compiler-standalone.js'
 import { type CompilerVocab } from './compiler-vocab.js'
 import { type PropertyPath } from './property-paths.js'
 
@@ -38,6 +39,10 @@ const log = createComponentLogger('compiler')
  * Generates one UNION arm per domain, each with the domain-specific
  * patterns, filters, and location constraints. Shared FILTER clauses
  * (location, license) are placed outside the UNION.
+ *
+ * `standaloneDomains` are requested support vocabularies with discovered
+ * entry classes; each adds the arms built by `buildStandaloneArms` (documents
+ * of that vocabulary not attached to any asset) after the asset arms.
  */
 export async function compilePeerDomainUnion(
   slots: SearchSlots,
@@ -45,7 +50,8 @@ export async function compilePeerDomainUnion(
   filtersByDomain: Record<string, Record<string, string | string[]>>,
   rangesByDomain: Record<string, Record<string, { min?: number; max?: number }>>,
   registry: DomainRegistry,
-  vocabIndex: CompilerVocab
+  vocabIndex: CompilerVocab,
+  standaloneDomains: string[] = []
 ): Promise<string> {
   const prefixDomains = new Set<string>()
   const selectVars = new Set(['?asset', '?name'])
@@ -120,6 +126,22 @@ export async function compilePeerDomainUnion(
       .map((line) => `    ${line}`)
       .join('\n')
     unionArms.push(`  {\n${armBody}\n  }`)
+  }
+
+  const slotHasConstraints =
+    Object.keys(slots.filters).length > 0 || Object.keys(slots.ranges).length > 0
+  for (const domainName of standaloneDomains) {
+    unionArms.push(
+      ...buildStandaloneArms(
+        domainName,
+        slots,
+        slotHasConstraints,
+        registry,
+        vocabIndex,
+        prefixDomains,
+        selectVars
+      )
+    )
   }
 
   // License is handled as a normal `filters` entry keyed by the SHACL leaf
