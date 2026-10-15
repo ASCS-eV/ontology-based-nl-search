@@ -209,11 +209,32 @@ search takes ~10–20 s. Startup verification runs `claude auth status` — no m
 
 Reasoning mode by provider: Mistral uses the `magistral-*` family, OpenAI uses the `o`-series model names (`o1`, `o4-mini`), Anthropic exposes a typed `thinking` block — `LLM_THINKING` is the only var that surfaces it explicitly. Model-id spelling is provider-specific and is passed through verbatim: Copilot uses dots (`claude-haiku-4.5`), the Anthropic Messages API uses hyphens (`claude-haiku-4-5`) and returns a 400 naming the model for the dotted form.
 
-### Copilot reasoning is disabled for slot-filling
+### Copilot reasoning is minimised for slot-filling
 
 Slot-filling is deterministic extraction (validated downstream by the SHACL gate), so the
-Copilot SDK adapter always requests `reasoningEffort: 'none'` in `createSession` — for
-**every** Copilot model, not an allowlist. This is a large latency win: with reasoning left
-on, `claude-sonnet-5` averaged ~19.5 s per round-trip (6–43 s, high variance); with `'none'`
-it is ~5 s (tight). Passing `'none'` is harmless for models that ignore the knob, so there is
-no per-model gate to fall out of date. See `agent-policy.ts` (`getAgentPolicy`).
+Copilot SDK adapter asks for the **least reasoning** the model offers — for **every** Copilot
+model, not an allowlist. What it sends is decided from what the runtime _advertises_ for the
+model (`listModels()` → `supportedReasoningEfforts`), never from the model id: `'none'` where
+advertised, otherwise the model's weakest advertised level (`'low'`), nothing for a model
+without the capability, and no `'none'` at all when the listing is unavailable. See
+`reasoning-effort.ts` and the _Copilot SDK compatibility_ section of `packages/llm/README.md`.
+
+Why not simply send `'none'`, or leave the knob unset:
+
+- **`'none'` is not accepted everywhere.** On the SDK-bundled runtime (1.0.85) it is a provider
+  400 for `claude-sonnet-5.5`, `claude-opus-5.5`, `grok-4.6`, `mai-code-1.1-flash` and
+  `gpt-5-mini`, and accepted for `claude-sonnet-5`. From runtime 1.0.91 on the runtime rejects it
+  locally for every model that does not advertise it — including `claude-sonnet-5` — while the
+  wire protocol version stays the same.
+- **Unset is not "off".** Measured through the real search path on 30 high-risk gold cases
+  (`claude-sonnet-5`, one run each): unset averaged 14.9 s (worst 44 s, 14.7k reasoning
+  tokens); `'none'` 7.3–7.4 s (worst 12.6–13.6 s, two runs); `'low'` 8.1–8.2 s (worst 12.4–21.8 s,
+  two runs).
+- **Quality.** `'low'` and `'none'` are indistinguishable at this sample size: 10–12 vs 13–14 of
+  30 exact, while two identical runs of the same setting flip 3–4 cases. Leaving reasoning on
+  recovered a few more cases (recall about 0.80 vs 0.70–0.75, one run) at twice the latency; that
+  trade-off is the maintainers' call and the policy still favours latency.
+
+The slot scorer used is `packages/testing/src/model-eval/scoring.ts` against the committed gold
+corpus. One case (`env-081`) intermittently expands a broad concept into ~60 values for any
+setting; it dominates precision when it happens and is unrelated to the effort level.
