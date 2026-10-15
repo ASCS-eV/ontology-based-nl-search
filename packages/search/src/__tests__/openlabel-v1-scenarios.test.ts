@@ -100,14 +100,16 @@ function oracle(filters: Filters): Matches {
       )
     )
     .map((tag) => tag['@id'])
-  const byAsset = (file: string, type: string) =>
-    dataFile(file)
+  // Every data file the store loads; HD maps also appear in the scenario file.
+  const byAsset = (type: string) =>
+    ['sample-hdmap.jsonld', 'sample-scenarios.jsonld']
+      .flatMap(dataFile)
       .filter((a) => a['@type'] === type && satisfies(collect(contentNodes(a)), filters))
       .map((a) => a['@id'])
   return {
     tags,
-    hdmap: byAsset('sample-hdmap.jsonld', 'hdmap:HdMap'),
-    scenario: byAsset('sample-scenarios.jsonld', 'scenario:Scenario'),
+    hdmap: byAsset('hdmap:HdMap'),
+    scenario: byAsset('scenario:Scenario'),
   }
 }
 

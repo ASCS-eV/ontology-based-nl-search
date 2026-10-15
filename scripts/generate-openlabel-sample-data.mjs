@@ -237,32 +237,79 @@ function pick(candidates, counter) {
   return candidates[(counter * coprimeStride(candidates.length) + 1) % candidates.length]
 }
 
-/** `hdmap:roadTypes` of the asset's native content node (motorway-like or not). */
-function isMotorwayLike(contentNodesOfAsset) {
-  const native = contentNodesOfAsset.find((node) => !isOpenLabelNode(node))
-  const roadTypes = native
-    ? Object.entries(native).find(([key]) => key.endsWith(':roadTypes'))?.[1]
-    : undefined
-  return asArray(roadTypes ?? []).some((value) => value === 'motorway' || value === 'highway')
+/** Values of the field `<prefix>:<name>` across the asset's native content nodes. */
+function nativeValues(contentNodesOfAsset, name) {
+  return contentNodesOfAsset
+    .filter((node) => !isOpenLabelNode(node))
+    .flatMap((node) =>
+      Object.entries(node)
+        .filter(([key]) => key.endsWith(`:${name}`))
+        .flatMap(([, value]) => asArray(value))
+    )
 }
 
-function additionsFor(fileName, asset, counters) {
+const MOTORWAY_ROAD_TYPES = new Set(['motorway', 'highway'])
+
+/** `roadTypes` of the asset's native content node (motorway-like or not). */
+function isMotorwayLike(contentNodesOfAsset) {
+  return nativeValues(contentNodesOfAsset, 'roadTypes').some((v) => MOTORWAY_ROAD_TYPES.has(v))
+}
+
+/** Native HD-map lane types with a v1 `LaneSpecificationType` counterpart. */
+const LANE_TYPE = new Map([
+  ['driving', 'LaneTypeTraffic'],
+  ['biking', 'LaneTypeCycle'],
+  ['bus', 'LaneTypeBus'],
+  ['tram', 'LaneTypeTram'],
+])
+
+/** Native traffic direction → v1 `LaneSpecificationTravelDirection`. */
+const TRAVEL_DIRECTION = new Map([
+  ['right-hand', 'TravelDirectionRight'],
+  ['left-hand', 'TravelDirectionLeft'],
+])
+
+/**
+ * The scenery an HD map's own content already states, in v1 terms: road
+ * type, lane types and travel direction. A map's OpenLABEL annotation then
+ * never contradicts the map, and every map is annotated with what it has.
+ */
+export function sceneryFromNativeContent(contentNodesOfAsset) {
+  const scenery = {}
+  if (isMotorwayLike(contentNodesOfAsset)) scenery.DrivableAreaType = 'RoadTypeMotorway'
+  const laneTypes = [
+    ...new Set(nativeValues(contentNodesOfAsset, 'laneTypes').map((v) => LANE_TYPE.get(v))),
+  ].filter(Boolean)
+  if (laneTypes.length > 0) {
+    scenery.LaneSpecificationType = laneTypes.length === 1 ? laneTypes[0] : laneTypes
+  }
+  const direction = TRAVEL_DIRECTION.get(nativeValues(contentNodesOfAsset, 'trafficDirection')[0])
+  if (direction) scenery.LaneSpecificationTravelDirection = direction
+  return scenery
+}
+
+function additionsFor(asset, counters) {
   const type = typesOf(asset)[0]
   const holder = contentHolder(asset)
   if (!holder) return []
   const existing = asArray(holder.owner[holder.key]).filter((node) => !isOpenLabelNode(node))
 
-  if (fileName === 'sample-hdmap.jsonld' && type === 'hdmap:HdMap') {
+  if (type === 'hdmap:HdMap') {
     const motorway = isMotorwayLike(existing)
     const counterKey = motorway ? 'hdmapMotorway' : 'hdmapOther'
     const situation = pick(
       motorway ? MOTORWAY_SITUATIONS : OTHER_SITUATIONS,
       counters[counterKey]++
     )
-    const node = contentNodes(situation).OddScenery
-    return node ? [node] : []
+    // The situation's own scenery wins where both say something (it may be
+    // more specific, e.g. a managed motorway).
+    const scenery = {
+      ...sceneryFromNativeContent(existing),
+      ...splitOdd(situation.odd, situation.id).OddScenery,
+    }
+    return isEmpty(scenery) ? [] : [typedNode('OddScenery', scenery, `${situation.id}.OddScenery`)]
   }
-  if (fileName === 'sample-scenarios.jsonld' && type === 'scenario:Scenario') {
+  if (type === 'scenario:Scenario') {
     const situation = pick(SITUATIONS, counters.scenario++)
     const nodes = contentNodes(situation)
     return ['OddEnvironment', 'OddDynamicElements', 'Behaviour', 'RoadUser']
@@ -278,14 +325,14 @@ const usesOpenLabelPrefix = (document) => JSON.stringify(document['@graph']).inc
  * Replace all OpenLABEL content nodes of an asset document. Pure: returns a
  * new document, never mutates `document`.
  */
-export function patchDocument(fileName, document) {
+export function patchDocument(document) {
   const out = structuredClone(document)
   const counters = { hdmapMotorway: 0, hdmapOther: 0, scenario: 0 }
   for (const asset of out['@graph']) {
     const holder = contentHolder(asset)
     if (!holder) continue
     const kept = asArray(holder.owner[holder.key]).filter((node) => !isOpenLabelNode(node))
-    const additions = additionsFor(fileName, asset, counters)
+    const additions = additionsFor(asset, counters)
     holder.owner[holder.key] = [...kept, ...additions]
   }
   if (!usesOpenLabelPrefix(out)) delete out['@context'].openlabel
@@ -313,7 +360,7 @@ export function computeOutputs(directory = dataDirectory) {
   const outputs = [{ fileName: TAG_FILE, text: serialise(buildTagDocument()) }]
   for (const fileName of ASSET_FILES) {
     const document = JSON.parse(readFileSync(join(directory, fileName), 'utf8'))
-    outputs.push({ fileName, text: serialise(patchDocument(fileName, document)) })
+    outputs.push({ fileName, text: serialise(patchDocument(document)) })
   }
   return outputs
 }

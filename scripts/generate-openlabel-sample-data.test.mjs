@@ -36,6 +36,20 @@ const readDocument = (fileName) => JSON.parse(readFileSync(join(dataDirectory, f
 const asArray = (value) => (Array.isArray(value) ? value : [value])
 const typesOf = (node) => asArray(node['@type'] ?? []).map(String)
 
+/** Values of `<prefix>:<name>` across an asset's non-OpenLABEL content nodes. */
+function nativeContentValues(asset, name) {
+  const specKey = Object.keys(asset).find((key) => key.endsWith(':hasDomainSpecification'))
+  const spec = asset[specKey]
+  const content = asArray(spec[Object.keys(spec).find((key) => key.endsWith(':hasContent'))])
+  return content
+    .filter((node) => !typesOf(node).some((type) => type.startsWith('openlabel:')))
+    .flatMap((node) =>
+      Object.entries(node)
+        .filter(([key]) => key.endsWith(`:${name}`))
+        .flatMap(([, value]) => asArray(value))
+    )
+}
+
 function embeddedOpenLabelNodes(asset) {
   const specKey = Object.keys(asset).find((key) => key.endsWith(':hasDomainSpecification'))
   const spec = asset[specKey]
@@ -55,8 +69,8 @@ test('the committed sample files are exactly what the generator produces', () =>
 
 test('rewriting is idempotent', () => {
   for (const fileName of ASSET_FILES) {
-    const once = patchDocument(fileName, readDocument(fileName))
-    assert.deepEqual(patchDocument(fileName, once), once, fileName)
+    const once = patchDocument(readDocument(fileName))
+    assert.deepEqual(patchDocument(once), once, fileName)
   }
 })
 
@@ -79,7 +93,7 @@ test('rewriting never touches anything but OpenLABEL nodes', () => {
   }
   for (const fileName of ASSET_FILES) {
     const document = readDocument(fileName)
-    assert.deepEqual(strip(patchDocument(fileName, document)), strip(document), fileName)
+    assert.deepEqual(strip(patchDocument(document)), strip(document), fileName)
   }
 })
 
@@ -125,6 +139,51 @@ test('standalone tags follow Tag → AdminTag / Odd / Behaviour / RoadUser', () 
     assert.match(tag['@id'], /^did:web:openlabel\.example:Tag:/)
     assert.equal(tag['openlabel:AdminTag']['@type'], 'openlabel:AdminTag')
     assert.equal(tag['openlabel:Odd']['@type'], 'openlabel:Odd')
+  }
+})
+
+test('every HD map restates its own road type, lane types and travel direction', () => {
+  // Independent restatement of the native → v1 correspondence.
+  const MOTORWAY = new Set([
+    'openlabel:RoadTypeMotorway',
+    'openlabel:MotorwayManaged',
+    'openlabel:MotorwayUnmanaged',
+  ])
+  const LANE_TYPE = {
+    driving: 'openlabel:LaneTypeTraffic',
+    biking: 'openlabel:LaneTypeCycle',
+    bus: 'openlabel:LaneTypeBus',
+    tram: 'openlabel:LaneTypeTram',
+  }
+  const DIRECTION = {
+    'right-hand': 'openlabel:TravelDirectionRight',
+    'left-hand': 'openlabel:TravelDirectionLeft',
+  }
+  const ids = (value) => asArray(value ?? []).map((ref) => ref['@id'])
+  const maps = ['sample-hdmap.jsonld', 'sample-scenarios.jsonld']
+    .flatMap((fileName) => readDocument(fileName)['@graph'])
+    .filter((asset) => asset['@type'] === 'hdmap:HdMap')
+  assert.ok(maps.length > 0)
+  for (const map of maps) {
+    const where = map['@id']
+    const [scenery] = embeddedOpenLabelNodes(map)
+    assert.ok(scenery, `${where}: no OpenLABEL scenery`)
+    const native = (name) => nativeContentValues(map, name)
+    if (native('roadTypes').some((v) => v === 'motorway' || v === 'highway')) {
+      assert.ok(
+        ids(scenery['openlabel:DrivableAreaType']).some((id) => MOTORWAY.has(id)),
+        where
+      )
+    }
+    const laneTypes = ids(scenery['openlabel:LaneSpecificationType'])
+    for (const laneType of native('laneTypes')) {
+      if (LANE_TYPE[laneType]) assert.ok(laneTypes.includes(LANE_TYPE[laneType]), where)
+    }
+    assert.deepEqual(
+      ids(scenery['openlabel:LaneSpecificationTravelDirection']),
+      native('trafficDirection').map((v) => DIRECTION[v]),
+      where
+    )
   }
 })
 
