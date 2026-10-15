@@ -22,6 +22,7 @@ import {
   emitDeepFilters,
   emitDirectPathFilters,
   lookupDomainSpecPredicate,
+  lookupLeafDatatype,
   lookupStepPredicate,
   SHALLOW_PATH_MAX_STEPS,
 } from './compiler-helpers-paths.js'
@@ -285,7 +286,13 @@ export function buildDomainPatterns(
       for (const [propName, value] of bucket.filters) {
         const varName = `?${propName}${suffix}`
         patterns.push(`${groupVar} ${propPrefix}:${propName} ${varName} .`)
-        addEnumFilter(patterns, filters, varName, value)
+        addEnumFilter(
+          patterns,
+          filters,
+          varName,
+          value,
+          lookupLeafDatatype(vocabIndex, domainName, propName)
+        )
         selectVars.add(varName)
       }
 
@@ -383,7 +390,13 @@ export function buildDomainPatterns(
     for (const [propName, value] of directFallbackFilters) {
       const varName = `?${propName}${suffix}`
       patterns.push(`${assetVar} ${domain.prefix}:${propName} ${varName} .`)
-      addEnumFilter(patterns, filters, varName, value)
+      addEnumFilter(
+        patterns,
+        filters,
+        varName,
+        value,
+        lookupLeafDatatype(vocabIndex, domainName, propName)
+      )
       selectVars.add(varName)
     }
     for (const [propName, range] of directFallbackRanges) {

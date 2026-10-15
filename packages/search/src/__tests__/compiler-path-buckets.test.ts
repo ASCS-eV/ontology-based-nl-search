@@ -6,6 +6,7 @@ import type { CompilerVocab } from '../compiler-vocab.js'
 import type { PropertyPath } from '../property-paths.js'
 
 const NS = 'http://example.org/'
+const XSD = 'http://www.w3.org/2001/XMLSchema#'
 const path = (name: string, intermediate: string): PropertyPath =>
   ({
     domain: 'x',
@@ -70,12 +71,69 @@ describe('emitDirectPathFilters — intermediate sharing', () => {
   })
 })
 
+describe('emitDirectPathFilters — datatype-driven comparison', () => {
+  it('compares a leaf declared xsd:boolean by lexical form', () => {
+    const filters: string[] = []
+    emitDirectPathFilters(
+      'x',
+      [['flag', 'true', { ...path('flag', 'Odd'), datatype: `${XSD}boolean` }]],
+      [],
+      '?asset',
+      '',
+      [],
+      filters,
+      new Set(),
+      new Set(),
+      { domains: new Map() } as unknown as DomainRegistry,
+      { range2DProperties: new Map() } as unknown as CompilerVocab
+    )
+    expect(filters).toEqual(['FILTER(STR(?flag) IN ("true", "1"))'])
+  })
+
+  it('keeps plain equality when the leaf is a string, whatever the value looks like', () => {
+    const filters: string[] = []
+    emitDirectPathFilters(
+      'x',
+      [['label', 'True', { ...path('label', 'Odd'), datatype: `${XSD}string` }]],
+      [],
+      '?asset',
+      '',
+      [],
+      filters,
+      new Set(),
+      new Set(),
+      { domains: new Map() } as unknown as DomainRegistry,
+      { range2DProperties: new Map() } as unknown as CompilerVocab
+    )
+    expect(filters).toEqual(['FILTER(?label = "True")'])
+  })
+})
+
 describe('addEnumFilter — boolean literals', () => {
-  it('compares a boolean value by lexical form so typed data matches', async () => {
+  const BOOLEAN = `${XSD}boolean`
+
+  it('compares a boolean leaf by lexical form so typed data matches', async () => {
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const filters: string[] = []
-    addEnumFilter([], filters, '?flag', 'True')
-    expect(filters).toEqual(['FILTER(STR(?flag) = "true")'])
+    addEnumFilter([], filters, '?flag', 'True', BOOLEAN)
+    expect(filters).toEqual(['FILTER(STR(?flag) IN ("true", "1"))'])
+  })
+
+  it('covers both lexical forms of false', async () => {
+    const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
+    const filters: string[] = []
+    addEnumFilter([], filters, '?flag', '0', BOOLEAN)
+    expect(filters).toEqual(['FILTER(STR(?flag) IN ("false", "0"))'])
+  })
+
+  it('does not sniff the value: without a boolean datatype a "true" stays plain equality', async () => {
+    const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
+    const untyped: string[] = []
+    addEnumFilter([], untyped, '?v', 'true')
+    expect(untyped).toEqual(['FILTER(?v = "true")'])
+    const stringTyped: string[] = []
+    addEnumFilter([], stringTyped, '?v', 'True', `${XSD}string`)
+    expect(stringTyped).toEqual(['FILTER(?v = "True")'])
   })
 
   it('keeps plain equality for non-boolean literals', async () => {
@@ -91,14 +149,21 @@ describe('addEnumFilter — boolean literals', () => {
     // `"true"^^xsd:boolean` data, matched nothing ([SPARQL11] §17.4.1.9).
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const filters: string[] = []
-    addEnumFilter([], filters, '?flag', ['true', 'FALSE', ' True '])
-    expect(filters).toEqual(['FILTER(STR(?flag) IN ("true", "false"))'])
+    addEnumFilter([], filters, '?flag', ['true', 'FALSE', ' True '], BOOLEAN)
+    expect(filters).toEqual(['FILTER(STR(?flag) IN ("true", "1", "false", "0"))'])
   })
 
   it('does not treat a mixed list as boolean', async () => {
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const filters: string[] = []
-    addEnumFilter([], filters, '?v', ['true', 'maybe'])
+    addEnumFilter([], filters, '?v', ['true', 'maybe'], BOOLEAN)
     expect(filters).toEqual(['FILTER(?v IN ("true", "maybe"))'])
+  })
+
+  it('does not mistake an inherited object key for a boolean form', async () => {
+    const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
+    const filters: string[] = []
+    addEnumFilter([], filters, '?v', 'constructor', BOOLEAN)
+    expect(filters).toEqual(['FILTER(?v = "constructor")'])
   })
 })

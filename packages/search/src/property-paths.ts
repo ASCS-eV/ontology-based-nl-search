@@ -26,6 +26,7 @@ import {
 import {
   enrichLeafKinds,
   type LeafRow,
+  queryLeafDatatypes,
   queryLeafProperties,
   queryResolvedEdges,
 } from './property-paths-queries.js'
@@ -162,10 +163,16 @@ export async function discoverPropertyPaths(
   // that actually showed up in a discovered path. Done after BFS so the
   // hot leaf query stays minimal (see `enrichLeafKinds`).
   const enrichEnd = log.time('property-paths/enrich-leaf-kinds')
-  const enriched = await enrichLeafKinds(store, [...out, ...rootPaths])
-  for (const path of [...out, ...rootPaths]) {
+  const allPaths = [...out, ...rootPaths]
+  const [enriched, datatypes] = await Promise.all([
+    enrichLeafKinds(store, allPaths),
+    queryLeafDatatypes(store, allPaths),
+  ])
+  for (const path of allPaths) {
     const kind = enriched.get(path.propertyIri)
     if (kind) path.leafKind = kind
+    const datatype = datatypes.get(path.propertyIri)
+    if (datatype) path.datatype = datatype
   }
   enrichEnd()
 

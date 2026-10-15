@@ -350,3 +350,54 @@ describe('genericity proof — compiler emission on a flat schema', () => {
     expect(sparql).not.toContain('?domSpec')
   }, 30_000)
 })
+
+/**
+ * The comparison for a literal follows the leaf's `sh:datatype` ([SHACL]
+ * §4.1.2), never the look of the filter value. Booleans are stored as
+ * `"true"^^xsd:boolean`, which no simple-literal equality matches
+ * ([SPARQL11] §17.4.1.7); a string leaf holding the text "True" must keep
+ * plain equality.
+ */
+const DATATYPE_FIXTURE_TTL = `
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix library: <http://example.org/library/v1/> .
+
+library:BookShape a sh:NodeShape ;
+  sh:targetClass library:Book ;
+  sh:property [ sh:path library:inPrint ; sh:datatype xsd:boolean ] ;
+  sh:property [ sh:path library:subtitle ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path library:edition ] .
+`
+
+describe('genericity proof — datatype-driven literal comparison', () => {
+  it('discovers sh:datatype on leaf paths', async () => {
+    const store = new OxigraphStore()
+    await store.loadTurtle(DATATYPE_FIXTURE_TTL, SCHEMA_GRAPH)
+    const paths = await buildPropertyPaths(store, libraryRegistry() as any)
+    const datatypeOf = (name: string) => paths.find((p) => p.propertyName === name)?.datatype
+    expect(datatypeOf('inPrint')).toBe('http://www.w3.org/2001/XMLSchema#boolean')
+    expect(datatypeOf('subtitle')).toBe('http://www.w3.org/2001/XMLSchema#string')
+    expect(datatypeOf('edition')).toBeUndefined()
+  }, 30_000)
+
+  it('compares only the boolean-typed leaf by lexical form', async () => {
+    const store = new OxigraphStore()
+    await store.loadTurtle(DATATYPE_FIXTURE_TTL, SCHEMA_GRAPH)
+    const registry = libraryRegistry()
+    const vocabIndex = await buildCompilerVocabFrom(store, registry as any)
+
+    const { sparql } = await compileSlotsWithTrace(
+      {
+        domains: ['library'],
+        filters: { inPrint: 'true', subtitle: 'True', edition: 'true' },
+        ranges: {},
+      },
+      { registry: registry as any, vocabIndex }
+    )
+
+    expect(sparql).toContain('FILTER(STR(?inPrint) IN ("true", "1"))')
+    expect(sparql).toContain('FILTER(?subtitle = "True")')
+    expect(sparql).toContain('FILTER(?edition = "true")')
+  }, 30_000)
+})

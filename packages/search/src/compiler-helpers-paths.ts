@@ -46,6 +46,19 @@ export function lookupStepPredicate(
 }
 
 /**
+ * The `sh:datatype` ([SHACL] §4.1.2) of a domain's leaf property, or
+ * `undefined` when the domain has no discovered path to it or the shape
+ * declares none. Keeps the comparison chosen for a leaf tied to the schema.
+ */
+export function lookupLeafDatatype(
+  vocabIndex: CompilerVocab,
+  domainName: string,
+  propName: string
+): string | undefined {
+  return vocabIndex.paths.get(`${domainName}:${propName}`)?.datatype
+}
+
+/**
  * The asset → specification predicate (the first hop) for a domain, derived
  * from any of its shape-group properties' discovered paths. Every shape-group
  * property in a domain nests under the same specification node, so they all
@@ -165,7 +178,7 @@ export function emitDirectPathFilters(
         const v = `?${entry.name}${suffix}`
         patterns.push(`${cursor} ${leafPred} ${v} .`)
         if (entry.path.leafKind === 'literal') {
-          addEnumFilter(patterns, filters, v, entry.value)
+          addEnumFilter(patterns, filters, v, entry.value, entry.path.datatype)
         } else {
           addLocationFilter(filters, v, entry.value)
         }
@@ -284,7 +297,7 @@ export function emitDeepFilters(
       // `class:` leaves are IRI-typed and want STR/LCASE matching;
       // `iri` leaves likewise. Literal leaves want exact equality.
       if (path.leafKind === 'literal') {
-        addEnumFilter(patterns, filters, v, value)
+        addEnumFilter(patterns, filters, v, value, path.datatype)
       } else {
         addLocationFilter(filters, v, value)
       }

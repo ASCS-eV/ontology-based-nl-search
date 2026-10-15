@@ -323,7 +323,7 @@ export function emitCrossDomainFilters(
       const v = `?${key}`
       optionalLines.push(`    ${cursor} ${leafPred} ${v} .`)
       if (leafPath.leafKind === 'literal') {
-        addEnumFilter(optionalLines, filters, v, value)
+        addEnumFilter(optionalLines, filters, v, value, leafPath.datatype)
       } else {
         addLocationFilter(filters, v, value)
       }

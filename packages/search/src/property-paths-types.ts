@@ -66,6 +66,12 @@ export interface PropertyPath {
    * reference chains, so they only ever add filterable properties.
    */
   extended?: true
+  /**
+   * `sh:datatype` IRI the leaf's shape declares ([SHACL] §4.1.2), when any.
+   * The compiler uses it to pick a comparison that suits the stored literal
+   * (e.g. `xsd:boolean`) instead of guessing from the filter value.
+   */
+  datatype?: string
 }
 
 /**
