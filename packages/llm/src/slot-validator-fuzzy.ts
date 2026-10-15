@@ -2,9 +2,11 @@
  * Fuzzy matching & suggestion helpers (ADR 0003) — the leaf layer of slot
  * validation: tokenized similarity scoring, the bespoke Levenshtein distance
  * (ADR 0004 keep-decision), best-match selection, vocabulary indexing, and
- * nearest-vocabulary suggestions. No sibling imports.
+ * nearest-vocabulary suggestions. Imports only types from siblings.
  */
 import type { SchemaVocabulary } from '@ontology-search/search'
+
+import type { PrefixMap } from './prefix-map.js'
 
 /**
  * Minimum NORMALIZED similarity (0-1) for a fuzzy value match to be accepted.
@@ -187,25 +189,75 @@ function iriLocalName(value: string): string {
 }
 
 /**
+ * Split a prefixed name (`ex:Member`) into its prefix and
+ * local part, or `null` when the value is not one. The prompt shows the
+ * shapes' Turtle, so the LLM echoes IRI enum members back in this form
+ * ([TURTLE] §2.4; [SPARQL11] §4.1.1.1 prefixed names). A full IRI
+ * (`https://…`) is not a prefixed name: its "local part" contains `/`.
+ */
+function parsePrefixedName(value: string): { prefix: string; local: string } | null {
+  const match = /^([A-Za-z][\w.-]*):([^\s/#:]+)$/.exec(value)
+  return match ? { prefix: match[1]!, local: match[2]! } : null
+}
+
+/**
+ * The IRI-valued member a prefixed name abbreviates, or `null`.
+ *
+ * The prefix decides which vocabulary is meant: with a declared prefix only
+ * members in a namespace it is bound to qualify, so `ex:Member` never matches
+ * another vocabulary's `Member`. Either way the result must be unambiguous:
+ * a prefix bound to several namespaces that each hold the local name, or a
+ * prefix the ontology does not declare whose local name several members
+ * carry, resolves to nothing.
+ */
+function matchPrefixedName(
+  value: string,
+  allowedValues: string[],
+  prefixes?: PrefixMap
+): string | null {
+  const prefixed = parsePrefixedName(value)
+  if (!prefixed) return null
+  const local = prefixed.local.toLowerCase()
+  const sameLocal = allowedValues.filter(
+    (allowed) =>
+      iriLocalName(allowed) !== allowed && iriLocalName(allowed).toLowerCase().trim() === local
+  )
+  const namespaces = prefixes?.get(prefixed.prefix)
+  const candidates =
+    namespaces === undefined
+      ? sameLocal
+      : sameLocal.filter((allowed) => namespaces.some((namespace) => allowed.startsWith(namespace)))
+  return candidates.length === 1 ? candidates[0]! : null
+}
+
+/**
  * Find the best fuzzy match for a value in a list of allowed values.
  * Returns null if no match within threshold.
  *
  * When allowed values are IRIs (from `@type: @vocab` enums), the LLM
  * typically proposes just the local name. This function compares against
  * both the full value AND its IRI local name to bridge the representation gap.
+ * A prefixed name is resolved through `prefixes` (see {@link matchPrefixedName}).
  */
 export function findBestMatch(
   value: string,
-  allowedValues: string[]
+  allowedValues: string[],
+  prefixes?: PrefixMap
 ): { match: string; distance: number; similarity: number } | null {
   if (!value) return null
   const normalizedValue = value.toLowerCase().trim()
+  const prefixedMember = matchPrefixedName(value.trim(), allowedValues, prefixes)
+  if (prefixedMember !== null) return { match: prefixedMember, distance: 0, similarity: 1 }
+  const isPrefixedName = parsePrefixedName(value.trim()) !== null
 
   let best: { match: string; distance: number; similarity: number } | null = null
   for (const allowed of allowedValues) {
     const normalizedAllowed = allowed.toLowerCase().trim()
     const normalizedLocalName = iriLocalName(allowed).toLowerCase().trim()
-
+    const isIri = normalizedLocalName !== normalizedAllowed
+    // A prefixed name that did not resolve above names a specific vocabulary;
+    // its edit distance to some other namespace's local name proves nothing.
+    if (isPrefixedName && isIri) continue
     // Exact match (case-insensitive) — full value or local name.
     if (normalizedValue === normalizedAllowed || normalizedValue === normalizedLocalName) {
       return { match: allowed, distance: 0, similarity: 1 }

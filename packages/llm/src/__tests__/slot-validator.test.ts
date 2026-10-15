@@ -134,6 +134,112 @@ describe('correctFilters', () => {
     const result = correctFilters(filters, testVocabulary)
     expect(result).toEqual({ roadTypes: 'suburban' })
   })
+
+  it('expands a prefixed name to the IRI-valued enum member it abbreviates', () => {
+    // Regression: the LLM echoed `ex:RoadTypeMotorway` as shown in the
+    // prompt; edit distance to the full IRI is huge, so the value fell
+    // through to SHACL, failed `sh:in`, and the filter was dropped.
+    const iri = 'https://example.org/odd/RoadTypeMotorway'
+    const vocabulary: SchemaVocabulary = {
+      ...testVocabulary,
+      enumProperties: [
+        {
+          localName: 'drivableArea',
+          domain: 'scenario',
+          iri: 'https://example.org/odd/drivableArea',
+          label: 'drivable area',
+          description: '',
+          allowedValues: ['https://example.org/odd/RoadTypeRural', iri],
+        },
+      ],
+    }
+    expect(correctFilters({ drivableArea: 'ex:RoadTypeMotorway' }, vocabulary)).toEqual({
+      drivableArea: iri,
+    })
+    // A literal-valued enum is never matched through a prefix.
+    expect(correctFilters({ roadTypes: 'vocabulary:motorway' }, testVocabulary)).toEqual({
+      roadTypes: 'vocabulary:motorway',
+    })
+  })
+
+  describe('prefixed names across vocabularies sharing a local name', () => {
+    const v1 = 'https://example.org/vocab-a/v1/RoadTypeMotorway'
+    const v2 = 'https://example.org/vocab-b/v2/RoadTypeMotorway'
+    const vocabulary: SchemaVocabulary = {
+      ...testVocabulary,
+      enumProperties: [
+        {
+          localName: 'drivableArea',
+          domain: 'scenario',
+          iri: 'https://example.org/odd/drivableArea',
+          label: 'drivable area',
+          description: '',
+          allowedValues: [v1, v2],
+        },
+      ],
+    }
+    const prefixes = new Map<string, readonly string[]>([
+      ['a', ['https://example.org/vocab-a/v1/']],
+      ['b', ['https://example.org/vocab-b/v2/']],
+      // One prefix bound to two namespaces by two loaded vocabularies.
+      ['shared', ['https://example.org/vocab-a/v1/', 'https://example.org/vocab-b/v2/']],
+    ])
+
+    it('lets the prefix pick the vocabulary, not the member order', () => {
+      expect(correctFilters({ drivableArea: 'a:RoadTypeMotorway' }, vocabulary, prefixes)).toEqual({
+        drivableArea: v1,
+      })
+      expect(correctFilters({ drivableArea: 'b:RoadTypeMotorway' }, vocabulary, prefixes)).toEqual({
+        drivableArea: v2,
+      })
+    })
+
+    it('does not fall back to another vocabulary when the prefix is declared but unmatched', () => {
+      const onlyV1: SchemaVocabulary = {
+        ...vocabulary,
+        enumProperties: [{ ...vocabulary.enumProperties[0]!, allowedValues: [v1] }],
+      }
+      expect(correctFilters({ drivableArea: 'b:RoadTypeMotorway' }, onlyV1, prefixes)).toEqual({
+        drivableArea: 'b:RoadTypeMotorway',
+      })
+    })
+
+    it('refuses a prefix bound to several namespaces that each hold the local name', () => {
+      expect(
+        correctFilters({ drivableArea: 'shared:RoadTypeMotorway' }, vocabulary, prefixes)
+      ).toEqual({ drivableArea: 'shared:RoadTypeMotorway' })
+    })
+
+    it('resolves a prefix bound to several namespaces when only one holds the local name', () => {
+      const onlyV2: SchemaVocabulary = {
+        ...vocabulary,
+        enumProperties: [{ ...vocabulary.enumProperties[0]!, allowedValues: [v2] }],
+      }
+      expect(correctFilters({ drivableArea: 'shared:RoadTypeMotorway' }, onlyV2, prefixes)).toEqual(
+        { drivableArea: v2 }
+      )
+    })
+
+    it('refuses an undeclared prefix when the local name is ambiguous', () => {
+      expect(correctFilters({ drivableArea: 'zz:RoadTypeMotorway' }, vocabulary, prefixes)).toEqual(
+        { drivableArea: 'zz:RoadTypeMotorway' }
+      )
+      // Without any prefix map the same ambiguity holds.
+      expect(correctFilters({ drivableArea: 'a:RoadTypeMotorway' }, vocabulary)).toEqual({
+        drivableArea: 'a:RoadTypeMotorway',
+      })
+    })
+
+    it('accepts an undeclared prefix when exactly one member carries the local name', () => {
+      const unique: SchemaVocabulary = {
+        ...vocabulary,
+        enumProperties: [{ ...vocabulary.enumProperties[0]!, allowedValues: [v1] }],
+      }
+      expect(correctFilters({ drivableArea: 'zz:RoadTypeMotorway' }, unique, prefixes)).toEqual({
+        drivableArea: v1,
+      })
+    })
+  })
 })
 
 describe('validateSlots', () => {

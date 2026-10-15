@@ -157,6 +157,8 @@ graph TD
 | **Domain**     | Property→domain map; add missing, keep valid                   | `scenario` + `roadTypes` → adds `hdmap` |
 | **Confidence** | Recompute from match quality, not LLM self-assessment          | Exact = high, fuzzy = medium            |
 
+The shapes' Turtle is part of the prompt, so the model often echoes an IRI-valued enum member as a prefixed name (`openlabel:RoadTypeMotorway`). Such a value is resolved through the prefixes the loaded ontology declares ([TURTLE] §2.4): the prefix selects the vocabulary, so two vocabularies that share a local name are never confused. A value is resolved only when exactly one member qualifies: a prefix that two loaded vocabularies bind to namespaces that both hold the local name, or an undeclared prefix whose local name several members carry, resolves to nothing. A prefixed name that does not resolve is never edit-distance-matched against another vocabulary's local name.
+
 ## Provider Flexibility
 
 | Provider           | SDK                       | Use Case                                                   |

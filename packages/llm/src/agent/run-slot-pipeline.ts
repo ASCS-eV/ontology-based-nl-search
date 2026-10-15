@@ -20,6 +20,7 @@
 
 import type { OntologyGap, QueryInterpretation } from '@ontology-search/api-types'
 import type { Stopwatch } from '@ontology-search/core/logging'
+import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { SchemaVocabulary } from '@ontology-search/search'
 import {
@@ -39,6 +40,7 @@ import type { LlmStructuredResponse } from '@ontology-search/search/types'
 import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
 import { normalizeReferences } from '@ontology-search/slots/slots'
 
+import { buildPrefixMap, type PrefixMap } from '../prefix-map.js'
 import type { InstanceValueLookup } from '../slot-validator.js'
 import {
   correctDomains,
@@ -107,6 +109,7 @@ async function validateReferenceTree(
   conceptIndex: Awaited<ReturnType<typeof getConceptExpansionIndex>>,
   shacl: ShaclValidator,
   gaps: OntologyGap[],
+  prefixes: PrefixMap,
   instanceValues?: InstanceValueLookup
 ): Promise<ReferenceFilter[]> {
   const out: ReferenceFilter[] = []
@@ -114,7 +117,7 @@ async function validateReferenceTree(
     const cleaned: ReferenceFilter = { ...ref }
 
     if (ref.filters && Object.keys(ref.filters).length > 0) {
-      const fuzzed = correctFilters(ref.filters, vocabulary)
+      const fuzzed = correctFilters(ref.filters, vocabulary, prefixes)
       const expanded = expandFilterConcepts(fuzzed, conceptIndex)
       const res = await validateSlotsAgainstShacl(expanded, shacl, vocabulary, instanceValues)
       for (const g of res.gaps) gaps.push(g)
@@ -136,6 +139,7 @@ async function validateReferenceTree(
         conceptIndex,
         shacl,
         gaps,
+        prefixes,
         instanceValues
       )
     }
@@ -155,8 +159,10 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   const { submission, vocabulary, targetDomain, sw, query } = input
 
   const endValidation = sw.time('post-llm-validation')
-  // 1. Fuzzy match: case / typo correction against sh:in enums.
-  const fuzzedFilters = correctFilters(submission.slots.filters ?? {}, vocabulary)
+  // 1. Fuzzy match: case / typo correction against sh:in enums. Prefixed names
+  // the LLM echoed from the shapes' Turtle resolve through the declared prefixes.
+  const prefixes = buildPrefixMap(await buildDomainRegistry())
+  const fuzzedFilters = correctFilters(submission.slots.filters ?? {}, vocabulary, prefixes)
   // 1b. Concept-hierarchy expansion: if a filter value names a broad
   // SKOS concept ("Europe", "Scandinavia", a vehicle super-category),
   // expand it to its transitive narrower members so a literal-valued
@@ -261,6 +267,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     conceptIndex,
     shacl,
     referenceGaps,
+    prefixes,
     instanceValueLookup
   )
   endValidation()
@@ -310,5 +317,5 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   }
 
   // 6. Final post-compile sanity / confidence-floor pass.
-  return validateSlots(rawResponse, vocabulary)
+  return validateSlots(rawResponse, vocabulary, prefixes)
 }
