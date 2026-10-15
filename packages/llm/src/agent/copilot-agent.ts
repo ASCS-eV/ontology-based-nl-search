@@ -17,15 +17,15 @@
 
 import { randomUUID } from 'node:crypto'
 
-import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
-import { getConfig } from '@ontology-search/core/config'
-import { Stopwatch } from '@ontology-search/core/logging'
+import { approveAll, type CopilotSession, defineTool } from '@github/copilot-sdk'
+import { createComponentLogger, Stopwatch } from '@ontology-search/core/logging'
 import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
 import type { LlmStructuredResponse } from '@ontology-search/search/types'
 import { z } from 'zod'
 
 import { buildRequestPrompt, getAgentContext, getStaticCore } from './agent-context.js'
 import { getAgentPolicy } from './agent-policy.js'
+import { getCopilotClient, resolveSessionEffort } from './copilot-client.js'
 import { buildEmptyFallbackResponse } from './empty-fallback.js'
 import type { AgentOptions } from './index.js'
 import { runSlotPipeline } from './run-slot-pipeline.js'
@@ -33,19 +33,10 @@ import { SCHEMA_TOOL_DEFINITIONS } from './schema-tools.js'
 import { renderTokenDirective, type Submission, SubmissionRouter } from './submission-router.js'
 import { slotSubmissionSchema } from './tools.js'
 
-// ─── Client Singleton ────────────────────────────────────────────────────────
+const log = createComponentLogger('copilot-agent')
 
-let client: CopilotClient | null = null
-
-async function getClient(): Promise<CopilotClient> {
-  if (client) return client
-  const { GITHUB_TOKEN } = getConfig()
-  client = new CopilotClient({
-    ...(GITHUB_TOKEN ? { gitHubToken: GITHUB_TOKEN } : {}),
-  })
-  await client.start()
-  return client
-}
+// The shared client (one per process, also used by authoring) lives in
+// `./copilot-client.ts`.
 
 /**
  * Per-request submission router. Each concurrent request gets a unique token;
@@ -134,18 +125,19 @@ const LLM_TURN_TIMEOUT_MS = 120_000
  * exactly once so no history accumulates.
  */
 async function createSession(prompt: string): Promise<CopilotSession> {
-  const c = await getClient()
+  const c = await getCopilotClient()
   const policy = getAgentPolicy()
+  // The policy states the effort it WANTS; what the runtime accepts for this
+  // model is decided from its advertised capabilities (see reasoning-effort.ts).
+  const reasoningEffort = await resolveSessionEffort(c, policy.model, policy.reasoningEffort)
 
   return c.createSession({
     model: policy.model,
-    // [SDK] The Copilot `session.create` wire schema accepts
-    // `reasoningEffort: "none"` ("none" disables reasoning), but the SDK's
-    // exported `ReasoningEffort` union narrows to low|medium|high|xhigh.
-    // Forward the wire-valid policy value with a cast.
-    ...(policy.reasoningEffort
-      ? { reasoningEffort: policy.reasoningEffort as unknown as 'low' | 'medium' | 'high' }
-      : {}),
+    // [SDK] `reasoningEffort` is typed low|medium|high|xhigh|max, but runtimes
+    // also report and accept `"none"` for models that advertise it
+    // (`supportedReasoningEfforts`). The resolved value is always one the model
+    // advertises, so the cast only widens the SDK's narrower type.
+    ...(reasoningEffort ? { reasoningEffort: reasoningEffort as 'low' } : {}),
     onPermissionRequest: approveAll,
     systemMessage: { mode: 'replace', content: prompt },
     tools: [buildSubmitSlotsTool(), ...buildLookupTools()],
@@ -203,7 +195,7 @@ async function acquireSession(): Promise<CopilotSession> {
  */
 export async function getPersistentSession(): Promise<CopilotSession> {
   // Only ensure the client is started (fast) — pool fills in background
-  await getClient()
+  await getCopilotClient()
   void replenishPool()
   // Return a placeholder — warmup doesn't actually need a session reference,
   // it just triggers background creation.
@@ -224,14 +216,18 @@ const CACHE_PRIMING_QUERY = 'warmup'
 
 /**
  * Run one throwaway slot-fill to warm the shared prompt cache. Best-effort:
- * any failure is swallowed so priming can never affect readiness or requests.
+ * a failure never affects readiness or requests, but it is logged — priming is
+ * the only model call startup makes, so it is where a rejected model setting
+ * first shows up.
  * Exported for tests.
  */
 export async function primeCacheOnce(): Promise<void> {
   try {
     await runCopilotAgent(CACHE_PRIMING_QUERY)
-  } catch {
-    // intentional: priming is best-effort and must never surface an error
+  } catch (error) {
+    log.warn('Prompt-cache priming failed; requests may fail the same way', {
+      error: error instanceof Error ? error.message : String(error),
+    })
   }
 }
 

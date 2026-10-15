@@ -22,12 +22,14 @@
 import { getConfig } from '@ontology-search/core/config'
 import type { LlmStructuredResponse } from '@ontology-search/search/types'
 
+import { getAgentPolicy } from './agent/agent-policy.js'
 import { runClaudeCodeAgent } from './agent/claude-code-agent.js'
 import {
   getPersistentSession,
   primeCacheInBackground,
   runCopilotAgent,
 } from './agent/copilot-agent.js'
+import { verifyModelListed } from './agent/copilot-client.js'
 import { runSparqlAgent } from './agent/index.js'
 import { fillSceneClaudeCode } from './authoring/fill-scene-claude-code.js'
 import { fillSceneCopilot } from './authoring/fill-scene-copilot.js'
@@ -71,6 +73,11 @@ export interface AgentBackend {
 const copilotBackend: AgentBackend = {
   id: 'copilot',
   async verify() {
+    // The model must be one this account can use: a mistyped or unavailable
+    // AI_MODEL otherwise only fails inside the first query's model call. The
+    // effort sent with it is resolved against the same listing (see
+    // `copilot-client.ts`), so a value the runtime would reject never reaches it.
+    await verifyModelListed(getAgentPolicy().model)
     // Creating the session IS the authentication check.
     await getPersistentSession()
     // Non-blocking one-shot prompt-cache prime. Readiness is not delayed;

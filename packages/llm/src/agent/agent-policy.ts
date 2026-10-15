@@ -67,11 +67,13 @@ export interface AgentPolicy {
     | { readonly mode: 'budget'; readonly budgetTokens: number }
     | null
   /**
-   * Copilot SDK reasoning effort. `null` when the provider isn't Copilot.
-   * For `search` this is `'none'` (reasoning disabled — a latency win for the
-   * deterministic slot-filling task). For `authoring` it is the configured
-   * `AUTHORING_REASONING_EFFORT` (reasoning ON — generative composition needs
-   * it). Maps to `reasoningEffort` in the `createSession` call.
+   * Copilot SDK reasoning effort the task WANTS. `null` when the provider isn't
+   * Copilot. For `search` this is `'none'` (the least reasoning — a latency win
+   * for the deterministic slot-filling task). For `authoring` it is the
+   * configured `AUTHORING_REASONING_EFFORT` (reasoning ON — generative
+   * composition needs it). The Copilot adapters resolve it against the levels
+   * the runtime advertises for the model before it becomes `reasoningEffort` in
+   * the `createSession` call (see `copilot-client.ts`).
    */
   readonly reasoningEffort: 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max' | null
   /**
@@ -137,16 +139,24 @@ export function getAgentPolicy(task: AgentTask = 'search'): AgentPolicy {
         ? { mode: 'adaptive' }
         : { mode: 'budget', budgetTokens: config.LLM_THINKING }
 
-  // Copilot SDK reasoningEffort is task-scoped:
+  // Copilot SDK reasoningEffort is task-scoped. The policy states the effort it
+  // WANTS; the adapters resolve it against the levels the runtime ADVERTISES for
+  // the model (`reasoning-effort.ts`), so a model never receives a value it does
+  // not accept and the model id is never inspected here.
   //
-  //  - search: disabled (`'none'`). Slot-filling is deterministic (fill slots
-  //    from SHACL, validated downstream by the SHACL gate), so chain-of-thought
-  //    only adds latency and output tokens without improving the structured
-  //    result. This applies to EVERY Copilot model — a previous allowlist gate
-  //    (`AI_MODEL.includes('4.6') || includes('opus')`) silently left reasoning
-  //    ON for models outside it (incl. the default `claude-sonnet-5`); the
-  //    benchmarked cost was mean 19.5s (6–43s) vs. ~5.2s with `'none'` — a ~74%
-  //    latency cut. Passing `'none'` is harmless for models that ignore the knob.
+  //  - search: the least reasoning the model offers. Slot-filling is
+  //    deterministic (fill slots from SHACL, validated downstream by the SHACL
+  //    gate), so chain-of-thought only adds latency and output tokens without
+  //    improving the structured result. This applies to EVERY Copilot model,
+  //    the default `claude-sonnet-5` included: on the real search path it
+  //    averaged 7.3 s with `'none'` and 8.1 s with `'low'`, but 14.9 s with the
+  //    knob unset, which is not "off". `'none'` is not accepted everywhere: it
+  //    depends on the model and the runtime version (a provider 400 for
+  //    `claude-sonnet-5.5`, a local rejection from runtime 1.0.91 on for every
+  //    model that does not advertise it), so it is sent only where advertised
+  //    and otherwise replaced by the weakest advertised level. Measurements and
+  //    quality: `apps/docs/agent.md`, "Copilot reasoning is minimised for
+  //    slot-filling".
   //
   //  - authoring: enabled at `AUTHORING_REASONING_EFFORT`. Composing a scenario
   //    from prose is a reasoning task (relative speeds, "slows down", timing);

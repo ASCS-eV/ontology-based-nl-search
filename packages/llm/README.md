@@ -20,25 +20,62 @@ The `agent/` subdirectory (provider adapters, tool schema, Copilot session, subm
 
 ## Copilot SDK compatibility
 
-The Copilot SDK is pinned to one tested version because it ships a matching
-native runtime and speaks a versioned protocol. CI runs the installed SDK and
-its bundled runtime without credentials:
+Three things have to agree: this repo, the pinned `@github/copilot-sdk`, and the
+Copilot **runtime** the SDK spawns. The runtime is not a library: it
+auto-updates for anyone who installs the CLI (1.0.78 to 1.0.98 within weeks),
+and its behaviour changes without the wire protocol version changing (it stayed
+at `3` while the runtime started validating reasoning efforts between 1.0.85 and
+1.0.91). So the contract is expressed at three levels, each with an owner:
+
+| Level                         | What can drift                                                                             | How it is pinned or checked                                                                                                                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Which runtime                 | The SDK bundles one (`TESTED_RUNTIME_VERSION` in `src/agent/copilot-client.ts`)            | Exact SDK pin. CI starts the bundled runtime and fails if it is not that version. At startup the app logs the runtime and protocol versions and warns on any other runtime, including `COPILOT_CLI_PATH`. |
+| What a model accepts          | `listModels()` advertises `supportedReasoningEfforts` per model; models change server-side | Adapters send only an effort the model advertises (`src/agent/reasoning-effort.ts`), never one chosen from the model id. `verify()` fails at startup when `AI_MODEL` is not listed for the account.       |
+| Whether it works for this key | Authentication, entitlements, a model's behaviour with the real prompt                     | The credentialed probe below, run by hand when the SDK changes (CI has no subscription and does not run it on public PRs).                                                                                |
+
+**Supported runtime.** Only the runtime bundled with the pinned SDK. A CLI you
+installed yourself (VS Code, `npm -g @github/copilot`) is a different, moving
+runtime: on 1.0.91 and later it rejects `reasoningEffort: "none"` for every
+model that does not advertise it, which the bundled 1.0.85 forwards to the
+provider instead. Setting `COPILOT_CLI_PATH` is therefore unsupported and
+logged as a warning; the compatibility script clears it.
+
+**Reasoning effort.** The search policy asks for the least reasoning
+(`"none"`). The adapters resolve that against the model's advertised levels:
+`none` where advertised, otherwise the weakest advertised level; no knob for a
+model without the capability; and no `none` at all when the listing is
+unavailable. Omitting the knob is not the same as turning reasoning off:
+`claude-sonnet-5` still thinks on the real search prompt when it is unset. The
+SDK's own `ReasoningEffort` type omits `"none"`, so the one cast lives in the
+adapters, behind this resolution.
+
+CI runs the installed SDK and its bundled runtime without credentials:
 
 ```bash
 pnpm --filter @ontology-search/llm test:copilot-sdk
 ```
 
-That check proves the platform package loads and the SDK can start and ping its
-bundled runtime. It cannot prove Copilot authentication or model inference.
-After changing the SDK version, run the authenticated probe with an available
-Copilot model. It lists models and checks both search and authoring tool turns,
-including search's `reasoningEffort: "none"` wire value, which the SDK does not
-include in its published TypeScript union:
+That check proves the platform package loads, the SDK can start and ping its
+bundled runtime, that runtime is the version the repo says it was tested with
+(and the SDK's own pin), and it fails otherwise. It cannot prove Copilot
+authentication or model inference.
+
+**Changing the SDK version.** Update `TESTED_RUNTIME_VERSION` (the credential-free
+check tells you to), build, then run the authenticated probe with an available
+Copilot model. It lists models, checks both search and authoring tool turns with
+the effort the adapters would really send, and with `--matrix` prints which
+efforts this runtime accepts for each model, failing if the adapters would send
+a rejected one:
 
 ```bash
 copilot login  # for GitHub Enterprise Cloud: copilot login --host HOSTNAME
-AI_MODEL=claude-sonnet-4.6 pnpm --filter @ontology-search/llm exec node scripts/copilot-sdk-compat.mjs --live --cli-login
+pnpm --filter @ontology-search/llm build
+AI_MODEL=claude-sonnet-5 pnpm --filter @ontology-search/llm exec node scripts/copilot-sdk-compat.mjs --live --cli-login --matrix
 ```
+
+Model ids differ per account; use one `listModels()` returns for yours. Set
+`COPILOT_MATRIX_MODELS` (comma separated) to cover more models than
+`AI_MODEL` and `AUTHORING_AI_MODEL`.
 
 `--cli-login` requires the SDK to report a stored user login and fails if a
 token environment variable could override it. Set `COPILOT_EXPECTED_HOST` to
@@ -46,7 +83,8 @@ the Enterprise host URL to verify that account's host as well. Use `--live`
 alone when intentionally checking token authentication.
 Set `AUTHORING_AI_MODEL` and `AUTHORING_REASONING_EFFORT` as deployed to test
 different authoring settings. Record the OS, Node, CLI login host, model, and
-result in the SDK update PR; the credentialed probe is not run on public PRs.
+the matrix output in the SDK update PR; the credentialed probe is not run on
+public PRs.
 
 ## Requirements & invariants
 
