@@ -2,6 +2,8 @@ import { Button } from '@ontology-search/design-system'
 import type { SearchSlots } from '@ontology-search/slots/slots'
 import { useEffect, useState } from 'react'
 
+import { compactIri } from '../lib/iri'
+
 /**
  * Editable chips over the **slot IR** the server compiled and streamed back.
  *
@@ -234,16 +236,20 @@ export function QueryRefinement({ slots: incoming, onRerun, loading }: QueryRefi
                 <button
                   onClick={() => startEdit(key, chip.value)}
                   className="font-medium text-gray-800 hover:text-blue-600 cursor-pointer"
-                  title="Click to edit"
-                  aria-label={`Edit ${chip.value}`}
+                  title={
+                    chip.value === compactIri(chip.value)
+                      ? 'Click to edit'
+                      : `Click to edit ${chip.value}`
+                  }
+                  aria-label={`Edit ${compactIri(chip.value)}`}
                 >
-                  {chip.value}
+                  {compactIri(chip.value)}
                 </button>
               )}
               <button
                 onClick={() => setSlots(removeFilterValue(slots, chip))}
                 className={REMOVE}
-                aria-label={`Remove ${chip.value} filter`}
+                aria-label={`Remove ${compactIri(chip.value)} filter`}
                 title="Remove filter"
               >
                 ×

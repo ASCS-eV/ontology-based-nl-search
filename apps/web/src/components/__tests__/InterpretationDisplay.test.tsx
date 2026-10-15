@@ -51,4 +51,29 @@ describe('InterpretationDisplay', () => {
     expect(screen.getByText('no terms')).toBeInTheDocument()
     expect(screen.queryByTitle(/Confidence:/)).not.toBeInTheDocument()
   })
+
+  /**
+   * Regression: a term mapped to a class IRI rendered the whole IRI
+   * (`https://…/ontologies/MotorwayManaged`) instead of its local name.
+   */
+  it('shows the local name of an IRI-valued mapping, with the full IRI as tooltip', () => {
+    const iri = 'https://example.org/ontologies/MotorwayManaged'
+    render(
+      <InterpretationDisplay
+        interpretation={{
+          summary: 's',
+          mappedTerms: [
+            {
+              input: 'access-controlled motorway',
+              mapped: iri,
+              confidence: 'high',
+              property: 'DrivableAreaType',
+            },
+          ],
+        }}
+      />
+    )
+    expect(screen.getByText('MotorwayManaged')).toHaveAttribute('title', iri)
+    expect(screen.queryByText(iri)).not.toBeInTheDocument()
+  })
 })
