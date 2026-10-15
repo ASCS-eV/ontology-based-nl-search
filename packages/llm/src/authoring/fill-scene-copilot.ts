@@ -15,27 +15,13 @@
  * @see ./scene-agent.ts — the repair-loop orchestrator that drives this
  */
 
-import { approveAll, CopilotClient, type CopilotSession, defineTool } from '@github/copilot-sdk'
-import { getConfig } from '@ontology-search/core/config'
+import { approveAll, type CopilotSession, defineTool } from '@github/copilot-sdk'
 import { z } from 'zod'
 
 import { getAgentPolicy } from '../agent/agent-policy.js'
+import { getCopilotClient, resolveSessionEffort } from '../agent/copilot-client.js'
 import { getSceneStaticCore } from './scene-prompt.js'
 import { type SceneSubmissionParams, sceneSubmissionSchema } from './scene-tool.js'
-
-// ─── Client singleton (shared with the search adapter's pattern) ─────────────
-
-let client: CopilotClient | null = null
-
-async function getClient(): Promise<CopilotClient> {
-  if (client) return client
-  const { GITHUB_TOKEN } = getConfig()
-  client = new CopilotClient({
-    ...(GITHUB_TOKEN ? { gitHubToken: GITHUB_TOKEN } : {}),
-  })
-  await client.start()
-  return client
-}
 
 /**
  * Warm the Copilot client so the first authoring request doesn't pay client
@@ -44,7 +30,7 @@ async function getClient(): Promise<CopilotClient> {
  */
 export async function warmupSceneCopilot(): Promise<void> {
   try {
-    await getClient()
+    await getCopilotClient()
   } catch {
     // intentional: warmup is best-effort
   }
@@ -96,8 +82,12 @@ export async function fillSceneCopilot(
   requestMessage: string,
   signal?: AbortSignal
 ): Promise<SceneSubmissionParams | null> {
-  const c = await getClient()
+  const c = await getCopilotClient()
   const policy = getAgentPolicy('authoring')
+  // The configured effort is checked against what the runtime advertises for
+  // the model: a value it would reject is replaced by the nearest advertised
+  // one (and logged) instead of failing every authoring request.
+  const reasoningEffort = await resolveSessionEffort(c, policy.model, policy.reasoningEffort)
 
   // Request-local capture — no cross-request router needed for per-request
   // sessions: this session's handler is the only writer of `captured`.
@@ -109,9 +99,7 @@ export async function fillSceneCopilot(
 
   const session: CopilotSession = await c.createSession({
     model: policy.model,
-    ...(policy.reasoningEffort
-      ? { reasoningEffort: policy.reasoningEffort as unknown as 'low' | 'medium' | 'high' }
-      : {}),
+    ...(reasoningEffort ? { reasoningEffort: reasoningEffort as 'low' } : {}),
     onPermissionRequest: approveAll,
     systemMessage: { mode: 'replace', content: getSceneStaticCore() },
     tools: [

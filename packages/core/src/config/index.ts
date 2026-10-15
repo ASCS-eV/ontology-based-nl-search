@@ -30,8 +30,11 @@ export const AI_PROVIDERS = [
 const aiProviderSchema = z.enum(AI_PROVIDERS)
 /**
  * Copilot reasoning-effort levels (the SDK's `reasoningEffort` on
- * `createSession`). `none` disables reasoning; `low`→`max` trade latency for
- * depth. Search forces `none`; the generative authoring agent turns it on.
+ * `createSession`). `none` disables reasoning where a model offers it;
+ * `low`→`max` trade latency for depth. Search asks for `none`; the generative
+ * authoring agent turns reasoning on. Either request is resolved against the
+ * levels the runtime advertises for the model before it is sent (see
+ * `packages/llm/src/agent/reasoning-effort.ts`).
  */
 const reasoningEffortSchema = z.enum(['none', 'low', 'medium', 'high', 'xhigh', 'max'])
 
@@ -122,10 +125,12 @@ const envSchema = z.object({
   AUTHORING_AI_MODEL: z.string().min(1).optional(),
   /**
    * Copilot reasoning effort for the authoring agent. Unlike search — which
-   * forces `none` because slot-filling is deterministic and SHACL-validated —
+   * asks for `none` because slot-filling is deterministic and SHACL-validated —
    * authoring turns reasoning ON so the model captures nuanced dynamics
    * (relative speeds, "slows down", timing). Applied only for the `copilot`
-   * provider; other providers reason via `LLM_THINKING` / a model family.
+   * provider; other providers reason via `LLM_THINKING` / a model family. A
+   * level the model does not advertise is replaced by the nearest one it does
+   * (and logged) instead of failing every request.
    */
   AUTHORING_REASONING_EFFORT: reasoningEffortSchema.default('medium'),
   OPENAI_API_KEY: z.string().optional(),
