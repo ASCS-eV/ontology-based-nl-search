@@ -21,7 +21,7 @@ import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontol
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from '../compiler.js'
-import type { LeafKind } from '../property-paths.js'
+import type { LeafKind, PropertyPath } from '../property-paths.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
 import { extractSchemaVocabulary } from '../vocabulary-extractor.js'
 import { readContextTerms } from './context-reader.js'
@@ -135,8 +135,20 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
   // The compiler's path index is the property universe: exactly the terms
   // that can compile into SPARQL, with the same multi-domain attribution
   // the editor and validator already use. No parallel heuristic to drift.
-  for (const path of compilerVocab.paths.values()) {
+  //
+  // Standalone vocabulary entry classes (`vocabularyRoots`) compile too — a
+  // query scoped to such a vocabulary gets its own UNION arms — so their
+  // leaves are cards of that vocabulary domain, once per (domain, IRI).
+  const rootPaths: PropertyPath[] = []
+  for (const roots of compilerVocab.vocabularyRoots?.values() ?? []) {
+    for (const root of roots) rootPaths.push(...root.paths.values())
+  }
+  const seenCards = new Set<string>()
+  for (const path of [...compilerVocab.paths.values(), ...rootPaths]) {
     if (!path.domain) continue
+    const cardKey = `${path.domain} ${path.propertyIri}`
+    if (seenCards.has(cardKey)) continue
+    seenCards.add(cardKey)
     const iri = path.propertyIri
     const localName = path.propertyName
     const annotation = annotations.get(iri)

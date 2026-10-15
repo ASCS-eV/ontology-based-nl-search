@@ -1,6 +1,7 @@
 import { Heading, Pill, type Tone } from '@ontology-search/design-system'
 
 import type { MappedTerm, QueryInterpretation } from '../api-types'
+import { compactIri } from '../lib/iri'
 
 interface InterpretationDisplayProps {
   interpretation: QueryInterpretation
@@ -37,7 +38,9 @@ export function InterpretationDisplay({ interpretation }: InterpretationDisplayP
             >
               <span className="text-gray-400 line-through text-xs">{term.input}</span>
               <span className="text-gray-400">→</span>
-              <span className="font-medium text-gray-800">{term.mapped}</span>
+              <span className="font-medium text-gray-800" title={term.mapped}>
+                {compactIri(term.mapped)}
+              </span>
               {confidenceBadge(term.confidence)}
               {term.property && (
                 <code className="text-xs text-gray-400 font-mono">{term.property}</code>

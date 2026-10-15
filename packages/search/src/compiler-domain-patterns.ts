@@ -22,6 +22,7 @@ import {
   emitDeepFilters,
   emitDirectPathFilters,
   lookupDomainSpecPredicate,
+  lookupLeafDatatype,
   lookupStepPredicate,
   SHALLOW_PATH_MAX_STEPS,
 } from './compiler-helpers-paths.js'
@@ -87,7 +88,11 @@ export function buildDomainPatterns(
   //     (the `asset → specification → group → leaf` meta-model). Emitted
   //     by the shape-group machinery below.
   //   - DEEP: a path longer than the shape-group standard — walked from the
-  //     spec variable via emitDeepFilters.
+  //     spec variable via emitDeepFilters. Only a deep path that starts with
+  //     the domain's asset → specification hop can hang off the spec
+  //     variable; one that starts elsewhere (a leaf inherited from a
+  //     superclass shape under another hop, say) is walked from the asset
+  //     like a direct property, with its own first hop.
   //   - DIRECT: a property with NO shape group anywhere (a flat ontology's
   //     `asset → leaf`, or any non-meta-model schema). Walked straight from
   //     the asset variable — no fabricated specification/group hops. This is
@@ -99,11 +104,17 @@ export function buildDomainPatterns(
   const shapeGroupFilterEntries: [string, string | string[]][] = []
   const deepFilterEntries: [string, string | string[], PropertyPath][] = []
   const directFilterEntries: [string, string | string[], PropertyPath][] = []
+  const domainSpecPredicate = lookupDomainSpecPredicate(vocabIndex, domain)
+  const startsAtSpecHop = (path: PropertyPath) =>
+    domainSpecPredicate === null ||
+    (path.steps[0] !== undefined &&
+      prefixedPredicate(path.steps[0].predicate, domain) === domainSpecPredicate)
   for (const [propName, value] of allFilterEntries) {
     if (!isNonEmpty(value)) continue
     const path = vocabIndex.paths.get(`${domainName}:${propName}`)
     if (path && path.steps.length > SHALLOW_PATH_MAX_STEPS) {
-      deepFilterEntries.push([propName, value, path])
+      if (startsAtSpecHop(path)) deepFilterEntries.push([propName, value, path])
+      else directFilterEntries.push([propName, value, path])
     } else if (path && !vocabIndex.shapeGroupPropertyNames.has(propName)) {
       directFilterEntries.push([propName, value, path])
     } else {
@@ -275,7 +286,13 @@ export function buildDomainPatterns(
       for (const [propName, value] of bucket.filters) {
         const varName = `?${propName}${suffix}`
         patterns.push(`${groupVar} ${propPrefix}:${propName} ${varName} .`)
-        addEnumFilter(patterns, filters, varName, value)
+        addEnumFilter(
+          patterns,
+          filters,
+          varName,
+          value,
+          lookupLeafDatatype(vocabIndex, domainName, propName)
+        )
         selectVars.add(varName)
       }
 
@@ -373,7 +390,13 @@ export function buildDomainPatterns(
     for (const [propName, value] of directFallbackFilters) {
       const varName = `?${propName}${suffix}`
       patterns.push(`${assetVar} ${domain.prefix}:${propName} ${varName} .`)
-      addEnumFilter(patterns, filters, varName, value)
+      addEnumFilter(
+        patterns,
+        filters,
+        varName,
+        value,
+        lookupLeafDatatype(vocabIndex, domainName, propName)
+      )
       selectVars.add(varName)
     }
     for (const [propName, range] of directFallbackRanges) {

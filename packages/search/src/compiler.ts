@@ -46,6 +46,7 @@ import {
   detectHierarchy,
   partitionFiltersByDomain,
   partitionRangesByDomain,
+  referencedDomainsOnlyShareConstraints,
   resolvePrimaryDomain,
 } from './compiler-helpers-domains.js'
 import { assembleQuery } from './compiler-helpers-query.js'
@@ -54,13 +55,16 @@ import {
   emitReferenceNode,
   type ReferenceEmitContext,
 } from './compiler-reference-emit.js'
+import { standaloneVocabularyDomains } from './compiler-standalone.js'
 import { type CompilerVocab, getCompilerVocab, getDomainReferences } from './compiler-vocab.js'
+import { normalizeDomainName } from './domain-scope.js'
 
 // Re-export the extracted compiler submodules (ADR 0003, step 1) so the existing
 // `@ontology-search/search` public surface and intra-package importers keep
 // resolving these from `./compiler.js` unchanged.
 export { buildCompilerVocabFrom, getCompilerVocab, warmupCompiler } from './compiler-vocab.js'
 export { compileAllCountQueries, compileCountQuery } from './count-query.js'
+export { canonicalAssetDomains, normalizeDomainName, resolveKnownDomains } from './domain-scope.js'
 
 /**
  * Compile structured search slots into a valid SPARQL SELECT query.
@@ -76,60 +80,7 @@ export { compileAllCountQueries, compileCountQuery } from './count-query.js'
  *
  * When no domain is specified and no filters exist, searches across ALL
  * asset types using discovered asset domain classes.
- */
-/**
- * Normalize an LLM-supplied domain name toward the registry's directory-name
- * convention: lowercase, hyphens at camelCase boundaries, spaces/underscores
- * to hyphens. Handles variants like "Environment Model", "EnvironmentModel",
- * "environment_model" → "environment-model". Idempotent.
- */
-export function normalizeDomainName(domain: string): string {
-  return domain
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
-    .toLowerCase()
-    .replace(/[\s_]+/g, '-')
-}
-
-/**
- * Filter a domain list to those that are valid primary search targets —
- * i.e. **asset** domains, discovered data-drivenly from the SHACL /
- * `rdfs:subClassOf` hierarchy (see `queryAssetDomains`). Drops:
  *
- *   - Phantom names (LLM-hallucinated "unknown", typos, sentinels from a
- *     failed IRI attribution) — not in the registry at all.
- *   - Non-asset support vocabularies (`gx`, `georeference`, `manifest`, …)
- *     that the registry knows about but that don't root any asset class in
- *     the discovered subclass hierarchy. The compiler would otherwise emit
- *     a primary `?asset a <Class>` UNION arm using the registry's arbitrary
- *     `targetClass` pick (e.g. `gx:AccessControlManagement`), which has
- *     nothing to do with the query and returns zero rows.
- *
- * Order-preserving and de-duplicated. Names are canonicalized to the
- * registry's directory key (so an IRI-segment input like `openlabel` maps
- * to the registry key `openlabel-v2`) before downstream lookup.
- *
- * Nothing about any specific ontology is hardcoded: the asset-domain set
- * comes from `getAssetDomains()`, which queries the graph.
- */
-export async function resolveKnownDomains(domains: string[]): Promise<string[]> {
-  const registry = await buildDomainRegistry()
-  const assetDomains = await getAssetDomains()
-  const seen = new Set<string>()
-  const known: string[] = []
-  for (const raw of domains) {
-    const name = normalizeDomainName(raw)
-    const canonical = registry.domains.has(name) ? name : registry.resolveByIriDomain(name)?.name
-    if (!canonical || seen.has(canonical)) continue
-    if (assetDomains.has(canonical)) {
-      seen.add(canonical)
-      known.push(canonical)
-    }
-  }
-  return known
-}
-
-/**
  * Backward-compatible wrapper that returns the SPARQL string only.
  * Callers that don't need the traceability plan keep their existing
  * `const sparql = await compileSlots(slots)` shape. New callers (the
@@ -197,7 +148,11 @@ export async function compileSlotsWithTrace(
     return { sparql: compileCrossDomainQuery(slots, registry, assetDomains, vocabIndex) }
   }
 
-  const detectedDomains = slots.domains
+  // Requested support vocabularies with standalone entry classes are answered
+  // by their own UNION arms (see `compiler-standalone.ts`); the remaining
+  // asset domains go through the usual partition below.
+  const standaloneDomains = standaloneVocabularyDomains(slots.domains, vocabIndex)
+  const detectedDomains = slots.domains.filter((d) => !standaloneDomains.includes(d))
 
   // Partition filters by domain
   const filtersByDomain = partitionFiltersByDomain(slots.filters, detectedDomains, vocabIndex)
@@ -211,11 +166,43 @@ export async function compileSlotsWithTrace(
   // Only multi-domain queries can have a parent-child hierarchy, so the
   // (global) reference index is consulted only then — a single-domain compile
   // stays free of the cross-domain discovery dependency.
-  const hasHierarchy =
-    detectedDomains.length > 1 && detectHierarchy(detectedDomains, await getDomainReferences())
+  //
+  // A schema-level reference alone does not make a JOIN: when every
+  // constraint the referenced (child) domain would carry is one the parent
+  // domain owns too, the request reads "either kind of asset matching these
+  // properties" — the same peer semantics as one GraphQL root per domain —
+  // not "parents referencing a matching child". Only a child-exclusive
+  // constraint (one the parent cannot express) forces the JOIN.
+  let hasHierarchy = false
+  if (detectedDomains.length > 1) {
+    const domainRefs = await getDomainReferences()
+    hasHierarchy =
+      detectHierarchy(detectedDomains, domainRefs) &&
+      !referencedDomainsOnlyShareConstraints(
+        detectedDomains,
+        domainRefs,
+        filtersByDomain,
+        rangesByDomain
+      )
+  }
 
-  if (!hasHierarchy && detectedDomains.length > 1) {
-    // Peer domains: generate UNION query that searches all domains independently
+  // A standalone document references nothing, so a reference — explicit, or
+  // the JOIN a parent→child hierarchy compiles to — is a restriction it cannot
+  // express: it then contributes no arm (the closed-unit rule of
+  // `compiler-standalone.ts`), and the asset domains compile as they would
+  // without it.
+  const referenceSlots = normalizeReferences(slots.references)
+  const standaloneArmDomains = hasHierarchy || referenceSlots.length > 0 ? [] : standaloneDomains
+
+  if (
+    (!hasHierarchy && detectedDomains.length > 1) ||
+    standaloneArmDomains.length > 0 ||
+    detectedDomains.length === 0
+  ) {
+    // Peer domains (and/or standalone vocabulary arms): generate a UNION query
+    // that searches every requested domain independently. A request for
+    // vocabularies alone whose arms cannot answer it compiles to an explicit
+    // empty result.
     return {
       sparql: await compilePeerDomainUnion(
         slots,
@@ -223,7 +210,8 @@ export async function compileSlotsWithTrace(
         filtersByDomain,
         rangesByDomain,
         registry,
-        vocabIndex
+        vocabIndex,
+        standaloneArmDomains
       ),
     }
   }
@@ -326,7 +314,6 @@ export async function compileSlotsWithTrace(
   // a resolved chain contributes its own breadcrumb plan. The distinct-asset
   // wrap (assembleQuery) keeps the LIMIT counting primary assets despite the
   // (now deeper) reference fan-out. See `emitReferenceNode`.
-  const referenceSlots = normalizeReferences(slots.references)
   for (let i = 0; i < referenceSlots.length; i++) {
     await emitReferenceNode(
       referenceSlots[i]!,

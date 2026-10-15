@@ -15,9 +15,19 @@ import { extractDomain, extractLocalName } from '@ontology-search/core/rdf/iri'
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
-import { bfsFromRoots, buildAncestorClosure, pathStepsTo } from './property-paths-graph.js'
+import {
+  bfsFromRoots,
+  buildAncestorClosure,
+  findVocabularyRoots,
+  pathStepsTo,
+  type PredecessorLink,
+  reachedAsAncestor,
+  reachedByInheritance,
+} from './property-paths-graph.js'
 import {
   enrichLeafKinds,
+  type LeafRow,
+  queryLeafDatatypes,
   queryLeafProperties,
   queryResolvedEdges,
 } from './property-paths-queries.js'
@@ -37,6 +47,49 @@ export async function buildPropertyPaths(
   store: SparqlStore,
   registry?: DomainRegistry
 ): Promise<PropertyPath[]> {
+  return (await discoverPropertyPaths(store, registry)).assetPaths
+}
+
+/** Both path families discovered from one pass over the shapes graph. */
+export interface DiscoveredPropertyPaths {
+  /** Paths rooted at an asset class (`domain` = the asset domain). */
+  assetPaths: PropertyPath[]
+  /**
+   * Paths rooted at a standalone entry class of a non-asset vocabulary
+   * (`domain` = that vocabulary, `assetClass` = the entry class). See
+   * {@link findVocabularyRoots}. Kept apart from `assetPaths` so the asset
+   * path index, reference chains and domain partitioning are unchanged.
+   */
+  vocabularyRootPaths: PropertyPath[]
+}
+
+/** Emit one PropertyPath per leaf whose owning class is reachable. */
+function pathsFrom(
+  rootClass: string,
+  domain: string,
+  predecessors: Map<string, PredecessorLink>,
+  leaves: LeafRow[],
+  out: PropertyPath[]
+): void {
+  for (const { owningClass, propertyIri, leafKind } of leaves) {
+    const steps = pathStepsTo(owningClass, predecessors, propertyIri)
+    if (!steps) continue
+    out.push({
+      domain,
+      propertyName: extractLocalName(propertyIri),
+      propertyIri,
+      assetClass: rootClass,
+      steps,
+      leafKind,
+      ...(reachedAsAncestor(owningClass, predecessors) && { inheritedLeaf: true }),
+    })
+  }
+}
+
+export async function discoverPropertyPaths(
+  store: SparqlStore,
+  registry?: DomainRegistry
+): Promise<DiscoveredPropertyPaths> {
   // Each sub-step is logged with its own duration: this whole function
   // is the dominant cold-start cost (tens of seconds on a large schema
   // graph), and without per-phase timings the warmup is an opaque gap.
@@ -86,20 +139,24 @@ export async function buildPropertyPaths(
   // For each asset class, walk forward and emit one PropertyPath per leaf
   // whose owning class is reachable.
   const bfsEnd = log.time('property-paths/bfs')
-  const out: PropertyPath[] = []
-  for (const assetClass of assetClasses) {
-    const predecessors = bfsFromRoots(ancestorsOf(assetClass), forwardEdges)
-    for (const { owningClass, propertyIri, leafKind } of leaves) {
-      const steps = pathStepsTo(owningClass, predecessors, propertyIri)
-      if (!steps) continue
-      out.push({
-        domain: extractDomainFromRegistry(assetClass, registry),
-        propertyName: extractLocalName(propertyIri),
-        propertyIri,
-        assetClass,
-        steps,
-        leafKind,
-      })
+  const out = emitPaths(assetClasses, leaves, forwardEdges, ancestorsOf, registry)
+
+  // Standalone vocabulary entry classes get the same traversal, so a document
+  // typed only with a support vocabulary's top-level class is searchable too.
+  // Requires the registry: without it there is no asset/vocabulary split.
+  const rootPaths: PropertyPath[] = []
+  if (registry) {
+    const roots = findVocabularyRoots({
+      edges: resolvedEdges,
+      leafOwners: leaves.map((leaf) => leaf.owningClass),
+      assetClasses,
+      assetDomains: new Set(assetDomainRows.map((row) => row.domainName)),
+      ancestorsOf,
+      domainOf: (iri) => registry.domainForIri(iri),
+    })
+    for (const { domain, rootClass } of roots) {
+      const predecessors = bfsFromRoots(ancestorsOf(rootClass), forwardEdges, ancestorsOf)
+      pathsFrom(rootClass, domain, predecessors, leaves, rootPaths)
     }
   }
   bfsEnd()
@@ -108,19 +165,81 @@ export async function buildPropertyPaths(
   // that actually showed up in a discovered path. Done after BFS so the
   // hot leaf query stays minimal (see `enrichLeafKinds`).
   const enrichEnd = log.time('property-paths/enrich-leaf-kinds')
-  const enriched = await enrichLeafKinds(store, out)
-  for (const path of out) {
+  const allPaths = [...out, ...rootPaths]
+  const [enriched, datatypes] = await Promise.all([
+    enrichLeafKinds(store, allPaths),
+    queryLeafDatatypes(store, allPaths),
+  ])
+  for (const path of allPaths) {
     const kind = enriched.get(path.propertyIri)
     if (kind) path.leafKind = kind
+    const datatype = datatypes.get(path.propertyIri)
+    if (datatype) path.datatype = datatype
   }
   enrichEnd()
 
   log.info('Property paths discovered', {
     paths: out.length,
+    vocabularyRootPaths: rootPaths.length,
     assetClasses: assetClasses.length,
     enrichedLeaves: enriched.size,
     durationMs: Date.now() - t0,
   })
+  return { assetPaths: out, vocabularyRootPaths: rootPaths }
+}
+
+/**
+ * One PropertyPath per (asset class, reachable leaf).
+ *
+ * Paths that need either discovery extension — a leaf whose owning class is
+ * reached only by inheritance below the root, or a leaf that is literal only
+ * through an `sh:or` member — are flagged `extended` and added last, only
+ * for property local names that no plain path has in ANY domain, and once
+ * per (domain, name). The compiler resolves properties by local name, not
+ * only per domain: it picks the owning domains of a name (`ownersOf`), the
+ * cross-domain OPTIONAL for a domain-less filter, and the validator's domain
+ * correction all read every domain's paths. A new path for a name another
+ * domain already resolves would change those queries; a new name cannot.
+ * `buildCompilerVocabFrom` additionally keeps them off shape-group names.
+ */
+function emitPaths(
+  assetClasses: string[],
+  leaves: LeafRow[],
+  forwardEdges: Map<string, { predicate: string; child: string }[]>,
+  ancestorsOf: (cls: string) => Set<string>,
+  registry: DomainRegistry | undefined
+): PropertyPath[] {
+  const out: PropertyPath[] = []
+  const extended: PropertyPath[] = []
+  for (const assetClass of assetClasses) {
+    const predecessors = bfsFromRoots(ancestorsOf(assetClass), forwardEdges, ancestorsOf)
+    for (const { owningClass, propertyIri, leafKind, viaDisjunction } of leaves) {
+      const steps = pathStepsTo(owningClass, predecessors, propertyIri)
+      if (!steps) continue
+      const path: PropertyPath = {
+        domain: extractDomainFromRegistry(assetClass, registry),
+        propertyName: extractLocalName(propertyIri),
+        propertyIri,
+        assetClass,
+        steps,
+        leafKind,
+        ...(reachedAsAncestor(owningClass, predecessors) && { inheritedLeaf: true }),
+      }
+      if (viaDisjunction || reachedByInheritance(owningClass, predecessors)) {
+        extended.push({ ...path, extended: true })
+      } else {
+        out.push(path)
+      }
+    }
+  }
+  const plainNames = new Set(out.map((p) => p.propertyName))
+  const added = new Set<string>()
+  for (const path of extended) {
+    const key = `${path.domain}:${path.propertyName}`
+    if (plainNames.has(path.propertyName) || added.has(key)) continue
+    added.add(key)
+    out.push(path)
+  }
   return out
 }
 
@@ -137,6 +256,10 @@ export function buildReferenceChains(
   const out: ReferenceChain[] = []
   for (const path of paths) {
     if (path.leafKind === 'literal') continue
+    // The compiler joins through the shortest chain, so a chain that needs a
+    // discovery extension could replace the join an existing cross-reference
+    // compiles to. Extended paths only ever add filterable properties.
+    if (path.extended) continue
     const parentDomain = path.domain || extractDomainFromRegistry(path.assetClass, registry)
     if (!parentDomain) continue
 

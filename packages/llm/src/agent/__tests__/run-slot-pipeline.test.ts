@@ -101,6 +101,64 @@ describe('runSlotPipeline', () => {
     expect(response.interpretation.domains).toEqual(['hdmap', 'ositrace'])
   })
 
+  /**
+   * Regression for "OpenLabel only: … straight access-controlled motorway …".
+   * The LLM names only the support vocabulary. The pipeline must keep it as a
+   * standalone scope next to every asset domain that can express the
+   * restrictions, and the named-domain tie-break must not narrow the result
+   * to the vocabulary alone.
+   */
+  it('keeps a vocabulary-only request as a scope over its asset domains', async () => {
+    const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
+    const response = await runSlotPipeline({
+      submission: submission({
+        domains: ['openlabel'],
+        filters: { DrivableAreaType: `${OL}MotorwayManaged`, HorizontalStraights: 'true' },
+      }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      sw: new Stopwatch(),
+      query: 'OpenLabel only: straight access-controlled motorway.',
+    })
+
+    expect([...(response.interpretation.domains ?? [])].sort()).toEqual([
+      'hdmap',
+      'openlabel',
+      'scenario',
+    ])
+    expect(response.sparql.match(/\bUNION\b/g)).toHaveLength(2)
+    expect(response.sparql).toContain('FILTER NOT EXISTS')
+  }, 120_000)
+
+  /**
+   * The same request with a behaviour flag ("… and maintains a stable lateral
+   * position while controlling speed"). An HD map carries scenery attributes
+   * but never a behaviour flag, so it cannot answer the whole restriction and
+   * must not be searched with the behaviour silently dropped (it used to
+   * return every straight motorway map).
+   */
+  it('searches only the domains that can express every restriction of the vocabulary', async () => {
+    const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
+    const response = await runSlotPipeline({
+      submission: submission({
+        domains: ['openlabel'],
+        filters: {
+          DrivableAreaType: `${OL}MotorwayManaged`,
+          HorizontalStraights: 'true',
+          MotionDrive: 'true',
+        },
+      }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      sw: new Stopwatch(),
+      query:
+        'OpenLabel only: The system travels on a straight access-controlled motorway and maintains a stable lateral position while controlling speed.',
+    })
+
+    expect([...(response.interpretation.domains ?? [])].sort()).toEqual(['openlabel', 'scenario'])
+    expect(response.sparql).not.toContain('hdmap:HdMap')
+  }, 120_000)
+
   it('drops a filter value that violates a declared SHACL constraint', async () => {
     const sw = new Stopwatch()
     // georeference:country requires the ISO two-letter pattern. A bogus
@@ -352,6 +410,26 @@ describe('runSlotPipeline', () => {
     })
     expect(response.sparql).not.toContain('?refAsset')
   }, 120_000)
+
+  it.each(['openlabel', 'gx'])(
+    'drops a reference to the support vocabulary %s instead of joining an asset that uses it',
+    async (vocabulary_) => {
+      // A reference targets an asset. A vocabulary name used to resolve to the
+      // asset domains using that vocabulary, and the first of them became the
+      // JOIN target (and left the primary domains).
+      const sw = new Stopwatch()
+      const response = await runSlotPipeline({
+        submission: submission({ domains: ['scenario'], references: { domain: vocabulary_ } }),
+        vocabulary,
+        targetDomain: 'scenario',
+        sw,
+        query: NEUTRAL_QUERY,
+      })
+      expect(response.interpretation.domains).toEqual(['scenario'])
+      expect(response.sparql).not.toContain('?refAsset')
+    },
+    120_000
+  )
 
   /**
    * Multi-reference AND-combines every referenced domain AND projects every

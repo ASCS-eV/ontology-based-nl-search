@@ -24,7 +24,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { getInitializedStore } from '../init.js'
-import { SCHEMA_GRAPH } from '../schema-loader.js'
+import { SCHEMA_GRAPH, VALUE_HIERARCHY_PREDICATES } from '../schema-loader.js'
 
 const PREFIXES = `
 PREFIX sh: <http://www.w3.org/ns/shacl#>
@@ -43,8 +43,12 @@ describe('instance data stays grounded in the loaded ontology', () => {
       return results.bindings.map((binding) => binding[variable]?.value ?? '')
     }
 
-    // Instance data lives in the default graph, the schema in its named graph.
-    const dataPredicates = await select(`SELECT DISTINCT ?p WHERE { ?s ?p ?o }`, 'p')
+    // Instance data lives in the default graph, the schema in its named graph
+    // — apart from the hierarchy edges the loader mirrors for compiled queries.
+    const mirrored = new Set(VALUE_HIERARCHY_PREDICATES)
+    const dataPredicates = (await select(`SELECT DISTINCT ?p WHERE { ?s ?p ?o }`, 'p')).filter(
+      (p) => !mirrored.has(p)
+    )
 
     // Blank-node paths are SHACL path expressions (sequence/alternative/…),
     // not terms the data can carry, so only IRI paths are registrations.

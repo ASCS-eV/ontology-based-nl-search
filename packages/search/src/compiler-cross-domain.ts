@@ -17,6 +17,7 @@ import type { SearchSlots } from '@ontology-search/slots/slots'
 
 import { buildDomainPatterns } from './compiler-domain-patterns.js'
 import { buildPrefixes } from './compiler-helpers-domains.js'
+import { pathPrefixKey } from './compiler-helpers-paths.js'
 import {
   addEnumFilter,
   addLocationFilter,
@@ -25,6 +26,7 @@ import {
   prefixedPredicate,
 } from './compiler-helpers-primitives.js'
 import { assembleQuery } from './compiler-helpers-query.js'
+import { buildStandaloneArms } from './compiler-standalone.js'
 import { type CompilerVocab } from './compiler-vocab.js'
 import { type PropertyPath } from './property-paths.js'
 
@@ -38,6 +40,10 @@ const log = createComponentLogger('compiler')
  * Generates one UNION arm per domain, each with the domain-specific
  * patterns, filters, and location constraints. Shared FILTER clauses
  * (location, license) are placed outside the UNION.
+ *
+ * `standaloneDomains` are requested support vocabularies with discovered
+ * entry classes; each adds the arms built by `buildStandaloneArms` (documents
+ * of that vocabulary not attached to any asset) after the asset arms.
  */
 export async function compilePeerDomainUnion(
   slots: SearchSlots,
@@ -45,7 +51,8 @@ export async function compilePeerDomainUnion(
   filtersByDomain: Record<string, Record<string, string | string[]>>,
   rangesByDomain: Record<string, Record<string, { min?: number; max?: number }>>,
   registry: DomainRegistry,
-  vocabIndex: CompilerVocab
+  vocabIndex: CompilerVocab,
+  standaloneDomains: string[] = []
 ): Promise<string> {
   const prefixDomains = new Set<string>()
   const selectVars = new Set(['?asset', '?name'])
@@ -122,13 +129,21 @@ export async function compilePeerDomainUnion(
     unionArms.push(`  {\n${armBody}\n  }`)
   }
 
+  for (const domainName of standaloneDomains) {
+    unionArms.push(
+      ...buildStandaloneArms(domainName, slots, registry, vocabIndex, prefixDomains, selectVars)
+    )
+  }
+
   // License is handled as a normal `filters` entry keyed by the SHACL leaf
   // local name. License chains are emitted by the generic deep-filter
   // machinery inside `buildDomainPatterns` (one chain per UNION arm). No
   // outer license OPTIONAL block needed.
 
-  // Build the UNION body
-  const unionBody = unionArms.join('\n  UNION\n')
+  // Build the UNION body. When no requested domain can satisfy the query the
+  // result must be EMPTY: an empty group pattern has exactly one (unbound)
+  // solution ([SPARQL11] §5.2.1), which would surface as a phantom row.
+  const unionBody = unionArms.length > 0 ? unionArms.join('\n  UNION\n') : 'FILTER(false)'
   const patterns = [unionBody]
   const optionals: string[] = []
 
@@ -276,10 +291,7 @@ export function emitCrossDomainFilters(
   type Bucket = { referencePath: PropertyPath; entries: Entry[] }
   const buckets = new Map<string, Bucket>()
   for (const entry of resolved) {
-    const prefixKey = entry.path.steps
-      .slice(0, -1)
-      .map((s) => s.predicate)
-      .join('|')
+    const prefixKey = pathPrefixKey(entry.path)
     let bucket = buckets.get(prefixKey)
     if (!bucket) {
       bucket = { referencePath: entry.path, entries: [] }
@@ -309,7 +321,7 @@ export function emitCrossDomainFilters(
       const v = `?${key}`
       optionalLines.push(`    ${cursor} ${leafPred} ${v} .`)
       if (leafPath.leafKind === 'literal') {
-        addEnumFilter(optionalLines, filters, v, value)
+        addEnumFilter(optionalLines, filters, v, value, leafPath.datatype)
       } else {
         addLocationFilter(filters, v, value)
       }

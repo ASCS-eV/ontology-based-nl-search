@@ -20,20 +20,27 @@
 
 import type { OntologyGap, QueryInterpretation } from '@ontology-search/api-types'
 import type { Stopwatch } from '@ontology-search/core/logging'
+import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { SchemaVocabulary } from '@ontology-search/search'
 import {
   expandFilterConcepts,
+  getAssetDomains,
   getConceptExpansionIndex,
   getInitializedStore,
   getInstanceValues,
   preferDomainsNamedInQuery,
 } from '@ontology-search/search'
-import { compileSlotsWithTrace, resolveKnownDomains } from '@ontology-search/search/compiler'
+import {
+  canonicalAssetDomains,
+  compileSlotsWithTrace,
+  resolveKnownDomains,
+} from '@ontology-search/search/compiler'
 import type { LlmStructuredResponse } from '@ontology-search/search/types'
 import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
 import { normalizeReferences } from '@ontology-search/slots/slots'
 
+import { buildPrefixMap, type PrefixMap } from '../prefix-map.js'
 import type { InstanceValueLookup } from '../slot-validator.js'
 import {
   correctDomains,
@@ -102,6 +109,7 @@ async function validateReferenceTree(
   conceptIndex: Awaited<ReturnType<typeof getConceptExpansionIndex>>,
   shacl: ShaclValidator,
   gaps: OntologyGap[],
+  prefixes: PrefixMap,
   instanceValues?: InstanceValueLookup
 ): Promise<ReferenceFilter[]> {
   const out: ReferenceFilter[] = []
@@ -109,7 +117,7 @@ async function validateReferenceTree(
     const cleaned: ReferenceFilter = { ...ref }
 
     if (ref.filters && Object.keys(ref.filters).length > 0) {
-      const fuzzed = correctFilters(ref.filters, vocabulary)
+      const fuzzed = correctFilters(ref.filters, vocabulary, prefixes)
       const expanded = expandFilterConcepts(fuzzed, conceptIndex)
       const res = await validateSlotsAgainstShacl(expanded, shacl, vocabulary, instanceValues)
       for (const g of res.gaps) gaps.push(g)
@@ -131,6 +139,7 @@ async function validateReferenceTree(
         conceptIndex,
         shacl,
         gaps,
+        prefixes,
         instanceValues
       )
     }
@@ -150,8 +159,10 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   const { submission, vocabulary, targetDomain, sw, query } = input
 
   const endValidation = sw.time('post-llm-validation')
-  // 1. Fuzzy match: case / typo correction against sh:in enums.
-  const fuzzedFilters = correctFilters(submission.slots.filters ?? {}, vocabulary)
+  // 1. Fuzzy match: case / typo correction against sh:in enums. Prefixed names
+  // the LLM echoed from the shapes' Turtle resolve through the declared prefixes.
+  const prefixes = buildPrefixMap(await buildDomainRegistry())
+  const fuzzedFilters = correctFilters(submission.slots.filters ?? {}, vocabulary, prefixes)
   // 1b. Concept-hierarchy expansion: if a filter value names a broad
   // SKOS concept ("Europe", "Scandinavia", a vehicle super-category),
   // expand it to its transitive narrower members so a literal-valued
@@ -192,14 +203,28 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   // only pollutes the interpretation with a phantom `domain:unknown` row
   // that never affected the SPARQL. Filtering here keeps the interpretation
   // honest about what was actually compiled.
-  const knownDomains = await resolveKnownDomains(correctedDomains)
+  //
+  // The LLM's own domain list is passed alongside: when it named only a
+  // support vocabulary ("<vocabulary> only"), the result keeps that vocabulary
+  // (searched standalone) next to the asset domains that use it.
+  const knownDomains = await resolveKnownDomains(
+    correctedDomains,
+    submission.slots.domains ?? [targetDomain],
+    [...Object.keys(shaclResult.filters), ...Object.keys(rangeResult.ranges)]
+  )
 
   // 4b-ii. A property declared by several domains keeps them all — the safe
   // default. But when the query names one of those domains outright ("maps
   // …"), the others were never asked for, and answering from them buries the
   // asked-for results among assets the user had already ruled out. Narrows
   // only on a clear, unambiguous naming; every other case passes through.
-  const preferredDomains = preferDomainsNamedInQuery(knownDomains, query)
+  // A named support vocabulary is the SCOPE of the request, not its subject:
+  // its name would always win the tie-break and drop the asset domains that
+  // use it, so the tie-break is skipped whenever such a scope is present.
+  const assetDomains = await getAssetDomains()
+  const vocabularyScope = knownDomains.filter((d) => !assetDomains.has(d))
+  const preferredDomains =
+    vocabularyScope.length > 0 ? knownDomains : preferDomainsNamedInQuery(knownDomains, query)
 
   // 4c. references.* are cross-reference JOIN targets (parent → child via the
   // discovered chain), not peers of the primary domain. Normalize to an array,
@@ -224,7 +249,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   const normalizedReferences: ReferenceFilter[] = []
   const referencedDomains = new Set<string>()
   for (const ref of requestedRefs) {
-    const [canonical] = await resolveKnownDomains([ref.domain])
+    const [canonical] = await canonicalAssetDomains([ref.domain])
     if (canonical && !referencedDomains.has(canonical)) {
       referencedDomains.add(canonical)
       normalizedReferences.push({ ...ref, domain: canonical })
@@ -242,6 +267,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     conceptIndex,
     shacl,
     referenceGaps,
+    prefixes,
     instanceValueLookup
   )
   endValidation()
@@ -291,5 +317,5 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   }
 
   // 6. Final post-compile sanity / confidence-floor pass.
-  return validateSlots(rawResponse, vocabulary)
+  return validateSlots(rawResponse, vocabulary, prefixes)
 }
