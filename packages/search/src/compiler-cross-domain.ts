@@ -17,6 +17,7 @@ import type { SearchSlots } from '@ontology-search/slots/slots'
 
 import { buildDomainPatterns } from './compiler-domain-patterns.js'
 import { buildPrefixes } from './compiler-helpers-domains.js'
+import { pathPrefixKey } from './compiler-helpers-paths.js'
 import {
   addEnumFilter,
   addLocationFilter,
@@ -290,10 +291,7 @@ export function emitCrossDomainFilters(
   type Bucket = { referencePath: PropertyPath; entries: Entry[] }
   const buckets = new Map<string, Bucket>()
   for (const entry of resolved) {
-    const prefixKey = entry.path.steps
-      .slice(0, -1)
-      .map((s) => s.predicate)
-      .join('|')
+    const prefixKey = pathPrefixKey(entry.path)
     let bucket = buckets.get(prefixKey)
     if (!bucket) {
       bucket = { referencePath: entry.path, entries: [] }

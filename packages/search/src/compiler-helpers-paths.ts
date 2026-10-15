@@ -97,12 +97,19 @@ export const SHALLOW_PATH_MAX_STEPS = 3
  * `sh:node`) describe DIFFERENT value nodes; binding them to one SPARQL
  * variable would demand a single node conforming to all shapes at once and
  * return zero rows. Leaves of the same class still share the node.
+ *
+ * A leaf inherited from a superclass of the class reached (`inheritedLeaf`)
+ * may sit on any value node of the hop, so it gets a bucket of its own: one
+ * node per leaf matches data that splits the leaves across value nodes as well
+ * as data that puts them on one (a solution maps each variable to one term,
+ * [SPARQL11] §18.1.8).
  */
 export function pathPrefixKey(path: PropertyPath): string {
-  return path.steps
+  const prefix = path.steps
     .slice(0, -1)
     .map((s) => `${s.predicate}@${s.intermediate ?? ''}`)
     .join('|')
+  return path.inheritedLeaf ? `${prefix}|${path.propertyIri}` : prefix
 }
 
 /**

@@ -154,6 +154,17 @@ function inheritBelowRoots(
   }
 }
 
+/**
+ * True when `target` is reached as an `rdfs:subClassOf` ancestor of the class
+ * the last hop lands on, i.e. a leaf owned by `target` is inherited there.
+ */
+export function reachedAsAncestor(
+  target: string,
+  predecessors: Map<string, PredecessorLink>
+): boolean {
+  return predecessors.get(target)?.inherited === true
+}
+
 /** True when the walk from a root to `target` crosses an `inherited` link. */
 export function reachedByInheritance(
   target: string,

@@ -21,6 +21,7 @@ import {
   findVocabularyRoots,
   pathStepsTo,
   type PredecessorLink,
+  reachedAsAncestor,
   reachedByInheritance,
 } from './property-paths-graph.js'
 import {
@@ -80,6 +81,7 @@ function pathsFrom(
       assetClass: rootClass,
       steps,
       leafKind,
+      ...(reachedAsAncestor(owningClass, predecessors) && { inheritedLeaf: true }),
     })
   }
 }
@@ -221,6 +223,7 @@ function emitPaths(
         assetClass,
         steps,
         leafKind,
+        ...(reachedAsAncestor(owningClass, predecessors) && { inheritedLeaf: true }),
       }
       if (viaDisjunction || reachedByInheritance(owningClass, predecessors)) {
         extended.push({ ...path, extended: true })
