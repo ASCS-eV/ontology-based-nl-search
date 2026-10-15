@@ -147,17 +147,16 @@ export function getAgentPolicy(task: AgentTask = 'search'): AgentPolicy {
   //  - search: the least reasoning the model offers. Slot-filling is
   //    deterministic (fill slots from SHACL, validated downstream by the SHACL
   //    gate), so chain-of-thought only adds latency and output tokens without
-  //    improving the structured result. This applies to EVERY Copilot model — a
-  //    previous allowlist gate (`AI_MODEL.includes('4.6') || includes('opus')`)
-  //    silently left reasoning ON for models outside it (incl. the default
-  //    `claude-sonnet-5`); the benchmarked cost was mean 19.5s (6–43s) vs. ~5.2s
-  //    with `'none'`. `'none'` is NOT harmless everywhere: whether it is accepted
+  //    improving the structured result. This applies to EVERY Copilot model,
+  //    the default `claude-sonnet-5` included: on the real search path it
+  //    averaged 7.3 s with `'none'` and 8.1 s with `'low'`, but 14.9 s with the
+  //    knob unset, which is not "off". `'none'` is not accepted everywhere: it
   //    depends on the model and the runtime version (a provider 400 for
   //    `claude-sonnet-5.5`, a local rejection from runtime 1.0.91 on for every
   //    model that does not advertise it), so it is sent only where advertised
-  //    and otherwise replaced by the weakest advertised level. Leaving the knob
-  //    unset is not "off" either: on the real search prompt `claude-sonnet-5`
-  //    still thinks (see #261 for the measurements).
+  //    and otherwise replaced by the weakest advertised level. Measurements and
+  //    quality: `apps/docs/agent.md`, "Copilot reasoning is minimised for
+  //    slot-filling".
   //
   //  - authoring: enabled at `AUTHORING_REASONING_EFFORT`. Composing a scenario
   //    from prose is a reasoning task (relative speeds, "slows down", timing);
