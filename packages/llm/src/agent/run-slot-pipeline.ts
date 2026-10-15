@@ -30,7 +30,11 @@ import {
   getInstanceValues,
   preferDomainsNamedInQuery,
 } from '@ontology-search/search'
-import { compileSlotsWithTrace, resolveKnownDomains } from '@ontology-search/search/compiler'
+import {
+  canonicalAssetDomains,
+  compileSlotsWithTrace,
+  resolveKnownDomains,
+} from '@ontology-search/search/compiler'
 import type { LlmStructuredResponse } from '@ontology-search/search/types'
 import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
 import { normalizeReferences } from '@ontology-search/slots/slots'
@@ -239,7 +243,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   const normalizedReferences: ReferenceFilter[] = []
   const referencedDomains = new Set<string>()
   for (const ref of requestedRefs) {
-    const [canonical] = await resolveKnownDomains([ref.domain])
+    const [canonical] = await canonicalAssetDomains([ref.domain])
     if (canonical && !referencedDomains.has(canonical)) {
       referencedDomains.add(canonical)
       normalizedReferences.push({ ...ref, domain: canonical })

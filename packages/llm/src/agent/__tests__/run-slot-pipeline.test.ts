@@ -411,6 +411,26 @@ describe('runSlotPipeline', () => {
     expect(response.sparql).not.toContain('?refAsset')
   }, 120_000)
 
+  it.each(['openlabel', 'gx'])(
+    'drops a reference to the support vocabulary %s instead of joining an asset that uses it',
+    async (vocabulary_) => {
+      // A reference targets an asset. A vocabulary name used to resolve to the
+      // asset domains using that vocabulary, and the first of them became the
+      // JOIN target (and left the primary domains).
+      const sw = new Stopwatch()
+      const response = await runSlotPipeline({
+        submission: submission({ domains: ['scenario'], references: { domain: vocabulary_ } }),
+        vocabulary,
+        targetDomain: 'scenario',
+        sw,
+        query: NEUTRAL_QUERY,
+      })
+      expect(response.interpretation.domains).toEqual(['scenario'])
+      expect(response.sparql).not.toContain('?refAsset')
+    },
+    120_000
+  )
+
   /**
    * Multi-reference AND-combines every referenced domain AND projects every
    * referenced asset (`?refAsset`/`?refName`, then `?refAsset1`/`?refName1`,

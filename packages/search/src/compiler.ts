@@ -64,7 +64,7 @@ import { normalizeDomainName } from './domain-scope.js'
 // resolving these from `./compiler.js` unchanged.
 export { buildCompilerVocabFrom, getCompilerVocab, warmupCompiler } from './compiler-vocab.js'
 export { compileAllCountQueries, compileCountQuery } from './count-query.js'
-export { normalizeDomainName, resolveKnownDomains } from './domain-scope.js'
+export { canonicalAssetDomains, normalizeDomainName, resolveKnownDomains } from './domain-scope.js'
 
 /**
  * Compile structured search slots into a valid SPARQL SELECT query.

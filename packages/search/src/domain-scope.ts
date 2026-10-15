@@ -74,20 +74,7 @@ export async function resolveKnownDomains(
 ): Promise<string[]> {
   const registry = await buildDomainRegistry()
   const assetDomains = await getAssetDomains()
-  const split = (names: string[]): { assets: string[]; vocabularies: string[] } => {
-    const seen = new Set<string>()
-    const assets: string[] = []
-    const vocabularies: string[] = []
-    for (const raw of names) {
-      const name = normalizeDomainName(raw)
-      const canonical = registry.domains.has(name) ? name : registry.resolveByIriDomain(name)?.name
-      if (!canonical || seen.has(canonical)) continue
-      seen.add(canonical)
-      if (assetDomains.has(canonical)) assets.push(canonical)
-      else vocabularies.push(canonical)
-    }
-    return { assets, vocabularies }
-  }
+  const split = (names: string[]) => splitDomains(names, registry, assetDomains)
   const { assets: known } = split(domains)
   const asked = split(requested)
   if (asked.assets.length > 0 || asked.vocabularies.length === 0) return known
@@ -102,6 +89,37 @@ export async function resolveKnownDomains(
     scope.required.every((name) => vocabIndex.paths.has(`${domain}:${name}`))
   )
   return [...result, ...standaloneVocabularyDomains(asked.vocabularies, vocabIndex)]
+}
+
+/**
+ * The asset domains among `domains`, canonicalized, order-preserving and
+ * de-duplicated. Unlike {@link resolveKnownDomains}, a support vocabulary is
+ * never expanded to the asset domains that use it: for a name that must
+ * denote an asset (a reference target), a vocabulary names none.
+ */
+export async function canonicalAssetDomains(domains: string[]): Promise<string[]> {
+  const [registry, assetDomains] = await Promise.all([buildDomainRegistry(), getAssetDomains()])
+  return splitDomains(domains, registry, assetDomains).assets
+}
+
+/** Canonical names, split into asset domains and support vocabularies. */
+function splitDomains(
+  names: string[],
+  registry: DomainRegistry,
+  assetDomains: ReadonlySet<string>
+): { assets: string[]; vocabularies: string[] } {
+  const seen = new Set<string>()
+  const assets: string[] = []
+  const vocabularies: string[] = []
+  for (const raw of names) {
+    const name = normalizeDomainName(raw)
+    const canonical = registry.domains.has(name) ? name : registry.resolveByIriDomain(name)?.name
+    if (!canonical || seen.has(canonical)) continue
+    seen.add(canonical)
+    if (assetDomains.has(canonical)) assets.push(canonical)
+    else vocabularies.push(canonical)
+  }
+  return { assets, vocabularies }
 }
 
 /**
