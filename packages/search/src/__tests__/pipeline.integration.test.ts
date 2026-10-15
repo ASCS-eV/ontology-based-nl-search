@@ -722,4 +722,32 @@ describe('SearchService — real pipeline integration', () => {
     expect(ids.every((id) => id.startsWith('did:web:openlabel.example:Tag:'))).toBe(true)
     expect(ids).toContain('did:web:openlabel.example:Tag:lane-keeping-straight-motorway')
   }, 120_000)
+
+  /**
+   * Two entry points, two readings of "an asset domain next to a vocabulary".
+   * Natural language (`resolveKnownDomains`) treats the vocabulary as the
+   * LLM's inference about the user's words, so a named asset domain wins and
+   * is never broadened. The explicit refine / GraphQL request carries the
+   * user's own scope selection, so `compileSlotsWithTrace` honours every
+   * domain it is given, vocabulary included.
+   */
+  it('honours a vocabulary next to an asset domain when the scope is explicit', async () => {
+    const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
+    const filters = { DrivableAreaType: `${OL}MotorwayManaged`, HorizontalStraights: 'true' }
+
+    // NL inference: the asset domain wins, the vocabulary is dropped.
+    expect(
+      await resolveKnownDomains(['scenario', 'openlabel'], undefined, Object.keys(filters))
+    ).toEqual(['scenario'])
+
+    // Explicit scope: the standalone vocabulary arm is compiled alongside.
+    const { sparql } = await compileSlotsWithTrace({
+      domains: ['scenario', 'openlabel'],
+      filters,
+      ranges: {},
+    })
+    expect(sparql).toContain('scenario:Scenario')
+    expect(sparql).toMatch(/\?asset a (openlabel:Tag|<[^>]*\/Tag>)/)
+    expect(sparql).toContain('FILTER NOT EXISTS')
+  }, 120_000)
 })
