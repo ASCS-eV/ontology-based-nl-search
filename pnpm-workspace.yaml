@@ -29,16 +29,20 @@ minimumReleaseAgeExclude:
 overrides:
   # Security advisories GHSA-mh99-v99m-4gvg and GHSA-rgw5-rvv9-x895
   # (brace-expansion DoS via unbounded intermediate arrays, high). The second
-  # bypasses the CVE-2026-14257 mitigation that 5.0.8 shipped, so the floor is
-  # >=5.0.9. The 5.x CJS build exports a NAMED `expand` (not the legacy bare
+  # bypasses the CVE-2026-14257 mitigation that 5.0.8 shipped, so the floor was
+  # >=5.0.9; three further advisories raise it to the highest patched version:
+  #   GHSA-6j4f-fj2g-mc7p — recursion in parseCommaParts (high), patched in 5.0.10
+  #   GHSA-qhr7-859c-m2p7 — recursion on nested brace groups (high), patched in 5.0.11
+  #   GHSA-q2hr-2g5m-vwhr — quadratic `{a},b}` rewrite (moderate), patched in 5.0.12
+  # The 5.x CJS build exports a NAMED `expand` (not the legacy bare
   # function), so only minimatch >=10 consumes it correctly; older transitive
   # minimatch (3.x via @eslint/config-array, 9.x via typescript-estree) crash on
   # it (`TypeError: expand is not a function`). We therefore lift the whole
   # minimatch lineage to 10.x (which depends on brace-expansion@^5) and floor
-  # brace-expansion at the patched 5.0.9. minimatch is dev-tooling only (ESLint /
+  # brace-expansion at the patched 5.0.12. minimatch is dev-tooling only (ESLint /
   # typescript-eslint — no runtime consumer). Verified: lint + typecheck + tests pass.
   minimatch: ^10.2.5
-  brace-expansion: ^5.0.9
+  brace-expansion: ^5.0.12
   # Two quadratic-CPU advisories against the same 4.x line, so the floor is the
   # higher of the two patched versions:
   #   GHSA-52cp-r559-cp3m — merge-key chains, patched in 4.3.0
@@ -80,6 +84,16 @@ overrides:
   nanoid@<3.3.18: ^3.3.18
   postcss@<=8.5.17: ^8.5.18
   postcss@<=8.5.22: ^8.5.23
+  # Two advisories in the seroval line that @tanstack/router-core (the web app's
+  # router) serializes route state with, both reachable through `fromJSON()`:
+  #   GHSA-p6vx-979v-rg4c — Promise thenable assimilation invokes plugin-produced
+  #                         callables, a bypass of GHSA-mv8w-475r-vwqw (critical),
+  #                         patched in 1.6.1
+  #   GHSA-jp82-f5mq-hwhp — memory exhaustion via an unchecked TypedArray length
+  #                         (high), patched in 1.6.3
+  # The floor is the higher of the two. Reached under `--prod --audit-level=moderate`
+  # through apps/web → @tanstack/react-router → @tanstack/router-core.
+  seroval@<1.6.3: ^1.6.3
   tar@<=7.5.20: ^7.5.21
   vite@<=6.4.2: ^6.4.3
   ws@>=8.0.0 <8.20.1: ^8.20.1
