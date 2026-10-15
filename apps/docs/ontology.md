@@ -133,11 +133,11 @@ What was checked in OMB (`artifacts/openlabel`, `submodules/asam-openx-standards
 
 Shape properties of v1 that matter for search and data (found while building the sample data):
 
-- The category shapes `OddSceneryShape`, `OddEnvironmentShape` and `OddDynamicElementsShape` have **no properties**; all 61 ODD properties sit on `OddShape` (target `Odd`), which category nodes reach through the class hierarchy. The `sh:or` unions of the HD-map and scenario shapes are therefore vacuous: SHACL cannot tell that scenery belongs in an HD map and weather in a scenario. The sample data follows OMB's own valid instances instead (category-pure nodes), and the compiler must not assume the split.
+- The category shapes `OddSceneryShape`, `OddEnvironmentShape` and `OddDynamicElementsShape` have **no properties**; all 61 ODD properties sit on `OddShape` (target `Odd`), which category nodes reach through the class hierarchy. The `sh:or` unions of the HD-map and scenario shapes are therefore vacuous: SHACL cannot tell that scenery belongs in an HD map and weather in a scenario. The sample data follows OMB's own valid instances instead (category-pure nodes), and the compiler does not assume the split: a leaf inherited from `OddShape` binds a content node of its own, so a filter on weather and one on traffic match the separate environment and dynamic-element nodes.
 - Some `*Value` properties are `sh:or ( scalar  schema:QuantitativeValue )` (speed, lane count, dimensions, accelerate, decelerate, drive); others are a plain decimal or integer. An `xsd:integer` is not an `xsd:decimal` ([SHACL] §4.1.2 compares datatype IRIs), which is why integers are only valid where the shape says integer.
 - `AdminTagShape` declares its properties as `sh:datatype rdfs:Literal`. `rdfs:Literal` is a class, not the datatype of any literal, so a strict engine can never accept a value (pyshacl special-cases it); the evident intent is `sh:nodeKind sh:Literal`.
 - `RoadUserShape` carries a stray copy of `motionDriveValue`.
-- **Path discovery skips property shapes with `sh:or`** (`queryLeafProperties`). In v1 that hides the scalar-or-range value properties above, so ranges on speed, lane count, dimensions and the three motion values cannot be searched; the same holds for the 16 literal-or-`QuantitativeValue` unions and 4 enumeration unions in v2 and for many `gx` shapes. Range filters on scalar-only value properties (`weatherRainValue`, `horizontalCurvesValue`, `trafficVolumeValue`, …) work.
+- **Scalar-or-range value properties are searched by their scalar values.** A property shape whose `sh:or` has a member with an `sh:datatype` is a literal leaf ([SHACL] §4.6.3), and a range property when every member datatype is numeric, so ranges on speed, lane count, dimensions and the motion values compare the recorded numbers. A value recorded as a `schema:QuantitativeValue` range node is not matched, and an `sh:or` whose members are constrained only by `sh:in` (the 4 enumeration unions in v2) does not make a leaf.
 
 ### Choosing which OpenLABEL the search loads
 
@@ -216,12 +216,12 @@ nothing for search today:
 | metric                                   | artifacts only | + `imports/` |
 | ---------------------------------------- | -------------- | ------------ |
 | schema-graph triples                     | 254,415        | 315,347      |
-| term cards / distinct searchable leaves  | 840 / 352      | 840 / 352    |
+| term cards / distinct leaf IRIs          | 936 / 524      | not measured |
 | value-hierarchy triples mirrored to data | 9,390          | 10,895       |
 | asset domains / ref. edges               | 13 / 469       | 13 / 469     |
 | retrieval recall (gating set)            | 1.00           | 1.00         |
 
-The first three rows were re-measured against OMB 0.5.0 (the last two are from the earlier measurement). Term cards include the leaves of standalone vocabulary entry classes — `openlabel` 100, `openlabel-v2` 102, `gx` 75, `envited-x` 19, `manifest` 15 — and the leaves the asset domains inherit through nested classes (`hdmap` and `scenario` 60 each); without them the index has 356 cards.
+The first three rows are measured against OMB 0.5.0 (the last two are from an earlier measurement); the term cards with `imports/` are not measured. Term cards include the leaves of standalone vocabulary entry classes — `openlabel` 105, `openlabel-v2` 108, `gx` 80, `envited-x` 19, `manifest` 15, `general` 4 — and 249 leaves the asset domains reach only through inheritance below the asset class or an `sh:or` member (`hdmap` and `scenario` 76 each, `service` 61, `automotive-simulator`, `leakage-test`, `simulation-model` and `vv-report` 9 each); without them the index has 356 cards.
 
 Searchable vocabulary is SHACL-driven and `imports/` ships no `*.shacl.ttl`,
 so no phantom domains or meta-vocabulary properties can appear — no filter
