@@ -130,6 +130,20 @@ let replenishing = false
 const LLM_TURN_TIMEOUT_MS = 120_000
 
 /**
+ * Claude 5.x models reject `thinking: {type: "disabled"}` (which the CLI sends
+ * for `reasoningEffort: "none"`) with a 400; they don't think by default, so
+ * the knob is simply omitted for them.
+ */
+export function shouldForwardReasoningEffort(
+  model: string | undefined,
+  effort: string | null | undefined
+): boolean {
+  if (!effort) return false
+  if (effort === 'none' && model && /claude-[a-z]+-5(?:[.-]|$)/i.test(model)) return false
+  return true
+}
+
+/**
  * Create a fresh session. No `infiniteSessions` — each session is used
  * exactly once so no history accumulates.
  */
@@ -143,7 +157,7 @@ async function createSession(prompt: string): Promise<CopilotSession> {
     // `reasoningEffort: "none"` ("none" disables reasoning), but the SDK's
     // exported `ReasoningEffort` union narrows to low|medium|high|xhigh.
     // Forward the wire-valid policy value with a cast.
-    ...(policy.reasoningEffort
+    ...(shouldForwardReasoningEffort(policy.model, policy.reasoningEffort)
       ? { reasoningEffort: policy.reasoningEffort as unknown as 'low' | 'medium' | 'high' }
       : {}),
     onPermissionRequest: approveAll,
