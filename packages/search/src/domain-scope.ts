@@ -40,19 +40,19 @@ export function normalizeDomainName(domain: string): string {
  *     that the registry knows about but that don't root any asset class in
  *     the discovered subclass hierarchy. The compiler would otherwise emit
  *     a primary `?asset a <Class>` UNION arm using the registry's arbitrary
- *     `targetClass` pick (e.g. `gx:AccessControlManagement`), which has
+ *     `targetClass` pick (any class of that vocabulary), which has
  *     nothing to do with the query and returns zero rows. When ONLY such
  *     vocabularies were named, they resolve to the asset domains that use
  *     them (see {@link vocabularyScope}).
  *
  * Order-preserving and de-duplicated. A name that is a registry directory key
  * resolves to that domain; only an unknown name falls back to the registry's
- * IRI-segment lookup, so two versions of one vocabulary (`openlabel`,
- * `openlabel-v2`) never shadow each other.
+ * IRI-segment lookup, so two versions of one vocabulary (directory keys
+ * `vocab` and `vocab-v2`) never shadow each other.
  *
  * `requested` is the domain list the user/LLM originally asked for (before
  * slot correction added the owners of the filter properties). When it names
- * ONLY support vocabularies ("OpenLABEL only"), the vocabulary intent wins:
+ * ONLY support vocabularies ("<vocabulary> only"), the vocabulary intent wins:
  * the result is the asset domains using that vocabulary PLUS the vocabulary
  * domains themselves when they have standalone entry classes, so documents
  * of that vocabulary that are not attached to any asset are searched too
@@ -123,7 +123,7 @@ function splitDomains(
 }
 
 /**
- * A request naming ONLY a non-asset vocabulary ("OpenLABEL only", "gx …")
+ * A request naming ONLY a non-asset vocabulary ("<vocabulary> only")
  * means "assets described with that vocabulary" — not "no restriction".
  * `owners` are the asset domains whose SHACL-discovered property paths end
  * in a leaf of that vocabulary ([SHACL] §2.3 property shapes reached via

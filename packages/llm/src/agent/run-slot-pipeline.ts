@@ -199,7 +199,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   // honest about what was actually compiled.
   //
   // The LLM's own domain list is passed alongside: when it named only a
-  // support vocabulary ("OpenLABEL only"), the result keeps that vocabulary
+  // support vocabulary ("<vocabulary> only"), the result keeps that vocabulary
   // (searched standalone) next to the asset domains that use it.
   const knownDomains = await resolveKnownDomains(
     correctedDomains,
