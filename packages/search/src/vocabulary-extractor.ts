@@ -15,6 +15,7 @@ import { isIri } from '@ontology-search/sparql/escape'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from './compiler.js'
+import { extractNumericProperties, type NumericProperty } from './numeric-properties.js'
 import { SCHEMA_GRAPH } from './schema-loader.js'
 import {
   queryInstanceValueDistribution,
@@ -23,6 +24,8 @@ import {
   type SkosConceptInfo,
   type SubClassEdge,
 } from './schema-queries.js'
+
+export type { NumericProperty } from './numeric-properties.js'
 
 /** A property with enumerated allowed values (from sh:in) */
 export interface EnumProperty {
@@ -37,16 +40,6 @@ export interface EnumProperty {
   /** Enumerated allowed values from sh:in */
   allowedValues: string[]
   /** Ontology domain (the SHACL domain name) */
-  domain: string
-}
-
-/** A numeric property (xsd:integer or xsd:float) */
-export interface NumericProperty {
-  iri: string
-  localName: string
-  label: string
-  description: string
-  datatype: 'integer' | 'float'
   domain: string
 }
 
@@ -290,53 +283,4 @@ async function extractEnumProperties(
       domain,
     }))
   )
-}
-
-/**
- * Extract all numeric properties (xsd:integer, xsd:float) from the schema graph.
- */
-async function extractNumericProperties(
-  store: SparqlStore,
-  domainsByPropertyIri: Map<string, Set<string>>
-): Promise<NumericProperty[]> {
-  const sparql = `
-    ${sparqlPrefixes('sh', 'xsd')}
-
-    SELECT ?path ?name ?description ?datatype
-    FROM <${SCHEMA_GRAPH}>
-    WHERE {
-      ?shape sh:property ?propShape .
-      ?propShape sh:path ?path .
-      FILTER(isIRI(?path))
-      ?propShape sh:datatype ?datatype .
-      OPTIONAL { ?propShape sh:name ?name }
-      OPTIONAL { ?propShape sh:description ?description }
-      FILTER(?datatype IN (xsd:integer, xsd:float))
-      FILTER NOT EXISTS { ?propShape sh:in ?list }
-    }
-  `
-
-  const results = await store.query(sparql)
-  const seen = new Set<string>()
-  const properties: NumericProperty[] = []
-
-  for (const row of results.results.bindings) {
-    const iri = row['path']?.value
-    if (!iri || seen.has(iri)) continue
-    seen.add(iri)
-
-    const datatypeIri = row['datatype']?.value ?? ''
-    const datatype = datatypeIri.includes('integer') ? 'integer' : 'float'
-    const localName = extractLocalName(iri)
-    const label = row['name']?.value ?? localName
-    const description = row['description']?.value ?? ''
-
-    // One entry per owning domain (SHACL shape membership); drop properties no
-    // domain can resolve — the compiler could not filter them either.
-    for (const domain of domainsByPropertyIri.get(iri) ?? []) {
-      properties.push({ iri, localName, label, description, datatype, domain })
-    }
-  }
-
-  return properties
 }

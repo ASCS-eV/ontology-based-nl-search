@@ -9,7 +9,7 @@
     "gx": "https://w3id.org/gaia-x/development#",
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
-    "openlabel_v2": "https://w3id.org/ascs-ev/envited-x/openlabel/v2/"
+    "openlabel": "https://openlabel.asam.net/V1-0-0/ontologies/"
   },
   "@graph": [
     {
@@ -40,82 +40,47 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeDistributor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "1",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeSegmented"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionIcy"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureStreetFurniture"
-              },
-              "openlabel_v2:SceneryZone": {
-                "@id": "openlabel_v2:ZoneRegion"
-              },
-              "openlabel_v2:JunctionIntersection": {
-                "@id": "openlabel_v2:IntersectionCrossroad"
-              },
-              "openlabel_v2:ConnectivityCommunication": {
-                "@id": "openlabel_v2:CommunicationV2i"
-              },
-              "openlabel_v2:ConnectivityPositioning": {
-                "@id": "openlabel_v2:PositioningGlonass"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              },
-              "openlabel_v2:SubjectVehicleSpeed": true,
-              "openlabel_v2:subjectVehicleSpeedValue": {
-                "@value": "30",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "1.5",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:BehaviourCommunication": {
-                "@id": "openlabel_v2:CommunicationHeadlightFlash"
-              }
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleCar"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanCyclist"
-              }
+            "openlabel:ConnectivityCommunication": {
+              "@id": "openlabel:CommunicationV2i"
+            },
+            "openlabel:ConnectivityPositioning": {
+              "@id": "openlabel:PositioningGlonass"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "1.5",
+              "@type": "xsd:decimal"
+            },
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationHeadlightFlash"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanCyclist"
             }
           }
         ],
@@ -461,75 +426,45 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayManaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "2",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionContamination"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeNone"
-              },
-              "openlabel_v2:WeatherWind": true,
-              "openlabel_v2:IlluminationLowLight": {
-                "@id": "openlabel_v2:LowLightNight"
-              },
-              "openlabel_v2:IlluminationArtificial": {
-                "@id": "openlabel_v2:ArtificialVehicleLighting"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureVegetation"
-              },
-              "openlabel_v2:SceneryZone": {
-                "@id": "openlabel_v2:ZoneGeoFenced"
-              },
-              "openlabel_v2:JunctionIntersection": {
-                "@id": "openlabel_v2:IntersectionTJunction"
-              },
-              "openlabel_v2:ConnectivityCommunication": {
-                "@id": "openlabel_v2:V2iWifi"
-              },
-              "openlabel_v2:ConnectivityPositioning": {
-                "@id": "openlabel_v2:PositioningGalileo"
-              },
-              "openlabel_v2:HorizontalStraights": true,
-              "openlabel_v2:SubjectVehicleSpeed": true,
-              "openlabel_v2:subjectVehicleSpeedValue": {
-                "@value": "41",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherWind": true,
+            "openlabel:IlluminationLowLight": {
+              "@id": "openlabel:LowLightNight"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionLaneChangeRight": true,
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "2.7",
-                "@type": "xsd:decimal"
-              }
+            "openlabel:IlluminationArtificial": {
+              "@id": "openlabel:ArtificialVehicleLighting"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleTrailer"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanPassenger"
-              }
+            "openlabel:ConnectivityCommunication": {
+              "@id": "openlabel:V2iWifi"
+            },
+            "openlabel:ConnectivityPositioning": {
+              "@id": "openlabel:PositioningGalileo"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "41",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionLaneChangeRight": true,
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "2.7",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleTrailer"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPassenger"
             }
           }
         ],
@@ -874,72 +809,42 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeSlip"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "3",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeUniform"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionStandingWater"
-              },
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryZone": {
-                "@id": "openlabel_v2:ZoneSchool"
-              },
-              "openlabel_v2:ScenerySpecialStructure": {
-                "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
-              },
-              "openlabel_v2:JunctionIntersection": {
-                "@id": "openlabel_v2:IntersectionGradeSeperated"
-              },
-              "openlabel_v2:ConnectivityCommunication": {
-                "@id": "openlabel_v2:V2vSatellite"
-              },
-              "openlabel_v2:ConnectivityPositioning": {
-                "@id": "openlabel_v2:PositioningGps"
-              },
-              "openlabel_v2:HorizontalCurves": true,
-              "openlabel_v2:SubjectVehicleSpeed": true,
-              "openlabel_v2:subjectVehicleSpeedValue": {
-                "@value": "52",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionCutOut": true,
-              "openlabel_v2:MotionLaneChangeRight": true,
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "3.9",
-                "@type": "xsd:decimal"
-              }
+            "openlabel:ConnectivityCommunication": {
+              "@id": "openlabel:V2vSatellite"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleBus"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanAnimalRider"
-              }
+            "openlabel:ConnectivityPositioning": {
+              "@id": "openlabel:PositioningGps"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "52",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutOut": true,
+            "openlabel:MotionLaneChangeRight": true,
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "3.9",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleBus"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanAnimalRider"
             }
           }
         ],
@@ -1201,48 +1106,34 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeRadial"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "1",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:IlluminationLowLight": {
-                "@id": "openlabel_v2:LowLightNight"
-              },
-              "openlabel_v2:IlluminationArtificial": {
-                "@id": "openlabel_v2:ArtificialVehicleLighting"
-              },
-              "openlabel_v2:TrafficAgentDensity": true,
-              "openlabel_v2:trafficAgentDensityValue": {
-                "@value": "31",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:IlluminationLowLight": {
+              "@id": "openlabel:LowLightNight"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "3.3",
-                "@type": "xsd:decimal"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleMotorcycle"
-              }
+            "openlabel:IlluminationArtificial": {
+              "@id": "openlabel:ArtificialVehicleLighting"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "31",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "3.3",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleMotorcycle"
             }
           }
         ],
@@ -1504,54 +1395,28 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMinor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "2",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeLoose"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryTemporaryStructure": {
-                "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionTurnLeft": true,
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "4.5",
-                "@type": "xsd:decimal"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleAgricultural"
-              }
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionTurnLeft": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "4.5",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleAgricultural"
             }
           }
         ],
@@ -1813,58 +1678,34 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayUnmanaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "3",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
-              },
-              "openlabel_v2:IlluminationLowLight": {
-                "@id": "openlabel_v2:LowLightNight"
-              },
-              "openlabel_v2:IlluminationArtificial": {
-                "@id": "openlabel_v2:ArtificialVehicleLighting"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureVegetation"
-              },
-              "openlabel_v2:HorizontalStraights": true
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:IlluminationLowLight": {
+              "@id": "openlabel:LowLightNight"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionOvertake": true,
-              "openlabel_v2:MotionTurnLeft": true,
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "5.7",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:BehaviourCommunication": {
-                "@id": "openlabel_v2:CommunicationWave"
-              }
+            "openlabel:IlluminationArtificial": {
+              "@id": "openlabel:ArtificialVehicleLighting"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionOvertake": true,
+            "openlabel:MotionTurnLeft": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "5.7",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleEmergency"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanDriver"
-              }
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationWave"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleEmergency"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanDriver"
             }
           }
         ],
@@ -2210,50 +2051,28 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMotorway"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeSegmented"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
-              },
-              "openlabel_v2:WeatherWind": true,
-              "openlabel_v2:WeatherSnow": true,
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureStreetFurniture"
-              },
-              "openlabel_v2:HorizontalCurves": true
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherWind": true,
+            "openlabel:WeatherSnow": true,
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "85.0",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleWheelchair"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "85",
-                "@type": "xsd:integer"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleWheelchair"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanPedestrian"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPedestrian"
             }
           }
         ],
@@ -2617,41 +2436,23 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeShared"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:ScenerySpecialStructure": {
-                "@id": "openlabel_v2:SpecialStructureTollPlaza"
-              },
-              "openlabel_v2:JunctionRoundabout": {
-                "@id": "openlabel_v2:RoundaboutMiniNosignal"
-              }
-            },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionTurnRight": true,
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "25",
-                "@type": "xsd:integer"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleCycle"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanCyclist"
-              },
-              "openlabel_v2:RoadUserAnimal": true
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionTurnRight": true,
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "25.0",
+              "@type": "xsd:decimal"
             }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCycle"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanCyclist"
+            },
+            "openlabel:RoadUserAnimal": true
           }
         ],
         "scenario:hasQuantity": {
@@ -2912,49 +2713,37 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeParking"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeUniform"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              },
-              "openlabel_v2:TrafficAgentDensity": true,
-              "openlabel_v2:trafficAgentDensityValue": {
-                "@value": "66",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:EnvironmentParticulates": {
-                "@id": "openlabel_v2:ParticulatesWater"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionLaneChangeLeft": true,
-              "openlabel_v2:MotionTurnRight": true,
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "45",
-                "@type": "xsd:integer"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleVan"
-              }
+            "openlabel:EnvironmentParticulates": {
+              "@id": "openlabel:ParticulatesWater"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "66",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionLaneChangeLeft": true,
+            "openlabel:MotionTurnRight": true,
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "45.0",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleVan"
             }
           }
         ],
@@ -3215,26 +3004,13 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeDistributor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:HorizontalStraights": true
-            },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionCutIn": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleConstruction"
-              }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutIn": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleConstruction"
             }
           }
         ],
@@ -3505,57 +3281,24 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayManaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "2",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeLoose"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionMirage"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeNone"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureStreetFurniture"
-              },
-              "openlabel_v2:HorizontalCurves": true
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "2.7",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "2.7",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:MotionCutIn": true,
-              "openlabel_v2:BehaviourCommunication": {
-                "@id": "openlabel_v2:CommunicationSignalSlowing"
-              }
+            "openlabel:MotionCutIn": true,
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationSignalSlowing"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleTruck"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleTruck"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanMotorcyclist"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanMotorcyclist"
             }
           }
         ],
@@ -3901,52 +3644,26 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeSlip"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "3",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionFlooded"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
-              },
-              "openlabel_v2:WeatherWind": true,
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureVegetation"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherWind": true
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionLaneChangeRight": true,
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "3.9",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionLaneChangeRight": true,
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "3.9",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:MotionCutIn": true
+            "openlabel:MotionCutIn": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleCar"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanWheelchairUser"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanWheelchairUser"
             }
           }
         ],
@@ -4292,52 +4009,23 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeRadial"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "1",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeSegmented"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionWet"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:ScenerySpecialStructure": {
-                "@id": "openlabel_v2:SpecialStructureAutoAccess"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutOut": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleTrailer"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionCutOut": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleTrailer"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanDriver"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanDriver"
             }
           }
         ],
@@ -4608,44 +4296,26 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMinor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "2",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:HorizontalStraights": true,
-              "openlabel_v2:TrafficAgentDensity": true,
-              "openlabel_v2:trafficAgentDensityValue": {
-                "@value": "11",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "11",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "4.5",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "4.5",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:MotionCutOut": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleBus"
-              }
+            "openlabel:MotionCutOut": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleBus"
             }
           }
         ],
@@ -4925,46 +4595,19 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayUnmanaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "3",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeUniform"
-              },
-              "openlabel_v2:SceneryTemporaryStructure": {
-                "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
-              },
-              "openlabel_v2:HorizontalCurves": true
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionTurnLeft": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "5.7",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionTurnLeft": true,
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "5.7",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:MotionCutOut": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleMotorcycle"
-              }
+            "openlabel:MotionCutOut": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleMotorcycle"
             }
           }
         ],
@@ -5226,45 +4869,19 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMotorway"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "1",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureVegetation"
-              }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionOvertake": true,
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationSignalRight"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleAgricultural"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionOvertake": true,
-              "openlabel_v2:BehaviourCommunication": {
-                "@id": "openlabel_v2:CommunicationSignalRight"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleAgricultural"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanPassenger"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPassenger"
             }
           }
         ],
@@ -5609,54 +5226,30 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeShared"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeLoose"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeNone"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:WeatherWind": true,
-              "openlabel_v2:WeatherSnow": true,
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureStreetFurniture"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "25",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:MotionOvertake": true
+            "openlabel:WeatherWind": true,
+            "openlabel:WeatherSnow": true
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "25.0",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleEmergency"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanAnimalRider"
-              }
+            "openlabel:MotionOvertake": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleEmergency"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanAnimalRider"
             }
           }
         ],
@@ -6002,41 +5595,22 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeParking"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:ScenerySpecialStructure": {
-                "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
-              },
-              "openlabel_v2:JunctionRoundabout": {
-                "@id": "openlabel_v2:RoundaboutNormalNosignal"
-              },
-              "openlabel_v2:HorizontalStraights": true
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionTurnRight": true,
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "45.0",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionTurnRight": true,
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "45",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:MotionOvertake": true
+            "openlabel:MotionOvertake": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleWheelchair"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleWheelchair"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanMotorcyclist"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanMotorcyclist"
             }
           }
         ],
@@ -6298,37 +5872,27 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeDistributor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeSegmented"
-              },
-              "openlabel_v2:HorizontalCurves": true,
-              "openlabel_v2:TrafficAgentDensity": true,
-              "openlabel_v2:trafficAgentDensityValue": {
-                "@value": "46",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:EnvironmentParticulates": {
-                "@id": "openlabel_v2:ParticulatesWater"
-              }
-            },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionLaneChangeLeft": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleCycle"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:EnvironmentParticulates": {
+              "@id": "openlabel:ParticulatesWater"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "46",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionLaneChangeLeft": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCycle"
             }
           }
         ],
@@ -6590,26 +6154,14 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayManaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              }
-            },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionCutIn": true,
-              "openlabel_v2:MotionLaneChangeLeft": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleVan"
-              }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutIn": true,
+            "openlabel:MotionLaneChangeLeft": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleVan"
             }
           }
         ],
@@ -6916,84 +6468,49 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeSlip"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "3",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeUniform"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionSnow"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureStreetFurniture"
-              },
-              "openlabel_v2:SceneryZone": {
-                "@id": "openlabel_v2:ZoneRegion"
-              },
-              "openlabel_v2:JunctionIntersection": {
-                "@id": "openlabel_v2:IntersectionCrossroad"
-              },
-              "openlabel_v2:ConnectivityCommunication": {
-                "@id": "openlabel_v2:CommunicationV2v"
-              },
-              "openlabel_v2:ConnectivityPositioning": {
-                "@id": "openlabel_v2:PositioningGps"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              },
-              "openlabel_v2:SubjectVehicleSpeed": true,
-              "openlabel_v2:subjectVehicleSpeedValue": {
-                "@value": "50",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "3.9",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:MotionCutIn": true,
-              "openlabel_v2:MotionLaneChangeLeft": true,
-              "openlabel_v2:BehaviourCommunication": {
-                "@id": "openlabel_v2:CommunicationSignalLeft"
-              }
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleConstruction"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanPedestrian"
-              }
+            "openlabel:ConnectivityCommunication": {
+              "@id": "openlabel:CommunicationV2v"
+            },
+            "openlabel:ConnectivityPositioning": {
+              "@id": "openlabel:PositioningGps"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "50",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "3.9",
+              "@type": "xsd:decimal"
+            },
+            "openlabel:MotionCutIn": true,
+            "openlabel:MotionLaneChangeLeft": true,
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationSignalLeft"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleConstruction"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPedestrian"
             }
           }
         ],
@@ -7339,70 +6856,40 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeRadial"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "1",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionIcy"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
-              },
-              "openlabel_v2:WeatherWind": true,
-              "openlabel_v2:IlluminationLowLight": {
-                "@id": "openlabel_v2:LowLightNight"
-              },
-              "openlabel_v2:IlluminationArtificial": {
-                "@id": "openlabel_v2:ArtificialVehicleLighting"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureVegetation"
-              },
-              "openlabel_v2:SceneryZone": {
-                "@id": "openlabel_v2:ZoneGeoFenced"
-              },
-              "openlabel_v2:JunctionIntersection": {
-                "@id": "openlabel_v2:IntersectionTJunction"
-              },
-              "openlabel_v2:ConnectivityCommunication": {
-                "@id": "openlabel_v2:V2vWifi"
-              },
-              "openlabel_v2:ConnectivityPositioning": {
-                "@id": "openlabel_v2:PositioningGlonass"
-              },
-              "openlabel_v2:HorizontalStraights": true,
-              "openlabel_v2:SubjectVehicleSpeed": true,
-              "openlabel_v2:subjectVehicleSpeedValue": {
-                "@value": "61",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherWind": true,
+            "openlabel:IlluminationLowLight": {
+              "@id": "openlabel:LowLightNight"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionLaneChangeRight": true
+            "openlabel:IlluminationArtificial": {
+              "@id": "openlabel:ArtificialVehicleLighting"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleTruck"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanCyclist"
-              }
+            "openlabel:ConnectivityCommunication": {
+              "@id": "openlabel:V2vWifi"
+            },
+            "openlabel:ConnectivityPositioning": {
+              "@id": "openlabel:PositioningGlonass"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "61",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionLaneChangeRight": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleTruck"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanCyclist"
             }
           }
         ],
@@ -7748,67 +7235,37 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMinor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "2",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeLoose"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionContamination"
-              },
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryZone": {
-                "@id": "openlabel_v2:ZoneSchool"
-              },
-              "openlabel_v2:ScenerySpecialStructure": {
-                "@id": "openlabel_v2:SpecialStructureTollPlaza"
-              },
-              "openlabel_v2:JunctionIntersection": {
-                "@id": "openlabel_v2:IntersectionGradeSeperated"
-              },
-              "openlabel_v2:ConnectivityCommunication": {
-                "@id": "openlabel_v2:V2iSatellite"
-              },
-              "openlabel_v2:ConnectivityPositioning": {
-                "@id": "openlabel_v2:PositioningGalileo"
-              },
-              "openlabel_v2:HorizontalCurves": true,
-              "openlabel_v2:SubjectVehicleSpeed": true,
-              "openlabel_v2:subjectVehicleSpeedValue": {
-                "@value": "72",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionCutOut": true,
-              "openlabel_v2:MotionLaneChangeRight": true
+            "openlabel:ConnectivityCommunication": {
+              "@id": "openlabel:V2iSatellite"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleCar"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanPassenger"
-              }
+            "openlabel:ConnectivityPositioning": {
+              "@id": "openlabel:PositioningGalileo"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "72",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutOut": true,
+            "openlabel:MotionLaneChangeRight": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPassenger"
             }
           }
         ],
@@ -8069,50 +7526,36 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayUnmanaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "3",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:IlluminationLowLight": {
-                "@id": "openlabel_v2:LowLightNight"
-              },
-              "openlabel_v2:IlluminationArtificial": {
-                "@id": "openlabel_v2:ArtificialVehicleLighting"
-              },
-              "openlabel_v2:TrafficAgentDensity": true,
-              "openlabel_v2:trafficAgentDensityValue": {
-                "@value": "81",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:IlluminationLowLight": {
+              "@id": "openlabel:LowLightNight"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "5.7",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:MotionCutOut": true,
-              "openlabel_v2:MotionLaneChangeRight": true
+            "openlabel:IlluminationArtificial": {
+              "@id": "openlabel:ArtificialVehicleLighting"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "81",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "5.7",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleTrailer"
-              }
+            "openlabel:MotionCutOut": true,
+            "openlabel:MotionLaneChangeRight": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleTrailer"
             }
           }
         ],
@@ -8374,49 +7817,23 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMotorway"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "1",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeSegmented"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryTemporaryStructure": {
-                "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionTurnLeft": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleBus"
-              }
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionTurnLeft": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleBus"
             }
           }
         ],
@@ -8678,53 +8095,29 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeShared"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "2",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeNone"
-              },
-              "openlabel_v2:IlluminationLowLight": {
-                "@id": "openlabel_v2:LowLightNight"
-              },
-              "openlabel_v2:IlluminationArtificial": {
-                "@id": "openlabel_v2:ArtificialVehicleLighting"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureVegetation"
-              },
-              "openlabel_v2:HorizontalStraights": true
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:IlluminationLowLight": {
+              "@id": "openlabel:LowLightNight"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionOvertake": true,
-              "openlabel_v2:MotionTurnLeft": true,
-              "openlabel_v2:BehaviourCommunication": {
-                "@id": "openlabel_v2:CommunicationSignalHazard"
-              }
+            "openlabel:IlluminationArtificial": {
+              "@id": "openlabel:ArtificialVehicleLighting"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionOvertake": true,
+            "openlabel:MotionTurnLeft": true,
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationSignalHazard"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleMotorcycle"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleMotorcycle"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanWheelchairUser"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanWheelchairUser"
             }
           }
         ],
@@ -9070,52 +8463,30 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeParking"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeUniform"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
-              },
-              "openlabel_v2:WeatherWind": true,
-              "openlabel_v2:WeatherSnow": true,
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureStreetFurniture"
-              },
-              "openlabel_v2:HorizontalCurves": true
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherWind": true,
+            "openlabel:WeatherSnow": true,
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "45.0",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "45",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:MotionOvertake": true,
-              "openlabel_v2:MotionTurnLeft": true
+            "openlabel:MotionOvertake": true,
+            "openlabel:MotionTurnLeft": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleAgricultural"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleAgricultural"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanDriver"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanDriver"
             }
           }
         ],
@@ -9479,36 +8850,18 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeDistributor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:ScenerySpecialStructure": {
-                "@id": "openlabel_v2:SpecialStructureAutoAccess"
-              },
-              "openlabel_v2:JunctionRoundabout": {
-                "@id": "openlabel_v2:RoundaboutMiniNosignal"
-              }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionTurnRight": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleEmergency"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionTurnRight": true
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPedestrian"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleEmergency"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanPedestrian"
-              },
-              "openlabel_v2:RoadUserAnimal": true
-            }
+            "openlabel:RoadUserAnimal": true
           }
         ],
         "scenario:hasQuantity": {
@@ -9769,44 +9122,32 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayManaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeLoose"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              },
-              "openlabel_v2:TrafficAgentDensity": true,
-              "openlabel_v2:trafficAgentDensityValue": {
-                "@value": "26",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:EnvironmentParticulates": {
-                "@id": "openlabel_v2:ParticulatesWater"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionLaneChangeLeft": true,
-              "openlabel_v2:MotionTurnRight": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleWheelchair"
-              }
+            "openlabel:EnvironmentParticulates": {
+              "@id": "openlabel:ParticulatesWater"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "26",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionLaneChangeLeft": true,
+            "openlabel:MotionTurnRight": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleWheelchair"
             }
           }
         ],
@@ -10068,28 +9409,15 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeSlip"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:HorizontalStraights": true
-            },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionCutIn": true,
-              "openlabel_v2:MotionLaneChangeLeft": true,
-              "openlabel_v2:MotionTurnRight": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleCycle"
-              }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutIn": true,
+            "openlabel:MotionLaneChangeLeft": true,
+            "openlabel:MotionTurnRight": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCycle"
             }
           }
         ],
@@ -10359,56 +9687,23 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeRadial"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "1",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeSegmented"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionStandingWater"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureStreetFurniture"
-              },
-              "openlabel_v2:HorizontalCurves": true
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "5.1",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "5.1",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:BehaviourCommunication": {
-                "@id": "openlabel_v2:CommunicationSignalEmergency"
-              }
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationSignalEmergency"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleVan"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleVan"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanAnimalRider"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanAnimalRider"
             }
           }
         ],
@@ -10754,51 +10049,25 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMinor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "2",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionMirage"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeNone"
-              },
-              "openlabel_v2:WeatherWind": true,
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureVegetation"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherWind": true
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionLaneChangeRight": true,
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "1.5",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleConstruction"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionLaneChangeRight": true,
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "1.5",
-                "@type": "xsd:decimal"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleConstruction"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanMotorcyclist"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanMotorcyclist"
             }
           }
         ],
@@ -11144,58 +10413,29 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayUnmanaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "3",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeUniform"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionFlooded"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:ScenerySpecialStructure": {
-                "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutOut": true,
+            "openlabel:MotionLaneChangeRight": true,
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "2.7",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleTruck"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionCutOut": true,
-              "openlabel_v2:MotionLaneChangeRight": true,
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "2.7",
-                "@type": "xsd:decimal"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleTruck"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanWheelchairUser"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanWheelchairUser"
             }
           }
         ],
@@ -11466,43 +10706,25 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMotorway"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "1",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:HorizontalStraights": true,
-              "openlabel_v2:TrafficAgentDensity": true,
-              "openlabel_v2:trafficAgentDensityValue": {
-                "@value": "61",
-                "@type": "xsd:integer"
-              }
-            },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "2.1",
-                "@type": "xsd:decimal"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleCar"
-              }
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "61",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "2.1",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
             }
           }
         ],
@@ -11782,45 +11004,18 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeShared"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "2",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeLoose"
-              },
-              "openlabel_v2:SceneryTemporaryStructure": {
-                "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
-              },
-              "openlabel_v2:HorizontalCurves": true
-            },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionTurnLeft": true,
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "3.3",
-                "@type": "xsd:decimal"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleTrailer"
-              }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionTurnLeft": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "3.3",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleTrailer"
             }
           }
         ],
@@ -12082,51 +11277,25 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeParking"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "3",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureVegetation"
-              }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionOvertake": true,
+            "openlabel:MotionTurnLeft": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "4.5",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionOvertake": true,
-              "openlabel_v2:MotionTurnLeft": true,
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "4.5",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:BehaviourCommunication": {
-                "@id": "openlabel_v2:CommunicationHorn"
-              }
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationHorn"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleBus"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleBus"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanCyclist"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanCyclist"
             }
           }
         ],
@@ -12472,53 +11641,29 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeDistributor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeSegmented"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:WeatherWind": true,
-              "openlabel_v2:WeatherSnow": true,
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureStreetFurniture"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "65",
-                "@type": "xsd:integer"
-              }
+            "openlabel:WeatherWind": true,
+            "openlabel:WeatherSnow": true
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "65.0",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleMotorcycle"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleMotorcycle"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanPassenger"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPassenger"
             }
           }
         ],
@@ -12863,40 +12008,21 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayManaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:ScenerySpecialStructure": {
-                "@id": "openlabel_v2:SpecialStructureTollPlaza"
-              },
-              "openlabel_v2:JunctionRoundabout": {
-                "@id": "openlabel_v2:RoundaboutNormalNosignal"
-              },
-              "openlabel_v2:HorizontalStraights": true
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionTurnRight": true,
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "85.0",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleAgricultural"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionTurnRight": true,
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "85",
-                "@type": "xsd:integer"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleAgricultural"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanAnimalRider"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanAnimalRider"
             }
           }
         ],
@@ -13158,43 +12284,33 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeSlip"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeUniform"
-              },
-              "openlabel_v2:HorizontalCurves": true,
-              "openlabel_v2:TrafficAgentDensity": true,
-              "openlabel_v2:trafficAgentDensityValue": {
-                "@value": "96",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:EnvironmentParticulates": {
-                "@id": "openlabel_v2:ParticulatesWater"
-              }
-            },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionLaneChangeLeft": true,
-              "openlabel_v2:MotionTurnRight": true,
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "25",
-                "@type": "xsd:integer"
-              }
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleEmergency"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:EnvironmentParticulates": {
+              "@id": "openlabel:ParticulatesWater"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "96",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionLaneChangeLeft": true,
+            "openlabel:MotionTurnRight": true,
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "25.0",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleEmergency"
             }
           }
         ],
@@ -13456,25 +12572,13 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeRadial"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              }
-            },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionCutIn": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleWheelchair"
-              }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutIn": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleWheelchair"
             }
           }
         ],
@@ -13772,83 +12876,48 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMinor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "2",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeLoose"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionWet"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeNone"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureStreetFurniture"
-              },
-              "openlabel_v2:SceneryZone": {
-                "@id": "openlabel_v2:ZoneRegion"
-              },
-              "openlabel_v2:JunctionIntersection": {
-                "@id": "openlabel_v2:IntersectionCrossroad"
-              },
-              "openlabel_v2:ConnectivityCommunication": {
-                "@id": "openlabel_v2:CommunicationV2i"
-              },
-              "openlabel_v2:ConnectivityPositioning": {
-                "@id": "openlabel_v2:PositioningGalileo"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              },
-              "openlabel_v2:SubjectVehicleSpeed": true,
-              "openlabel_v2:subjectVehicleSpeedValue": {
-                "@value": "70",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "1.5",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:MotionCutIn": true,
-              "openlabel_v2:BehaviourCommunication": {
-                "@id": "openlabel_v2:CommunicationHeadlightFlash"
-              }
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleCycle"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanDriver"
-              }
+            "openlabel:ConnectivityCommunication": {
+              "@id": "openlabel:CommunicationV2i"
+            },
+            "openlabel:ConnectivityPositioning": {
+              "@id": "openlabel:PositioningGalileo"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "70",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "1.5",
+              "@type": "xsd:decimal"
+            },
+            "openlabel:MotionCutIn": true,
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationHeadlightFlash"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCycle"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanDriver"
             }
           }
         ],
@@ -14194,76 +13263,46 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayUnmanaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "3",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionSnow"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeTemporaryLineMarkers"
-              },
-              "openlabel_v2:WeatherWind": true,
-              "openlabel_v2:IlluminationLowLight": {
-                "@id": "openlabel_v2:LowLightNight"
-              },
-              "openlabel_v2:IlluminationArtificial": {
-                "@id": "openlabel_v2:ArtificialVehicleLighting"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureVegetation"
-              },
-              "openlabel_v2:SceneryZone": {
-                "@id": "openlabel_v2:ZoneGeoFenced"
-              },
-              "openlabel_v2:JunctionIntersection": {
-                "@id": "openlabel_v2:IntersectionTJunction"
-              },
-              "openlabel_v2:ConnectivityCommunication": {
-                "@id": "openlabel_v2:V2iWifi"
-              },
-              "openlabel_v2:ConnectivityPositioning": {
-                "@id": "openlabel_v2:PositioningGps"
-              },
-              "openlabel_v2:HorizontalStraights": true,
-              "openlabel_v2:SubjectVehicleSpeed": true,
-              "openlabel_v2:subjectVehicleSpeedValue": {
-                "@value": "81",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherWind": true,
+            "openlabel:IlluminationLowLight": {
+              "@id": "openlabel:LowLightNight"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionLaneChangeRight": true,
-              "openlabel_v2:MotionAccelerate": true,
-              "openlabel_v2:motionAccelerateValue": {
-                "@value": "2.7",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:MotionCutIn": true
+            "openlabel:IlluminationArtificial": {
+              "@id": "openlabel:ArtificialVehicleLighting"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleVan"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanPedestrian"
-              }
+            "openlabel:ConnectivityCommunication": {
+              "@id": "openlabel:V2iWifi"
+            },
+            "openlabel:ConnectivityPositioning": {
+              "@id": "openlabel:PositioningGps"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "81",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionLaneChangeRight": true,
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@value": "2.7",
+              "@type": "xsd:decimal"
+            },
+            "openlabel:MotionCutIn": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleVan"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPedestrian"
             }
           }
         ],
@@ -14609,66 +13648,36 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMotorway"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "1",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeSegmented"
-              },
-              "openlabel_v2:DrivableAreaSurfaceCondition": {
-                "@id": "openlabel_v2:SurfaceConditionIcy"
-              },
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryZone": {
-                "@id": "openlabel_v2:ZoneSchool"
-              },
-              "openlabel_v2:ScenerySpecialStructure": {
-                "@id": "openlabel_v2:SpecialStructureAutoAccess"
-              },
-              "openlabel_v2:JunctionIntersection": {
-                "@id": "openlabel_v2:IntersectionGradeSeperated"
-              },
-              "openlabel_v2:ConnectivityCommunication": {
-                "@id": "openlabel_v2:V2vSatellite"
-              },
-              "openlabel_v2:ConnectivityPositioning": {
-                "@id": "openlabel_v2:PositioningGlonass"
-              },
-              "openlabel_v2:HorizontalCurves": true,
-              "openlabel_v2:SubjectVehicleSpeed": true,
-              "openlabel_v2:subjectVehicleSpeedValue": {
-                "@value": "92",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionCutOut": true
+            "openlabel:ConnectivityCommunication": {
+              "@id": "openlabel:V2vSatellite"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleConstruction"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanCyclist"
-              }
+            "openlabel:ConnectivityPositioning": {
+              "@id": "openlabel:PositioningGlonass"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "92",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutOut": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleConstruction"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanCyclist"
             }
           }
         ],
@@ -14930,49 +13939,35 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeShared"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "2",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:IlluminationLowLight": {
-                "@id": "openlabel_v2:LowLightNight"
-              },
-              "openlabel_v2:IlluminationArtificial": {
-                "@id": "openlabel_v2:ArtificialVehicleLighting"
-              },
-              "openlabel_v2:TrafficAgentDensity": true,
-              "openlabel_v2:trafficAgentDensityValue": {
-                "@value": "41",
-                "@type": "xsd:integer"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:IlluminationLowLight": {
+              "@id": "openlabel:LowLightNight"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "3.3",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:MotionCutOut": true
+            "openlabel:IlluminationArtificial": {
+              "@id": "openlabel:ArtificialVehicleLighting"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "41",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "3.3",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleTruck"
-              }
+            "openlabel:MotionCutOut": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleTruck"
             }
           }
         ],
@@ -15233,55 +14228,29 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeParking"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "3",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeUniform"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryTemporaryStructure": {
-                "@id": "openlabel_v2:TemporaryStructureConstructionDetour"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionTurnLeft": true,
-              "openlabel_v2:MotionDecelerate": true,
-              "openlabel_v2:motionDecelerateValue": {
-                "@value": "4.5",
-                "@type": "xsd:decimal"
-              },
-              "openlabel_v2:MotionCutOut": true
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionTurnLeft": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@value": "4.5",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleCar"
-              }
+            "openlabel:MotionCutOut": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
             }
           }
         ],
@@ -15543,52 +14512,28 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeDistributor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:LaneSpecificationLaneCount": true,
-              "openlabel_v2:laneSpecificationLaneCountValue": {
-                "@value": "1",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeSpecial"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeShoulderPavedOrGravel"
-              },
-              "openlabel_v2:IlluminationLowLight": {
-                "@id": "openlabel_v2:LowLightNight"
-              },
-              "openlabel_v2:IlluminationArtificial": {
-                "@id": "openlabel_v2:ArtificialVehicleLighting"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureVegetation"
-              },
-              "openlabel_v2:HorizontalStraights": true
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:IlluminationLowLight": {
+              "@id": "openlabel:LowLightNight"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionOvertake": true,
-              "openlabel_v2:BehaviourCommunication": {
-                "@id": "openlabel_v2:CommunicationWave"
-              }
+            "openlabel:IlluminationArtificial": {
+              "@id": "openlabel:ArtificialVehicleLighting"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionOvertake": true,
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationWave"
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleTrailer"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleTrailer"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanMotorcyclist"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanMotorcyclist"
             }
           }
         ],
@@ -15934,51 +14879,29 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:MotorwayManaged"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:LaneSpecificationType": {
-                "@id": "openlabel_v2:LaneTypeBus"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeLoose"
-              },
-              "openlabel_v2:DrivableAreaEdge": {
-                "@id": "openlabel_v2:EdgeNone"
-              },
-              "openlabel_v2:WeatherWind": true,
-              "openlabel_v2:WeatherSnow": true,
-              "openlabel_v2:DaySunPosition": {
-                "@id": "openlabel_v2:SunPositionBehind"
-              },
-              "openlabel_v2:SceneryFixedStructure": {
-                "@id": "openlabel_v2:FixedStructureStreetFurniture"
-              },
-              "openlabel_v2:HorizontalCurves": true
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherWind": true,
+            "openlabel:WeatherSnow": true,
+            "openlabel:DaySunPosition": {
+              "@id": "openlabel:SunPositionBehind"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "85.0",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "85",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:MotionOvertake": true
+            "openlabel:MotionOvertake": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleBus"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleBus"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanWheelchairUser"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanWheelchairUser"
             }
           }
         ],
@@ -16342,42 +15265,24 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeSlip"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:ScenerySpecialStructure": {
-                "@id": "openlabel_v2:SpecialStructurePedestrianCrossing"
-              },
-              "openlabel_v2:JunctionRoundabout": {
-                "@id": "openlabel_v2:RoundaboutMiniNosignal"
-              }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionTurnRight": true,
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@value": "25.0",
+              "@type": "xsd:decimal"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionTurnRight": true,
-              "openlabel_v2:MotionDrive": true,
-              "openlabel_v2:motionDriveValue": {
-                "@value": "25",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:MotionOvertake": true
+            "openlabel:MotionOvertake": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleMotorcycle"
             },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleMotorcycle"
-              },
-              "openlabel_v2:RoadUserHuman": {
-                "@id": "openlabel_v2:HumanDriver"
-              },
-              "openlabel_v2:RoadUserAnimal": true
-            }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanDriver"
+            },
+            "openlabel:RoadUserAnimal": true
           }
         ],
         "scenario:hasQuantity": {
@@ -16638,43 +15543,31 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeRadial"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionLeft"
-              },
-              "openlabel_v2:DrivableAreaSurfaceType": {
-                "@id": "openlabel_v2:SurfaceTypeSegmented"
-              },
-              "openlabel_v2:WeatherRain": true,
-              "openlabel_v2:RainType": {
-                "@id": "openlabel_v2:RainTypeConvective"
-              },
-              "openlabel_v2:GeometryTransverse": {
-                "@id": "openlabel_v2:TransverseDivided"
-              },
-              "openlabel_v2:TrafficAgentDensity": true,
-              "openlabel_v2:trafficAgentDensityValue": {
-                "@value": "76",
-                "@type": "xsd:integer"
-              },
-              "openlabel_v2:EnvironmentParticulates": {
-                "@id": "openlabel_v2:ParticulatesWater"
-              }
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:RainType": {
+              "@id": "openlabel:RainTypeConvective"
             },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionLaneChangeLeft": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleAgricultural"
-              }
+            "openlabel:EnvironmentParticulates": {
+              "@id": "openlabel:ParticulatesWater"
+            }
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "76",
+              "@type": "xsd:integer"
+            }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionLaneChangeLeft": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleAgricultural"
             }
           }
         ],
@@ -16936,27 +15829,14 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel_v2:Tag",
-            "openlabel_v2:Odd": {
-              "@type": "openlabel_v2:Odd",
-              "openlabel_v2:DrivableAreaType": {
-                "@id": "openlabel_v2:RoadTypeMinor"
-              },
-              "openlabel_v2:LaneSpecificationTravelDirection": {
-                "@id": "openlabel_v2:TravelDirectionRight"
-              },
-              "openlabel_v2:HorizontalStraights": true
-            },
-            "openlabel_v2:Behaviour": {
-              "@type": "openlabel_v2:Behaviour",
-              "openlabel_v2:MotionCutIn": true,
-              "openlabel_v2:MotionLaneChangeLeft": true
-            },
-            "openlabel_v2:RoadUser": {
-              "@type": "openlabel_v2:RoadUser",
-              "openlabel_v2:RoadUserVehicle": {
-                "@id": "openlabel_v2:VehicleEmergency"
-              }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutIn": true,
+            "openlabel:MotionLaneChangeLeft": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleEmergency"
             }
           }
         ],

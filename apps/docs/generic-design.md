@@ -33,15 +33,15 @@ graph LR
 
 ### What Is Discovered (not hardcoded)
 
-| What                  | How                                                  | Example                                                       |
-| --------------------- | ---------------------------------------------------- | ------------------------------------------------------------- |
-| **Asset domains**     | `rdfs:subClassOf` + `sh:targetClass`                 | `hdmap`, `scenario`, `ositrace`                               |
-| **Property paths**    | Walk `sh:property` / `sh:node` chains                | `Asset → hasDomainSpec → hasContent → roadTypes`              |
-| **Allowed values**    | `sh:in` RDF lists                                    | `["motorway", "rural", "urban"]`                              |
-| **Shape groups**      | `sh:property` → `sh:node` structure                  | `Content`, `Format`, `Quality`, `Quantity`                    |
-| **Cross-domain refs** | `sh:class` pointing to another domain's target class | `scenario → hdmap`, `scenario → ositrace`                     |
-| **Location chain**    | Property paths ending in `country`, `city`, etc.     | `DomainSpec → hasGeoreference → hasProjectLocation → country` |
-| **Range properties**  | `sh:datatype xsd:integer/float` properties           | `laneCount`, `length`, `speedLimit`                           |
+| What                  | How                                                                          | Example                                                       |
+| --------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **Asset domains**     | `rdfs:subClassOf` + `sh:targetClass`                                         | `hdmap`, `scenario`, `ositrace`                               |
+| **Property paths**    | Walk `sh:property` / `sh:node` chains                                        | `Asset → hasDomainSpec → hasContent → roadTypes`              |
+| **Allowed values**    | `sh:in` RDF lists                                                            | `["motorway", "rural", "urban"]`                              |
+| **Shape groups**      | `sh:property` → `sh:node` structure                                          | `Content`, `Format`, `Quality`, `Quantity`                    |
+| **Cross-domain refs** | `sh:class` pointing to another domain's target class                         | `scenario → hdmap`, `scenario → ositrace`                     |
+| **Location chain**    | Property paths ending in `country`, `city`, etc.                             | `DomainSpec → hasGeoreference → hasProjectLocation → country` |
+| **Range properties**  | `sh:datatype xsd:integer/float`, directly or as every datatype of an `sh:or` | `laneCount`, `length`, `speedLimit`                           |
 
 ## Property Path Discovery
 
@@ -72,6 +72,15 @@ graph TD
 ```
 
 The `buildPropertyPaths()` function produces one `PropertyPath` per (asset-class, leaf-property) pair. The compiler uses these paths to emit SPARQL triples without any ontology-specific knowledge.
+
+Two SHACL rules widen what counts as a leaf:
+
+- **Inheritance below the asset.** A class-based target covers every instance of the class, subclasses included (SHACL §2.1.3.2). When the walk reaches a node of class `C`, the shapes targeting `C`'s `rdfs:subClassOf` ancestors apply to it too. This is how an HD map's content item typed as an OpenLABEL `OddScenery` gets the ODD properties that OpenLABEL declares on its `Odd` superclass, such as the lane count.
+- **Disjunctive leaves.** A property shape whose `sh:or` has a member with an `sh:datatype` admits literal values (SHACL §4.6.3), so it is a leaf even when another member points at a sub-resource, as in "a number, or a range node". It is a range property when every datatype among its members is numeric.
+
+Paths found only through these rules never displace anything the compiler already resolves. The compiler resolves properties by local name across domains (which domains own a name, the cross-domain OPTIONAL for a domain-less filter, the validator's domain correction), so these paths are added only for property names that have no path in any domain and belong to no shape group, and they are not used for cross-reference chains. A query over properties that already resolved compiles to the same SPARQL as before.
+
+A deep path (more than the three steps of `asset → specification → group → leaf`) is walked from the specification variable only when it starts with the domain's specification hop. One that starts under another branch of the asset is walked from the asset with its own first hop.
 
 ## Filter Routing
 
