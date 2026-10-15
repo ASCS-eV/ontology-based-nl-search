@@ -5785,17 +5785,19 @@
           "ositrace:compression": "lz4",
           "ositrace:osiTraceFormatVersion": "1.0.0"
         },
-        "ositrace:hasContent": {
-          "@type": "ositrace:Content",
-          "ositrace:roadTypes": "motorway",
-          "ositrace:laneTypes": [
-            "driving",
-            "shoulder"
-          ],
-          "ositrace:levelOfDetail": "car",
-          "ositrace:trafficDirection": "right-hand",
-          "ositrace:granularity": "object list"
-        },
+        "ositrace:hasContent": [
+          {
+            "@type": "ositrace:Content",
+            "ositrace:roadTypes": "motorway",
+            "ositrace:laneTypes": [
+              "driving",
+              "shoulder"
+            ],
+            "ositrace:levelOfDetail": "car",
+            "ositrace:trafficDirection": "right-hand",
+            "ositrace:granularity": "object list"
+          }
+        ],
         "ositrace:hasQuantity": {
           "@type": "ositrace:Quantity",
           "ositrace:numberFrames": {
@@ -5859,17 +5861,19 @@
           "ositrace:compression": "zstd",
           "ositrace:osiTraceFormatVersion": "1.0.0"
         },
-        "ositrace:hasContent": {
-          "@type": "ositrace:Content",
-          "ositrace:roadTypes": "motorway",
-          "ositrace:laneTypes": [
-            "driving",
-            "emergency"
-          ],
-          "ositrace:levelOfDetail": "truck",
-          "ositrace:trafficDirection": "right-hand",
-          "ositrace:granularity": "detection list"
-        },
+        "ositrace:hasContent": [
+          {
+            "@type": "ositrace:Content",
+            "ositrace:roadTypes": "motorway",
+            "ositrace:laneTypes": [
+              "driving",
+              "emergency"
+            ],
+            "ositrace:levelOfDetail": "truck",
+            "ositrace:trafficDirection": "right-hand",
+            "ositrace:granularity": "detection list"
+          }
+        ],
         "ositrace:hasQuantity": {
           "@type": "ositrace:Quantity",
           "ositrace:numberFrames": {
@@ -5933,17 +5937,19 @@
           "ositrace:compression": "lz4",
           "ositrace:osiTraceFormatVersion": "1.1.0"
         },
-        "ositrace:hasContent": {
-          "@type": "ositrace:Content",
-          "ositrace:roadTypes": "motorway",
-          "ositrace:laneTypes": [
-            "driving",
-            "entry"
-          ],
-          "ositrace:levelOfDetail": "car",
-          "ositrace:trafficDirection": "right-hand",
-          "ositrace:granularity": "raw data"
-        },
+        "ositrace:hasContent": [
+          {
+            "@type": "ositrace:Content",
+            "ositrace:roadTypes": "motorway",
+            "ositrace:laneTypes": [
+              "driving",
+              "entry"
+            ],
+            "ositrace:levelOfDetail": "car",
+            "ositrace:trafficDirection": "right-hand",
+            "ositrace:granularity": "raw data"
+          }
+        ],
         "ositrace:hasQuantity": {
           "@type": "ositrace:Quantity",
           "ositrace:numberFrames": {

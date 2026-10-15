@@ -46,6 +46,19 @@ export function lookupStepPredicate(
 }
 
 /**
+ * The `sh:datatype` ([SHACL] §4.1.2) of a domain's leaf property, or
+ * `undefined` when the domain has no discovered path to it or the shape
+ * declares none. Keeps the comparison chosen for a leaf tied to the schema.
+ */
+export function lookupLeafDatatype(
+  vocabIndex: CompilerVocab,
+  domainName: string,
+  propName: string
+): string | undefined {
+  return vocabIndex.paths.get(`${domainName}:${propName}`)?.datatype
+}
+
+/**
  * The asset → specification predicate (the first hop) for a domain, derived
  * from any of its shape-group properties' discovered paths. Every shape-group
  * property in a domain nests under the same specification node, so they all
@@ -75,6 +88,29 @@ export function lookupDomainSpecPredicate(
  * emission walks the actual SHACL-discovered chain instead.
  */
 export const SHALLOW_PATH_MAX_STEPS = 3
+
+/**
+ * Bucket key for intermediate-variable sharing: every non-leaf step's
+ * predicate AND the SHACL class it reaches. Leaves owned by different node
+ * shapes behind the same multi-valued predicate (e.g. several `sh:or`
+ * alternatives of one content list — [SHACL] §4.6.3 `sh:or`, §4.7.1
+ * `sh:node`) describe DIFFERENT value nodes; binding them to one SPARQL
+ * variable would demand a single node conforming to all shapes at once and
+ * return zero rows. Leaves of the same class still share the node.
+ *
+ * A leaf inherited from a superclass of the class reached (`inheritedLeaf`)
+ * may sit on any value node of the hop, so it gets a bucket of its own: one
+ * node per leaf matches data that splits the leaves across value nodes as well
+ * as data that puts them on one (a solution maps each variable to one term,
+ * [SPARQL11] §18.1.8).
+ */
+export function pathPrefixKey(path: PropertyPath): string {
+  const prefix = path.steps
+    .slice(0, -1)
+    .map((s) => `${s.predicate}@${s.intermediate ?? ''}`)
+    .join('|')
+  return path.inheritedLeaf ? `${prefix}|${path.propertyIri}` : prefix
+}
 
 /**
  * Emit MANDATORY patterns for "direct" properties — those with a discovered
@@ -121,10 +157,7 @@ export function emitDirectPathFilters(
   // reuse intermediates. Sorted keys keep the emitted SPARQL deterministic.
   const buckets = new Map<string, { referencePath: PropertyPath; entries: Entry[] }>()
   for (const entry of all) {
-    const prefixKey = entry.path.steps
-      .slice(0, -1)
-      .map((s) => s.predicate)
-      .join('|')
+    const prefixKey = pathPrefixKey(entry.path)
     let bucket = buckets.get(prefixKey)
     if (!bucket) {
       bucket = { referencePath: entry.path, entries: [] }
@@ -152,7 +185,7 @@ export function emitDirectPathFilters(
         const v = `?${entry.name}${suffix}`
         patterns.push(`${cursor} ${leafPred} ${v} .`)
         if (entry.path.leafKind === 'literal') {
-          addEnumFilter(patterns, filters, v, entry.value)
+          addEnumFilter(patterns, filters, v, entry.value, entry.path.datatype)
         } else {
           addLocationFilter(filters, v, entry.value)
         }
@@ -228,10 +261,7 @@ export function emitDeepFilters(
   const buckets = new Map<string, Bucket>()
   for (const entry of entries) {
     const path = entry[2]
-    const prefixKey = path.steps
-      .slice(0, -1)
-      .map((s) => s.predicate)
-      .join('|')
+    const prefixKey = pathPrefixKey(path)
     let bucket = buckets.get(prefixKey)
     if (!bucket) {
       bucket = { referencePath: path, entries: [] }
@@ -274,7 +304,7 @@ export function emitDeepFilters(
       // `class:` leaves are IRI-typed and want STR/LCASE matching;
       // `iri` leaves likewise. Literal leaves want exact equality.
       if (path.leafKind === 'literal') {
-        addEnumFilter(patterns, filters, v, value)
+        addEnumFilter(patterns, filters, v, value, path.datatype)
       } else {
         addLocationFilter(filters, v, value)
       }

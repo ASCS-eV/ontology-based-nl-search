@@ -66,6 +66,20 @@ export interface PropertyPath {
    * reference chains, so they only ever add filterable properties.
    */
   extended?: true
+  /**
+   * The leaf is declared by a shape targeting a superclass of the class the
+   * last hop reaches ([SHACL] §2.1.3.2). Every subclass reachable through that
+   * hop inherits it, so the schema does not say which value node of the hop
+   * carries it: the compiler gives such a leaf its own value node rather than
+   * requiring one node to carry it together with other leaves.
+   */
+  inheritedLeaf?: true
+  /**
+   * `sh:datatype` IRI the leaf's shape declares ([SHACL] §4.1.2), when any.
+   * The compiler uses it to pick a comparison that suits the stored literal
+   * (e.g. `xsd:boolean`) instead of guessing from the filter value.
+   */
+  datatype?: string
 }
 
 /**

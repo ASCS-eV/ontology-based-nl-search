@@ -103,6 +103,27 @@ describe('buildPropertyPaths', () => {
   }, 120_000)
 
   /**
+   * Regression: OpenLABEL's ODD category shapes (OddEnvironment / OddScenery /
+   * OddDynamicElements) are empty and defer to the flat `OddShape` on their
+   * superclass `Odd` ([SHACL] §2.1.3.2, §1.1). Nested under scenario's
+   * `hasContent` union, their properties used to be invisible.
+   */
+  it('inherits superclass-shape leaves for classes nested via sh:node', async () => {
+    const store = await getInitializedStore()
+    const registry = await buildDomainRegistry()
+    const paths = await buildPropertyPaths(store, registry)
+    for (const domain of ['scenario', 'hdmap']) {
+      const odd = paths.find((p) => p.domain === domain && p.propertyName === 'DrivableAreaType')
+      expect(odd, `${domain} must expose DrivableAreaType`).toBeDefined()
+      expect(odd!.steps.map((s) => s.predicate)).toEqual([
+        expect.stringMatching(/\/hasDomainSpecification$/),
+        expect.stringMatching(/\/hasContent$/),
+        odd!.propertyIri,
+      ])
+    }
+  }, 120_000)
+
+  /**
    * Reachability check: every leaf property the compiler currently
    * emits should be reachable from at least one asset class. Without
    * this, the 21b rewire would silently drop properties that the

@@ -1,0 +1,1859 @@
+{
+  "@context": {
+    "openlabel": "https://openlabel.asam.net/V1-0-0/ontologies/",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "schema": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "did:web:openlabel.example:Tag:lane-keeping-straight-motorway",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Lane keeping on a straight managed motorway",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Lane keeping on a straight managed motorway",
+        "openlabel:scenarioDescription": "The ego vehicle holds its lane on a straight, access-controlled motorway and regulates speed.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000001",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true,
+        "openlabel:LaneSpecificationLaneCount": true,
+        "openlabel:laneSpecificationLaneCountValue": {
+          "@value": "3",
+          "@type": "xsd:integer"
+        },
+        "openlabel:LaneSpecificationMarking": true,
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@value": "110",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "100.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "120.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:lane-keeping-motorway-curve",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Lane keeping through a motorway curve",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Lane keeping through a motorway curve",
+        "openlabel:scenarioDescription": "A curved motorway section is negotiated with lateral and speed adaptation.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000002",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeMotorway"
+        },
+        "openlabel:HorizontalCurves": true,
+        "openlabel:horizontalCurvesValue": {
+          "@value": "850.0",
+          "@type": "xsd:decimal"
+        },
+        "openlabel:LaneSpecificationLaneCount": true,
+        "openlabel:laneSpecificationLaneCountValue": {
+          "@value": "2",
+          "@type": "xsd:integer"
+        },
+        "openlabel:LaneSpecificationMarking": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "80.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "110.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:adjacent-lane-vehicle-alongside",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Vehicle travelling alongside in the neighbouring lane",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Vehicle travelling alongside in the neighbouring lane",
+        "openlabel:scenarioDescription": "A car drives next to the ego vehicle on a multi-lane motorway.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000003",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:LaneSpecificationLaneCount": true,
+        "openlabel:laneSpecificationLaneCountValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "2.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "4.0",
+            "@type": "xsd:decimal"
+          }
+        },
+        "openlabel:GeometryTransverse": {
+          "@id": "openlabel:TransverseDivided"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:following-passenger-car",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Following a passenger car in free-flowing traffic",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Following a passenger car in free-flowing traffic",
+        "openlabel:scenarioDescription": "The lead vehicle is a passenger car; speed and gap are controlled.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000004",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true,
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "90.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "120.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@value": "105.0",
+          "@type": "xsd:decimal"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:following-two-wheeler",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Following a motorcycle in the same lane",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Following a motorcycle in the same lane",
+        "openlabel:scenarioDescription": "The lead road user is a powered two-wheeler that must be tracked consistently.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000005",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeMotorway"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleMotorcycle"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanMotorcyclist"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:stop-and-go-congestion",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Stop-and-go traffic in congestion",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Stop-and-go traffic in congestion",
+        "openlabel:scenarioDescription": "Dense, slow traffic with repeated stops and restarts.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000006",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:TrafficAgentDensity": true,
+        "openlabel:trafficAgentDensityValue": {
+          "@value": "78",
+          "@type": "xsd:integer"
+        },
+        "openlabel:TrafficVolume": true,
+        "openlabel:trafficVolumeValue": {
+          "@value": "1900",
+          "@type": "xsd:integer"
+        },
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "0.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "30.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionStop": true,
+        "openlabel:MotionAccelerate": true,
+        "openlabel:motionAccelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "0.3",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "1.2",
+            "@type": "xsd:decimal"
+          }
+        },
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "0.5",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "2.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": [
+          {
+            "@id": "openlabel:VehicleCar"
+          },
+          {
+            "@id": "openlabel:VehicleTruck"
+          }
+        ]
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:lead-vehicle-moderate-braking",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Lead vehicle brakes moderately",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Lead vehicle brakes moderately",
+        "openlabel:scenarioDescription": "A compliant following situation turns into moderate braking of the lead car.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000007",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "2.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "4.0",
+            "@type": "xsd:decimal"
+          }
+        },
+        "openlabel:MotionDrive": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:lead-vehicle-severe-braking",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Lead vehicle brakes severely",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Lead vehicle brakes severely",
+        "openlabel:scenarioDescription": "The lead car brakes hard and warns following traffic.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000008",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "6.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "9.0",
+            "@type": "xsd:decimal"
+          }
+        },
+        "openlabel:BehaviourCommunication": {
+          "@id": "openlabel:CommunicationSignalHazard"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:cut-out-reveals-stationary-car",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Cut-out reveals a stationary car",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Cut-out reveals a stationary car",
+        "openlabel:scenarioDescription": "The lead vehicle changes lane and uncovers a stopped passenger car in the ego lane.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000009",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutOut": true,
+        "openlabel:MotionStop": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:cut-out-reveals-stationary-two-wheeler",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Cut-out reveals a stationary motorcycle",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Cut-out reveals a stationary motorcycle",
+        "openlabel:scenarioDescription": "A lane change of the lead vehicle exposes a stopped powered two-wheeler.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000010",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutOut": true,
+        "openlabel:MotionStop": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleMotorcycle"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanMotorcyclist"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:cut-out-reveals-pedestrian",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Cut-out reveals a pedestrian",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Cut-out reveals a pedestrian",
+        "openlabel:scenarioDescription": "The vehicle ahead leaves the lane and a pedestrian stands in the ego lane.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000011",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutOut": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanPedestrian"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:cut-out-reveals-blocked-lane",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Cut-out reveals a lane closed by roadworks",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Cut-out reveals a lane closed by roadworks",
+        "openlabel:scenarioDescription": "The lead vehicle moves out and the ego lane ends in a roadworks closure.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000012",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:SceneryTemporaryStructure": {
+          "@id": "openlabel:TemporaryStructureRoadWorks"
+        },
+        "openlabel:SignsRegulatory": {
+          "@id": "openlabel:RegulatorySignsVariableTemporary"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutOut": true,
+        "openlabel:MotionStop": true
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:cut-in-car-steady-speed",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Car cuts in at steady speed",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Car cuts in at steady speed",
+        "openlabel:scenarioDescription": "Another passenger car enters the ego lane without changing its speed.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000013",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true,
+        "openlabel:LaneSpecificationLaneCount": true,
+        "openlabel:laneSpecificationLaneCountValue": {
+          "@value": "3",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutIn": true,
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "95.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "115.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:cut-in-while-braking",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Car cuts in and decelerates",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Car cuts in and decelerates",
+        "openlabel:scenarioDescription": "The intruding car slows down during or right after the lane change.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000014",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutIn": true,
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "1.5",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "3.5",
+            "@type": "xsd:decimal"
+          }
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:cut-in-while-accelerating",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Car cuts in and accelerates",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Car cuts in and accelerates",
+        "openlabel:scenarioDescription": "The intruding car accelerates while entering the ego lane.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000015",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeMotorway"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutIn": true,
+        "openlabel:MotionAccelerate": true,
+        "openlabel:motionAccelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "0.8",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "2.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:cut-in-two-wheeler",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Motorcycle cuts in from the adjacent lane",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Motorcycle cuts in from the adjacent lane",
+        "openlabel:scenarioDescription": "A powered two-wheeler moves into the gap ahead of the ego vehicle.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000016",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true,
+        "openlabel:LaneSpecificationLaneCount": true,
+        "openlabel:laneSpecificationLaneCountValue": {
+          "@value": "3",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutIn": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleMotorcycle"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanMotorcyclist"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:harsh-cut-in-short-gap",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Harsh cut-in with a very short gap",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Harsh cut-in with a very short gap",
+        "openlabel:scenarioDescription": "A nearby vehicle cuts in sharply and brakes, leaving little room.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000017",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCutIn": true,
+        "openlabel:MotionLaneChangeLeft": true,
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "5.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "9.0",
+            "@type": "xsd:decimal"
+          }
+        },
+        "openlabel:BehaviourCommunication": {
+          "@id": "openlabel:CommunicationSignalHazard"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:merge-from-entry-lane",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Vehicle merges from a motorway entry lane",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Vehicle merges from a motorway entry lane",
+        "openlabel:scenarioDescription": "A car joins from a slip road and moves towards the ego lane.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000018",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": [
+          {
+            "@id": "openlabel:MotorwayManaged"
+          },
+          {
+            "@id": "openlabel:RoadTypeSlip"
+          }
+        ],
+        "openlabel:LaneSpecificationLaneCount": true,
+        "openlabel:laneSpecificationLaneCountValue": {
+          "@value": "2",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionLaneChangeLeft": true,
+        "openlabel:MotionAccelerate": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:stationary-car-in-lane",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Stationary car in the ego lane",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Stationary car in the ego lane",
+        "openlabel:scenarioDescription": "The vehicle approaches a stopped passenger car that occupies its lane.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000019",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionStop": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:stationary-two-wheeler-in-lane",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Stationary motorcycle in the ego lane",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Stationary motorcycle in the ego lane",
+        "openlabel:scenarioDescription": "A stopped powered two-wheeler is in the path of the ego vehicle.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000020",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeMotorway"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionStop": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleMotorcycle"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:pedestrian-crossing-the-carriageway",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Pedestrian crosses the carriageway",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Pedestrian crosses the carriageway",
+        "openlabel:scenarioDescription": "A pedestrian walks laterally through the trajectory of the ego vehicle.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000021",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:DrivableAreaEdge": {
+          "@id": "openlabel:EdgeNone"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCross": true,
+        "openlabel:MotionWalk": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanPedestrian"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:stationary-pedestrian-in-lane",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Stationary pedestrian in the ego lane",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Stationary pedestrian in the ego lane",
+        "openlabel:scenarioDescription": "A pedestrian is standing in the lane ahead.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000022",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionStop": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanPedestrian"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:target-emerges-from-occlusion",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Target emerges from behind a truck",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Target emerges from behind a truck",
+        "openlabel:scenarioDescription": "A pedestrian is hidden by a truck under a bridge and appears near the path.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000023",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:ScenerySpecialStructure": {
+          "@id": "openlabel:SpecialStructureBridge"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionTowards": true,
+        "openlabel:MotionWalk": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleTruck"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanPedestrian"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:faded-lane-markings",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Lane markings faded or missing",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Lane markings faded or missing",
+        "openlabel:scenarioDescription": "Markings are not detectable while the system is active.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000024",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:LaneSpecificationMarking": false,
+        "openlabel:DrivableAreaEdge": {
+          "@id": "openlabel:EdgeNone"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:heavy-rain-low-visibility",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Heavy rain with reduced visibility",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Heavy rain with reduced visibility",
+        "openlabel:scenarioDescription": "Rainfall and spray degrade the effective sensing range.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000025",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:WeatherRain": true,
+        "openlabel:weatherRainValue": {
+          "@value": "14.5",
+          "@type": "xsd:decimal"
+        },
+        "openlabel:RainType": {
+          "@id": "openlabel:RainTypeConvective"
+        },
+        "openlabel:IlluminationLowLight": {
+          "@id": "openlabel:LowLightAmbient"
+        },
+        "openlabel:DrivableAreaSurfaceCondition": {
+          "@id": "openlabel:SurfaceConditionWet"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "60.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "90.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:snowfall-and-spray",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Snowfall with spray on the carriageway",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Snowfall with spray on the carriageway",
+        "openlabel:scenarioDescription": "Snow and whirled-up water limit visibility.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000026",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:WeatherSnow": true,
+        "openlabel:weatherSnowValue": {
+          "@value": "3.0",
+          "@type": "xsd:decimal"
+        },
+        "openlabel:EnvironmentParticulates": {
+          "@id": "openlabel:ParticulatesWater"
+        },
+        "openlabel:DrivableAreaSurfaceCondition": {
+          "@id": "openlabel:SurfaceConditionSnow"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "50.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "80.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:night-driving-lit-motorway",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Night driving on a lit motorway",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Night driving on a lit motorway",
+        "openlabel:scenarioDescription": "Darkness with street lighting.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000027",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:IlluminationLowLight": {
+          "@id": "openlabel:LowLightNight"
+        },
+        "openlabel:IlluminationArtificial": {
+          "@id": "openlabel:ArtificialStreetLighting"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:icy-low-friction-surface",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Icy low-friction road surface",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Icy low-friction road surface",
+        "openlabel:scenarioDescription": "Ice reduces friction and may exceed the declared operating domain.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000028",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeMotorway"
+        },
+        "openlabel:DrivableAreaSurfaceCondition": {
+          "@id": "openlabel:SurfaceConditionIcy"
+        },
+        "openlabel:WeatherSnow": true,
+        "openlabel:weatherSnowValue": {
+          "@value": "1.0",
+          "@type": "xsd:decimal"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "40.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "70.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:strong-crosswind-on-straight",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Strong crosswind on a straight section",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Strong crosswind on a straight section",
+        "openlabel:scenarioDescription": "Lateral wind loads the vehicle on an exposed straight.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000029",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true,
+        "openlabel:WeatherWind": true,
+        "openlabel:weatherWindValue": {
+          "@value": "19.0",
+          "@type": "xsd:decimal"
+        },
+        "openlabel:ScenerySpecialStructure": {
+          "@id": "openlabel:SpecialStructureBridge"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "90.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "110.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:degraded-positioning-and-connectivity",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Degraded positioning and backend connectivity",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Degraded positioning and backend connectivity",
+        "openlabel:scenarioDescription": "Map or backend information is delayed or inconsistent with perception.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000030",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:ConnectivityPositioning": {
+          "@id": "openlabel:PositioningGps"
+        },
+        "openlabel:ConnectivityCommunication": {
+          "@id": "openlabel:V2iCellular"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:approach-motorway-end-tunnel",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Approach to a tunnel at the end of the supported route",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Approach to a tunnel at the end of the supported route",
+        "openlabel:scenarioDescription": "A known excluded structure ends the supported stretch.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000031",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:ScenerySpecialStructure": {
+          "@id": "openlabel:SpecialStructureTunnel"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "0.5",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "1.5",
+            "@type": "xsd:decimal"
+          }
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:approach-motorway-exit",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Approach to a motorway exit",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Approach to a motorway exit",
+        "openlabel:scenarioDescription": "A grade-separated exit leaves the supported road type.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000032",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": [
+          {
+            "@id": "openlabel:MotorwayManaged"
+          },
+          {
+            "@id": "openlabel:RoadTypeSlip"
+          }
+        ],
+        "openlabel:JunctionIntersection": {
+          "@id": "openlabel:IntersectionGradeSeperated"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:MotionLaneChangeRight": true
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:unplanned-roadworks-detour",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Unplanned roadworks with a detour",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Unplanned roadworks with a detour",
+        "openlabel:scenarioDescription": "Changed infrastructure closes lanes and signs a detour.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000033",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:SceneryTemporaryStructure": [
+          {
+            "@id": "openlabel:TemporaryStructureRoadWorks"
+          },
+          {
+            "@id": "openlabel:TemporaryStructureConstructionDetour"
+          }
+        ],
+        "openlabel:SignsRegulatory": {
+          "@id": "openlabel:RegulatorySignsVariableTemporary"
+        },
+        "openlabel:LaneSpecificationType": {
+          "@id": "openlabel:LaneTypeTraffic"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "1.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "2.5",
+            "@type": "xsd:decimal"
+          }
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:emergency-braking-to-standstill",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Emergency braking ends at standstill",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Emergency braking ends at standstill",
+        "openlabel:scenarioDescription": "An imminent collision forces a full stop with hazard warning.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000034",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:HorizontalStraights": true
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "7.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "10.0",
+            "@type": "xsd:decimal"
+          }
+        },
+        "openlabel:MotionStop": true,
+        "openlabel:BehaviourCommunication": {
+          "@id": "openlabel:CommunicationSignalHazard"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:emergency-vehicle-from-behind",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Emergency vehicle approaches from behind",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Emergency vehicle approaches from behind",
+        "openlabel:scenarioDescription": "A police or ambulance vehicle with active warning signals closes in.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000035",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:LaneSpecificationLaneCount": true,
+        "openlabel:laneSpecificationLaneCountValue": {
+          "@value": "3",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionTowards": true,
+        "openlabel:MotionOvertake": true,
+        "openlabel:BehaviourCommunication": {
+          "@id": "openlabel:CommunicationSignalEmergency"
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleEmergency"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:speed-limit-change",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Applicable speed limit changes",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Applicable speed limit changes",
+        "openlabel:scenarioDescription": "A variable regulatory sign changes the permitted speed.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000036",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:SignsRegulatory": {
+          "@id": "openlabel:RegulatorySignsVariableFullTime"
+        },
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@value": "100",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "0.5",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "1.5",
+            "@type": "xsd:decimal"
+          }
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:successive-speed-limit-changes",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Successive speed-limit changes",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Successive speed-limit changes",
+        "openlabel:scenarioDescription": "Several regulatory signs change the limit within a short distance.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000037",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:SignsRegulatory": [
+          {
+            "@id": "openlabel:RegulatorySignsVariableFullTime"
+          },
+          {
+            "@id": "openlabel:RegulatorySignsVariableTemporary"
+          }
+        ],
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "60.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "120.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "0.5",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "2.0",
+            "@type": "xsd:decimal"
+          }
+        },
+        "openlabel:MotionAccelerate": true,
+        "openlabel:motionAccelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "0.3",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "1.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:solid-marking-lane-change-prohibited",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Solid marking prohibits changing lane",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Solid marking prohibits changing lane",
+        "openlabel:scenarioDescription": "Markings and signs forbid crossing the lane boundary.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000038",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:MotorwayManaged"
+        },
+        "openlabel:LaneSpecificationMarking": true,
+        "openlabel:SignsRegulatory": {
+          "@id": "openlabel:RegulatorySignsUniformFullTime"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:urban-pedestrian-crossing",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Urban street with a pedestrian crossing",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Urban street with a pedestrian crossing",
+        "openlabel:scenarioDescription": "A pedestrian uses a marked crossing on a minor town road.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000039",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeMinor"
+        },
+        "openlabel:ScenerySpecialStructure": {
+          "@id": "openlabel:SpecialStructurePedestrianCrossing"
+        },
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@value": "30",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionCross": true,
+        "openlabel:MotionWalk": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanPedestrian"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:urban-roundabout-approach",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Approach to a signalised roundabout",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Approach to a signalised roundabout",
+        "openlabel:scenarioDescription": "A city street leads into a normal-sized signalised roundabout.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000040",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeDistributor"
+        },
+        "openlabel:JunctionRoundabout": {
+          "@id": "openlabel:RoundaboutNormalSignal"
+        },
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "20.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "40.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionTurnRight": true,
+        "openlabel:MotionDecelerate": true,
+        "openlabel:motionDecelerateValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "1.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "2.0",
+            "@type": "xsd:decimal"
+          }
+        }
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleBus"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:rural-bend-wet-road",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Rural bend on a wet road",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Rural bend on a wet road",
+        "openlabel:scenarioDescription": "A tight bend on a rural road with standing water.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000041",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeShared"
+        },
+        "openlabel:HorizontalCurves": true,
+        "openlabel:horizontalCurvesValue": {
+          "@value": "120.0",
+          "@type": "xsd:decimal"
+        },
+        "openlabel:DrivableAreaSurfaceCondition": {
+          "@id": "openlabel:SurfaceConditionStandingWater"
+        },
+        "openlabel:WeatherRain": true,
+        "openlabel:weatherRainValue": {
+          "@value": "6.0",
+          "@type": "xsd:decimal"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true,
+        "openlabel:motionDriveValue": {
+          "@type": "schema:QuantitativeValue",
+          "schema:minValue": {
+            "@value": "40.0",
+            "@type": "xsd:decimal"
+          },
+          "schema:maxValue": {
+            "@value": "60.0",
+            "@type": "xsd:decimal"
+          }
+        },
+        "openlabel:MotionTurn": true
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:parking-area-manoeuvre",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Manoeuvring in a parking area",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Manoeuvring in a parking area",
+        "openlabel:scenarioDescription": "Low-speed reversing between parked vehicles.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000042",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeParking"
+        },
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@value": "5",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionReverse": true,
+        "openlabel:MotionUTurn": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCar"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanPassenger"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:school-zone-cyclist",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Cyclist near a school zone",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Cyclist near a school zone",
+        "openlabel:scenarioDescription": "A cyclist rides alongside a minor road in a school zone.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000043",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeMinor"
+        },
+        "openlabel:SceneryZone": {
+          "@id": "openlabel:ZoneSchool"
+        },
+        "openlabel:SubjectVehicleSpeed": true,
+        "openlabel:subjectVehicleSpeedValue": {
+          "@value": "30",
+          "@type": "xsd:integer"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionDrive": true
+      },
+      "openlabel:RoadUser": {
+        "@type": "openlabel:RoadUser",
+        "openlabel:RoadUserVehicle": {
+          "@id": "openlabel:VehicleCycle"
+        },
+        "openlabel:RoadUserHuman": {
+          "@id": "openlabel:HumanCyclist"
+        }
+      }
+    },
+    {
+      "@id": "did:web:openlabel.example:Tag:rail-crossing-approach",
+      "@type": "openlabel:Tag",
+      "rdfs:label": {
+        "@value": "Approach to a rail crossing",
+        "@language": "en"
+      },
+      "openlabel:AdminTag": {
+        "@type": "openlabel:AdminTag",
+        "openlabel:scenarioName": "Approach to a rail crossing",
+        "openlabel:scenarioDescription": "A rural road crosses a railway line.",
+        "openlabel:scenarioUniqueReference": "00000000-0000-4000-8000-000000000044",
+        "openlabel:scenarioVersion": "1.0.0"
+      },
+      "openlabel:Odd": {
+        "@type": "openlabel:Odd",
+        "openlabel:DrivableAreaType": {
+          "@id": "openlabel:RoadTypeDistributor"
+        },
+        "openlabel:ScenerySpecialStructure": {
+          "@id": "openlabel:SpecialStructureRailCrossing"
+        },
+        "openlabel:SignsWarning": {
+          "@id": "openlabel:WarningSignsUniformFullTime"
+        }
+      },
+      "openlabel:Behaviour": {
+        "@type": "openlabel:Behaviour",
+        "openlabel:MotionStop": true
+      }
+    }
+  ]
+}

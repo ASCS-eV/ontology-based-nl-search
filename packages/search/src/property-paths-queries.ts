@@ -211,6 +211,46 @@ export interface LeafRow {
 }
 
 /**
+ * The `sh:datatype` declared on each leaf property ([SHACL] §4.1.2), keyed by
+ * property IRI. A second pass over the already-discovered leaves, like
+ * {@link enrichLeafKinds}, so the hot leaf query stays minimal. When shapes
+ * disagree about one property's datatype the lexicographically first IRI wins,
+ * so the choice never depends on graph iteration order.
+ */
+export async function queryLeafDatatypes(
+  store: SparqlStore,
+  paths: PropertyPath[]
+): Promise<Map<string, string>> {
+  const propIris = new Set<string>()
+  for (const p of paths) propIris.add(p.propertyIri)
+  if (propIris.size === 0) return new Map()
+
+  const valuesClause = [...propIris].map((iri) => `<${iri}>`).join(' ')
+  const result = await store.query(`
+    ${sparqlPrefixes('sh')}
+
+    SELECT DISTINCT ?propertyIri ?datatype WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        VALUES ?propertyIri { ${valuesClause} }
+        ?propShape sh:path ?propertyIri .
+        ?propShape sh:datatype ?datatype .
+        FILTER(isIRI(?datatype))
+      }
+    }
+  `)
+
+  const out = new Map<string, string>()
+  for (const row of result.results.bindings) {
+    const propertyIri = row['propertyIri']?.value
+    const datatype = row['datatype']?.value
+    if (!propertyIri || !datatype) continue
+    const current = out.get(propertyIri)
+    if (current === undefined || datatype < current) out.set(propertyIri, datatype)
+  }
+  return out
+}
+
+/**
  * Query every `(targetClass, leaf-predicate, leaf-iri)` triple — the
  * leaves of every property path. A leaf is a property shape with a
  * literal `sh:path` and NO `sh:node` (its values are RDF literals,

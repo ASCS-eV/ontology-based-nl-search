@@ -235,6 +235,9 @@ vi.mock('../property-paths.js', () => {
   })
   return {
     buildPropertyPaths: vi.fn().mockResolvedValue(allPaths),
+    discoverPropertyPaths: vi
+      .fn()
+      .mockResolvedValue({ assetPaths: allPaths, vocabularyRootPaths: [] }),
     buildReferenceChains: vi
       .fn()
       .mockReturnValue([

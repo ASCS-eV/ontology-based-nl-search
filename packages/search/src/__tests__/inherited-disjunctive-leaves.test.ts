@@ -94,6 +94,19 @@ const DATA_TTL = `
   fleet:hasPart [ a fleet:SceneryTag ; fleet:laneCount 3 ] .
 <urn:vehicle:narrow> a fleet:Vehicle ; rdfs:label "Narrow" ;
   fleet:hasPart [ a fleet:SceneryTag ; fleet:laneCount 1 ] .
+# Inherited leaves on two items of one multi-valued hop, or on one item.
+<urn:vehicle:split> a fleet:Vehicle ; rdfs:label "Split" ;
+  fleet:hasPart [ a fleet:SceneryTag ; fleet:colour "red" ] ,
+                [ a fleet:SceneryTag ; fleet:surface "gravel" ] .
+<urn:vehicle:merged> a fleet:Vehicle ; rdfs:label "Merged" ;
+  fleet:hasPart [ a fleet:SceneryTag ; fleet:colour "red" ; fleet:surface "gravel" ] .
+<urn:vehicle:other> a fleet:Vehicle ; rdfs:label "Other" ;
+  fleet:hasPart [ a fleet:SceneryTag ; fleet:colour "red" ] ,
+                [ a fleet:SceneryTag ; fleet:surface "asphalt" ] .
+# Leaves the engine's own shape declares describe one engine.
+<urn:vehicle:two-engines> a fleet:Vehicle ; rdfs:label "Two engines" ;
+  fleet:hasPart [ a fleet:Engine ; fleet:fuel "diesel" ; fleet:rating 5 ] ,
+                [ a fleet:Engine ; fleet:fuel "electric" ; fleet:rating 9 ] .
 `
 
 /** The minimum DomainRegistry surface the discovery and compiler read. */
@@ -240,5 +253,34 @@ describe('leaves inherited at an intermediate class, and disjunctive leaves', ()
     const result = await store.query(sparql)
     const assets = new Set(result.results.bindings.map((row) => row['asset']?.value))
     expect([...assets]).toEqual(['urn:vehicle:wide'])
+  }, 30_000)
+
+  it('matches inherited leaves on different items of a multi-valued hop', async () => {
+    // The superclass shape declares both leaves, so the schema does not say
+    // which item carries which: each must be free to bind its own item.
+    const { store, registry } = await discover()
+    const vocabIndex = await buildCompilerVocabFrom(store, registry)
+
+    const { sparql } = await compileSlotsWithTrace(
+      { domains: ['fleet'], filters: { colour: 'red', surface: 'gravel' }, ranges: {} },
+      { registry, vocabIndex }
+    )
+
+    const result = await store.query(sparql)
+    const assets = new Set(result.results.bindings.map((row) => row['asset']?.value))
+    expect([...assets].sort()).toEqual(['urn:vehicle:merged', 'urn:vehicle:split'])
+  }, 30_000)
+
+  it('keeps the leaves a class declares itself on one node', async () => {
+    const { store, registry } = await discover()
+    const vocabIndex = await buildCompilerVocabFrom(store, registry)
+
+    const { sparql } = await compileSlotsWithTrace(
+      { domains: ['fleet'], filters: { fuel: 'diesel' }, ranges: { rating: { min: 9 } } },
+      { registry, vocabIndex }
+    )
+
+    const result = await store.query(sparql)
+    expect(result.results.bindings).toEqual([])
   }, 30_000)
 })

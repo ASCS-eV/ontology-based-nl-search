@@ -143,9 +143,29 @@ export function addLocationFilter(
 const HIERARCHY_EXPANSION_PATH = `(<${iri('skos', 'broaderTransitive')}>|<${iri('rdfs', 'subClassOf')}>)*`
 
 /**
+ * Lexical forms of the two `xsd:boolean` values — each value has two
+ * representations ([RDF11] §5 Datatypes: `"true"`/`"1"` and `"false"`/`"0"`).
+ */
+const BOOLEAN_LEXICAL_FORMS: ReadonlyMap<string, readonly string[]> = new Map([
+  ['true', ['true', '1']],
+  ['false', ['false', '0']],
+])
+const BOOLEAN_CANONICAL: ReadonlyMap<string, 'true' | 'false'> = new Map([
+  ['true', 'true'],
+  ['1', 'true'],
+  ['false', 'false'],
+  ['0', 'false'],
+])
+
+const XSD_BOOLEAN = iri('xsd', 'boolean')
+
+/**
  * Add a FILTER (or graph pattern) for an enum value.
  *
  * - **Literal value(s)**: emits the existing `FILTER(?v = "lit")` form.
+ *   When the leaf's SHACL datatype is `xsd:boolean` and every value is a
+ *   boolean lexical form, the comparison is on the lexical form instead
+ *   (`STR(?v) IN ("true", "1")`) — see the comment below.
  * - **IRI value(s)**: emits a reflexive-transitive SPARQL property path,
  *   so the filter matches any concept narrower than the IRI in any
  *   `skos:broaderTransitive` or `rdfs:subClassOf` chain loaded into the
@@ -158,18 +178,40 @@ const HIERARCHY_EXPANSION_PATH = `(<${iri('skos', 'broaderTransitive')}>|<${iri(
  *
  *   When no hierarchy edges are present in the data, the path matches only
  *   the IRI itself (reflexive case) — same semantics as plain equality.
+ *
+ * @param datatype `sh:datatype` the leaf's shape declares ([SHACL] §4.1.2),
+ *   when known. The comparison follows the declared datatype, never the
+ *   shape of the filter value: a string property that happens to hold
+ *   "True" keeps plain equality.
  */
 export function addEnumFilter(
   patterns: string[],
   filters: string[],
   varName: string,
-  value: string | string[]
+  value: string | string[],
+  datatype?: string
 ): void {
   const arr = Array.isArray(value) ? value : [value]
   const iriValues = arr.filter(isIri)
   const literalValues = arr.filter((v) => !isIri(v))
 
-  if (literalValues.length === 1) {
+  // A boolean leaf stores `"true"^^xsd:boolean`, which is never RDF-term-equal
+  // to the simple literal `"true"` ([SPARQL11] §17.4.1.7 — `=` on literals of
+  // different datatypes is a type error, so the FILTER drops every row), and
+  // so is `IN`, which is defined through `=` ([SPARQL11] §17.4.1.9). The two
+  // lexical forms of each boolean value ([RDF11] §5) are compared through
+  // STR() instead, which matches typed and plain-string storage alike.
+  const booleans = literalValues.map((v) => BOOLEAN_CANONICAL.get(v.trim().toLowerCase()))
+  if (
+    datatype === XSD_BOOLEAN &&
+    literalValues.length > 0 &&
+    booleans.every((b) => b !== undefined)
+  ) {
+    const lexical = [...new Set(booleans.flatMap((b) => BOOLEAN_LEXICAL_FORMS.get(b!)!))].map(
+      (form) => `"${form}"`
+    )
+    filters.push(`FILTER(STR(${varName}) IN (${lexical.join(', ')}))`)
+  } else if (literalValues.length === 1) {
     filters.push(`FILTER(${varName} = "${escapeRdfLiteral(literalValues[0]!)}")`)
   } else if (literalValues.length > 1) {
     const values = literalValues.map((v) => `"${escapeRdfLiteral(v)}"`).join(', ')

@@ -102,7 +102,7 @@ An earlier design used manually maintained SKOS vocabularies as an intermediate 
 
 ## Supported Domains
 
-With the demo ENVITED-X ontologies loaded, the registry discovers **~20 domains** from the ontology source, of which **5 populated domains** carry sample instance data — **358 assets** in total:
+With the demo ENVITED-X ontologies loaded, the registry discovers **~20 domains** from the ontology source, of which **5 asset domains** carry sample instance data — **358 assets** in total — and the vocabulary domain `openlabel` carries **44 standalone tags** (`sample-openlabel.jsonld`):
 
 | Domain                | Instance Assets | Key Properties                                                          |
 | --------------------- | :-------------: | ----------------------------------------------------------------------- |
@@ -112,7 +112,72 @@ With the demo ENVITED-X ontologies loaded, the registry discovers **~20 domains*
 | **Scenario**          |       50        | scenarioCategory, weather, timeOfDay, trafficDensity                    |
 | **Surface Model**     |       20        | materialType, frictionCoefficient, textureFormat                        |
 
-Exact counts track the sample TTL files and may shift as they evolve. The remaining discovered domains ship SHACL shapes without sample instances (for example automotive-simulator, simulation-model, openlabel, simulated-sensor, and vv-report).
+Exact counts track the sample data files and may shift as they evolve (re-measured against OMB 0.5.0 on the branch that added the standalone OpenLABEL tags: counts above unchanged). The standalone tags (see [Data](/data#openlabel-sample-data)) come on top of the asset counts, and the HD-map and scenario assets additionally carry OpenLABEL V1-0-0 content nodes. The remaining discovered domains ship SHACL shapes without sample instances (for example automotive-simulator, simulation-model, simulated-sensor, and vv-report).
+
+## OpenLABEL: v1 vs. v2
+
+OMB ships two OpenLABEL domains. They are **not** two versions of one model, and only v1 is what the ENVITED-X asset shapes reference:
+
+|                       | `openlabel` — **V1-0-0**                                                                                                                     | `openlabel-v2` — **WIP**                                                                      |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Namespace             | `https://openlabel.asam.net/V1-0-0/ontologies/` (ASAM's)                                                                                     | `https://w3id.org/ascs-ev/envited-x/openlabel/v2/` (ASCS-eV's)                                |
+| Source of truth       | ASAM's OWL, verbatim, plus **hand-authored** SHACL and JSON-LD context                                                                       | one LinkML model (`linkml/openlabel-v2/openlabel-v2.yaml`) that generates OWL, SHACL, context |
+| Referenced by         | HD-map (`OddScenery`) and scenario (`OddEnvironment`, `OddDynamicElements`, `Behaviour`, `RoadUser`) shapes                                  | no asset shape                                                                                |
+| Properties in the OWL | none — flags and enumeration values are **classes** in a taxonomy (`MotorwayManaged ⊑ RoadTypeMotorway ⊑ DrivableAreaType ⊑ … ⊑ OddScenery`) | declared object/datatype properties, enumerations as named individuals                        |
+
+What was checked in OMB (`artifacts/openlabel`, `submodules/asam-openx-standards/standards/asam-openlabel`):
+
+- **The OWL is ASAM's.** `openlabel.owl.ttl` and ASAM's `openlabel_ontology_scenario_tags.ttl` have the same 243 classes and identical superclasses. They declare no properties; the SHACL paths (`openlabel:HorizontalStraights`, `openlabel:motionDriveValue`, …) are OMB's integration layer, which OMB itself calls "not an official ASAM deliverable".
+- **There is no model that generates v1.** SHACL (9 node shapes, 107 property paths, 17 flag↔value `sh:sparql` rules plus one `minValue ≤ maxValue` rule) and context (≈280 hand-written terms with per-term `xsd:boolean` / `xsd:decimal` / `@type: @vocab` coercions) are maintained by hand next to the OWL.
+- **ASAM's JSON schema describes something else.** `openlabel_json_schema*.json` (draft-07, 46 definitions) defines the annotation _file_ — `openlabel.tags[*]` is `{ontology_uid, type, tag_data}`, next to frames, objects, actions and events. It contains none of the ODD vocabulary (no `DrivableAreaType`, no `MotionDrive`, …), so it cannot validate the RDF representation. In v1 the SHACL shapes are the only machine-checkable contract, and that is what the sample data is validated against.
+
+Shape properties of v1 that matter for search and data (found while building the sample data):
+
+- The category shapes `OddSceneryShape`, `OddEnvironmentShape` and `OddDynamicElementsShape` have **no properties**; all 61 ODD properties sit on `OddShape` (target `Odd`), which category nodes reach through the class hierarchy. The `sh:or` unions of the HD-map and scenario shapes are therefore vacuous: SHACL cannot tell that scenery belongs in an HD map and weather in a scenario. The sample data follows OMB's own valid instances instead (category-pure nodes), and the compiler does not assume the split: a leaf inherited from `OddShape` binds a content node of its own, so a filter on weather and one on traffic match the separate environment and dynamic-element nodes.
+- Some `*Value` properties are `sh:or ( scalar  schema:QuantitativeValue )` (speed, lane count, dimensions, accelerate, decelerate, drive); others are a plain decimal or integer. An `xsd:integer` is not an `xsd:decimal` ([SHACL] §4.1.2 compares datatype IRIs), which is why integers are only valid where the shape says integer.
+- `AdminTagShape` declares its properties as `sh:datatype rdfs:Literal`. `rdfs:Literal` is a class, not the datatype of any literal, so a strict engine can never accept a value (pyshacl special-cases it); the evident intent is `sh:nodeKind sh:Literal`.
+- `RoadUserShape` carries a stray copy of `motionDriveValue`.
+- **Scalar-or-range value properties are searched by their scalar values.** A property shape whose `sh:or` has a member with an `sh:datatype` is a literal leaf ([SHACL] §4.6.3), and a range property when every member datatype is numeric, so ranges on speed, lane count, dimensions and the motion values compare the recorded numbers. A value recorded as a `schema:QuantitativeValue` range node is not matched, and an `sh:or` whose members are constrained only by `sh:in` (the 4 enumeration unions in v2) does not make a leaf.
+
+### Choosing which OpenLABEL the search loads
+
+Both domains are loaded by default, which gives the model two near-identical vocabulary names to choose from ("OpenLABEL only" is ambiguous, and `openlabel-v2` has standalone entry classes but no data). The per-source `domains` allowlist of `ontology-sources.json` scopes this without touching code:
+
+```json
+{
+  "sources": [
+    {
+      "name": "omb-artifacts",
+      "path": ".ontology/artifacts",
+      "domains": [
+        "automotive-simulator",
+        "description",
+        "environment-model",
+        "envited-x",
+        "example",
+        "general",
+        "georeference",
+        "gx",
+        "hdmap",
+        "leakage-test",
+        "manifest",
+        "openlabel",
+        "ositrace",
+        "scenario",
+        "service",
+        "simulated-sensor",
+        "simulation-model",
+        "surface-model",
+        "survey",
+        "tzip21",
+        "vv-report"
+      ]
+    }
+  ]
+}
+```
+
+(every domain of the pinned OMB 0.5.0 except `openlabel-v2`, which is left out until it is finished and referenced by the asset shapes; with this manifest `openlabel-v2` is no longer in the domain registry and the OpenLABEL test suites pass unchanged).
 
 ## Cross-Domain Relationships
 
@@ -148,17 +213,22 @@ OMB also ships `imports/` — the foundation vocabularies its ontologies build o
 **not loaded by default**, and measurement shows loading them is safe but buys
 nothing for search today:
 
-| metric                        | artifacts only | + `imports/` |
-| ----------------------------- | -------------- | ------------ |
-| schema-graph triples          | 248,135        | 272,287      |
-| term cards / searchable props | 483 / 165      | 483 / 165    |
-| asset domains / ref. edges    | 13 / 469       | 13 / 469     |
-| retrieval recall (gating set) | 1.00           | 1.00         |
+| metric                                   | artifacts only | + `imports/` |
+| ---------------------------------------- | -------------- | ------------ |
+| schema-graph triples                     | 254,415        | 315,347      |
+| term cards / distinct leaf IRIs          | 936 / 524      | not measured |
+| value-hierarchy triples mirrored to data | 9,390          | 10,895       |
+| asset domains / ref. edges               | 13 / 469       | 13 / 469     |
+| retrieval recall (gating set)            | 1.00           | 1.00         |
+
+The first three rows are measured against OMB 0.5.0 (the last two are from an earlier measurement); the term cards with `imports/` are not measured. Term cards include the leaves of standalone vocabulary entry classes — `openlabel` 105, `openlabel-v2` 108, `gx` 80, `envited-x` 19, `manifest` 15, `general` 4 — and 249 leaves the asset domains reach only through inheritance below the asset class or an `sh:or` member (`hdmap` and `scenario` 76 each, `service` 61, `automotive-simulator`, `leakage-test`, `simulation-model` and `vv-report` 9 each); without them the index has 356 cards.
 
 Searchable vocabulary is SHACL-driven and `imports/` ships no `*.shacl.ttl`,
 so no phantom domains or meta-vocabulary properties can appear — no filter
-layer is required. The only growth is foundation `rdfs:subClassOf` edges,
-which nothing on the search path consumes yet.
+layer is required. The only growth is foundation `rdfs:subClassOf` edges. Those
+are mirrored into the default graph together with the schema's own value
+hierarchies (`materializeValueHierarchy`), because the hierarchy walk of an
+IRI-valued filter runs there; that is the 1,505 extra triples above.
 
 **To opt in** (e.g. when foundation class hierarchies become load-bearing),
 add a second source to `ontology-sources.json`:
