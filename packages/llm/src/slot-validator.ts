@@ -26,6 +26,7 @@ import type { GapKind, MappedTerm, OntologyGap } from '@ontology-search/api-type
 import type { SchemaVocabulary } from '@ontology-search/search'
 import type { LlmStructuredResponse } from '@ontology-search/search/types'
 
+import type { PrefixMap } from './prefix-map.js'
 import {
   buildAllowedValuesIndex,
   buildNumericPropertySet,
@@ -56,7 +57,8 @@ export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-va
  */
 export function validateSlots(
   response: LlmStructuredResponse,
-  vocabulary: SchemaVocabulary
+  vocabulary: SchemaVocabulary,
+  prefixes?: PrefixMap
 ): LlmStructuredResponse {
   const allowedIndex = buildAllowedValuesIndex(vocabulary)
   const numericProps = buildNumericPropertySet(vocabulary)
@@ -86,7 +88,7 @@ export function validateSlots(
     // Enum property — validate against sh:in
     if (propertyName && allowedIndex.has(propertyName)) {
       const { allowedValues } = allowedIndex.get(propertyName)!
-      const result = findBestMatch(term.mapped, allowedValues)
+      const result = findBestMatch(term.mapped, allowedValues, prefixes)
 
       if (result) {
         const objectiveConfidence = result.distance === 0 ? 'high' : 'medium'
@@ -137,7 +139,7 @@ export function validateSlots(
         const propInfo = allowedIndex.get(correctedPropName)
 
         if (propInfo) {
-          const valueMatch = findBestMatch(term.mapped, propInfo.allowedValues)
+          const valueMatch = findBestMatch(term.mapped, propInfo.allowedValues, prefixes)
           if (valueMatch) {
             validatedTerms.push({
               ...term,
@@ -191,11 +193,13 @@ export function validateSlots(
 
 /**
  * Correct filter values in SearchSlots based on validation results.
- * Returns corrected filters with only valid ontology values.
+ * Returns corrected filters with only valid ontology values. `prefixes`
+ * resolves prefixed names an LLM echoed from the shapes' Turtle.
  */
 export function correctFilters(
   filters: Record<string, string | string[]>,
-  vocabulary: SchemaVocabulary
+  vocabulary: SchemaVocabulary,
+  prefixes?: PrefixMap
 ): Record<string, string | string[]> {
   const allowedIndex = buildAllowedValuesIndex(vocabulary)
   const corrected: Record<string, string | string[]> = {}
@@ -216,12 +220,12 @@ export function correctFilters(
       // from any sh:in entry are silently dropped and the caller sees
       // an empty filter with no explanation.
       const correctedValues: string[] = value.map((v) => {
-        const match = findBestMatch(v, propInfo.allowedValues)
+        const match = findBestMatch(v, propInfo.allowedValues, prefixes)
         return match ? match.match : v
       })
       corrected[propName] = correctedValues
     } else {
-      const match = findBestMatch(value, propInfo.allowedValues)
+      const match = findBestMatch(value, propInfo.allowedValues, prefixes)
       // Same pass-through rationale as the array branch.
       corrected[propName] = match ? match.match : value
     }
