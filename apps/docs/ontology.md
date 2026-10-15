@@ -102,7 +102,7 @@ An earlier design used manually maintained SKOS vocabularies as an intermediate 
 
 ## Supported Domains
 
-With the demo ENVITED-X ontologies loaded, the registry discovers **~20 domains** from the ontology source, of which **5 populated domains** carry sample instance data — **358 assets** in total:
+With the demo ENVITED-X ontologies loaded, the registry discovers **~20 domains** from the ontology source, of which **5 asset domains** carry sample instance data — **358 assets** in total — and the vocabulary domain `openlabel` carries **44 standalone tags** (`sample-openlabel.jsonld`):
 
 | Domain                | Instance Assets | Key Properties                                                          |
 | --------------------- | :-------------: | ----------------------------------------------------------------------- |
@@ -112,7 +112,7 @@ With the demo ENVITED-X ontologies loaded, the registry discovers **~20 domains*
 | **Scenario**          |       50        | scenarioCategory, weather, timeOfDay, trafficDensity                    |
 | **Surface Model**     |       20        | materialType, frictionCoefficient, textureFormat                        |
 
-Exact counts track the sample TTL files and may shift as they evolve. The standalone OpenLABEL tags (`sample-openlabel.jsonld`, see [Data](/data#openlabel-sample-data)) come on top of these asset counts, and the HD-map and scenario assets additionally carry OpenLABEL V1-0-0 content nodes. The remaining discovered domains ship SHACL shapes without sample instances (for example automotive-simulator, simulation-model, simulated-sensor, and vv-report).
+Exact counts track the sample data files and may shift as they evolve (re-measured against OMB 0.5.0 on the branch that added the standalone OpenLABEL tags: counts above unchanged). The standalone tags (see [Data](/data#openlabel-sample-data)) come on top of the asset counts, and the HD-map and scenario assets additionally carry OpenLABEL V1-0-0 content nodes. The remaining discovered domains ship SHACL shapes without sample instances (for example automotive-simulator, simulation-model, simulated-sensor, and vv-report).
 
 ## OpenLABEL: v1 vs. v2
 
@@ -213,17 +213,22 @@ OMB also ships `imports/` — the foundation vocabularies its ontologies build o
 **not loaded by default**, and measurement shows loading them is safe but buys
 nothing for search today:
 
-| metric                        | artifacts only | + `imports/` |
-| ----------------------------- | -------------- | ------------ |
-| schema-graph triples          | 248,135        | 272,287      |
-| term cards / searchable props | 483 / 165      | 483 / 165    |
-| asset domains / ref. edges    | 13 / 469       | 13 / 469     |
-| retrieval recall (gating set) | 1.00           | 1.00         |
+| metric                                   | artifacts only | + `imports/` |
+| ---------------------------------------- | -------------- | ------------ |
+| schema-graph triples                     | 254,415        | 315,347      |
+| term cards / distinct searchable leaves  | 840 / 352      | 840 / 352    |
+| value-hierarchy triples mirrored to data | 9,390          | 10,895       |
+| asset domains / ref. edges               | 13 / 469       | 13 / 469     |
+| retrieval recall (gating set)            | 1.00           | 1.00         |
+
+The first three rows were re-measured against OMB 0.5.0 (the last two are from the earlier measurement). Term cards include the leaves of standalone vocabulary entry classes — `openlabel` 100, `openlabel-v2` 102, `gx` 75, `envited-x` 19, `manifest` 15 — and the leaves the asset domains inherit through nested classes (`hdmap` and `scenario` 60 each); without them the index has 356 cards.
 
 Searchable vocabulary is SHACL-driven and `imports/` ships no `*.shacl.ttl`,
 so no phantom domains or meta-vocabulary properties can appear — no filter
-layer is required. The only growth is foundation `rdfs:subClassOf` edges,
-which nothing on the search path consumes yet.
+layer is required. The only growth is foundation `rdfs:subClassOf` edges. Those
+are mirrored into the default graph together with the schema's own value
+hierarchies (`materializeValueHierarchy`), because the hierarchy walk of an
+IRI-valued filter runs there; that is the 1,505 extra triples above.
 
 **To opt in** (e.g. when foundation class hierarchies become load-bearing),
 add a second source to `ontology-sources.json`:
