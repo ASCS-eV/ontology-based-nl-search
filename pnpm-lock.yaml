@@ -971,15 +971,30 @@ importers:
       '@ontology-search/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@rdfjs/dataset':
+        specifier: ^2.0.2
+        version: 2.0.2
+      '@types/n3':
+        specifier: ^1.26.1
+        version: 1.26.1
       '@types/node':
         specifier: ^25.7.0
         version: 25.7.0
+      '@types/rdfjs__dataset':
+        specifier: ^2.0.7
+        version: 2.0.7
       '@types/sparqljs':
         specifier: ^3.1.12
         version: 3.1.12
       '@vitest/coverage-v8':
         specifier: 4.1.11
         version: 4.1.11(vitest@4.1.11)
+      n3:
+        specifier: ^2.0.3
+        version: 2.0.3
+      rdf-validate-shacl:
+        specifier: ^0.6.5
+        version: 0.6.5(supports-color@7.2.0)
       rimraf:
         specifier: ^6.0.0
         version: 6.1.3

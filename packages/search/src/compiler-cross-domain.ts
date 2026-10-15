@@ -128,19 +128,9 @@ export async function compilePeerDomainUnion(
     unionArms.push(`  {\n${armBody}\n  }`)
   }
 
-  const slotHasConstraints =
-    Object.keys(slots.filters).length > 0 || Object.keys(slots.ranges).length > 0
   for (const domainName of standaloneDomains) {
     unionArms.push(
-      ...buildStandaloneArms(
-        domainName,
-        slots,
-        slotHasConstraints,
-        registry,
-        vocabIndex,
-        prefixDomains,
-        selectVars
-      )
+      ...buildStandaloneArms(domainName, slots, registry, vocabIndex, prefixDomains, selectVars)
     )
   }
 
@@ -149,8 +139,10 @@ export async function compilePeerDomainUnion(
   // machinery inside `buildDomainPatterns` (one chain per UNION arm). No
   // outer license OPTIONAL block needed.
 
-  // Build the UNION body
-  const unionBody = unionArms.join('\n  UNION\n')
+  // Build the UNION body. When no requested domain can satisfy the query the
+  // result must be EMPTY: an empty group pattern has exactly one (unbound)
+  // solution ([SPARQL11] §5.2.1), which would surface as a phantom row.
+  const unionBody = unionArms.length > 0 ? unionArms.join('\n  UNION\n') : 'FILTER(false)'
   const patterns = [unionBody]
   const optionals: string[] = []
 

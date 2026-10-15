@@ -121,12 +121,19 @@ export function normalizeDomainName(domain: string): string {
  * of that vocabulary that are not attached to any asset are searched too
  * (see `compiler-standalone.ts`). Defaults to `domains`.
  *
+ * `constraints` are the property names of the surviving filters and ranges.
+ * An asset domain is a candidate for a vocabulary-only request only when it can
+ * express every constraint the vocabulary itself defines — an HD map can carry
+ * scenery attributes but never a behaviour flag, so it cannot answer "straight
+ * motorway AND lane keeping" however many scenery matches it has.
+ *
  * Nothing about any specific ontology is hardcoded: the asset-domain set
  * comes from `getAssetDomains()`, which queries the graph.
  */
 export async function resolveKnownDomains(
   domains: string[],
-  requested: string[] = domains
+  requested: string[] = domains,
+  constraints: readonly string[] = []
 ): Promise<string[]> {
   const registry = await buildDomainRegistry()
   const assetDomains = await getAssetDomains()
@@ -149,35 +156,55 @@ export async function resolveKnownDomains(
   if (asked.assets.length > 0 || asked.vocabularies.length === 0) return known
 
   const vocabIndex = await getCompilerVocab()
-  const result = [...known]
-  for (const d of assetDomainsUsingVocabularies(asked.vocabularies, registry, vocabIndex)) {
-    if (!result.includes(d)) result.push(d)
-  }
+  const scope = vocabularyScope(asked.vocabularies, registry, vocabIndex, constraints)
+  const candidates = [...known]
+  for (const d of scope.owners) if (!candidates.includes(d)) candidates.push(d)
+  // Slot correction may already have added asset domains (the owners of the
+  // filter properties); they face the same coverage test as the rest.
+  const result = candidates.filter((domain) =>
+    scope.required.every((name) => vocabIndex.paths.has(`${domain}:${name}`))
+  )
   return [...result, ...standaloneVocabularyDomains(asked.vocabularies, vocabIndex)]
 }
 
 /**
  * A request naming ONLY a non-asset vocabulary ("OpenLABEL only", "gx …")
  * means "assets described with that vocabulary" — not "no restriction".
- * Resolve it to the asset domains whose SHACL-discovered property paths end
+ * `owners` are the asset domains whose SHACL-discovered property paths end
  * in a leaf of that vocabulary ([SHACL] §2.3 property shapes reached via
- * `sh:node`), in path-index order. Only applied when no asset domain was
- * named, so a precise asset choice is never broadened by a support
- * vocabulary that every asset happens to use.
+ * `sh:node`), sorted. Only applied when no asset domain was named, so a
+ * precise asset choice is never broadened by a support vocabulary that every
+ * asset happens to use.
+ *
+ * `required` are the constraints (`constraints` ∩ the vocabulary's leaves,
+ * nested or standalone) every searched asset domain must be able to express:
+ * a domain that can express only part of the restriction would otherwise be
+ * searched with the rest silently dropped.
  */
-function assetDomainsUsingVocabularies(
+function vocabularyScope(
   vocabularies: string[],
   registry: DomainRegistry,
-  vocabIndex: CompilerVocab
-): string[] {
+  vocabIndex: CompilerVocab,
+  constraints: readonly string[]
+): { owners: string[]; required: string[] } {
   const wanted = new Set(vocabularies)
   const owners = new Set<string>()
+  const vocabularyLeaves = new Set<string>()
   for (const path of vocabIndex.paths.values()) {
-    if (!path.domain || owners.has(path.domain)) continue
     const leafDomain = registry.domainForIri(path.propertyIri)
-    if (leafDomain && wanted.has(leafDomain)) owners.add(path.domain)
+    if (!leafDomain || !wanted.has(leafDomain)) continue
+    vocabularyLeaves.add(path.propertyName)
+    if (path.domain) owners.add(path.domain)
   }
-  return [...owners].sort()
+  for (const vocabulary of vocabularies) {
+    for (const root of vocabIndex.vocabularyRoots?.get(vocabulary) ?? []) {
+      for (const name of root.paths.keys()) vocabularyLeaves.add(name)
+    }
+  }
+  return {
+    owners: [...owners].sort(),
+    required: constraints.filter((name) => vocabularyLeaves.has(name)),
+  }
 }
 
 /**

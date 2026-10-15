@@ -142,11 +142,17 @@ export function addLocationFilter(
  */
 const HIERARCHY_EXPANSION_PATH = `(<${iri('skos', 'broaderTransitive')}>|<${iri('rdfs', 'subClassOf')}>)*`
 
+/** `true` / `false` — the xsd:boolean lexical forms ([RDF11] §5 Datatypes). */
+function isBooleanLexical(value: string): boolean {
+  return /^(true|false)$/i.test(value.trim())
+}
+
 /**
  * Add a FILTER (or graph pattern) for an enum value.
  *
  * - **Literal value(s)**: emits the existing `FILTER(?v = "lit")` form;
- *   a single boolean value compares lexical forms (`STR(?v) = "true"`).
+ *   when every value is a boolean lexical form the comparison is on the
+ *   lexical form instead (`STR(?v) = "true"` / `STR(?v) IN ("true", "false")`).
  * - **IRI value(s)**: emits a reflexive-transitive SPARQL property path,
  *   so the filter matches any concept narrower than the IRI in any
  *   `skos:broaderTransitive` or `rdfs:subClassOf` chain loaded into the
@@ -160,11 +166,6 @@ const HIERARCHY_EXPANSION_PATH = `(<${iri('skos', 'broaderTransitive')}>|<${iri(
  *   When no hierarchy edges are present in the data, the path matches only
  *   the IRI itself (reflexive case) — same semantics as plain equality.
  */
-/** `true` / `false` — the xsd:boolean lexical forms ([RDF11] §5 Datatypes). */
-function isBooleanLexical(value: string): boolean {
-  return /^(true|false)$/i.test(value.trim())
-}
-
 export function addEnumFilter(
   patterns: string[],
   filters: string[],
@@ -177,11 +178,18 @@ export function addEnumFilter(
 
   // A boolean leaf stores `"true"^^xsd:boolean`, which is never RDF-term-equal
   // to the simple literal `"true"` ([SPARQL11] §17.4.1.7 — `=` on literals of
-  // different datatypes is a type error, so the FILTER drops every row).
-  // Compare boolean lexical forms ([RDF11] §5 — xsd:boolean) by lexical value instead,
-  // which matches both typed and plain-string storage.
-  if (literalValues.length === 1 && isBooleanLexical(literalValues[0]!)) {
-    filters.push(`FILTER(STR(${varName}) = "${literalValues[0]!.trim().toLowerCase()}")`)
+  // different datatypes is a type error, so the FILTER drops every row), and
+  // so is `IN`, which is defined through `=` ([SPARQL11] §17.4.1.9).
+  // Compare the lexical forms of xsd:boolean ([RDF11] §5) instead, which
+  // matches both typed and plain-string storage. The canonical lowercase form
+  // is used on both sides.
+  if (literalValues.length > 0 && literalValues.every(isBooleanLexical)) {
+    const lexical = [...new Set(literalValues.map((v) => `"${v.trim().toLowerCase()}"`))]
+    filters.push(
+      lexical.length === 1
+        ? `FILTER(STR(${varName}) = ${lexical[0]})`
+        : `FILTER(STR(${varName}) IN (${lexical.join(', ')}))`
+    )
   } else if (literalValues.length === 1) {
     filters.push(`FILTER(${varName} = "${escapeRdfLiteral(literalValues[0]!)}")`)
   } else if (literalValues.length > 1) {

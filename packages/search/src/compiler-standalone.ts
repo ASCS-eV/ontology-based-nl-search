@@ -13,6 +13,12 @@
  * vocabulary node composed into an asset (and therefore already answered by
  * that asset's arm) is never reported twice.
  *
+ * A standalone document is a closed unit: it cannot acquire a property from
+ * anywhere else. An entry class therefore yields an arm only when it can
+ * express EVERY constraint of the query — a restriction it has no path for
+ * removes the arm instead of being silently dropped (which would return
+ * documents that violate what the user asked for).
+ *
  * @see https://www.w3.org/TR/sparql11-query/ — [SPARQL11]
  */
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
@@ -32,9 +38,9 @@ export function standaloneVocabularyDomains(
 }
 
 /**
- * Build one `{ … }` group per entry class of `domainName` that resolves at
- * least one constraint of the query (or every entry class when the query has
- * no constraints) — the same subset semantics as the asset peer arms.
+ * Build one `{ … }` group per entry class of `domainName` that can express
+ * every constraint of the query (every entry class when the query has no
+ * constraints).
  *
  * Shape of an arm ([SPARQL11] §5.2 group, §6 OPTIONAL, §8.1 NOT EXISTS):
  *   ?asset a <EntryClass> .
@@ -45,7 +51,6 @@ export function standaloneVocabularyDomains(
 export function buildStandaloneArms(
   domainName: string,
   slots: SearchSlots,
-  queryHasConstraints: boolean,
   registry: DomainRegistry,
   vocabIndex: CompilerVocab,
   prefixDomains: Set<string>,
@@ -63,7 +68,8 @@ export function buildStandaloneArms(
       const path = root.paths.get(name)
       if (path) rangeEntries.push([name, range, path])
     }
-    if (queryHasConstraints && filterEntries.length + rangeEntries.length === 0) continue
+    const constraintCount = Object.keys(slots.filters).length + Object.keys(slots.ranges).length
+    if (filterEntries.length + rangeEntries.length < constraintCount) continue
 
     const rootDesc = findDomainForIri(root.rootClass, registry)
     if (rootDesc) prefixDomains.add(rootDesc.name)

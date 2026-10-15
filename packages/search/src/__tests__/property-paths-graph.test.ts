@@ -126,7 +126,7 @@ describe('bfsFromRoots', () => {
 /**
  * Standalone vocabulary entry points: a non-asset vocabulary class that owns
  * properties but is never the value class of a composition edge
- * ([SHACL] §4.8.1 `sh:node`) can be the type of an unattached document.
+ * ([SHACL] §4.7.1 `sh:node`) can be the type of an unattached document.
  */
 describe('findVocabularyRoots', () => {
   const domainOf = (iri: string): string | undefined => iri.split(':')[0]

@@ -225,14 +225,23 @@ export async function buildCompilerVocabFrom(
   }
 }
 
+/** Stable identity of a path's route (predicates and reached classes), for tie-breaking. */
+const pathSignature = (path: PropertyPath): string =>
+  path.steps.map((s) => `${s.predicate}@${s.intermediate ?? ''}`).join('>')
+
 /**
  * Group standalone-root paths by vocabulary domain → root class. The first
- * path per (root, local name) wins, after sorting by property IRI, so the
- * index is deterministic when two vocabularies share a local name.
+ * path per (root, local name) wins after sorting by property IRI and then by
+ * route signature, so the choice never depends on SHACL graph iteration order
+ * (two shapes may declare the same leaf, or two vocabularies share a local
+ * name).
  */
 function indexVocabularyRoots(rootPaths: PropertyPath[]): Map<string, VocabularyRootPaths[]> {
   const byDomain = new Map<string, Map<string, Map<string, PropertyPath>>>()
-  const sorted = [...rootPaths].sort((a, b) => a.propertyIri.localeCompare(b.propertyIri))
+  const sorted = [...rootPaths].sort(
+    (a, b) =>
+      a.propertyIri.localeCompare(b.propertyIri) || pathSignature(a).localeCompare(pathSignature(b))
+  )
   for (const path of sorted) {
     const roots = byDomain.get(path.domain) ?? new Map<string, Map<string, PropertyPath>>()
     byDomain.set(path.domain, roots)

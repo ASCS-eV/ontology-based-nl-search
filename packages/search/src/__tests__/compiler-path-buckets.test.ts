@@ -40,7 +40,7 @@ function compile(entries: [string, string, PropertyPath][]): string[] {
 
 /**
  * Regression: leaves owned by different `sh:or` alternatives behind one
- * multi-valued predicate ([SHACL] §4.6.2) live on DIFFERENT value nodes.
+ * multi-valued predicate ([SHACL] §4.6.3) live on DIFFERENT value nodes.
  * Sharing one intermediate variable demanded a single node of both shapes
  * and returned zero rows.
  */
@@ -83,5 +83,22 @@ describe('addEnumFilter — boolean literals', () => {
     const filters: string[] = []
     addEnumFilter([], filters, '?v', 'car')
     expect(filters).toEqual(['FILTER(?v = "car")'])
+  })
+
+  it('compares several boolean values by lexical form too (IN is defined through =)', async () => {
+    // Regression: only a single boolean value used the lexical comparison, so
+    // `["true", "false"]` compiled to `?v IN ("true", "false")` and, against
+    // `"true"^^xsd:boolean` data, matched nothing ([SPARQL11] §17.4.1.9).
+    const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
+    const filters: string[] = []
+    addEnumFilter([], filters, '?flag', ['true', 'FALSE', ' True '])
+    expect(filters).toEqual(['FILTER(STR(?flag) IN ("true", "false"))'])
+  })
+
+  it('does not treat a mixed list as boolean', async () => {
+    const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
+    const filters: string[] = []
+    addEnumFilter([], filters, '?v', ['true', 'maybe'])
+    expect(filters).toEqual(['FILTER(?v IN ("true", "maybe"))'])
   })
 })

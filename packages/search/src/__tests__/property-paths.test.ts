@@ -105,7 +105,7 @@ describe('buildPropertyPaths', () => {
   /**
    * Regression: OpenLABEL's ODD category shapes (OddEnvironment / OddScenery /
    * OddDynamicElements) are empty and defer to the flat `OddShape` on their
-   * superclass `Odd` ([SHACL] §2.1.3.1, §1.5). Nested under scenario's
+   * superclass `Odd` ([SHACL] §2.1.3.2, §1.1). Nested under scenario's
    * `hasContent` union, their properties used to be invisible.
    */
   it('inherits superclass-shape leaves for classes nested via sh:node', async () => {

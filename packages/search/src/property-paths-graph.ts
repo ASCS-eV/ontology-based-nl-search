@@ -220,7 +220,7 @@ export interface VocabularyRoot {
  *   - it is not an ancestor of an asset class (those are reached through the
  *     asset already), and
  *   - neither it nor any superclass is the value class of a composition edge
- *     (`sh:node`/`sh:class` nesting, [SHACL] §4.8.1/§4.7.1) — a nested class is
+ *     (`sh:node` [SHACL] §4.7.1 / `sh:class` §4.1.1 nesting) — a nested class is
  *     part of something else, not an entry point.
  *
  * Nothing names a concrete ontology: the asset/vocabulary split comes from

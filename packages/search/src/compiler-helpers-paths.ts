@@ -80,7 +80,7 @@ export const SHALLOW_PATH_MAX_STEPS = 3
  * Bucket key for intermediate-variable sharing: every non-leaf step's
  * predicate AND the SHACL class it reaches. Leaves owned by different node
  * shapes behind the same multi-valued predicate (e.g. several `sh:or`
- * alternatives of one content list — [SHACL] §4.6.2 `sh:or`, §4.8.1
+ * alternatives of one content list — [SHACL] §4.6.3 `sh:or`, §4.7.1
  * `sh:node`) describe DIFFERENT value nodes; binding them to one SPARQL
  * variable would demand a single node conforming to all shapes at once and
  * return zero rows. Leaves of the same class still share the node.

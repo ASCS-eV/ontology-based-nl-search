@@ -214,161 +214,13 @@ const providers = [
   'pointcloud.eu',
 ]
 
-const ROAD_TYPES_OL = [
-  'RoadTypeMotorway',
-  'MotorwayManaged',
-  'MotorwayUnmanaged',
-  'RoadTypeDistributor',
-  'RoadTypeMinor',
-  'RoadTypeParking',
-  'RoadTypeRadial',
-  'RoadTypeShared',
-  'RoadTypeSlip',
-]
-const LANE_TYPES_OL = [
-  'LaneTypeTraffic',
-  'LaneTypeBus',
-  'LaneTypeCycle',
-  'LaneTypeEmergency',
-  'LaneTypeSpecial',
-  'LaneTypeTram',
-]
-const TRAVEL_DIRECTIONS_OL = ['TravelDirectionLeft', 'TravelDirectionRight']
-const SURFACE_TYPES_OL = ['SurfaceTypeLoose', 'SurfaceTypeSegmented', 'SurfaceTypeUniform']
-const SURFACE_CONDITIONS_OL = [
-  'SurfaceConditionContamination',
-  'SurfaceConditionFlooded',
-  'SurfaceConditionIcy',
-  'SurfaceConditionMirage',
-  'SurfaceConditionSnow',
-  'SurfaceConditionStandingWater',
-  'SurfaceConditionWet',
-]
-const EDGE_TYPES_OL = [
-  'EdgeLineMarkers',
-  'EdgeNone',
-  'EdgeShoulderGrass',
-  'EdgeShoulderPavedOrGravel',
-  'EdgeSolidBarriers',
-  'EdgeTemporaryLineMarkers',
-]
-const SCENERY_ZONES_OL = [
-  'ZoneGeoFenced',
-  'ZoneInterference',
-  'ZoneRegion',
-  'ZoneSchool',
-  'ZoneTrafficManagement',
-]
-const SCENERY_FIXED_OL = [
-  'FixedStructureBuilding',
-  'FixedStructureStreetFurniture',
-  'FixedStructureStreetlight',
-  'FixedStructureVegetation',
-]
-const SCENERY_TEMP_OL = [
-  'TemporaryStructureConstructionDetour',
-  'TemporaryStructureRefuseCollection',
-  'TemporaryStructureRoadSignage',
-  'TemporaryStructureRoadWorks',
-]
-const SCENERY_SPECIAL_OL = [
-  'SpecialStructureAutoAccess',
-  'SpecialStructureBridge',
-  'SpecialStructurePedestrianCrossing',
-  'SpecialStructureRailCrossing',
-  'SpecialStructureTollPlaza',
-  'SpecialStructureTunnel',
-]
-const RAIN_TYPES_OL = ['RainTypeConvective', 'RainTypeDynamic', 'RainTypeOrographic']
-const SUN_POSITIONS_OL = [
-  'SunPositionBehind',
-  'SunPositionFront',
-  'SunPositionLeft',
-  'SunPositionRight',
-]
-const LOW_LIGHT_OL = ['LowLightAmbient', 'LowLightNight']
-const ARTIFICIAL_LIGHT_OL = ['ArtificialStreetLighting', 'ArtificialVehicleLighting']
-const CONNECTIVITY_COMM_OL = [
-  'CommunicationV2i',
-  'V2iCellular',
-  'V2iSatellite',
-  'V2iWifi',
-  'CommunicationV2v',
-  'V2vCellular',
-  'V2vSatellite',
-  'V2vWifi',
-]
-const CONNECTIVITY_POS_OL = ['PositioningGalileo', 'PositioningGlonass', 'PositioningGps']
-const PARTICULATES_OL = [
-  'ParticulatesDust',
-  'ParticulatesMarine',
-  'ParticulatesPollution',
-  'ParticulatesVolcanic',
-  'ParticulatesWater',
-]
-const INTERSECTIONS_OL = [
-  'IntersectionCrossroad',
-  'IntersectionGradeSeperated',
-  'IntersectionStaggered',
-  'IntersectionTJunction',
-  'IntersectionYJunction',
-]
-const ROUNDABOUTS_OL = [
-  'RoundaboutCompactNosignal',
-  'RoundaboutCompactSignal',
-  'RoundaboutNormalNosignal',
-  'RoundaboutNormalSignal',
-  'RoundaboutLargeNosignal',
-  'RoundaboutLargeSignal',
-  'RoundaboutMiniNosignal',
-  'RoundaboutMiniSignal',
-]
-const GEOMETRY_TRANSVERSE_OL = ['TransverseDivided', 'TransverseUndivided']
-const BEHAVIOUR_COMM_OL = [
-  'CommunicationHeadlightFlash',
-  'CommunicationHorn',
-  'CommunicationSignalEmergency',
-  'CommunicationSignalHazard',
-  'CommunicationSignalLeft',
-  'CommunicationSignalRight',
-  'CommunicationSignalSlowing',
-  'CommunicationWave',
-]
-const VEHICLES_OL = [
-  'VehicleAgricultural',
-  'VehicleBus',
-  'VehicleCar',
-  'VehicleConstruction',
-  'VehicleCycle',
-  'VehicleEmergency',
-  'VehicleMotorcycle',
-  'VehicleTrailer',
-  'VehicleTruck',
-  'VehicleVan',
-  'VehicleWheelchair',
-]
-const HUMANS_OL = [
-  'HumanAnimalRider',
-  'HumanCyclist',
-  'HumanDriver',
-  'HumanMotorcyclist',
-  'HumanPassenger',
-  'HumanPedestrian',
-  'HumanWheelchairUser',
-]
-
-const behaviourMotionDefinitions = [
-  { flag: 'MotionAccelerate', valueProperty: 'motionAccelerateValue', mode: 'decimal' },
-  { flag: 'MotionDecelerate', valueProperty: 'motionDecelerateValue', mode: 'decimal' },
-  { flag: 'MotionDrive', valueProperty: 'motionDriveValue', mode: 'integer' },
-  { flag: 'MotionCutIn' },
-  { flag: 'MotionCutOut' },
-  { flag: 'MotionOvertake' },
-  { flag: 'MotionLaneChangeLeft' },
-  { flag: 'MotionLaneChangeRight' },
-  { flag: 'MotionTurnLeft' },
-  { flag: 'MotionTurnRight' },
-]
+/*
+ * OpenLABEL content is NOT generated here: every `openlabel:*` node in the
+ * sample files — and `sample-openlabel.jsonld` — is owned by
+ * `generate-openlabel-sample-data.mjs`, which rewrites only those nodes (run it
+ * after this script). It follows OMB's valid v1 instances and the v1 value
+ * rules; see apps/docs/data.md ("OpenLABEL sample data").
+ */
 
 const hdmapSceneNames = {
   motorway: 'Motorway',
@@ -393,7 +245,6 @@ const contexts = {
     gx: 'https://w3id.org/gaia-x/development#',
     rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
     xsd: 'http://www.w3.org/2001/XMLSchema#',
-    openlabel: 'https://openlabel.asam.net/V1-0-0/ontologies/',
   },
   scenario: {
     scenario: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/',
@@ -405,7 +256,6 @@ const contexts = {
     gx: 'https://w3id.org/gaia-x/development#',
     rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
     xsd: 'http://www.w3.org/2001/XMLSchema#',
-    openlabel: 'https://openlabel.asam.net/V1-0-0/ontologies/',
   },
   ositrace: {
     ositrace: 'https://w3id.org/ascs-ev/envited-x/ositrace/v6/',
@@ -415,7 +265,6 @@ const contexts = {
     gx: 'https://w3id.org/gaia-x/development#',
     rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
     xsd: 'http://www.w3.org/2001/XMLSchema#',
-    openlabel: 'https://openlabel.asam.net/V1-0-0/ontologies/',
   },
   environmentModel: {
     'environment-model': 'https://w3id.org/ascs-ev/envited-x/environment-model/v5/',
@@ -423,12 +272,6 @@ const contexts = {
     georeference: 'https://w3id.org/ascs-ev/envited-x/georeference/v5/',
     manifest: 'https://w3id.org/ascs-ev/envited-x/manifest/v5/',
     gx: 'https://w3id.org/gaia-x/development#',
-    rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
-    xsd: 'http://www.w3.org/2001/XMLSchema#',
-    openlabel: 'https://openlabel.asam.net/V1-0-0/ontologies/',
-  },
-  openlabel: {
-    openlabel: 'https://openlabel.asam.net/V1-0-0/ontologies/',
     rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
     xsd: 'http://www.w3.org/2001/XMLSchema#',
   },
@@ -440,16 +283,13 @@ const contexts = {
     gx: 'https://w3id.org/gaia-x/development#',
     rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
     xsd: 'http://www.w3.org/2001/XMLSchema#',
-    openlabel: 'https://openlabel.asam.net/V1-0-0/ontologies/',
   },
 }
 
 const typeValue = (value, type) => ({ '@value': String(value), '@type': type })
 const floatValue = (value, digits = 1) => typeValue(Number(value).toFixed(digits), 'xsd:float')
-const decimalValue = (value, digits = 1) => typeValue(Number(value).toFixed(digits), 'xsd:decimal')
 const integerValue = (value) => typeValue(Math.trunc(value), 'xsd:integer')
 const languageValue = (value) => ({ '@value': value, '@language': 'en' })
-const enumRef = (value) => ({ '@id': `openlabel:${value}` })
 const cycle = (items, index, multiplier = 1, offset = 0) =>
   items[(index * multiplier + offset) % items.length]
 const toTitleCase = (value) =>
@@ -537,236 +377,8 @@ function createManifest(referencedArtifacts = []) {
   return manifest
 }
 
-function generateOdd(assetIdx, options = {}) {
-  const { profile = 'general', roadType } = options
-  const odd = {
-    '@type': 'openlabel:Odd',
-    'openlabel:DrivableAreaType': enumRef(cycle(ROAD_TYPES_OL, assetIdx, 7, 3)),
-    'openlabel:LaneSpecificationTravelDirection': enumRef(
-      cycle(TRAVEL_DIRECTIONS_OL, assetIdx, 1, 0)
-    ),
-  }
-
-  // Lane count correlated with road type for realistic data
-  if (assetIdx % 10 < 6) {
-    odd['openlabel:LaneSpecificationLaneCount'] = true
-    let laneCount
-    if (roadType === 'motorway' || roadType === 'highway') {
-      laneCount = 2 + (assetIdx % 5) // 2-6 lanes for motorways/highways
-    } else if (roadType === 'town') {
-      laneCount = 1 + (assetIdx % 4) // 1-4 lanes for urban roads
-    } else {
-      laneCount = 1 + (assetIdx % 3) // 1-3 lanes for rural/custom
-    }
-    odd['openlabel:laneSpecificationLaneCountValue'] = integerValue(laneCount)
-  }
-
-  if (assetIdx % 10 < 7) {
-    odd['openlabel:LaneSpecificationType'] = enumRef(cycle(LANE_TYPES_OL, assetIdx, 3, 1))
-  }
-
-  if (profile === 'surface' || assetIdx % 2 === 0) {
-    odd['openlabel:DrivableAreaSurfaceType'] = enumRef(cycle(SURFACE_TYPES_OL, assetIdx, 2, 1))
-  }
-
-  if (profile === 'surface' ? assetIdx % 2 === 1 : assetIdx % 10 < 3) {
-    odd['openlabel:DrivableAreaSurfaceCondition'] = enumRef(
-      cycle(SURFACE_CONDITIONS_OL, assetIdx, 5, 2)
-    )
-  }
-
-  if (assetIdx % 5 < 2) {
-    odd['openlabel:DrivableAreaEdge'] = enumRef(cycle(EDGE_TYPES_OL, assetIdx, 4, 3))
-  }
-
-  if (assetIdx % 4 === 0) {
-    odd['openlabel:WeatherRain'] = true
-    odd['openlabel:RainType'] = enumRef(cycle(RAIN_TYPES_OL, assetIdx, 3, 0))
-  }
-
-  if (assetIdx % 5 === 1) {
-    odd['openlabel:WeatherWind'] = true
-  }
-
-  if (assetIdx % 10 === 6) {
-    odd['openlabel:WeatherSnow'] = true
-  }
-
-  if (assetIdx % 20 < 7) {
-    if (assetIdx % 2 === 0) {
-      odd['openlabel:DaySunPosition'] = enumRef(cycle(SUN_POSITIONS_OL, assetIdx, 2, 0))
-    } else {
-      odd['openlabel:IlluminationLowLight'] = enumRef(cycle(LOW_LIGHT_OL, assetIdx, 1, 0))
-      odd['openlabel:IlluminationArtificial'] = enumRef(cycle(ARTIFICIAL_LIGHT_OL, assetIdx, 1, 0))
-    }
-  }
-
-  if (profile === 'scenery' || assetIdx % 5 < 2) {
-    odd['openlabel:SceneryFixedStructure'] = enumRef(cycle(SCENERY_FIXED_OL, assetIdx, 2, 1))
-  }
-
-  if (assetIdx % 20 < 3) {
-    odd['openlabel:SceneryZone'] = enumRef(cycle(SCENERY_ZONES_OL, assetIdx, 3, 2))
-  }
-
-  if (profile === 'scenery' || assetIdx % 5 === 2) {
-    odd['openlabel:ScenerySpecialStructure'] = enumRef(cycle(SCENERY_SPECIAL_OL, assetIdx, 4, 0))
-  }
-
-  if (assetIdx % 10 === 4) {
-    odd['openlabel:SceneryTemporaryStructure'] = enumRef(cycle(SCENERY_TEMP_OL, assetIdx, 2, 0))
-  }
-
-  if (assetIdx % 20 < 3) {
-    odd['openlabel:JunctionIntersection'] = enumRef(cycle(INTERSECTIONS_OL, assetIdx, 3, 0))
-  }
-
-  if (assetIdx % 10 === 7) {
-    odd['openlabel:JunctionRoundabout'] = enumRef(cycle(ROUNDABOUTS_OL, assetIdx, 2, 0))
-  }
-
-  if (assetIdx % 20 < 3) {
-    odd['openlabel:ConnectivityCommunication'] = enumRef(
-      cycle(CONNECTIVITY_COMM_OL, assetIdx, 3, 0)
-    )
-    odd['openlabel:ConnectivityPositioning'] = enumRef(cycle(CONNECTIVITY_POS_OL, assetIdx, 2, 1))
-  }
-
-  if (assetIdx % 4 === 0) {
-    odd['openlabel:GeometryTransverse'] = enumRef(cycle(GEOMETRY_TRANSVERSE_OL, assetIdx, 1, 0))
-  } else if (assetIdx % 4 === 1) {
-    odd['openlabel:HorizontalStraights'] = true
-  } else if (assetIdx % 4 === 2) {
-    odd['openlabel:HorizontalCurves'] = true
-  }
-
-  if (assetIdx % 5 === 3) {
-    odd['openlabel:TrafficAgentDensity'] = true
-    odd['openlabel:trafficAgentDensityValue'] = integerValue(10 + ((assetIdx * 7) % 90))
-  }
-
-  if (assetIdx % 20 < 3) {
-    odd['openlabel:SubjectVehicleSpeed'] = true
-    odd['openlabel:subjectVehicleSpeedValue'] = integerValue(30 + ((assetIdx * 11) % 100))
-  }
-
-  if (assetIdx % 10 === 8) {
-    odd['openlabel:EnvironmentParticulates'] = enumRef(cycle(PARTICULATES_OL, assetIdx, 3, 0))
-  }
-
-  return odd
-}
-
-function generateBehaviour(assetIdx) {
-  const behaviour = { '@type': 'openlabel:Behaviour' }
-  const selectedFlags = new Set()
-  const motionCount = 1 + (assetIdx % 3)
-  let offset = 0
-
-  while (selectedFlags.size < motionCount) {
-    const motionDefinition = cycle(behaviourMotionDefinitions, assetIdx, 7, offset * 3)
-
-    if (!selectedFlags.has(motionDefinition.flag)) {
-      selectedFlags.add(motionDefinition.flag)
-      behaviour[`openlabel:${motionDefinition.flag}`] = true
-
-      if (motionDefinition.valueProperty) {
-        const value =
-          motionDefinition.mode === 'decimal'
-            ? decimalValue(1.5 + ((assetIdx + offset) % 8) * 0.6, 1)
-            : integerValue(25 + ((assetIdx + offset) % 8) * 10)
-        behaviour[`openlabel:${motionDefinition.valueProperty}`] = value
-      }
-    }
-
-    offset += 1
-  }
-
-  if (assetIdx % 5 === 0) {
-    behaviour['openlabel:BehaviourCommunication'] = enumRef(
-      cycle(BEHAVIOUR_COMM_OL, assetIdx, 3, 0)
-    )
-  }
-
-  return behaviour
-}
-
-function generateRoadUser(assetIdx) {
-  const roadUser = {
-    '@type': 'openlabel:RoadUser',
-    'openlabel:RoadUserVehicle': enumRef(cycle(VEHICLES_OL, assetIdx, 5, 2)),
-  }
-
-  if (assetIdx % 5 < 3) {
-    roadUser['openlabel:RoadUserHuman'] = enumRef(cycle(HUMANS_OL, assetIdx, 3, 1))
-  }
-
-  if (assetIdx % 20 === 7) {
-    roadUser['openlabel:RoadUserAnimal'] = true
-  }
-
-  return roadUser
-}
-
-/**
- * PAS-1883 ODD category (OpenLABEL V1-0-0 `OddScenery` / `OddEnvironment` /
- * `OddDynamicElements`) of an ODD attribute, by its attribute family.
- */
-const ODD_CATEGORY_PREFIXES = [
-  [
-    'OddEnvironment',
-    ['Weather', 'Rain', 'Day', 'Illumination', 'Connectivity', 'Particulates', 'Environment'],
-  ],
-  ['OddDynamicElements', ['Traffic', 'SubjectVehicle']],
-]
-
-function oddCategory(key) {
-  const local = key.replace(/^openlabel:/, '')
-  const name = local.charAt(0).toUpperCase() + local.slice(1)
-  for (const [category, prefixes] of ODD_CATEGORY_PREFIXES) {
-    if (prefixes.some((prefix) => name.startsWith(prefix))) return category
-  }
-  return 'OddScenery'
-}
-
-/**
- * Type an ODD node with every category its attributes belong to, plus the
- * categories the asset's `hasContent` union requires (scenario accepts
- * OddEnvironment / OddDynamicElements, hdmap accepts OddScenery). One node
- * per asset keeps all ODD attributes on the same value node.
- */
-function typeOdd(odd, required = []) {
-  const attributes = Object.fromEntries(Object.entries(odd).filter(([key]) => key !== '@type'))
-  const categories = new Set(required)
-  for (const key of Object.keys(attributes)) categories.add(oddCategory(key))
-  const order = ['OddScenery', 'OddEnvironment', 'OddDynamicElements']
-  return {
-    '@type': order.filter((c) => categories.has(c)).map((c) => `openlabel:${c}`),
-    ...attributes,
-  }
-}
-
-/**
- * Scenario OpenLABEL annotations as separate `hasContent` items, matching the
- * scenario `ContentOrDynamicAnnotationShape` union (OddEnvironment,
- * OddDynamicElements, Behaviour, RoadUser).
- */
-function generateTag(assetIdx) {
-  return [
-    typeOdd(generateOdd(assetIdx), ['OddEnvironment', 'OddDynamicElements']),
-    generateBehaviour(assetIdx),
-    generateRoadUser(assetIdx),
-  ]
-}
-
 function buildHdMapAsset(index, options = {}) {
-  const {
-    id,
-    locationOffset = 0,
-    profile = 'general',
-    referenced = false,
-    labelPrefix = '',
-  } = options
+  const { id, locationOffset = 0, referenced = false, labelPrefix = '' } = options
   const assetNumber = index + 1
   const provider = getProvider(index, referenced ? 2 : 0)
   const location = getLocation(index, locationOffset)
@@ -802,9 +414,7 @@ function buildHdMapAsset(index, options = {}) {
         'hdmap:formatType': formatType,
         'hdmap:version': formatVersion,
       },
-      'hdmap:hasContent': referenced
-        ? [content]
-        : [content, typeOdd(generateOdd(index, { profile, roadType }), ['OddScenery'])],
+      'hdmap:hasContent': [content],
       'hdmap:hasQuantity': {
         '@type': 'hdmap:Quantity',
         'hdmap:length': floatValue(12 + index * 0.8, 1),
@@ -849,19 +459,12 @@ function buildScenarioReferenceHdMap(index, scenarioLabel) {
     id: assetId,
     locationOffset: 1,
     referenced: true,
-    profile: 'general',
     labelPrefix: `Referenced HD Map for ${scenarioLabel}`,
   })
 }
 
 function buildEnvironmentModelAsset(index, options = {}) {
-  const {
-    id,
-    locationOffset = 0,
-    profile = 'scenery',
-    referenced = false,
-    labelPrefix = '',
-  } = options
+  const { id, locationOffset = 0, referenced = false, labelPrefix = '' } = options
   const assetNumber = index + 1
   const provider = getProvider(index, referenced ? 4 : 3)
   const location = getLocation(index, locationOffset)
@@ -891,9 +494,7 @@ function buildEnvironmentModelAsset(index, options = {}) {
         'environment-model:formatType': formatType,
         'environment-model:version': formatVersion,
       },
-      'environment-model:hasContent': referenced
-        ? [content]
-        : [content, typeOdd(generateOdd(index, { profile }))],
+      'environment-model:hasContent': [content],
       'environment-model:hasProject': {
         '@type': 'environment-model:Project',
         'environment-model:creationToolName': creationTool.name,
@@ -939,7 +540,6 @@ function buildScenarioReferenceEnvironmentModel(index, scenarioLabel) {
     id: assetId,
     locationOffset: 2,
     referenced: true,
-    profile: 'scenery',
     labelPrefix: `Referenced Environment Model for ${scenarioLabel}`,
   })
 }
@@ -983,7 +583,6 @@ function buildScenarioAsset(index) {
             'scenario:country': location.country.toLowerCase(),
             'scenario:criticalityFactors': cycle(criticalityFactors, index, 2, 0),
           },
-          ...generateTag(index),
         ],
         'scenario:hasQuantity': {
           '@type': 'scenario:Quantity',
@@ -1047,7 +646,6 @@ function buildOsiTraceAsset(index) {
           'ositrace:trafficDirection': getTrafficDirection(location.country, index),
           'ositrace:granularity': cycle(granularities, index, 2, 0),
         },
-        typeOdd(generateOdd(index, { profile: 'general' })),
       ],
       'ositrace:hasQuantity': {
         '@type': 'ositrace:Quantity',
@@ -1100,7 +698,6 @@ function buildSurfaceModelAsset(index) {
           '@type': 'surface-model:Content',
           'surface-model:contentType': contentType,
         },
-        typeOdd(generateOdd(index, { profile: 'surface' })),
       ],
       'surface-model:hasQuantity': {
         '@type': 'surface-model:Quantity',
@@ -1125,52 +722,6 @@ function buildSurfaceModelAsset(index) {
       'surface-model:hasGeoreference': createGeoreference(location, index, true),
     },
     'surface-model:hasManifest': createManifest(),
-  }
-}
-
-/** Number of standalone OpenLABEL tags (`sample-openlabel.jsonld`). */
-const STANDALONE_TAG_COUNT = 12
-
-/**
- * A standalone OpenLABEL `Tag` document — published on its own, not nested in
- * (nor referenced by) any ENVITED-X asset. Shaped by the OpenLABEL
- * `TagShape` (Tag → Odd / Behaviour / RoadUser). Every fourth tag is the
- * lane-keeping profile (managed motorway, straight, subject-vehicle speed,
- * driving motion) so the vocabulary-scoped search has deterministic matches;
- * the rest vary the same attributes so non-matches exist too.
- */
-function buildStandaloneOpenLabelTag(index) {
-  const laneKeeping = index % 4 === 0
-  const odd = {
-    '@type': 'openlabel:Odd',
-    'openlabel:DrivableAreaType': enumRef(
-      laneKeeping ? 'MotorwayManaged' : cycle(ROAD_TYPES_OL, index, 3, 4)
-    ),
-  }
-  if (laneKeeping || index % 4 === 1) odd['openlabel:HorizontalStraights'] = true
-  else odd['openlabel:HorizontalCurves'] = true
-  if (laneKeeping) {
-    odd['openlabel:SubjectVehicleSpeed'] = true
-    odd['openlabel:subjectVehicleSpeedValue'] = integerValue(80 + index * 5)
-  }
-
-  const behaviour = laneKeeping
-    ? {
-        '@type': 'openlabel:Behaviour',
-        'openlabel:MotionDrive': true,
-        'openlabel:motionDriveValue': integerValue(90 + index),
-      }
-    : generateBehaviour(index)
-
-  return {
-    '@id': `did:web:openlabel.example:Tag:standalone-${String(index + 1).padStart(3, '0')}`,
-    '@type': 'openlabel:Tag',
-    'rdfs:label': languageValue(
-      `Standalone OpenLABEL tag ${index + 1}${laneKeeping ? ' (lane keeping, managed motorway)' : ''}`
-    ),
-    'openlabel:Odd': odd,
-    'openlabel:Behaviour': behaviour,
-    'openlabel:RoadUser': generateRoadUser(index),
   }
 }
 
@@ -1206,20 +757,12 @@ function buildDocuments() {
     '@graph': Array.from({ length: 20 }, (_, index) => buildSurfaceModelAsset(index)),
   }
 
-  const openLabelDocument = {
-    '@context': contexts.openlabel,
-    '@graph': Array.from({ length: STANDALONE_TAG_COUNT }, (_, index) =>
-      buildStandaloneOpenLabelTag(index)
-    ),
-  }
-
   return [
     { fileName: 'sample-hdmap.jsonld', document: hdmapDocument },
     { fileName: 'sample-scenarios.jsonld', document: scenarioDocument },
     { fileName: 'sample-ositrace.jsonld', document: osiTraceDocument },
     { fileName: 'sample-environment-models.jsonld', document: environmentModelDocument },
     { fileName: 'sample-surface-models.jsonld', document: surfaceModelDocument },
-    { fileName: 'sample-openlabel.jsonld', document: openLabelDocument },
   ]
 }
 
@@ -1264,14 +807,4 @@ if (isMainModule) {
   })
 }
 
-export {
-  buildDocuments,
-  buildStandaloneOpenLabelTag,
-  contexts,
-  generateBehaviour,
-  generateOdd,
-  generateRoadUser,
-  generateTag,
-  main,
-  writeDocuments,
-}
+export { buildDocuments, contexts, main, writeDocuments }

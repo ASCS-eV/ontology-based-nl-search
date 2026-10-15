@@ -199,7 +199,8 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   // (searched standalone) next to the asset domains that use it.
   const knownDomains = await resolveKnownDomains(
     correctedDomains,
-    submission.slots.domains ?? [targetDomain]
+    submission.slots.domains ?? [targetDomain],
+    [...Object.keys(shaclResult.filters), ...Object.keys(rangeResult.ranges)]
   )
 
   // 4b-ii. A property declared by several domains keeps them all — the safe
