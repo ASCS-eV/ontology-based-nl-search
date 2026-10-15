@@ -144,6 +144,39 @@ describe('QueryRefinement', () => {
   })
 
   /**
+   * Regression: an IRI-valued filter chip showed the whole IRI. The chip shows
+   * the local name, but editing starts from — and keeps — the full IRI.
+   */
+  it('displays the local name of an IRI value but edits the full IRI', async () => {
+    const user = userEvent.setup()
+    const onRerun = vi.fn()
+    const iri = 'https://example.org/ontologies/MotorwayManaged'
+    render(
+      <QueryRefinement
+        slots={{ domains: [], filters: { DrivableAreaType: iri, Straight: 'true' }, ranges: {} }}
+        onRerun={onRerun}
+      />
+    )
+
+    const chip = screen.getByRole('button', { name: 'Edit MotorwayManaged' })
+    expect(chip).toHaveTextContent(/^MotorwayManaged$/)
+    expect(chip).toHaveAttribute('title', `Click to edit ${iri}`)
+    expect(screen.queryByText(iri)).not.toBeInTheDocument()
+
+    await user.click(chip)
+    expect(screen.getByRole('textbox', { name: /edit value for DrivableAreaType/i })).toHaveValue(
+      iri
+    )
+    await user.click(screen.getByRole('button', { name: 'Remove true filter' }))
+    await user.click(screen.getByRole('button', { name: /re-run with modified filters/i }))
+    expect(onRerun).toHaveBeenCalledWith({
+      domains: [],
+      filters: { DrivableAreaType: iri },
+      ranges: {},
+    })
+  })
+
+  /**
    * Ranges previously survived the round-trip only if a regex could recover
    * them from prose like ">= 3". They are structured now, edited as numbers.
    */
