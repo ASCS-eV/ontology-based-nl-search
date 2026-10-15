@@ -186,9 +186,23 @@ export async function compileSlotsWithTrace(
       )
   }
 
-  if ((!hasHierarchy && detectedDomains.length > 1) || standaloneDomains.length > 0) {
+  // A standalone document references nothing, so a reference — explicit, or
+  // the JOIN a parent→child hierarchy compiles to — is a restriction it cannot
+  // express: it then contributes no arm (the closed-unit rule of
+  // `compiler-standalone.ts`), and the asset domains compile as they would
+  // without it.
+  const referenceSlots = normalizeReferences(slots.references)
+  const standaloneArmDomains = hasHierarchy || referenceSlots.length > 0 ? [] : standaloneDomains
+
+  if (
+    (!hasHierarchy && detectedDomains.length > 1) ||
+    standaloneArmDomains.length > 0 ||
+    detectedDomains.length === 0
+  ) {
     // Peer domains (and/or standalone vocabulary arms): generate a UNION query
-    // that searches every requested domain independently.
+    // that searches every requested domain independently. A request for
+    // vocabularies alone whose arms cannot answer it compiles to an explicit
+    // empty result.
     return {
       sparql: await compilePeerDomainUnion(
         slots,
@@ -197,7 +211,7 @@ export async function compileSlotsWithTrace(
         rangesByDomain,
         registry,
         vocabIndex,
-        standaloneDomains
+        standaloneArmDomains
       ),
     }
   }
@@ -300,7 +314,6 @@ export async function compileSlotsWithTrace(
   // a resolved chain contributes its own breadcrumb plan. The distinct-asset
   // wrap (assembleQuery) keeps the LIMIT counting primary assets despite the
   // (now deeper) reference fan-out. See `emitReferenceNode`.
-  const referenceSlots = normalizeReferences(slots.references)
   for (let i = 0; i < referenceSlots.length; i++) {
     await emitReferenceNode(
       referenceSlots[i]!,
