@@ -122,6 +122,28 @@ describe('retrieveRelevantSchema — fragments, budgets, abort', () => {
     expect(primary.length).toBeLessThanOrEqual(5)
   })
 
+  /**
+   * Regression: a query naming a domain ("<Domain> only: ...") was routed by
+   * lexical score alone, so the named domain could lose to unrelated domains
+   * and its properties beyond the card budget were never shown — the model
+   * then reported existing properties as ontology gaps.
+   */
+  it('routes a domain the query names first and shows all of its cards', async () => {
+    const [domain, cards] = [...index.byDomain.entries()]
+      .filter(([d]) => /^[a-z0-9]+$/.test(d))
+      .sort((a, b) => b[1].length - a[1].length)[0]!
+    expect(cards.length).toBeGreaterThan(5)
+
+    const retrieved = await retrieveRelevantSchema(store, `${domain} only: something unrelated`, {
+      maxDomains: 1,
+      maxCards: 5,
+    })
+
+    expect(retrieved.domains[0]).toBe(domain)
+    const selected = new Set(retrieved.cards.map((c) => `${c.domain}|${c.kind}|${c.iri}`))
+    for (const c of cards) expect(selected.has(`${c.domain}|${c.kind}|${c.iri}`)).toBe(true)
+  })
+
   it('bounds the raw fragment payload; overflow properties survive as cards', async () => {
     const card = pickEnumCard()
     const unbounded = await retrieveRelevantSchema(store, card.labels[0]!)

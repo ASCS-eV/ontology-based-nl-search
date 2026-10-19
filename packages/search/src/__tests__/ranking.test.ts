@@ -4,7 +4,13 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { lexicalScore, rankCards, rankDomains, tokenize } from '../schema-index/ranking.js'
+import {
+  lexicalScore,
+  namedDomains,
+  rankCards,
+  rankDomains,
+  tokenize,
+} from '../schema-index/ranking.js'
 import type { DomainCard, TermCard } from '../schema-index/term-index.js'
 
 const card = (overrides: Partial<TermCard>): TermCard => ({
@@ -102,5 +108,64 @@ describe('rankDomains', () => {
 
   it('returns nothing for signal-free queries', () => {
     expect(rankDomains('xyzzy plugh', catalog)).toEqual([])
+  })
+})
+
+describe('identifier code-list damping', () => {
+  /**
+   * Regression: a card with thousands of enum values (media types) fuzzy-
+   * matched most words of any query and outranked every relevant card,
+   * pulling its domain into routing.
+   */
+  it('ranks a concept card above a huge code list that only fuzzy-matches', () => {
+    const query = 'open system approaches car'
+    const codeList = card({
+      domain: 'meta',
+      iri: 'https://example.org/meta/mediaTypes',
+      labels: ['media types'],
+      allowedValues: [
+        'application/opendocument',
+        'application/systems',
+        'application/approach',
+        'model/cartomobile',
+        ...Array.from({ length: 2000 }, (_, i) => `application/x-${i}`),
+      ],
+    })
+    const concept = card({
+      iri: 'https://example.org/alpha/vehicle',
+      labels: ['road user vehicle'],
+      allowedValues: ['car', 'truck', 'bus'],
+    })
+    const ranked = rankCards(query, [codeList, concept])
+    expect(ranked[0]!.card.iri).toBe(concept.iri)
+  })
+
+  it('leaves the value weight of a normal-sized enum untouched', () => {
+    const small = card({ labels: ['road types'], allowedValues: ['motorway', 'rural'] })
+    expect(lexicalScore('motorway', small)).toBeCloseTo(0.7)
+  })
+})
+
+describe('namedDomains', () => {
+  const domains = ['alpha-beta', 'gamma', 'gammadelta', 'hdmap']
+
+  it('matches a product-style name without splitting it on camelCase', () => {
+    expect(namedDomains('Gamma only: something', domains)).toEqual(['gamma'])
+  })
+
+  it('matches a hyphenated id written as two words or joined', () => {
+    expect(namedDomains('find alpha beta assets', domains)).toEqual(['alpha-beta'])
+    expect(namedDomains('find AlphaBeta assets', domains)).toEqual(['alpha-beta'])
+    expect(namedDomains('find alpha-beta assets', domains)).toEqual(['alpha-beta'])
+    expect(namedDomains('hd map with lanes', domains)).toEqual(['hdmap'])
+  })
+
+  it('keeps only the longer id when one named id prefixes another', () => {
+    expect(namedDomains('gamma delta tags', domains)).toEqual(['gammadelta'])
+  })
+
+  it('returns domains in query order and nothing for unnamed domains', () => {
+    expect(namedDomains('hdmap and gamma', domains)).toEqual(['hdmap', 'gamma'])
+    expect(namedDomains('motorway at night', domains)).toEqual([])
   })
 })

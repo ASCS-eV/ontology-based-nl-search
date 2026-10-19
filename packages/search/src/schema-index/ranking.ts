@@ -34,6 +34,17 @@ const LABEL_WEIGHT = 1
 const VALUE_WEIGHT = 0.7
 const DESCRIPTION_WEIGHT = 0.4
 
+/**
+ * Enum size above which the value field is damped. A closed list of a few
+ * dozen values names concepts ("motorway", "pedestrian"); a list of hundreds
+ * or thousands is an identifier code list (media types, country codes) whose
+ * tokens fuzzy-match nearly any query word. Undamped, such a card outranks
+ * every genuinely relevant one and drags its domain into routing. The value
+ * weight scales by `sqrt(LARGE_VALUE_LIST / n)` past this size — inverse-
+ * frequency style, so the evidence of a value hit shrinks with the list.
+ */
+const LARGE_VALUE_LIST = 50
+
 /** Minimum trigram Dice similarity that still counts as a fuzzy match. */
 const MIN_TRIGRAM_SIMILARITY = 0.5
 /** Score awarded to a prefix (non-exact) token match. */
@@ -64,9 +75,48 @@ const STOPWORDS = new Set([
 export function lexicalScore(query: string, card: TermCard): number {
   return scoreFields(tokenize(query), [
     { tokens: card.labels.flatMap(tokenize), weight: LABEL_WEIGHT },
-    { tokens: (card.allowedValues ?? []).flatMap(tokenize), weight: VALUE_WEIGHT },
+    { tokens: (card.allowedValues ?? []).flatMap(tokenize), weight: valueWeight(card) },
     { tokens: tokenize(card.description ?? ''), weight: DESCRIPTION_WEIGHT },
   ])
+}
+
+/** Value-field weight, damped for identifier-sized code lists (see LARGE_VALUE_LIST). */
+function valueWeight(card: TermCard): number {
+  const n = card.allowedValues?.length ?? 0
+  return n > LARGE_VALUE_LIST ? VALUE_WEIGHT * Math.sqrt(LARGE_VALUE_LIST / n) : VALUE_WEIGHT
+}
+
+/**
+ * Domains the query names verbatim, in query order. A domain id matches
+ * when its alphanumeric form equals one query word or two adjacent words
+ * joined (`"OpenLabel"` → `openlabel`, `"openlabel v2"` → `openlabel-v2`,
+ * `"hd map"` → `hdmap`). Words are split on non-alphanumerics only — not
+ * on camelCase, which `tokenize` does and which would break a product name
+ * like "OpenLabel" into generic words. When one named domain's id is the
+ * prefix of another's that also matched, only the longer one is kept, so
+ * "openlabel v2" does not also pin `openlabel`.
+ */
+export function namedDomains(query: string, domains: readonly string[]): string[] {
+  const words = query
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+  const candidates = new Map<string, number>()
+  words.forEach((word, i) => {
+    if (!candidates.has(word)) candidates.set(word, i)
+    const next = words[i + 1]
+    if (next !== undefined && !candidates.has(word + next)) candidates.set(word + next, i)
+  })
+  const matched = domains
+    .map((domain) => ({ domain, key: domain.toLowerCase().replace(/[^a-z0-9]/g, '') }))
+    .filter(({ key }) => key.length > 0 && candidates.has(key))
+  return matched
+    .filter(({ key }) => !matched.some((m) => m.key !== key && m.key.startsWith(key)))
+    .sort(
+      (a, b) =>
+        (candidates.get(a.key) ?? 0) - (candidates.get(b.key) ?? 0) || a.key.localeCompare(b.key)
+    )
+    .map(({ domain }) => domain)
 }
 
 /** Rank cards by lexical relevance; ties break deterministically by (domain, iri). */

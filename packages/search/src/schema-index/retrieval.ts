@@ -19,7 +19,7 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { type EmbeddingProvider, lexicalOnlyProvider } from './embedding.js'
 import { extractShaclFragments, type ShaclFragment } from './fragment-extractor.js'
-import { rankCards, rankDomains, type ScoredCard } from './ranking.js'
+import { namedDomains, rankCards, rankDomains, type ScoredCard } from './ranking.js'
 import { buildTermIndex, type DomainCard, type TermCard } from './term-index.js'
 
 export interface RetrievalOptions {
@@ -115,10 +115,14 @@ export async function retrieveRelevantSchema(
     const existing = domainSignal.get(card.domain) ?? 0
     if (score > existing) domainSignal.set(card.domain, score)
   }
-  const domains = [...domainSignal.entries()]
+  // A domain the query names verbatim is an explicit scope, not a lexical
+  // hint: it is routed first and never displaced by the budget.
+  const named = namedDomains(query, [...index.byDomain.keys()])
+  const ranked = [...domainSignal.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, maxDomains)
     .map(([domain]) => domain)
+    .filter((domain) => !named.includes(domain))
+  const domains = [...named, ...ranked].slice(0, Math.max(maxDomains, named.length))
 
   const confidence = Math.min(1, Math.max(domainRanking[0]?.score ?? 0, cardRanking[0]?.score ?? 0))
 
@@ -138,6 +142,14 @@ export async function retrieveRelevantSchema(
   for (const { card } of cardRanking) {
     if (selected.length >= maxCards) break
     if (routed.has(card.domain)) push(card)
+  }
+  // A named domain is shown whole, outside the card budget: the user scoped
+  // the search to it, so every property it declares must be visible —
+  // otherwise the model reports a property it never saw as an ontology gap.
+  // Cards beyond the fragment budget degrade to condensed lines, so the
+  // prompt stays bounded.
+  for (const domain of named) {
+    for (const card of index.byDomain.get(domain) ?? []) push(card)
   }
   for (const domain of domains) {
     if (selected.length >= maxCards) break
