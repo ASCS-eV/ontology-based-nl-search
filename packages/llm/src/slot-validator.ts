@@ -33,6 +33,7 @@ import {
   findBestMatch,
   getSuggestions,
   MAX_PROPERTY_MATCH_DISTANCE,
+  MAX_SUGGESTION_POOL_SIZE,
   MAX_SUGGESTIONS,
   MIN_SUGGESTION_SIMILARITY,
   suggestionScore,
@@ -370,6 +371,7 @@ function enrichGapWithSuggestions(
   const allSuggestions: { value: string; score: number; property: string }[] = []
 
   for (const [propName, { allowedValues }] of allowedIndex) {
+    if (allowedValues.length > MAX_SUGGESTION_POOL_SIZE) continue
     for (const allowed of allowedValues) {
       const score = suggestionScore(gap.term ?? '', allowed)
       if (score >= MIN_SUGGESTION_SIMILARITY) {

@@ -477,6 +477,88 @@ describe('validateSlots', () => {
   })
 
   /**
+   * Regression: two-letter codes (ISO country/jurisdiction lists) were offered
+   * as "related concepts" because the gap word "its" stems to "it" and
+   * contains the code `IT`, and "stops" contains `ST`.
+   */
+  it('never suggests a two-letter code that only substrings a gap word', () => {
+    const vocabulary: SchemaVocabulary = {
+      ...testVocabulary,
+      enumProperties: [
+        ...testVocabulary.enumProperties,
+        {
+          localName: 'jurisdiction',
+          domain: 'service',
+          iri: 'https://example.org/service/jurisdiction',
+          label: 'jurisdiction',
+          description: '',
+          allowedValues: ['IT', 'IS', 'ST', 'TO'],
+        },
+      ],
+    }
+    const response: LlmStructuredResponse = {
+      interpretation: { summary: 'test', mappedTerms: [] },
+      gaps: [{ term: 'approaches its path and stops', reason: 'Not found' }],
+      sparql: 'SELECT * WHERE { }',
+    }
+    const suggestions = validateSlots(response, vocabulary).gaps[0]!.suggestions ?? []
+    expect(suggestions.some((s) => s.includes('(jurisdiction)'))).toBe(false)
+  })
+
+  it('still suggests a code when the gap term is exactly that code', () => {
+    const vocabulary: SchemaVocabulary = {
+      ...testVocabulary,
+      enumProperties: [
+        {
+          localName: 'jurisdiction',
+          domain: 'service',
+          iri: 'https://example.org/service/jurisdiction',
+          label: 'jurisdiction',
+          description: '',
+          allowedValues: ['IT', 'IS'],
+        },
+      ],
+    }
+    const response: LlmStructuredResponse = {
+      interpretation: { summary: 'test', mappedTerms: [] },
+      gaps: [{ term: 'it', reason: 'Not found' }],
+      sparql: 'SELECT * WHERE { }',
+    }
+    expect(validateSlots(response, vocabulary).gaps[0]!.suggestions).toEqual(['IT (jurisdiction)'])
+  })
+
+  /**
+   * Regression: an identifier code list with thousands of entries (media
+   * types) always had some value fuzzy-matching some word of a free-text gap
+   * ("audible" -> "audio/L8"), drowning the real concept suggestions.
+   */
+  it('excludes identifier-sized code lists from gap suggestions', () => {
+    const codes = Array.from({ length: 300 }, (_, i) => `audio/L${i}`)
+    const vocabulary: SchemaVocabulary = {
+      ...testVocabulary,
+      enumProperties: [
+        ...testVocabulary.enumProperties,
+        {
+          localName: 'mediaTypes',
+          domain: 'service',
+          iri: 'https://example.org/service/mediaTypes',
+          label: 'media types',
+          description: '',
+          allowedValues: codes,
+        },
+      ],
+    }
+    const response: LlmStructuredResponse = {
+      interpretation: { summary: 'test', mappedTerms: [] },
+      gaps: [{ term: 'audio overtaking', reason: 'Not found' }],
+      sparql: 'SELECT * WHERE { }',
+    }
+    const suggestions = validateSlots(response, vocabulary).gaps[0]!.suggestions ?? []
+    expect(suggestions.some((s) => s.includes('(mediaTypes)'))).toBe(false)
+    expect(suggestions.some((s) => s.includes('overtaking'))).toBe(true)
+  })
+
+  /**
    * Honest gap reporting: schema-limit gaps (e.g. dropped references)
    * carry `suggestions: []` as a sentinel — the enricher must respect
    * it and NOT append "related concepts" noise. Adding suggestions to

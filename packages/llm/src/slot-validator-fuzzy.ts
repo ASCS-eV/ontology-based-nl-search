@@ -27,6 +27,17 @@ const FUZZY_SIMILARITY_THRESHOLD = 0.8
  */
 export const MAX_PROPERTY_MATCH_DISTANCE = 2
 
+/** Shortest gap token / candidate value that takes part in fuzzy suggestion matching. */
+const MIN_SUGGESTION_TOKEN_LENGTH = 3
+
+/**
+ * Enum size above which a property is an identifier code list (media types,
+ * country codes) rather than a concept vocabulary. Its values are not offered
+ * as "related concept" suggestions for a free-text gap: with thousands of
+ * entries, some value always fuzzy-matches some word of the gap.
+ */
+export const MAX_SUGGESTION_POOL_SIZE = 200
+
 /** Maximum suggestions to generate per gap */
 export const MAX_SUGGESTIONS = 5
 
@@ -105,10 +116,17 @@ const SUGGESTION_STOPWORDS = new Set([
  */
 export function suggestionScore(gapTerm: string, candidate: string): number {
   const candLower = candidate.toLowerCase()
+  // A one- or two-character candidate is a code (ISO country, language), not
+  // a concept label: containment and edit distance against it are noise —
+  // "its" stems to "it" and contains the code `IT`, "stops" contains `ST`.
+  // Such a value is suggested only when the gap term IS that code.
+  if (candLower.length < MIN_SUGGESTION_TOKEN_LENGTH) {
+    return gapTerm.trim().toLowerCase() === candLower ? 1 : 0
+  }
   const tokens = gapTerm
     .toLowerCase()
     .split(/[^a-z0-9]+/)
-    .filter((t) => t.length >= 3 && !SUGGESTION_STOPWORDS.has(t))
+    .filter((t) => t.length >= MIN_SUGGESTION_TOKEN_LENGTH && !SUGGESTION_STOPWORDS.has(t))
   if (tokens.length === 0) return similarity(gapTerm.toLowerCase(), candLower)
   let best = 0
   for (const tok of tokens) {
