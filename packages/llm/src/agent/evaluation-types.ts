@@ -50,7 +50,8 @@ export function summarizeRetrieval(retrieved: RetrievedSchema): EvaluationRetrie
         sum +
         domain.domain.length +
         domain.classLabels.join(' ').length +
-        domain.sampleTerms.join(' ').length,
+        domain.sampleTerms.join(' ').length +
+        domain.propertyNames.join(' ').length,
       0
     )
 

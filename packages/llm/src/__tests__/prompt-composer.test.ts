@@ -3,7 +3,11 @@
  * prompts, and the no-user-text-in-system-prompt guarantee.
  */
 import type { RetrievedSchema } from '@ontology-search/search'
-import { buildTermIndex, getInitializedStore } from '@ontology-search/search'
+import {
+  buildTermIndex,
+  getInitializedStore,
+  retrieveRelevantSchema,
+} from '@ontology-search/search'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { buildRequestPrompt } from '../agent/agent-context.js'
@@ -17,8 +21,18 @@ const emptyRetrieved: RetrievedSchema = {
   fragments: [],
   confidence: 0,
   catalog: [
-    { domain: 'alpha', classLabels: ['Alpha Asset'], sampleTerms: ['speedLimit', 'country'] },
-    { domain: 'beta', classLabels: ['Beta Asset'], sampleTerms: ['sensorType'] },
+    {
+      domain: 'alpha',
+      classLabels: ['Alpha Asset'],
+      sampleTerms: ['speedLimit', 'country'],
+      propertyNames: ['speedLimit', 'country'],
+    },
+    {
+      domain: 'beta',
+      classLabels: ['Beta Asset'],
+      sampleTerms: ['sensorType'],
+      propertyNames: ['sensorType'],
+    },
   ],
 }
 
@@ -137,6 +151,100 @@ describe('composePrompt', () => {
     expect(prompt).toContain('- beta (Beta Asset) — e.g. sensorType')
     expect(prompt).toContain('ontology gap')
   })
+
+  /**
+   * Regression: card selection is bounded, so a domain with more properties
+   * than the budget shows only its top-ranked ones. Without naming the rest
+   * the model cannot tell "absent from the ontology" from "crowded out of
+   * this selection", and reports existing properties as ontology gaps. The
+   * remainder rides as names only, so the fix is bounded by a few tokens per
+   * property rather than by raising the card budget.
+   */
+  it('names a routed domain\u2019s remaining properties when the budget leaves them out', () => {
+    const retrieved: RetrievedSchema = {
+      ...emptyRetrieved,
+      domains: ['alpha'],
+      catalog: [
+        {
+          domain: 'alpha',
+          classLabels: ['Alpha Asset'],
+          sampleTerms: ['speedLimit'],
+          propertyNames: ['speedLimit', 'country', 'surfaceType'],
+        },
+      ],
+      cards: [
+        {
+          kind: 'property',
+          iri: 'urn:x:speedLimit',
+          localName: 'speedLimit',
+          domain: 'alpha',
+          labels: ['speed limit'],
+        },
+      ],
+    }
+    const prompt = composePrompt(buildStaticCore(), retrieved)
+
+    expect(prompt).toContain('Also defined in this domain, not retrieved for this query:')
+    expect(prompt).toContain('country, surfaceType')
+    // The selected property is already shown in full; it is not repeated.
+    expect(prompt).not.toMatch(/not retrieved for this query: [^\n]*speedLimit/)
+  })
+
+  it('omits the remainder line when the selection already covers the domain', () => {
+    const retrieved: RetrievedSchema = {
+      ...emptyRetrieved,
+      domains: ['alpha'],
+      catalog: [
+        {
+          domain: 'alpha',
+          classLabels: ['Alpha Asset'],
+          sampleTerms: ['speedLimit'],
+          propertyNames: ['speedLimit'],
+        },
+      ],
+      cards: [
+        {
+          kind: 'property',
+          iri: 'urn:x:speedLimit',
+          localName: 'speedLimit',
+          domain: 'alpha',
+          labels: ['speed limit'],
+        },
+      ],
+    }
+    expect(composePrompt(buildStaticCore(), retrieved)).not.toContain('Also defined in this domain')
+  })
+
+  it('does not name remaining properties of domains the query did not route to', () => {
+    const retrieved: RetrievedSchema = {
+      ...emptyRetrieved,
+      domains: ['alpha'],
+      catalog: [
+        {
+          domain: 'alpha',
+          classLabels: ['Alpha Asset'],
+          sampleTerms: [],
+          propertyNames: ['speedLimit'],
+        },
+        {
+          domain: 'beta',
+          classLabels: ['Beta Asset'],
+          sampleTerms: [],
+          propertyNames: ['sensorType', 'manufacturer'],
+        },
+      ],
+      cards: [
+        {
+          kind: 'property',
+          iri: 'urn:x:speedLimit',
+          localName: 'speedLimit',
+          domain: 'alpha',
+          labels: ['speed limit'],
+        },
+      ],
+    }
+    expect(composePrompt(buildStaticCore(), retrieved)).not.toContain('manufacturer')
+  })
 })
 
 describe('buildRequestPrompt (integration)', () => {
@@ -173,4 +281,35 @@ describe('buildRequestPrompt (integration)', () => {
     expect(retrieved.confidence).toBeGreaterThan(0)
     expect(retrieved.domains).toContain(card!.domain)
   })
+
+  /**
+   * The property that makes the bounded card budget safe: however few of a
+   * routed domain's properties fit as cards, EVERY one of them is named
+   * somewhere in the prompt. "Absent from the prompt" therefore means
+   * "absent from the ontology", which is exactly what honest gap reporting
+   * requires — and it holds without letting the expensive payload grow with
+   * the ontology.
+   */
+  it('names every property of every routed domain, however small the card budget', async () => {
+    const store = await getInitializedStore()
+    const retrieved = await retrieveRelevantSchema(store, 'scenarios with a cut-in manoeuvre', {
+      maxCards: 5,
+    })
+    const tail = composeRetrievedSections(retrieved)
+    expect(retrieved.domains.length).toBeGreaterThan(0)
+
+    for (const domain of retrieved.domains) {
+      const names = retrieved.catalog.find((entry) => entry.domain === domain)?.propertyNames ?? []
+      expect(names.length, domain).toBeGreaterThan(0)
+      const carded = new Set(
+        retrieved.cards
+          .filter((c) => c.domain === domain && c.kind === 'property')
+          .map((c) => c.localName)
+      )
+      // The budget really does hide most of a domain this size...
+      expect(carded.size, domain).toBeLessThan(names.length)
+      // ...and the prompt names them all anyway.
+      expect(names.filter((name) => !tail.includes(name))).toEqual([])
+    }
+  }, 120_000)
 })

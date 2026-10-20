@@ -559,6 +559,39 @@ describe('validateSlots', () => {
   })
 
   /**
+   * Regression: damping must dilute *resemblance*, not *identity*. Weighting
+   * every candidate by pool size made a large enough vocabulary completely
+   * unsuggestable — the raw score is capped at 1, so once the weight fell
+   * below the similarity floor no value could pass, including a value the
+   * user had typed verbatim. The user naming an exact vocabulary member is
+   * unambiguous evidence however many siblings it has.
+   */
+  it('still suggests an exact value match from an identifier-sized code list', () => {
+    const codes = Array.from({ length: 300 }, (_, i) => `audio/L${i}`)
+    const vocabulary: SchemaVocabulary = {
+      ...testVocabulary,
+      enumProperties: [
+        ...testVocabulary.enumProperties,
+        {
+          localName: 'mediaTypes',
+          domain: 'service',
+          iri: 'https://example.org/service/mediaTypes',
+          label: 'media types',
+          description: '',
+          allowedValues: codes,
+        },
+      ],
+    }
+    const response: LlmStructuredResponse = {
+      interpretation: { summary: 'test', mappedTerms: [] },
+      gaps: [{ term: 'audio/L7', reason: 'Not found' }],
+      sparql: 'SELECT * WHERE { }',
+    }
+    const suggestions = validateSlots(response, vocabulary).gaps[0]!.suggestions ?? []
+    expect(suggestions).toContain('audio/L7 (mediaTypes)')
+  })
+
+  /**
    * Honest gap reporting: schema-limit gaps (e.g. dropped references)
    * carry `suggestions: []` as a sentinel — the enricher must respect
    * it and NOT append "related concepts" noise. Adding suggestions to

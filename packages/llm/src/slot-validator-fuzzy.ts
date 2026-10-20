@@ -31,12 +31,13 @@ export const MAX_PROPERTY_MATCH_DISTANCE = 2
 const MIN_SUGGESTION_TOKEN_LENGTH = 3
 
 /**
- * Enum size above which a property is an identifier code list (media types,
- * country codes) rather than a concept vocabulary. Its values are not offered
- * as "related concept" suggestions for a free-text gap: with thousands of
- * entries, some value always fuzzy-matches some word of the gap.
+ * BM25 length-normalization parameter for suggestion-pool evidence
+ * weighting. 0 = ignore pool size, 1 = fully proportional; 0.75 is the
+ * standard IR default (Robertson & Zaragoza, *The Probabilistic Relevance
+ * Framework: BM25 and Beyond*, §3.2). A retrieval-model constant, not an
+ * ontology-fitted one.
  */
-export const MAX_SUGGESTION_POOL_SIZE = 200
+export const POOL_NORM_B = 0.75
 
 /** Maximum suggestions to generate per gap */
 export const MAX_SUGGESTIONS = 5

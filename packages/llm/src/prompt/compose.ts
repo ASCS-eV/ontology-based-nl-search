@@ -51,21 +51,35 @@ export function composeRetrievedSections(retrieved: RetrievedSchema): string {
   const covered = new Set(retrieved.fragments.flatMap((f) => f.propertyIris))
   const fragmentsByDomain = groupFragments(retrieved)
   const uncoveredByDomain = groupCards(retrieved, (card) => !covered.has(card.iri))
+  const rostersByDomain = rosters(retrieved)
 
-  for (const domain of new Set([...fragmentsByDomain.keys(), ...uncoveredByDomain.keys()])) {
-    sections.push(`### ${formatDomainHeader(domain)} domain\n`)
+  const domains = new Set([
+    ...retrieved.domains,
+    ...fragmentsByDomain.keys(),
+    ...uncoveredByDomain.keys(),
+  ])
+  for (const domain of domains) {
     const fragments = fragmentsByDomain.get(domain) ?? []
+    const uncovered = uncoveredByDomain.get(domain) ?? []
+    const roster = rostersByDomain.get(domain) ?? []
+    if (fragments.length === 0 && uncovered.length === 0 && roster.length === 0) continue
+
+    sections.push(`### ${formatDomainHeader(domain)} domain\n`)
     if (fragments.length > 0) {
       sections.push('```turtle')
       sections.push(fragments.map((f) => f.turtle.trim()).join('\n\n'))
       sections.push('```\n')
     }
-    const uncovered = uncoveredByDomain.get(domain) ?? []
     if (uncovered.length > 0) {
       if (fragments.length > 0) sections.push('Further properties of this domain (condensed):\n')
       sections.push('```')
       sections.push(renderDistilledCards(uncovered))
       sections.push('```\n')
+    }
+    if (roster.length > 0) {
+      sections.push(
+        `Also defined in this domain, not retrieved for this query: ${roster.join(', ')}\n`
+      )
     }
   }
 
@@ -113,6 +127,42 @@ function groupCards(
   }
   for (const [domain, cards] of groups) if (cards.length === 0) groups.delete(domain)
   return groups
+}
+
+/**
+ * Per-routed-domain list of property names the card budget left out.
+ *
+ * Selection is bounded, so a domain with more properties than the budget
+ * shows only its top-ranked ones. Without this the model cannot tell
+ * "absent from the ontology" from "crowded out of this query's selection",
+ * and reports existing properties as ontology gaps — the same honesty
+ * problem the always-attached catalog solves between domains, solved here
+ * within one.
+ *
+ * Deliberately names only, and deliberately only for the domains actually
+ * routed: it is complete where completeness changes an answer, and costs a
+ * few tokens per property rather than a card's worth, so it stays bounded
+ * for an ontology of any size. Raising the card budget instead would scale
+ * the expensive payload with the ontology; this scales the cheap one.
+ */
+function rosters(retrieved: RetrievedSchema): Map<string, string[]> {
+  const catalogByDomain = new Map(retrieved.catalog.map((entry) => [entry.domain, entry]))
+  const shown = new Map<string, Set<string>>()
+  for (const card of retrieved.cards) {
+    if (card.kind !== 'property') continue
+    const names = shown.get(card.domain) ?? new Set<string>()
+    names.add(card.localName)
+    shown.set(card.domain, names)
+  }
+
+  const result = new Map<string, string[]>()
+  for (const domain of retrieved.domains) {
+    const names = catalogByDomain.get(domain)?.propertyNames ?? []
+    const rendered = shown.get(domain) ?? new Set<string>()
+    const remaining = [...new Set(names)].filter((name) => !rendered.has(name))
+    if (remaining.length > 0) result.set(domain, remaining)
+  }
+  return result
 }
 
 /**

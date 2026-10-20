@@ -39,7 +39,14 @@ vi.mock('../agent-context.js', () => ({
       cards: [{ iri: 'urn:roadTypes' }],
       fragments: [{ turtle: 'abc' }],
       confidence: 0.9,
-      catalog: [{ domain: 'hdmap', classLabels: ['HD Map'], sampleTerms: ['motorway'] }],
+      catalog: [
+        {
+          domain: 'hdmap',
+          classLabels: ['HD Map'],
+          sampleTerms: ['motorway'],
+          propertyNames: ['motorway'],
+        },
+      ],
     },
   }),
   warmupAgentContext: vi.fn(),
@@ -105,7 +112,7 @@ describe('evaluation observer', () => {
       finishReason: 'tool-calls',
       promptChars: 22,
       missingSubmitFallback: false,
-      retrieval: { domains: ['hdmap'], contextChars: 22 },
+      retrieval: { domains: ['hdmap'], contextChars: 30 },
       usage: { inputTokens: 100, outputTokens: 25, totalTokens: 125 },
     })
     expect(result.trace.toolCalls.map((call) => call.toolName)).toEqual([
