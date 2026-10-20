@@ -226,11 +226,22 @@ describe('joined-token routing', () => {
       sampleTerms: ['temperature'],
       propertyNames: ['temperature'],
     },
+    {
+      domain: 'carpet',
+      classLabels: ['Floor Covering'],
+      sampleTerms: ['pileHeight'],
+      propertyNames: ['pileHeight'],
+    },
   ]
   const scores = (query: string): Map<string, number> =>
     new Map(rankDomains(query, catalog).map((s) => [s.domain.domain, s.score]))
 
   it('matches an id written as adjacent words', () => {
+    // The contract is the score, not just the order: without span joining
+    // `graph` matches nothing in `roadgraph` and the query scores strictly
+    // lower, whatever the rest of the catalog happens to do.
+    const unjoined = scores('road, graph with lanes').get('roadgraph') ?? 0
+    expect(scores('road graph with lanes').get('roadgraph') ?? 0).toBeGreaterThan(unjoined)
     expect(rankDomains('road graph with lanes', catalog)[0]?.domain.domain).toBe('roadgraph')
   })
 
@@ -239,17 +250,26 @@ describe('joined-token routing', () => {
       const ranked = scores(query)
       expect(ranked.get('gammalabel-v2')).toBeGreaterThan(ranked.get('gammalabel') ?? 0)
     }
+    // Only the joined span can read `label` as part of the id, so dividing
+    // the two words strictly lowers the score it would otherwise reach.
+    expect(scores('gamma label v2 scenarios').get('gammalabel-v2') ?? 0).toBeGreaterThan(
+      scores('gamma, label v2 scenarios').get('gammalabel-v2') ?? 0
+    )
   })
 
   it('routes identically however the user capitalizes a product name', () => {
     // The per-token mean differs with the token count ("GammaLabel" is two
-    // tokens, "gammalabel" one), so the contract is the routing order, not
-    // the absolute score. Before span joining the split spelling matched
-    // only as a weak prefix and could reorder the catalog.
+    // tokens, "gammalabel" one), so the cross-spelling contract is the
+    // routing order. The score contract is between the two *split*
+    // spellings: the camelCase cut is this tokenizer's own, so rejoining it
+    // is worth strictly more than guessing that two written words are one.
     const order = (query: string): string[] =>
       rankDomains(query, catalog).map((s) => s.domain.domain)
     expect(order('GammaLabel motion stop')).toEqual(order('gammalabel motion stop'))
     expect(order('GammaLabel motion stop')[0]).toBe('gammalabel-v2')
+    expect(scores('GammaLabel motion stop').get('gammalabel-v2') ?? 0).toBeGreaterThan(
+      scores('gamma label motion stop').get('gammalabel-v2') ?? 0
+    )
   })
 
   it('joins nothing for ordinary prose', () => {
@@ -271,15 +291,66 @@ describe('joined-token routing', () => {
     expect(bridged).toBeLessThan(exact)
   })
 
-  it('never joins across a separator that divides names', () => {
-    // A comma, slash, or semicolon separates two names; only whitespace and
-    // the identifier joiners keep a span together.
+  /**
+   * Regression: a span is credited at the weakest seam it crosses. The
+   * three grades, and the strict ordering between them, are the whole
+   * contract — binary adjacency collapses the first two, and no joining at
+   * all collapses the last two.
+   */
+  it('grades a join by the seam it crosses', () => {
     const exact = scores('roadgraph').get('roadgraph') ?? 0
-    for (const query of ['road, graph', 'road/graph', 'road; graph']) {
-      expect(scores(query).get('roadgraph') ?? 0).toBeLessThan(exact)
-    }
-    for (const query of ['road graph', 'road-graph', 'road_graph']) {
+    const divided = scores('road, graph').get('roadgraph') ?? 0
+    for (const query of ['road-graph', 'road_graph']) {
       expect(scores(query).get('roadgraph')).toBe(exact)
     }
+    for (const query of ['road graph', 'road  graph']) {
+      const guessed = scores(query).get('roadgraph') ?? 0
+      expect(guessed).toBeLessThan(exact)
+      expect(guessed).toBeGreaterThan(divided)
+    }
+    for (const query of ['road/graph', 'road; graph']) {
+      expect(scores(query).get('roadgraph') ?? 0).toBe(divided)
+    }
+  })
+
+  /**
+   * Regression: the bigger the ontology, the more compound identifiers it
+   * has, so adjacent word pairs concatenate into one by accident. Crediting
+   * that as *exact* lets an unrelated domain tie or outrank the one the
+   * user named; crediting it as an approximation keeps the recall without
+   * the false certainty. Precision must not decay as the ontology grows.
+   */
+  it('never claims an exact match for two words the user wrote apart', () => {
+    expect(scores('car pet').get('carpet') ?? 0).toBeLessThan(scores('carpet').get('carpet') ?? 0)
+  })
+})
+
+describe('rankDomains tie-breaking', () => {
+  /**
+   * Regression: two domains can score identically because one is *named* by
+   * the query word and the other merely *contains* it as a class label. The
+   * named one is what the user asked for, so it must win — and it must win
+   * even when the alphabetical fallback would have put the other first,
+   * which is the only arrangement that detects a missing name tiebreak.
+   */
+  it('prefers the domain the query names when total scores tie', () => {
+    const catalog: DomainCard[] = [
+      {
+        domain: 'alpha',
+        classLabels: ['Weather'],
+        sampleTerms: ['xylophone'],
+        propertyNames: ['xylophone'],
+      },
+      {
+        domain: 'weather',
+        classLabels: ['Beta'],
+        sampleTerms: ['zeppelin'],
+        propertyNames: ['zeppelin'],
+      },
+    ]
+    const ranked = rankDomains('weather', catalog)
+    expect(ranked[0]?.score).toBe(ranked[1]?.score)
+    expect(ranked[0]?.domain.domain).toBe('weather')
+    expect(ranked[1]?.nameScore).toBe(0)
   })
 })

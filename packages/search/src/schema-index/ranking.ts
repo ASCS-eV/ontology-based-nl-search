@@ -218,33 +218,53 @@ export function tokenize(text: string): string[] {
 }
 
 /**
- * Query tokens plus, for each one, whether it was *directly* adjacent to its
- * predecessor in the source text.
+ * Query tokens plus, for each one, how strongly it is bound to its
+ * predecessor in the source text — which decides whether the two may be
+ * joined into one span, and what such a join is worth.
  *
- * Only directly adjacent tokens may be joined into a span. Tokenization drops
- * function words and separates on punctuation, so without this the dropped
- * material would close up and make unrelated words look like one identifier:
- * "a car and a pet" would collapse to `car`+`pet` and exact-match a property
- * called `carpet`. Adjacency is recorded before anything is dropped, so the
- * span matcher can only ever join what the user actually wrote as one name.
+ * Tokenization drops function words and splits on punctuation, whitespace
+ * and case boundaries. Recording the *original* separator before anything
+ * is dropped is what keeps the span matcher honest: it can never close up
+ * discarded material into an identifier the user never wrote ("a car and a
+ * pet" must not exact-match a property called `carpet`), and it can
+ * distinguish undoing its own split from guessing that two written words
+ * name one thing.
  */
 interface QueryTokens {
   tokens: string[]
-  /** `adjacent[i]`: token *i* directly followed token *i-1* in the source. */
-  adjacent: boolean[]
+  /**
+   * `adjacency[i]`: the grade of the seam between token *i-1* and token
+   * *i*, used directly as the match grade of any span crossing it.
+   *
+   * - `1` — the tokenizer itself made this cut (camelCase, `-`, `_`).
+   *   Rejoining is *reconstruction*, so the span is worth an exact match.
+   * - {@link PREFIX_MATCH_SCORE} — the user wrote whitespace. Rejoining is
+   *   a *guess* that two words name one thing, graded like every other
+   *   approximate match rather than claimed as exact.
+   * - `0` — punctuation, or a dropped function word, came between. Never
+   *   join.
+   */
+  adjacency: number[]
 }
 
 /**
- * Separators that still count as "one written name": whitespace and the
- * identifier joiners. A comma, slash, or colon separates names, so a span
- * never crosses one.
+ * The separator substituted at a camelCase boundary. A case boundary is an
+ * identifier-*internal* seam, exactly like a hyphen or an underscore, so it
+ * is normalized to one; that keeps the tokenizer's own cuts distinguishable
+ * from whitespace the user typed.
  */
-const NAME_SEPARATOR = /^[\s\-_]*$/
+const CASE_BOUNDARY = '-'
+
+/** Seams this tokenizer introduces, or that join one written identifier. */
+const IDENTIFIER_SEAM = /^[-_]*$/
+
+/** Seams the user wrote as a space between two words. */
+const WORD_SEAM = /^\s+$/
 
 function tokenizeQuery(text: string): QueryTokens {
-  const normalized = text.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase()
+  const normalized = text.replace(/([a-z0-9])([A-Z])/g, `$1${CASE_BOUNDARY}$2`).toLowerCase()
   const tokens: string[] = []
-  const adjacent: boolean[] = []
+  const adjacency: number[] = []
   const word = /[a-z0-9]+/g
   let previousEnd = -1
   let previousKept = false
@@ -253,14 +273,21 @@ function tokenizeQuery(text: string): QueryTokens {
     const raw = match[0]
     const kept = raw.length > 1 && !STOPWORDS.has(raw)
     if (kept) {
-      const separator = previousEnd < 0 ? '' : normalized.slice(previousEnd, match.index)
       tokens.push(raw)
-      adjacent.push(previousKept && NAME_SEPARATOR.test(separator))
+      adjacency.push(
+        previousKept && previousEnd >= 0 ? seamGrade(normalized.slice(previousEnd, match.index)) : 0
+      )
     }
     previousEnd = match.index + raw.length
     previousKept = kept
   }
-  return { tokens, adjacent }
+  return { tokens, adjacency }
+}
+
+function seamGrade(separator: string): number {
+  if (IDENTIFIER_SEAM.test(separator)) return 1
+  if (WORD_SEAM.test(separator)) return PREFIX_MATCH_SCORE
+  return 0
 }
 
 // ─── Internals ───────────────────────────────────────────────────────────────
@@ -381,7 +408,7 @@ function scoreFields(query: QueryTokens, fields: ScoredField[]): number {
 
 /**
  * Credit a run of adjacent query tokens that *concatenates* to one index
- * token, as an exact match for every token in the run.
+ * token, at the grade of the weakest seam the run crosses.
  *
  * `tokenize` splits camelCase, so a product name written as one word
  * ("AlphaLabel") becomes `alpha`+`label` while the ontology's own id
@@ -391,28 +418,36 @@ function scoreFields(query: QueryTokens, fields: ScoredField[]): number {
  * identifier-shaped special case: it is the same mechanism for every field
  * marked joinable, in every ontology.
  *
- * Two guards keep it from inventing matches. A span may only cover tokens
- * the user wrote adjacently ({@link QueryTokens.adjacent}), so dropped
- * function words never close up into a false identifier. And it is extended
- * only while it remains a prefix of some index token, so it terminates
- * immediately on ordinary prose and needs no arbitrary bound on how many
- * words may be joined — "alpha label v2" reaches `alphalabel-v2` just as
- * "road graph" reaches `roadgraph`.
+ * Three guards keep it from inventing matches. A span may only cross seams
+ * the user actually wrote ({@link QueryTokens.adjacency}), so dropped
+ * function words never close up into a false identifier. It is credited at
+ * the weakest seam it crosses, so only a split this tokenizer *made* is
+ * repaid as an exact match — concatenating two space-separated words is
+ * graded as the approximation it is, which is what stops a large ontology's
+ * compound identifiers from exact-matching unrelated word pairs ("car pet"
+ * → `carpet`). And it is extended only while it remains a prefix of some
+ * index token, so it terminates immediately on ordinary prose and needs no
+ * arbitrary bound on how many words may be joined — "alpha label v2"
+ * reaches `alphalabel-v2` just as "AlphaLabel v2" does, one grade lower.
  */
 function applyJoinedSpans(query: QueryTokens, field: ScoredField, best: number[]): void {
-  const { tokens: queryTokens, adjacent } = query
+  const { tokens: queryTokens, adjacency } = query
   const indexTokens = new Set(field.tokens)
   const prefixes = prefixSetOf(field.tokens)
   for (let i = 0; i < queryTokens.length; i++) {
     let span = queryTokens[i]!
     if (!prefixes.has(span)) continue
+    let grade = 1
     for (let j = i + 1; j < queryTokens.length; j++) {
-      if (!adjacent[j]) break
+      const seam = adjacency[j] ?? 0
+      if (seam <= 0) break
+      if (seam < grade) grade = seam
       span += queryTokens[j]!
       if (!prefixes.has(span)) break
       if (indexTokens.has(span)) {
+        const credit = field.weight * grade
         for (let k = i; k <= j; k++) {
-          if (best[k]! < field.weight) best[k] = field.weight
+          if (best[k]! < credit) best[k] = credit
         }
       }
     }
