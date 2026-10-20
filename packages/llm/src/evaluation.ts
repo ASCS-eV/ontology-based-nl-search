@@ -29,6 +29,12 @@ export type {
 } from './agent/evaluation-types.js'
 
 /**
+ * The agent's own context accounting, re-exported so the retrieval harness
+ * scores the bytes the agent actually sends instead of re-deriving them.
+ */
+export { summarizeRetrieval } from './agent/evaluation-types.js'
+
+/**
  * The agent's own tool registry, re-exported so the harness classifies tool
  * traces against what the agent actually registers rather than a hand-kept
  * copy that can drift out of step with it.

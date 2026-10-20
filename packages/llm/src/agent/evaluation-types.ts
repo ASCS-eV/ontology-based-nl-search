@@ -1,6 +1,7 @@
 import type { RetrievedSchema } from '@ontology-search/search'
 import type { LlmStructuredResponse } from '@ontology-search/search/types'
 
+import { composeRetrievedSections } from '../prompt/compose.js'
 import type { SlotPipelineSubmission } from './run-slot-pipeline.js'
 
 export interface EvaluationToolTrace {
@@ -42,25 +43,24 @@ export interface AgentEvaluationResult {
 
 export type AgentEvaluationObserver = (trace: AgentEvaluationTrace) => void | Promise<void>
 
+/**
+ * Summarize what a retrieval costs the model.
+ *
+ * `contextChars` is measured by composing the prompt tail rather than by
+ * re-adding up the parts. Any hand-rolled sum drifts the moment the
+ * composer changes what it renders — and it over-counts structurally,
+ * because the composer emits only the *routed* domains' detail and
+ * subtracts whatever already appears as a card, while a parts-sum sees the
+ * whole catalog. Composing is the only measure that cannot disagree with
+ * the bytes the model receives.
+ */
 export function summarizeRetrieval(retrieved: RetrievedSchema): EvaluationRetrievalTrace {
-  const contextChars =
-    retrieved.fragments.reduce((sum, fragment) => sum + fragment.turtle.length, 0) +
-    retrieved.catalog.reduce(
-      (sum, domain) =>
-        sum +
-        domain.domain.length +
-        domain.classLabels.join(' ').length +
-        domain.sampleTerms.join(' ').length +
-        domain.propertyNames.join(' ').length,
-      0
-    )
-
   return {
     domains: [...retrieved.domains],
     confidence: retrieved.confidence,
     cardCount: retrieved.cards.length,
     fragmentCount: retrieved.fragments.length,
     catalogCount: retrieved.catalog.length,
-    contextChars,
+    contextChars: composeRetrievedSections(retrieved).length,
   }
 }

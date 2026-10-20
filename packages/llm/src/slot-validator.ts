@@ -407,10 +407,10 @@ function enrichGapWithSuggestions(
  * Per-property evidence weight for suggestion scoring, in (0, 1].
  *
  * A fuzzy hit inside a closed vocabulary of a few values is real evidence.
- * A fuzzy hit inside an identifier code list of thousands of entries (media
- * types, country codes) is almost none: with that many entries *something*
- * always resembles *some* word of a free-text gap ("audible" → "audio/L8"),
- * and those near-matches drown the genuine concept suggestions.
+ * A fuzzy hit inside an identifier code list of thousands of entries is
+ * almost none: with that many entries *something* always resembles *some*
+ * word of a free-text gap, and those near-matches drown the genuine
+ * concept suggestions.
  *
  * The weight is pivoted length normalization against the mean pool size of
  * this vocabulary — the same normalization the schema-index ranker applies,
