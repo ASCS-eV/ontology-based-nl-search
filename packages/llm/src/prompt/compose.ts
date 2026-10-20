@@ -48,9 +48,22 @@ export function composeRetrievedSections(retrieved: RetrievedSchema): string {
   // Properties whose raw SHACL made it into the (budget-bounded) fragment
   // payload; everything else selected renders as a distilled line, so
   // coverage survives the budget.
-  const covered = new Set(retrieved.fragments.flatMap((f) => f.propertyIris))
+  //
+  // Keyed by (domain, iri), not by iri alone: one property IRI can be
+  // reachable from several domains, and a fragment only renders it under
+  // the one domain it was retrieved for. Treating it as covered everywhere
+  // would drop it from every *other* routed domain's distilled list while
+  // the roster still counted it as shown — so the property would appear in
+  // no block of its own domain and in no remainder marker, and the roster
+  // would read as exhaustive while omitting it.
+  const covered = new Set(
+    retrieved.fragments.flatMap((f) => f.propertyIris.map((iri) => coverageKey(f.domain, iri)))
+  )
   const fragmentsByDomain = groupFragments(retrieved)
-  const uncoveredByDomain = groupCards(retrieved, (card) => !covered.has(card.iri))
+  const uncoveredByDomain = groupCards(
+    retrieved,
+    (card) => !covered.has(coverageKey(card.domain, card.iri))
+  )
   const rostersByDomain = rosters(retrieved)
 
   const domains = new Set([
@@ -105,12 +118,21 @@ export function composeRetrievedSections(retrieved: RetrievedSchema): string {
   const sections = [...preamble]
   blocks.forEach((block, index) => {
     sections.push(...block.lines)
-    const line = rosterLines[index]
+    const line = rosterLines.lines[index]
     if (line) sections.push(line)
   })
+  if (rosterLines.summary) sections.push(rosterLines.summary)
   sections.push(...catalog)
 
   return sections.join('\n')
+}
+
+/**
+ * Coverage identity of a property: a property is rendered for a *domain*,
+ * so the same IRI reached from two domains is two separate obligations.
+ */
+function coverageKey(domain: string, iri: string): string {
+  return `${domain}\u0000${iri}`
 }
 
 /** Length of a section list once joined, newlines included. */
@@ -134,6 +156,10 @@ function charsOf(lines: string[]): number {
  * The cap is falsifiable rather than tuned: a roster that needs more than a
  * quarter of the payload to suppress false gaps is evidence the *card*
  * budget is too small for that ontology, and should be raised instead.
+ *
+ * The cap binds the whole roster, markers included — see
+ * {@link allocateRosters}, which degrades to a single aggregate line rather
+ * than emitting a per-domain marker it cannot afford.
  */
 const MAX_ROSTER_SHARE = 0.25
 
@@ -147,8 +173,17 @@ const ROSTER_PREFIX = 'Also defined in this domain, not retrieved for this query
  * domain that fits inside its share releases the remainder, so a few huge
  * domains can never starve the rest, and no domain is truncated while
  * another prints in full within the same budget.
+ *
+ * A domain whose share cannot hold even `prefix + "…+N more"` is not given
+ * an over-budget line: its omission rolls into one aggregate summary
+ * instead. That keeps the honesty signal O(1) rather than O(routed
+ * domains), so the roster stays inside its share no matter how high
+ * `RETRIEVAL_MAX_DOMAINS` is configured.
  */
-function allocateRosters(rosters: string[][], budget: number): (string | null)[] {
+function allocateRosters(
+  rosters: string[][],
+  budget: number
+): { lines: (string | null)[]; summary: string | null } {
   const lines: (string | null)[] = rosters.map(() => null)
   const order = rosters
     .map((names, index) => ({ index, names }))
@@ -157,23 +192,41 @@ function allocateRosters(rosters: string[][], budget: number): (string | null)[]
 
   let remaining = Math.max(0, Math.floor(budget))
   let left = order.length
+  const unreported: string[][] = []
   for (const { index, names } of order) {
     const line = fitRoster(names, Math.floor(remaining / left))
     left--
-    if (!line) continue
+    if (!line) {
+      unreported.push(names)
+      continue
+    }
     lines[index] = line
     remaining -= line.length + 1
   }
-  return lines
+  return { lines, summary: summarizeUnreported(unreported) }
+}
+
+/**
+ * One line standing in for every roster the budget could not afford.
+ *
+ * Fixed cost regardless of how many domains it covers, so it cannot be the
+ * thing that overruns the budget — and it still tells the model those
+ * domains hold properties it was not shown, which is the whole point of
+ * the roster.
+ */
+function summarizeUnreported(rosters: string[][]): string | null {
+  if (rosters.length === 0) return null
+  let total = 0
+  for (const names of rosters) total += names.length
+  return `Further properties exist in ${rosters.length} more routed domain(s) (${total} in total) but were not retrieved for this query.\n`
 }
 
 /**
  * Render one roster within `budget`, dropping trailing names if it does not
- * fit. Truncation is never silent, and the remainder marker is *not*
- * budgeted: it is the irreducible part — "+N more" tells the model the list
- * is incomplete just as effectively as the names would, at a fixed cost per
- * routed domain, so suppressing it could only ever trade honesty for
- * nothing. The budget governs how many names accompany it.
+ * fit. Truncation is never silent: the remainder marker is reserved before
+ * any name is admitted, so a line is only ever emitted when its marker is
+ * paid for. A budget too small for even the marker yields no line, and the
+ * caller accounts for the domain in an aggregate instead.
  */
 function fitRoster(names: string[], budget: number): string | null {
   if (names.length === 0) return null
@@ -185,6 +238,7 @@ function fitRoster(names: string[], budget: number): string | null {
   const marker = (rest: number) => `…+${rest} more`
   const shown: string[] = []
   let used = ROSTER_PREFIX.length + marker(names.length).length + 1
+  if (used > budget) return null
   for (const name of names) {
     const next = used + name.length + 2
     if (next > budget) break
@@ -243,6 +297,11 @@ function groupCards(
  * do, so the honesty guarantee survives the bound. Raising the card budget
  * instead would scale the expensive payload with the ontology; this scales
  * the cheap one, and caps it.
+ *
+ * `shown` may exclude a name only because that name is rendered in *this*
+ * domain's block; see the coverage key in {@link composeRetrievedSections},
+ * which is what makes that true for a property reachable from more than one
+ * domain.
  */
 function rosters(retrieved: RetrievedSchema): Map<string, string[]> {
   const catalogByDomain = new Map(retrieved.catalog.map((entry) => [entry.domain, entry]))

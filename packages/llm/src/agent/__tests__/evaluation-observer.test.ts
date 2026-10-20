@@ -121,9 +121,13 @@ describe('evaluation observer', () => {
       finishReason: 'tool-calls',
       promptChars: 22,
       missingSubmitFallback: false,
-      retrieval: { domains: ['hdmap'], contextChars: expect.any(Number) },
+      retrieval: { domains: ['hdmap'] },
       usage: { inputTokens: 100, outputTokens: 25, totalTokens: 125 },
     })
+    // `expect.any(Number)` would also accept NaN, -1 and Infinity — the
+    // three values a broken character count actually produces.
+    expect(result.trace.retrieval?.contextChars).toBeGreaterThan(0)
+    expect(Number.isSafeInteger(result.trace.retrieval?.contextChars)).toBe(true)
     expect(result.trace.toolCalls.map((call) => call.toolName)).toEqual([
       'find_terms',
       'submit_slots',

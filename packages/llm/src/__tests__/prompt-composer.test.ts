@@ -284,6 +284,45 @@ describe('composePrompt', () => {
     expect(large.match(REMAINDER_MARKER_ANYWHERE)).toHaveLength(2)
     expect(large).toContain('alphaProperty0')
   })
+
+  /**
+   * Regression: the remainder marker used to be unbudgeted, on the
+   * reasoning that it costs a fixed amount per routed domain. That holds
+   * only while the number of routed domains is small, and
+   * `RETRIEVAL_MAX_DOMAINS` has no upper bound — with enough domains the
+   * markers alone outgrew the share they were supposed to annotate.
+   *
+   * The honesty signal is therefore O(1), not O(domains): domains the
+   * budget cannot afford a marker for are rolled into one aggregate line,
+   * so the model is still told they hold properties it was not shown.
+   */
+  it('keeps the roster inside its share however many domains are routed', () => {
+    const turtle = `<urn:x:AlphaShape> a sh:NodeShape ;\n  sh:description "${'x'.repeat(400)}" .`
+    const domains = Array.from({ length: 100 }, (_, i) => `domain-${i}`)
+    const retrieved: RetrievedSchema = {
+      ...emptyRetrieved,
+      domains,
+      fragments: [{ shapeIri: 'urn:x:AlphaShape', domain: 'domain-0', turtle, propertyIris: [] }],
+      catalog: domains.map((domain) => ({
+        domain,
+        classLabels: [`${domain} Asset`],
+        sampleTerms: [],
+        propertyNames: Array.from({ length: 50 }, (_, i) => `${domain}Property${i}`),
+      })),
+    }
+
+    const tail = composeRetrievedSections(retrieved)
+    const rosterChars = tail
+      .split('\n')
+      .filter((line) => line.startsWith(ROSTER_PREFIX))
+      .reduce((sum, line) => sum + line.length + 1, 0)
+    const payload = tail.length - rosterChars
+
+    expect(rosterChars).toBeLessThanOrEqual(payload * 0.25)
+    // Nothing went silent: what could not be afforded per-domain is still
+    // declared once, with a count.
+    expect(tail).toMatch(/Further properties exist in \d+ more routed domain\(s\) \(\d+ in total\)/)
+  })
 })
 
 describe('buildRequestPrompt (integration)', () => {
@@ -313,12 +352,17 @@ describe('buildRequestPrompt (integration)', () => {
     // ontology: raw fragments by the retrieval character budget (45k),
     // distilled cards by the card budget, rosters by their share of the
     // payload, the catalog by the domain count. BOUNDEDNESS is what is
-    // pinned here; the thresholds carry headroom above this query's size.
-    // (The fixed overhead above the fragment budget is not itself budgeted
-    // — on the pinned OMB ontology the widest observed tail is ~60k, so
-    // these numbers hold for this query, not for every query.)
-    expect(tail.length).toBeLessThan(55_000)
-    expect(prompt.length).toBeLessThan(75_000)
+    // pinned here, not a tuned number.
+    //
+    // The fixed overhead above the fragment budget is not itself budgeted,
+    // so the thresholds come from measurement plus headroom rather than
+    // from this one query: across the probe queries the widest tail on the
+    // pinned OMB ontology is ~61.5k ("gaia-x service offering media
+    // types") and the static core adds ~20k. The earlier 55k/75k passed
+    // this query by under 0.1% — a tripwire rather than a bound, which
+    // other queries already exceeded.
+    expect(tail.length).toBeLessThan(70_000)
+    expect(prompt.length).toBeLessThan(90_000)
     expect(retrieved.confidence).toBeGreaterThan(0)
     expect(retrieved.domains).toContain(card!.domain)
   })
@@ -334,44 +378,57 @@ describe('buildRequestPrompt (integration)', () => {
    */
   it('accounts for every property of every routed domain, however small the card budget', async () => {
     const store = await getInitializedStore()
-    const retrieved = await retrieveRelevantSchema(store, 'scenarios with a cut-in manoeuvre', {
-      maxCards: 5,
-    })
-    const tail = composeRetrievedSections(retrieved)
-    expect(retrieved.domains.length).toBeGreaterThan(0)
+    // Both budgets, because they fail differently: a tiny budget pushes
+    // almost everything into the roster, while the production default is
+    // where a property can be carded for one domain and rendered under
+    // another — the case that made the roster read as exhaustive while
+    // omitting a property the user had literally asked for.
+    const cases = [
+      { query: 'scenarios with a cut-in manoeuvre', maxCards: 5 },
+      { query: 'road types and country of hd maps', maxCards: 40 },
+      { query: 'sensor recordings', maxCards: 40 },
+    ]
 
-    for (const domain of retrieved.domains) {
-      const names = retrieved.catalog.find((entry) => entry.domain === domain)?.propertyNames ?? []
-      expect(names.length, domain).toBeGreaterThan(0)
-      const carded = new Set(
-        retrieved.cards
-          .filter((c) => c.domain === domain && c.kind === 'property')
-          .map((c) => c.localName)
-      )
-      // The budget really does hide most of a domain this size...
-      expect(carded.size, domain).toBeLessThan(names.length)
+    for (const { query, maxCards } of cases) {
+      const retrieved = await retrieveRelevantSchema(store, query, { maxCards })
+      const tail = composeRetrievedSections(retrieved)
+      expect(retrieved.domains.length, query).toBeGreaterThan(0)
 
-      // ...and the prompt accounts for all of them anyway. Counting the
-      // rendered line rather than substring-searching the tail is what
-      // makes this exact: a name may only be claimed once, and the
-      // remainder marker must cover precisely what is not listed.
-      const rosterLine = blockFor(tail, domain)
-        .split('\n')
-        .find((line) => line.startsWith(ROSTER_PREFIX))
-      expect(rosterLine, domain).toBeDefined()
-      const listed = rosterLine!
-        .slice(ROSTER_PREFIX.length)
-        .replace(REMAINDER_MARKER, '')
-        .split(', ')
-        .filter((name) => name.length > 0)
-      const remainder = REMAINDER_MARKER.exec(rosterLine!)
-      expect(listed.length, domain).toBeGreaterThan(0)
-      expect(listed.length + Number(remainder?.[1] ?? 0), domain).toBe(
-        new Set(names.filter((name) => !carded.has(name))).size
-      )
+      for (const domain of retrieved.domains) {
+        const names = retrieved.catalog.find((e) => e.domain === domain)?.propertyNames ?? []
+        expect(names.length, `${query} / ${domain}`).toBeGreaterThan(0)
+
+        const block = blockFor(tail, domain)
+        const rosterLine = block.split('\n').find((line) => line.startsWith(ROSTER_PREFIX)) ?? ''
+        const body = block.replace(rosterLine, '')
+        const listed = new Set(
+          rosterLine
+            .slice(ROSTER_PREFIX.length)
+            .replace(REMAINDER_MARKER, '')
+            .split(', ')
+            .filter((name) => name.length > 0)
+        )
+        const remainder = Number(REMAINDER_MARKER.exec(rosterLine)?.[1] ?? 0)
+
+        // Read the prompt the way the model does — does the name occur in
+        // this domain's own section at all? Deliberately NOT re-derived
+        // from the card list the roster is built from, which would only
+        // re-check the roster against itself.
+        const missing = names.filter((name) => !listed.has(name) && !mentions(body, name))
+        expect(
+          missing.length,
+          `${query} / ${domain}: unaccounted ${missing.slice(0, 6).join(', ')}`
+        ).toBeLessThanOrEqual(remainder)
+      }
     }
-  }, 120_000)
+  }, 180_000)
 })
+
+/** Does the text name this property, as a whole identifier rather than a substring? */
+function mentions(text: string, name: string): boolean {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?<![A-Za-z0-9_])${escaped}(?![A-Za-z0-9_])`).test(text)
+}
 
 const ROSTER_PREFIX = 'Also defined in this domain, not retrieved for this query: '
 const REMAINDER_MARKER = /…\+(\d+) more$/
