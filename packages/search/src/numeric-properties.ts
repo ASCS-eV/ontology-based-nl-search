@@ -25,13 +25,14 @@
  * @see https://www.w3.org/TR/shacl/#OrConstraintComponent — [SHACL] §4.6.3 sh:or
  */
 import { extractLocalName } from '@ontology-search/core/rdf/iri'
-import { iri, sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
+import { NUMERIC_DATATYPE_IRIS, numericKind } from '@ontology-search/core/rdf/numeric-datatypes'
+import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import { isIri } from '@ontology-search/sparql/escape'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
 
-/** A numeric property (xsd:integer or xsd:float) */
+/** A numeric property — any [RDF11] §5.1 numeric XSD datatype */
 export interface NumericProperty {
   iri: string
   localName: string
@@ -41,10 +42,8 @@ export interface NumericProperty {
   domain: string
 }
 
-/** The datatypes a range filter treats as numbers. */
-const NUMERIC_DATATYPES: ReadonlySet<string> = new Set([iri('xsd', 'integer'), iri('xsd', 'float')])
-
-const XSD_INTEGER = iri('xsd', 'integer')
+/** `VALUES` block binding `?datatype` to every numeric XSD datatype. */
+const NUMERIC_DATATYPE_VALUES = `VALUES ?datatype { ${NUMERIC_DATATYPE_IRIS.map((d) => `<${d}>`).join(' ')} }`
 
 interface NumericLeaf {
   iri: string
@@ -90,7 +89,7 @@ export async function extractNumericProperties(
 /** Property shapes that declare a numeric `sh:datatype` themselves. */
 async function queryDirectNumericLeaves(store: SparqlStore): Promise<NumericLeaf[]> {
   const sparql = `
-    ${sparqlPrefixes('sh', 'xsd')}
+    ${sparqlPrefixes('sh')}
 
     SELECT ?path ?name ?description ?datatype
     FROM <${SCHEMA_GRAPH}>
@@ -98,10 +97,10 @@ async function queryDirectNumericLeaves(store: SparqlStore): Promise<NumericLeaf
       ?shape sh:property ?propShape .
       ?propShape sh:path ?path .
       FILTER(isIRI(?path))
+      ${NUMERIC_DATATYPE_VALUES}
       ?propShape sh:datatype ?datatype .
       OPTIONAL { ?propShape sh:name ?name }
       OPTIONAL { ?propShape sh:description ?description }
-      FILTER(?datatype IN (xsd:integer, xsd:float))
       FILTER NOT EXISTS { ?propShape sh:in ?list }
     }
   `
@@ -114,7 +113,7 @@ async function queryDirectNumericLeaves(store: SparqlStore): Promise<NumericLeaf
     const description = row['description']?.value
     leaves.push({
       iri: path,
-      datatype: row['datatype']?.value === XSD_INTEGER ? 'integer' : 'float',
+      datatype: numericKind(row['datatype']?.value) ?? 'float',
       ...(name ? { name } : {}),
       ...(description ? { description } : {}),
     })
@@ -161,8 +160,9 @@ async function queryDisjunctiveNumericLeaves(store: SparqlStore): Promise<Numeri
   }
   const numericByPath = new Map<string, NumericProperty['datatype']>()
   for (const { path, datatypes } of byShape.values()) {
-    if (![...datatypes].every((d) => NUMERIC_DATATYPES.has(d))) continue
-    const datatype = [...datatypes].every((d) => d === XSD_INTEGER) ? 'integer' : 'float'
+    const kinds = [...datatypes].map(numericKind)
+    if (!kinds.every((k) => k !== null)) continue
+    const datatype = kinds.every((k) => k === 'integer') ? 'integer' : 'float'
     if (numericByPath.get(path) !== 'float') numericByPath.set(path, datatype)
   }
   if (numericByPath.size === 0) return []

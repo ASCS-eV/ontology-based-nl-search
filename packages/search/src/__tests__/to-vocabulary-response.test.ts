@@ -2,6 +2,7 @@
  * Projection contract: the autocomplete wire shape is derived from the
  * shared term index without changing what the web client sees.
  */
+import { numericKind } from '@ontology-search/core/rdf/numeric-datatypes'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -128,7 +129,7 @@ describe('toVocabularyResponse (contract parity with the schema vocabulary)', ()
           const type =
             entry.allowedValues && entry.allowedValues.length > 0
               ? 'enum'
-              : entry.datatype === `${XSD}integer` || entry.datatype === `${XSD}float`
+              : numericKind(entry.datatype) !== null
                 ? 'numeric'
                 : 'string'
           return `${entry.domain}|${entry.localName}|${type}`

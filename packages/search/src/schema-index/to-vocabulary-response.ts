@@ -6,12 +6,12 @@
  * this module is the only translation between the two, so the editor's
  * vocabulary can never drift from what the interpreter and compiler see.
  *
- * Enum (`sh:in`), numeric (integer/float datatype), and free-form literal
+ * Enum (`sh:in`), numeric (any [RDF11] §5.1 numeric XSD datatype), and free-form literal
  * properties are projected. Object-reference leaves stay represented by the
  * GraphQL DSL's recursive `references` field.
  */
 import type { VocabProperty, VocabularyResponse } from '@ontology-search/api-types'
-import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
+import { numericKind } from '@ontology-search/core/rdf/numeric-datatypes'
 
 import type { TermCard, TermIndex } from './term-index.js'
 
@@ -43,7 +43,7 @@ function projectCard(card: TermCard): VocabProperty | null {
     return { ...base, type: 'enum', allowedValues: [...card.allowedValues] }
   }
 
-  const datatype = numericDatatype(card.datatype)
+  const datatype = numericKind(card.datatype)
   if (datatype) {
     return { ...base, type: 'numeric', datatype }
   }
@@ -53,11 +53,5 @@ function projectCard(card: TermCard): VocabProperty | null {
   }
 
   // Object references are represented by the recursive `references` field.
-  return null
-}
-
-function numericDatatype(datatype: string | undefined): 'integer' | 'float' | null {
-  if (datatype === `${RDF_PREFIXES.xsd}integer`) return 'integer'
-  if (datatype === `${RDF_PREFIXES.xsd}float`) return 'float'
   return null
 }
