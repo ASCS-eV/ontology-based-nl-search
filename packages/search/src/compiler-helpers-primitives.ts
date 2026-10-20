@@ -239,26 +239,42 @@ export function addEnumFilter(
 
   // Several values on one leaf carry IN-semantics (slot-wire-schema): the
   // leaf must fall under ANY of them, so one walk per value would AND them
-  // and never match. A single walk to a VALUES-bound target set, wrapped in
-  // EXISTS so a value under several targets yields one row, expresses the
-  // disjunction ([SPARQL11] §10.2.1 VALUES, §17.4.1.4 EXISTS).
+  // and never match. Emit the walks as alternatives inside EXISTS, which
+  // yields one row however many targets a value sits under ([SPARQL11] §7
+  // UNION, §17.4.1.4 EXISTS).
   //
-  // The target variable must be one the surrounding query never binds.
-  // EXISTS is evaluated by substituting the current solution mapping into
-  // its pattern ([SPARQL11] §17.4.1.4), so a target named after an outer
-  // variable — `?x_target` where the query also projects a property called
-  // `x_target` — would have its VALUES block rewritten to that row's value
-  // and silently filter against the wrong set. `?_enumTarget` is reserved:
-  // projected variables are `?asset`, `?name`, property local names and
-  // `?_d<i>_<j>` group variables, none of which can produce it. Reusing one
-  // constant across filters is safe because EXISTS does not bind outward,
-  // so the name is never in the solution mapping being substituted.
-  const target = '?_enumTarget'
-  const targets = iriValues.map((v) => `<${v}>`).join(' ')
-  const iriCondition = `EXISTS { VALUES ${target} { ${targets} } ${varName} ${HIERARCHY_EXPANSION_PATH} ${target} . }`
-  filters.push(
-    literalCondition
-      ? `FILTER((${literalCondition}) || ${iriCondition})`
-      : `FILTER(${iriCondition})`
-  )
+  // The branches are ground: no target variable is introduced. That is the
+  // point. EXISTS is evaluated by substituting the current solution mapping
+  // into its pattern ([SPARQL11] §17.4.1.4), so any variable here that the
+  // surrounding query also binds would be rewritten to that row's value and
+  // the filter would silently match nothing — returning no rows rather than
+  // an error. Ontology local names reach variable names verbatim
+  // (`?${propName}${suffix}`), so no fixed internal name can be proven free:
+  // a property called `_enumTarget` would collide with a reserved
+  // `?_enumTarget` exactly as one called `x_target` collided with the
+  // earlier `?x_target`. Introducing no variable removes the whole class
+  // for any ontology, rather than making one instance of it unlikely.
+  const iriCondition = `EXISTS { ${iriValues
+    .map((v) => `{ ${varName} ${HIERARCHY_EXPANSION_PATH} <${v}> }`)
+    .join(' UNION ')} }`
+
+  // `EXISTS` must be guarded by `BOUND`. A literal condition excludes a row
+  // whose leaf is unbound for free: evaluating `?v IN (…)` on an unbound
+  // variable raises an error, and a FILTER treats an error as false
+  // ([SPARQL11] §17.2). `EXISTS` has no such behaviour — substitution leaves
+  // an unbound `?v` free ([SPARQL11] §17.4.1.4), so the pattern becomes an
+  // open join over the whole dataset and answers true whenever any of the
+  // target values occurs anywhere. The filter would then constrain nothing
+  // and return every asset, including those carrying no value for the
+  // property at all; in the mixed case the `||` would short-circuit on that
+  // true and disable the literal half as well.
+  //
+  // This matters wherever the leaf triple is not a required pattern — the
+  // cross-domain path emits it inside `OPTIONAL` — and guarding here keeps
+  // the helper correct without depending on an unstated caller invariant.
+  // Where the leaf is required the guard is simply always true.
+  const condition = literalCondition
+    ? `BOUND(${varName}) && ((${literalCondition}) || ${iriCondition})`
+    : `BOUND(${varName}) && ${iriCondition}`
+  filters.push(`FILTER(${condition})`)
 }

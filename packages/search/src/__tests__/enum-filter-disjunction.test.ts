@@ -82,28 +82,76 @@ describe('addEnumFilter — several values are alternatives', () => {
     expect(compile([`${EX}Wet`, 'slush', `${EX}Icy`, `${EX}Wet`])).toEqual(canonical)
   })
 
-  it('binds the EXISTS target to a name the surrounding query cannot shadow', async () => {
+  it('introduces no variable the surrounding query could shadow', async () => {
     // EXISTS is evaluated by substituting the current solution mapping into
-    // its pattern ([SPARQL11] §17.4.1.4). Naming the target after the filtered
-    // variable — `?s` → `?s_target` — collides as soon as the query also
-    // projects a property whose leaf variable is `?s_target`: the VALUES block
-    // is rewritten to that row's literal and the disjunction silently matches
-    // nothing. The fixture binds `?s_target` to "zzz" on every asset, so this
-    // fails for any target name derived from the filtered variable.
+    // its pattern ([SPARQL11] §17.4.1.4). An auxiliary target variable named
+    // after the filtered variable — `?s` → `?s_target` — collides as soon as
+    // the query also projects a property whose leaf variable is `?s_target`:
+    // the target set is rewritten to that row's literal and the disjunction
+    // silently matches nothing.
+    //
+    // A reserved internal name only narrows that window. Ontology local names
+    // reach variable names verbatim, so a property called `_enumTarget` would
+    // collide with a reserved `?_enumTarget` in exactly the same way. The
+    // disjunction therefore introduces no variable at all, which is what this
+    // asserts: the emitted filter mentions only the leaf variable.
     const patterns: string[] = []
     const filters: string[] = []
     addEnumFilter(patterns, filters, '?s', [`${EX}Wet`, `${EX}Icy`])
     const emitted = [...patterns, ...filters].join('\n  ')
 
+    const introduced = [...emitted.matchAll(/\?[A-Za-z_][A-Za-z0-9_]*/g)]
+      .map((m) => m[0])
+      .filter((v) => v !== '?s')
+    expect(introduced).toEqual([])
+
+    // Bound to the fixture, the filter still has to behave: `?s_target` is
+    // bound to "zzz" on every asset, which would poison any target named
+    // after the filtered variable.
     const store = new OxigraphStore()
     await store.loadTurtle(FIXTURE)
     const query =
       `SELECT ?a WHERE {\n  ?a <${EX}surface> ?s .\n` +
       `  ?a <${EX}surface_target> ?s_target .\n  ${emitted}\n}`
     const res = await store.query(query)
-    const matched = res.results.bindings.map((b) => b['a']!.value.replace(EX, '')).sort()
-    expect(matched).toEqual(['a1', 'a2', 'a4'])
-    expect(emitted).not.toContain('?s_target')
+    expect(res.results.bindings.map((b) => b['a']!.value.replace(EX, '')).sort()).toEqual([
+      'a1',
+      'a2',
+      'a4',
+    ])
+  })
+
+  it('excludes a row whose leaf the surrounding OPTIONAL left unbound', async () => {
+    // The cross-domain compiler binds a filtered leaf inside OPTIONAL, so the
+    // variable can reach the filter unbound. A literal condition drops such a
+    // row for free — an unbound operand is an error and a FILTER reads an
+    // error as false ([SPARQL11] §17.2) — but EXISTS does not: substitution
+    // leaves the variable free ([SPARQL11] §17.4.1.4), the pattern becomes an
+    // open join over the dataset, and it answers true whenever any target
+    // value occurs anywhere. Without the BOUND guard this filter matched
+    // every asset, including ones with no value for the property.
+    //
+    // `ex:a3` has `ex:surface ex:Dry`, which is under neither target, and
+    // `ex:a6` has no `ex:surface` triple at all. Both must be excluded.
+    for (const value of [
+      [`${EX}Wet`, `${EX}Icy`],
+      [`${EX}Wet`, `${EX}Icy`, 'slush'],
+    ]) {
+      const patterns: string[] = []
+      const filters: string[] = []
+      addEnumFilter(patterns, filters, '?s', value)
+
+      const store = new OxigraphStore()
+      await store.loadTurtle(`${FIXTURE}\nex:a6 a skos:Concept .\n`)
+      const query =
+        `SELECT ?a WHERE {\n  ?a a skos:Concept .\n` +
+        `  OPTIONAL { ?a <${EX}surface> ?s .\n    ${patterns.join('\n    ')} }\n` +
+        `  ${filters.join('\n  ')}\n}`
+      const res = await store.query(`PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n${query}`)
+      const matched = res.results.bindings.map((b) => b['a']!.value.replace(EX, '')).sort()
+      expect(matched).not.toContain('a6')
+      expect(matched).not.toContain('a3')
+    }
   })
 })
 
