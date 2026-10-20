@@ -24,6 +24,7 @@
  * here should be regenerated deliberately, not silently auto-fixed.
  */
 
+import { getConfig } from '@ontology-search/core/config'
 import type { SearchSlots } from '@ontology-search/slots/slots'
 import { enforceSparqlPolicy, registerPolicyNamespaces } from '@ontology-search/sparql/policy'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -45,8 +46,14 @@ beforeAll(async () => {
 
 /**
  * Compile twice, assert bit-identical output, assert the policy gate
- * accepts the query. Returns the SPARQL so callers can pin it to an
- * inline snapshot in the same test.
+ * accepts the query, and assert the query is row-bounded. Returns the
+ * SPARQL so callers can pin it to an inline snapshot in the same test.
+ *
+ * Boundedness is checked here rather than in one test because it is a
+ * whole-compiler invariant: the compiler is the only producer the store
+ * ever sees, so an unbounded query escaping it would make a response size
+ * proportional to the catalog. Reaching the ceiling is surfaced as
+ * `meta.truncated`, so the bound never silently shortens a result.
  */
 async function assertDeterministic(slots: SearchSlots): Promise<string> {
   const first = await compileSlots(slots)
@@ -54,6 +61,7 @@ async function assertDeterministic(slots: SearchSlots): Promise<string> {
   expect(second).toBe(first)
   const policy = enforceSparqlPolicy(first)
   expect(policy.allowed, `policy violations: ${policy.violations.join('; ')}`).toBe(true)
+  expect(first.trimEnd().endsWith(`LIMIT ${getConfig().SPARQL_MAX_LIMIT}`), first).toBe(true)
   return first
 }
 
@@ -350,15 +358,20 @@ describe('compileSlots — determinism + snapshot suite', () => {
 
   // ─── Cross-reference JOINs (deterministic + policy-clean) ──────────────
 
-  it('single reference → flat JOIN without LIMIT', async () => {
+  it('single reference → flat JOIN, row-bounded by the configured ceiling', async () => {
     const sparql = await assertDeterministic({
       domains: ['ositrace'],
       filters: {},
       ranges: {},
       references: [{ domain: 'hdmap' }],
     })
+    // The distinct-asset sub-SELECT wrap is gone: a JOIN is emitted flat and
+    // the single trailing LIMIT bounds rows, which is what the response costs
+    // to materialize. Reaching it is reported as `meta.truncated`, never
+    // silently swallowed.
     expect(sparql).not.toContain('SELECT DISTINCT ?asset')
-    expect(sparql).not.toMatch(/\bLIMIT\b/)
+    expect(sparql.match(/\bLIMIT\b/g)).toHaveLength(1)
+    expect(sparql.trimEnd().endsWith(`LIMIT ${getConfig().SPARQL_MAX_LIMIT}`)).toBe(true)
     expect(sparql).toContain('hdmap:HdMap')
     expect(sparql).toMatchSnapshot()
   })

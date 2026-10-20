@@ -2,6 +2,7 @@
  * Tests for the unified search service.
  * Uses direct dependency injection — no vi.mock() needed.
  */
+import { getConfig } from '@ontology-search/core/config'
 import type { SearchSlots } from '@ontology-search/slots'
 import type { SparqlResults, SparqlStore } from '@ontology-search/sparql/types'
 import { vi } from 'vitest'
@@ -121,6 +122,37 @@ describe('SearchService.searchNl', () => {
     expect(result.execution.results).toHaveLength(3)
     // …but the match count is distinct assets, matching the grouped UI count.
     expect(result.meta.matchCount).toBe(2)
+  })
+
+  it('flags meta.truncated once the row ceiling is reached, and not before', async () => {
+    // Regression: the compiler used to emit `LIMIT 100` while the policy
+    // appended `LIMIT 500`, and nothing reported the cut — "all HD maps"
+    // returned and counted 100 of 165. The ceiling still exists (it bounds
+    // what a response costs to materialize) but reaching it is now reported,
+    // so `matchCount` is either exact or explicitly a lower bound.
+    const maxLimit = getConfig().SPARQL_MAX_LIMIT
+    const rowsFor = (n: number): SparqlResults => ({
+      head: { vars: ['asset', 'name'] },
+      results: {
+        bindings: Array.from({ length: n }, (_, i) => ({
+          asset: { type: 'uri' as const, value: `urn:a:${i}` },
+        })),
+      },
+    })
+
+    const under = { ...mockStore, query: vi.fn().mockResolvedValue(rowsFor(maxLimit - 1)) }
+    const underResult = await new SearchService(
+      createMockDeps({ getStore: vi.fn().mockResolvedValue(under) })
+    ).searchNl({ query: 'everything' })
+    expect(underResult.meta.truncated).toBeUndefined()
+    expect(underResult.meta.matchCount).toBe(maxLimit - 1)
+
+    const at = { ...mockStore, query: vi.fn().mockResolvedValue(rowsFor(maxLimit)) }
+    const atResult = await new SearchService(
+      createMockDeps({ getStore: vi.fn().mockResolvedValue(at) })
+    ).searchNl({ query: 'everything' })
+    expect(atResult.meta.truncated).toBe(true)
+    expect(atResult.meta.matchCount).toBe(maxLimit)
   })
 
   it('returns error when SPARQL policy rejects the query', async () => {

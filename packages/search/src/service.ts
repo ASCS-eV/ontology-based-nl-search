@@ -25,6 +25,7 @@
  * here so consumers keep importing it from `@ontology-search/search`.
  */
 import type { ResultRow, ResultTraceStep, RowTraceability } from '@ontology-search/api-types'
+import { getConfig } from '@ontology-search/core/config'
 import { generateRequestId, RequestLogger } from '@ontology-search/core/logging'
 import type { ReferenceFilter, TraceabilityPlan } from '@ontology-search/slots/slots'
 import type { SparqlBinding } from '@ontology-search/sparql/types'
@@ -135,9 +136,14 @@ export class SearchService {
       requestId,
       this.countMatches(execution.results),
       totalDatasets,
-      logger
+      logger,
+      this.isTruncated(execution.results)
     )
-    logger.info('Search completed', { matchCount: meta.matchCount, totalDatasets })
+    logger.info('Search completed', {
+      matchCount: meta.matchCount,
+      totalDatasets,
+      truncated: meta.truncated ?? false,
+    })
 
     return {
       interpretation: structured.interpretation,
@@ -212,8 +218,17 @@ export class SearchService {
     // Execute
     const execution = await this.executeSparql(sparql, trace, logger, signal)
 
-    const meta = this.buildMeta(requestId, this.countMatches(execution.results), 0, logger)
-    logger.info('Refine completed', { matchCount: meta.matchCount })
+    const meta = this.buildMeta(
+      requestId,
+      this.countMatches(execution.results),
+      0,
+      logger,
+      this.isTruncated(execution.results)
+    )
+    logger.info('Refine completed', {
+      matchCount: meta.matchCount,
+      truncated: meta.truncated ?? false,
+    })
 
     return { sparql, execution, meta }
   }
@@ -352,9 +367,13 @@ export class SearchService {
   /**
    * Count matches as DISTINCT primary assets, not result rows. A cross-reference
    * JOIN fans out (one row per referenced asset / per nested chain), so
-   * `results.length` over-counts. The UI groups by `?asset` and the distinct-
-   * `?asset` LIMIT wrap bounds distinct assets, so `matchCount` must agree with
-   * both. Falls back to the row count when rows carry no `?asset` binding.
+   * `results.length` over-counts — measured at 6.46 rows per asset for a
+   * scenario→hdmap join on the shipped corpus. The UI groups by `?asset`, so
+   * `matchCount` must agree with it. Falls back to the row count when rows
+   * carry no `?asset` binding.
+   *
+   * When {@link isTruncated} reports the row ceiling was reached this is a
+   * lower bound, not the total.
    */
   private countMatches(results: ResultRow[]): number {
     const assets = new Set<string>()
@@ -369,17 +388,34 @@ export class SearchService {
     return sawAsset ? assets.size : results.length
   }
 
+  /**
+   * Whether the query hit the compiler's row ceiling and so may have left
+   * matches unreturned. `assembleQuery` emits `LIMIT SPARQL_MAX_LIMIT` on
+   * every compiled query ([SPARQL11] §15.5); a solution sequence exactly that
+   * long is indistinguishable from a longer one that was cut, so the ceiling
+   * is reported as reached rather than guessed at. Callers render
+   * `matchCount` as "N+" when this is set.
+   *
+   * Reporting is the point: the previous design truncated at a lower limit
+   * and said nothing, so a 165-asset result was returned and counted as 100.
+   */
+  private isTruncated(results: ResultRow[]): boolean {
+    return results.length >= getConfig().SPARQL_MAX_LIMIT
+  }
+
   private buildMeta(
     requestId: string,
     matchCount: number,
     totalDatasets: number,
-    logger: RequestLogger
+    logger: RequestLogger,
+    truncated = false
   ): SearchMeta {
     return {
       requestId,
       totalDatasets,
       matchCount,
       executionTimeMs: logger.getTotalMs(),
+      ...(truncated ? { truncated: true } : {}),
       timings: logger.getTimings(),
     }
   }

@@ -151,6 +151,12 @@ export interface SearchMeta {
   totalDatasets: number
   matchCount: number
   executionTimeMs: number
+  /**
+   * Set when the query reached the server's row ceiling (`SPARQL_MAX_LIMIT`)
+   * and further matches exist that were not returned. `matchCount` is then a
+   * lower bound — render it as "N+". Absent means the result set is complete.
+   */
+  truncated?: boolean
   /** Per-stage durations within the server pipeline. Optional on the wire. */
   timings?: TimingEntry[]
 }

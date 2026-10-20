@@ -30,9 +30,13 @@ describe('enforceSparqlPolicy', () => {
     expect(result.violations).toHaveLength(0)
   })
 
-  it('leaves a query without LIMIT unbounded', () => {
-    // Regression: the policy appended `LIMIT 500`, silently truncating
-    // compiled searches that are meant to return every match.
+  it('passes a query without LIMIT through unchanged instead of appending one', () => {
+    // Regression: the policy silently appended `LIMIT 500` on top of the
+    // compiler's own `LIMIT 100`, so a broad search reported 100 of 165
+    // matches as if that were the total. Bounding is the compiler's job —
+    // it emits `LIMIT SPARQL_MAX_LIMIT` and the service reports reaching it
+    // as `meta.truncated`. A silent append here would only re-hide a query
+    // that had escaped that path.
     const result = enforceSparqlPolicy(validSelect)
     expect(result.allowed).toBe(true)
     expect(result.query).toBe(validSelect)

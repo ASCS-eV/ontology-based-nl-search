@@ -254,7 +254,14 @@ export function SearchPage() {
       {meta && (
         <div className="mt-4 text-xs text-gray-400 flex flex-col items-center gap-1">
           <div className="flex items-center gap-3">
-            <span>{meta.matchCount} results</span>
+            <span
+              title={
+                meta.truncated ? 'The server row limit was reached; more matches exist.' : undefined
+              }
+            >
+              {meta.matchCount}
+              {meta.truncated ? '+' : ''} results
+            </span>
             <span className="text-gray-300">·</span>
             <span>{meta.executionTimeMs}ms</span>
           </div>

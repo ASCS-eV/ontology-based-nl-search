@@ -124,9 +124,10 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
     }
   }
 
-  // An explicit LIMIT must stay within the configured maximum. A query
-  // without LIMIT is left as is: compiled searches return every match
-  // ([SPARQL11] §15.5), so nothing is appended.
+  // An explicit LIMIT must stay within the configured maximum. Nothing is
+  // appended when one is missing: the compiler emits `LIMIT SPARQL_MAX_LIMIT`
+  // on every query it produces ([SPARQL11] §15.5), so a silent append here
+  // would only mask a query that bypassed it.
   const maxLimit = getConfig().SPARQL_MAX_LIMIT
   if (parsed.queryType === 'SELECT' && parsed.limit !== undefined && parsed.limit > maxLimit) {
     violations.push(`LIMIT ${parsed.limit} exceeds maximum ${maxLimit}`)

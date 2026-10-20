@@ -61,7 +61,9 @@ describe('numeric datatype coverage', () => {
         },
       ],
       byDomain: new Map(),
-      domainCatalog: [{ domain: 'weather', classLabels: ['weather'], sampleTerms: [] }],
+      domainCatalog: [
+        { domain: 'weather', classLabels: ['weather'], sampleTerms: [], propertyNames: [] },
+      ],
     })
     expect(response.properties[0]).toMatchObject({ type: 'numeric', datatype: 'float' })
   })
