@@ -19,6 +19,7 @@ SELECT ?asset ?name ?city ?country ?region ?state WHERE {
   FILTER(?region = "Oberbayern")
   FILTER(?state = "Bavaria")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -35,6 +36,7 @@ SELECT ?asset ?name ?country WHERE {
   ?_d0_2 georeference:country ?country .
   FILTER(?country IN ("DE", "FR", "IT"))
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -51,6 +53,7 @@ SELECT ?asset ?name ?country WHERE {
   ?_d0_2 georeference:country ?country .
   FILTER(?country = "DE")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -67,6 +70,7 @@ SELECT ?asset ?name ?country WHERE {
   ?_d0_2 georeference:country ?country .
   FILTER(?country = "DE")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -77,6 +81,7 @@ SELECT ?asset ?name WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -87,6 +92,7 @@ SELECT ?asset ?name WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -97,6 +103,7 @@ SELECT ?asset ?name WHERE {
   ?asset a hdmap:HdMap ;
     rdfs:label ?name .
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -107,6 +114,7 @@ SELECT ?asset ?name WHERE {
   ?asset a ositrace:OSITrace ;
     rdfs:label ?name .
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -117,6 +125,7 @@ SELECT ?asset ?name WHERE {
   ?asset a scenario:Scenario ;
     rdfs:label ?name .
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -127,6 +136,7 @@ SELECT ?asset ?name WHERE {
   ?asset a ?assetClass ;
     rdfs:label ?name .
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -141,6 +151,7 @@ SELECT ?asset ?name ?formatType WHERE {
   ?format hdmap:formatType ?formatType .
   FILTER(?formatType = "ASAM OpenDRIVE")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -155,6 +166,7 @@ SELECT ?asset ?name ?roadTypes WHERE {
   ?content hdmap:roadTypes ?roadTypes .
   FILTER(?roadTypes IN ("motorway", "urban"))
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -171,6 +183,7 @@ SELECT ?asset ?name ?numberIntersections WHERE {
   FILTER(xsd:float(?numberIntersections) >= 5)
   FILTER(xsd:float(?numberIntersections) <= 50)
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -186,6 +199,7 @@ SELECT ?asset ?name ?numberIntersections WHERE {
   ?quantity hdmap:numberIntersections ?numberIntersections .
   FILTER(xsd:float(?numberIntersections) >= 5)
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -201,6 +215,7 @@ SELECT ?asset ?name ?numberIntersections WHERE {
   ?quantity hdmap:numberIntersections ?numberIntersections .
   FILTER(xsd:float(?numberIntersections) <= 50)
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -215,6 +230,7 @@ SELECT ?asset ?name ?roadTypes WHERE {
   ?content hdmap:roadTypes ?roadTypes .
   FILTER(?roadTypes = "motorway")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -232,6 +248,7 @@ SELECT ?asset ?name ?numberIntersections ?numberTrafficLights WHERE {
   FILTER(xsd:float(?numberIntersections) >= 5)
   FILTER(xsd:float(?numberTrafficLights) <= 100)
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -248,6 +265,7 @@ SELECT ?asset ?name ?roadTypes ?laneTypes WHERE {
   FILTER(?roadTypes = "motorway")
   FILTER(?laneTypes = "driving")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -276,6 +294,7 @@ SELECT ?asset ?name ?roadTypes ?license ?numberIntersections ?country WHERE {
   FILTER(xsd:float(?numberIntersections) <= 50)
   FILTER(?country = "DE")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -294,6 +313,7 @@ SELECT ?asset ?name ?roadTypes ?license WHERE {
   FILTER(?roadTypes = "motorway")
   FILTER(?license = "CC-BY-4.0")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -309,6 +329,7 @@ SELECT ?asset ?name ?license WHERE {
   ?quality_envited_x envited-x:license ?license .
   FILTER(?license = "CC-BY-4.0")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -332,6 +353,7 @@ SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset1 ?refNa
   ?refAsset1 a hdmap:HdMap .
   ?refAsset1 rdfs:label ?refName1 .
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -355,6 +377,7 @@ SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset_0 ?refN
   ?refAsset_0 a hdmap:HdMap .
   ?refAsset_0 rdfs:label ?refName_0 .
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -390,6 +413,7 @@ SELECT ?asset ?name ?roadTypes ?country WHERE {
     FILTER(?country = "FR")
   }
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -416,6 +440,7 @@ SELECT ?asset ?name ?roadTypes WHERE {
     FILTER(?roadTypes = "motorway")
   }
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -430,6 +455,7 @@ SELECT ?asset ?name ?accuracySignals WHERE {
   ?quality hdmap:accuracySignals ?accuracySignals .
   FILTER(?accuracySignals = "0.1")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -444,6 +470,7 @@ SELECT ?asset ?name ?scenarioCategory WHERE {
   ?content scenario:scenarioCategory ?scenarioCategory .
   FILTER(?scenarioCategory = "urban")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -458,6 +485,7 @@ SELECT ?asset ?name ?scenarioCategory WHERE {
   ?content scenario:scenarioCategory ?scenarioCategory .
   FILTER(?scenarioCategory = "urban")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -472,6 +500,7 @@ SELECT ?asset ?name ?entityTypes WHERE {
   ?content scenario:entityTypes ?entityTypes .
   FILTER(?entityTypes IN ("bicycle", "truck"))
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -486,6 +515,7 @@ SELECT ?asset ?name ?scenarioCategory WHERE {
   ?content scenario:scenarioCategory ?scenarioCategory .
   FILTER(?scenarioCategory = "urban")
 }
+ORDER BY ?asset
 LIMIT 500"
 `;
 
@@ -503,5 +533,6 @@ SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 WHERE {
   ?refAsset a hdmap:HdMap .
   ?refAsset rdfs:label ?refName .
 }
+ORDER BY ?asset
 LIMIT 500"
 `;

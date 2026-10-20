@@ -46,9 +46,10 @@ const envSchema = z.object({
   SPARQL_CACHE_TTL_MS: z.coerce.number().int().nonnegative().default(300_000),
   /**
    * Maximum rows a compiled search may return, and the ceiling the SPARQL
-   * policy accepts on an explicit LIMIT. Every compiled query carries this
-   * limit; reaching it sets `meta.truncated` so the shortfall is reported
-   * rather than hidden.
+   * policy accepts on an explicit LIMIT. Every compiled query is ordered by
+   * asset and carries this limit; on reaching it the service drops the
+   * trailing asset's rows, so every asset returned is complete and
+   * `meta.truncated` reports a real cut rather than a guess.
    */
   SPARQL_MAX_LIMIT: z.coerce.number().int().positive().default(500),
   /** Remote SPARQL HTTP timeout. Composed with caller signals via AbortSignal.any. */

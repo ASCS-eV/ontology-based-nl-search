@@ -38,17 +38,24 @@ export function pruneUnusedPrefixes(prefixes: string, body: string): string {
  * Centralizes the query-tail pattern used by both single-domain and
  * cross-domain compilation.
  *
- * Every query carries `LIMIT SPARQL_MAX_LIMIT` ([SPARQL11] §15.5). The limit
- * bounds *rows*, which is what a response costs to materialize and serialize,
- * and is the only ceiling in the system — a compiled query is the sole
- * producer the store ever sees, so bounding it here bounds the service.
+ * Every query carries `ORDER BY ?asset` followed by `LIMIT SPARQL_MAX_LIMIT`
+ * ([SPARQL11] §15.1, §15.5). This is the only ceiling in the system — a
+ * compiled query is the sole producer the store ever sees — so bounding it
+ * here bounds the service.
  *
- * Rows are not assets: a multi-valued property or a cross-reference JOIN
- * emits one row per value (measured at 6.46 rows per asset for a
- * scenario→hdmap join on the shipped corpus), so hitting the limit truncates
- * fewer assets than the number suggests. That is why reaching it is reported
- * rather than hidden — `SearchService` flags `meta.truncated` when the row
- * count reaches the ceiling, instead of silently returning a short list.
+ * The limit counts *rows*, and rows are not assets: a multi-valued property
+ * or a cross-reference JOIN emits one row per value, so a bounded page holds
+ * fewer assets than rows. Ordering by the primary asset is what makes that
+ * safe to report. It gives two properties a bare `LIMIT` cannot:
+ *
+ *  - the page is deterministic. A solution sequence has no inherent order,
+ *    so which rows a `LIMIT` keeps is otherwise arbitrary ([SPARQL11] §15.5)
+ *    and may differ between runs of the same query;
+ *  - every asset's rows are contiguous, so at most one asset — the last —
+ *    can be cut part-way through. `SearchService` drops that trailing group,
+ *    which is what lets it report `meta.truncated` as a fact rather than a
+ *    guess, and guarantees every asset it does return carries its complete
+ *    set of joined rows rather than a silently partial one.
  */
 export function assembleQuery(
   prefixes: string,
@@ -63,7 +70,7 @@ export function assembleQuery(
   const prologue = pruneUnusedPrefixes(prefixes, `${selectClause}\n${whereBody}`)
   const query =
     `${prologue}\n${selectClause} WHERE {\n  ${whereBody}\n}` +
-    `\nLIMIT ${getConfig().SPARQL_MAX_LIMIT}`
+    `\nORDER BY ?asset\nLIMIT ${getConfig().SPARQL_MAX_LIMIT}`
 
   // Post-assembly validation: catch syntax errors and W3C compliance issues
   const validation = validateSparql(query)

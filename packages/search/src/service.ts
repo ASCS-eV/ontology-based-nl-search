@@ -137,7 +137,7 @@ export class SearchService {
       this.countMatches(execution.results),
       totalDatasets,
       logger,
-      this.isTruncated(execution.results)
+      execution.truncated ?? false
     )
     logger.info('Search completed', {
       matchCount: meta.matchCount,
@@ -223,7 +223,7 @@ export class SearchService {
       this.countMatches(execution.results),
       0,
       logger,
-      this.isTruncated(execution.results)
+      execution.truncated ?? false
     )
     logger.info('Refine completed', {
       matchCount: meta.matchCount,
@@ -264,13 +264,16 @@ export class SearchService {
       const sparqlResults = await store.query(policy.query, { signal })
       endQuery()
 
+      // Trim before flattening so `results` and `traceability`, which are
+      // index-aligned, are derived from the same rows.
+      const { bindings, truncated } = this.applyRowCeiling(sparqlResults.results.bindings)
+
       return {
-        results: this.flattenBindings(sparqlResults.results.bindings),
+        results: this.flattenBindings(bindings),
         traceability:
-          trace && trace.length > 0
-            ? this.assembleTraceability(sparqlResults.results.bindings, trace)
-            : undefined,
+          trace && trace.length > 0 ? this.assembleTraceability(bindings, trace) : undefined,
         sparql: policy.query,
+        ...(truncated ? { truncated: true } : {}),
       }
     } catch (err) {
       // Aborts must propagate so the SSE handler can shut the stream
@@ -365,15 +368,15 @@ export class SearchService {
   }
 
   /**
-   * Count matches as DISTINCT primary assets, not result rows. A cross-reference
-   * JOIN fans out (one row per referenced asset / per nested chain), so
-   * `results.length` over-counts — measured at 6.46 rows per asset for a
-   * scenario→hdmap join on the shipped corpus. The UI groups by `?asset`, so
-   * `matchCount` must agree with it. Falls back to the row count when rows
-   * carry no `?asset` binding.
+   * Count matches as DISTINCT primary assets, not result rows. A
+   * cross-reference JOIN fans out (one row per referenced asset / per nested
+   * chain), so `results.length` over-counts — by more than 6× for the widest
+   * join in the shipped fixture. The UI groups by `?asset`, so `matchCount`
+   * must agree with it. Falls back to the row count when rows carry no
+   * `?asset` binding.
    *
-   * When {@link isTruncated} reports the row ceiling was reached this is a
-   * lower bound, not the total.
+   * When {@link applyRowCeiling} reports the row ceiling was reached this is
+   * a lower bound, not the total.
    */
   private countMatches(results: ResultRow[]): number {
     const assets = new Set<string>()
@@ -389,18 +392,41 @@ export class SearchService {
   }
 
   /**
-   * Whether the query hit the compiler's row ceiling and so may have left
-   * matches unreturned. `assembleQuery` emits `LIMIT SPARQL_MAX_LIMIT` on
-   * every compiled query ([SPARQL11] §15.5); a solution sequence exactly that
-   * long is indistinguishable from a longer one that was cut, so the ceiling
-   * is reported as reached rather than guessed at. Callers render
-   * `matchCount` as "N+" when this is set.
+   * Apply the compiler's row ceiling to a solution sequence.
    *
-   * Reporting is the point: the previous design truncated at a lower limit
-   * and said nothing, so a 165-asset result was returned and counted as 100.
+   * `assembleQuery` emits `ORDER BY ?asset` then `LIMIT SPARQL_MAX_LIMIT`
+   * ([SPARQL11] §15.1, §15.5), so a full page may have cut the last asset
+   * part-way through its joined rows. Returning it would present an asset
+   * whose references are silently incomplete — the same class of quiet
+   * wrongness as the old design, which returned 100 of 165 matches and said
+   * nothing. Because the rows are ordered by `?asset` they are contiguous
+   * per asset, so dropping the trailing group is enough to guarantee every
+   * asset returned is whole.
+   *
+   * Dropping it is also what makes `truncated` a fact rather than a guess: a
+   * sequence exactly as long as the limit is indistinguishable from a longer
+   * one that was cut, but once the trailing group is removed something was
+   * definitely withheld either way. No `LIMIT + 1` probe row is possible
+   * here — the policy gate rejects a limit above the ceiling, so asking for
+   * one more than the maximum is a contradiction.
+   *
+   * The sole exception is a single asset whose own fan-out fills the page.
+   * Dropping it would return nothing at all, so it is kept and the result is
+   * still reported as truncated.
    */
-  private isTruncated(results: ResultRow[]): boolean {
-    return results.length >= getConfig().SPARQL_MAX_LIMIT
+  private applyRowCeiling(bindings: SparqlBinding[]): {
+    bindings: SparqlBinding[]
+    truncated: boolean
+  } {
+    if (bindings.length < getConfig().SPARQL_MAX_LIMIT) return { bindings, truncated: false }
+
+    const lastAsset = bindings[bindings.length - 1]?.['asset']?.value
+    if (lastAsset === undefined) return { bindings, truncated: true }
+
+    const trimmed = bindings.filter((b) => b['asset']?.value !== lastAsset)
+    return trimmed.length === 0
+      ? { bindings, truncated: true }
+      : { bindings: trimmed, truncated: true }
   }
 
   private buildMeta(

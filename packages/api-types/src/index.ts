@@ -153,8 +153,14 @@ export interface SearchMeta {
   executionTimeMs: number
   /**
    * Set when the query reached the server's row ceiling (`SPARQL_MAX_LIMIT`)
-   * and further matches exist that were not returned. `matchCount` is then a
-   * lower bound — render it as "N+". Absent means the result set is complete.
+   * and matches were withheld: the server drops the trailing asset's rows so
+   * every asset returned is complete, which makes this a fact rather than a
+   * guess. `matchCount` is then a lower bound — render it as "N+". Absent
+   * means the result set is complete.
+   *
+   * Omitted rather than sent as `false`, so absent and `false` mean the same
+   * thing to a consumer ([RFC8259] §3 — a JSON member is either present with
+   * a literal value or not present at all).
    */
   truncated?: boolean
   /** Per-stage durations within the server pipeline. Optional on the wire. */

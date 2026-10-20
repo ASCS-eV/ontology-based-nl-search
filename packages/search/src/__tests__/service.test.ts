@@ -124,35 +124,73 @@ describe('SearchService.searchNl', () => {
     expect(result.meta.matchCount).toBe(2)
   })
 
-  it('flags meta.truncated once the row ceiling is reached, and not before', async () => {
-    // Regression: the compiler used to emit `LIMIT 100` while the policy
-    // appended `LIMIT 500`, and nothing reported the cut — "all HD maps"
-    // returned and counted 100 of 165. The ceiling still exists (it bounds
-    // what a response costs to materialize) but reaching it is now reported,
-    // so `matchCount` is either exact or explicitly a lower bound.
+  describe('row ceiling', () => {
+    // Regression: the compiler emitted `LIMIT 100` while the policy appended
+    // `LIMIT 500`, and nothing reported the cut — "all HD maps" returned and
+    // counted 100 of 165 as if that were the total. A ceiling still exists,
+    // but reaching it is now reported, and the trailing asset's rows are
+    // dropped so the report is a fact and every asset returned is complete.
     const maxLimit = getConfig().SPARQL_MAX_LIMIT
-    const rowsFor = (n: number): SparqlResults => ({
+
+    const resultsOf = (assetOfRow: (i: number) => string, n: number): SparqlResults => ({
       head: { vars: ['asset', 'name'] },
       results: {
         bindings: Array.from({ length: n }, (_, i) => ({
-          asset: { type: 'uri' as const, value: `urn:a:${i}` },
+          asset: { type: 'uri' as const, value: assetOfRow(i) },
         })),
       },
     })
 
-    const under = { ...mockStore, query: vi.fn().mockResolvedValue(rowsFor(maxLimit - 1)) }
-    const underResult = await new SearchService(
-      createMockDeps({ getStore: vi.fn().mockResolvedValue(under) })
-    ).searchNl({ query: 'everything' })
-    expect(underResult.meta.truncated).toBeUndefined()
-    expect(underResult.meta.matchCount).toBe(maxLimit - 1)
+    const search = async (rows: SparqlResults) => {
+      const store = { ...mockStore, query: vi.fn().mockResolvedValue(rows) }
+      return new SearchService(
+        createMockDeps({ getStore: vi.fn().mockResolvedValue(store) })
+      ).searchNl({ query: 'everything' })
+    }
 
-    const at = { ...mockStore, query: vi.fn().mockResolvedValue(rowsFor(maxLimit)) }
-    const atResult = await new SearchService(
-      createMockDeps({ getStore: vi.fn().mockResolvedValue(at) })
-    ).searchNl({ query: 'everything' })
-    expect(atResult.meta.truncated).toBe(true)
-    expect(atResult.meta.matchCount).toBe(maxLimit)
+    it('reports nothing and keeps every row below the ceiling', async () => {
+      const result = await search(resultsOf((i) => `urn:a:${i}`, maxLimit - 1))
+      expect(result.meta.truncated).toBeUndefined()
+      expect(result.meta.matchCount).toBe(maxLimit - 1)
+      expect(result.execution.results).toHaveLength(maxLimit - 1)
+    })
+
+    it('drops the trailing asset at the ceiling, so the report is a fact', async () => {
+      // A full page is indistinguishable from a longer one that was cut, and
+      // no `LIMIT + 1` probe is available — the policy rejects a limit above
+      // the ceiling. Dropping the last asset makes `truncated` true either
+      // way instead of a guess.
+      const result = await search(resultsOf((i) => `urn:a:${i}`, maxLimit))
+      expect(result.meta.truncated).toBe(true)
+      expect(result.meta.matchCount).toBe(maxLimit - 1)
+      expect(result.execution.results.map((r) => r['asset'])).not.toContain(`urn:a:${maxLimit - 1}`)
+    })
+
+    it('never returns an asset with only part of its fanned-out rows', async () => {
+      // The compiler orders by `?asset`, so a cut can only land inside the
+      // last asset's run of rows. Returning that asset would show a card
+      // whose references are silently incomplete.
+      const rowsPerAsset = 7
+      const result = await search(
+        resultsOf((i) => `urn:a:${String(Math.floor(i / rowsPerAsset)).padStart(4, '0')}`, maxLimit)
+      )
+      expect(result.meta.truncated).toBe(true)
+
+      const counts = new Map<string, number>()
+      for (const row of result.execution.results) {
+        counts.set(row['asset']!, (counts.get(row['asset']!) ?? 0) + 1)
+      }
+      expect([...counts.values()].every((c) => c === rowsPerAsset)).toBe(true)
+      expect(result.meta.matchCount).toBe(counts.size)
+    })
+
+    it('keeps a single asset whose own fan-out fills the page', async () => {
+      // Dropping the trailing group would otherwise return nothing at all.
+      const result = await search(resultsOf(() => 'urn:a:only', maxLimit))
+      expect(result.meta.truncated).toBe(true)
+      expect(result.meta.matchCount).toBe(1)
+      expect(result.execution.results).toHaveLength(maxLimit)
+    })
   })
 
   it('returns error when SPARQL policy rejects the query', async () => {
