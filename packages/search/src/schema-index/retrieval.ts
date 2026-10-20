@@ -19,7 +19,7 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { type EmbeddingProvider, lexicalOnlyProvider } from './embedding.js'
 import { extractShaclFragments, type ShaclFragment } from './fragment-extractor.js'
-import { namedDomains, rankCards, rankDomains, type ScoredCard } from './ranking.js'
+import { rankCards, rankDomains, type ScoredCard } from './ranking.js'
 import { buildTermIndex, type DomainCard, type TermCard } from './term-index.js'
 
 export interface RetrievalOptions {
@@ -107,22 +107,42 @@ export async function retrieveRelevantSchema(
   const domainRanking = rankDomains(query, index.domainCatalog)
   const cardRanking = await rerank(query, rankCards(query, index.cards), embedding, maxCards)
 
-  const domainSignal = new Map<string, number>()
-  for (const { domain, score } of domainRanking) {
-    domainSignal.set(domain.domain, score)
+  // Routing signal per domain: the strongest evidence seen for it, plus how
+  // strongly the query NAMED it. A word can tie two domains because one is
+  // named by it and the other merely contains it in a class or property
+  // label; `nameScore` breaks exactly that tie toward the domain the user
+  // asked for. Card-derived signal never contributes a name score — it is
+  // indirect evidence by construction.
+  const domainSignal = new Map<string, { score: number; nameScore: number }>()
+  const bump = (domain: string, score: number, nameScore: number): void => {
+    const existing = domainSignal.get(domain)
+    if (!existing) {
+      domainSignal.set(domain, { score, nameScore })
+      return
+    }
+    existing.score = Math.max(existing.score, score)
+    existing.nameScore = Math.max(existing.nameScore, nameScore)
+  }
+  for (const { domain, score, nameScore } of domainRanking) {
+    bump(domain.domain, score, nameScore)
   }
   for (const { card, score } of cardRanking) {
-    const existing = domainSignal.get(card.domain) ?? 0
-    if (score > existing) domainSignal.set(card.domain, score)
+    bump(card.domain, score, 0)
   }
-  // A domain the query names verbatim is an explicit scope, not a lexical
-  // hint: it is routed first and never displaced by the budget.
-  const named = namedDomains(query, [...index.byDomain.keys()])
-  const ranked = [...domainSignal.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  // A domain the query names explicitly already outranks the rest: the
+  // domain id is a joinable label field, so a version suffix written as
+  // separate words matches the versioned id exactly rather than weakly
+  // prefix-matching its unversioned sibling. Routing therefore stays a pure
+  // ranking decision and the card budget is never bypassed — a named domain
+  // that overflows the budget degrades to its top-ranked cards plus the
+  // always-attached catalog, which is what keeps gap reporting honest
+  // without an unbounded prompt.
+  const domains = [...domainSignal.entries()]
+    .sort(
+      ([an, a], [bn, b]) => b.score - a.score || b.nameScore - a.nameScore || an.localeCompare(bn)
+    )
+    .slice(0, maxDomains)
     .map(([domain]) => domain)
-    .filter((domain) => !named.includes(domain))
-  const domains = [...named, ...ranked].slice(0, Math.max(maxDomains, named.length))
 
   const confidence = Math.min(1, Math.max(domainRanking[0]?.score ?? 0, cardRanking[0]?.score ?? 0))
 
@@ -142,14 +162,6 @@ export async function retrieveRelevantSchema(
   for (const { card } of cardRanking) {
     if (selected.length >= maxCards) break
     if (routed.has(card.domain)) push(card)
-  }
-  // A named domain is shown whole, outside the card budget: the user scoped
-  // the search to it, so every property it declares must be visible —
-  // otherwise the model reports a property it never saw as an ontology gap.
-  // Cards beyond the fragment budget degrade to condensed lines, so the
-  // prompt stays bounded.
-  for (const domain of named) {
-    for (const card of index.byDomain.get(domain) ?? []) push(card)
   }
   for (const domain of domains) {
     if (selected.length >= maxCards) break

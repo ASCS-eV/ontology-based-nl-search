@@ -125,10 +125,15 @@ describe('retrieveRelevantSchema — fragments, budgets, abort', () => {
   /**
    * Regression: a query naming a domain ("<Domain> only: ...") was routed by
    * lexical score alone, so the named domain could lose to unrelated domains
-   * and its properties beyond the card budget were never shown — the model
-   * then reported existing properties as ontology gaps.
+   * and its properties were never shown — the model then reported existing
+   * properties as ontology gaps.
+   *
+   * The fix is in ranking (the domain id is a joinable label field), NOT a
+   * budget bypass: the named domain must route first *and* the card budget
+   * must still hold, otherwise the prompt grows without bound on exactly
+   * the queries that name the largest domains.
    */
-  it('routes a domain the query names first and shows all of its cards', async () => {
+  it('routes a domain the query names first, still within the card budget', async () => {
     const [domain, cards] = [...index.byDomain.entries()]
       .filter(([d]) => /^[a-z0-9]+$/.test(d))
       .sort((a, b) => b[1].length - a[1].length)[0]!
@@ -140,8 +145,45 @@ describe('retrieveRelevantSchema — fragments, budgets, abort', () => {
     })
 
     expect(retrieved.domains[0]).toBe(domain)
-    const selected = new Set(retrieved.cards.map((c) => `${c.domain}|${c.kind}|${c.iri}`))
-    for (const c of cards) expect(selected.has(`${c.domain}|${c.kind}|${c.iri}`)).toBe(true)
+    const primary = retrieved.cards.filter((c) => retrieved.domains.includes(c.domain))
+    expect(primary.length).toBeLessThanOrEqual(5)
+    expect(primary.length).toBeGreaterThan(0)
+  })
+
+  /**
+   * Regression: a multi-word spelling of a domain id tokenizes apart while
+   * the id stays joined, so a versioned domain could not be distinguished
+   * from its base and the model answered about the wrong version.
+   *
+   * The split points are generated rather than hand-written so the test
+   * asserts the general property — *however* the user breaks the name into
+   * adjacent words, it still routes to the version they named — without
+   * encoding how any particular ontology spells its domains.
+   */
+  it('routes a versioned domain above its base id for any adjacent-word spelling', async () => {
+    const versioned = [...index.byDomain.keys()].find(
+      (d) => /-v\d+$/.test(d) && index.byDomain.has(d.replace(/-v\d+$/, ''))
+    )
+    // Not a conditional skip: the corpus is the fixture, and a corpus with
+    // no versioned sibling cannot exercise this at all.
+    expect(versioned, 'corpus has no versioned/base domain pair to disambiguate').toBeDefined()
+    const base = versioned!.replace(/-v\d+$/, '')
+
+    const spellings = [
+      versioned!,
+      versioned!.replace(/[^a-z0-9]+/g, ' '),
+      // Break the base word itself, which is what makes the two sides
+      // tokenize asymmetrically in the first place.
+      `${base.slice(0, Math.ceil(base.length / 2))} ${base.slice(Math.ceil(base.length / 2))} ${versioned!.slice(base.length).replace(/[^a-z0-9]+/g, '')}`,
+    ]
+
+    for (const query of spellings) {
+      const retrieved = await retrieveRelevantSchema(store, `${query} properties`, {
+        maxDomains: 1,
+      })
+      expect(retrieved.domains[0], `query: ${query}`).toBe(versioned)
+      expect(retrieved.domains[0]).not.toBe(base)
+    }
   })
 
   it('bounds the raw fragment payload; overflow properties survive as cards', async () => {
