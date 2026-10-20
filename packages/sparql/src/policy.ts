@@ -75,7 +75,7 @@ interface SparqlPattern {
  * Rules:
  * - Must be a SELECT query (no INSERT, DELETE, CONSTRUCT, DESCRIBE, LOAD, etc.)
  * - No SERVICE clauses (no federation to external endpoints)
- * - LIMIT must be ≤ MAX_LIMIT (auto-appended if missing)
+ * - An explicit LIMIT must be ≤ MAX_LIMIT (none is appended when missing)
  * - All prefixes must be from the allowed set
  */
 export function enforceSparqlPolicy(query: string): PolicyResult & { query: string } {
@@ -124,22 +124,19 @@ export function enforceSparqlPolicy(query: string): PolicyResult & { query: stri
     }
   }
 
-  // Check LIMIT against the configured maximum.
+  // An explicit LIMIT must stay within the configured maximum. Nothing is
+  // appended when one is missing: the compiler emits `LIMIT SPARQL_MAX_LIMIT`
+  // on every query it produces ([SPARQL11] §15.5), so a silent append here
+  // would only mask a query that bypassed it.
   const maxLimit = getConfig().SPARQL_MAX_LIMIT
-  let resultQuery = query
-  if (parsed.type === 'query' && parsed.queryType === 'SELECT') {
-    if (parsed.limit === undefined) {
-      // Append a default LIMIT
-      resultQuery = query.trimEnd() + `\nLIMIT ${maxLimit}`
-    } else if (parsed.limit > maxLimit) {
-      violations.push(`LIMIT ${parsed.limit} exceeds maximum ${maxLimit}`)
-    }
+  if (parsed.queryType === 'SELECT' && parsed.limit !== undefined && parsed.limit > maxLimit) {
+    violations.push(`LIMIT ${parsed.limit} exceeds maximum ${maxLimit}`)
   }
 
   return {
     allowed: violations.length === 0,
     violations,
-    query: violations.length === 0 ? resultQuery : query,
+    query,
   }
 }
 

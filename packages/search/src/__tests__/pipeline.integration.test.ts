@@ -34,6 +34,7 @@
  * - Any UI behaviour (task 18).
  */
 
+import { getConfig } from '@ontology-search/core/config'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SearchSlots } from '@ontology-search/slots/slots'
 import { enforceSparqlPolicy } from '@ontology-search/sparql/policy'
@@ -178,27 +179,53 @@ describe('SearchService — real pipeline integration', () => {
   }, 120_000)
 
   /**
-   * A cross-reference JOIN fans out (one row per referenced asset), so a plain
-   * row-level LIMIT would silently truncate distinct matching assets. The
-   * compiler must wrap the asset selection in a `SELECT DISTINCT ?asset … LIMIT`
-   * sub-SELECT so the limit bounds distinct assets, not rows. Plain queries
-   * (no fan-out) must stay a flat SELECT.
+   * Regression: every compiled query carried `LIMIT 100` (and the policy
+   * appended `LIMIT 500` to any query without one), so "all HD maps"
+   * returned and counted 100 of the 165 in the fixture — silently, as if
+   * 100 were the total.
+   *
+   * The fix is not "no bound at all": a response still has to be
+   * materialized and serialized, so rows are bounded at the configured
+   * ceiling. What changed is that the bound is (a) large enough that real
+   * queries over this corpus are complete, and (b) reported via
+   * `meta.truncated` when it is reached, so a short count is never passed
+   * off as a total. This test pins both halves.
    */
-  it('limits a cross-reference JOIN by distinct asset, not by row', async () => {
-    const { sparql } = await compileSlotsWithTrace({
-      domains: ['ositrace'],
+  it('returns every matching asset, with the row bound reported rather than silent', async () => {
+    const maxLimit = getConfig().SPARQL_MAX_LIMIT
+    const result = await realServiceWithMockedLlm({
+      domains: ['hdmap'],
+      filters: {},
+      ranges: {},
+    }).searchNl({ query: 'all HD maps' })
+
+    expect(result.execution.error).toBeUndefined()
+    // One bound, at the ceiling — not the old 100, and not a second one
+    // appended by the policy on top of the compiler's.
+    expect(result.sparql.match(/\bLIMIT\b/g)).toHaveLength(1)
+    expect(result.sparql.trimEnd().endsWith(`LIMIT ${maxLimit}`)).toBe(true)
+    // All 165 come back, and nothing claims they were cut.
+    expect(result.meta.matchCount).toBe(165)
+    expect(result.meta.truncated).toBeUndefined()
+
+    // The worst reference fan-out the fixture produces (scenario → hdmap,
+    // 323 rows for 50 distinct scenarios, 6.5×) also fits under the
+    // ceiling, so the bound does not re-introduce the bug for joins. It is
+    // emitted flat: no distinct-asset sub-SELECT wrap duplicating the WHERE
+    // body, which is what the old design needed to make a LIMIT count
+    // assets instead of rows.
+    const fanOut = await realServiceWithMockedLlm({
+      domains: ['scenario'],
       filters: {},
       ranges: {},
       references: [{ domain: 'hdmap' }],
-    })
-    expect(sparql).toMatch(/SELECT DISTINCT \?asset WHERE \{/)
+    }).searchNl({ query: 'scenarios referencing HD maps' })
 
-    const { sparql: plain } = await compileSlotsWithTrace({
-      domains: ['ositrace'],
-      filters: {},
-      ranges: {},
-    })
-    expect(plain).not.toContain('SELECT DISTINCT ?asset')
+    expect(fanOut.execution.error).toBeUndefined()
+    expect(fanOut.sparql).not.toContain('SELECT DISTINCT ?asset')
+    expect(fanOut.execution.results.length).toBeLessThan(maxLimit)
+    expect(fanOut.execution.results.length).toBeGreaterThan(fanOut.meta.matchCount)
+    expect(fanOut.meta.truncated).toBeUndefined()
   }, 120_000)
 
   /**

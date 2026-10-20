@@ -16,6 +16,7 @@ import {
   formatMissingSourcesError,
   getArtifactRoots,
   getWorkspaceRoot,
+  isDomainSelected,
   loadOntologySourcesManifest,
   type OntologySourcesDiagnostics,
 } from '../sources.js'
@@ -179,6 +180,102 @@ describe('ontology source-tree discovery (sources.ts)', () => {
       expect(roots).toHaveLength(1)
       expect(roots[0]?.path).toBe(join(workspaceRoot, 'omb-root'))
       expect(roots[0]?.domainAllowlist).toEqual(new Set(['hdmap', 'scenario']))
+    })
+
+    it('passes the excludeDomains denylist from manifest', () => {
+      writeFileSync(
+        join(workspaceRoot, 'ontology-sources.json'),
+        JSON.stringify({ sources: [{ path: 'omb-root', excludeDomains: ['gx'] }] })
+      )
+      const roots = getArtifactRoots()
+      expect(roots[0]?.domainAllowlist).toBeUndefined()
+      expect(roots[0]?.domainDenylist).toEqual(new Set(['gx']))
+    })
+  })
+
+  describe('domain selection (domains whitelist / excludeDomains blacklist)', () => {
+    function setupArtifacts(selection: Record<string, unknown>): void {
+      const artifactsRoot = join(workspaceRoot, 'artifacts')
+      for (const domain of ['hdmap', 'openlabel', 'openlabel-v2', 'scenario']) {
+        mkdirSync(join(artifactsRoot, domain), { recursive: true })
+        writeFileSync(join(artifactsRoot, domain, `${domain}.shacl.ttl`), '@prefix : <#> .')
+        writeFileSync(join(artifactsRoot, domain, `${domain}.owl.ttl`), '@prefix : <#> .')
+        writeFileSync(join(artifactsRoot, domain, `${domain}.context.jsonld`), '{}')
+      }
+      writeFileSync(
+        join(workspaceRoot, 'ontology-sources.json'),
+        JSON.stringify({ sources: [{ path: 'artifacts', ...selection }] })
+      )
+    }
+    const shapeDomains = () =>
+      [...new Set(discoverShapeFiles({ includeOwl: true }).map((f) => f.domain))].sort()
+
+    it('isDomainSelected applies the allowlist, then the denylist', () => {
+      const root = {
+        path: '/x',
+        domainAllowlist: new Set(['a', 'b']),
+        domainDenylist: new Set(['b']),
+      }
+      expect(isDomainSelected(root, 'a')).toBe(true)
+      expect(isDomainSelected(root, 'b')).toBe(false)
+      expect(isDomainSelected(root, 'c')).toBe(false)
+      expect(isDomainSelected({ path: '/x' }, 'c')).toBe(true)
+    })
+
+    it('a whitelist of one ontology loads only that ontology everywhere', () => {
+      setupArtifacts({ domains: ['openlabel'] })
+      expect(shapeDomains()).toEqual(['openlabel'])
+      expect(discoverContextFiles().map((f) => f.domain)).toEqual(['openlabel'])
+      expect(diagnoseOntologySources().totalShapeFiles).toBe(1)
+    })
+
+    it('a blacklist drops only the named ontologies', () => {
+      setupArtifacts({ excludeDomains: ['openlabel-v2'] })
+      expect(shapeDomains()).toEqual(['hdmap', 'openlabel', 'scenario'])
+      expect(discoverContextFiles().map((f) => f.domain)).not.toContain('openlabel-v2')
+      expect(diagnoseOntologySources().totalShapeFiles).toBe(3)
+    })
+
+    it('combines whitelist and blacklist', () => {
+      setupArtifacts({ domains: ['hdmap', 'scenario'], excludeDomains: ['openlabel'] })
+      expect(shapeDomains()).toEqual(['hdmap', 'scenario'])
+    })
+
+    it('reports selected names without a directory as unknownDomains (typos)', () => {
+      setupArtifacts({ domains: ['openlabel', 'OpenLabel'], excludeDomains: ['gx'] })
+      const [root] = diagnoseOntologySources().roots
+      expect(root?.unknownDomains).toEqual(['OpenLabel', 'gx'])
+    })
+
+    it('omits unknownDomains when every selected name exists', () => {
+      setupArtifacts({ domains: ['openlabel'] })
+      expect(diagnoseOntologySources().roots[0]).not.toHaveProperty('unknownDomains')
+    })
+
+    it('rejects a domain named in both lists', () => {
+      setupArtifacts({ domains: ['openlabel'], excludeDomains: ['openlabel'] })
+      expect(() => loadOntologySourcesManifest()).toThrow(OntologySourcesError)
+      expect(() => loadOntologySourcesManifest()).toThrow(/both includes and excludes openlabel/)
+    })
+
+    it.each([
+      ['domains', 'openlabel'],
+      ['excludeDomains', [1]],
+    ])('rejects a non-string-array %s', (key, value) => {
+      setupArtifacts({ [key]: value })
+      expect(() => loadOntologySourcesManifest()).toThrow(OntologySourcesError)
+      expect(() => loadOntologySourcesManifest()).toThrow(new RegExp(`${key} .*array of domain`))
+    })
+
+    it.each(['domains', 'excludeDomains'])('rejects a duplicate entry in %s', (key) => {
+      // `ontology-sources.schema.json` declares `uniqueItems` on both lists
+      // ([JSON-SCHEMA-VAL] §6.4.3), so a conforming validator rejects a
+      // duplicate. The loader must agree, or the published schema is not the
+      // contract the loader actually enforces — even though the list ends up
+      // in a Set where the duplicate would vanish.
+      setupArtifacts({ [key]: ['openlabel', 'openlabel'] })
+      expect(() => loadOntologySourcesManifest()).toThrow(OntologySourcesError)
+      expect(() => loadOntologySourcesManifest()).toThrow(/openlabel more than once/)
     })
   })
 

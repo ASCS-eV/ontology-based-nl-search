@@ -11,6 +11,7 @@ import { createComponentLogger } from '@ontology-search/core/logging'
 import { iri } from '@ontology-search/core/rdf/prefixes'
 import {
   assertOntologySourcesAvailable,
+  diagnoseOntologySources,
   discoverShapeFiles,
 } from '@ontology-search/ontology/sources'
 import type { SparqlStore } from '@ontology-search/sparql/types'
@@ -33,7 +34,16 @@ export async function loadSchemaGraph(
   // absent (e.g. git submodules not initialized). Without this the loader
   // would log "0 files" and return, the service would start "ready", and
   // every search would silently produce empty/garbage results.
-  assertOntologySourcesAvailable()
+  const diag = diagnoseOntologySources()
+  assertOntologySourcesAvailable(diag)
+  for (const root of diag.roots) {
+    if (root.unknownDomains) {
+      log.warn('ontology-sources.json selects domains that do not exist in the source root', {
+        root: root.path,
+        unknownDomains: root.unknownDomains,
+      })
+    }
+  }
 
   const files = discoverShapeFiles({ includeOwl: true })
   const domains = new Set<string>()

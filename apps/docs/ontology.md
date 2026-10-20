@@ -141,7 +141,7 @@ Shape properties of v1 that matter for search and data (found while building the
 
 ### Choosing which OpenLABEL the search loads
 
-Both domains are loaded by default, which gives the model two near-identical vocabulary names to choose from ("OpenLABEL only" is ambiguous, and `openlabel-v2` has standalone entry classes but no data). The per-source `domains` allowlist of `ontology-sources.json` scopes this without touching code:
+Both domains are loaded by default, which gives the model two near-identical vocabulary names to choose from ("OpenLABEL only" is ambiguous, and `openlabel-v2` has standalone entry classes but no data). The per-source `excludeDomains` denylist of `ontology-sources.json` scopes this without touching code:
 
 ```json
 {
@@ -149,35 +149,21 @@ Both domains are loaded by default, which gives the model two near-identical voc
     {
       "name": "omb-artifacts",
       "path": ".ontology/artifacts",
-      "domains": [
-        "automotive-simulator",
-        "description",
-        "environment-model",
-        "envited-x",
-        "example",
-        "general",
-        "georeference",
-        "gx",
-        "hdmap",
-        "leakage-test",
-        "manifest",
-        "openlabel",
-        "ositrace",
-        "scenario",
-        "service",
-        "simulated-sensor",
-        "simulation-model",
-        "surface-model",
-        "survey",
-        "tzip21",
-        "vv-report"
-      ]
+      "excludeDomains": ["openlabel-v2"]
     }
   ]
 }
 ```
 
-(every domain of the pinned OMB 0.5.0 except `openlabel-v2`, which is left out until it is finished and referenced by the asset shapes; with this manifest `openlabel-v2` is no longer in the domain registry and the OpenLABEL test suites pass unchanged).
+(every domain of the pinned OMB except `openlabel-v2`, which is left out until it is finished and referenced by the asset shapes; with this manifest `openlabel-v2` is no longer in the domain registry and the OpenLABEL test suites pass unchanged).
+
+To search **OpenLABEL V1-0-0 only**, whitelist it instead. The schema graph, the LLM prompt, the domain registry and the asset domains then contain `openlabel` alone, so every query targets `openlabel:Tag` and the results are the 44 standalone OpenLABEL documents of the sample data (the OpenLABEL nodes embedded in HD-map and scenario assets are not returned, because those asset ontologies are not loaded):
+
+```json
+{
+  "sources": [{ "name": "omb-artifacts", "path": ".ontology/artifacts", "domains": ["openlabel"] }]
+}
+```
 
 ## Cross-Domain Relationships
 
@@ -205,7 +191,64 @@ The stack loads its artifacts from the roots declared in `ontology-sources.json`
 (validated by `ontology-sources.schema.json`, JSON Schema 2020-12). Without a
 manifest it falls back to `ONTOLOGY_ARTIFACTS_PATH`, then to the default
 submodule path. Multiple roots are supported, each with an optional per-root
-`domains` allowlist.
+domain selection (see [Selecting ontologies](#selecting-ontologies)).
+
+### Selecting ontologies
+
+Each source can restrict which of its domain subdirectories (= ontologies) are
+loaded:
+
+| key              | meaning                                                       |
+| ---------------- | ------------------------------------------------------------- |
+| `domains`        | whitelist — load **only** these domains of the root           |
+| `excludeDomains` | blacklist — never load these domains; applied after `domains` |
+
+A domain left out by the selection is invisible to the whole stack: it is not
+loaded into the schema graph, not part of the domain registry, the SHACL
+validator, the JSON-LD contexts or the LLM prompt, and can therefore never be
+searched or returned. Naming a domain in both lists is rejected at startup
+(`OntologySourcesError`); a name that matches no subdirectory is logged as a
+warning (`unknownDomains`), since it is almost always a typo. The selection
+needs a restart of the API to take effect.
+
+A domain is loaded when it is in `domains` (or `domains` is omitted) **and** it
+is not in `excludeDomains`. Domain names are the subdirectory names of the
+source root, e.g. `ls .ontology/artifacts`. `ontology-sources.json` is
+gitignored, so each checkout picks its own selection. Start from
+`ontology-sources.example.json`:
+
+```bash
+cp ontology-sources.example.json ontology-sources.json
+```
+
+Then add a selection to the source:
+
+| goal                              | source entry                                                                  |
+| --------------------------------- | ----------------------------------------------------------------------------- |
+| search OpenLABEL V1-0-0 only      | `{ "path": ".ontology/artifacts", "domains": ["openlabel"] }`                 |
+| search HD maps and scenarios only | `{ "path": ".ontology/artifacts", "domains": ["hdmap", "scenario"] }`         |
+| everything except `openlabel-v2`  | `{ "path": ".ontology/artifacts", "excludeDomains": ["openlabel-v2"] }`       |
+| everything except Gaia-X and V2   | `{ "path": ".ontology/artifacts", "excludeDomains": ["gx", "openlabel-v2"] }` |
+
+The selection is not transitive. If you leave out an ontology that an asset
+ontology builds on, the asset ontology and its data still load, but the
+properties it gets from the left-out ontology can't be searched. For example,
+with `"domains": ["hdmap"]` all 165 HD maps load, but only the 23 `hdmap`
+properties are searchable. `country` and `city` come from `georeference`, so
+add that domain to filter by location.
+
+To check the active selection after a restart, call `/stats`.
+`availableDomains` and the per-domain asset counts list only the selected
+domains:
+
+```bash
+curl -s http://localhost:3003/stats
+# {"totalAssets":44,"domains":{"openlabel":44},"availableDomains":["openlabel"],…}
+```
+
+Before starting, `pnpm run check:setup` prints how many shape files the
+selection loads, and fails if it loads none. The API reports unknown domain
+names and overlapping lists when it starts.
 
 OMB also ships `imports/` — the foundation vocabularies its ontologies build on
 (`cred`, `cs`, `dcterms`, `did`, `foaf`, `org`, `owl`, `prov`, `rdf`, `rdfs`,

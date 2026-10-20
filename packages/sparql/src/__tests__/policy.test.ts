@@ -30,9 +30,16 @@ describe('enforceSparqlPolicy', () => {
     expect(result.violations).toHaveLength(0)
   })
 
-  it('appends LIMIT if missing', () => {
+  it('passes a query without LIMIT through unchanged instead of appending one', () => {
+    // Regression: the policy silently appended `LIMIT 500` on top of the
+    // compiler's own `LIMIT 100`, so a broad search reported 100 of 165
+    // matches as if that were the total. Bounding is the compiler's job —
+    // it emits `LIMIT SPARQL_MAX_LIMIT` and the service reports reaching it
+    // as `meta.truncated`. A silent append here would only re-hide a query
+    // that had escaped that path.
     const result = enforceSparqlPolicy(validSelect)
-    expect(result.query).toContain('LIMIT 500')
+    expect(result.allowed).toBe(true)
+    expect(result.query).toBe(validSelect)
   })
 
   it('preserves existing LIMIT ≤ 500', () => {
@@ -162,13 +169,13 @@ describe('enforceSparqlPolicy', () => {
     expect(result.violations[0]).toMatch(/Only SELECT|Parse error/)
   })
 
-  it('appends LIMIT on a fresh line even when the query ends in a comment', () => {
-    // Comment-injection guard: a trailing `#` comment must not swallow the
-    // auto-appended LIMIT (the policy appends it on a new line, post-parse).
-    const q = validSelect.trimEnd() + '\n# trailing comment without a newline'
+  it('rejects LIMIT > 500 written on the line after a trailing comment', () => {
+    // A `#` comment ends at the newline, so the LIMIT on the next line is real
+    // and must still be checked against the ceiling.
+    const q = validSelect.trimEnd() + '\n# trailing comment\nLIMIT 9999'
     const result = enforceSparqlPolicy(q)
-    expect(result.allowed).toBe(true)
-    expect(result.query).toMatch(/\nLIMIT 500\s*$/)
+    expect(result.allowed).toBe(false)
+    expect(result.violations[0]).toContain('exceeds maximum')
   })
 })
 

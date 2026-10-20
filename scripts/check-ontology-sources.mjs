@@ -46,26 +46,36 @@ function resolveArtifactRoots() {
     try {
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
       const sources = Array.isArray(manifest?.sources) ? manifest.sources : []
-      const paths = sources
-        .map((s) => (typeof s?.path === 'string' ? join(root, s.path) : null))
-        .filter(Boolean)
-      if (paths.length > 0) return paths
+      const asSet = (list) => (Array.isArray(list) ? new Set(list) : undefined)
+      const roots = sources
+        .filter((s) => typeof s?.path === 'string')
+        .map((s) => ({
+          path: join(root, s.path),
+          allow: asSet(s.domains),
+          deny: asSet(s.excludeDomains),
+        }))
+      if (roots.length > 0) return roots
     } catch {
       // A malformed manifest is reported loudly by the server at startup
       // (OntologySourcesError); the preflight just falls through.
     }
   }
   const envOverride = process.env.ONTOLOGY_ARTIFACTS_PATH
-  if (envOverride) return [envOverride]
+  if (envOverride) return [{ path: envOverride }]
   // Last resort: the default cache path (matches runtime fallback)
-  return [join(root, ...DEFAULT_CACHE_SEGMENTS)]
+  return [{ path: join(root, ...DEFAULT_CACHE_SEGMENTS) }]
 }
 
-/** Count `*.shacl.ttl` files in the domain subdirectories of a root. */
-function countShapeFiles(rootDir) {
+/**
+ * Count `*.shacl.ttl` files in the selected domain subdirectories of a root —
+ * mirrors `isDomainSelected` in packages/ontology/src/sources.ts.
+ */
+function countShapeFiles({ path: rootDir, allow, deny }) {
   if (!existsSync(rootDir)) return 0
   let count = 0
   for (const entry of readdirSync(rootDir)) {
+    if (allow && !allow.has(entry)) continue
+    if (deny?.has(entry)) continue
     const domainDir = join(rootDir, entry)
     if (!statSync(domainDir).isDirectory()) continue
     for (const file of readdirSync(domainDir)) {
@@ -75,10 +85,10 @@ function countShapeFiles(rootDir) {
   return count
 }
 
-const roots = resolveArtifactRoots().map((path) => ({
-  path,
-  exists: existsSync(path),
-  shapeFileCount: countShapeFiles(path),
+const roots = resolveArtifactRoots().map((r) => ({
+  path: r.path,
+  exists: existsSync(r.path),
+  shapeFileCount: countShapeFiles(r),
 }))
 const total = roots.reduce((sum, r) => sum + r.shapeFileCount, 0)
 

@@ -45,6 +45,11 @@
       "import": "./dist/rdf/literal.js",
       "default": "./dist/rdf/literal.js"
     },
+    "./rdf/numeric-datatypes": {
+      "types": "./src/rdf/numeric-datatypes.ts",
+      "import": "./dist/rdf/numeric-datatypes.js",
+      "default": "./dist/rdf/numeric-datatypes.js"
+    },
     "./http/mime": {
       "types": "./src/http/mime.ts",
       "import": "./dist/http/mime.js",

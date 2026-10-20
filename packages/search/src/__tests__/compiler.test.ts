@@ -1,3 +1,4 @@
+import { getConfig } from '@ontology-search/core/config'
 import { parseGraphQLToSlots, slotsToGraphQL } from '@ontology-search/graphql-ir'
 import type { SearchSlots } from '@ontology-search/slots/slots'
 import {
@@ -255,7 +256,7 @@ describe('compileSlots', () => {
     expect(sparql).toContain('SELECT ?asset ?name')
     expect(sparql).toContain('?asset a hdmap:HdMap')
     expect(sparql).toContain('rdfs:label ?name')
-    expect(sparql).toContain('LIMIT 100')
+    expect(sparql.trimEnd().endsWith(`LIMIT ${getConfig().SPARQL_MAX_LIMIT}`)).toBe(true)
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
   })
@@ -497,7 +498,7 @@ describe('compileSlots', () => {
       ranges: {},
     }
     const sparql = await compileSlots(slots)
-    expect(sparql).toContain('FILTER(?entityTypes IN ("car", "truck", "pedestrian"))')
+    expect(sparql).toContain('FILTER(?entityTypes IN ("car", "pedestrian", "truck"))')
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
   })

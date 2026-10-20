@@ -178,6 +178,8 @@ const XSD_BOOLEAN = iri('xsd', 'boolean')
  *
  *   When no hierarchy edges are present in the data, the path matches only
  *   the IRI itself (reflexive case) — same semantics as plain equality.
+ * - **Several values** (any mix) are alternatives: the leaf matches when it
+ *   satisfies ANY of them, as the slot contract's IN-semantics require.
  *
  * @param datatype `sh:datatype` the leaf's shape declares ([SHACL] §4.1.2),
  *   when known. The comparison follows the declared datatype, never the
@@ -191,7 +193,10 @@ export function addEnumFilter(
   value: string | string[],
   datatype?: string
 ): void {
-  const arr = Array.isArray(value) ? value : [value]
+  // Several values form a set (IN-semantics), so their order carries no
+  // meaning; sorting makes equivalent slots — e.g. a GraphQL round-trip,
+  // which sorts values — compile to the identical query.
+  const arr = [...new Set(Array.isArray(value) ? value : [value])].sort()
   const iriValues = arr.filter(isIri)
   const literalValues = arr.filter((v) => !isIri(v))
 
@@ -202,6 +207,7 @@ export function addEnumFilter(
   // lexical forms of each boolean value ([RDF11] §5) are compared through
   // STR() instead, which matches typed and plain-string storage alike.
   const booleans = literalValues.map((v) => BOOLEAN_CANONICAL.get(v.trim().toLowerCase()))
+  let literalCondition: string | undefined
   if (
     datatype === XSD_BOOLEAN &&
     literalValues.length > 0 &&
@@ -210,18 +216,65 @@ export function addEnumFilter(
     const lexical = [...new Set(booleans.flatMap((b) => BOOLEAN_LEXICAL_FORMS.get(b!)!))].map(
       (form) => `"${form}"`
     )
-    filters.push(`FILTER(STR(${varName}) IN (${lexical.join(', ')}))`)
+    literalCondition = `STR(${varName}) IN (${lexical.join(', ')})`
   } else if (literalValues.length === 1) {
-    filters.push(`FILTER(${varName} = "${escapeRdfLiteral(literalValues[0]!)}")`)
+    literalCondition = `${varName} = "${escapeRdfLiteral(literalValues[0]!)}"`
   } else if (literalValues.length > 1) {
     const values = literalValues.map((v) => `"${escapeRdfLiteral(v)}"`).join(', ')
-    filters.push(`FILTER(${varName} IN (${values}))`)
+    literalCondition = `${varName} IN (${values})`
   }
 
-  for (const iri of iriValues) {
+  if (iriValues.length === 0) {
+    if (literalCondition) filters.push(`FILTER(${literalCondition})`)
+    return
+  }
+
+  if (iriValues.length === 1 && !literalCondition) {
     // The hierarchy walk is emitted as an additional graph pattern, not a
     // FILTER, so the property path is evaluated by the SPARQL engine against
     // every loaded named graph (schema, codelists, instances, …) generically.
-    patterns.push(`${varName} ${HIERARCHY_EXPANSION_PATH} <${iri}> .`)
+    patterns.push(`${varName} ${HIERARCHY_EXPANSION_PATH} <${iriValues[0]}> .`)
+    return
   }
+
+  // Several values on one leaf carry IN-semantics (slot-wire-schema): the
+  // leaf must fall under ANY of them, so one walk per value would AND them
+  // and never match. Emit the walks as alternatives inside EXISTS, which
+  // yields one row however many targets a value sits under ([SPARQL11] §7
+  // UNION, §17.4.1.4 EXISTS).
+  //
+  // The branches are ground: no target variable is introduced. That is the
+  // point. EXISTS is evaluated by substituting the current solution mapping
+  // into its pattern ([SPARQL11] §17.4.1.4), so any variable here that the
+  // surrounding query also binds would be rewritten to that row's value and
+  // the filter would silently match nothing — returning no rows rather than
+  // an error. Ontology local names reach variable names verbatim
+  // (`?${propName}${suffix}`), so no fixed internal name can be proven free:
+  // a property called `_enumTarget` would collide with a reserved
+  // `?_enumTarget` exactly as one called `x_target` collided with the
+  // earlier `?x_target`. Introducing no variable removes the whole class
+  // for any ontology, rather than making one instance of it unlikely.
+  const iriCondition = `EXISTS { ${iriValues
+    .map((v) => `{ ${varName} ${HIERARCHY_EXPANSION_PATH} <${v}> }`)
+    .join(' UNION ')} }`
+
+  // `EXISTS` must be guarded by `BOUND`. A literal condition excludes a row
+  // whose leaf is unbound for free: evaluating `?v IN (…)` on an unbound
+  // variable raises an error, and a FILTER treats an error as false
+  // ([SPARQL11] §17.2). `EXISTS` has no such behaviour — substitution leaves
+  // an unbound `?v` free ([SPARQL11] §17.4.1.4), so the pattern becomes an
+  // open join over the whole dataset and answers true whenever any of the
+  // target values occurs anywhere. The filter would then constrain nothing
+  // and return every asset, including those carrying no value for the
+  // property at all; in the mixed case the `||` would short-circuit on that
+  // true and disable the literal half as well.
+  //
+  // This matters wherever the leaf triple is not a required pattern — the
+  // cross-domain path emits it inside `OPTIONAL` — and guarding here keeps
+  // the helper correct without depending on an unstated caller invariant.
+  // Where the leaf is required the guard is simply always true.
+  const condition = literalCondition
+    ? `BOUND(${varName}) && ((${literalCondition}) || ${iriCondition})`
+    : `BOUND(${varName}) && ${iriCondition}`
+  filters.push(`FILTER(${condition})`)
 }

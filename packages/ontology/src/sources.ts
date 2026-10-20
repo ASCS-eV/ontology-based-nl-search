@@ -71,6 +71,16 @@ export interface OntologySource {
    * domains but only a subset is needed.
    */
   domains?: string[]
+  /**
+   * Optional denylist of domain subdirectory names to skip in this root.
+   * Applied after {@link domains}: a domain is loaded only when it passes the
+   * allowlist (if any) and is not named here. A name may not appear in both
+   * lists.
+   *
+   * Use this to drop a few domains from a large root without enumerating
+   * every other one.
+   */
+  excludeDomains?: string[]
 }
 
 /** Parsed contents of the manifest. */
@@ -132,11 +142,50 @@ export function loadOntologySourcesManifest(): OntologySourcesManifest | null {
         `${configPath}: every sources[] entry must be { path: string }; received ${JSON.stringify(source)}`
       )
     }
+    validateDomainSelection(configPath, source as OntologySource)
   }
   return { sources: sources as readonly OntologySource[] }
 }
 
-/** A resolved artifact root with optional domain allowlist. */
+/**
+ * Fail fast on a mal-formed domain selection: both lists must be arrays of
+ * unique strings ([JSON-SCHEMA-CORE] §10.3.1.2 `items`, [JSON-SCHEMA-VAL]
+ * §6.1.1 `type`, §6.4.3 `uniqueItems`, as declared in
+ * `ontology-sources.schema.json`), and a domain named in both is a
+ * contradiction the loader refuses to resolve silently.
+ *
+ * Uniqueness is enforced rather than absorbed by the `Set` the lists become:
+ * `ontology-sources.schema.json` declares `uniqueItems`, so a conforming
+ * validator — an editor's schema support, a CI manifest check — rejects a
+ * duplicate. Accepting one here would make the published schema something
+ * other than the real contract.
+ */
+function validateDomainSelection(configPath: string, source: OntologySource): void {
+  for (const key of ['domains', 'excludeDomains'] as const) {
+    const list: unknown = source[key]
+    if (list === undefined) continue
+    if (!Array.isArray(list) || !list.every((d) => typeof d === 'string')) {
+      throw new OntologySourcesError(
+        `${configPath}: sources[].${key} of "${source.path}" must be an array of domain names; received ${JSON.stringify(list)}`
+      )
+    }
+    const duplicates = [...new Set(list.filter((d, i) => list.indexOf(d) !== i))]
+    if (duplicates.length > 0) {
+      throw new OntologySourcesError(
+        `${configPath}: sources[].${key} of "${source.path}" lists ${duplicates.join(', ')} more than once; each domain may appear at most once`
+      )
+    }
+  }
+  const excluded = new Set(source.excludeDomains ?? [])
+  const both = (source.domains ?? []).filter((d) => excluded.has(d))
+  if (both.length > 0) {
+    throw new OntologySourcesError(
+      `${configPath}: source "${source.path}" both includes and excludes ${both.join(', ')}; name each domain in at most one of domains / excludeDomains`
+    )
+  }
+}
+
+/** A resolved artifact root with optional domain allow- and denylist. */
 export interface ArtifactRoot {
   /** Absolute path to the artifacts directory. */
   path: string
@@ -145,6 +194,19 @@ export interface ArtifactRoot {
    * When absent, load all domain subdirectories.
    */
   domainAllowlist?: ReadonlySet<string>
+  /** When set, never load domain subdirectories whose names appear in this set. */
+  domainDenylist?: ReadonlySet<string>
+}
+
+/**
+ * Whether a domain subdirectory of `root` is selected by the root's
+ * allowlist and denylist. Every walk over an artifact root goes through this
+ * one predicate, so the schema graph, the domain registry, the SHACL
+ * validator and the JSON-LD contexts always see the same set of ontologies.
+ */
+export function isDomainSelected(root: ArtifactRoot, domain: string): boolean {
+  if (root.domainAllowlist && !root.domainAllowlist.has(domain)) return false
+  return !root.domainDenylist?.has(domain)
 }
 
 /**
@@ -162,6 +224,7 @@ export function getArtifactRoots(): ArtifactRoot[] {
     return manifest.sources.map((s) => ({
       path: join(root, s.path),
       domainAllowlist: s.domains ? new Set(s.domains) : undefined,
+      domainDenylist: s.excludeDomains ? new Set(s.excludeDomains) : undefined,
     }))
   }
 
@@ -210,6 +273,12 @@ export interface OntologyRootDiagnostic {
   exists: boolean
   /** Number of `*.shacl.ttl` files found in its domain subdirectories. */
   shapeFileCount: number
+  /**
+   * Domain names the root's `domains` / `excludeDomains` lists name but that
+   * have no subdirectory in the root — almost always a typo. Only present
+   * when non-empty.
+   */
+  unknownDomains?: string[]
 }
 
 /** Aggregate diagnostics across every resolved artifact root. */
@@ -228,15 +297,24 @@ export function diagnoseOntologySources(): OntologySourcesDiagnostics {
   const roots = getArtifactRoots().map((root): OntologyRootDiagnostic => {
     if (!existsSync(root.path)) return { path: root.path, exists: false, shapeFileCount: 0 }
     let shapeFileCount = 0
-    for (const entry of readdirSync(root.path)) {
-      if (root.domainAllowlist && !root.domainAllowlist.has(entry)) continue
+    const entries = readdirSync(root.path)
+    for (const entry of entries) {
+      if (!isDomainSelected(root, entry)) continue
       const domainDir = join(root.path, entry)
       if (!statSync(domainDir).isDirectory()) continue
       for (const file of readdirSync(domainDir)) {
         if (file.endsWith('.shacl.ttl')) shapeFileCount++
       }
     }
-    return { path: root.path, exists: true, shapeFileCount }
+    const present = new Set(entries)
+    const named = [...(root.domainAllowlist ?? []), ...(root.domainDenylist ?? [])]
+    const unknownDomains = named.filter((d) => !present.has(d))
+    return {
+      path: root.path,
+      exists: true,
+      shapeFileCount,
+      ...(unknownDomains.length > 0 ? { unknownDomains } : {}),
+    }
   })
   const totalShapeFiles = roots.reduce((sum, r) => sum + r.shapeFileCount, 0)
   return { roots, totalShapeFiles }
@@ -334,8 +412,8 @@ export interface DiscoverShapeFilesOptions {
  * exist are silently skipped — that matches the prior callers' behaviour
  * and lets the dev workspace coexist with selectively-cloned submodules.
  *
- * When a root declares a `domainAllowlist`, only those domain subdirectories
- * are loaded — all others are skipped.
+ * When a root declares a `domainAllowlist` and/or `domainDenylist`, only the
+ * selected domain subdirectories are loaded (see {@link isDomainSelected}).
  */
 export function discoverShapeFiles(options: DiscoverShapeFilesOptions = {}): ShapeFile[] {
   const includeOwl = options.includeOwl ?? false
@@ -346,7 +424,7 @@ export function discoverShapeFiles(options: DiscoverShapeFilesOptions = {}): Sha
     if (!existsSync(root.path)) continue
     for (const entry of readdirSync(root.path)) {
       if (exclude.has(entry)) continue
-      if (root.domainAllowlist && !root.domainAllowlist.has(entry)) continue
+      if (!isDomainSelected(root, entry)) continue
       const domainDir = join(root.path, entry)
       if (!statSync(domainDir).isDirectory()) continue
       for (const file of readdirSync(domainDir)) {
@@ -372,7 +450,7 @@ export interface ContextFile {
  * map human-facing term names to IRIs ([JSON-LD11] §3.1 The Context).
  *
  * Sibling of {@link discoverShapeFiles}: same root resolution
- * (`getArtifactRoots`), same allowlist handling, same silent skip of
+ * (`getArtifactRoots`), same allow-/denylist handling, same silent skip of
  * missing roots. Discovery only — parsing lives with the consumer
  * (`@ontology-search/search` schema-index), keeping this module I/O-shape
  * agnostic.
@@ -383,7 +461,7 @@ export function discoverContextFiles(): ContextFile[] {
   for (const root of getArtifactRoots()) {
     if (!existsSync(root.path)) continue
     for (const entry of readdirSync(root.path)) {
-      if (root.domainAllowlist && !root.domainAllowlist.has(entry)) continue
+      if (!isDomainSelected(root, entry)) continue
       const domainDir = join(root.path, entry)
       if (!statSync(domainDir).isDirectory()) continue
       for (const file of readdirSync(domainDir)) {

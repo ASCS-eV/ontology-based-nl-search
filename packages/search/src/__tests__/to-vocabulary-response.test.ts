@@ -2,7 +2,7 @@
  * Projection contract: the autocomplete wire shape is derived from the
  * shared term index without changing what the web client sees.
  */
-import { RDF_PREFIXES } from '@ontology-search/core/rdf/prefixes'
+import { numericKind } from '@ontology-search/core/rdf/numeric-datatypes'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -155,7 +155,6 @@ describe('toVocabularyResponse (contract parity with the schema vocabulary)', ()
     // an unenumerated numeric leaf projects as numeric, any other literal
     // leaf as string, and unenumerated object references do not project at
     // all (they are represented by the recursive `references` field).
-    const NUMERIC = new Set([`${RDF_PREFIXES.xsd}integer`, `${RDF_PREFIXES.xsd}float`])
     for (const card of propertyCards) {
       const entry = projected.get(key(card.domain, card.localName))
       if (card.allowedValues && card.allowedValues.length > 0) {
@@ -164,7 +163,7 @@ describe('toVocabularyResponse (contract parity with the schema vocabulary)', ()
         // re-derivation of it.
         if (entry?.type === 'enum')
           expect(entry.allowedValues, card.iri).toEqual(card.allowedValues)
-      } else if (card.datatype && NUMERIC.has(card.datatype)) {
+      } else if (numericKind(card.datatype) !== null) {
         expect(entry?.type, card.iri).toBe('numeric')
       } else if (card.leafKind === 'literal') {
         expect(entry?.type, card.iri).toBe('string')

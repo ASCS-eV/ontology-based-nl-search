@@ -25,6 +25,7 @@
  * here so consumers keep importing it from `@ontology-search/search`.
  */
 import type { ResultRow, ResultTraceStep, RowTraceability } from '@ontology-search/api-types'
+import { getConfig } from '@ontology-search/core/config'
 import { generateRequestId, RequestLogger } from '@ontology-search/core/logging'
 import type { ReferenceFilter, TraceabilityPlan } from '@ontology-search/slots/slots'
 import type { SparqlBinding } from '@ontology-search/sparql/types'
@@ -135,9 +136,14 @@ export class SearchService {
       requestId,
       this.countMatches(execution.results),
       totalDatasets,
-      logger
+      logger,
+      execution.truncated ?? false
     )
-    logger.info('Search completed', { matchCount: meta.matchCount, totalDatasets })
+    logger.info('Search completed', {
+      matchCount: meta.matchCount,
+      totalDatasets,
+      truncated: meta.truncated ?? false,
+    })
 
     return {
       interpretation: structured.interpretation,
@@ -212,8 +218,17 @@ export class SearchService {
     // Execute
     const execution = await this.executeSparql(sparql, trace, logger, signal)
 
-    const meta = this.buildMeta(requestId, this.countMatches(execution.results), 0, logger)
-    logger.info('Refine completed', { matchCount: meta.matchCount })
+    const meta = this.buildMeta(
+      requestId,
+      this.countMatches(execution.results),
+      0,
+      logger,
+      execution.truncated ?? false
+    )
+    logger.info('Refine completed', {
+      matchCount: meta.matchCount,
+      truncated: meta.truncated ?? false,
+    })
 
     return { sparql, execution, meta }
   }
@@ -249,13 +264,16 @@ export class SearchService {
       const sparqlResults = await store.query(policy.query, { signal })
       endQuery()
 
+      // Trim before flattening so `results` and `traceability`, which are
+      // index-aligned, are derived from the same rows.
+      const { bindings, truncated } = this.applyRowCeiling(sparqlResults.results.bindings)
+
       return {
-        results: this.flattenBindings(sparqlResults.results.bindings),
+        results: this.flattenBindings(bindings),
         traceability:
-          trace && trace.length > 0
-            ? this.assembleTraceability(sparqlResults.results.bindings, trace)
-            : undefined,
+          trace && trace.length > 0 ? this.assembleTraceability(bindings, trace) : undefined,
         sparql: policy.query,
+        ...(truncated ? { truncated: true } : {}),
       }
     } catch (err) {
       // Aborts must propagate so the SSE handler can shut the stream
@@ -350,11 +368,15 @@ export class SearchService {
   }
 
   /**
-   * Count matches as DISTINCT primary assets, not result rows. A cross-reference
-   * JOIN fans out (one row per referenced asset / per nested chain), so
-   * `results.length` over-counts. The UI groups by `?asset` and the distinct-
-   * `?asset` LIMIT wrap bounds distinct assets, so `matchCount` must agree with
-   * both. Falls back to the row count when rows carry no `?asset` binding.
+   * Count matches as DISTINCT primary assets, not result rows. A
+   * cross-reference JOIN fans out (one row per referenced asset / per nested
+   * chain), so `results.length` over-counts — by more than 6× for the widest
+   * join in the shipped fixture. The UI groups by `?asset`, so `matchCount`
+   * must agree with it. Falls back to the row count when rows carry no
+   * `?asset` binding.
+   *
+   * When {@link applyRowCeiling} reports the row ceiling was reached this is
+   * a lower bound, not the total.
    */
   private countMatches(results: ResultRow[]): number {
     const assets = new Set<string>()
@@ -369,17 +391,57 @@ export class SearchService {
     return sawAsset ? assets.size : results.length
   }
 
+  /**
+   * Apply the compiler's row ceiling to a solution sequence.
+   *
+   * `assembleQuery` emits `ORDER BY ?asset` then `LIMIT SPARQL_MAX_LIMIT`
+   * ([SPARQL11] §15.1, §15.5), so a full page may have cut the last asset
+   * part-way through its joined rows. Returning it would present an asset
+   * whose references are silently incomplete — the same class of quiet
+   * wrongness as the old design, which returned 100 of 165 matches and said
+   * nothing. Because the rows are ordered by `?asset` they are contiguous
+   * per asset, so dropping the trailing group is enough to guarantee every
+   * asset returned is whole.
+   *
+   * Dropping it is also what makes `truncated` a fact rather than a guess: a
+   * sequence exactly as long as the limit is indistinguishable from a longer
+   * one that was cut, but once the trailing group is removed something was
+   * definitely withheld either way. No `LIMIT + 1` probe row is possible
+   * here — the policy gate rejects a limit above the ceiling, so asking for
+   * one more than the maximum is a contradiction.
+   *
+   * The sole exception is a single asset whose own fan-out fills the page.
+   * Dropping it would return nothing at all, so it is kept and the result is
+   * still reported as truncated.
+   */
+  private applyRowCeiling(bindings: SparqlBinding[]): {
+    bindings: SparqlBinding[]
+    truncated: boolean
+  } {
+    if (bindings.length < getConfig().SPARQL_MAX_LIMIT) return { bindings, truncated: false }
+
+    const lastAsset = bindings[bindings.length - 1]?.['asset']?.value
+    if (lastAsset === undefined) return { bindings, truncated: true }
+
+    const trimmed = bindings.filter((b) => b['asset']?.value !== lastAsset)
+    return trimmed.length === 0
+      ? { bindings, truncated: true }
+      : { bindings: trimmed, truncated: true }
+  }
+
   private buildMeta(
     requestId: string,
     matchCount: number,
     totalDatasets: number,
-    logger: RequestLogger
+    logger: RequestLogger,
+    truncated = false
   ): SearchMeta {
     return {
       requestId,
       totalDatasets,
       matchCount,
       executionTimeMs: logger.getTotalMs(),
+      ...(truncated ? { truncated: true } : {}),
       timings: logger.getTimings(),
     }
   }

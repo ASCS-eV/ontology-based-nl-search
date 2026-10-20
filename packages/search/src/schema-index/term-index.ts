@@ -16,6 +16,7 @@
  * @see https://www.w3.org/TR/skos-reference/ — [SKOS] §5 lexical labels
  */
 import { extractLocalName } from '@ontology-search/core/rdf/iri'
+import { numericKind } from '@ontology-search/core/rdf/numeric-datatypes'
 import { RDF_PREFIXES, sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SparqlStore } from '@ontology-search/sparql/types'
@@ -165,9 +166,13 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
     const numericProp = numericByIri.get(iri)
     const context = contextByIri.get(iri)
 
-    const datatype = numericProp
-      ? `${RDF_PREFIXES.xsd}${numericProp.datatype}`
-      : (annotation?.datatype ?? context?.datatype)
+    // Keep the declared numeric datatype (e.g. xsd:decimal) rather than
+    // collapsing it to the integer/float kind used for range bounds.
+    const declared = annotation?.datatype ?? context?.datatype
+    const datatype =
+      numericProp && !numericKind(declared)
+        ? `${RDF_PREFIXES.xsd}${numericProp.datatype}`
+        : declared
 
     cards.push({
       kind: 'property',

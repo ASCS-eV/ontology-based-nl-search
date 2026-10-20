@@ -44,9 +44,7 @@ const log = createComponentLogger('compiler')
 
 /**
  * Mutable compile state shared by the reference emitters. The arrays/sets are
- * the same references the core compile holds, mutated in place; `hasReferenceJoin`
- * is read back by the caller after emission to decide the distinct-asset LIMIT
- * wrap.
+ * the same references the core compile holds, mutated in place.
  */
 export interface ReferenceEmitContext {
   registry: DomainRegistry
@@ -58,7 +56,6 @@ export interface ReferenceEmitContext {
   prefixDomains: Set<string>
   traces: TraceabilityPlan[]
   droppedReferences: string[]
-  hasReferenceJoin: boolean
 }
 
 /**
@@ -144,7 +141,6 @@ export function emitReferencedDomainJoins(
       refSpecVar
     )
     for (const fd of refForeign) prefixDomains.add(fd)
-    ctx.hasReferenceJoin = true
   }
 }
 
@@ -257,9 +253,8 @@ export async function emitReferenceNode(
     }
   }
 
-  // Chain resolution succeeded — mark this reference as emitted.
+  // Chain resolution succeeded — include the referenced domain's prefixes.
   prefixDomains.add(ref.domain)
-  ctx.hasReferenceJoin = true
 
   // Bind a label for every reference so each referenced asset can be
   // displayed (and so a label filter can apply to any of them).

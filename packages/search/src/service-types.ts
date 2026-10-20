@@ -78,6 +78,13 @@ export interface ExecutionResult {
   traceability?: RowTraceability[]
   sparql: string
   error?: string
+  /**
+   * Set when the query reached the compiler's row ceiling and the trailing
+   * asset's rows were dropped, so `results` holds strictly fewer assets than
+   * matched. Absent when every match was returned. See
+   * `SearchService.applyRowCeiling`.
+   */
+  truncated?: boolean
 }
 
 /** Full search result including LLM interpretation */

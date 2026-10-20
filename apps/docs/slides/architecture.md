@@ -294,7 +294,7 @@ flowchart LR
       <ul class="tight-list">
         <li>Only <code>SELECT</code> runs; writes, <code>SERVICE</code>, and graph redirection are rejected.</li>
         <li>The gate's prefix allowlist shares its sources with what the compiler emits — standard prefixes plus the same ontology namespaces from the domain registry — so the two cannot drift.</li>
-        <li>A <code>LIMIT</code> ceiling is enforced; literals are escaped to the SPARQL 1.1 grammar (fuzz-tested).</li>
+        <li>An explicit <code>LIMIT</code> above the ceiling is rejected; the compiler bounds its own output at the ceiling and reaching it is reported as <code>meta.truncated</code>, never a silent short count. Literals are escaped to the SPARQL 1.1 grammar (fuzz-tested).</li>
       </ul>
     </div>
   </div>
