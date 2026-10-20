@@ -190,6 +190,17 @@ export function validateRangesAgainstShacl(
       })
       continue
     }
+    if (range.min === undefined && range.max === undefined) {
+      // An unbounded range is no numeric constraint, yet it still compiles to
+      // a required triple pattern — silently narrowing the result set to
+      // assets that merely carry the property.
+      gaps.push({
+        term: slotKey,
+        reason: `No numeric bound was given for "${slotKey}", so it cannot be filtered.`,
+        kind: 'unmapped',
+      })
+      continue
+    }
     clean[slotKey] = range
   }
   return { ranges: clean, gaps }

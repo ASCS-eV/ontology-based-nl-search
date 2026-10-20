@@ -35,6 +35,7 @@ import {
   MAX_PROPERTY_MATCH_DISTANCE,
   MAX_SUGGESTIONS,
   MIN_SUGGESTION_SIMILARITY,
+  POOL_NORM_B,
   suggestionScore,
 } from './slot-validator-fuzzy.js'
 
@@ -366,12 +367,24 @@ function enrichGapWithSuggestions(
   // explanation only misleads the reader.
   if (Array.isArray(gap.suggestions)) return gap
 
-  // Search across all enum properties for the best matching values
+  // Search across all enum properties for the best matching values, weighted
+  // by how much evidence a hit in that property actually carries.
   const allSuggestions: { value: string; score: number; property: string }[] = []
+  const evidence = poolEvidenceWeights(allowedIndex)
+  const term = (gap.term ?? '').trim().toLowerCase()
 
   for (const [propName, { allowedValues }] of allowedIndex) {
+    const weight = evidence.get(propName) ?? 1
     for (const allowed of allowedValues) {
-      const score = suggestionScore(gap.term ?? '', allowed)
+      // Damping dilutes *resemblance*, not *identity*. Weighting every
+      // candidate by pool size makes a large enough vocabulary entirely
+      // unsuggestable — the similarity score is capped at 1, so once the
+      // weight falls below the floor no value can pass, including one the
+      // user typed verbatim. A term identical to a vocabulary value is
+      // unambiguous evidence however many siblings that value has, and
+      // scores 1 by definition rather than by fuzzy measurement.
+      const exact = allowed.toLowerCase() === term
+      const score = exact ? 1 : suggestionScore(gap.term ?? '', allowed) * weight
       if (score >= MIN_SUGGESTION_SIMILARITY) {
         allSuggestions.push({ value: allowed, score, property: propName })
       }
@@ -388,4 +401,41 @@ function enrichGapWithSuggestions(
     ...gap,
     suggestions: topSuggestions.length > 0 ? topSuggestions : gap.suggestions,
   }
+}
+
+/**
+ * Per-property evidence weight for suggestion scoring, in (0, 1].
+ *
+ * A fuzzy hit inside a closed vocabulary of a few values is real evidence.
+ * A fuzzy hit inside an identifier code list of thousands of entries is
+ * almost none: with that many entries *something* always resembles *some*
+ * word of a free-text gap, and those near-matches drown the genuine
+ * concept suggestions.
+ *
+ * The weight is pivoted length normalization against the mean pool size of
+ * this vocabulary — the same normalization the schema-index ranker applies,
+ * and deliberately corpus-relative rather than an absolute size cutoff. A
+ * cutoff encodes "ontologies look like ours"; on a vocabulary set where
+ * every enum is large it would suppress every suggestion, whereas a
+ * corpus-relative weight correctly treats size as carrying no signal there.
+ * Capped at 1 so a small pool is never boosted above its raw similarity.
+ *
+ * Applies to fuzzy hits only — see {@link enrichGapWithSuggestions} for why
+ * an exact value match is exempt.
+ */
+function poolEvidenceWeights(
+  allowedIndex: Map<string, { allowedValues: string[]; domain: string }>
+): Map<string, number> {
+  const sizes = [...allowedIndex].map(
+    ([name, { allowedValues }]) => [name, allowedValues.length] as const
+  )
+  const populated = sizes.filter(([, size]) => size > 0)
+  const weights = new Map<string, number>()
+  if (populated.length === 0) return weights
+  const mean = populated.reduce((sum, [, size]) => sum + size, 0) / populated.length
+  for (const [name, size] of populated) {
+    const ratio = size / mean
+    weights.set(name, Math.min(1, 1 / (1 - POOL_NORM_B + POOL_NORM_B * ratio)))
+  }
+  return weights
 }

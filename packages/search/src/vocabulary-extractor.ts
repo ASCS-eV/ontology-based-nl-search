@@ -15,6 +15,7 @@ import { isIri } from '@ontology-search/sparql/escape'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from './compiler.js'
+import { allPropertyPaths } from './compiler-vocab.js'
 import { extractNumericProperties, type NumericProperty } from './numeric-properties.js'
 import { SCHEMA_GRAPH } from './schema-loader.js'
 import {
@@ -119,6 +120,12 @@ export async function extractSchemaVocabulary(store: SparqlStore): Promise<Schem
   // guarantees the editor exposes exactly the properties that compile, per
   // domain — no parallel heuristic to drift. A property reachable from several
   // domains is attributed to each (matching the compiler's multi-domain paths).
+  //
+  // Reads `allPropertyPaths` (asset paths UNION vocabulary-root paths), not
+  // `paths` alone: six domains in the shipped set are reachable only as
+  // standalone vocabulary roots, so attributing from `paths` left every one
+  // of their properties unattributed — `extractEnumProperties` then emitted
+  // nothing for them and the LLM saw a vocabulary with no filterable values.
   const compilerVocab = await getCompilerVocab()
   const domainsByPropertyIri = new Map<string, Set<string>>()
   // Local-name attribution for every resolvable property, enumerated or not.
@@ -126,7 +133,7 @@ export async function extractSchemaVocabulary(store: SparqlStore): Promise<Schem
   // may enumerate it while the other only types it; both are filterable, so
   // both belong here.
   const domainsByPropertyName = new Map<string, Set<string>>()
-  for (const path of compilerVocab.paths.values()) {
+  for (const path of allPropertyPaths(compilerVocab)) {
     if (!path.domain) continue
     const set = domainsByPropertyIri.get(path.propertyIri) ?? new Set<string>()
     set.add(path.domain)

@@ -106,4 +106,16 @@ describe('validateRangesAgainstShacl — unknown range keys (R1 extension)', () 
     expect(result.ranges.numberIntersections).toEqual({ min: 1, max: 10 })
     expect(result.gaps).toEqual([])
   }, 60_000)
+
+  /**
+   * Regression: a range with neither bound compiled to a required triple
+   * pattern, narrowing the results to assets that merely have the property.
+   */
+  it('drops a range with neither min nor max and reports it as a gap', async () => {
+    const shacl = await ShaclValidator.fromWorkspace()
+    const result = validateRangesAgainstShacl({ numberIntersections: {} }, shacl)
+    expect(result.ranges).toEqual({})
+    expect(result.gaps).toHaveLength(1)
+    expect(result.gaps[0]!.term).toBe('numberIntersections')
+  }, 60_000)
 })

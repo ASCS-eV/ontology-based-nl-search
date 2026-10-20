@@ -27,6 +27,18 @@ const FUZZY_SIMILARITY_THRESHOLD = 0.8
  */
 export const MAX_PROPERTY_MATCH_DISTANCE = 2
 
+/** Shortest gap token / candidate value that takes part in fuzzy suggestion matching. */
+const MIN_SUGGESTION_TOKEN_LENGTH = 3
+
+/**
+ * BM25 length-normalization parameter for suggestion-pool evidence
+ * weighting. 0 = ignore pool size, 1 = fully proportional; 0.75 is the
+ * standard IR default (Robertson & Zaragoza, *The Probabilistic Relevance
+ * Framework: BM25 and Beyond*, §3.2). A retrieval-model constant, not an
+ * ontology-fitted one.
+ */
+export const POOL_NORM_B = 0.75
+
 /** Maximum suggestions to generate per gap */
 export const MAX_SUGGESTIONS = 5
 
@@ -105,10 +117,17 @@ const SUGGESTION_STOPWORDS = new Set([
  */
 export function suggestionScore(gapTerm: string, candidate: string): number {
   const candLower = candidate.toLowerCase()
+  // A one- or two-character candidate is a code (ISO country, language), not
+  // a concept label: containment and edit distance against it are noise —
+  // "its" stems to "it" and contains the code `IT`, "stops" contains `ST`.
+  // Such a value is suggested only when the gap term IS that code.
+  if (candLower.length < MIN_SUGGESTION_TOKEN_LENGTH) {
+    return gapTerm.trim().toLowerCase() === candLower ? 1 : 0
+  }
   const tokens = gapTerm
     .toLowerCase()
     .split(/[^a-z0-9]+/)
-    .filter((t) => t.length >= 3 && !SUGGESTION_STOPWORDS.has(t))
+    .filter((t) => t.length >= MIN_SUGGESTION_TOKEN_LENGTH && !SUGGESTION_STOPWORDS.has(t))
   if (tokens.length === 0) return similarity(gapTerm.toLowerCase(), candLower)
   let best = 0
   for (const tok of tokens) {

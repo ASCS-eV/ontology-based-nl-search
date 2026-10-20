@@ -95,6 +95,25 @@ export interface VocabularyRootPaths {
 }
 
 /**
+ * Every property path the compiler can resolve: the asset-rooted paths PLUS
+ * the leaf paths of the standalone vocabulary roots.
+ *
+ * Both surfaces are the property universe — a vocabulary published on its own
+ * (not nested inside any asset) compiles through `vocabularyRoots`, and some
+ * domains are reachable ONLY that way. Consumers that enumerate "all
+ * properties" must read this helper rather than `paths` alone: reading
+ * `paths` silently drops those domains, which previously cost them their
+ * `sh:in` value attribution (and with it, every filterable value the LLM
+ * could see).
+ */
+export function allPropertyPaths(vocab: CompilerVocab): PropertyPath[] {
+  const roots = [...(vocab.vocabularyRoots?.values() ?? [])].flatMap((entries) =>
+    entries.flatMap((entry) => [...entry.paths.values()])
+  )
+  return [...vocab.paths.values(), ...roots]
+}
+
+/**
  * Cached compiler vocabulary. Stored as the in-flight Promise rather
  * than the resolved value so concurrent callers share one build —
  * without this, three SSE requests landing inside the cold-start

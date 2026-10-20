@@ -107,18 +107,39 @@ export async function retrieveRelevantSchema(
   const domainRanking = rankDomains(query, index.domainCatalog)
   const cardRanking = await rerank(query, rankCards(query, index.cards), embedding, maxCards)
 
-  const domainSignal = new Map<string, number>()
-  for (const { domain, score } of domainRanking) {
-    domainSignal.set(domain.domain, score)
+  // Routing signal per domain: the strongest evidence seen for it, whether
+  // the query NAMED it outright, and how strongly its id matched. A word
+  // can tie two domains because one is named by it and the other merely
+  // contains it in a class or property label; `nameScore` breaks exactly
+  // that tie toward the domain the user asked for, and `named` settles the
+  // harder case where the other domain does not merely tie but wins.
+  // Card-derived signal never contributes either — it is indirect evidence
+  // by construction.
+  const domainSignal = new Map<string, { score: number; nameScore: number; named: boolean }>()
+  const bump = (domain: string, score: number, nameScore: number, named: boolean): void => {
+    const existing = domainSignal.get(domain)
+    if (!existing) {
+      domainSignal.set(domain, { score, nameScore, named })
+      return
+    }
+    existing.score = Math.max(existing.score, score)
+    existing.nameScore = Math.max(existing.nameScore, nameScore)
+    existing.named ||= named
+  }
+  for (const { domain, score, nameScore, named } of domainRanking) {
+    bump(domain.domain, score, nameScore, named)
   }
   for (const { card, score } of cardRanking) {
-    const existing = domainSignal.get(card.domain) ?? 0
-    if (score > existing) domainSignal.set(card.domain, score)
+    bump(card.domain, score, 0, false)
   }
-  const domains = [...domainSignal.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, maxDomains)
-    .map(([domain]) => domain)
+  // A domain the query names in full is guaranteed one of the routing
+  // slots, so a version suffix written as separate words reaches the
+  // versioned domain even when a sibling scores higher on class labels.
+  // Routing stays a ranking decision and the card budget is never bypassed
+  // — a named domain that overflows the budget degrades to its top-ranked
+  // cards plus the always-attached catalog, which is what keeps gap
+  // reporting honest without an unbounded prompt.
+  const domains = selectRoutedDomains(domainSignal, maxDomains)
 
   const confidence = Math.min(1, Math.max(domainRanking[0]?.score ?? 0, cardRanking[0]?.score ?? 0))
 
@@ -220,6 +241,41 @@ export async function warmupRetrievalIndex(
 ): Promise<void> {
   await buildTermIndex(store)
   await embedding.embed([])
+}
+
+/**
+ * Choose which domains to route, highest signal first, reserving slots for
+ * the domains the query *named*.
+ *
+ * Naming and relevance are different evidence. A domain whose class labels
+ * echo the query can out-score the domain whose id the user literally
+ * wrote — and because grading a whitespace join below an exact match is
+ * what stops two unrelated words claiming a compound identifier, the named
+ * domain is often the lower-scoring one. Ordering by score alone therefore
+ * drops it first under `maxDomains`, which is precisely the failure that
+ * makes the model report an existing property as an ontology gap.
+ *
+ * Named domains are admitted first, in score order; the rest of the budget
+ * goes to the highest-scoring remainder. So naming decides *whether* a
+ * domain is routed, while score still decides which of the routed domains
+ * leads. Nothing here bypasses the card budget.
+ */
+export function selectRoutedDomains(
+  signals: ReadonlyMap<string, { score: number; nameScore: number; named: boolean }>,
+  maxDomains: number
+): string[] {
+  const ordered = [...signals.entries()].sort(
+    ([an, a], [bn, b]) => b.score - a.score || b.nameScore - a.nameScore || an.localeCompare(bn)
+  )
+  const selected: string[] = []
+  const taken = new Set<string>()
+  for (const [domain, signal] of ordered)
+    if (signal.named) {
+      selected.push(domain)
+      taken.add(domain)
+    }
+  for (const [domain] of ordered) if (!taken.has(domain)) selected.push(domain)
+  return selected.slice(0, maxDomains)
 }
 
 /**
