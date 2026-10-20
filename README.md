@@ -234,6 +234,24 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 | `RATE_LIMIT_RPS`            | Token-bucket rate limit (requests/sec); `0` disables                                                                        | `0`                                      |
 | `ONTOLOGY_ARTIFACTS_PATH`   | Directory of ontology artifacts, overriding the pinned `.ontology/` cache                                                   | — (uses the pin)                         |
 
+### Selecting ontologies
+
+To load and search only some ontologies, copy `ontology-sources.example.json`
+to `ontology-sources.json` (gitignored) and add a selection to the source. Use
+`domains` to whitelist and `excludeDomains` to blacklist. For example, this
+searches OpenLABEL V1-0-0 only:
+
+```json
+{
+  "sources": [{ "name": "omb-artifacts", "path": ".ontology/artifacts", "domains": ["openlabel"] }]
+}
+```
+
+Ontologies left out are not loaded into the schema graph, the LLM prompt or
+the results. Restart the API to apply a change. See
+[Selecting ontologies](./apps/docs/ontology.md#selecting-ontologies) for the
+details.
+
 ## License
 
 Licensed under the Apache License 2.0 — see [LICENSE](./LICENSE).

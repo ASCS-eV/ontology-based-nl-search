@@ -186,6 +186,15 @@ If you keep your ontology elsewhere, point `ONTOLOGY_ARTIFACTS_PATH` at it or
 create an `ontology-sources.json` (see `ontology-sources.example.json` as
 template).
 
+### Issue: results come from ontologies you don't need (e.g. you want OpenLABEL only)
+
+**Cause**: by default every domain under `.ontology/artifacts` is loaded.
+
+**Solution**: whitelist (`domains`) or blacklist (`excludeDomains`) domains in
+`ontology-sources.json`, then restart the API and check `availableDomains` in
+`curl http://localhost:3003/stats`. See
+[Selecting ontologies](apps/docs/ontology.md#selecting-ontologies).
+
 ### Issue: local Ollama model never returns results (falls back to "LLM did not extract specific filters" every time)
 
 **Cause**: Ollama's OpenAI-compatible endpoint (`OLLAMA_BASE_URL`) ignores any
