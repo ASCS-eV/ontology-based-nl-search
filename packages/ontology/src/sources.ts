@@ -149,9 +149,16 @@ export function loadOntologySourcesManifest(): OntologySourcesManifest | null {
 
 /**
  * Fail fast on a mal-formed domain selection: both lists must be arrays of
- * strings ([JSON-SCHEMA-CORE] §10.3.1.2 `items`, [JSON-SCHEMA-VAL] §6.1.1 `type`, as declared in
+ * unique strings ([JSON-SCHEMA-CORE] §10.3.1.2 `items`, [JSON-SCHEMA-VAL]
+ * §6.1.1 `type`, §6.4.3 `uniqueItems`, as declared in
  * `ontology-sources.schema.json`), and a domain named in both is a
  * contradiction the loader refuses to resolve silently.
+ *
+ * Uniqueness is enforced rather than absorbed by the `Set` the lists become:
+ * `ontology-sources.schema.json` declares `uniqueItems`, so a conforming
+ * validator — an editor's schema support, a CI manifest check — rejects a
+ * duplicate. Accepting one here would make the published schema something
+ * other than the real contract.
  */
 function validateDomainSelection(configPath: string, source: OntologySource): void {
   for (const key of ['domains', 'excludeDomains'] as const) {
@@ -160,6 +167,12 @@ function validateDomainSelection(configPath: string, source: OntologySource): vo
     if (!Array.isArray(list) || !list.every((d) => typeof d === 'string')) {
       throw new OntologySourcesError(
         `${configPath}: sources[].${key} of "${source.path}" must be an array of domain names; received ${JSON.stringify(list)}`
+      )
+    }
+    const duplicates = [...new Set(list.filter((d, i) => list.indexOf(d) !== i))]
+    if (duplicates.length > 0) {
+      throw new OntologySourcesError(
+        `${configPath}: sources[].${key} of "${source.path}" lists ${duplicates.join(', ')} more than once; each domain may appear at most once`
       )
     }
   }

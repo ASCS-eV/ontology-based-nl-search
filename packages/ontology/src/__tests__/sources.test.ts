@@ -266,6 +266,17 @@ describe('ontology source-tree discovery (sources.ts)', () => {
       expect(() => loadOntologySourcesManifest()).toThrow(OntologySourcesError)
       expect(() => loadOntologySourcesManifest()).toThrow(new RegExp(`${key} .*array of domain`))
     })
+
+    it.each(['domains', 'excludeDomains'])('rejects a duplicate entry in %s', (key) => {
+      // `ontology-sources.schema.json` declares `uniqueItems` on both lists
+      // ([JSON-SCHEMA-VAL] §6.4.3), so a conforming validator rejects a
+      // duplicate. The loader must agree, or the published schema is not the
+      // contract the loader actually enforces — even though the list ends up
+      // in a Set where the duplicate would vanish.
+      setupArtifacts({ [key]: ['openlabel', 'openlabel'] })
+      expect(() => loadOntologySourcesManifest()).toThrow(OntologySourcesError)
+      expect(() => loadOntologySourcesManifest()).toThrow(/openlabel more than once/)
+    })
   })
 
   describe('discoverShapeFiles', () => {
