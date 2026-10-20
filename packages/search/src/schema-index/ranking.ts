@@ -27,6 +27,19 @@ export interface ScoredDomain {
    * routing evidence. Generic across ontologies — every domain has an id.
    */
   nameScore: number
+  /**
+   * The query writes out *every* token of this domain's id, so the user
+   * named it outright rather than happening to use one of its words.
+   *
+   * Guarantees a routing slot (see `selectRoutedDomains`) rather than a
+   * rank: relevance and naming measure different things, and a domain
+   * whose class labels happen to echo the query can out-score the domain
+   * the user actually asked for — which, under a small `maxDomains`, drops
+   * the named one from routing entirely and re-opens exactly the false-gap
+   * reporting this is meant to prevent. Which routed domain answers best
+   * is still decided by {@link score}.
+   */
+  named: boolean
 }
 
 export interface RankOptions {
@@ -137,9 +150,23 @@ export function lexicalScore(query: string, card: TermCard, stats?: CorpusStats)
  * not evidence *beyond* an exact match, and leaving it uncapped would let a
  * 2-value enum outscore a label hit.
  *
- * Deliberately corpus-relative rather than an absolute size threshold: on an
- * ontology set where every vocabulary is large, length carries no signal and
- * nothing is damped — an absolute cutoff would wrongly damp all of them.
+ * Corpus-relative rather than an absolute size threshold, so swapping the
+ * ontology set re-derives the pivot instead of re-tuning a constant.
+ *
+ * KNOWN LIMIT — this calibrates value-field-vs-value-field, not
+ * value-field-vs-label/description. On a corpus whose enum pools are
+ * uniformly large (in the limit, one enum card: it *is* its own mean) every
+ * ratio is ~1, nothing is damped, and a sponge can still out-score a
+ * relevant description. The sponge argument above is about *match
+ * opportunity*, which is absolute, so a length ratio cannot express it in
+ * full. The corpus this ships against is sharply bimodal (hundreds of pools
+ * at =<50 values, dozens at >200, nothing in between), so the pivot is
+ * well-separated here and this is strictly better than the absolute
+ * threshold it replaced. The parameter-free fix is to weight a value hit by
+ * how many values in the same pool match it at the same grade — observed
+ * match density rather than inferred — which is a global change to card
+ * scoring and is tracked separately. See the regression test
+ * `damping degenerates on a corpus of uniformly large pools`.
  */
 function valueLengthNorm(card: TermCard, stats: CorpusStats | undefined): number {
   if (!stats || stats.avgValueTokens <= 0) return 1
@@ -176,10 +203,15 @@ export function rankCards(
  * matches the joined id (`alphalabel-v2`, `roadgraph`). See
  * {@link applyJoinedSpans}.
  *
- * Ties break on {@link ScoredDomain.nameScore} first: a word can tie two
- * domains because one is *named* by it and the other merely *contains* it
- * (as a class label or a property label), and the named one is what the
- * user asked for.
+ * A domain the query *names in full* ({@link ScoredDomain.named}) is
+ * guaranteed a routing slot by {@link selectRoutedDomains}; relevance
+ * ordering here is deliberately left alone, so naming decides whether a
+ * domain is routed at all without overriding which of the routed domains
+ * is the better answer.
+ *
+ * Below that, ties break on {@link ScoredDomain.nameScore}: a word can tie
+ * two domains because one is *named* by it and the other merely *contains*
+ * it, and the named one is what the user asked for.
  */
 export function rankDomains(
   query: string,
@@ -188,6 +220,16 @@ export function rankDomains(
 ): ScoredDomain[] {
   const minScore = options.minScore ?? 0
   const queryTokens = tokenizeQuery(query)
+  // Longest id token in this catalog bounds how far a span is worth
+  // growing: nothing longer can equal one. Derived from the data, so it
+  // needs no arbitrary cap on query length.
+  let longestIdToken = 0
+  for (const domain of catalog) {
+    for (const token of domainIdTokensOf(domain)) {
+      if (token.length > longestIdToken) longestIdToken = token.length
+    }
+  }
+  const written = surfaceFormsOf(queryTokens, longestIdToken)
   return catalog
     .map((domain) => ({
       domain,
@@ -198,6 +240,7 @@ export function rankDomains(
       nameScore: scoreFields(queryTokens, [
         { tokens: domainIdTokensOf(domain), weight: LABEL_WEIGHT, joinable: true },
       ]),
+      named: namesDomain(written, domainIdTokensOf(domain)),
     }))
     .filter((s) => s.score > minScore)
     .sort(
@@ -206,6 +249,45 @@ export function rankDomains(
         b.nameScore - a.nameScore ||
         a.domain.domain.localeCompare(b.domain.domain)
     )
+}
+
+/**
+ * Every form the query could be read as naming: each token, plus the
+ * concatenation of every run of tokens the user wrote adjacently.
+ *
+ * Grade is deliberately ignored here. Grading answers "how good a match is
+ * this?"; naming answers "did the user write this identifier?", and
+ * "road graph" writes `roadgraph` just as plainly as `road-graph` does.
+ * Spans stop growing past `maxLength`, the longest identifier token that
+ * exists to be matched.
+ */
+function surfaceFormsOf(query: QueryTokens, maxLength: number): Set<string> {
+  const { tokens, adjacency } = query
+  const forms = new Set<string>()
+  for (let i = 0; i < tokens.length; i++) {
+    let span = tokens[i]!
+    forms.add(span)
+    for (let j = i + 1; j < tokens.length; j++) {
+      if ((adjacency[j] ?? 0) <= 0) break
+      span += tokens[j]!
+      if (span.length > maxLength) break
+      forms.add(span)
+    }
+  }
+  return forms
+}
+
+/**
+ * Did the query write out every token of this domain's id?
+ *
+ * Exact tokens only — no prefix or fuzzy credit. Naming is a claim strong
+ * enough to reorder routing, so it has to be something the user actually
+ * typed: "openlabel" alone does not name `openlabel-v2` (it names the
+ * family, not the version), while "open label v2" does.
+ */
+function namesDomain(written: Set<string>, idTokens: string[]): boolean {
+  if (idTokens.length === 0) return false
+  return idTokens.every((token) => written.has(token))
 }
 
 /**

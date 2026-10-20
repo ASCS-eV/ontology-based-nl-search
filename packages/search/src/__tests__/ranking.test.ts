@@ -169,9 +169,10 @@ describe('identifier code-list damping', () => {
   })
 
   /**
-   * The damping must come from the corpus, not from an absolute size
-   * threshold: on an ontology set where EVERY vocabulary is large, size
-   * carries no signal and a fixed cutoff would wrongly damp all of them.
+   * Damping comes from the corpus, not from an absolute size threshold, so
+   * swapping the ontology set re-derives the pivot instead of re-tuning a
+   * constant. Where every vocabulary is large, none is damped relative to
+   * the others.
    */
   it('damps nothing when every vocabulary in the corpus is large', () => {
     const big = (domain: string, extra: string[]): TermCard =>
@@ -183,6 +184,85 @@ describe('identifier code-list damping', () => {
       })
     const corpus = [big('alpha', ['motorway']), big('beta', []), big('gamma', [])]
     expect(lexicalScore('motorway', corpus[0]!, corpusStats(corpus))).toBeCloseTo(0.7)
+  })
+
+  /**
+   * KNOWN LIMIT, pinned so it is a measured fact rather than a claim.
+   *
+   * Length normalization calibrates value-field against value-field. It
+   * cannot calibrate value-field against *description*, because the pivot
+   * is the value-field mean: with a single enum card the pool is its own
+   * mean, the ratio is 1, and nothing is damped — so a sponge still
+   * out-scores a genuinely relevant description.
+   *
+   * This is not a regression (the absolute threshold it replaced failed the
+   * same case, and worse). It is the boundary of what a length ratio can
+   * express: the sponge argument is about match *opportunity*, which is
+   * absolute. The parameter-free fix is observed match density — weight a
+   * value hit by how many values in that pool match at the same grade —
+   * which changes card scoring globally and is tracked as follow-up work.
+   *
+   * When that lands, this test should start failing and be replaced by its
+   * inverse.
+   */
+  it('damping degenerates on a corpus of uniformly large pools', () => {
+    const sponge = card({
+      domain: 'alpha',
+      iri: 'https://example.org/alpha/codes',
+      localName: 'codes',
+      labels: ['codes'],
+      allowedValues: Array.from({ length: 2000 }, (_, i) => `rare-token-${i}`).concat('highway'),
+    })
+    const relevant = card({
+      domain: 'beta',
+      iri: 'https://example.org/beta/roadClass',
+      localName: 'roadClass',
+      labels: ['road class'],
+      description: 'the class of highway this segment belongs to',
+    })
+    const stats = corpusStats([sponge, relevant])
+
+    // The pool is its own mean, so the damping factor is exactly 1.
+    expect(stats.avgValueTokens).toBe(corpusStats([sponge]).avgValueTokens)
+    expect(lexicalScore('highway', sponge, stats)).toBeGreaterThan(
+      lexicalScore('highway', relevant, stats)
+    )
+  })
+
+  /**
+   * The same corpus with the pools separated: damping does its job as soon
+   * as there is any spread to be relative to. This is the shipped corpus's
+   * shape (hundreds of pools at =<50 values, dozens at >200), which is why
+   * the limit above is a boundary case and not the operating regime.
+   */
+  it('damps the sponge once the corpus has any spread of pool sizes', () => {
+    const sponge = card({
+      domain: 'alpha',
+      iri: 'https://example.org/alpha/codes',
+      localName: 'codes',
+      labels: ['codes'],
+      allowedValues: Array.from({ length: 2000 }, (_, i) => `rare-token-${i}`).concat('highway'),
+    })
+    const relevant = card({
+      domain: 'beta',
+      iri: 'https://example.org/beta/roadClass',
+      localName: 'roadClass',
+      labels: ['road class'],
+      description: 'the class of highway this segment belongs to',
+    })
+    const smallPools = Array.from({ length: 20 }, (_, i) =>
+      card({
+        domain: `small${i}`,
+        iri: `https://example.org/small${i}/kind`,
+        localName: 'kind',
+        labels: ['kind'],
+        allowedValues: ['one', 'two', 'three'],
+      })
+    )
+    const stats = corpusStats([sponge, relevant, ...smallPools])
+    expect(lexicalScore('highway', sponge, stats)).toBeLessThan(
+      lexicalScore('highway', relevant, stats)
+    )
   })
 
   it('reports the mean value-token count only over cards that enumerate values', () => {
@@ -352,5 +432,60 @@ describe('rankDomains tie-breaking', () => {
     expect(ranked[0]?.score).toBe(ranked[1]?.score)
     expect(ranked[0]?.domain.domain).toBe('weather')
     expect(ranked[1]?.nameScore).toBe(0)
+  })
+
+  /**
+   * Regression: a tie-break is not a guarantee. Grading a whitespace join
+   * below an exact match — which is what stops "car pet" claiming
+   * `carpet` — means a domain the user named by writing its id as two
+   * words scores 0.7 while a domain whose *class label* happens to be
+   * those same two words scores 1.0. Under a small `maxDomains` the named
+   * domain is then dropped from routing entirely, and its properties come
+   * back to the user as ontology gaps.
+   *
+   * `named` records that evidence here; `selectRoutedDomains` is what
+   * reserves the slot (see retrieval.test.ts).
+   */
+  it('marks a domain the query names even when a rival out-scores it', () => {
+    const catalog: DomainCard[] = [
+      {
+        domain: 'roadgraph',
+        classLabels: [],
+        sampleTerms: [],
+        propertyNames: [],
+      },
+      {
+        domain: 'other',
+        classLabels: ['road graph'],
+        sampleTerms: [],
+        propertyNames: [],
+      },
+    ]
+    const ranked = rankDomains('road graph', catalog)
+    const named = ranked.find((s) => s.domain.domain === 'roadgraph')
+    const rival = ranked.find((s) => s.domain.domain === 'other')
+
+    // The rival really does out-score it — otherwise this proves nothing.
+    expect(rival?.score).toBeGreaterThan(named?.score ?? 0)
+    expect(named?.named).toBe(true)
+    expect(rival?.named).toBe(false)
+  })
+
+  /**
+   * The counterweight: naming must be something the user actually wrote,
+   * or every loose prefix would claim a reserved routing slot.
+   */
+  it('does not treat a partial id as naming the domain', () => {
+    const catalog: DomainCard[] = [
+      {
+        domain: 'gammalabel-v2',
+        classLabels: [],
+        sampleTerms: [],
+        propertyNames: [],
+      },
+    ]
+    expect(rankDomains('gammalabel', catalog)[0]?.named).toBe(false)
+    expect(rankDomains('gamma label v2', catalog)[0]?.named).toBe(true)
+    expect(rankDomains('gammalabel v2', catalog)[0]?.named).toBe(true)
   })
 })

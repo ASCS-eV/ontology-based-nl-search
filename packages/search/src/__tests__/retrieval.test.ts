@@ -10,7 +10,11 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 import type { TermCard, TermIndex } from '../index.js'
 import { getInitializedStore } from '../init.js'
-import { retrieveRelevantSchema, warmupRetrievalIndex } from '../schema-index/retrieval.js'
+import {
+  retrieveRelevantSchema,
+  selectRoutedDomains,
+  warmupRetrievalIndex,
+} from '../schema-index/retrieval.js'
 import { buildTermIndex } from '../schema-index/term-index.js'
 
 let store: SparqlStore
@@ -210,5 +214,73 @@ describe('retrieveRelevantSchema — fragments, budgets, abort', () => {
     await expect(
       retrieveRelevantSchema(store, 'anything', { signal: controller.signal })
     ).rejects.toThrow()
+  })
+})
+
+describe('selectRoutedDomains', () => {
+  const signal = (score: number, named = false, nameScore = 0) => ({ score, nameScore, named })
+
+  /**
+   * The guarantee the whole domain-naming path exists for. Scoring a
+   * whitespace join below an exact match is deliberate — it is what stops
+   * two unrelated adjacent words claiming a compound id — but it also
+   * means the domain the user *wrote out* routinely scores below a domain
+   * that merely echoes those words in a class label. Ordering by score
+   * alone drops the named one at a small `maxDomains`, and the model then
+   * reports its properties as ontology gaps.
+   */
+  it('reserves a slot for a named domain the scores would have dropped', () => {
+    const signals = new Map([
+      ['other', signal(1.0)],
+      ['roadgraph', signal(0.7, true)],
+    ])
+    expect(selectRoutedDomains(signals, 1)).toEqual(['roadgraph'])
+  })
+
+  /**
+   * The counterweight: reserving a slot must not become a reordering of
+   * relevance. Once everyone fits, score decides who leads.
+   */
+  it('leaves relevance order alone when the budget fits everyone', () => {
+    const signals = new Map([
+      ['other', signal(1.0)],
+      ['roadgraph', signal(0.7, true)],
+    ])
+    expect(selectRoutedDomains(signals, 5)).toEqual(['roadgraph', 'other'])
+    expect(selectRoutedDomains(new Map([['solo', signal(0.4)]]), 5)).toEqual(['solo'])
+  })
+
+  it('orders named domains among themselves by score, and never exceeds the budget', () => {
+    const signals = new Map([
+      ['low-named', signal(0.2, true)],
+      ['high-named', signal(0.9, true)],
+      ['top-unnamed', signal(1.0)],
+    ])
+    expect(selectRoutedDomains(signals, 2)).toEqual(['high-named', 'low-named'])
+    expect(selectRoutedDomains(signals, 3)).toEqual(['high-named', 'low-named', 'top-unnamed'])
+  })
+
+  /**
+   * Naming cannot buy more prompt than the budget allows, however many
+   * domains the query happens to name.
+   */
+  it('never returns more than maxDomains even when every domain is named', () => {
+    const signals = new Map(
+      Array.from({ length: 50 }, (_, i) => [`d${i}`, signal(i / 50, true)] as const)
+    )
+    const selected = selectRoutedDomains(signals, 4)
+    expect(selected).toHaveLength(4)
+    expect(new Set(selected).size).toBe(4)
+  })
+
+  it('returns each domain at most once', () => {
+    const signals = new Map([
+      ['a', signal(0.5, true)],
+      ['b', signal(0.9, true)],
+      ['c', signal(0.1)],
+    ])
+    const selected = selectRoutedDomains(signals, 10)
+    expect(new Set(selected).size).toBe(selected.length)
+    expect(selected).toHaveLength(3)
   })
 })

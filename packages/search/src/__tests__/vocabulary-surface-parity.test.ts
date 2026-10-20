@@ -126,15 +126,21 @@ describe('enum coverage parity across retrieval and validation', () => {
       ])
     )
     const unknown: string[] = []
+    let compared = 0
     for (const card of index.cards) {
       if (card.kind !== 'property') continue
       const accepted = known.get(`${card.domain}|${card.iri}`)
       if (!accepted) continue
       for (const value of card.allowedValues ?? []) {
+        compared++
         if (!accepted.has(value)) unknown.push(`${card.domain}|${card.localName}|${value}`)
       }
     }
     expect(known.size).toBeGreaterThan(0)
+    // Skipping unknown properties is what makes the loop above a value
+    // check rather than a coverage check, so it can pass by comparing
+    // nothing. Pin that it actually compared something.
+    expect(compared).toBeGreaterThan(0)
     expect(unknown.sort().slice(0, 20)).toEqual([])
   })
 })
