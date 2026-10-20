@@ -1,6 +1,6 @@
 {
   "$schema": "./ontology-sources.schema.json",
-  "description": "Example ontology-sources.json \u2014 copy to ontology-sources.json and adjust paths. The default paths point at the local ontology cache materialized by `pnpm run fetch:ontology` from the pin in ontology-package.json. Add a second source pointing at .ontology/imports to opt in to the foundation vocabularies (see apps/docs/ontology.md).",
+  "description": "Example ontology-sources.json \u2014 copy to ontology-sources.json and adjust paths. The default paths point at the local ontology cache materialized by `pnpm run fetch:ontology` from the pin in ontology-package.json. Select which ontologies of a source are loaded with `domains` (whitelist, e.g. [\"openlabel\"] to search OpenLABEL only) and/or `excludeDomains` (blacklist, e.g. [\"openlabel-v2\"]). Add a second source pointing at .ontology/imports to opt in to the foundation vocabularies (see apps/docs/ontology.md).",
   "sources": [
     {
       "name": "omb-artifacts",

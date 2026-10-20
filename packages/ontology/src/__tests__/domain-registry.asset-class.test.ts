@@ -116,4 +116,16 @@ describe('primary-asset-class selection — graph-driven (no name list)', () => 
     expect(alpha!.targetClass).not.toBe('alpha:WidgetPart')
     expect(beta!.targetClass).not.toBe('beta:GadgetPart')
   })
+
+  it.each([
+    ['domains whitelist', { domains: ['alpha'] }],
+    ['excludeDomains blacklist', { excludeDomains: ['beta'] }],
+  ])('the %s of ontology-sources.json scopes the registry', async (_label, selection) => {
+    writeFileSync(
+      join(workspaceRoot, 'ontology-sources.json'),
+      JSON.stringify({ sources: [{ path: '.', ...selection }] })
+    )
+    const registry = await buildDomainRegistry()
+    expect(registry.domainNames).toEqual(['alpha'])
+  })
 })

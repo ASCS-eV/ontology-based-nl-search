@@ -30,7 +30,7 @@ import {
   parseTtl,
   selectPrimaryAssetClass,
 } from './domain-registry-parse.js'
-import { getArtifactRoots } from './sources.js'
+import { getArtifactRoots, isDomainSelected } from './sources.js'
 
 /** Metadata for a single ontology domain */
 export interface DomainDescriptor {
@@ -140,7 +140,7 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
     }
 
     for (const entry of entries) {
-      if (root.domainAllowlist && !root.domainAllowlist.has(entry)) continue
+      if (!isDomainSelected(root, entry)) continue
       const domainDir = join(root.path, entry)
       // statSync and the inner readdirSync/readFileSync here are NOT wrapped
       // in try/catch on purpose: every call sits inside an artifact-root walk
