@@ -178,27 +178,29 @@ describe('SearchService — real pipeline integration', () => {
   }, 120_000)
 
   /**
-   * A cross-reference JOIN fans out (one row per referenced asset), so a plain
-   * row-level LIMIT would silently truncate distinct matching assets. The
-   * compiler must wrap the asset selection in a `SELECT DISTINCT ?asset … LIMIT`
-   * sub-SELECT so the limit bounds distinct assets, not rows. Plain queries
-   * (no fan-out) must stay a flat SELECT.
+   * Regression: every compiled query carried `LIMIT 100` (and the policy
+   * appended `LIMIT 500` to any query without one), so "all HD maps" returned
+   * and counted 100 of the 165 in the fixture. A search returns every match.
    */
-  it('limits a cross-reference JOIN by distinct asset, not by row', async () => {
-    const { sparql } = await compileSlotsWithTrace({
+  it('returns every matching asset — no LIMIT truncates the results', async () => {
+    const result = await realServiceWithMockedLlm({
+      domains: ['hdmap'],
+      filters: {},
+      ranges: {},
+    }).searchNl({ query: 'all HD maps' })
+
+    expect(result.execution.error).toBeUndefined()
+    expect(result.sparql).not.toMatch(/\bLIMIT\b/)
+    expect(result.meta.matchCount).toBe(165)
+
+    const { sparql: joined } = await compileSlotsWithTrace({
       domains: ['ositrace'],
       filters: {},
       ranges: {},
       references: [{ domain: 'hdmap' }],
     })
-    expect(sparql).toMatch(/SELECT DISTINCT \?asset WHERE \{/)
-
-    const { sparql: plain } = await compileSlotsWithTrace({
-      domains: ['ositrace'],
-      filters: {},
-      ranges: {},
-    })
-    expect(plain).not.toContain('SELECT DISTINCT ?asset')
+    expect(joined).not.toMatch(/\bLIMIT\b/)
+    expect(joined).not.toContain('SELECT DISTINCT ?asset')
   }, 120_000)
 
   /**

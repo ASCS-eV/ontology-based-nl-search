@@ -44,15 +44,11 @@ const envSchema = z.object({
   SPARQL_ENDPOINT: z.string().url().optional(),
   SPARQL_CACHE_SIZE: z.coerce.number().int().positive().default(256),
   SPARQL_CACHE_TTL_MS: z.coerce.number().int().nonnegative().default(300_000),
-  /** Maximum LIMIT the SPARQL policy will accept; queries above are rejected. */
-  SPARQL_MAX_LIMIT: z.coerce.number().int().positive().default(500),
   /**
-   * Default LIMIT the compiler embeds in every emitted query. Must be
-   * ≤ `SPARQL_MAX_LIMIT` (the policy ceiling) — enforced below via
-   * cross-field validation. Operators tune throughput vs. payload size
-   * via this knob without recompiling.
+   * Maximum explicit LIMIT the SPARQL policy accepts; queries above are
+   * rejected. Compiled searches carry no LIMIT and return every match.
    */
-  SPARQL_DEFAULT_LIMIT: z.coerce.number().int().positive().default(100),
+  SPARQL_MAX_LIMIT: z.coerce.number().int().positive().default(500),
   /** Remote SPARQL HTTP timeout. Composed with caller signals via AbortSignal.any. */
   SPARQL_REMOTE_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
   /**
@@ -404,11 +400,6 @@ export function getConfig(): AppConfig {
   // Validate cross-field constraints
   if (result.data.SPARQL_MODE === 'remote' && !result.data.SPARQL_ENDPOINT) {
     throw new ConfigError('SPARQL_ENDPOINT is required when SPARQL_MODE is "remote"')
-  }
-  if (result.data.SPARQL_DEFAULT_LIMIT > result.data.SPARQL_MAX_LIMIT) {
-    throw new ConfigError(
-      `SPARQL_DEFAULT_LIMIT (${result.data.SPARQL_DEFAULT_LIMIT}) must be ≤ SPARQL_MAX_LIMIT (${result.data.SPARQL_MAX_LIMIT}); the compiler default would be rejected by the policy gate.`
-    )
   }
   if (result.data.NODE_ENV === 'production' && result.data.CORS_ALLOWED_ORIGINS.trim() === '*') {
     throw new ConfigError(

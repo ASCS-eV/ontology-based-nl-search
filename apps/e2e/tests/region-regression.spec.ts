@@ -77,7 +77,6 @@ test.describe('Multi-country region regression (R6)', () => {
           '  ?loc georeference:country ?country .',
           '  FILTER(?country IN ("DE", "FR", "IT", "ES", "NL"))',
           '}',
-          'LIMIT 100',
         ].join('\n'),
         results: [
           { asset: 'http://example.org/de1', name: 'Berlin HD Map', country: 'DE' },

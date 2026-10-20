@@ -255,7 +255,7 @@ describe('compileSlots', () => {
     expect(sparql).toContain('SELECT ?asset ?name')
     expect(sparql).toContain('?asset a hdmap:HdMap')
     expect(sparql).toContain('rdfs:label ?name')
-    expect(sparql).toContain('LIMIT 100')
+    expect(sparql).not.toMatch(/\bLIMIT\b/)
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
   })

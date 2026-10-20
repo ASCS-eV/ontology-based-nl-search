@@ -25,7 +25,6 @@
  * referenced asset's variable, so a constraint on a referenced asset compiles
  * to a basic graph pattern rooted at that asset — [SPARQL11] §5 (BGP).
  */
-import { getConfig } from '@ontology-search/core/config'
 import { CompileError } from '@ontology-search/core/errors'
 import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { CompileResult, SearchSlots, TraceabilityPlan } from '@ontology-search/slots/slots'
@@ -272,8 +271,7 @@ export async function compileSlotsWithTrace(
 
   // Shared mutable compile state for the reference emitters. Built once and
   // threaded through both the implicit cross-domain joins and the explicit
-  // `slots.references` emission so they accumulate into the same query state;
-  // `hasReferenceJoin` is read back below to decide the distinct-asset LIMIT wrap.
+  // `slots.references` emission so they accumulate into the same query state.
   const refCtx: ReferenceEmitContext = {
     registry,
     vocabIndex,
@@ -284,7 +282,6 @@ export async function compileSlotsWithTrace(
     prefixDomains,
     traces,
     droppedReferences,
-    hasReferenceJoin: false,
   }
 
   // Implicit cross-domain JOINs: referenced (non-primary) domains that carry
@@ -311,9 +308,7 @@ export async function compileSlotsWithTrace(
   // child), so a nested reference becomes parent → child → grandchild rather
   // than two flat siblings (parent → child AND parent → grandchild). Every
   // node is projected and each with
-  // a resolved chain contributes its own breadcrumb plan. The distinct-asset
-  // wrap (assembleQuery) keeps the LIMIT counting primary assets despite the
-  // (now deeper) reference fan-out. See `emitReferenceNode`.
+  // a resolved chain contributes its own breadcrumb plan. See `emitReferenceNode`.
   for (let i = 0; i < referenceSlots.length; i++) {
     await emitReferenceNode(
       referenceSlots[i]!,
@@ -329,15 +324,7 @@ export async function compileSlotsWithTrace(
 
   // Build the query
   return {
-    sparql: assembleQuery(
-      prefixes,
-      selectVars,
-      patterns,
-      optionals,
-      filters,
-      getConfig().SPARQL_DEFAULT_LIMIT,
-      refCtx.hasReferenceJoin ? '?asset' : undefined
-    ),
+    sparql: assembleQuery(prefixes, selectVars, patterns, optionals, filters),
     trace: traces.length > 0 ? traces : undefined,
     droppedReferences: droppedReferences.length > 0 ? droppedReferences : undefined,
   }

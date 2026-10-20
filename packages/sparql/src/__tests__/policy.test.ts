@@ -30,9 +30,12 @@ describe('enforceSparqlPolicy', () => {
     expect(result.violations).toHaveLength(0)
   })
 
-  it('appends LIMIT if missing', () => {
+  it('leaves a query without LIMIT unbounded', () => {
+    // Regression: the policy appended `LIMIT 500`, silently truncating
+    // compiled searches that are meant to return every match.
     const result = enforceSparqlPolicy(validSelect)
-    expect(result.query).toContain('LIMIT 500')
+    expect(result.allowed).toBe(true)
+    expect(result.query).toBe(validSelect)
   })
 
   it('preserves existing LIMIT ≤ 500', () => {
@@ -162,13 +165,13 @@ describe('enforceSparqlPolicy', () => {
     expect(result.violations[0]).toMatch(/Only SELECT|Parse error/)
   })
 
-  it('appends LIMIT on a fresh line even when the query ends in a comment', () => {
-    // Comment-injection guard: a trailing `#` comment must not swallow the
-    // auto-appended LIMIT (the policy appends it on a new line, post-parse).
-    const q = validSelect.trimEnd() + '\n# trailing comment without a newline'
+  it('rejects LIMIT > 500 written on the line after a trailing comment', () => {
+    // A `#` comment ends at the newline, so the LIMIT on the next line is real
+    // and must still be checked against the ceiling.
+    const q = validSelect.trimEnd() + '\n# trailing comment\nLIMIT 9999'
     const result = enforceSparqlPolicy(q)
-    expect(result.allowed).toBe(true)
-    expect(result.query).toMatch(/\nLIMIT 500\s*$/)
+    expect(result.allowed).toBe(false)
+    expect(result.violations[0]).toContain('exceeds maximum')
   })
 })
 

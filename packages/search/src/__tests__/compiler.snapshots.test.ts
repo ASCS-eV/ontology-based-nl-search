@@ -350,14 +350,15 @@ describe('compileSlots — determinism + snapshot suite', () => {
 
   // ─── Cross-reference JOINs (deterministic + policy-clean) ──────────────
 
-  it('single reference → distinct-asset-limited JOIN', async () => {
+  it('single reference → flat JOIN without LIMIT', async () => {
     const sparql = await assertDeterministic({
       domains: ['ositrace'],
       filters: {},
       ranges: {},
       references: [{ domain: 'hdmap' }],
     })
-    expect(sparql).toMatch(/SELECT DISTINCT \?asset WHERE \{/)
+    expect(sparql).not.toContain('SELECT DISTINCT ?asset')
+    expect(sparql).not.toMatch(/\bLIMIT\b/)
     expect(sparql).toContain('hdmap:HdMap')
     expect(sparql).toMatchSnapshot()
   })
