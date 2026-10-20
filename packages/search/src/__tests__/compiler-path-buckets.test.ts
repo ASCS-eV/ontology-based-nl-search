@@ -157,7 +157,7 @@ describe('addEnumFilter — boolean literals', () => {
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const filters: string[] = []
     addEnumFilter([], filters, '?v', ['true', 'maybe'], BOOLEAN)
-    expect(filters).toEqual(['FILTER(?v IN ("true", "maybe"))'])
+    expect(filters).toEqual(['FILTER(?v IN ("maybe", "true"))'])
   })
 
   it('does not mistake an inherited object key for a boolean form', async () => {

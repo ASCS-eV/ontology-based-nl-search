@@ -497,7 +497,7 @@ describe('compileSlots', () => {
       ranges: {},
     }
     const sparql = await compileSlots(slots)
-    expect(sparql).toContain('FILTER(?entityTypes IN ("car", "truck", "pedestrian"))')
+    expect(sparql).toContain('FILTER(?entityTypes IN ("car", "pedestrian", "truck"))')
     const policy = enforceSparqlPolicy(sparql)
     expect(policy.allowed).toBe(true)
   })

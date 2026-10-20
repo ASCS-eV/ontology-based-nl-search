@@ -178,6 +178,8 @@ const XSD_BOOLEAN = iri('xsd', 'boolean')
  *
  *   When no hierarchy edges are present in the data, the path matches only
  *   the IRI itself (reflexive case) — same semantics as plain equality.
+ * - **Several values** (any mix) are alternatives: the leaf matches when it
+ *   satisfies ANY of them, as the slot contract's IN-semantics require.
  *
  * @param datatype `sh:datatype` the leaf's shape declares ([SHACL] §4.1.2),
  *   when known. The comparison follows the declared datatype, never the
@@ -191,7 +193,10 @@ export function addEnumFilter(
   value: string | string[],
   datatype?: string
 ): void {
-  const arr = Array.isArray(value) ? value : [value]
+  // Several values form a set (IN-semantics), so their order carries no
+  // meaning; sorting makes equivalent slots — e.g. a GraphQL round-trip,
+  // which sorts values — compile to the identical query.
+  const arr = [...new Set(Array.isArray(value) ? value : [value])].sort()
   const iriValues = arr.filter(isIri)
   const literalValues = arr.filter((v) => !isIri(v))
 
@@ -202,6 +207,7 @@ export function addEnumFilter(
   // lexical forms of each boolean value ([RDF11] §5) are compared through
   // STR() instead, which matches typed and plain-string storage alike.
   const booleans = literalValues.map((v) => BOOLEAN_CANONICAL.get(v.trim().toLowerCase()))
+  let literalCondition: string | undefined
   if (
     datatype === XSD_BOOLEAN &&
     literalValues.length > 0 &&
@@ -210,18 +216,38 @@ export function addEnumFilter(
     const lexical = [...new Set(booleans.flatMap((b) => BOOLEAN_LEXICAL_FORMS.get(b!)!))].map(
       (form) => `"${form}"`
     )
-    filters.push(`FILTER(STR(${varName}) IN (${lexical.join(', ')}))`)
+    literalCondition = `STR(${varName}) IN (${lexical.join(', ')})`
   } else if (literalValues.length === 1) {
-    filters.push(`FILTER(${varName} = "${escapeRdfLiteral(literalValues[0]!)}")`)
+    literalCondition = `${varName} = "${escapeRdfLiteral(literalValues[0]!)}"`
   } else if (literalValues.length > 1) {
     const values = literalValues.map((v) => `"${escapeRdfLiteral(v)}"`).join(', ')
-    filters.push(`FILTER(${varName} IN (${values}))`)
+    literalCondition = `${varName} IN (${values})`
   }
 
-  for (const iri of iriValues) {
+  if (iriValues.length === 0) {
+    if (literalCondition) filters.push(`FILTER(${literalCondition})`)
+    return
+  }
+
+  if (iriValues.length === 1 && !literalCondition) {
     // The hierarchy walk is emitted as an additional graph pattern, not a
     // FILTER, so the property path is evaluated by the SPARQL engine against
     // every loaded named graph (schema, codelists, instances, …) generically.
-    patterns.push(`${varName} ${HIERARCHY_EXPANSION_PATH} <${iri}> .`)
+    patterns.push(`${varName} ${HIERARCHY_EXPANSION_PATH} <${iriValues[0]}> .`)
+    return
   }
+
+  // Several values on one leaf carry IN-semantics (slot-wire-schema): the
+  // leaf must fall under ANY of them, so one walk per value would AND them
+  // and never match. A single walk to a VALUES-bound target set, wrapped in
+  // EXISTS so a value under several targets yields one row, expresses the
+  // disjunction ([SPARQL11] §10.2.1 VALUES, §17.4.1.4 EXISTS).
+  const target = `${varName}_target`
+  const targets = iriValues.map((v) => `<${v}>`).join(' ')
+  const iriCondition = `EXISTS { VALUES ${target} { ${targets} } ${varName} ${HIERARCHY_EXPANSION_PATH} ${target} . }`
+  filters.push(
+    literalCondition
+      ? `FILTER((${literalCondition}) || ${iriCondition})`
+      : `FILTER(${iriCondition})`
+  )
 }

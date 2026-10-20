@@ -11,6 +11,28 @@ import { validateSparql } from './sparql-validator.js'
 
 const log = createComponentLogger('compiler')
 
+const PREFIX_DECL = /^\s*PREFIX\s+([A-Za-z][\w.-]*)?:/i
+
+/**
+ * Keep only the PREFIX declarations the query body references. A prefix
+ * label is needed only where a prefixed name uses it ([SPARQL11] §4.1.1.1
+ * Prefixed Names), so declaring the full standard set on every query just
+ * advertises vocabularies the query never touches. Matching is
+ * conservative: a label preceded by a name character is not a use, and a
+ * spurious match (e.g. inside a literal) merely keeps a harmless line.
+ */
+export function pruneUnusedPrefixes(prefixes: string, body: string): string {
+  return prefixes
+    .split('\n')
+    .filter((line) => {
+      const match = PREFIX_DECL.exec(line)
+      if (!match) return line.trim().length > 0
+      const label = (match[1] ?? '').replace(/[.-]/g, '\\$&')
+      return new RegExp(`(?<![\\w.-])${label}:`).test(body)
+    })
+    .join('\n')
+}
+
 /**
  * Assemble a complete SPARQL SELECT query from its constituent parts.
  * Centralizes the query-tail pattern used by both single-domain and
@@ -31,6 +53,7 @@ export function assembleQuery(
   const vars = selectVars instanceof Set ? [...selectVars] : selectVars
   const selectClause = `SELECT ${vars.join(' ')}`
   const whereBody = [...patterns, ...optionals, ...filters].join('\n  ')
+  const prologue = pruneUnusedPrefixes(prefixes, `${selectClause}\n${whereBody}`)
 
   let query: string
   if (distinctSubjectVar) {
@@ -43,11 +66,11 @@ export function assembleQuery(
     // policy enforces anyway); the inner LIMIT is the real distinct-asset bound.
     const maxLimit = getConfig().SPARQL_MAX_LIMIT
     query =
-      `${prefixes}\n${selectClause} WHERE {\n` +
+      `${prologue}\n${selectClause} WHERE {\n` +
       `  { SELECT DISTINCT ${distinctSubjectVar} WHERE {\n  ${whereBody}\n  } LIMIT ${limit} }\n` +
       `  ${whereBody}\n}\nLIMIT ${maxLimit}`
   } else {
-    query = `${prefixes}\n${selectClause} WHERE {\n  ${whereBody}\n}\nLIMIT ${limit}`
+    query = `${prologue}\n${selectClause} WHERE {\n  ${whereBody}\n}\nLIMIT ${limit}`
   }
 
   // Post-assembly validation: catch syntax errors and W3C compliance issues
