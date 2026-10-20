@@ -10,7 +10,11 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 import type { TermCard, TermIndex } from '../index.js'
 import { getInitializedStore } from '../init.js'
-import { retrieveRelevantSchema, warmupRetrievalIndex } from '../schema-index/retrieval.js'
+import {
+  retrieveRelevantSchema,
+  selectRoutedDomains,
+  warmupRetrievalIndex,
+} from '../schema-index/retrieval.js'
 import { buildTermIndex } from '../schema-index/term-index.js'
 
 let store: SparqlStore
@@ -122,6 +126,70 @@ describe('retrieveRelevantSchema — fragments, budgets, abort', () => {
     expect(primary.length).toBeLessThanOrEqual(5)
   })
 
+  /**
+   * Regression: a query naming a domain ("<Domain> only: ...") was routed by
+   * lexical score alone, so the named domain could lose to unrelated domains
+   * and its properties were never shown — the model then reported existing
+   * properties as ontology gaps.
+   *
+   * The fix is in ranking (the domain id is a joinable label field), NOT a
+   * budget bypass: the named domain must route first *and* the card budget
+   * must still hold, otherwise the prompt grows without bound on exactly
+   * the queries that name the largest domains.
+   */
+  it('routes a domain the query names first, still within the card budget', async () => {
+    const [domain, cards] = [...index.byDomain.entries()]
+      .filter(([d]) => /^[a-z0-9]+$/.test(d))
+      .sort((a, b) => b[1].length - a[1].length)[0]!
+    expect(cards.length).toBeGreaterThan(5)
+
+    const retrieved = await retrieveRelevantSchema(store, `${domain} only: something unrelated`, {
+      maxDomains: 1,
+      maxCards: 5,
+    })
+
+    expect(retrieved.domains[0]).toBe(domain)
+    const primary = retrieved.cards.filter((c) => retrieved.domains.includes(c.domain))
+    expect(primary.length).toBeLessThanOrEqual(5)
+    expect(primary.length).toBeGreaterThan(0)
+  })
+
+  /**
+   * Regression: a multi-word spelling of a domain id tokenizes apart while
+   * the id stays joined, so a versioned domain could not be distinguished
+   * from its base and the model answered about the wrong version.
+   *
+   * The split points are generated rather than hand-written so the test
+   * asserts the general property — *however* the user breaks the name into
+   * adjacent words, it still routes to the version they named — without
+   * encoding how any particular ontology spells its domains.
+   */
+  it('routes a versioned domain above its base id for any adjacent-word spelling', async () => {
+    const versioned = [...index.byDomain.keys()].find(
+      (d) => /-v\d+$/.test(d) && index.byDomain.has(d.replace(/-v\d+$/, ''))
+    )
+    // Not a conditional skip: the corpus is the fixture, and a corpus with
+    // no versioned sibling cannot exercise this at all.
+    expect(versioned, 'corpus has no versioned/base domain pair to disambiguate').toBeDefined()
+    const base = versioned!.replace(/-v\d+$/, '')
+
+    const spellings = [
+      versioned!,
+      versioned!.replace(/[^a-z0-9]+/g, ' '),
+      // Break the base word itself, which is what makes the two sides
+      // tokenize asymmetrically in the first place.
+      `${base.slice(0, Math.ceil(base.length / 2))} ${base.slice(Math.ceil(base.length / 2))} ${versioned!.slice(base.length).replace(/[^a-z0-9]+/g, '')}`,
+    ]
+
+    for (const query of spellings) {
+      const retrieved = await retrieveRelevantSchema(store, `${query} properties`, {
+        maxDomains: 1,
+      })
+      expect(retrieved.domains[0], `query: ${query}`).toBe(versioned)
+      expect(retrieved.domains[0]).not.toBe(base)
+    }
+  })
+
   it('bounds the raw fragment payload; overflow properties survive as cards', async () => {
     const card = pickEnumCard()
     const unbounded = await retrieveRelevantSchema(store, card.labels[0]!)
@@ -146,5 +214,73 @@ describe('retrieveRelevantSchema — fragments, budgets, abort', () => {
     await expect(
       retrieveRelevantSchema(store, 'anything', { signal: controller.signal })
     ).rejects.toThrow()
+  })
+})
+
+describe('selectRoutedDomains', () => {
+  const signal = (score: number, named = false, nameScore = 0) => ({ score, nameScore, named })
+
+  /**
+   * The guarantee the whole domain-naming path exists for. Scoring a
+   * whitespace join below an exact match is deliberate — it is what stops
+   * two unrelated adjacent words claiming a compound id — but it also
+   * means the domain the user *wrote out* routinely scores below a domain
+   * that merely echoes those words in a class label. Ordering by score
+   * alone drops the named one at a small `maxDomains`, and the model then
+   * reports its properties as ontology gaps.
+   */
+  it('reserves a slot for a named domain the scores would have dropped', () => {
+    const signals = new Map([
+      ['other', signal(1.0)],
+      ['roadgraph', signal(0.7, true)],
+    ])
+    expect(selectRoutedDomains(signals, 1)).toEqual(['roadgraph'])
+  })
+
+  /**
+   * The counterweight: reserving a slot must not become a reordering of
+   * relevance. Once everyone fits, score decides who leads.
+   */
+  it('leaves relevance order alone when the budget fits everyone', () => {
+    const signals = new Map([
+      ['other', signal(1.0)],
+      ['roadgraph', signal(0.7, true)],
+    ])
+    expect(selectRoutedDomains(signals, 5)).toEqual(['roadgraph', 'other'])
+    expect(selectRoutedDomains(new Map([['solo', signal(0.4)]]), 5)).toEqual(['solo'])
+  })
+
+  it('orders named domains among themselves by score, and never exceeds the budget', () => {
+    const signals = new Map([
+      ['low-named', signal(0.2, true)],
+      ['high-named', signal(0.9, true)],
+      ['top-unnamed', signal(1.0)],
+    ])
+    expect(selectRoutedDomains(signals, 2)).toEqual(['high-named', 'low-named'])
+    expect(selectRoutedDomains(signals, 3)).toEqual(['high-named', 'low-named', 'top-unnamed'])
+  })
+
+  /**
+   * Naming cannot buy more prompt than the budget allows, however many
+   * domains the query happens to name.
+   */
+  it('never returns more than maxDomains even when every domain is named', () => {
+    const signals = new Map(
+      Array.from({ length: 50 }, (_, i) => [`d${i}`, signal(i / 50, true)] as const)
+    )
+    const selected = selectRoutedDomains(signals, 4)
+    expect(selected).toHaveLength(4)
+    expect(new Set(selected).size).toBe(4)
+  })
+
+  it('returns each domain at most once', () => {
+    const signals = new Map([
+      ['a', signal(0.5, true)],
+      ['b', signal(0.9, true)],
+      ['c', signal(0.1)],
+    ])
+    const selected = selectRoutedDomains(signals, 10)
+    expect(new Set(selected).size).toBe(selected.length)
+    expect(selected).toHaveLength(3)
   })
 })

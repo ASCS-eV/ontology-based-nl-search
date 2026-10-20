@@ -21,7 +21,8 @@ import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontol
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from '../compiler.js'
-import type { LeafKind, PropertyPath } from '../property-paths.js'
+import { allPropertyPaths } from '../compiler-vocab.js'
+import type { LeafKind } from '../property-paths.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
 import { extractSchemaVocabulary } from '../vocabulary-extractor.js'
 import { readContextTerms } from './context-reader.js'
@@ -73,6 +74,16 @@ export interface DomainCard {
   classLabels: string[]
   /** A few representative property terms (deterministic sample) */
   sampleTerms: string[]
+  /**
+   * Every property local name in the domain, in index order.
+   *
+   * Names only — no labels, descriptions, or values. A name costs a few
+   * tokens where a full card costs a hundred, so this stays affordable at
+   * any ontology size while making "this domain has no such property" a
+   * sound inference rather than a guess about what the card budget happened
+   * to include.
+   */
+  propertyNames: string[]
   targetClassIri?: string
 }
 
@@ -139,12 +150,10 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
   // Standalone vocabulary entry classes (`vocabularyRoots`) compile too — a
   // query scoped to such a vocabulary gets its own UNION arms — so their
   // leaves are cards of that vocabulary domain, once per (domain, IRI).
-  const rootPaths: PropertyPath[] = []
-  for (const roots of compilerVocab.vocabularyRoots?.values() ?? []) {
-    for (const root of roots) rootPaths.push(...root.paths.values())
-  }
+  // `allPropertyPaths` is the SHARED accessor the vocabulary extractor also
+  // reads, so card coverage and value attribution cannot drift apart.
   const seenCards = new Set<string>()
-  for (const path of [...compilerVocab.paths.values(), ...rootPaths]) {
+  for (const path of allPropertyPaths(compilerVocab)) {
     if (!path.domain) continue
     const cardKey = `${path.domain} ${path.propertyIri}`
     if (seenCards.has(cardKey)) continue
@@ -215,14 +224,12 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
 
   const domainCatalog = [...byDomain.entries()].map(([domain, domainCards]): DomainCard => {
     const classCard = domainCards.find((c) => c.kind === 'class')
-    const sampleTerms = domainCards
-      .filter((c) => c.kind === 'property')
-      .slice(0, DOMAIN_CARD_SAMPLE_TERMS)
-      .map((c) => c.localName)
+    const propertyNames = domainCards.filter((c) => c.kind === 'property').map((c) => c.localName)
     return {
       domain,
       classLabels: classCard?.labels ?? [domain],
-      sampleTerms,
+      sampleTerms: propertyNames.slice(0, DOMAIN_CARD_SAMPLE_TERMS),
+      propertyNames,
       ...(classCard ? { targetClassIri: classCard.iri } : {}),
     }
   })

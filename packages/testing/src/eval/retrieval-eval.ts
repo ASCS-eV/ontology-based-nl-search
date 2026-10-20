@@ -12,6 +12,7 @@
  * reported for diagnosis (e.g. synonym-heavy phrasings the lexical ranker
  * is not expected to resolve) but excluded from threshold assertions.
  */
+import { summarizeRetrieval } from '@ontology-search/llm/evaluation'
 import type { RetrievedSchema } from '@ontology-search/search'
 
 export interface EvalCase {
@@ -110,13 +111,7 @@ async function runCase(retrieve: RetrieveFn, evalCase: EvalCase): Promise<CaseRe
       evalCase.expectedProperties.length
     : 1
 
-  const contextChars =
-    retrieved.fragments.reduce((sum, f) => sum + f.turtle.length, 0) +
-    retrieved.catalog.reduce(
-      (sum, d) =>
-        sum + d.domain.length + d.classLabels.join(' ').length + d.sampleTerms.join(' ').length,
-      0
-    )
+  const contextChars = summarizeRetrieval(retrieved).contextChars
 
   return {
     name: evalCase.name,
