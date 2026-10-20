@@ -242,7 +242,18 @@ export function addEnumFilter(
   // and never match. A single walk to a VALUES-bound target set, wrapped in
   // EXISTS so a value under several targets yields one row, expresses the
   // disjunction ([SPARQL11] §10.2.1 VALUES, §17.4.1.4 EXISTS).
-  const target = `${varName}_target`
+  //
+  // The target variable must be one the surrounding query never binds.
+  // EXISTS is evaluated by substituting the current solution mapping into
+  // its pattern ([SPARQL11] §17.4.1.4), so a target named after an outer
+  // variable — `?x_target` where the query also projects a property called
+  // `x_target` — would have its VALUES block rewritten to that row's value
+  // and silently filter against the wrong set. `?_enumTarget` is reserved:
+  // projected variables are `?asset`, `?name`, property local names and
+  // `?_d<i>_<j>` group variables, none of which can produce it. Reusing one
+  // constant across filters is safe because EXISTS does not bind outward,
+  // so the name is never in the solution mapping being substituted.
+  const target = '?_enumTarget'
   const targets = iriValues.map((v) => `<${v}>`).join(' ')
   const iriCondition = `EXISTS { VALUES ${target} { ${targets} } ${varName} ${HIERARCHY_EXPANSION_PATH} ${target} . }`
   filters.push(

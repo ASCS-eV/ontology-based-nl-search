@@ -27,6 +27,12 @@ ex:a2 ex:surface ex:Icy .
 ex:a3 ex:surface ex:Dry .
 ex:a4 ex:surface ex:Puddles .
 ex:a5 ex:surface "slush" .
+
+ex:a1 ex:surface_target "zzz" .
+ex:a2 ex:surface_target "zzz" .
+ex:a3 ex:surface_target "zzz" .
+ex:a4 ex:surface_target "zzz" .
+ex:a5 ex:surface_target "zzz" .
 `
 
 async function run(value: string | string[]): Promise<string[]> {
@@ -74,6 +80,30 @@ describe('addEnumFilter — several values are alternatives', () => {
     const canonical = compile([`${EX}Icy`, `${EX}Wet`, 'slush'])
     expect(compile(['slush', `${EX}Wet`, `${EX}Icy`])).toEqual(canonical)
     expect(compile([`${EX}Wet`, 'slush', `${EX}Icy`, `${EX}Wet`])).toEqual(canonical)
+  })
+
+  it('binds the EXISTS target to a name the surrounding query cannot shadow', async () => {
+    // EXISTS is evaluated by substituting the current solution mapping into
+    // its pattern ([SPARQL11] §17.4.1.4). Naming the target after the filtered
+    // variable — `?s` → `?s_target` — collides as soon as the query also
+    // projects a property whose leaf variable is `?s_target`: the VALUES block
+    // is rewritten to that row's literal and the disjunction silently matches
+    // nothing. The fixture binds `?s_target` to "zzz" on every asset, so this
+    // fails for any target name derived from the filtered variable.
+    const patterns: string[] = []
+    const filters: string[] = []
+    addEnumFilter(patterns, filters, '?s', [`${EX}Wet`, `${EX}Icy`])
+    const emitted = [...patterns, ...filters].join('\n  ')
+
+    const store = new OxigraphStore()
+    await store.loadTurtle(FIXTURE)
+    const query =
+      `SELECT ?a WHERE {\n  ?a <${EX}surface> ?s .\n` +
+      `  ?a <${EX}surface_target> ?s_target .\n  ${emitted}\n}`
+    const res = await store.query(query)
+    const matched = res.results.bindings.map((b) => b['a']!.value.replace(EX, '')).sort()
+    expect(matched).toEqual(['a1', 'a2', 'a4'])
+    expect(emitted).not.toContain('?s_target')
   })
 })
 
