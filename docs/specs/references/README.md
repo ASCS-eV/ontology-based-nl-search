@@ -25,24 +25,32 @@ can check the exact normative language offline.
 
 ## Files
 
-| File | Specification | Publisher | License | Used in this codebase |
-| --- | --- | --- | --- | --- |
-| `json-schema-core.md` | JSON Schema Core 2020-12 | JSON Schema Org / IETF I-D | AFL-3.0 / BSD-3 | **Slot wire schema** — `slot-wire-schema.ts`, `agent/tools.ts` (Zod → JSON Schema for LLM tool calling). The slot IR's normative contract. |
-| `json-schema-validation.md` | JSON Schema Validation 2020-12 | JSON Schema Org / IETF I-D | AFL-3.0 / BSD-3 | Slot/filter validation keywords (`enum`, `type`, `minimum`, …). |
-| `graphql.md` | GraphQL Specification (Draft) | GraphQL Foundation (Linux F.) | OWFa 1.0 | `graphql-serializer.ts`, `graphql-parser.ts` (alternate query serialization). |
-| `sparql11-query.md` | SPARQL 1.1 Query Language | W3C | W3C Document License | `compiler.ts` output; `@ontology-search/sparql` execution. |
-| `shacl.md` | Shapes Constraint Language (SHACL) | W3C | W3C Document License | `schema-loader.ts`, `prompt-builder.ts`, `slot-validator.ts`, `schema-queries.ts`, property-path discovery. |
-| `owl2-overview.md` | OWL 2 — Document Overview | W3C | W3C Document License | Ontology (`*.owl.ttl`); `domain-registry.ts` class hierarchy. |
-| `owl2-syntax.md` | OWL 2 — Structural Specification | W3C | W3C Document License | OWL constructs consumed during schema load. |
-| `rdf11-concepts.md` | RDF 1.1 Concepts & Abstract Syntax | W3C | W3C Document License | Data model underlying all assets, triples, named graphs. |
-| `rdf-schema.md` | RDF Schema 1.1 | W3C | W3C Document License | `rdfs:label`, `rdfs:subClassOf` in compiler/registry. |
-| `turtle.md` | RDF 1.1 Turtle | W3C | W3C Document License | `*.ttl` ontology + sample data; `FALLBACK_TURTLE`. |
-| `json-ld11.md` | JSON-LD 1.1 | W3C | W3C Document License | `data-loader.ts` (`loadJsonLd`, `@context` resolution); `*.context.jsonld`. |
-| `skos-reference.md` | SKOS Reference | W3C | W3C Document License | `concept-expansion.ts` (concept hierarchy expansion). |
-| `did-core.md` | Decentralized Identifiers (DIDs) v1.0 | W3C | W3C Document License | Asset identifiers (`did:web:…`) across the instance data. |
-| `eventsource.md` | Server-Sent Events | W3C | W3C Document License | `apps/api` `/search/stream` SSE protocol (`SSE_EVENT`). |
-| `rfc8259-json.md` | RFC 8259 — JSON | IETF | IETF Trust (BCP 78) | All JSON payloads on the HTTP boundary (`@ontology-search/api-types`). |
-| `rfc9110-http.md` | RFC 9110 — HTTP Semantics | IETF | IETF Trust (BCP 78) | Hono HTTP API surface (methods, status, content negotiation). |
+`Tag` is how code cites the file: `[SHACL] §4.8.3`. `scripts/check-citations.mjs`
+reads the tags of both tables below and checks every numbered citation in the
+repository against the file named here: the section exists, and a term or a
+link to the spec written next to the citation belongs to that section. The
+JSON Schema drafts are stored without section numbers, so their citations are
+not checked.
+
+| Tag | File | Specification | Publisher | License | Used in this codebase |
+| --- | --- | --- | --- | --- | --- |
+| `[JSON-SCHEMA-CORE]` | `json-schema-core.md` | JSON Schema Core 2020-12 | JSON Schema Org / IETF I-D | AFL-3.0 / BSD-3 | **Slot wire schema** — `slot-wire-schema.ts`, `agent/tools.ts` (Zod → JSON Schema for LLM tool calling). The slot IR's normative contract. |
+| `[JSON-SCHEMA-VAL]` | `json-schema-validation.md` | JSON Schema Validation 2020-12 | JSON Schema Org / IETF I-D | AFL-3.0 / BSD-3 | Slot/filter validation keywords (`enum`, `type`, `minimum`, …). |
+| `[GraphQL]` | `graphql.md` | GraphQL Specification (Draft) | GraphQL Foundation (Linux F.) | OWFa 1.0 | `graphql-serializer.ts`, `graphql-parser.ts` (alternate query serialization). |
+| `[SPARQL11]` | `sparql11-query.md` | SPARQL 1.1 Query Language | W3C | W3C Document License | `compiler.ts` output; `@ontology-search/sparql` execution. |
+| `[SPARQL11-JSON]` | `sparql11-results-json.md` | SPARQL 1.1 Query Results JSON Format | W3C | W3C Document License | The result bindings `@ontology-search/sparql` reads from either store (`oxigraph-binding-parity.test.ts`). |
+| `[SHACL]` | `shacl.md` | Shapes Constraint Language (SHACL) | W3C | W3C Document License | `schema-loader.ts`, `prompt-builder.ts`, `slot-validator.ts`, `schema-queries.ts`, property-path discovery. |
+| `[OWL2-OVERVIEW]` | `owl2-overview.md` | OWL 2 — Document Overview | W3C | W3C Document License | Ontology (`*.owl.ttl`); `domain-registry.ts` class hierarchy. |
+| `[OWL2]` | `owl2-syntax.md` | OWL 2 — Structural Specification | W3C | W3C Document License | OWL constructs consumed during schema load. |
+| `[RDF11]` | `rdf11-concepts.md` | RDF 1.1 Concepts & Abstract Syntax | W3C | W3C Document License | Data model underlying all assets, triples, named graphs. |
+| `[RDFS]` | `rdf-schema.md` | RDF Schema 1.1 | W3C | W3C Document License | `rdfs:label`, `rdfs:subClassOf` in compiler/registry. |
+| `[TURTLE]` | `turtle.md` | RDF 1.1 Turtle | W3C | W3C Document License | `*.ttl` ontology + sample data; `FALLBACK_TURTLE`. |
+| `[JSON-LD11]` | `json-ld11.md` | JSON-LD 1.1 | W3C | W3C Document License | `data-loader.ts` (`loadJsonLd`, `@context` resolution); `*.context.jsonld`. |
+| `[SKOS]` | `skos-reference.md` | SKOS Reference | W3C | W3C Document License | `concept-expansion.ts` (concept hierarchy expansion). |
+| `[DID-CORE]` | `did-core.md` | Decentralized Identifiers (DIDs) v1.0 | W3C | W3C Document License | Asset identifiers (`did:web:…`) across the instance data. |
+| `[SSE]` | `eventsource.md` | Server-Sent Events | W3C | W3C Document License | `apps/api` `/search/stream` SSE protocol (`SSE_EVENT`). |
+| `[RFC8259]` | `rfc8259-json.md` | RFC 8259 — JSON | IETF | IETF Trust (BCP 78) | All JSON payloads on the HTTP boundary (`@ontology-search/api-types`). |
+| `[RFC9110]` | `rfc9110-http.md` | RFC 9110 — HTTP Semantics | IETF | IETF Trust (BCP 78) | Hono HTTP API surface (methods, status, content negotiation). |
 
 ## Pinned machine-readable standards (not prose)
 
@@ -123,7 +131,8 @@ inventory and the citation convention.
 
 ## Retrieval
 
-All files retrieved **2026-06-16**.
+All files retrieved **2026-06-16**, except `sparql11-results-json.md`
+(**2026-10-21**). Each file's attribution header records its own date.
 
 ## Refreshing
 
