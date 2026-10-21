@@ -20,6 +20,23 @@ export function isInternalTraceColumn(key: string): boolean {
 }
 
 /**
+ * Display/export columns of a result set: every key of every row, in
+ * first-seen order, minus the internal trace columns. A row carries only the
+ * variables its solution binds ([SPARQL11] §6: an OPTIONAL that does not match
+ * leaves its variables unbound), so no single row is guaranteed to hold every column — an asset
+ * without a label has no `name`.
+ */
+export function resultColumns(results: Record<string, string>[]): string[] {
+  const columns = new Set<string>()
+  for (const row of results) {
+    for (const key of Object.keys(row)) {
+      if (!isInternalTraceColumn(key)) columns.add(key)
+    }
+  }
+  return [...columns]
+}
+
+/**
  * Heuristic: does a value look like an IRI (has a URI scheme)? Recognizes any
  * scheme — `did:web:…`, `urn:…`, `https://…` — not just http(s), so `did:web`
  * asset identifiers are treated as IRIs (the previous http-only check silently

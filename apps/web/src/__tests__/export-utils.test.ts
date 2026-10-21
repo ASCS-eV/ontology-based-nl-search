@@ -4,6 +4,7 @@ import type { ExportAsset } from '../lib/export-utils'
 import {
   isInternalTraceColumn,
   isIriValue,
+  resultColumns,
   resultsToCsv,
   resultsToJsonLd,
   sanitizeCsvCell,
@@ -55,6 +56,28 @@ describe('isInternalTraceColumn', () => {
     for (const k of ['asset', 'name', 'country', 'refAsset', 'refName', 'refAsset_0']) {
       expect(isInternalTraceColumn(k)).toBe(false)
     }
+  })
+})
+
+describe('resultColumns', () => {
+  /**
+   * The asset label is OPTIONAL, so a solution without one has no `name`
+   * key. When rows are ordered by asset and the first asset is unlabelled,
+   * the columns must still come from every row, or the `name` column — and
+   * every other asset's name — vanishes from the table and the CSV.
+   */
+  it('collects the columns of every row in first-seen order', () => {
+    const results: Record<string, string>[] = [
+      { asset: 'urn:a', genre: 'fiction' },
+      { asset: 'urn:b', name: 'B', genre: 'poetry', ref_step_1: 'blank-node' },
+    ]
+    const columns = resultColumns(results)
+    expect(columns).toEqual(['asset', 'genre', 'name'])
+    expect(resultsToCsv(results, columns).split('\n')).toEqual([
+      'asset,genre,name',
+      '"urn:a","fiction",""',
+      '"urn:b","poetry","B"',
+    ])
   })
 })
 

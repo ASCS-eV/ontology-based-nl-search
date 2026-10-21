@@ -198,6 +198,20 @@ describe('ResultsDisplay', () => {
   })
 
   /**
+   * Rows are ordered by asset and the label is optional, so the first row may
+   * lack `name`. The table still shows the column and the other rows' names.
+   */
+  it('keeps the name column when the first asset has no label', () => {
+    const results: Record<string, string>[] = [
+      { asset: 'urn:book:a', genre: 'fiction' },
+      { asset: 'urn:book:b', name: 'Book B', genre: 'poetry' },
+    ]
+    render(<ResultsDisplay results={results} />)
+    expect(screen.getByRole('columnheader', { name: 'name' })).toBeInTheDocument()
+    expect(screen.getByText('Book B')).toBeInTheDocument()
+  })
+
+  /**
    * The label of a referenced asset is optional (closed SHACL shapes cannot
    * carry `rdfs:label`), so a row may project `refAsset` without `refName`.
    * The reference still renders, named by its IRI.

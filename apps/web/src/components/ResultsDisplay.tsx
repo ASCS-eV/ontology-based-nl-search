@@ -2,12 +2,7 @@ import { Alert, Button, Heading, Pill } from '@ontology-search/design-system'
 import { useState } from 'react'
 
 import type { ResultTraceStep } from '../api-types'
-import {
-  downloadFile,
-  isInternalTraceColumn,
-  resultsToCsv,
-  resultsToJsonLd,
-} from '../lib/export-utils'
+import { downloadFile, resultColumns, resultsToCsv, resultsToJsonLd } from '../lib/export-utils'
 import { LineageExplorer } from './LineageExplorer'
 import {
   attachLineage,
@@ -39,7 +34,7 @@ export function ResultsDisplay({ results, traceability }: ResultsDisplayProps) {
 
   // Drop compiler-internal breadcrumb-intermediate columns (blank-node IDs) from
   // every surface — they're hidden in the UI and must not leak into exports.
-  const columns = Object.keys(results[0] ?? {}).filter((c) => !isInternalTraceColumn(c))
+  const columns = resultColumns(results)
 
   const showCards = hasReferences(results)
   const grouped = showCards ? groupByAsset(results, traceability) : []
