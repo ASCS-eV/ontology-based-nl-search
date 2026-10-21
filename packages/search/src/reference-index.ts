@@ -21,8 +21,8 @@
  * the data actually populates).
  *
  * Ontology-agnostic: every signature comes from standard SHACL structure
- * ([SHACL] §2.3 property shapes, §4.1.3 sh:class, §4.1.2 sh:nodeKind,
- * §5 sh:node) — no ontology-specific predicate or class name appears here.
+ * ([SHACL] §2.3 property shapes, §4.1.1 sh:class, §4.1.3 sh:nodeKind,
+ * §4.7.1 sh:node) — no ontology-specific predicate or class name appears here.
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'

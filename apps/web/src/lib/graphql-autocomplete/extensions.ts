@@ -31,7 +31,7 @@ export function buildEditorExtensions(vocabulary: EditorVocabulary): Extension[]
   // user typed a letter or pressed Ctrl-Space. The `:` trigger matters for
   // categorical filters: their values are a GraphQL *enum* (the standard mapping
   // of a closed `sh:in` vocabulary), so the spec-correct form is unquoted
-  // (`compression(values: lz4)`, §2.9.6) — opening the list right after
+  // (`compression(values: lz4)`, [GraphQL] §2.10.6) — opening the list right after
   // `values:` surfaces the allowed members and steers users away from typing a
   // quote, which is a string literal an enum field validly rejects. Dispatching
   // from inside an update listener is illegal, so defer the (explicit)

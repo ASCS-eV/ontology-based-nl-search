@@ -226,7 +226,7 @@ interface PropertyShapeFacts {
  *
  * Each property shape is read once and merged into both indexes, keyed by its
  * path and by its path with each `sh:targetClass` of the node shape declaring
- * it ([SHACL] §2.1.3.1, §2.3).
+ * it ([SHACL] §2.1.3.2, §2.3).
  *
  * This is fully generic — reads only standard SHACL vocabulary, works with
  * any shapes graph.
@@ -265,7 +265,7 @@ export async function indexPropertyConstraints(
   const readShape = (propShape: Term): PropertyShapeFacts => {
     // The datatype IRI is kept, not just the fact of it: candidate synthesis
     // needs the declared datatype to build a literal the shape can actually
-    // accept [SHACL] §4.2.3.
+    // accept [SHACL] §4.1.2.
     const datatypes: string[] = []
     for (const dtQ of shapes.match(propShape, namedNode(SH_DATATYPE), null, null)) {
       if (dtQ.object.termType === 'NamedNode') datatypes.push(dtQ.object.value)

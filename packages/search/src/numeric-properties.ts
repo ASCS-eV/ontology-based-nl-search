@@ -2,7 +2,7 @@
  * Numeric property discovery — the leaves a range filter can compare.
  *
  * A property is numeric when a property shape constrains its values to a
- * numeric `sh:datatype` ([SHACL] §4.1.1), either directly or through an
+ * numeric `sh:datatype` ([SHACL] §4.1.2), either directly or through an
  * `sh:or` ([SHACL] §4.6.3) whose datatype-bearing members are all numeric.
  * The disjunctive form is how an ontology says "a number, or a range node":
  * the literal alternative is what a range filter compares, and members that
@@ -21,7 +21,7 @@
  * over `integer` across those shapes, and the name and description come
  * from the shape that sorts first by them.
  *
- * @see https://www.w3.org/TR/shacl/#DatatypeConstraintComponent — [SHACL] §4.1.1 sh:datatype
+ * @see https://www.w3.org/TR/shacl/#DatatypeConstraintComponent — [SHACL] §4.1.2 sh:datatype
  * @see https://www.w3.org/TR/shacl/#OrConstraintComponent — [SHACL] §4.6.3 sh:or
  */
 import { extractLocalName } from '@ontology-search/core/rdf/iri'

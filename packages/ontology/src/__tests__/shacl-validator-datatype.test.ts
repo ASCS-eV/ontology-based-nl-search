@@ -4,7 +4,7 @@
  * type.
  *
  * `sh:datatype` holds only when the literal's datatype IRI EQUALS the declared
- * one [SHACL] §4.2.3 — SHACL performs no numeric promotion. Typing the literal
+ * one [SHACL] §4.1.2 — SHACL performs no numeric promotion. Typing the literal
  * from the JS type therefore rejected valid values in both directions, and the
  * `sh:minInclusive` comparison then failed in cascade because it cannot order a
  * plain string. Both directions are asserted here against the real pinned

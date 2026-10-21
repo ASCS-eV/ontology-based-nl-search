@@ -21,7 +21,7 @@ export class GraphQLVocabularyError extends Error {
   }
 }
 
-/** Convert an ontology term into a GraphQL Name (§2.1.9). */
+/** Convert an ontology term into a GraphQL Name ([GraphQL] §2.1.8). */
 export function sanitizeGraphQLName(name: string): string {
   let safe = name.replace(/[^A-Za-z0-9_]/g, '_')
   if (/^[0-9]/.test(safe)) safe = `_${safe}`

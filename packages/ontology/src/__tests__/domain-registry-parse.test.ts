@@ -6,10 +6,10 @@
  * faithful RDF parse handles it. They would fail on the pre-I2 code:
  *
  *  - `parseTtl` must honor SPARQL-style `PREFIX` directives (no leading `@`, no
- *    trailing `.`, case-insensitive keyword) [RDF11-TURTLE §6.4], which the
+ *    trailing `.`, case-insensitive keyword) [TURTLE §2.4], which the
  *    `@prefix`-only regex ignored.
  *  - `extractTargetClasses` matches `sh:targetClass` by RESOLVED IRI
- *    [SHACL §2.1.3.3], so a class written with a *different* alias bound to the
+ *    [SHACL §2.1.3.2], so a class written with a *different* alias bound to the
  *    same namespace, or as a full `<IRI>`, or separated from the predicate by a
  *    comment, is still found — none of which the alias-keyed regex caught.
  *  - A malformed document degrades to the empty view rather than throwing.
@@ -88,7 +88,7 @@ mydomain:X a <http://www.w3.org/2002/07/owl#Class> .`
   })
 })
 
-describe('domain-registry-parse — flat-ontology namespace fallback (SHACL §2.1.3.3)', () => {
+describe('domain-registry-parse — flat-ontology namespace fallback ([SHACL] §2.1.3.2)', () => {
   it('derives the namespace from sh:targetClass shapes when prefix name and owl:Ontology are absent', () => {
     // LinkML gen-shacl shape: prefix alias "adont" differs from the directory name
     // "adontology", and there is no owl:Ontology declaration. The namespace shared

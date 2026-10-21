@@ -298,7 +298,7 @@ export async function queryLeafEnumerations(store: SparqlStore): Promise<Map<str
  *
  * A property shape with an `sh:or` is a leaf too when one of its members
  * constrains `sh:datatype`: a value conforming to that member is a literal
- * ([SHACL] §4.6.3 `sh:or`, §4.1.1 `sh:datatype`). Such a property can be an
+ * ([SHACL] §4.6.3 `sh:or`, §4.1.2 `sh:datatype`). Such a property can be an
  * edge as well — another member may `sh:node` a sub-resource, like a range
  * node beside a plain number — and then it is both. Members without a
  * datatype contribute nothing here.

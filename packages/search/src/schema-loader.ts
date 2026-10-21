@@ -112,7 +112,7 @@ export const VALUE_HIERARCHY_PREDICATES: readonly string[] = [
  * forbids `GRAPH` / `FROM` ([SPARQL11] §13.2 RDF dataset). An IRI filter
  * value is matched with `(skos:broaderTransitive|rdfs:subClassOf)*`, so a
  * broad value (a class or concept) also matches data that stores a narrower
- * one ([RDF-SCHEMA] §3.4 rdfs:subClassOf transitivity; [SKOS] §8.1
+ * one ([RDFS] §3.4 rdfs:subClassOf transitivity; [SKOS] §8.1
  * skos:broaderTransitive). Those edges live in {@link SCHEMA_GRAPH}; without
  * this copy the walk only ever matched the value itself. Only IRI→IRI edges
  * are copied — no shapes, restrictions, or blank nodes leave the schema graph.

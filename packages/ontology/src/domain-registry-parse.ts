@@ -5,7 +5,7 @@
  * consumed by `buildDomainRegistry` in `./domain-registry.js`.
  *
  * Every Turtle structure here is read through a real RDF/JS parse (n3), never a
- * regex over the source text [RDF11-TURTLE]. `parseTtl` parses each file once
+ * regex over the source text [TURTLE]. `parseTtl` parses each file once
  * into a `{ quads, prefixes }` view; the extractors below traverse that view by
  * resolved IRI, so comments, arbitrary whitespace, and alternate prefix aliases
  * for the same namespace are all handled correctly. Only `extractVersion`
@@ -53,7 +53,7 @@ const EMPTY_PARSE: ParsedTtl = { quads: [], prefixes: {} }
 
 /**
  * Parse a Turtle document once with a real RDF parser, returning both its quads
- * and its declared prefixes [RDF11-TURTLE §2.4].
+ * and its declared prefixes [TURTLE §2.4].
  *
  * A real parser is required, not a regex: the upstream Gaia-X OWL
  * (`gx.owl.ttl`) declares superclasses through deeply nested blank-node
@@ -102,7 +102,7 @@ function lookupPrefix(prefixes: Record<string, string>, alias: string): string |
  * `gen-shacl` output) — the namespace shared by the file's `sh:targetClass`
  * shapes. The last fallback needs no prefix-name, version, or ontology-header
  * convention, so any SHACL carrying target-class shapes yields a domain
- * [SHACL §2.1.3.3].
+ * [SHACL §2.1.3.2].
  */
 export function extractNamespace(parsed: ParsedTtl, domainName: string): string | null {
   const direct = lookupPrefix(parsed.prefixes, domainName)
@@ -131,7 +131,7 @@ export function extractNamespace(parsed: ParsedTtl, domainName: string): string 
  * to and including its final `#` or `/`) shared by the most `sh:targetClass`
  * shapes. Deterministic — ties are broken by namespace IRI. Returns `null` when
  * there are no named target classes. This removes the versioned-namespace /
- * matching-prefix convention as a hard requirement [SHACL §2.1.3.3].
+ * matching-prefix convention as a hard requirement [SHACL §2.1.3.2].
  */
 function namespaceFromTargetClasses(parsed: ParsedTtl): string | null {
   const counts = new Map<string, number>()
@@ -182,7 +182,7 @@ export function findPrefixAlias(
 
 /**
  * Extract target classes declared via `sh:targetClass` whose IRI sits directly
- * in the given namespace [SHACL §2.1.3.3]. Matching by resolved IRI (not by a
+ * in the given namespace [SHACL §2.1.3.2]. Matching by resolved IRI (not by a
  * prefix alias in the source text) means a class written with any alias that
  * binds to this namespace is found. The local name is restricted to a bare
  * NCName-like token (`\w+`) directly under the namespace, preserving the prior
@@ -301,7 +301,7 @@ export function extractCompositionAdjacency(quads: Quad[]): Map<string, string[]
 
 /**
  * Map every shape subject to the target class(es) it declares via
- * `sh:targetClass` [SHACL §2.1.3.3]. A shape may target several classes and a
+ * `sh:targetClass` [SHACL §2.1.3.2]. A shape may target several classes and a
  * class may be targeted by several shapes, so values are arrays. Lets a
  * composition-reachable shape node be resolved back to the asset class(es) it
  * stands for.

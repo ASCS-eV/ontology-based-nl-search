@@ -187,8 +187,12 @@ fix or surface it within the PR's scope, do not bundle.
     `compiler.ts`, `graphql-serializer.ts`). The slot IR is **not** a standard
     of its own — it is held to **JSON Schema 2020-12** (the LLM tool-call
     contract). If an interface's standard is not yet in `docs/specs/references/`,
-    add it (attribution header + README row) before relying on it. Rationale and
-    the full interface inventory: [Standards Audit](apps/docs/standards-audit.md).
+    add it (attribution header + README row with its tag) before relying on it.
+    `scripts/check-citations.mjs` (run by `pnpm run test:scripts`) fails a
+    citation whose tag is unregistered, whose section the stored text does not
+    have, or whose section is not the one defining the term or anchor written
+    next to it. Rationale and the full interface inventory:
+    [Standards Audit](apps/docs/standards-audit.md).
 
 ### Commit Conventions
 

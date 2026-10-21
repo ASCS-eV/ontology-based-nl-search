@@ -3,8 +3,8 @@
  *
  * Pins the two halves of the contract:
  *  1. `extractSchemaVocabulary` derives everything from the schema graph
- *     (enum/numeric queries carry `FROM <urn:graph:schema>` — [SHACL] §4.6.1
- *     sh:in, §4.1.1 sh:datatype) and never issues the instance-literal scan
+ *     (enum/numeric queries carry `FROM <urn:graph:schema>` — [SHACL] §4.8.3
+ *     sh:in, §4.1.2 sh:datatype) and never issues the instance-literal scan
  *     (`FILTER(isLiteral(?v))`) the old eager path ran at warmup.
  *  2. `getInstanceValues` reproduces the old eager distribution — restricted
  *     via a VALUES clause ([SPARQL11] §10.2).

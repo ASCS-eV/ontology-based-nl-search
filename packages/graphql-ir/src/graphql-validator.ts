@@ -5,16 +5,16 @@
  * reference implementation maintained by the GraphQL Foundation) and
  * walks the AST to catch structural issues:
  *
- *   - Syntax errors (invalid GraphQL per spec §2 Language)
- *   - Empty selection sets (spec §2.4 requires ≥1 field selection)
- *   - Missing field names (spec §2.5 Field definition)
+ *   - Syntax errors (invalid GraphQL per [GraphQL] §2 Language)
+ *   - Empty selection sets ([GraphQL] §2.5 requires ≥1 field selection)
+ *   - Missing field names ([GraphQL] §2.6 Field definition)
  *
  * Mirrors the SPARQL validator (`sparql-validator.ts`) which uses
  * `sparqljs` for the same purpose against W3C SPARQL 1.1.
  *
  * @see https://spec.graphql.org/September2025/ — GraphQL Language Specification
- * @see https://spec.graphql.org/September2025/#sec-Language — §2 Language (syntax)
- * @see https://spec.graphql.org/September2025/#sec-Selection-Sets — §2.4 Selection Sets
+ * @see https://spec.graphql.org/September2025/#sec-Language — [GraphQL] §2 Language (syntax)
+ * @see https://spec.graphql.org/September2025/#sec-Selection-Sets — [GraphQL] §2.5 Selection Sets
  * @see https://github.com/graphql/graphql-js — reference implementation (parse gate)
  */
 

@@ -114,7 +114,7 @@ const XSD_LEXICAL: ReadonlyArray<readonly [string, RegExp]> = [
  * Pick the declared datatype to type this value with.
  *
  * `sh:datatype` holds only when the literal's datatype IRI EQUALS the declared
- * one [SHACL] §4.2.3 — SHACL performs no numeric promotion, so an
+ * one [SHACL] §4.1.2 — SHACL performs no numeric promotion, so an
  * `xsd:integer` literal fails an `xsd:float` shape just as a plain string
  * fails both. Guessing the datatype from the host value's runtime type
  * therefore reports valid values as violations in both directions: an integer

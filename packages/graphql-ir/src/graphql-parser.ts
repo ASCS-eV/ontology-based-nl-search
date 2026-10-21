@@ -13,18 +13,18 @@
  *
  * | GraphQL AST node            | Slot concept    | Spec section |
  * |-----------------------------|-----------------|--------------|
- * | OperationDefinition (query) | query root      | §2.3         |
- * | Top-level Field             | domain          | §2.5         |
- * | Nested Field                | filter/range    | §2.5         |
- * | Argument (values: [...])    | filter values   | §2.6         |
- * | Argument (min/max: N)       | range bounds    | §2.6         |
- * | Field `references`          | references container | §2.5    |
- * | Field under `references`    | reference entry | §2.5         |
- * | Argument (label: "...")     | reference label | §2.6         |
- * | ListValue                   | array values    | §2.9.7       |
- * | StringValue                 | literal value   | §2.9.4       |
- * | EnumValue                   | enum filter value | §2.9.6     |
- * | IntValue / FloatValue       | numeric bounds  | §2.9.1–2.9.2 |
+ * | OperationDefinition (query) | query root      | §2.4         |
+ * | Top-level Field             | domain          | §2.6         |
+ * | Nested Field                | filter/range    | §2.6         |
+ * | Argument (values: [...])    | filter values   | §2.7         |
+ * | Argument (min/max: N)       | range bounds    | §2.7         |
+ * | Field `references`          | references container | §2.6    |
+ * | Field under `references`    | reference entry | §2.6         |
+ * | Argument (label: "...")     | reference label | §2.7         |
+ * | ListValue                   | array values    | §2.10.7      |
+ * | StringValue                 | literal value   | §2.10.4      |
+ * | EnumValue                   | enum filter value | §2.10.6    |
+ * | IntValue / FloatValue       | numeric bounds  | §2.10.1–2.10.2 |
  *
  * References are modelled as recursive *fields* (`references { <domain> { … } }`),
  * not an argument — parsing a referenced asset's selection set is the same
@@ -32,9 +32,10 @@
  * `docs/adr/0002-field-based-recursive-references.md`.
  *
  * Only inlined `Field` selections with literal argument values are modelled.
- * Fragments (§2.8), variables (§2.10), and directives (§2.12) are rejected up
- * front (see {@link findUnsupportedConstruct}) rather than silently dropped, so
- * a schema-valid edited query can never execute an unintended search.
+ * Fragments ([GraphQL] §2.9), variables ([GraphQL] §2.11), and directives
+ * ([GraphQL] §2.13) are rejected up front (see {@link findUnsupportedConstruct})
+ * rather than silently dropped, so a schema-valid edited query can never
+ * execute an unintended search.
  *
  * @see https://spec.graphql.org/September2025/ — GraphQL Language Specification
  * @see slotsToGraphQL in ./graphql-serializer.ts — the forward path
@@ -126,7 +127,7 @@ export function parseGraphQLToSlots(
     if (graphQLDomainName === '_empty') continue // placeholder
     const domainName = options.nameMap?.domains.get(graphQLDomainName) ?? graphQLDomainName
 
-    // GraphQL merges repeated fields (§2.5); the flat slot model lists each
+    // GraphQL merges repeated fields ([GraphQL] §2.6); the flat slot model lists each
     // domain once. Keep the domain unique while still merging the constraints
     // from every block that names it.
     if (!domains.includes(domainName)) domains.push(domainName)
@@ -152,9 +153,9 @@ export function parseGraphQLToSlots(
  * usually under-constrained, search. Returning a bounded error (surfaced by the
  * API as HTTP 422) keeps the executed query faithful to the edited one.
  *
- * @see https://spec.graphql.org/draft/#sec-Language.Fragments — [GraphQL] §2.8
- * @see https://spec.graphql.org/draft/#sec-Language.Variables — [GraphQL] §2.10
- * @see https://spec.graphql.org/draft/#sec-Language.Directives — [GraphQL] §2.12
+ * @see https://spec.graphql.org/draft/#sec-Language.Fragments — [GraphQL] §2.9
+ * @see https://spec.graphql.org/draft/#sec-Language.Variables — [GraphQL] §2.11
+ * @see https://spec.graphql.org/draft/#sec-Language.Directives — [GraphQL] §2.13
  */
 function findUnsupportedConstruct(ast: DocumentNode): string | null {
   let unsupported: string | null = null
@@ -162,13 +163,13 @@ function findUnsupportedConstruct(ast: DocumentNode): string | null {
     unsupported ??= message
   }
   visit(ast, {
-    // [GraphQL] §2.8 — fragment fields live outside the selection sets we walk.
+    // [GraphQL] §2.9 — fragment fields live outside the selection sets we walk.
     FragmentDefinition: () => flag('Fragments are not supported; inline the fields directly.'),
     FragmentSpread: () => flag('Fragment spreads are not supported; inline the fields directly.'),
     InlineFragment: () => flag('Inline fragments are not supported; inline the fields directly.'),
-    // [GraphQL] §2.10 — variable values are never bound on the refine path.
+    // [GraphQL] §2.11 — variable values are never bound on the refine path.
     Variable: () => flag('Variables are not supported; use literal values.'),
-    // [GraphQL] §2.12 — directives (e.g. @skip/@include) alter which fields apply.
+    // [GraphQL] §2.13 — directives (e.g. @skip/@include) alter which fields apply.
     Directive: () => flag('Directives are not supported.'),
   })
   return unsupported
