@@ -30,6 +30,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const REFERENCES = 'docs/specs/references'
+/** The gate's own tests, whose fixtures are wrong citations on purpose. */
+const OWN_TESTS = 'scripts/check-citations.test.mjs'
 
 /** A section number: `4.8.3`, or an appendix letter followed by numbers (`A.1`). */
 const SECTION = String.raw`\d+(?:\.\d+)*|[A-Z](?:\.\d+)+`
@@ -212,12 +214,20 @@ export function analyzeCitations(files, registry, specs) {
   return violations
 }
 
-/** The tracked text files that may carry citations, outside the vendored texts. */
+/**
+ * The tracked text files that may carry citations: everything outside the
+ * vendored texts and the gate's own tests.
+ */
 function trackedSources(root) {
   const listed = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
   return listed
     .split('\0')
-    .filter((path) => /\.(?:[cm]?[jt]sx?|md|ya?ml)$/.test(path) && !path.startsWith(REFERENCES))
+    .filter(
+      (path) =>
+        /\.(?:[cm]?[jt]sx?|md|ya?ml)$/.test(path) &&
+        !path.startsWith(REFERENCES) &&
+        path !== OWN_TESTS
+    )
     .map((path) => ({ path, text: readFileSync(join(root, path), 'utf8') }))
 }
 
