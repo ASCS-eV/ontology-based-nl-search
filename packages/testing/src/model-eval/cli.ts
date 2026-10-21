@@ -352,6 +352,33 @@ function assertCandidateInventory(): void {
   }
 }
 
+/**
+ * Environment of a child process that sees only the toyverse ontology: the
+ * ambient environment (provider credentials, proxy, …) with the workspace
+ * pointed at `root`, whose ontology-sources.json names the fixture, and an
+ * in-process store. An ambient ONTOLOGY_SOURCES_FILE would replace that
+ * manifest, and an ambient remote store would hold another ontology (and
+ * receive the fixture's schema), so both are overridden.
+ */
+export function toyverseChildEnv(
+  root: string,
+  extra: Record<string, string> = {}
+): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {
+    // Forwards the ambient environment to a child process — not a config
+    // read, so the getConfig() rule does not apply.
+    // eslint-disable-next-line no-restricted-syntax
+    ...process.env,
+    NODE_ENV: 'test',
+    ONTOLOGY_ROOT: root,
+    SPARQL_MODE: 'memory',
+    ...extra,
+  }
+  delete env['ONTOLOGY_SOURCES_FILE']
+  delete env['SPARQL_ENDPOINT']
+  return env
+}
+
 async function checkToyverseInChild(repoRoot: string): Promise<void> {
   const root = mkdtempSync(join(tmpdir(), 'model-eval-toyverse-'))
   const fixture = join(repoRoot, 'packages/testing/fixtures/toyverse')
@@ -365,14 +392,7 @@ async function checkToyverseInChild(repoRoot: string): Promise<void> {
       const child = spawn(process.execPath, ['--import', 'tsx', childPath], {
         shell: false,
         stdio: 'inherit',
-        env: {
-          // Forwards the ambient environment to a child process — not a
-          // config read, so the getConfig() rule does not apply.
-          // eslint-disable-next-line no-restricted-syntax
-          ...process.env,
-          NODE_ENV: 'test',
-          ONTOLOGY_ROOT: root,
-        },
+        env: toyverseChildEnv(root),
       })
       child.once('error', reject)
       child.once('close', (code) => resolveStatus(code ?? 1))
@@ -399,14 +419,7 @@ async function runToyverseInChild(repoRoot: string): Promise<number> {
         {
           shell: false,
           stdio: 'inherit',
-          env: {
-            // Forwards ambient variables to the isolated ontology process.
-            // eslint-disable-next-line no-restricted-syntax
-            ...process.env,
-            NODE_ENV: 'test',
-            ONTOLOGY_ROOT: root,
-            MODEL_EVAL_TOYVERSE_CHILD: '1',
-          },
+          env: toyverseChildEnv(root, { MODEL_EVAL_TOYVERSE_CHILD: '1' }),
         }
       )
       child.once('error', reject)

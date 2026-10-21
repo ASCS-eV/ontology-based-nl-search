@@ -1,10 +1,10 @@
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { candidateInventory } from '../candidates.js'
-import { parseCliArgs } from '../cli.js'
+import { parseCliArgs, toyverseChildEnv } from '../cli.js'
 import { assertCorpusInvariants, envitedGoldCases, protocolGoldCases } from '../corpus.js'
 import { planProfile, roundRobinSamples } from '../profiles.js'
 import { assertSchemaArtifactsCurrent, generateSchemaArtifacts } from '../schema-artifacts.js'
@@ -12,6 +12,29 @@ import { assertSchemaArtifactsCurrent, generateSchemaArtifacts } from '../schema
 const modelEvalRoot = dirname(fileURLToPath(new URL('../types.ts', import.meta.url)))
 
 describe('evaluation contracts', () => {
+  it('isolates the toyverse child from an ambient ontology manifest and store', () => {
+    // An ambient ONTOLOGY_SOURCES_FILE replaces the workspace manifest the
+    // child is given, and an ambient remote store holds another ontology (and
+    // would receive the toyverse schema), so the child would evaluate against
+    // something other than the fixture.
+    vi.stubEnv('ONTOLOGY_SOURCES_FILE', '/elsewhere/ontology-sources.json')
+    vi.stubEnv('SPARQL_MODE', 'remote')
+    vi.stubEnv('SPARQL_ENDPOINT', 'http://shared-store.example/sparql')
+    try {
+      const env = toyverseChildEnv('/tmp/toyverse-root', { MODEL_EVAL_TOYVERSE_CHILD: '1' })
+      expect(env).not.toHaveProperty('ONTOLOGY_SOURCES_FILE')
+      expect(env).not.toHaveProperty('SPARQL_ENDPOINT')
+      expect(env).toMatchObject({
+        NODE_ENV: 'test',
+        ONTOLOGY_ROOT: '/tmp/toyverse-root',
+        SPARQL_MODE: 'memory',
+        MODEL_EVAL_TOYVERSE_CHILD: '1',
+      })
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('parses strict CLI commands and rejects conflicting server control', () => {
     expect(parseCliArgs(['list'])).toEqual({ command: 'list' })
     expect(parseCliArgs(['smoke', '--api-key', 'sk-test'])).toMatchObject({
