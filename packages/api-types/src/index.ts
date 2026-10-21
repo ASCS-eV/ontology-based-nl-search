@@ -258,7 +258,10 @@ export interface StatsResponse {
  * can offer as a query constraint, discovered from the SHACL vocabulary.
  */
 export interface VocabProperty {
-  /** Local name (the field name in the editor). */
+  /**
+   * The slot key (the field name in the editor): a leaf's local name, or a
+   * qualified key naming one of several property paths to that local name.
+   */
   name: string
   /** Human-readable label (`sh:name`); falls back to `name`. */
   label: string

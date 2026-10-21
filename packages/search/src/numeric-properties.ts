@@ -35,7 +35,10 @@ import { SCHEMA_GRAPH } from './schema-loader.js'
 /** A numeric property — any [RDF11] §5.1 numeric XSD datatype */
 export interface NumericProperty {
   iri: string
+  /** The slot key (ADR 0009): the leaf's local name unless it is qualified. */
   localName: string
+  /** The leaf's local name, present when the key is qualified — a key, too, for every chain of that name. */
+  leafName?: string
   label: string
   description: string
   datatype: 'integer' | 'float'

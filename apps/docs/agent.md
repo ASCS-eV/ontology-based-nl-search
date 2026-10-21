@@ -41,8 +41,8 @@ submit_slots({
     domains: string[],                                       // Asset types to search
     filters: Record<string, string | string[]>,              // Enum filters (any sh:in property,
                                                               //   including country / region /
-                                                              //   license — all keyed by SHACL
-                                                              //   leaf local name, no special-case
+                                                              //   license — all keyed by the
+                                                              //   property key, no special-case
                                                               //   `location` or `license` slots)
     ranges: Record<string, { min?: number; max?: number }>,  // Numeric ranges
     references?: Reference | Reference[]                     // Cross-domain JOIN(s) to other
@@ -61,7 +61,7 @@ submit_slots({
 type Reference = { domain: string; label?: string; references?: Reference[] }
 ```
 
-Slot shape: there are no top-level `location` or `license` objects — both flow through `filters` keyed by the SHACL leaf local name (e.g. `country`, `region`, `license`). The `references` slot is a **list** of cross-domain JOINs whose targets are SHACL-discovered asset classes; entries are **AND-combined** (the asset must reference all of them). Each entry may **nest** its own `references` to express a chain — "scenarios derived from traces with maps" → `[{ domain: 'ositrace', references: [{ domain: 'hdmap' }] }]` (scenario → trace → map), as opposed to flat siblings `[{ ositrace }, { hdmap }]` (scenario → trace AND scenario → map). A single object is still accepted and normalized to a one-element list.
+Slot shape: there are no top-level `location` or `license` objects — both flow through `filters` keyed by the property key — the SHACL leaf local name (e.g. `country`, `region`, `license`), or a qualified key (`dataRate__value`) where a domain reaches one local name through several paths ([ADR 0009](https://github.com/ASCS-eV/ontology-based-nl-search/blob/main/docs/adr/0009-per-path-property-keys.md)). The `references` slot is a **list** of cross-domain JOINs whose targets are SHACL-discovered asset classes; entries are **AND-combined** (the asset must reference all of them). Each entry may **nest** its own `references` to express a chain — "scenarios derived from traces with maps" → `[{ domain: 'ositrace', references: [{ domain: 'hdmap' }] }]` (scenario → trace → map), as opposed to flat siblings `[{ ositrace }, { hdmap }]` (scenario → trace AND scenario → map). A single object is still accepted and normalized to a one-element list.
 
 ### Forced tool choice
 

@@ -14,10 +14,50 @@ import {
   addEnumFilter,
   addLocationFilter,
   findDomainForIri,
+  leafVariable,
   prefixedPredicate,
 } from './compiler-helpers-primitives.js'
 import { type CompilerVocab } from './compiler-vocab.js'
+import { pathsThatCanHold } from './property-keys.js'
 import { type PropertyPath } from './property-paths.js'
+
+/** How a slot key resolves (ADR 0009). */
+export type KeyResolution =
+  | { kind: 'path'; path: PropertyPath }
+  | { kind: 'alternatives'; paths: PropertyPath[] }
+  | { kind: 'none' }
+
+/**
+ * Resolve a slot key against a keyed path index: the one path a key names;
+ * or, for a bare name the index reaches through several chains, the chains
+ * that can hold `value` ({@link pathsThatCanHold}) — collapsing to a single
+ * path when only one can. Without a value (a range), every chain.
+ */
+export function resolveKey(
+  paths: ReadonlyMap<string, PropertyPath>,
+  alternatives: ReadonlyMap<string, PropertyPath[]> | undefined,
+  indexKey: string,
+  value?: string | string[]
+): KeyResolution {
+  const path = paths.get(indexKey)
+  if (path) return { kind: 'path', path }
+  const chains = alternatives?.get(indexKey)
+  if (!chains || chains.length === 0) return { kind: 'none' }
+  const candidates = value === undefined ? chains : pathsThatCanHold(chains, value)
+  return candidates.length === 1
+    ? { kind: 'path', path: candidates[0]! }
+    : { kind: 'alternatives', paths: candidates }
+}
+
+/** {@link resolveKey} for a domain of the compiler vocabulary. */
+export function resolveDomainKey(
+  vocabIndex: CompilerVocab,
+  domainName: string,
+  key: string,
+  value?: string | string[]
+): KeyResolution {
+  return resolveKey(vocabIndex.paths, vocabIndex.alternatives, `${domainName}:${key}`, value)
+}
 
 /**
  * Pick the step-N predicate to emit for the path of ANY property in the
@@ -182,48 +222,182 @@ export function emitDirectPathFilters(
       const leafStep = entry.path.steps[entry.path.steps.length - 1]!
       const leafPred = emitPredicate(leafStep.predicate)
       if (entry.kind === 'filter') {
-        const v = `?${entry.name}${suffix}`
-        patterns.push(`${cursor} ${leafPred} ${v} .`)
-        if (entry.path.leafKind === 'literal') {
-          addEnumFilter(patterns, filters, v, entry.value, entry.path.datatype)
-        } else {
-          addLocationFilter(filters, v, entry.value)
-        }
-        selectVars.add(v)
+        emitLeafFilter(
+          cursor,
+          leafPred,
+          entry.name,
+          suffix,
+          entry.value,
+          entry.path,
+          patterns,
+          filters,
+          selectVars
+        )
       } else {
-        const range2D = vocabIndex.range2DProperties.get(entry.name)
-        if (range2D) {
-          const rangeNode = `?${entry.name}Range${suffix}`
-          patterns.push(`${cursor} ${leafPred} ${rangeNode} .`)
-          const minPred = emitPredicate(range2D.minPredicate)
-          const maxPred = emitPredicate(range2D.maxPredicate)
-          if (entry.range.min !== undefined) {
-            const maxVar = `?${entry.name}Max${suffix}`
-            patterns.push(`${rangeNode} ${maxPred} ${maxVar} .`)
-            filters.push(`FILTER(xsd:float(${maxVar}) >= ${entry.range.min})`)
-            selectVars.add(maxVar)
-          }
-          if (entry.range.max !== undefined) {
-            const minVar = `?${entry.name}Min${suffix}`
-            patterns.push(`${rangeNode} ${minPred} ${minVar} .`)
-            filters.push(`FILTER(xsd:float(${minVar}) <= ${entry.range.max})`)
-            selectVars.add(minVar)
-          }
-        } else {
-          const v = `?${entry.name}${suffix}`
-          patterns.push(`${cursor} ${leafPred} ${v} .`)
-          selectVars.add(v)
-          if (entry.range.min !== undefined) {
-            filters.push(`FILTER(xsd:float(${v}) >= ${entry.range.min})`)
-          }
-          if (entry.range.max !== undefined) {
-            filters.push(`FILTER(xsd:float(${v}) <= ${entry.range.max})`)
-          }
-        }
+        emitLeafRange(
+          cursor,
+          leafPred,
+          entry.name,
+          suffix,
+          entry.range,
+          entry.path,
+          patterns,
+          filters,
+          selectVars,
+          emitPredicate,
+          vocabIndex
+        )
       }
     }
     bucketIdx++
   }
+}
+
+/** Bind a filter's leaf from `cursor` and constrain it to `value`. */
+function emitLeafFilter(
+  cursor: string,
+  leafPred: string,
+  key: string,
+  suffix: string,
+  value: string | string[],
+  path: PropertyPath,
+  patterns: string[],
+  filters: string[],
+  selectVars: Set<string>
+): void {
+  const v = leafVariable(key, suffix)
+  patterns.push(`${cursor} ${leafPred} ${v} .`)
+  if (path.leafKind === 'literal') {
+    addEnumFilter(patterns, filters, v, value, path.datatype)
+  } else {
+    addLocationFilter(filters, v, value)
+  }
+  selectVars.add(v)
+}
+
+/**
+ * Bind a range's leaf from `cursor` and bound it. An interval leaf
+ * (`range2DProperties`, keyed by leaf name) is compared through its
+ * SHACL-discovered lower/upper predicates: a user `min` constrains the
+ * interval's upper bound and vice versa.
+ */
+function emitLeafRange(
+  cursor: string,
+  leafPred: string,
+  key: string,
+  suffix: string,
+  range: { min?: number; max?: number },
+  path: PropertyPath,
+  patterns: string[],
+  filters: string[],
+  selectVars: Set<string>,
+  emitPredicate: (iri: string) => string,
+  vocabIndex: CompilerVocab
+): void {
+  const range2D = vocabIndex.range2DProperties.get(path.propertyName)
+  if (range2D) {
+    const rangeNode = leafVariable(key, suffix, 'Range')
+    patterns.push(`${cursor} ${leafPred} ${rangeNode} .`)
+    if (range.min !== undefined) {
+      const maxVar = leafVariable(key, suffix, 'Max')
+      patterns.push(`${rangeNode} ${emitPredicate(range2D.maxPredicate)} ${maxVar} .`)
+      filters.push(`FILTER(xsd:float(${maxVar}) >= ${range.min})`)
+      selectVars.add(maxVar)
+    }
+    if (range.max !== undefined) {
+      const minVar = leafVariable(key, suffix, 'Min')
+      patterns.push(`${rangeNode} ${emitPredicate(range2D.minPredicate)} ${minVar} .`)
+      filters.push(`FILTER(xsd:float(${minVar}) <= ${range.max})`)
+      selectVars.add(minVar)
+    }
+    return
+  }
+  const v = leafVariable(key, suffix)
+  patterns.push(`${cursor} ${leafPred} ${v} .`)
+  selectVars.add(v)
+  if (range.min !== undefined) filters.push(`FILTER(xsd:float(${v}) >= ${range.min})`)
+  if (range.max !== undefined) filters.push(`FILTER(xsd:float(${v}) <= ${range.max})`)
+}
+
+/**
+ * Emit the constraints whose key names several chains (a bare leaf name the
+ * domain reaches more than one way, ADR 0009) as one `UNION` group each
+ * ([SPARQL11] §7): a branch per chain walks the whole chain from the asset
+ * with intermediates of its own and carries its own value test, and every
+ * branch binds the key's variable, so the value is projected whichever chain
+ * holds it. The branches share no node with the query's other constraints —
+ * the key does not say which chain, so it cannot say which node either.
+ *
+ * Branches follow the order of the chains (IRI-chain order) and the groups the
+ * order of the keys, so the SPARQL is deterministic.
+ */
+export function emitAlternativeConstraints(
+  domainName: string,
+  filterEntries: [string, string | string[], PropertyPath[]][],
+  rangeEntries: [string, { min?: number; max?: number }, PropertyPath[]][],
+  assetVar: string,
+  suffix: string,
+  patterns: string[],
+  selectVars: Set<string>,
+  foreignDomains: Set<string>,
+  registry: DomainRegistry,
+  vocabIndex: CompilerVocab
+): void {
+  const emitPredicate = (predicateIri: string): string => {
+    const desc = findDomainForIri(predicateIri, registry)
+    if (desc && desc.name !== domainName) foreignDomains.add(desc.name)
+    return desc ? prefixedPredicate(predicateIri, desc) : `<${predicateIri}>`
+  }
+  type Entry =
+    | { kind: 'filter'; key: string; value: string | string[]; paths: PropertyPath[] }
+    | { kind: 'range'; key: string; range: { min?: number; max?: number }; paths: PropertyPath[] }
+  const entries: Entry[] = [
+    ...filterEntries.map(([key, value, paths]): Entry => ({ kind: 'filter', key, value, paths })),
+    ...rangeEntries.map(([key, range, paths]): Entry => ({ kind: 'range', key, range, paths })),
+  ].sort((a, b) => a.key.localeCompare(b.key) || a.kind.localeCompare(b.kind))
+
+  entries.forEach((entry, entryIdx) => {
+    const branches = entry.paths.map((path, branchIdx) => {
+      const lines: string[] = []
+      const tests: string[] = []
+      let cursor = assetVar
+      for (let i = 0; i < path.steps.length - 1; i++) {
+        const intVar = `?_alt${entryIdx}_${branchIdx}_${i}${suffix}`
+        lines.push(`${cursor} ${emitPredicate(path.steps[i]!.predicate)} ${intVar} .`)
+        cursor = intVar
+      }
+      const leafPred = emitPredicate(path.steps[path.steps.length - 1]!.predicate)
+      if (entry.kind === 'filter') {
+        emitLeafFilter(
+          cursor,
+          leafPred,
+          entry.key,
+          suffix,
+          entry.value,
+          path,
+          lines,
+          tests,
+          selectVars
+        )
+      } else {
+        emitLeafRange(
+          cursor,
+          leafPred,
+          entry.key,
+          suffix,
+          entry.range,
+          path,
+          lines,
+          tests,
+          selectVars,
+          emitPredicate,
+          vocabIndex
+        )
+      }
+      return `{\n    ${[...lines, ...tests].join('\n    ')}\n  }`
+    })
+    patterns.push(branches.join('\n  UNION\n  '))
+  })
 }
 
 /**
@@ -298,17 +472,19 @@ export function emitDeepFilters(
         ? prefixedPredicate(leafStep.predicate, leafDomain)
         : `<${leafStep.predicate}>`
       if (leafDomain && leafDomain.name !== domainName) foreignDomains.add(leafDomain.name)
-      const v = `?${propName}${suffix}`
-      patterns.push(`${cursor} ${leafPredicate} ${v} .`)
-      // Use the filter helper that matches the leaf's value kind.
-      // `class:` leaves are IRI-typed and want STR/LCASE matching;
-      // `iri` leaves likewise. Literal leaves want exact equality.
-      if (path.leafKind === 'literal') {
-        addEnumFilter(patterns, filters, v, value, path.datatype)
-      } else {
-        addLocationFilter(filters, v, value)
-      }
-      selectVars.add(v)
+      // The leaf value kind picks the test: literal leaves want exact
+      // equality, IRI-typed (`iri` / `class:`) leaves STR/LCASE matching.
+      emitLeafFilter(
+        cursor,
+        leafPredicate,
+        propName,
+        suffix,
+        value,
+        path,
+        patterns,
+        filters,
+        selectVars
+      )
     }
     bucketIdx++
   }

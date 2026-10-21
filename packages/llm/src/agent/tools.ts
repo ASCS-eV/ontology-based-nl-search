@@ -21,8 +21,9 @@ export const AGENT_TOOL_NAMES = [...SCHEMA_TOOL_NAMES, SUBMIT_TOOL_NAME] as cons
  * Tool schema for the LLM slot-filling agent.
  *
  * Design: The schema mirrors SearchSlots directly — no conversion needed.
- * The LLM fills property names matching the ontology local names
- * (from SHACL sh:path declarations) as documented in the agent-tools
+ * The LLM fills property keys — the ontology local names (from SHACL
+ * sh:path declarations), qualified where one local name is reached through
+ * several property paths (ADR 0009) — as documented in the agent-tools
  * catalog (apps/docs/agent-tools.md).
  */
 
@@ -35,10 +36,10 @@ export const slotSubmissionSchema = z.object({
     .object({
       domains: searchSlotsWireSchema.shape.domains.describe('Target domain(s)'),
       filters: searchSlotsWireSchema.shape.filters.describe(
-        'Property filters keyed by SHACL leaf local name. Includes EVERY literal/IRI constraint — geography, license, etc. Geographic filters use the property local names declared in the ontology (e.g. "country", "state", "region", "city" when the SHACL has those leaves); the compiler discovers the chain from the asset class to each leaf. Use arrays for IN-semantics (e.g. ["DE","FR"] when the user expresses a region).'
+        'Property filters keyed by property key: the SHACL leaf local name, or the qualified key the property list gives a path (e.g. "dataRate__value"); a bare local name matches every path of that name. Includes EVERY literal/IRI constraint — geography, license, etc. Geographic filters use the property local names declared in the ontology (e.g. "country", "state", "region", "city" when the SHACL has those leaves); the compiler discovers the chain from the asset class to each leaf. Use arrays for IN-semantics (e.g. ["DE","FR"] when the user expresses a region).'
       ),
       ranges: searchSlotsWireSchema.shape.ranges.describe(
-        'Numeric ranges: localName → { min?, max? }'
+        'Numeric ranges: property key → { min?, max? }'
       ),
       references: searchSlotsWireSchema.shape.references.describe(
         'Cross-reference filter(s): find assets that reference one or more other domains. ' +

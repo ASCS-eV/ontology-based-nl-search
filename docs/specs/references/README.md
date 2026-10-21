@@ -38,7 +38,7 @@ can check the exact normative language offline.
 | `rdf-schema.md` | RDF Schema 1.1 | W3C | W3C Document License | `rdfs:label`, `rdfs:subClassOf` in compiler/registry. |
 | `turtle.md` | RDF 1.1 Turtle | W3C | W3C Document License | `*.ttl` ontology + sample data; `FALLBACK_TURTLE`. |
 | `json-ld11.md` | JSON-LD 1.1 | W3C | W3C Document License | `data-loader.ts` (`loadJsonLd`, `@context` resolution); `*.context.jsonld`. |
-| `skos-reference.md` | SKOS Reference | W3C | W3C Document License | `concept-expansion.ts`, `scripts/generate-skos.ts` (synonyms/concepts). |
+| `skos-reference.md` | SKOS Reference | W3C | W3C Document License | `concept-expansion.ts` (concept hierarchy expansion). |
 | `did-core.md` | Decentralized Identifiers (DIDs) v1.0 | W3C | W3C Document License | Asset identifiers (`did:web:…`) across the instance data. |
 | `eventsource.md` | Server-Sent Events | W3C | W3C Document License | `apps/api` `/search/stream` SSE protocol (`SSE_EVENT`). |
 | `rfc8259-json.md` | RFC 8259 — JSON | IETF | IETF Trust (BCP 78) | All JSON payloads on the HTTP boundary (`@ontology-search/api-types`). |

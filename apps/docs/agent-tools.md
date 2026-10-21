@@ -38,9 +38,12 @@ submit_slots({
   slots: {
     domains:  string[],                                     // asset types to search
     filters:  Record<string, string | string[]>,           // enum/literal filters keyed by the
-                                                            //   SHACL leaf local name (country,
-                                                            //   license, …); array = IN-semantics
-    ranges:   Record<string, { min?: number; max?: number }>, // numeric ranges by local name
+                                                            //   property key: the SHACL leaf local
+                                                            //   name (country, license, …), or a
+                                                            //   qualified key (dataRate__value)
+                                                            //   where several paths share it;
+                                                            //   array = IN-semantics
+    ranges:   Record<string, { min?: number; max?: number }>, // numeric ranges by property key
     references?: Reference | Reference[],                   // cross-domain JOIN(s), AND-combined;
                                                             //   each may nest its own `references`
   },

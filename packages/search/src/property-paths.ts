@@ -28,6 +28,7 @@ import {
   enrichLeafKinds,
   type LeafRow,
   queryLeafDatatypes,
+  queryLeafEnumerations,
   queryLeafProperties,
   queryResolvedEdges,
 } from './property-paths-queries.js'
@@ -79,6 +80,7 @@ function pathsFrom(
       propertyName: extractLocalName(propertyIri),
       propertyIri,
       assetClass: rootClass,
+      owningClass,
       steps,
       leafKind,
       ...(reachedAsAncestor(owningClass, predecessors) && { inheritedLeaf: true }),
@@ -166,15 +168,18 @@ export async function discoverPropertyPaths(
   // hot leaf query stays minimal (see `enrichLeafKinds`).
   const enrichEnd = log.time('property-paths/enrich-leaf-kinds')
   const allPaths = [...out, ...rootPaths]
-  const [enriched, datatypes] = await Promise.all([
+  const [enriched, datatypes, enumerations] = await Promise.all([
     enrichLeafKinds(store, allPaths),
     queryLeafDatatypes(store, allPaths),
+    queryLeafEnumerations(store),
   ])
   for (const path of allPaths) {
     const kind = enriched.get(path.propertyIri)
     if (kind) path.leafKind = kind
     const datatype = datatypes.get(path.propertyIri)
     if (datatype) path.datatype = datatype
+    const allowedValues = enumerations.get(`${path.owningClass}|${path.propertyIri}`)
+    if (allowedValues) path.allowedValues = allowedValues
   }
   enrichEnd()
 
@@ -221,6 +226,7 @@ function emitPaths(
         propertyName: extractLocalName(propertyIri),
         propertyIri,
         assetClass,
+        owningClass,
         steps,
         leafKind,
         ...(reachedAsAncestor(owningClass, predecessors) && { inheritedLeaf: true }),

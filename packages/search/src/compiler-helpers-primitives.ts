@@ -81,6 +81,23 @@ export function groupPredicate(group: string): string {
 // `IRIREF` body grammar. Literal escaping is the grammar-shared
 // `escapeRdfLiteral` from `@ontology-search/core/rdf/literal`.
 
+/** Variables every compiled query projects for itself (the asset, its class, its label). */
+const PROJECTED_VARIABLES = new Set(['asset', 'assetClass', 'name'])
+
+/**
+ * The SPARQL variable a slot key binds: the key with each character a
+ * variable name cannot carry ([SPARQL11] §19.8, rule 166 VARNAME) replaced by
+ * `_`, then `part` (`Range`, `Min`, `Max` for an interval's nodes) and the
+ * per-domain `suffix`. A key spelled like a variable the query projects for
+ * itself gets a trailing `_`, so a leaf called `name` never rebinds the
+ * asset's label.
+ */
+export function leafVariable(key: string, suffix = '', part = ''): string {
+  const base = key.replace(/[^A-Za-z0-9_]/g, '_')
+  const safe = PROJECTED_VARIABLES.has(base) ? `${base}_` : base
+  return `?${safe}${part}${suffix}`
+}
+
 /**
  * A slot value carries information iff it's a non-empty string or a
  * non-empty array. Used by the compiler to decide whether to emit the

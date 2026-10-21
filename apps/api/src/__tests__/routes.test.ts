@@ -568,8 +568,9 @@ describe('POST /search/refine-graphql', () => {
     )
     expect(retried.status).toBe(200)
     expect(buildTermIndex).toHaveBeenCalledOnce()
-    // The successful response also initializes the independent enum-serialization cache.
-    expect(getInitializedStore).toHaveBeenCalledTimes(3)
+    // The failed build and the retry; the serializer's enum set comes from the
+    // same contract, so the store is not read again for it.
+    expect(getInitializedStore).toHaveBeenCalledTimes(2)
   })
 })
 

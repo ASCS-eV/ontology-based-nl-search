@@ -5,6 +5,16 @@
  *
  * @see https://www.w3.org/TR/shacl/
  */
+/**
+ * One property shape to validate against ([SHACL] §2.3): the property IRI it
+ * constrains (its `sh:path`) and, when known, the target class of the node
+ * shape that declares it.
+ */
+export interface PropertyShapeTarget {
+  iri: string
+  targetClass?: string
+}
+
 /** Result of validating a candidate value. */
 export interface ShaclValidationResult {
   conforms: boolean

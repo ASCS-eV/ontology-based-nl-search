@@ -25,8 +25,11 @@ import { z } from 'zod'
 // ─── Leaf value shapes ───────────────────────────────────────────────────────
 
 /**
- * A property filter map: SHACL leaf local name → one value or several.
- * An array carries IN-semantics for the compiler.
+ * A property filter map: property key → one value or several. A key is the
+ * SHACL leaf's local name, or a qualified key (`dataRate__value`) naming one
+ * of several property paths that end in that local name; the bare local name
+ * then matches every such path (ADR 0009). An array carries IN-semantics for
+ * the compiler.
  */
 export const slotFiltersWireSchema = z.record(
   z.string(),
@@ -46,7 +49,7 @@ export const slotRangeWireSchema = z.object({
   max: z.number().optional(),
 })
 
-/** A numeric range map: SHACL leaf local name → range. */
+/** A numeric range map: property key (as for filters) → range. */
 export const slotRangesWireSchema = z.record(z.string(), slotRangeWireSchema)
 
 // ─── Reference filter (recursive) ────────────────────────────────────────────
@@ -75,7 +78,7 @@ export const referenceFilterWireSchema: z.ZodType<ReferenceFilterInput> = z.lazy
     filters: slotFiltersWireSchema
       .optional()
       .describe(
-        'Property filters on THIS referenced asset (keyed by SHACL leaf local name), ' +
+        'Property filters on THIS referenced asset (keyed by property key), ' +
           'i.e. a property of the referenced asset constrained to one or more values. ' +
           'Put constraints that describe the referenced asset here, NOT in the top-level slots.'
       ),

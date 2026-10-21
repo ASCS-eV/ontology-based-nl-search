@@ -101,6 +101,27 @@ describe('buildGraphQLSchema', () => {
     ).toHaveLength(0)
   })
 
+  it('types a field by its own domain, not by another domain enumerating the name', () => {
+    const typed = buildGraphQLSchema({
+      domains: ['maps', 'traces'],
+      properties: [
+        {
+          name: 'unit',
+          label: 'unit',
+          description: '',
+          domain: 'maps',
+          type: 'enum',
+          allowedValues: ['metres'],
+        },
+        { name: 'unit', label: 'unit', description: '', domain: 'traces', type: 'string' },
+      ],
+    })
+    // Free text stays free in `traces`, though `maps` enumerates `unit`.
+    expect(validate(typed, parse('query { traces { unit(values: ["px"]) } }'))).toHaveLength(0)
+    expect(validate(typed, parse('query { maps { unit(values: [metres]) } }'))).toHaveLength(0)
+    expect(validate(typed, parse('query { maps { unit(values: ["px"]) } }'))).not.toHaveLength(0)
+  })
+
   it('provides a valid empty-schema placeholder', () => {
     const empty = buildGraphQLSchema({ domains: [], properties: [] })
     expect(validate(empty, parse('query { _empty }'))).toHaveLength(0)

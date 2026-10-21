@@ -119,14 +119,16 @@ async function validateReferenceTree(
     if (ref.filters && Object.keys(ref.filters).length > 0) {
       const fuzzed = correctFilters(ref.filters, vocabulary, prefixes)
       const expanded = expandFilterConcepts(fuzzed, conceptIndex)
-      const res = await validateSlotsAgainstShacl(expanded, shacl, vocabulary, instanceValues)
+      const res = await validateSlotsAgainstShacl(expanded, shacl, vocabulary, instanceValues, [
+        ref.domain,
+      ])
       for (const g of res.gaps) gaps.push(g)
       if (Object.keys(res.filters).length > 0) cleaned.filters = res.filters
       else delete cleaned.filters
     }
 
     if (ref.ranges && Object.keys(ref.ranges).length > 0) {
-      const res = validateRangesAgainstShacl(ref.ranges, shacl)
+      const res = validateRangesAgainstShacl(ref.ranges, shacl, vocabulary)
       for (const g of res.gaps) gaps.push(g)
       if (Object.keys(res.ranges).length > 0) cleaned.ranges = res.ranges
       else delete cleaned.ranges
@@ -184,12 +186,13 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     expandedFilters,
     shacl,
     vocabulary,
-    instanceValueLookup
+    instanceValueLookup,
+    submission.slots.domains ?? [targetDomain]
   )
   // 3. Ranges go through their own check: numeric values always pass SHACL
   // datatype constraints, so we only need to confirm the property name is
   // known. Hallucinated keys (e.g. `numberLanes`) are dropped here.
-  const rangeResult = validateRangesAgainstShacl(submission.slots.ranges ?? {}, shacl)
+  const rangeResult = validateRangesAgainstShacl(submission.slots.ranges ?? {}, shacl, vocabulary)
   // 4. Reassign domains based on the union of surviving filter / range keys.
   const correctedDomains = correctDomains(
     submission.slots.domains ?? [targetDomain],

@@ -164,8 +164,12 @@ export const SCHEMA_TOOL_DEFINITIONS: SchemaToolDefinition[] = [
         return { domain, count: Number(result.results.bindings[0]?.['count']?.value ?? 0) }
       }
 
+      // A card's key, and the local name of its leaf: a bare name is a key for
+      // every chain of that name (ADR 0009).
       const known = new Set(
-        domainCards.filter((c) => c.kind === 'property').map((c) => c.localName)
+        domainCards
+          .filter((c) => c.kind === 'property')
+          .flatMap((c) => (c.leafName ? [c.localName, c.leafName] : [c.localName]))
       )
       const unknown = Object.keys(filters).filter((name) => !known.has(name))
       if (unknown.length > 0) {

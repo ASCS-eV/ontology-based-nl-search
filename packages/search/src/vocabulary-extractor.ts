@@ -11,12 +11,14 @@
  */
 import { extractLocalName } from '@ontology-search/core/rdf/iri'
 import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
+import type { PropertyShapeTarget } from '@ontology-search/ontology/shacl-validator'
 import { isIri } from '@ontology-search/sparql/escape'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from './compiler.js'
-import { allPropertyPaths } from './compiler-vocab.js'
+import { allPropertyKeys, type KeyedPropertyPath } from './compiler-vocab.js'
 import { extractNumericProperties, type NumericProperty } from './numeric-properties.js'
+import { PROPERTY_KEY_SEPARATOR } from './property-keys.js'
 import { SCHEMA_GRAPH } from './schema-loader.js'
 import {
   queryInstanceValueDistribution,
@@ -28,17 +30,38 @@ import {
 
 export type { NumericProperty } from './numeric-properties.js'
 
+/** A property shape a slot key names, with the domain whose chain reaches it. */
+export interface KeyShapeTarget extends PropertyShapeTarget {
+  domain: string
+}
+
 /** A property with enumerated allowed values (from sh:in) */
 export interface EnumProperty {
   /** Full IRI of the property (e.g., "http://example.org/ontology/v1/propertyName") */
   iri: string
-  /** Local name (e.g., "propertyName") */
+  /**
+   * The slot key (ADR 0009): the leaf's local name, or a qualified key
+   * (`dataRate__value`) when the domain reaches that leaf name through more
+   * than one predicate chain.
+   */
   localName: string
+  /**
+   * The leaf's local name, present when the key is qualified (it differs from
+   * {@link localName}); the bare name is itself a key matching every chain of
+   * that name.
+   */
+  leafName?: string
+  /** The class whose node shape declares the leaf property shape, when known. */
+  owningClass?: string
   /** Human-readable label from sh:name (e.g., "road types") */
   label: string
   /** Description from sh:description */
   description: string
-  /** Enumerated allowed values from sh:in */
+  /**
+   * Enumerated allowed values: the chain's own `sh:in`, or — when its
+   * property shape declares none — the values the property's shapes declare
+   * across the schema.
+   */
   allowedValues: string[]
   /** Ontology domain (the SHACL domain name) */
   domain: string
@@ -60,7 +83,8 @@ export interface SchemaVocabulary {
   /** All domains found in the schema */
   domains: string[]
   /**
-   * Every property the compiler can resolve, as local name → owning domains.
+   * Every slot key the compiler can resolve — qualified keys and bare leaf
+   * names alike (ADR 0009) — as key → owning domains.
    *
    * Deliberately broader than {@link enumProperties} + {@link numericProperties}:
    * those cover only properties carrying `sh:in` or a numeric `sh:datatype`, so
@@ -70,6 +94,13 @@ export interface SchemaVocabulary {
    * the enum/numeric lists alone reports a false negative for such leaves.
    */
   propertyDomains: ReadonlyMap<string, readonly string[]>
+  /**
+   * The property shapes ([SHACL] §2.3) a slot key names, for the keys that
+   * resolving a leaf IRI's local name cannot identify (ADR 0009): a qualified
+   * key's one chain, and every chain of a leaf name that has qualified keys
+   * anywhere. Keys absent here are plain leaf names.
+   */
+  propertyShapeTargets?: ReadonlyMap<string, readonly KeyShapeTarget[]>
   /**
    * SKOS concepts grouped by scheme — discovered generically from
    * any loaded graph. Empty if no SKOS schemes are loaded.
@@ -121,38 +152,42 @@ export async function extractSchemaVocabulary(store: SparqlStore): Promise<Schem
   // domain — no parallel heuristic to drift. A property reachable from several
   // domains is attributed to each (matching the compiler's multi-domain paths).
   //
-  // Reads `allPropertyPaths` (asset paths UNION vocabulary-root paths), not
-  // `paths` alone: six domains in the shipped set are reachable only as
-  // standalone vocabulary roots, so attributing from `paths` left every one
-  // of their properties unattributed — `extractEnumProperties` then emitted
-  // nothing for them and the LLM saw a vocabulary with no filterable values.
+  // Reads `allPropertyKeys` (asset paths UNION vocabulary-root paths), not
+  // `paths` alone: some domains are reachable only as standalone vocabulary
+  // roots, and attributing from `paths` would leave every one of their
+  // properties without a domain, and the LLM without their values.
+  //
+  // Everything is per slot key (ADR 0009): one entry per (domain, key).
   const compilerVocab = await getCompilerVocab()
+  const keyed = allPropertyKeys(compilerVocab).filter(({ path }) => path.domain)
   const domainsByPropertyIri = new Map<string, Set<string>>()
-  // Local-name attribution for every resolvable property, enumerated or not.
-  // Two domains may declare the same leaf name under different IRIs, and one
-  // may enumerate it while the other only types it; both are filterable, so
-  // both belong here.
-  const domainsByPropertyName = new Map<string, Set<string>>()
-  for (const path of allPropertyPaths(compilerVocab)) {
-    if (!path.domain) continue
+  // Key attribution for every resolvable property, enumerated or not. Two
+  // domains may declare the same leaf name under different IRIs, and one may
+  // enumerate it while the other only types it; both are filterable, so both
+  // belong here. A leaf name counts too: it is a key for all of its chains.
+  const domainsByKey = new Map<string, Set<string>>()
+  const attribute = (key: string, domain: string) =>
+    domainsByKey.set(key, (domainsByKey.get(key) ?? new Set<string>()).add(domain))
+  for (const { key, path } of keyed) {
     const set = domainsByPropertyIri.get(path.propertyIri) ?? new Set<string>()
     set.add(path.domain)
     domainsByPropertyIri.set(path.propertyIri, set)
-
-    const byName = domainsByPropertyName.get(path.propertyName) ?? new Set<string>()
-    byName.add(path.domain)
-    domainsByPropertyName.set(path.propertyName, byName)
+    attribute(key, path.domain)
+    attribute(path.propertyName, path.domain)
   }
   const propertyDomains = new Map<string, readonly string[]>(
-    [...domainsByPropertyName].map(([name, domains]) => [name, [...domains].sort()])
+    [...domainsByKey].map(([key, domains]) => [key, [...domains].sort()])
   )
+  const propertyShapeTargets = shapeTargetsByKey(keyed)
 
-  const [enumProperties, numericProperties, skosConcepts, subClassEdges] = await Promise.all([
-    extractEnumProperties(store, domainsByPropertyIri),
+  const [enumByIri, numericByIri, skosConcepts, subClassEdges] = await Promise.all([
+    extractEnumProperties(store),
     extractNumericProperties(store, domainsByPropertyIri),
     querySkosConcepts(store),
     querySubClassEdges(store),
   ])
+  const enumProperties = enumPropertiesByKey(keyed, enumByIri)
+  const numericProperties = numericPropertiesByKey(keyed, numericByIri)
 
   // Searchable domains are exactly those that own at least one discovered
   // property (the empty sentinel can no longer appear: unattributable
@@ -174,6 +209,7 @@ export async function extractSchemaVocabulary(store: SparqlStore): Promise<Schem
     numericProperties,
     domains,
     propertyDomains,
+    propertyShapeTargets,
     conceptSchemes,
     classHierarchy: subClassEdges,
   }
@@ -226,12 +262,109 @@ export function resetVocabulary(): void {
 }
 
 /**
- * Extract all properties with sh:in enumerations from the schema graph.
+ * The label of a slot key: the leaf's label, preceded by the predicate local
+ * names that qualify it, so a qualified key reads (and is found) by the
+ * context that tells it apart — `dataRate__value` → "dataRate value".
  */
-async function extractEnumProperties(
-  store: SparqlStore,
-  domainsByPropertyIri: Map<string, Set<string>>
-): Promise<EnumProperty[]> {
+export function keyLabel(key: string, leafName: string, leafLabel: string): string {
+  if (key === leafName) return leafLabel
+  const qualifiers = key.split(PROPERTY_KEY_SEPARATOR).slice(0, -1)
+  return [...qualifiers, leafLabel].join(' ')
+}
+
+/**
+ * Property-shape targets of the keys local-name resolution cannot identify:
+ * each qualified key → its chain's leaf; each leaf name with a qualified key
+ * somewhere → the leaf of every chain of that name, in every domain (it is a
+ * key for all of them). Deduplicated, in key order.
+ */
+function shapeTargetsByKey(
+  keyed: readonly KeyedPropertyPath[]
+): Map<string, readonly KeyShapeTarget[]> {
+  const qualifiedLeaves = new Set(
+    keyed.filter(({ key, path }) => key !== path.propertyName).map(({ path }) => path.propertyName)
+  )
+  const targets = new Map<string, KeyShapeTarget[]>()
+  const add = (key: string, path: KeyedPropertyPath['path']) => {
+    const list = targets.get(key) ?? []
+    // Every shape that declares the chain's leaf is a place the value may sit.
+    const owners = path.owningClasses ?? [path.owningClass]
+    for (const owner of owners) {
+      const same = (t: KeyShapeTarget) =>
+        t.domain === path.domain && t.iri === path.propertyIri && t.targetClass === owner
+      if (list.some(same)) continue
+      list.push({
+        domain: path.domain,
+        iri: path.propertyIri,
+        ...(owner ? { targetClass: owner } : {}),
+      })
+    }
+    targets.set(key, list)
+  }
+  for (const { key, path } of keyed) {
+    if (key !== path.propertyName) add(key, path)
+    if (qualifiedLeaves.has(path.propertyName)) add(path.propertyName, path)
+  }
+  return new Map([...targets].sort(([a], [b]) => a.localeCompare(b)))
+}
+
+/** One enumerated property per (domain, key): the chain's own values when it has them. */
+function enumPropertiesByKey(
+  keyed: readonly KeyedPropertyPath[],
+  enumByIri: ReadonlyMap<string, EnumBase>
+): EnumProperty[] {
+  const out: EnumProperty[] = []
+  for (const { key, path } of keyed) {
+    const base = enumByIri.get(path.propertyIri)
+    const allowedValues = path.allowedValues ?? base?.allowedValues
+    if (!allowedValues || allowedValues.length === 0) continue
+    out.push({
+      iri: path.propertyIri,
+      localName: key,
+      ...(key !== path.propertyName ? { leafName: path.propertyName } : {}),
+      ...(path.owningClass ? { owningClass: path.owningClass } : {}),
+      label: keyLabel(key, path.propertyName, base?.label ?? path.propertyName),
+      description: base?.description ?? '',
+      allowedValues: [...allowedValues],
+      domain: path.domain,
+    })
+  }
+  return out
+}
+
+/** One numeric property per (domain, key) whose leaf is numeric in that domain. */
+function numericPropertiesByKey(
+  keyed: readonly KeyedPropertyPath[],
+  numericByIri: readonly NumericProperty[]
+): NumericProperty[] {
+  const byIriAndDomain = new Map(numericByIri.map((p) => [`${p.domain} ${p.iri}`, p]))
+  const out: NumericProperty[] = []
+  for (const { key, path } of keyed) {
+    const numeric = byIriAndDomain.get(`${path.domain} ${path.propertyIri}`)
+    if (!numeric) continue
+    out.push({
+      ...numeric,
+      localName: key,
+      ...(key !== path.propertyName ? { leafName: path.propertyName } : {}),
+      label: keyLabel(key, path.propertyName, numeric.label),
+    })
+  }
+  return out
+}
+
+/** The `sh:in` view of one property IRI, merged across every shape declaring it. */
+interface EnumBase {
+  iri: string
+  label: string
+  description: string
+  allowedValues: string[]
+}
+
+/**
+ * Extract the sh:in enumerations of every property IRI from the schema graph,
+ * merged across the property shapes that declare it.
+ */
+async function extractEnumProperties(store: SparqlStore): Promise<Map<string, EnumBase>> {
   const sparql = `
     ${sparqlPrefixes('sh', 'rdf')}
 
@@ -251,16 +384,8 @@ async function extractEnumProperties(
 
   const results = await store.query(sparql)
 
-  // Accumulate the sh:in values per property IRI first; domain attribution is
-  // applied afterwards so a property reachable from several domains expands to
-  // one entry per domain (sharing the same allowed-value set).
-  interface EnumBase {
-    iri: string
-    localName: string
-    label: string
-    description: string
-    allowedValues: string[]
-  }
+  // Accumulate the sh:in values per property IRI; keys are attributed by
+  // `enumPropertiesByKey`.
   const byIri = new Map<string, EnumBase>()
 
   for (const row of results.results.bindings) {
@@ -268,13 +393,11 @@ async function extractEnumProperties(
     const value = row['value']?.value
     if (!iri || !value) continue
 
-    const localName = extractLocalName(iri)
     let base = byIri.get(iri)
     if (!base) {
       base = {
         iri,
-        localName,
-        label: row['name']?.value ?? localName,
+        label: row['name']?.value ?? extractLocalName(iri),
         description: row['description']?.value ?? '',
         allowedValues: [],
       }
@@ -282,12 +405,5 @@ async function extractEnumProperties(
     }
     if (!base.allowedValues.includes(value)) base.allowedValues.push(value)
   }
-
-  return [...byIri.values()].flatMap((base) =>
-    [...(domainsByPropertyIri.get(base.iri) ?? [])].map((domain) => ({
-      ...base,
-      allowedValues: [...base.allowedValues],
-      domain,
-    }))
-  )
+  return byIri
 }

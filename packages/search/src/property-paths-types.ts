@@ -75,6 +75,25 @@ export interface PropertyPath {
    */
   inheritedLeaf?: true
   /**
+   * The class whose node shape declares the leaf property shape
+   * ([SHACL] §2.3): with `propertyIri` it identifies that property shape.
+   */
+  owningClass?: string
+  /**
+   * Every class whose node shape declares this chain's leaf, in IRI order,
+   * when there is more than one — a property declared at several levels of a
+   * class hierarchy. Each is a property shape a value may be validated
+   * against; {@link owningClass} is the representative's.
+   */
+  owningClasses?: string[]
+  /**
+   * The `sh:in` list ([SHACL] §4.8.3) of the leaf property shape declared for
+   * `owningClass`, sorted. Absent when that shape declares none. Unlike the
+   * values merged per property IRI, these belong to this path alone, which is
+   * what tells two paths ending in the same leaf IRI apart.
+   */
+  allowedValues?: string[]
+  /**
    * `sh:datatype` IRI the leaf's shape declares ([SHACL] §4.1.2), when any.
    * The compiler uses it to pick a comparison that suits the stored literal
    * (e.g. `xsd:boolean`) instead of guessing from the filter value.

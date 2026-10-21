@@ -40,6 +40,59 @@ const card = (overrides: Partial<TermCard>): TermCard => ({
 })
 
 describe('toVocabularyResponse (pure projection)', () => {
+  /**
+   * A leaf a domain reaches through several chains has a qualified key per
+   * chain and no card of its own, yet its bare name is a key for all of them
+   * (ADR 0009): the editor contract must accept it.
+   */
+  it('projects a bare leaf name over its qualified keys', () => {
+    const response = toVocabularyResponse(
+      indexOf([
+        card({
+          iri: 'urn:x:value',
+          localName: 'colour__value',
+          leafName: 'value',
+          allowedValues: ['red', 'blue'],
+        }),
+        card({
+          iri: 'urn:x:value',
+          localName: 'size__value',
+          leafName: 'value',
+          allowedValues: ['L', 'red'],
+        }),
+        card({
+          iri: 'urn:x:amount',
+          localName: 'price__amount',
+          leafName: 'amount',
+          datatype: `${XSD}integer`,
+        }),
+        card({
+          iri: 'urn:x:amount',
+          localName: 'weight__amount',
+          leafName: 'amount',
+          datatype: `${XSD}decimal`,
+        }),
+        card({ iri: 'urn:x:note', localName: 'a__note', leafName: 'note', allowedValues: ['x'] }),
+        card({ iri: 'urn:x:note', localName: 'b__note', leafName: 'note' }),
+      ])
+    )
+    const byName = new Map(response.properties.map((p) => [p.name, p]))
+    expect(byName.get('value')).toMatchObject({ type: 'enum', allowedValues: ['L', 'blue', 'red'] })
+    expect(byName.get('amount')).toMatchObject({ type: 'numeric', datatype: 'float' })
+    expect(byName.get('note')).toMatchObject({ type: 'string' })
+    expect(byName.get('colour__value')).toMatchObject({ allowedValues: ['red', 'blue'] })
+  })
+
+  it('adds no bare name where the domain already has a key of that name', () => {
+    const response = toVocabularyResponse(
+      indexOf([
+        card({ iri: 'urn:x:value', localName: 'value' }),
+        card({ iri: 'urn:other:value', localName: 'spec__value', leafName: 'value' }),
+      ])
+    )
+    expect(response.properties.filter((p) => p.name === 'value')).toHaveLength(1)
+  })
+
   it('projects enum cards with their sh:in values', () => {
     const response = toVocabularyResponse(
       indexOf([
@@ -137,9 +190,19 @@ describe('toVocabularyResponse (contract parity with the schema vocabulary)', ()
     const projected = new Map(response.properties.map((p) => [key(p.domain, p.name), p]))
     const propertyCards = index.cards.filter((entry) => entry.kind === 'property')
 
-    // Nothing is invented: every projected property is an indexed card.
+    // Nothing is invented: every projected property is an indexed card, or
+    // the bare leaf name of a domain's qualified cards (a key for all of them,
+    // ADR 0009).
     const cardKeys = new Set(propertyCards.map((c) => key(c.domain, c.localName)))
-    expect([...projected.keys()].filter((k) => !cardKeys.has(k))).toEqual([])
+    const bareNames = new Set(
+      propertyCards
+        .filter((c) => c.leafName && !cardKeys.has(key(c.domain, c.leafName)))
+        .map((c) => key(c.domain, c.leafName!))
+    )
+    expect(bareNames.size).toBeGreaterThan(0)
+    expect([...projected.keys()].filter((k) => !cardKeys.has(k)).sort()).toEqual(
+      [...bareNames].filter((k) => projected.has(k)).sort()
+    )
 
     // Nothing filterable is silently dropped. A card is filterable if it
     // enumerates values (a closed `sh:in` list is a filter whether its

@@ -640,7 +640,7 @@
           "type": "string"
         },
         "filters": {
-          "description": "Property filters on THIS referenced asset (keyed by SHACL leaf local name), i.e. a property of the referenced asset constrained to one or more values. Put constraints that describe the referenced asset here, NOT in the top-level slots.",
+          "description": "Property filters on THIS referenced asset (keyed by property key), i.e. a property of the referenced asset constrained to one or more values. Put constraints that describe the referenced asset here, NOT in the top-level slots.",
           "type": "object",
           "propertyNames": {
             "type": "string"

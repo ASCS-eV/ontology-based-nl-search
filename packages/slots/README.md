@@ -8,7 +8,7 @@
 
 `SearchSlots` is the system's **central contract**: the LLM never writes SPARQL — it fills slots via a single tool call, and the deterministic compiler translates those slots into SPARQL. That IR is consumed by the compiler, the GraphQL codec, the `llm` slot pipeline/validator, and the `api` route schemas. Giving it a dependency-light home of its own means any of those layers can type-check against the exact same shape without depending on the whole `search` package, and no consumer can drift from the canonical definition.
 
-The IR is **domain-agnostic by construction**: it carries no ontology-specific field names. Every constraint a user expresses — geography, license, cross-references, anything — flows through one of the generic buckets (`filters`, `ranges`, `references`), keyed by a SHACL property's local name. Ontologies with different naming or shape depth need zero changes here (criterion 9b — the ontology-name budget).
+The IR is **domain-agnostic by construction**: it carries no ontology-specific field names. Every constraint a user expresses — geography, license, cross-references, anything — flows through one of the generic buckets (`filters`, `ranges`, `references`), keyed by a property key: a SHACL property's local name, or a qualified key (`dataRate__value`) naming one of several property paths that end in that local name (ADR 0009). Ontologies with different naming or shape depth need zero changes here (criterion 9b — the ontology-name budget).
 
 ## Public interface
 

@@ -49,15 +49,17 @@ const logger = createComponentLogger('graphql-serializer')
 /** Options controlling how slots are rendered to GraphQL. */
 export interface GraphQLSerializeOptions {
   /**
-   * Property names whose filter values should be emitted as GraphQL enum
-   * literals (unquoted) instead of strings, enabling value autocomplete in the
-   * editor. Must match the editor schema's enum-typed properties: both derive
-   * the set from the same discovered vocabulary via `enumEncodableValues`.
+   * Per domain, the property keys whose filter values should be emitted as
+   * GraphQL enum literals (unquoted) instead of strings, enabling value
+   * autocomplete in the editor. Must match the editor schema's enum-typed
+   * fields, which are per domain too: a key enumerated in one domain may be
+   * free text in another.
    */
-  enumProperties?: ReadonlySet<string>
+  enumProperties?: ReadonlyMap<string, ReadonlySet<string>>
 }
 
 const EMPTY_SET: ReadonlySet<string> = new Set()
+const EMPTY_MAP: ReadonlyMap<string, ReadonlySet<string>> = new Map()
 
 /**
  * Convert SearchSlots into a human-readable GraphQL query string.
@@ -99,7 +101,7 @@ export function slotsToGraphQL(slots: SearchSlots, options: GraphQLSerializeOpti
   const { domains, filters, ranges, references, ...rest } = slots
   const _exhaustive: Record<string, never> = rest
 
-  const enumProperties = options.enumProperties ?? EMPTY_SET
+  const enumProperties = options.enumProperties ?? EMPTY_MAP
 
   const sortedDomains = [...domains].sort()
   if (sortedDomains.length === 0) {
@@ -142,7 +144,7 @@ function buildBlock(
   filters: SearchSlots['filters'],
   ranges: SearchSlots['ranges'],
   references: SearchSlots['references'],
-  enumProperties: ReadonlySet<string>,
+  enumProperties: ReadonlyMap<string, ReadonlySet<string>>,
   depth: number
 ): string {
   const indent = '  '.repeat(depth)
@@ -151,7 +153,7 @@ function buildBlock(
   const labelArg = label ? `(label: "${escapeGraphQLString(label)}")` : ''
   const header = `${indent}${sanitizeGraphQLName(name)}${labelArg} {`
 
-  const lines = buildFields(filters, ranges, fieldIndent, enumProperties)
+  const lines = buildFields(filters, ranges, fieldIndent, enumProperties.get(name) ?? EMPTY_SET)
   lines.push(...buildReferencesBlock(references, fieldIndent, enumProperties, depth + 1))
 
   // GraphQL requires a non-empty selection set.
@@ -171,7 +173,7 @@ function buildBlock(
 function buildReferencesBlock(
   references: ReferenceFilter[] | undefined,
   indent: string,
-  enumProperties: ReadonlySet<string>,
+  enumProperties: ReadonlyMap<string, ReadonlySet<string>>,
   depth: number
 ): string[] {
   if (!references || references.length === 0) return []

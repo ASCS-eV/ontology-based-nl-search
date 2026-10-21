@@ -124,12 +124,16 @@ function validateFields(
   }
 }
 
+/**
+ * The cards a slot key names: the card of that key, or — for a bare leaf name
+ * (ADR 0009) — every card whose leaf has that local name, one per chain.
+ */
 function matchingCards(property: string, domains: string[], index: TermIndex): TermCard[] {
   const domainSet = new Set(domains)
   return index.cards.filter(
     (card) =>
       card.kind === 'property' &&
-      card.localName === property &&
+      (card.localName === property || card.leafName === property) &&
       (domainSet.size === 0 || domainSet.has(card.domain))
   )
 }

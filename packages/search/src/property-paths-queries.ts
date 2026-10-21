@@ -251,6 +251,46 @@ export async function queryLeafDatatypes(
 }
 
 /**
+ * The `sh:in` list ([SHACL] §4.8.3) of every leaf property shape, keyed by
+ * `<owningClass>|<propertyIri>` — the node shape's target class and the
+ * property shape's path, which together identify one property shape
+ * ([SHACL] §2.3). Values are sorted, so the result never depends on list
+ * walk order.
+ *
+ * The list walk is a property path in a UNION-free query (see
+ * {@link queryResolvedEdges} for why that matters on Oxigraph WASM).
+ */
+export async function queryLeafEnumerations(store: SparqlStore): Promise<Map<string, string[]>> {
+  const result = await store.query(`
+    ${sparqlPrefixes('sh', 'rdf')}
+
+    SELECT DISTINCT ?owningClass ?propertyIri ?value WHERE {
+      GRAPH <${SCHEMA_GRAPH}> {
+        ?shape sh:targetClass ?owningClass .
+        ?shape sh:property ?propShape .
+        ?propShape sh:path ?propertyIri .
+        FILTER(isIRI(?propertyIri))
+        ?propShape sh:in ?list .
+        ?list rdf:rest*/rdf:first ?value .
+      }
+    }
+  `)
+  const out = new Map<string, string[]>()
+  for (const row of result.results.bindings) {
+    const owningClass = row['owningClass']?.value
+    const propertyIri = row['propertyIri']?.value
+    const value = row['value']?.value
+    if (!owningClass || !propertyIri || value === undefined) continue
+    const key = `${owningClass}|${propertyIri}`
+    const values = out.get(key) ?? []
+    if (!values.includes(value)) values.push(value)
+    out.set(key, values)
+  }
+  for (const values of out.values()) values.sort()
+  return out
+}
+
+/**
  * Query every `(targetClass, leaf-predicate, leaf-iri)` triple — the
  * leaves of every property path. A leaf is a property shape with a
  * literal `sh:path` and NO `sh:node` (its values are RDF literals,

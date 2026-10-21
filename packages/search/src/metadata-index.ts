@@ -37,10 +37,36 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getAssetDomains } from './asset-domains.js'
 import { getCompilerVocab } from './compiler.js'
+import { SHALLOW_PATH_MAX_STEPS } from './compiler-helpers-paths.js'
+import type { CompilerVocab } from './compiler-vocab.js'
 import { getInitializedStore } from './init.js'
+import { keyOfIndexEntry } from './property-keys.js'
 import type { PropertyPath } from './property-paths.js'
 
 const log = createComponentLogger('metadata-index')
+
+/**
+ * The path a shape-group leaf name denotes in a domain, with the key that
+ * names it. A name the domain reaches through several chains (ADR 0009) has
+ * no path under its bare name: its shape-group chain is the one shallow
+ * enough for the group (`asset → spec → group → leaf`), under its own key.
+ */
+function shapeGroupPath(
+  vocab: CompilerVocab,
+  domain: string,
+  property: string
+): { key: string; path: PropertyPath } | undefined {
+  const path = vocab.paths.get(`${domain}:${property}`)
+  if (path) return { key: property, path }
+  const shallow = (vocab.alternatives?.get(`${domain}:${property}`) ?? []).filter(
+    (chain) => chain.steps.length <= SHALLOW_PATH_MAX_STEPS
+  )
+  if (shallow.length !== 1) return undefined
+  for (const [indexKey, candidate] of vocab.paths) {
+    if (candidate === shallow[0]) return { key: keyOfIndexEntry(indexKey), path: candidate }
+  }
+  return undefined
+}
 
 /** XSD numeric datatypes the aggregate view detects to report a min/max range. */
 const XSD_NUMERIC = new Set(
@@ -127,11 +153,11 @@ export async function getAssetMetadata(assetIri: string): Promise<AssetMetadata>
   // key, or the path resolves to undefined and the facet is dropped.
   const entries: { property: string; group: string; path: PropertyPath }[] = []
   for (const [key, group] of vocab.shapeGroups) {
-    const [property, propDomain] = key.split(':')
-    if (!property || propDomain !== domain) continue
-    const path = vocab.paths.get(`${domain}:${property}`)
-    if (!path || path.leafKind !== 'literal') continue
-    entries.push({ property, group, path })
+    const [leafName, propDomain] = key.split(':')
+    if (!leafName || propDomain !== domain) continue
+    const resolved = shapeGroupPath(vocab, domain, leafName)
+    if (!resolved || resolved.path.leafKind !== 'literal') continue
+    entries.push({ property: resolved.key, group, path: resolved.path })
   }
   if (entries.length === 0) {
     end()
@@ -194,11 +220,11 @@ export async function getDomainMetadataAggregate(
   const properties: { property: string; path: PropertyPath }[] = []
   for (const [key, g] of vocab.shapeGroups) {
     if (g !== group) continue
-    const [property, propDomain] = key.split(':')
-    if (!property || propDomain !== domain) continue
-    const path = vocab.paths.get(`${domain}:${property}`)
-    if (!path || path.leafKind !== 'literal') continue
-    properties.push({ property, path })
+    const [leafName, propDomain] = key.split(':')
+    if (!leafName || propDomain !== domain) continue
+    const resolved = shapeGroupPath(vocab, domain, leafName)
+    if (!resolved || resolved.path.leafKind !== 'literal') continue
+    properties.push({ property: resolved.key, path: resolved.path })
   }
 
   const assetCount = await countAssetsOfClass(store, domainDesc.targetClassIri)

@@ -1,6 +1,8 @@
 /**
  * Search slot types — the structured intermediate representation.
- * Domain-agnostic: slots are keyed by ontology property local names.
+ * Domain-agnostic: slots are keyed by property keys — ontology property local
+ * names, qualified where one local name is reached through several property
+ * paths (ADR 0009).
  *
  * The LLM or concept-matcher fills these; the compiler translates
  * them into SPARQL based on domain registry metadata.
@@ -32,7 +34,7 @@ export interface ReferenceFilter {
   label?: string
   /**
    * Property filters that constrain the REFERENCED asset itself (not the
-   * parent). Keyed by SHACL leaf local name — same shape as
+   * parent). Keyed by property key — same shape as
    * {@link SearchSlots.filters}. Example: a parent referencing child assets
    * constrained by a property value →
    * `{ domain: 'child', filters: { '<property>': '<value>' } }`. The compiler
@@ -56,15 +58,18 @@ export interface ReferenceFilter {
 }
 
 /**
- * Generic search slots — property localName → value(s).
+ * Generic search slots — property key → value(s).
  *
  * Domain-agnostic by construction. The slot shape contains no
  * ontology-specific field names: every constraint the user expresses
  * — geography, license, references, anything else — flows through one
- * of the four generic buckets below, keyed by the SHACL property's
- * local name. The compiler walks the SHACL-discovered property path
- * for that key to emit the corresponding SPARQL pattern; ontologies
- * with different naming or shape depth need zero code changes.
+ * of the four generic buckets below, keyed by the property key: the
+ * SHACL property's local name, or — where a domain reaches one local name
+ * through several property paths — a qualified key naming one of them
+ * (`dataRate__value`, ADR 0009), the bare local name matching every one.
+ * The compiler walks the SHACL-discovered property path(s) for that key to
+ * emit the corresponding SPARQL pattern; ontologies with different naming
+ * or shape depth need zero code changes.
  *
  * Enumerated properties (sh:in) accept the exact `sh:in` values.
  * Numeric properties go through `ranges` with `min`/`max` bounds.
@@ -75,13 +80,13 @@ export interface SearchSlots {
   /** Target domain(s) for the search (the SHACL domain name(s)) */
   domains: string[]
   /**
-   * Property filters keyed by SHACL property local name. Values are
+   * Property filters keyed by property key. Values are
    * literal strings (or arrays for `IN (…)` semantics). Works for any
    * leaf in the schema — including geography, license, and any other
    * leaf the ontology declares.
    */
   filters: Record<string, string | string[]>
-  /** Numeric range filters: localName → { min?, max? } */
+  /** Numeric range filters: property key → { min?, max? } */
   ranges: Record<string, { min?: number; max?: number }>
   /**
    * Cross-reference filters — find assets that reference one or more other

@@ -30,7 +30,9 @@ describe('parseGraphQLToSlots', () => {
       ranges: {},
     }
 
-    const graphql = slotsToGraphQL(slots, { enumProperties: new Set(['country']) })
+    const graphql = slotsToGraphQL(slots, {
+      enumProperties: new Map([['hdmap', new Set(['country'])]]),
+    })
     expect(graphql).toContain('country(values: [AT, DE])') // unquoted enum literals
 
     const result = parseGraphQLToSlots(graphql)
@@ -138,7 +140,7 @@ describe('parseGraphQLToSlots', () => {
 
     // Enum literals (unquoted) must parse back to the same string values.
     const result = parseGraphQLToSlots(
-      slotsToGraphQL(slots, { enumProperties: new Set(['roadType']) })
+      slotsToGraphQL(slots, { enumProperties: new Map([['hdmap', new Set(['roadType'])]]) })
     )
 
     expect(result.success).toBe(true)

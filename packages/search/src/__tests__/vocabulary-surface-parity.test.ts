@@ -10,15 +10,16 @@
  * term onto them and reported every one of their properties as an ontology
  * gap.
  *
- * `allPropertyPaths` is now the single accessor both read. These tests pin
+ * `allPropertyKeys` is the single accessor both read. These tests pin
  * that they cannot diverge again, and are ontology-agnostic: nothing here
  * names a domain, a property, or a namespace.
  */
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { getCompilerVocab } from '../compiler.js'
-import { allPropertyPaths } from '../compiler-vocab.js'
+import { allPropertyKeys } from '../compiler-vocab.js'
 import { getInitializedStore } from '../init.js'
+import { keyOfIndexEntry } from '../property-keys.js'
 import type { TermIndex } from '../schema-index/term-index.js'
 import { buildTermIndex } from '../schema-index/term-index.js'
 import type { SchemaVocabulary } from '../vocabulary-extractor.js'
@@ -34,16 +35,21 @@ beforeAll(async () => {
   vocabulary = await extractSchemaVocabulary(store)
 }, 180_000)
 
-describe('allPropertyPaths', () => {
-  it('includes the standalone vocabulary roots, not just the asset-rooted paths', async () => {
+describe('allPropertyKeys', () => {
+  it('includes the standalone vocabulary roots, once per (domain, key)', async () => {
     const vocab = await getCompilerVocab()
-    const all = allPropertyPaths(vocab)
+    const all = allPropertyKeys(vocab)
 
-    expect(all.length).toBeGreaterThanOrEqual(vocab.paths.size)
-    const rootCount = [...(vocab.vocabularyRoots?.values() ?? [])]
-      .flat()
-      .reduce((sum, entry) => sum + entry.paths.size, 0)
-    expect(all.length).toBe(vocab.paths.size + rootCount)
+    const expected = new Set(
+      [...vocab.paths].map(([indexKey, path]) => `${path.domain}:${keyOfIndexEntry(indexKey)}`)
+    )
+    for (const [domain, roots] of vocab.vocabularyRoots ?? []) {
+      for (const root of roots)
+        for (const key of root.paths.keys()) expected.add(`${domain}:${key}`)
+    }
+    expect(all.length).toBeGreaterThan(vocab.paths.size)
+    expect(all.length).toBe(expected.size)
+    expect(new Set(all.map(({ key, path }) => `${path.domain}:${key}`))).toEqual(expected)
   })
 
   it('attributes a domain to properties reachable only through a vocabulary root', async () => {
@@ -52,8 +58,8 @@ describe('allPropertyPaths', () => {
       [...vocab.paths.values()].map((path) => path.domain).filter(Boolean)
     )
     const allDomains = new Set(
-      allPropertyPaths(vocab)
-        .map((path) => path.domain)
+      allPropertyKeys(vocab)
+        .map(({ path }) => path.domain)
         .filter(Boolean)
     )
 
