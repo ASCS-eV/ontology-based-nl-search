@@ -17,6 +17,7 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from './compiler.js'
 import { allPropertyKeys, type KeyedPropertyPath } from './compiler-vocab.js'
+import { queryDisjunctiveEnumerations } from './disjunctive-enumerations.js'
 import { extractNumericProperties, type NumericProperty } from './numeric-properties.js'
 import { PROPERTY_KEY_SEPARATOR } from './property-keys.js'
 import { SCHEMA_GRAPH } from './schema-loader.js'
@@ -352,9 +353,12 @@ interface EnumBase {
 
 /**
  * Extract the sh:in enumerations of every property IRI from the schema graph,
- * merged across the property shapes that declare it.
+ * merged across the property shapes that declare it, including the union of
+ * an `sh:or` whose members are all `sh:in` lists
+ * (`disjunctive-enumerations.ts`).
  */
 async function extractEnumProperties(store: SparqlStore): Promise<Map<string, EnumBase>> {
+  const disjunctive = queryDisjunctiveEnumerations(store)
   const sparql = `
     ${sparqlPrefixes('sh', 'rdf')}
 
@@ -394,6 +398,20 @@ async function extractEnumProperties(store: SparqlStore): Promise<Map<string, En
       byIri.set(iri, base)
     }
     if (!base.allowedValues.includes(value)) base.allowedValues.push(value)
+  }
+  for (const { propertyIri, values, name, description } of await disjunctive) {
+    let base = byIri.get(propertyIri)
+    if (!base) {
+      base = {
+        iri: propertyIri,
+        label: name ?? extractLocalName(propertyIri),
+        description: description ?? '',
+        allowedValues: [],
+      }
+      byIri.set(propertyIri, base)
+    }
+    for (const value of values)
+      if (!base.allowedValues.includes(value)) base.allowedValues.push(value)
   }
   return byIri
 }

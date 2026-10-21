@@ -9,6 +9,7 @@
 import { iri, sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
+import { queryDisjunctiveEnumerations } from './disjunctive-enumerations.js'
 import { type LeafKind, type PropertyPath } from './property-paths-types.js'
 import { SCHEMA_GRAPH } from './schema-loader.js'
 
@@ -261,6 +262,7 @@ export async function queryLeafDatatypes(
  * {@link queryResolvedEdges} for why that matters on Oxigraph WASM).
  */
 export async function queryLeafEnumerations(store: SparqlStore): Promise<Map<string, string[]>> {
+  const disjunctive = queryDisjunctiveEnumerations(store)
   const result = await store.query(`
     ${sparqlPrefixes('sh', 'rdf')}
 
@@ -286,6 +288,15 @@ export async function queryLeafEnumerations(store: SparqlStore): Promise<Map<str
     if (!values.includes(value)) values.push(value)
     out.set(key, values)
   }
+  // An `sh:or` of `sh:in` lists enumerates the union of its lists.
+  for (const { owningClasses, propertyIri, values: listed } of await disjunctive) {
+    for (const owningClass of owningClasses) {
+      const key = `${owningClass}|${propertyIri}`
+      const values = out.get(key) ?? []
+      for (const value of listed) if (!values.includes(value)) values.push(value)
+      out.set(key, values)
+    }
+  }
   for (const values of out.values()) values.sort()
   return out
 }
@@ -297,11 +308,12 @@ export async function queryLeafEnumerations(store: SparqlStore): Promise<Map<str
  * IRIs, or typed instances, not sub-resources to recurse into).
  *
  * A property shape with an `sh:or` is a leaf too when one of its members
- * constrains `sh:datatype`: a value conforming to that member is a literal
- * ([SHACL] §4.6.3 `sh:or`, §4.1.2 `sh:datatype`). Such a property can be an
- * edge as well — another member may `sh:node` a sub-resource, like a range
- * node beside a plain number — and then it is both. Members without a
- * datatype contribute nothing here.
+ * constrains `sh:datatype` or lists the values with `sh:in`: a value
+ * conforming to that member is a literal or a listed term, not a resource to
+ * walk into ([SHACL] §4.6.3 `sh:or`, §4.1.2 `sh:datatype`, §4.8.3 `sh:in`).
+ * Such a property can be an edge as well — another member may `sh:node` a
+ * sub-resource, like a range node beside a plain number — and then it is
+ * both. Other members contribute nothing here.
  *
  * Returns each leaf annotated with its {@link LeafKind} so the
  * compiler can distinguish literal-value leaves (used for filters
@@ -357,7 +369,8 @@ export async function queryLeafProperties(store: SparqlStore): Promise<LeafRow[]
         FILTER NOT EXISTS { ?propShape sh:node ?anyNode }
         ?propShape sh:or ?list .
         ?list rdf:rest*/rdf:first ?member .
-        ?member sh:datatype ?memberDatatype .
+        VALUES ?memberConstraint { sh:datatype sh:in }
+        ?member ?memberConstraint ?memberValue .
       }
     }
   `
