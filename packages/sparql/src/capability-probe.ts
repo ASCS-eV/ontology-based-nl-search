@@ -1,12 +1,12 @@
 /**
  * SPARQL store capability probe.
  *
- * The compiler emits SPARQL 1.1 property-path expressions
- * (`rdfs:subClassOf*`, `skos:broaderTransitive*`) to expand
- * hierarchical filter values to their subclasses. Stores that do not
- * honour property paths will silently return only the literal value
- * — a "broad" query like "give me all vehicles" then comes back
- * empty even when subclasses are present in the data.
+ * Search depends on SPARQL 1.1 property paths ([SPARQL11] §9): schema
+ * discovery walks RDF lists along `rdf:rest` zero or more times, and the
+ * last-resort reference join compiles an arbitrary-length path. A store that
+ * does not honour them answers those queries with nothing rather than an
+ * error, so discovery finds no vocabulary and such a reference matches no
+ * asset.
  *
  * This probe runs a tiny SELECT with a `rdfs:subClassOf*` term at
  * startup. If the store rejects the query or returns no bindings for

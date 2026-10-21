@@ -33,6 +33,7 @@ import {
   queryPropertyShapeGroups,
   queryRange2DProperties,
 } from './schema-queries.js'
+import { type NarrowerValues, queryNarrowerValues } from './value-hierarchy.js'
 
 /** Property info from ontology - supports properties existing in multiple domains */
 export interface CompilerProperty {
@@ -96,6 +97,12 @@ export interface CompilerVocab {
    * fixture vocabs need not supply it.
    */
   vocabularyRoots?: Map<string, VocabularyRootPaths[]>
+  /**
+   * The schema's value hierarchy: broader value IRI → the values directly
+   * below it (`queryNarrowerValues`). The compiler expands an IRI filter value
+   * with it. Optional so hand-built fixture vocabs need not supply it.
+   */
+  narrowerValues?: NarrowerValues
 }
 
 /** One standalone vocabulary entry class and the leaf paths it reaches. */
@@ -179,12 +186,14 @@ export async function buildCompilerVocabFrom(
   store: SparqlStore,
   registry: DomainRegistry
 ): Promise<CompilerVocab> {
-  const [propertyDomains, shapeGroupInfos, range2DInfos, discovered] = await Promise.all([
-    queryPropertyDomains(store, registry),
-    queryPropertyShapeGroups(store, registry),
-    queryRange2DProperties(store, registry),
-    discoverPropertyPaths(store, registry),
-  ])
+  const [propertyDomains, shapeGroupInfos, range2DInfos, discovered, narrowerValues] =
+    await Promise.all([
+      queryPropertyDomains(store, registry),
+      queryPropertyShapeGroups(store, registry),
+      queryRange2DProperties(store, registry),
+      discoverPropertyPaths(store, registry),
+      queryNarrowerValues(store),
+    ])
   const propertyPaths = discovered.assetPaths
 
   const properties = new Map<string, CompilerProperty>()
@@ -269,6 +278,7 @@ export async function buildCompilerVocabFrom(
     alternatives,
     referenceChains,
     vocabularyRoots: indexVocabularyRoots(discovered.vocabularyRootPaths),
+    narrowerValues,
   }
 }
 

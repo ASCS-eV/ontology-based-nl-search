@@ -4,10 +4,12 @@
  * "OpenLABEL v1" is the ASAM class taxonomy plus the OMB-authored SHACL shapes
  * (`openlabel.shacl.ttl`) — it has no LinkML source and its OWL declares no
  * properties, so the shapes are the only machine-checkable contract. This test
- * validates the data exactly as loaded into the store (JSON-LD → RDF, with the
- * ontology's class hierarchy mirrored into the default graph, which is what
- * makes `sh:targetClass openlabel:Odd` reach `openlabel:OddScenery` nodes
- * ([SHACL] §2.1.3.2 class-based targets, §1.5 RDFS inferencing).
+ * validates the data exactly as loaded into the store (JSON-LD → RDF), joined
+ * with the ontology's `rdfs:subClassOf` edges: a class-based target reaches
+ * the instances of subclasses only through declarations in the data graph,
+ * which is what makes `sh:targetClass openlabel:Odd` reach
+ * `openlabel:OddScenery` nodes ([SHACL] §2.1.3.2 class-based targets, §1.5
+ * RDFS inferencing). The store itself keeps the hierarchy in the schema graph.
  *
  * Engine: rdf-validate-shacl (SHACL Core). The flag ↔ value pairing of the v1
  * shapes is a SHACL-SPARQL rule ([SHACL] §5, `sh:sparql`) the engine may not
@@ -25,6 +27,7 @@ import SHACLValidator from 'rdf-validate-shacl'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { getInitializedStore } from '../init.js'
+import { SCHEMA_GRAPH } from '../schema-loader.js'
 
 const { namedNode, blankNode, literal, quad } = DataFactory
 
@@ -41,9 +44,22 @@ const RDFS_LITERAL = 'http://www.w3.org/2000/01/rdf-schema#Literal'
 
 type Dataset = ReturnType<typeof datasetFactory.dataset>
 
-/** Default graph of the loaded store as an RDF/JS dataset. */
-async function defaultGraph(store: SparqlStore): Promise<Dataset> {
-  const { results } = await store.query('SELECT ?s ?p ?o WHERE { ?s ?p ?o }')
+/**
+ * The data graph to validate: the store's default graph plus the schema's
+ * IRI-to-IRI `rdfs:subClassOf` edges, which a class-based target needs in the
+ * data graph to reach the instances of subclasses ([SHACL] §2.1.3.2).
+ */
+async function dataGraph(store: SparqlStore): Promise<Dataset> {
+  const { results } = await store.query(`
+    SELECT ?s ?p ?o WHERE {
+      { ?s ?p ?o }
+      UNION
+      {
+        GRAPH <${SCHEMA_GRAPH}> { ?s ?p ?o }
+        FILTER(?p = <${RDFS_SUBCLASS}> && isIRI(?s) && isIRI(?o))
+      }
+    }
+  `)
   const dataset = datasetFactory.dataset()
   for (const row of results.bindings) {
     const s = row['s']!
@@ -107,7 +123,7 @@ describe('OpenLABEL sample data conforms to the OpenLABEL V1-0-0 shapes', () => 
 
   beforeAll(async () => {
     store = await getInitializedStore()
-    data = await defaultGraph(store)
+    data = await dataGraph(store)
     shapes = loadShapes()
   }, 180_000)
 
@@ -133,7 +149,9 @@ describe('OpenLABEL sample data conforms to the OpenLABEL V1-0-0 shapes', () => 
     )
     const odd = await count(
       store,
-      `SELECT (COUNT(DISTINCT ?n) AS ?odd) WHERE { ?n a ?c . ?c <${RDFS_SUBCLASS}>* <${OL}Odd> }`,
+      `SELECT (COUNT(DISTINCT ?n) AS ?odd) WHERE {
+         ?n a ?c . GRAPH <${SCHEMA_GRAPH}> { ?c <${RDFS_SUBCLASS}>* <${OL}Odd> }
+       }`,
       'odd'
     )
     const behaviour = await count(
@@ -234,7 +252,7 @@ describe('OpenLABEL sample data conforms to the OpenLABEL V1-0-0 shapes', () => 
            ?n a ?type ; ?attribute ?o .
            FILTER(STRSTARTS(STR(?attribute), "${OL}"))
            FILTER(REGEX(STRAFTER(STR(?attribute), "${OL}"), "^[A-Z]"))
-           FILTER NOT EXISTS { ?attribute <${RDFS_SUBCLASS}>* ?type }
+           FILTER NOT EXISTS { GRAPH <${SCHEMA_GRAPH}> { ?attribute <${RDFS_SUBCLASS}>* ?type } }
          }`
       )
       expect(rows).toEqual([])

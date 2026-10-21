@@ -115,31 +115,31 @@ describe('addEnumFilter — boolean literals', () => {
   it('compares a boolean leaf by lexical form so typed data matches', async () => {
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const filters: string[] = []
-    addEnumFilter([], filters, '?flag', 'True', BOOLEAN)
+    addEnumFilter(filters, '?flag', 'True', BOOLEAN)
     expect(filters).toEqual(['FILTER(STR(?flag) IN ("true", "1"))'])
   })
 
   it('covers both lexical forms of false', async () => {
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const filters: string[] = []
-    addEnumFilter([], filters, '?flag', '0', BOOLEAN)
+    addEnumFilter(filters, '?flag', '0', BOOLEAN)
     expect(filters).toEqual(['FILTER(STR(?flag) IN ("false", "0"))'])
   })
 
   it('does not sniff the value: without a boolean datatype a "true" stays plain equality', async () => {
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const untyped: string[] = []
-    addEnumFilter([], untyped, '?v', 'true')
+    addEnumFilter(untyped, '?v', 'true')
     expect(untyped).toEqual(['FILTER(?v = "true")'])
     const stringTyped: string[] = []
-    addEnumFilter([], stringTyped, '?v', 'True', `${XSD}string`)
+    addEnumFilter(stringTyped, '?v', 'True', `${XSD}string`)
     expect(stringTyped).toEqual(['FILTER(?v = "True")'])
   })
 
   it('keeps plain equality for non-boolean literals', async () => {
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const filters: string[] = []
-    addEnumFilter([], filters, '?v', 'car')
+    addEnumFilter(filters, '?v', 'car')
     expect(filters).toEqual(['FILTER(?v = "car")'])
   })
 
@@ -149,21 +149,21 @@ describe('addEnumFilter — boolean literals', () => {
     // `"true"^^xsd:boolean` data, matched nothing ([SPARQL11] §17.4.1.9).
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const filters: string[] = []
-    addEnumFilter([], filters, '?flag', ['true', 'FALSE', ' True '], BOOLEAN)
+    addEnumFilter(filters, '?flag', ['true', 'FALSE', ' True '], BOOLEAN)
     expect(filters).toEqual(['FILTER(STR(?flag) IN ("true", "1", "false", "0"))'])
   })
 
   it('does not treat a mixed list as boolean', async () => {
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const filters: string[] = []
-    addEnumFilter([], filters, '?v', ['true', 'maybe'], BOOLEAN)
+    addEnumFilter(filters, '?v', ['true', 'maybe'], BOOLEAN)
     expect(filters).toEqual(['FILTER(?v IN ("maybe", "true"))'])
   })
 
   it('does not mistake an inherited object key for a boolean form', async () => {
     const { addEnumFilter } = await import('../compiler-helpers-primitives.js')
     const filters: string[] = []
-    addEnumFilter([], filters, '?v', 'constructor', BOOLEAN)
+    addEnumFilter(filters, '?v', 'constructor', BOOLEAN)
     expect(filters).toEqual(['FILTER(?v = "constructor")'])
   })
 })

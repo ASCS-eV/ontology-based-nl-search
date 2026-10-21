@@ -106,6 +106,12 @@ vi.mock('../schema-queries.js', () => ({
   ]),
 }))
 
+// The schema's value hierarchy: none in this mocked vocabulary.
+vi.mock('../value-hierarchy.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../value-hierarchy.js')>()),
+  queryNarrowerValues: vi.fn().mockResolvedValue(new Map()),
+}))
+
 // Mock the store init (not needed since the vocabulary is mocked)
 vi.mock('../init.js', () => ({
   getInitializedStore: vi.fn().mockResolvedValue({}),

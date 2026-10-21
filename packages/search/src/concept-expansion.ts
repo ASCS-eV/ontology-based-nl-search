@@ -23,10 +23,10 @@
  *     (falling back to prefLabel, then the IRI local name), so the
  *     expanded set matches whatever literal form the instance data uses.
  *
- * Complements the compiler's `HIERARCHY_EXPANSION_PATH`: that handles
- * IRI-valued properties by walking `skos:broaderTransitive*` in SPARQL;
- * this handles literal-valued properties by pre-expanding the slot value
- * to the explicit member list before compilation.
+ * Complements the compiler's `value-hierarchy.ts`: that expands an IRI value
+ * into the IRIs below it in the schema's hierarchy; this handles
+ * literal-valued properties by pre-expanding the slot value to the explicit
+ * member list before compilation.
  *
  * @see https://www.w3.org/TR/skos-reference/#semantic-relations
  */

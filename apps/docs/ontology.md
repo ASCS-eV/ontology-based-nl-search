@@ -258,22 +258,22 @@ OMB also ships `imports/` — the foundation vocabularies its ontologies build o
 **not loaded by default**, and measurement shows loading them is safe but buys
 nothing for search today:
 
-| metric                                   | artifacts only | + `imports/` |
-| ---------------------------------------- | -------------- | ------------ |
-| schema-graph triples                     | 254,415        | 315,347      |
-| term cards / distinct leaf IRIs          | 936 / 524      | not measured |
-| value-hierarchy triples mirrored to data | 9,390          | 10,895       |
-| asset domains / ref. edges               | 13 / 469       | 13 / 469     |
-| retrieval recall (gating set)            | 1.00           | 1.00         |
+| metric                              | artifacts only | + `imports/` |
+| ----------------------------------- | -------------- | ------------ |
+| schema-graph triples                | 254,415        | 315,347      |
+| term cards / distinct leaf IRIs     | 936 / 524      | not measured |
+| value-hierarchy edges in the schema | 9,390          | 10,895       |
+| asset domains / ref. edges          | 13 / 469       | 13 / 469     |
+| retrieval recall (gating set)       | 1.00           | 1.00         |
 
 The first three rows are measured against OMB 0.5.0 (the last two are from an earlier measurement); the term cards with `imports/` are not measured. Term cards include the leaves of standalone vocabulary entry classes — `openlabel` 105, `openlabel-v2` 108, `gx` 80, `envited-x` 19, `manifest` 15, `general` 4 — and 249 leaves the asset domains reach only through inheritance below the asset class or an `sh:or` member (`hdmap` and `scenario` 76 each, `service` 61, `automotive-simulator`, `leakage-test`, `simulation-model` and `vv-report` 9 each); without them the index has 356 cards.
 
 Searchable vocabulary is SHACL-driven and `imports/` ships no `*.shacl.ttl`,
 so no phantom domains or meta-vocabulary properties can appear — no filter
-layer is required. The only growth is foundation `rdfs:subClassOf` edges. Those
-are mirrored into the default graph together with the schema's own value
-hierarchies (`materializeValueHierarchy`), because the hierarchy walk of an
-IRI-valued filter runs there; that is the 1,505 extra triples above.
+layer is required. The only growth is foundation `rdfs:subClassOf` edges, the
+1,505 extra edges above. They reach a query only as narrower values of an
+IRI-valued filter, which the compiler lists from the schema graph
+(`value-hierarchy.ts`); nothing is written into the instance data.
 
 **To opt in** (e.g. when foundation class hierarchies become load-bearing),
 add a second source to `ontology-sources.json`:

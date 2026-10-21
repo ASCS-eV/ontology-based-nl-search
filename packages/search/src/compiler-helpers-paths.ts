@@ -268,7 +268,7 @@ function emitLeafFilter(
   const v = leafVariable(key, suffix)
   patterns.push(`${cursor} ${leafPred} ${v} .`)
   if (path.leafKind === 'literal') {
-    addEnumFilter(patterns, filters, v, value, path.datatype)
+    addEnumFilter(filters, v, value, path.datatype)
   } else {
     addLocationFilter(filters, v, value)
   }

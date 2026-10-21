@@ -651,8 +651,9 @@ describe('SearchService — real pipeline integration', () => {
    * returned zero rows on their own:
    *   - boolean leaves stored as `"true"^^xsd:boolean` never equalled the
    *     compiled simple literal `"true"` ([SPARQL11] §17.4.1.7);
-   *   - the `rdfs:subClassOf*` walk ran against the default graph, where no
-   *     hierarchy lived, so `RoadTypeMotorway` missed `MotorwayManaged` data;
+   *   - a filter on `RoadTypeMotorway` must match data that stores the
+   *     narrower `MotorwayManaged`, which the compiler lists from the
+   *     schema's class hierarchy;
    *   - ODD and Behaviour leaves were bound to ONE node though a Tag keeps
    *     them in separate `Odd` / `Behaviour` nodes.
    */
