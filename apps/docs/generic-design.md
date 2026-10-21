@@ -158,7 +158,7 @@ flowchart TD
 3. Referenced domains without any constraints are **skipped** — no empty mandatory JOINs
 4. This prevents the "over-constraint" problem where multi-domain selection returns zero results
 5. Domains whose constraints are all shared with the domain referencing them are **peers**: each gets its own `UNION` arm instead of being collapsed into a parent → child JOIN
-6. A request scoped only to a support vocabulary ("OpenLABEL only") searches the asset domains that use it **and** can express every restriction of that vocabulary, plus the vocabulary's standalone documents ([Query Flow](/query-flow))
+6. A request scoped to a support vocabulary ("OpenLABEL only") searches the asset domains that use it **and** can express every restriction of that vocabulary, restricted to the assets carrying its content, plus the vocabulary's standalone documents ([Query Flow](/query-flow))
 
 ## Ontology Budget Rule
 

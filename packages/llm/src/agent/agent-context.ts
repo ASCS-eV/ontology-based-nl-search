@@ -20,6 +20,7 @@ import {
   retrieveRelevantSchema,
   type SchemaVocabulary,
 } from '@ontology-search/search'
+import { searchedDomains } from '@ontology-search/search/compiler'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { composeRetrievedSections, joinPromptParts } from '../prompt/compose.js'
@@ -90,6 +91,11 @@ export interface BuildRequestPromptOptions {
   maxContextChars?: number
   /** false = distilled cards instead of raw SHACL fragments. */
   includeFragments?: boolean
+  /**
+   * The domains the request is scoped to, as the user selected them. Only
+   * the domains the scope searches are routed (see `searchedDomains`).
+   */
+  scope?: readonly string[]
 }
 
 /**
@@ -112,6 +118,7 @@ export async function buildRequestPrompt(
     maxCards: options.maxCards,
     maxContextChars: options.maxContextChars,
     includeFragments: options.includeFragments,
+    ...(options.scope === undefined ? {} : { domains: await searchedDomains(options.scope) }),
   })
   const tail = composeRetrievedSections(retrieved)
   return { prompt: joinPromptParts(buildStaticCore(), tail), tail, retrieved }

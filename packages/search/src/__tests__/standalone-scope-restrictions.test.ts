@@ -57,14 +57,25 @@ describe('a standalone vocabulary in scope', () => {
     expect(scoped.sparql).toBe(plain.sparql)
   }, 120_000)
 
-  it('compiles a reference on the vocabulary alone to an explicit empty result', async () => {
+  /**
+   * A vocabulary alone searches the domains using it. The domain the query
+   * references is the target of the reference, so it answers nothing itself:
+   * only the remaining owners do, joined to it and restricted to the assets
+   * carrying the vocabulary's content.
+   */
+  it('compiles a reference on the vocabulary alone through the owners that are not its target', async () => {
     const { sparql } = await compileSlotsWithTrace({
       domains: [VOCABULARY],
       filters: {},
       ranges: {},
       references: [{ domain: 'hdmap' }],
     })
-    expect(sparql).toContain('FILTER(false)')
-    expect(await assetsOf(sparql)).toEqual([])
+    expect(sparql).not.toContain('UNION')
+    expect(sparql).toContain('?asset a scenario:Scenario')
+    expect(sparql).not.toContain('?asset a hdmap:HdMap')
+    expect(sparql).toContain('FILTER EXISTS')
+    const assets = await assetsOf(sparql)
+    expect(assets.length).toBeGreaterThan(0)
+    expect(assets.every((asset) => asset.includes(':Scenario:'))).toBe(true)
   }, 120_000)
 })

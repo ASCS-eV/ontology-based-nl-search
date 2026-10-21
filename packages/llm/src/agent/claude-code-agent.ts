@@ -54,11 +54,13 @@ export const STRUCTURED_SUBMISSION_NOTE =
  */
 export async function runClaudeCodeAgent(
   naturalLanguageQuery: string,
-  options?: { domain?: string; signal?: AbortSignal }
+  options?: { domains?: readonly string[]; signal?: AbortSignal }
 ): Promise<LlmStructuredResponse> {
   const sw = new Stopwatch()
   const policy = getAgentPolicy()
-  const targetDomain = options?.domain ?? (await getPrimaryDomain())
+  const targetDomain = await getPrimaryDomain()
+  // An empty selection selects nothing: the model chooses the domains.
+  const scope = options?.domains?.length ? options.domains : undefined
 
   const endSetup = sw.time('setup')
   const { vocabulary } = await getAgentContext()
@@ -69,6 +71,7 @@ export async function runClaudeCodeAgent(
   const endRetrieval = sw.time('retrieval')
   const { prompt } = await buildRequestPrompt(naturalLanguageQuery, {
     signal: options?.signal,
+    ...(scope === undefined ? {} : { scope }),
     maxDomains: policy.retrieval.maxDomains,
     maxCards: policy.retrieval.maxCards,
     maxContextChars: policy.retrieval.maxContextChars,
@@ -91,6 +94,7 @@ export async function runClaudeCodeAgent(
       submission: submission.data,
       vocabulary,
       targetDomain,
+      ...(scope === undefined ? {} : { scope }),
       sw,
       query: naturalLanguageQuery,
     })
@@ -106,6 +110,6 @@ export async function runClaudeCodeAgent(
       .slice(0, 5)
       .map((issue) => `${issue.path.join('.')}: ${issue.message}`),
   })
-  const fallback = await buildEmptyFallbackResponse(naturalLanguageQuery, vocabulary)
+  const fallback = await buildEmptyFallbackResponse(naturalLanguageQuery, vocabulary, scope)
   return { ...fallback, timings: sw.getTimings() }
 }

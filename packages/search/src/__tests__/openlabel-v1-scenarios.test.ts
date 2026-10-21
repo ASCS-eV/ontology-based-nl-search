@@ -253,7 +253,7 @@ describe('standalone OpenLABEL tags — one situation family per query', () => {
 describe('"OpenLABEL only" — vocabulary scope over every asset domain that can answer', () => {
   for (const [name, [filters]] of Object.entries(SITUATIONS)) {
     it(`${name}`, async () => {
-      const domains = await resolveKnownDomains(['openlabel'], ['openlabel'], Object.keys(filters))
+      const domains = await resolveKnownDomains(['openlabel'], ['openlabel'])
       const { matches } = await search({ domains, filters, ranges: {} })
       const expected = oracle(filters)
       expect(slugs(matches.tags)).toEqual(slugs(expected.tags))
@@ -264,20 +264,17 @@ describe('"OpenLABEL only" — vocabulary scope over every asset domain that can
 
   it('excludes asset domains that cannot express every restriction of the vocabulary', async () => {
     // an HD map carries scenery attributes but never a behaviour flag
-    const sceneryOnly = await resolveKnownDomains(
-      ['openlabel'],
-      ['openlabel'],
-      ['DrivableAreaType']
-    )
-    const withBehaviour = await resolveKnownDomains(
-      ['openlabel'],
-      ['openlabel'],
-      ['DrivableAreaType', 'MotionDrive']
-    )
-    expect(sceneryOnly).toContain('hdmap')
-    expect(withBehaviour).not.toContain('hdmap')
-    expect(withBehaviour).toContain('scenario')
-    expect(withBehaviour).toContain('openlabel')
+    const scenery = { DrivableAreaType: ol('MotorwayManaged') }
+    const sceneryOnly = await search({ domains: ['openlabel'], filters: scenery, ranges: {} })
+    const withBehaviour = await search({
+      domains: ['openlabel'],
+      filters: { ...scenery, MotionDrive: 'true' },
+      ranges: {},
+    })
+    expect(sceneryOnly.sparql).toContain('hdmap:HdMap')
+    expect(withBehaviour.sparql).not.toContain('hdmap:HdMap')
+    expect(withBehaviour.sparql).toContain('scenario:Scenario')
+    expect(withBehaviour.sparql).toMatch(/\?asset a (openlabel:Tag|<[^>]*\/Tag>)/)
   })
 
   it('answers scenery from HD maps and behaviour from scenarios (category-pure embedding)', async () => {
@@ -307,11 +304,11 @@ describe('restrictions are never silently dropped', () => {
       filters: { DrivableAreaType: ol('RoadTypeMotorway'), country: 'de' },
       ranges: {},
     })
+    // A tag has no country, so no standalone arm is compiled; the assets that
+    // carry OpenLABEL content answer with the country applied.
     expect(matches.tags).toEqual([])
-    // no arm can answer → an explicit empty result, not an empty group (one unbound row)
-    expect(sparql).toContain('FILTER(false)')
-    const { results } = await store.query(sparql)
-    expect(results.bindings).toEqual([])
+    expect(sparql).not.toMatch(/\?asset a (openlabel:Tag|<[^>]*\/Tag>)/)
+    expect(sparql).toContain('FILTER EXISTS')
   })
 
   it('without the unsatisfiable restriction the same query finds the motorway tags', async () => {

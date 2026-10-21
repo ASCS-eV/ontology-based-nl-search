@@ -56,6 +56,7 @@ import {
 } from './compiler-reference-emit.js'
 import { standaloneVocabularyDomains } from './compiler-standalone.js'
 import { type CompilerVocab, getCompilerVocab, getDomainReferences } from './compiler-vocab.js'
+import { resolveDomainScope, vocabularyContentFilter } from './compiler-vocabulary-scope.js'
 import { normalizeDomainName } from './domain-scope.js'
 import { expandNarrowerValues } from './value-hierarchy.js'
 
@@ -64,7 +65,14 @@ import { expandNarrowerValues } from './value-hierarchy.js'
 // resolving these from `./compiler.js` unchanged.
 export { buildCompilerVocabFrom, getCompilerVocab, warmupCompiler } from './compiler-vocab.js'
 export { compileAllCountQueries, compileCountQuery } from './count-query.js'
-export { canonicalAssetDomains, normalizeDomainName, resolveKnownDomains } from './domain-scope.js'
+export {
+  canonicalAssetDomains,
+  canonicalDomains,
+  constraintsOutsideScope,
+  normalizeDomainName,
+  resolveKnownDomains,
+  searchedDomains,
+} from './domain-scope.js'
 
 /**
  * Compile structured search slots into a valid SPARQL SELECT query.
@@ -151,22 +159,20 @@ export async function compileSlotsWithTrace(
     return { sparql: compileCrossDomainQuery(slots, registry, assetDomains, vocabIndex) }
   }
 
-  // Requested support vocabularies with standalone entry classes are answered
-  // by their own UNION arms (see `compiler-standalone.ts`); the remaining
-  // asset domains go through the usual partition below.
-  const standaloneDomains = standaloneVocabularyDomains(slots.domains, vocabIndex)
-  const detectedDomains = slots.domains.filter((d) => !standaloneDomains.includes(d))
+  // A requested support vocabulary searches its standalone documents (their
+  // own UNION arms, see `compiler-standalone.ts`) and the assets of the
+  // domains that use it, restricted to those carrying its content (see
+  // `compiler-vocabulary-scope.ts`). The asset domains go through the usual
+  // partition below.
+  const scope = resolveDomainScope(slots.domains, slots, registry, vocabIndex)
+  const standaloneDomains = standaloneVocabularyDomains(scope.vocabularies, vocabIndex)
+  // The asset domains the request names itself; a vocabulary's owners follow.
+  const namedDomains = scope.named
 
-  // Partition filters by domain
-  const filtersByDomain = partitionFiltersByDomain(slots.filters, detectedDomains, vocabIndex)
-
-  // Partition ranges by domain
-  const rangesByDomain = partitionRangesByDomain(slots.ranges, detectedDomains, vocabIndex)
-
-  // Determine whether the domains are peers (no parent-child relationship)
-  // or have a referencing hierarchy. Peer domains get a UNION query; parent-child
-  // domains get a JOIN through the discovered reference chain.
-  // Only multi-domain queries can have a parent-child hierarchy, so the
+  // Determine whether the named domains are peers (no parent-child
+  // relationship) or have a referencing hierarchy. Peer domains get a UNION
+  // query; parent-child domains get a JOIN through the discovered reference
+  // chain. Only multi-domain queries can have a parent-child hierarchy, so the
   // (global) reference index is consulted only then — a single-domain compile
   // stays free of the cross-domain discovery dependency.
   //
@@ -176,18 +182,30 @@ export async function compileSlotsWithTrace(
   // properties" — the same peer semantics as one GraphQL root per domain —
   // not "parents referencing a matching child". Only a child-exclusive
   // constraint (one the parent cannot express) forces the JOIN.
+  //
+  // The owners a vocabulary adds never take part: each answers "assets
+  // described with the vocabulary" on its own, never through another. A JOIN
+  // among the named domains is one query rooted at the parent, which they
+  // cannot join as peers, so they are then not searched (ADR 0010).
   let hasHierarchy = false
-  if (detectedDomains.length > 1) {
+  if (namedDomains.length > 1) {
     const domainRefs = await getDomainReferences()
     hasHierarchy =
-      detectHierarchy(detectedDomains, domainRefs) &&
+      detectHierarchy(namedDomains, domainRefs) &&
       !referencedDomainsOnlyShareConstraints(
-        detectedDomains,
+        namedDomains,
         domainRefs,
-        filtersByDomain,
-        rangesByDomain
+        partitionFiltersByDomain(slots.filters, namedDomains, vocabIndex),
+        partitionRangesByDomain(slots.ranges, namedDomains, vocabIndex)
       )
   }
+  const detectedDomains = hasHierarchy ? namedDomains : scope.assetDomains
+
+  // Partition filters by domain
+  const filtersByDomain = partitionFiltersByDomain(slots.filters, detectedDomains, vocabIndex)
+
+  // Partition ranges by domain
+  const rangesByDomain = partitionRangesByDomain(slots.ranges, detectedDomains, vocabIndex)
 
   // A standalone document references nothing, so a reference — explicit, or
   // the JOIN a parent→child hierarchy compiles to — is a restriction it cannot
@@ -214,7 +232,8 @@ export async function compileSlotsWithTrace(
         rangesByDomain,
         registry,
         vocabIndex,
-        standaloneArmDomains
+        standaloneArmDomains,
+        scope.carried
       ),
     }
   }
@@ -272,6 +291,11 @@ export async function compileSlotsWithTrace(
     '?domSpec'
   )
   for (const fd of primaryForeign) prefixDomains.add(fd)
+  const carriedVocabularies = scope.carried.get(primaryDomain)
+  const content =
+    carriedVocabularies &&
+    vocabularyContentFilter(primaryDomain, carriedVocabularies, registry, vocabIndex)
+  if (content) filters.push(content)
 
   // Shared mutable compile state for the reference emitters. Built once and
   // threaded through both the implicit cross-domain joins and the explicit

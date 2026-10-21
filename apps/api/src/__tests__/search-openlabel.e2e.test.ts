@@ -13,7 +13,9 @@
  *     UNION arm ([SPARQL11] §7 — matching alternatives), so no requested
  *     domain is silently dropped by an implicit JOIN;
  *   - the vocabulary root matches standalone tags only (not tags nested in
- *     an asset), via `FILTER NOT EXISTS` ([SPARQL11] §8.1).
+ *     an asset), via `FILTER NOT EXISTS` ([SPARQL11] §8.1);
+ *   - the vocabulary alone also searches the asset domains using it, for the
+ *     assets carrying its content (`FILTER EXISTS`, [SPARQL11] §8.1).
  */
 
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
@@ -79,7 +81,7 @@ describe('OpenLABEL-only refine (unmocked end-to-end)', () => {
     expect(standalone).not.toContain(CONTRAST_TAG)
   }, 180_000)
 
-  it('POST /search/refine with only the vocabulary returns only standalone tags', async () => {
+  it('POST /search/refine with only the vocabulary returns its tags and the assets carrying it', async () => {
     const res = await post('/search/refine', {
       slots: {
         domains: ['openlabel'],
@@ -90,10 +92,11 @@ describe('OpenLABEL-only refine (unmocked end-to-end)', () => {
     const text = await res.text()
     expect(res.status, text).toBe(200)
     const body = JSON.parse(text) as RefineBody
-    expect(body.sparql).not.toMatch(/\bUNION\b/)
+    // The domains using the vocabulary answer with the assets carrying its
+    // content, next to the standalone tags.
+    expect(body.sparql).toContain('FILTER EXISTS')
     const ids = [...new Set(assetIds(body))]
-    expect(ids.length).toBeGreaterThan(0)
-    expect(ids.every((id) => id.startsWith(TAG_PREFIX))).toBe(true)
+    expect(ids.some((id) => id.includes(':HdMap:'))).toBe(true)
     expect(ids).toContain(LANE_KEEPING_TAG)
     expect(ids).not.toContain(CONTRAST_TAG)
   }, 180_000)

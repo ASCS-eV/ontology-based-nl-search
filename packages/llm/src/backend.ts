@@ -40,8 +40,8 @@ import { verifyProviderAccess } from './provider-access.js'
 
 /** Options every slot-filling run takes, whichever backend serves it. */
 export interface FillSlotsOptions {
-  /** Target domain for the search. */
-  domain: string
+  /** The domains the search is scoped to, when the user selected them. */
+  domains?: readonly string[]
   /** Cancel the in-flight LLM call when the caller aborts. */
   signal?: AbortSignal
 }
@@ -85,8 +85,7 @@ const copilotBackend: AgentBackend = {
     // recurring keep-alive, so no idle token cost.
     primeCacheInBackground()
   },
-  fillSlots: (query, { domain, signal }) =>
-    runSparqlAgentCompatible(runCopilotAgent, query, domain, signal),
+  fillSlots: (query, options) => runSparqlAgentCompatible(runCopilotAgent, query, options),
   fillScene: fillSceneCopilot,
 }
 
@@ -98,8 +97,7 @@ const claudeCodeBackend: AgentBackend = {
   id: 'claude-code',
   // `claude auth status`: the binary runs and is signed in — no model call.
   verify: () => verifyClaudeCodeLogin(),
-  fillSlots: (query, { domain, signal }) =>
-    runSparqlAgentCompatible(runClaudeCodeAgent, query, domain, signal),
+  fillSlots: (query, options) => runSparqlAgentCompatible(runClaudeCodeAgent, query, options),
   fillScene: fillSceneClaudeCode,
 }
 
@@ -107,13 +105,12 @@ const claudeCodeBackend: AgentBackend = {
 const vercelBackend: AgentBackend = {
   id: 'vercel',
   verify: () => verifyProviderAccess(),
-  fillSlots: (query, { domain, signal }) =>
-    runSparqlAgentCompatible(runSparqlAgent, query, domain, signal),
+  fillSlots: (query, options) => runSparqlAgentCompatible(runSparqlAgent, query, options),
   fillScene: fillSceneVercel,
 }
 
 /**
- * Both agents take `{ domain?, signal? }` with the same meaning, but declare
+ * Both agents take `{ domains?, signal? }` with the same meaning, but declare
  * the optional keys separately. Forward them by name — spreading a caller's
  * object would let an extra key structurally satisfy the options type and
  * reach the agent, which the "LLM never writes SPARQL" invariant depends on
@@ -122,13 +119,15 @@ const vercelBackend: AgentBackend = {
 function runSparqlAgentCompatible(
   run: (
     query: string,
-    options?: { domain?: string; signal?: AbortSignal }
+    options?: { domains?: readonly string[]; signal?: AbortSignal }
   ) => Promise<LlmStructuredResponse>,
   query: string,
-  domain: string,
-  signal: AbortSignal | undefined
+  { domains, signal }: FillSlotsOptions
 ): Promise<LlmStructuredResponse> {
-  return run(query, { domain, ...(signal === undefined ? {} : { signal }) })
+  return run(query, {
+    ...(domains === undefined ? {} : { domains }),
+    ...(signal === undefined ? {} : { signal }),
+  })
 }
 
 /**

@@ -64,7 +64,7 @@ import type { LlmStructuredResponse } from '../types.js'
 function realServiceWithMockedLlm(slots: SearchSlots): SearchService {
   const interpretQuery = async (
     query: string,
-    _options: { domain?: string; signal?: AbortSignal }
+    _options: { domains?: readonly string[]; signal?: AbortSignal }
   ): Promise<LlmStructuredResponse> => {
     // Use the trace-aware compile path so the mocked LLM returns the same
     // shape the real `run-slot-pipeline` does (sparql + trace). Without
@@ -604,45 +604,38 @@ describe('SearchService — real pipeline integration', () => {
    * Regression: "OpenLabel only: …" made the LLM pick the non-asset
    * vocabulary domain `openlabel` alone. It was dropped, leaving an empty
    * domain list and an unfiltered query over every asset class. A request
-   * naming only a vocabulary must resolve to the asset domains whose
-   * discovered paths use that vocabulary's leaves.
+   * naming only a vocabulary keeps it as the scope; the compiler searches the
+   * asset domains using it (see `compiler-vocabulary-scope.ts`).
    */
-  it('resolveKnownDomains maps a vocabulary-only request to the asset domains using it', async () => {
-    // The vocabulary itself is kept so its standalone (asset-less) data is
-    // queried as an extra UNION arm.
-    expect((await resolveKnownDomains(['openlabel'])).sort()).toEqual([
-      'hdmap',
+  it('resolveKnownDomains keeps the vocabulary of a vocabulary-only request as its scope', async () => {
+    expect(await resolveKnownDomains(['openlabel'])).toEqual(['openlabel'])
+    // The pipeline passes the LLM's original request separately: the owners
+    // slot correction added would search those domains without restriction.
+    expect(await resolveKnownDomains(['openlabel', 'hdmap', 'scenario'], ['openlabel'])).toEqual([
       'openlabel',
-      'scenario',
     ])
-    // The pipeline passes the LLM's original request separately: after the
-    // validator broadened `['openlabel']`, the request still governs.
-    expect(
-      (await resolveKnownDomains(['openlabel', 'hdmap', 'scenario'], ['openlabel'])).sort()
-    ).toEqual(['hdmap', 'openlabel', 'scenario'])
     // A named asset domain is never broadened by a vocabulary next to it.
     expect(await resolveKnownDomains(['scenario', 'openlabel'])).toEqual(['scenario'])
     expect(await resolveKnownDomains(['unknown'])).toEqual([])
-    // Only asset domains that can express every restriction of the vocabulary
-    // are searched: an HD map has scenery attributes but no behaviour flags.
-    expect(
-      (
-        await resolveKnownDomains(
-          ['openlabel'],
-          ['openlabel'],
-          ['DrivableAreaType', 'HorizontalStraights']
-        )
-      ).sort()
-    ).toEqual(['hdmap', 'openlabel', 'scenario'])
-    expect(
-      (
-        await resolveKnownDomains(
-          ['openlabel'],
-          ['openlabel'],
-          ['DrivableAreaType', 'HorizontalStraights', 'MotionDrive']
-        )
-      ).sort()
-    ).toEqual(['openlabel', 'scenario'])
+  }, 120_000)
+
+  /**
+   * Only asset domains that can express every restriction of the vocabulary
+   * are searched: an HD map has scenery attributes but no behaviour flags.
+   */
+  it('searches a vocabulary through the owners that can express all of its constraints', async () => {
+    const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
+    const scenery = { DrivableAreaType: `${OL}MotorwayManaged`, HorizontalStraights: 'true' }
+    const both = await compileSlots({ domains: ['openlabel'], filters: scenery, ranges: {} })
+    expect(both).toContain('hdmap:HdMap')
+    expect(both).toContain('scenario:Scenario')
+    const behaviour = await compileSlots({
+      domains: ['openlabel'],
+      filters: { ...scenery, MotionDrive: 'true' },
+      ranges: {},
+    })
+    expect(behaviour).not.toContain('hdmap:HdMap')
+    expect(behaviour).toContain('scenario:Scenario')
   }, 120_000)
 
   /**
@@ -695,7 +688,7 @@ describe('SearchService — real pipeline integration', () => {
   it('returns hdmap and standalone OpenLABEL rows for a vocabulary-only scenery request', async () => {
     const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
     const filters = { DrivableAreaType: `${OL}MotorwayManaged`, HorizontalStraights: 'true' }
-    const domains = await resolveKnownDomains(['openlabel'], ['openlabel'], Object.keys(filters))
+    const domains = await resolveKnownDomains(['openlabel'], ['openlabel'])
     const slots: SearchSlots = { domains, filters, ranges: {} }
     const { sparql } = await compileSlotsWithTrace(slots)
     expect(() => enforceSparqlPolicy(sparql)).not.toThrow()
@@ -735,20 +728,40 @@ describe('SearchService — real pipeline integration', () => {
     expect(ids.some((id) => id.includes(':HdMap:'))).toBe(true)
   }, 120_000)
 
-  it('compiles only the standalone vocabulary arm when no asset domain is requested', async () => {
+  it('compiles a vocabulary alone to its owners carrying its content and its own documents', async () => {
     const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
     const sparql = await compileSlots({
       domains: ['openlabel'],
       filters: { DrivableAreaType: `${OL}MotorwayManaged`, HorizontalStraights: 'true' },
       ranges: {},
     })
-    expect(sparql).not.toMatch(/\bUNION\b/)
+    expect(sparql).toContain('hdmap:HdMap')
+    expect(sparql.match(/FILTER EXISTS/g)?.length).toBeGreaterThanOrEqual(1)
     expect(sparql).toMatch(/\?asset a (openlabel:Tag|<[^>]*\/Tag>)/)
     const rows = (await (await getInitializedStore()).query(sparql)).results.bindings
     const ids = rows.map((r) => r['asset']?.value ?? '')
-    expect(ids.length).toBeGreaterThan(0)
-    expect(ids.every((id) => id.startsWith('did:web:openlabel.example:Tag:'))).toBe(true)
+    expect(ids.some((id) => id.includes(':HdMap:'))).toBe(true)
     expect(ids).toContain('did:web:openlabel.example:Tag:lane-keeping-straight-motorway')
+  }, 120_000)
+
+  /**
+   * Regression: a vocabulary in the scope switched hierarchy detection off for
+   * the named domains as well, so adding it turned their scenario → HD map
+   * JOIN into a UNION that returned no scenario at all.
+   */
+  it('keeps the JOIN of the named domains when a vocabulary is in the scope', async () => {
+    const slots: SearchSlots = {
+      domains: ['scenario', 'hdmap'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+    }
+    const plain = await compileSlotsWithTrace(slots)
+    const scoped = await compileSlotsWithTrace({
+      ...slots,
+      domains: [...slots.domains, 'georeference'],
+    })
+    expect(plain.sparql).not.toMatch(/\bUNION\b/)
+    expect(scoped.sparql).toBe(plain.sparql)
   }, 120_000)
 
   /**
@@ -764,17 +777,19 @@ describe('SearchService — real pipeline integration', () => {
     const filters = { DrivableAreaType: `${OL}MotorwayManaged`, HorizontalStraights: 'true' }
 
     // NL inference: the asset domain wins, the vocabulary is dropped.
-    expect(
-      await resolveKnownDomains(['scenario', 'openlabel'], undefined, Object.keys(filters))
-    ).toEqual(['scenario'])
+    expect(await resolveKnownDomains(['scenario', 'openlabel'])).toEqual(['scenario'])
 
-    // Explicit scope: the standalone vocabulary arm is compiled alongside.
+    // Explicit scope: every domain answers. The scenarios are searched as
+    // named; the vocabulary adds the HD maps carrying its content and its
+    // standalone tags.
     const { sparql } = await compileSlotsWithTrace({
       domains: ['scenario', 'openlabel'],
       filters,
       ranges: {},
     })
     expect(sparql).toContain('scenario:Scenario')
+    expect(sparql).toContain('hdmap:HdMap')
+    expect(sparql.match(/FILTER EXISTS/g)).toHaveLength(1)
     expect(sparql).toMatch(/\?asset a (openlabel:Tag|<[^>]*\/Tag>)/)
     expect(sparql).toContain('FILTER NOT EXISTS')
   }, 120_000)

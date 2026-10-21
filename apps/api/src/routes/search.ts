@@ -1,6 +1,12 @@
 import type { RefineResponse } from '@ontology-search/api-types'
 import { getConfig } from '@ontology-search/core/config'
-import { AppError, badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
+import {
+  AppError,
+  badRequest,
+  type HttpError,
+  internalError,
+  unprocessable,
+} from '@ontology-search/core/errors'
 import {
   createComponentLogger,
   REQUEST_ID_HEADER,
@@ -8,6 +14,8 @@ import {
 } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { parseGraphQLToSlots, slotsToGraphQL } from '@ontology-search/graphql-ir'
+import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
+import { canonicalDomains } from '@ontology-search/search/compiler'
 import { referenceFilterWireSchema } from '@ontology-search/slots/slot-wire-schema'
 import { normalizeReferences } from '@ontology-search/slots/slots'
 import { parse, validate } from 'graphql'
@@ -57,15 +65,54 @@ const searchSlotsSchema = z.object({
 export const searchRoutes = new Hono<AppEnv>()
 
 /**
+ * The fields `/search/stream` takes besides `query` ([JSON-SCHEMA-VAL] §6.4
+ * array keywords): `domains`, the scope the user selected. An empty list
+ * selects nothing and searches every domain, as an absent one does.
+ */
+const searchStreamBodySchema = z.object({
+  domains: z.array(z.string().min(1)).optional(),
+})
+
+/**
+ * The scope of a streaming search, in canonical domain names. A name the
+ * loaded ontology does not know is rejected with 400 ([RFC9110] §15.5.1)
+ * rather than dropped: searching less than the user selected, silently, is
+ * exactly what an explicit scope exists to rule out.
+ */
+async function parseSearchStreamBody(
+  raw: Record<string, unknown>
+): Promise<{ domains?: string[] } | HttpError> {
+  const parsed = searchStreamBodySchema.safeParse(raw)
+  if (!parsed.success) {
+    return badRequest(
+      'Invalid "domains" field',
+      parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+    )
+  }
+  const requested = parsed.data.domains ?? []
+  if (requested.length === 0) return {}
+  const { known, unknown } = await canonicalDomains(requested)
+  if (unknown.length > 0) {
+    const { domainNames } = await buildDomainRegistry()
+    return badRequest(`Unknown domains: ${unknown.join(', ')}`, [
+      `Known domains: ${domainNames.join(', ')}`,
+    ])
+  }
+  return { domains: known }
+}
+
+/**
  * Streaming search: SSE endpoint that progressively sends results.
  */
 searchRoutes.post('/stream', (c) =>
-  handleStreamRoute(c, {
+  handleStreamRoute<{ domains?: string[] }>(c, {
     label: 'Stream search',
     errorMessage: 'Search failed',
-    handler: async ({ query, signal, logger, emit }) => {
+    parseBody: parseSearchStreamBody,
+    handler: async ({ query, body, signal, logger, emit }) => {
       const result = await searchNl({
         query,
+        ...(body.domains ? { domains: body.domains } : {}),
         signal,
         requestId: c.get('requestId'),
         onProgress: async (progress) => {

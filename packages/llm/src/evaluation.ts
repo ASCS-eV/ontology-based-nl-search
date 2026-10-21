@@ -121,7 +121,7 @@ export function createOpenAIResponsesModel(options: OpenAICompatibleModelOptions
 export function evaluateStructuredSearch(query: string, options: EvaluateSearchOptions) {
   const modelId = typeof options.model === 'string' ? options.model : options.model.modelId
   return runSparqlAgentWithModel(query, options.model, {
-    domain: options.domain,
+    ...(options.domains === undefined ? {} : { domains: options.domains }),
     signal: options.signal,
     observer: options.observer,
     policy: options.policy ?? createEvaluationPolicy(modelId),

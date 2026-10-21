@@ -6,16 +6,15 @@
  * resolving them unchanged.
  *
  * Everything here is graph-driven: the asset-domain set comes from
- * `getAssetDomains()`, the vocabulary leaves from the discovered property
- * paths. No ontology is named.
+ * `getAssetDomains()`, the domain names from the registry. No ontology is
+ * named.
  */
 import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontology/domain-registry'
+import { normalizeReferences, type SearchSlots } from '@ontology-search/slots/slots'
 
 import { getAssetDomains } from './asset-domains.js'
-import { standaloneVocabularyDomains } from './compiler-standalone.js'
-import { type CompilerVocab, getCompilerVocab } from './compiler-vocab.js'
-import { keyOfIndexEntry } from './property-keys.js'
-import type { PropertyPath } from './property-paths.js'
+import { getCompilerVocab } from './compiler-vocab.js'
+import { resolveDomainScope } from './compiler-vocabulary-scope.js'
 
 /**
  * Normalize an LLM-supplied domain name toward the registry's directory-name
@@ -32,69 +31,46 @@ export function normalizeDomainName(domain: string): string {
 }
 
 /**
- * Filter a domain list to those that are valid primary search targets —
- * i.e. **asset** domains, discovered data-drivenly from the SHACL /
- * `rdfs:subClassOf` hierarchy (see `queryAssetDomains`). Drops:
+ * The domains a natural-language request searches, from the domain list the
+ * LLM filled and that slot correction extended.
+ *
+ * Asset domains, discovered data-drivenly from the SHACL / `rdfs:subClassOf`
+ * hierarchy (see `queryAssetDomains`), are kept. Dropped:
  *
  *   - Phantom names (LLM-hallucinated "unknown", typos, sentinels from a
  *     failed IRI attribution) — not in the registry at all.
- *   - Non-asset support vocabularies (`gx`, `georeference`, `manifest`, …)
- *     that the registry knows about but that don't root any asset class in
- *     the discovered subclass hierarchy. The compiler would otherwise emit
- *     a primary `?asset a <Class>` UNION arm using the registry's arbitrary
- *     `targetClass` pick (any class of that vocabulary), which has
- *     nothing to do with the query and returns zero rows. When ONLY such
- *     vocabularies were named, they resolve to the asset domains that use
- *     them (see {@link vocabularyScope}).
+ *   - Support vocabularies (`gx`, `georeference`, `manifest`, …) next to an
+ *     asset domain. The LLM names a vocabulary as its reading of the user's
+ *     words, and an asset domain it names alongside is the subject; the
+ *     vocabulary only describes it.
+ *
+ * `requested` is the domain list the LLM originally asked for, before slot
+ * correction added the owners of the filter properties. When it names ONLY
+ * support vocabularies ("<vocabulary> only"), the vocabularies are the scope
+ * and are returned as they are: the compiler searches their standalone
+ * documents and the assets of the domains that use them, restricted to those
+ * carrying their content (`compiler-vocabulary-scope.ts`). The owners slot
+ * correction added are dropped, since they would search those domains
+ * without the restriction. Defaults to `domains`.
  *
  * Order-preserving and de-duplicated. A name that is a registry directory key
  * resolves to that domain; only an unknown name falls back to the registry's
  * IRI-segment lookup, so two versions of one vocabulary (directory keys
  * `vocab` and `vocab-v2`) never shadow each other.
  *
- * `requested` is the domain list the user/LLM originally asked for (before
- * slot correction added the owners of the filter properties). When it names
- * ONLY support vocabularies ("<vocabulary> only"), the vocabulary intent wins:
- * the result is the asset domains using that vocabulary PLUS the vocabulary
- * domains themselves when they have standalone entry classes, so documents
- * of that vocabulary that are not attached to any asset are searched too
- * (see `compiler-standalone.ts`). Defaults to `domains`.
- *
- * `constraints` are the property names of the surviving filters and ranges.
- * An asset domain is a candidate for a vocabulary-only request only when it can
- * express every constraint the vocabulary itself defines — an HD map can carry
- * scenery attributes but never a behaviour flag, so it cannot answer "straight
- * motorway AND lane keeping" however many scenery matches it has.
- *
- * Nothing about any specific ontology is hardcoded: the asset-domain set
- * comes from `getAssetDomains()`, which queries the graph.
+ * A request that states its scope explicitly does not come through here: the
+ * scope it names is searched as named.
  */
 export async function resolveKnownDomains(
   domains: string[],
-  requested: string[] = domains,
-  constraints: readonly string[] = []
+  requested: string[] = domains
 ): Promise<string[]> {
   const registry = await buildDomainRegistry()
   const assetDomains = await getAssetDomains()
   const split = (names: string[]) => splitDomains(names, registry, assetDomains)
-  const { assets: known } = split(domains)
   const asked = split(requested)
-  if (asked.assets.length > 0 || asked.vocabularies.length === 0) return known
-
-  const vocabIndex = await getCompilerVocab()
-  const scope = vocabularyScope(asked.vocabularies, registry, vocabIndex, constraints)
-  const candidates = [...known]
-  for (const d of scope.owners) if (!candidates.includes(d)) candidates.push(d)
-  // Slot correction may already have added asset domains (the owners of the
-  // filter properties); they face the same coverage test as the rest.
-  const result = candidates.filter((domain) =>
-    scope.required.every(
-      (key) =>
-        vocabIndex.paths.has(`${domain}:${key}`) ||
-        (vocabIndex.alternatives?.has(`${domain}:${key}`) ?? false)
-    )
-  )
-  return [...result, ...standaloneVocabularyDomains(asked.vocabularies, vocabIndex)]
+  if (asked.assets.length === 0 && asked.vocabularies.length > 0) return asked.vocabularies
+  return split(domains).assets
 }
 
 /**
@@ -129,50 +105,74 @@ function splitDomains(
 }
 
 /**
- * A request naming ONLY a non-asset vocabulary ("<vocabulary> only")
- * means "assets described with that vocabulary" — not "no restriction".
- * `owners` are the asset domains whose SHACL-discovered property paths end
- * in a leaf of that vocabulary ([SHACL] §2.3 property shapes reached via
- * `sh:node`), sorted. Only applied when no asset domain was named, so a
- * precise asset choice is never broadened by a support vocabulary that every
- * asset happens to use.
- *
- * `required` are the constraints (`constraints` ∩ the vocabulary's leaves,
- * nested or standalone) every searched asset domain must be able to express:
- * a domain that can express only part of the restriction would otherwise be
- * searched with the rest silently dropped.
+ * Canonical names for a scope a request states itself: every name the
+ * registry knows, asset domain or vocabulary, in request order. `unknown`
+ * holds the names it does not know, which the caller rejects rather than
+ * silently searching less than was asked.
  */
-function vocabularyScope(
-  vocabularies: string[],
-  registry: DomainRegistry,
-  vocabIndex: CompilerVocab,
-  constraints: readonly string[]
-): { owners: string[]; required: string[] } {
-  const wanted = new Set(vocabularies)
-  const owners = new Set<string>()
-  // Keys (ADR 0009) whose path ends in a leaf of a wanted vocabulary — a
-  // qualified key or a bare name naming several chains included.
-  const vocabularyLeaves = new Set<string>()
-  const isWanted = (path: PropertyPath) => {
-    const leafDomain = registry.domainForIri(path.propertyIri)
-    return leafDomain !== undefined && wanted.has(leafDomain)
+export async function canonicalDomains(
+  domains: readonly string[]
+): Promise<{ known: string[]; unknown: string[] }> {
+  const registry = await buildDomainRegistry()
+  const known: string[] = []
+  const unknown: string[] = []
+  for (const raw of domains) {
+    // A name as the registry spells it, in any case, before the
+    // normalization that turns a model's variants into one ("HDMap" is the
+    // registry's `hdmap`, not `hd-map`).
+    const spellings = [raw, raw.toLowerCase(), normalizeDomainName(raw)]
+    const canonical =
+      spellings.find((name) => registry.domains.has(name)) ??
+      spellings.map((name) => registry.resolveByIriDomain(name)?.name).find(Boolean)
+    if (!canonical) unknown.push(raw)
+    else if (!known.includes(canonical)) known.push(canonical)
   }
-  for (const [indexKey, path] of vocabIndex.paths) {
-    if (!isWanted(path)) continue
-    vocabularyLeaves.add(keyOfIndexEntry(indexKey))
-    if (path.domain) owners.add(path.domain)
-  }
-  for (const [indexKey, paths] of vocabIndex.alternatives ?? []) {
-    if (paths.some(isWanted)) vocabularyLeaves.add(keyOfIndexEntry(indexKey))
-  }
-  for (const vocabulary of vocabularies) {
-    for (const root of vocabIndex.vocabularyRoots?.get(vocabulary) ?? []) {
-      for (const key of root.paths.keys()) vocabularyLeaves.add(key)
-      for (const name of root.alternatives?.keys() ?? []) vocabularyLeaves.add(name)
-    }
-  }
-  return {
-    owners: [...owners].sort(),
-    required: constraints.filter((name) => vocabularyLeaves.has(name)),
-  }
+  return { known, unknown }
+}
+
+/**
+ * Every domain a search scoped to `domains` reads from: the asset domains it
+ * names, the asset domains that use a vocabulary it names, and the
+ * vocabularies themselves (see `compiler-vocabulary-scope.ts`).
+ */
+export async function searchedDomains(domains: readonly string[]): Promise<string[]> {
+  const [registry, vocabIndex] = await Promise.all([buildDomainRegistry(), getCompilerVocab()])
+  const scope = resolveDomainScope(domains, { filters: {}, ranges: {} }, registry, vocabIndex)
+  return [...scope.assetDomains, ...scope.vocabularies]
+}
+
+/**
+ * The filter and range keys of `slots` that no part of the search over
+ * `slots.domains` can express: no searched asset domain has a path for the
+ * key, and no requested vocabulary's standalone entry class does either.
+ *
+ * Each key is judged on its own, against every domain the scope can search.
+ * Whether one domain can express all keys together is the compiler's
+ * question (an owner that cannot is not searched); a key some domain
+ * expresses is in scope even when the query as a whole finds nothing. A
+ * domain the query references is the target of the reference, not a place
+ * to express its constraints.
+ */
+export async function constraintsOutsideScope(
+  slots: Pick<SearchSlots, 'domains' | 'filters' | 'ranges' | 'references'>
+): Promise<string[]> {
+  const [registry, vocabIndex] = await Promise.all([buildDomainRegistry(), getCompilerVocab()])
+  const scope = resolveDomainScope(
+    slots.domains,
+    { filters: {}, ranges: {}, references: slots.references },
+    registry,
+    vocabIndex
+  )
+  const referenced = new Set(normalizeReferences(slots.references).map((ref) => ref.domain))
+  const searched = scope.assetDomains.filter((domain) => !referenced.has(domain))
+  const roots = scope.vocabularies.flatMap((name) => vocabIndex.vocabularyRoots?.get(name) ?? [])
+  const expressible = (key: string) =>
+    searched.some(
+      (domain) =>
+        vocabIndex.paths.has(`${domain}:${key}`) ||
+        (vocabIndex.alternatives?.has(`${domain}:${key}`) ?? false)
+    ) || roots.some((root) => root.paths.has(key) || (root.alternatives?.has(key) ?? false))
+  return [...Object.keys(slots.filters), ...Object.keys(slots.ranges)].filter(
+    (key) => !expressible(key)
+  )
 }

@@ -103,10 +103,10 @@ describe('runSlotPipeline', () => {
 
   /**
    * Regression for "OpenLabel only: … straight access-controlled motorway …".
-   * The LLM names only the support vocabulary. The pipeline must keep it as a
-   * standalone scope next to every asset domain that can express the
-   * restrictions, and the named-domain tie-break must not narrow the result
-   * to the vocabulary alone.
+   * The LLM names only the support vocabulary. The pipeline keeps it as the
+   * scope, the compiler searches every asset domain that can express the
+   * restrictions next to the vocabulary's own documents, and the named-domain
+   * tie-break must not narrow the result to the vocabulary alone.
    */
   it('keeps a vocabulary-only request as a scope over its asset domains', async () => {
     const OL = 'https://openlabel.asam.net/V1-0-0/ontologies/'
@@ -121,11 +121,9 @@ describe('runSlotPipeline', () => {
       query: 'OpenLabel only: straight access-controlled motorway.',
     })
 
-    expect([...(response.interpretation.domains ?? [])].sort()).toEqual([
-      'hdmap',
-      'openlabel',
-      'scenario',
-    ])
+    expect(response.interpretation.domains).toEqual(['openlabel'])
+    expect(response.sparql).toContain('hdmap:HdMap')
+    expect(response.sparql).toContain('scenario:Scenario')
     expect(response.sparql.match(/\bUNION\b/g)).toHaveLength(2)
     expect(response.sparql).toContain('FILTER NOT EXISTS')
   }, 120_000)
@@ -155,8 +153,118 @@ describe('runSlotPipeline', () => {
         'OpenLabel only: The system travels on a straight access-controlled motorway and maintains a stable lateral position while controlling speed.',
     })
 
-    expect([...(response.interpretation.domains ?? [])].sort()).toEqual(['openlabel', 'scenario'])
+    expect(response.interpretation.domains).toEqual(['openlabel'])
+    expect(response.sparql).toContain('scenario:Scenario')
     expect(response.sparql).not.toContain('hdmap:HdMap')
+  }, 120_000)
+
+  /**
+   * A scope the user selected replaces the model's domain choice: the domains
+   * are searched as selected, never narrowed by the tie-break nor widened by
+   * the owners of the filled properties.
+   */
+  it('searches exactly the domains of an explicit scope', async () => {
+    const response = await runSlotPipeline({
+      submission: submission({
+        domains: ['hdmap', 'ositrace'],
+        filters: { roadTypes: 'MOTORWAY' },
+      }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      scope: ['ositrace'],
+      sw: new Stopwatch(),
+      query: 'maps with motorways',
+    })
+    expect(response.interpretation.domains).toEqual(['ositrace'])
+    expect(response.sparql).not.toContain('hdmap:HdMap')
+  }, 120_000)
+
+  it('keeps a vocabulary in an explicit scope next to the asset domain the model chose', async () => {
+    const response = await runSlotPipeline({
+      submission: submission({ domains: ['scenario'] }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      scope: ['openlabel'],
+      sw: new Stopwatch(),
+      query: NEUTRAL_QUERY,
+    })
+    expect(response.interpretation.domains).toEqual(['openlabel'])
+    expect(response.sparql).toContain('FILTER EXISTS')
+  }, 120_000)
+
+  /**
+   * Regression: nothing kept a search inside the scope the user chose; a
+   * property only another domain declares widened the search to that domain.
+   * Within an explicit scope it is reported as a limitation instead, under
+   * the user's own words for it.
+   */
+  it('reports a constraint the scope cannot express instead of widening the scope', async () => {
+    const response = await runSlotPipeline({
+      submission: {
+        slots: { domains: ['hdmap'], filters: { laneTypes: 'driving' } },
+        interpretation: {
+          summary: 'test',
+          mappedTerms: [
+            {
+              input: 'driving lanes',
+              mapped: 'driving',
+              property: 'laneTypes',
+              confidence: 'high',
+            },
+          ],
+        },
+        gaps: [],
+      },
+      vocabulary,
+      targetDomain: 'hdmap',
+      scope: ['scenario'],
+      sw: new Stopwatch(),
+      query: 'scenarios with driving lanes',
+    })
+    expect(response.interpretation.domains).toEqual(['scenario'])
+    expect(response.slots?.filters).toEqual({})
+    expect(response.sparql).not.toContain('hdmap:HdMap')
+    const gap = response.gaps.find((g) => g.term === 'driving lanes')
+    expect(gap?.kind).toBe('limitation')
+    expect(gap?.reason).toContain('scenario')
+  }, 120_000)
+
+  /**
+   * Regression: with a scope, a reference the model filled to a domain of the
+   * scope removed that domain from the answers, leaving none, and the search
+   * fell back to every asset domain with the reference dropped.
+   */
+  it('keeps the scope as the answers when the model references a domain of it', async () => {
+    const response = await runSlotPipeline({
+      submission: submission({ domains: ['scenario'], references: [{ domain: 'hdmap' }] }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      scope: ['hdmap'],
+      sw: new Stopwatch(),
+      query: 'maps used by scenarios',
+    })
+    expect(response.interpretation.domains).toEqual(['hdmap'])
+    expect(response.slots?.references).toBeUndefined()
+    expect(response.sparql).toContain('hdmap:HdMap')
+    expect(response.sparql).not.toContain('scenario:Scenario')
+    const gap = response.gaps.find((g) => g.term === 'hdmap')
+    expect(gap?.kind).toBe('limitation')
+  }, 120_000)
+
+  /**
+   * Without a scope, a request the model filled with a support vocabulary
+   * alone still answers from the asset domain the query names outright: the
+   * tie-break runs over the domains using the vocabulary.
+   */
+  it('answers a vocabulary-only request from the owner the query names', async () => {
+    const response = await runSlotPipeline({
+      submission: submission({ domains: ['georeference'], filters: { country: 'DE' } }),
+      vocabulary,
+      targetDomain: 'hdmap',
+      sw: new Stopwatch(),
+      query: 'HD maps located in Germany',
+    })
+    expect(response.interpretation.domains).toEqual(['hdmap'])
   }, 120_000)
 
   it('drops a filter value that violates a declared SHACL constraint', async () => {

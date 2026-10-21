@@ -293,14 +293,14 @@ describe('SearchService.searchNl', () => {
     expect(mockStore.query).not.toHaveBeenCalled()
   })
 
-  it('passes domain option to LLM', async () => {
+  it('passes the domain scope to the LLM', async () => {
     const deps = createMockDeps()
     const service = new SearchService(deps)
 
-    await service.searchNl({ query: 'scenarios', domain: 'scenario' })
+    await service.searchNl({ query: 'scenarios', domains: ['scenario'] })
 
     expect(deps.interpretQuery).toHaveBeenCalledWith('scenarios', {
-      domain: 'scenario',
+      domains: ['scenario'],
       signal: undefined,
     })
   })

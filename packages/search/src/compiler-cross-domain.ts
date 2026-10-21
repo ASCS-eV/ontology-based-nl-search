@@ -29,6 +29,7 @@ import {
 import { assembleQuery, ASSET_LABEL_PATTERN } from './compiler-helpers-query.js'
 import { buildStandaloneArms } from './compiler-standalone.js'
 import { type CompilerVocab } from './compiler-vocab.js'
+import { vocabularyContentFilter } from './compiler-vocabulary-scope.js'
 import { type PropertyPath } from './property-paths.js'
 
 const log = createComponentLogger('compiler')
@@ -45,6 +46,8 @@ const log = createComponentLogger('compiler')
  * `standaloneDomains` are requested support vocabularies with discovered
  * entry classes; each adds the arms built by `buildStandaloneArms` (documents
  * of that vocabulary not attached to any asset) after the asset arms.
+ * `carried` maps an asset domain a vocabulary scope added to the vocabularies
+ * its assets must carry (see `compiler-vocabulary-scope.ts`).
  */
 export async function compilePeerDomainUnion(
   slots: SearchSlots,
@@ -53,7 +56,8 @@ export async function compilePeerDomainUnion(
   rangesByDomain: Record<string, Record<string, { min?: number; max?: number }>>,
   registry: DomainRegistry,
   vocabIndex: CompilerVocab,
-  standaloneDomains: string[] = []
+  standaloneDomains: string[] = [],
+  carried: ReadonlyMap<string, readonly string[]> = new Map()
 ): Promise<string> {
   const prefixDomains = new Set<string>()
   const selectVars = new Set(['?asset', '?name'])
@@ -122,6 +126,13 @@ export async function compilePeerDomainUnion(
     )
     for (const fd of foreignDomains) prefixDomains.add(fd)
     for (const v of armSelectVars) selectVars.add(v)
+    // An owner added by a vocabulary scope answers only with assets that
+    // carry the vocabulary's content (see `compiler-vocabulary-scope.ts`).
+    const carriedVocabularies = carried.get(domainName)
+    const content =
+      carriedVocabularies &&
+      vocabularyContentFilter(domainName, carriedVocabularies, registry, vocabIndex)
+    if (content) armFilters.push(content)
 
     // Combine arm into a single block
     const armBody = [...armPatterns, ...armOptionals, ...armFilters]

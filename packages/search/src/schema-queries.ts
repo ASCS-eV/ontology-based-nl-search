@@ -15,6 +15,7 @@
 export {
   type AssetDomainInfo,
   type PropertyDomainInfo,
+  queryAssetClassVocabularies,
   queryAssetDomains,
   queryPropertyDomains,
 } from './schema-queries-domains.js'

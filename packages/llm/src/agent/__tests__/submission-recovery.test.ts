@@ -122,7 +122,7 @@ function toolTurn(toolName: string, input: unknown): GenerateResult {
 }
 
 function run(model: MockLanguageModelV4, runPolicy: AgentPolicy = policy) {
-  return runSparqlAgentWithModel('any query', model, { domain: 'any-domain', policy: runPolicy })
+  return runSparqlAgentWithModel('any query', model, { domains: ['any-domain'], policy: runPolicy })
 }
 
 beforeEach(() => {
