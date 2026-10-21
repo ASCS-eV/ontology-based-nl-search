@@ -345,13 +345,13 @@ SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset1 ?refNa
   ?ref_step_1 manifest:hasReferencedArtifacts ?ref_step_2 .
   ?ref_step_2 manifest:iri ?refAsset .
   ?refAsset a ositrace:OSITrace .
-  ?refAsset rdfs:label ?refName .
   ?asset scenario:hasManifest ?ref1_step_1 .
   ?ref1_step_1 manifest:hasReferencedArtifacts ?ref1_step_2 .
   ?ref1_step_2 manifest:iri ?refAsset1 .
   ?refAsset1 a hdmap:HdMap .
-  ?refAsset1 rdfs:label ?refName1 .
   OPTIONAL { ?asset rdfs:label ?name }
+  OPTIONAL { ?refAsset rdfs:label ?refName }
+  OPTIONAL { ?refAsset1 rdfs:label ?refName1 }
 }
 ORDER BY ?asset
 LIMIT 500"
@@ -369,13 +369,13 @@ SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 ?refAsset_0 ?refN
   ?ref_step_1 manifest:hasReferencedArtifacts ?ref_step_2 .
   ?ref_step_2 manifest:iri ?refAsset .
   ?refAsset a ositrace:OSITrace .
-  ?refAsset rdfs:label ?refName .
   ?refAsset ositrace:hasManifest ?ref_0_step_1 .
   ?ref_0_step_1 manifest:hasReferencedArtifacts ?ref_0_step_2 .
   ?ref_0_step_2 manifest:iri ?refAsset_0 .
   ?refAsset_0 a hdmap:HdMap .
-  ?refAsset_0 rdfs:label ?refName_0 .
   OPTIONAL { ?asset rdfs:label ?name }
+  OPTIONAL { ?refAsset rdfs:label ?refName }
+  OPTIONAL { ?refAsset_0 rdfs:label ?refName_0 }
 }
 ORDER BY ?asset
 LIMIT 500"
@@ -530,8 +530,8 @@ SELECT ?asset ?name ?refAsset ?refName ?ref_step_1 ?ref_step_2 WHERE {
   ?ref_step_1 manifest:hasReferencedArtifacts ?ref_step_2 .
   ?ref_step_2 manifest:iri ?refAsset .
   ?refAsset a hdmap:HdMap .
-  ?refAsset rdfs:label ?refName .
   OPTIONAL { ?asset rdfs:label ?name }
+  OPTIONAL { ?refAsset rdfs:label ?refName }
 }
 ORDER BY ?asset
 LIMIT 500"

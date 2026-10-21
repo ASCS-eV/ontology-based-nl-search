@@ -198,6 +198,24 @@ describe('ResultsDisplay', () => {
   })
 
   /**
+   * The label of a referenced asset is optional (closed SHACL shapes cannot
+   * carry `rdfs:label`), so a row may project `refAsset` without `refName`.
+   * The reference still renders, named by its IRI.
+   */
+  it('renders a referenced asset that has no label by its IRI', () => {
+    const results = [
+      {
+        asset: 'did:web:x:Scenario:1',
+        name: 'Munich Scenario',
+        refAsset: 'did:web:x:HdMap:1',
+      },
+    ]
+    render(<ResultsDisplay results={results} />)
+    expect(screen.getByText('References (1)')).toBeInTheDocument()
+    expect(screen.getByText('did:web:x:HdMap:1')).toBeInTheDocument()
+  })
+
+  /**
    * Nested references (scenario → trace → map): the compiler projects the map
    * as `refAsset_0` under the trace `refAsset`. The UI must render the map as a
    * child of the trace (not a sibling), and the map's breadcrumb roots at the

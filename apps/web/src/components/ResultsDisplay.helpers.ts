@@ -172,8 +172,9 @@ export function groupByAsset(
     for (const [k, v] of Object.entries(row)) {
       const match = REF_ASSET_RE.exec(k)
       if (!match || !v) continue
-      const name = row[`refName${match[1]}`]
-      if (!name) continue
+      // An unlabelled referenced asset has no `refName`; show its IRI, as for
+      // the primary asset.
+      const name = row[`refName${match[1]}`] ?? v
       if (!builder.nodes.has(v)) {
         const steps = rowTrace?.[k] // breadcrumb keyed by this node's column
         builder.nodes.set(v, {
