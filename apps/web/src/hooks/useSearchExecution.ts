@@ -34,6 +34,11 @@ export interface SearchState {
    */
   traceability: RowTraceability[] | null
   meta: SearchMeta | null
+  /**
+   * The domains the current search was scoped to, as the user selected them;
+   * empty when the model chose the domains.
+   */
+  scope: string[]
   phase: SearchPhase
   loading: boolean
   error: string | null
@@ -55,6 +60,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
     results: null,
     traceability: null,
     meta: null,
+    scope: [],
     phase: 'idle',
     loading: false,
     error: null,
@@ -62,110 +68,114 @@ export function useSearchExecution(_availableDomains?: string[]) {
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  const handleSearch = useCallback(async (naturalLanguageQuery: string) => {
-    abortControllerRef.current?.abort()
-    const controller = new AbortController()
-    abortControllerRef.current = controller
+  const handleSearch = useCallback(
+    async (naturalLanguageQuery: string, domains: readonly string[] = []) => {
+      abortControllerRef.current?.abort()
+      const controller = new AbortController()
+      abortControllerRef.current = controller
 
-    setState({
-      interpretation: null,
-      gaps: null,
-      sparql: null,
-      graphql: null,
-      slots: null,
-      results: null,
-      traceability: null,
-      meta: null,
-      phase: 'interpreting',
-      loading: true,
-      error: null,
-    })
+      setState({
+        interpretation: null,
+        gaps: null,
+        sparql: null,
+        graphql: null,
+        slots: null,
+        results: null,
+        traceability: null,
+        meta: null,
+        scope: [...domains],
+        phase: 'interpreting',
+        loading: true,
+        error: null,
+      })
 
-    try {
-      const res = await apiPostStream(
-        '/api/search/stream',
-        { query: naturalLanguageQuery },
-        {
-          signal: controller.signal,
-        }
-      )
+      try {
+        const res = await apiPostStream(
+          '/api/search/stream',
+          { query: naturalLanguageQuery, ...(domains.length > 0 ? { domains } : {}) },
+          {
+            signal: controller.signal,
+          }
+        )
 
-      const reader = res.body?.getReader()
-      if (!reader) throw new Error('No response stream')
+        const reader = res.body?.getReader()
+        if (!reader) throw new Error('No response stream')
 
-      const decoder = new TextDecoder()
-      let buffer = ''
-      let pendingEvent = ''
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let pendingEvent = ''
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
 
-        buffer += decoder.decode(value, { stream: true })
-        const result = parseSSEBuffer(buffer, pendingEvent)
-        buffer = result.remainder
-        pendingEvent = result.pendingEvent
+          buffer += decoder.decode(value, { stream: true })
+          const result = parseSSEBuffer(buffer, pendingEvent)
+          buffer = result.remainder
+          pendingEvent = result.pendingEvent
 
-        for (const { event, data } of result.events) {
-          switch (event) {
-            case SSE_EVENT.STATUS:
-              setState((s) => ({ ...s, phase: (data as { phase: SearchPhase }).phase }))
-              break
-            case SSE_EVENT.INTERPRETATION:
-              setState((s) => ({ ...s, interpretation: data as QueryInterpretation }))
-              break
-            case SSE_EVENT.GAPS:
-              setState((s) => ({ ...s, gaps: data as OntologyGap[] }))
-              break
-            case SSE_EVENT.SPARQL:
-              setState((s) => ({ ...s, sparql: data as string }))
-              break
-            case SSE_EVENT.GRAPHQL:
-              setState((s) => ({ ...s, graphql: data as string }))
-              break
-            case SSE_EVENT.SLOTS:
-              setState((s) => ({ ...s, slots: data as SearchSlots }))
-              break
-            case SSE_EVENT.RESULTS: {
-              const resultData = data as {
-                results: Record<string, string>[]
-                traceability?: RowTraceability[]
-                error?: string
+          for (const { event, data } of result.events) {
+            switch (event) {
+              case SSE_EVENT.STATUS:
+                setState((s) => ({ ...s, phase: (data as { phase: SearchPhase }).phase }))
+                break
+              case SSE_EVENT.INTERPRETATION:
+                setState((s) => ({ ...s, interpretation: data as QueryInterpretation }))
+                break
+              case SSE_EVENT.GAPS:
+                setState((s) => ({ ...s, gaps: data as OntologyGap[] }))
+                break
+              case SSE_EVENT.SPARQL:
+                setState((s) => ({ ...s, sparql: data as string }))
+                break
+              case SSE_EVENT.GRAPHQL:
+                setState((s) => ({ ...s, graphql: data as string }))
+                break
+              case SSE_EVENT.SLOTS:
+                setState((s) => ({ ...s, slots: data as SearchSlots }))
+                break
+              case SSE_EVENT.RESULTS: {
+                const resultData = data as {
+                  results: Record<string, string>[]
+                  traceability?: RowTraceability[]
+                  error?: string
+                }
+                setState((s) => ({
+                  ...s,
+                  results: resultData.results,
+                  traceability: resultData.traceability ?? null,
+                  error: resultData.error ?? s.error,
+                }))
+                break
               }
-              setState((s) => ({
-                ...s,
-                results: resultData.results,
-                traceability: resultData.traceability ?? null,
-                error: resultData.error ?? s.error,
-              }))
-              break
+              case SSE_EVENT.META:
+                setState((s) => ({ ...s, meta: data as SearchMeta }))
+                break
+              case SSE_EVENT.DONE:
+                setState((s) => ({ ...s, phase: 'done' }))
+                break
+              case SSE_EVENT.ERROR:
+                setState((s) => ({ ...s, error: (data as { message: string }).message }))
+                break
             }
-            case SSE_EVENT.META:
-              setState((s) => ({ ...s, meta: data as SearchMeta }))
-              break
-            case SSE_EVENT.DONE:
-              setState((s) => ({ ...s, phase: 'done' }))
-              break
-            case SSE_EVENT.ERROR:
-              setState((s) => ({ ...s, error: (data as { message: string }).message }))
-              break
           }
         }
+      } catch (err) {
+        if (isAbortError(err) || abortControllerRef.current !== controller) return
+        setState((s) => ({
+          ...s,
+          error: err instanceof Error ? err.message : 'An unexpected error occurred',
+        }))
+      } finally {
+        // Only the still-current request may finalize the shared state. A superseded
+        // request (aborted because a newer search started) must not flip loading/phase.
+        if (abortControllerRef.current === controller) {
+          setState((s) => ({ ...s, loading: false, phase: 'done' }))
+        }
       }
-    } catch (err) {
-      if (isAbortError(err) || abortControllerRef.current !== controller) return
-      setState((s) => ({
-        ...s,
-        error: err instanceof Error ? err.message : 'An unexpected error occurred',
-      }))
-    } finally {
-      // Only the still-current request may finalize the shared state. A superseded
-      // request (aborted because a newer search started) must not flip loading/phase.
-      if (abortControllerRef.current === controller) {
-        setState((s) => ({ ...s, loading: false, phase: 'done' }))
-      }
-    }
-  }, [])
+    },
+    []
+  )
 
   /**
    * Re-run against edited slots.
