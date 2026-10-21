@@ -388,12 +388,20 @@ features use its `imports/`, search does not.
   (`{"@value": "120.0", "@type": "xsd:float"}`), or RDFS inference cannot type
   them and `sh:class` / `sh:datatype` constraints fail.
 
-### Known limitation: value-object wrappers
+### Property keys: one leaf name, several paths
 
-Filters are keyed by a property's local name. Ontologies that wrap many
-categorical properties in value objects sharing one leaf property (e.g.
-`colour → ColourValue → value`, `size → SizeValue → value`) expose all of them as
-a single `value` leaf with a merged `sh:in`, and the compiler resolves it to
-one path. Properties that carry their enumeration directly are searchable;
-wrapped ones currently surface as gaps. Resolving the leaf per path by its own
-`sh:in` is the follow-up.
+Filters are keyed by a **property key**, one per predicate chain
+([ADR 0009](https://github.com/ASCS-eV/ontology-based-nl-search/blob/main/docs/adr/0009-per-path-property-keys.md)).
+A leaf the domain reaches one way is keyed by its local name. Ontologies that
+wrap categorical properties in value objects sharing one leaf
+(`colour → ColourValue → value`, `size → SizeValue → value`) reach that leaf
+several ways, and each chain gets a qualified key: the shortest suffix of its
+predicate local names that no other chain shares, joined with `__`
+(`colour__value`, `size__value`). A chain no suffix tells apart — one step long,
+or the tail of another — is led by its owning class (`Asset__description`).
+
+Each qualified key carries its own chain's `sh:in`, labels that include the
+qualifying predicates, and its own card, so "red cars" and "small cars" map to
+different keys. The bare name (`value`) stays a key and matches any chain that
+can hold the value: those whose own `sh:in` contains it, and those that declare
+none. Check the keys a domain resolves with `curl localhost:3003/vocabulary`.

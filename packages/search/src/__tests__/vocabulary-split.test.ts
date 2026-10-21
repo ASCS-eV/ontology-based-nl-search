@@ -76,8 +76,8 @@ beforeEach(() => {
   resetVocabulary()
   vi.mocked(getCompilerVocab).mockResolvedValue({
     paths: new Map([
-      ['alpha:color', { domain: 'alpha', propertyIri: P1 }],
-      ['alpha:length', { domain: 'alpha', propertyIri: P2 }],
+      ['alpha:color', { domain: 'alpha', propertyIri: P1, propertyName: 'color' }],
+      ['alpha:length', { domain: 'alpha', propertyIri: P2, propertyName: 'length' }],
     ]),
   } as unknown as CompilerVocab)
 })

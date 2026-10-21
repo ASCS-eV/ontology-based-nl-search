@@ -22,10 +22,10 @@ import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontol
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from '../compiler.js'
-import { allPropertyPaths } from '../compiler-vocab.js'
+import { allPropertyKeys } from '../compiler-vocab.js'
 import type { LeafKind } from '../property-paths.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
-import { extractSchemaVocabulary } from '../vocabulary-extractor.js'
+import { extractSchemaVocabulary, keyLabel } from '../vocabulary-extractor.js'
 import { readContextTerms } from './context-reader.js'
 
 /** Value constraints harvested from the property shape ([SHACL] §4). */
@@ -38,14 +38,25 @@ export interface TermConstraints {
 }
 
 /**
- * One searchable term. Identity is the **(iri, domain) pair** — a property
- * reachable from several domains legitimately yields one card per domain
- * (mirroring the compiler's multi-domain path attribution).
+ * One searchable term. A property card's identity is the **(domain, key)
+ * pair** (ADR 0009): a property reachable from several domains yields one
+ * card per domain (mirroring the compiler's multi-domain path attribution),
+ * and a leaf a domain reaches through several predicate chains one card per
+ * chain.
  */
 export interface TermCard {
   kind: 'property' | 'class'
   iri: string
+  /**
+   * The slot key of a property card — the leaf's local name, or a qualified
+   * key (`dataRate__value`) — and the local name of a class card.
+   */
   localName: string
+  /**
+   * The leaf's local name, present when {@link localName} is a qualified key:
+   * that bare name is a key too, for every chain of the leaf (ADR 0009).
+   */
+  leafName?: string
   domain: string
   /** Union of sh:name, rdfs:label, skos:prefLabel/altLabel, @context key, localName */
   labels: string[]
@@ -138,32 +149,32 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
     contextByIri.set(t.iri, entry)
   }
 
-  const enumByIri = indexBy(vocab.enumProperties, (p) => p.iri)
-  const numericByIri = indexBy(vocab.numericProperties, (p) => p.iri)
+  const enumByKey = indexBy(vocab.enumProperties, (p) => `${p.domain}:${p.localName}`)
+  const numericByKey = indexBy(vocab.numericProperties, (p) => `${p.domain}:${p.localName}`)
 
   const cards: TermCard[] = []
 
-  // ── Property cards: one per compiler path, i.e. per (domain, leaf) ──────
+  // ── Property cards: one per slot key, i.e. per (domain, chain) ──────────
   // The compiler's path index is the property universe: exactly the terms
   // that can compile into SPARQL, with the same multi-domain attribution
   // the editor and validator already use. No parallel heuristic to drift.
   //
   // Standalone vocabulary entry classes (`vocabularyRoots`) compile too — a
   // query scoped to such a vocabulary gets its own UNION arms — so their
-  // leaves are cards of that vocabulary domain, once per (domain, IRI).
-  // `allPropertyPaths` is the SHARED accessor the vocabulary extractor also
+  // leaves are cards of that vocabulary domain, once per (domain, key).
+  // `allPropertyKeys` is the SHARED accessor the vocabulary extractor also
   // reads, so card coverage and value attribution cannot drift apart.
-  const seenCards = new Set<string>()
-  for (const path of allPropertyPaths(compilerVocab)) {
+  //
+  // A qualified key's labels lead with its qualifying predicates, so the
+  // context that tells two chains apart ("data rate") finds the right card,
+  // and keep the leaf's own labels, so the leaf's name still finds both.
+  for (const { key, path } of allPropertyKeys(compilerVocab)) {
     if (!path.domain) continue
-    const cardKey = `${path.domain} ${path.propertyIri}`
-    if (seenCards.has(cardKey)) continue
-    seenCards.add(cardKey)
     const iri = path.propertyIri
-    const localName = path.propertyName
+    const localName = key
     const annotation = annotations.get(iri)
-    const enumProp = enumByIri.get(iri)
-    const numericProp = numericByIri.get(iri)
+    const enumProp = enumByKey.get(`${path.domain}:${key}`)
+    const numericProp = numericByKey.get(`${path.domain}:${key}`)
     const context = contextByIri.get(iri)
 
     // Keep the declared numeric datatype (e.g. xsd:decimal) rather than
@@ -178,13 +189,18 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
       kind: 'property',
       iri,
       localName,
+      ...(key !== path.propertyName ? { leafName: path.propertyName } : {}),
       domain: path.domain,
       labels: mergeLabels(
+        key === path.propertyName
+          ? undefined
+          : keyLabel(key, path.propertyName, annotation?.labels[0] ?? path.propertyName),
         enumProp?.label,
         numericProp?.label,
         annotation?.labels,
         context?.names,
-        localName
+        localName,
+        path.propertyName
       ),
       ...(descriptionOf(annotation, enumProp?.description, numericProp?.description) ?? {}),
       ...(datatype ? { datatype } : {}),
@@ -212,12 +228,13 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
   }
 
   // Deterministic order — stable across builds for snapshots and ranking ties.
-  cards.sort((a, b) =>
-    a.domain === b.domain
-      ? a.kind === b.kind
-        ? a.iri.localeCompare(b.iri)
-        : a.kind.localeCompare(b.kind)
-      : a.domain.localeCompare(b.domain)
+  // Several keys share an IRI (one per chain), so the key breaks that tie.
+  cards.sort(
+    (a, b) =>
+      a.domain.localeCompare(b.domain) ||
+      a.kind.localeCompare(b.kind) ||
+      a.iri.localeCompare(b.iri) ||
+      a.localName.localeCompare(b.localName)
   )
 
   const byDomain = new Map<string, TermCard[]>()

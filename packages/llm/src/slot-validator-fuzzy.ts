@@ -329,31 +329,37 @@ export function getSuggestions(
 }
 
 /**
- * Build a lookup of property name → allowed values from vocabulary.
- * Merges allowed values from all domains when the same localName appears
- * in multiple domains.
+ * Build a lookup of slot key → allowed values from vocabulary.
+ * Merges allowed values from all domains when the same key appears in
+ * multiple domains. A qualified key's values also count for its leaf name
+ * (ADR 0009): the bare name is a key for every chain of that name, so it
+ * accepts any of their values.
  */
 export function buildAllowedValuesIndex(
   vocabulary: SchemaVocabulary
 ): Map<string, { allowedValues: string[]; domain: string }> {
   const index = new Map<string, { allowedValues: string[]; domain: string }>()
-  for (const prop of vocabulary.enumProperties) {
-    const existing = index.get(prop.localName)
+  const add = (key: string, allowedValues: readonly string[], domain: string) => {
+    const existing = index.get(key)
     if (existing) {
       // Merge allowed values from multiple domains (deduplicated)
-      const merged = new Set([...existing.allowedValues, ...prop.allowedValues])
-      existing.allowedValues = [...merged]
+      existing.allowedValues = [...new Set([...existing.allowedValues, ...allowedValues])]
     } else {
-      index.set(prop.localName, {
-        allowedValues: [...prop.allowedValues],
-        domain: prop.domain,
-      })
+      index.set(key, { allowedValues: [...allowedValues], domain })
     }
+  }
+  for (const prop of vocabulary.enumProperties) {
+    add(prop.localName, prop.allowedValues, prop.domain)
+    if (prop.leafName) add(prop.leafName, prop.allowedValues, prop.domain)
   }
   return index
 }
 
-/** Build a set of known numeric property names */
+/** Build a set of known numeric slot keys — qualified keys and their leaf names. */
 export function buildNumericPropertySet(vocabulary: SchemaVocabulary): Set<string> {
-  return new Set(vocabulary.numericProperties.map((p) => p.localName))
+  return new Set(
+    vocabulary.numericProperties.flatMap((p) =>
+      p.leafName ? [p.localName, p.leafName] : [p.localName]
+    )
+  )
 }

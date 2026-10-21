@@ -78,15 +78,15 @@ Two SHACL rules widen what counts as a leaf:
 - **Inheritance below the asset.** A class-based target covers every instance of the class, subclasses included (SHACL §2.1.3.2). When the walk reaches a node of class `C`, the shapes targeting `C`'s `rdfs:subClassOf` ancestors apply to it too. This is how an HD map's content item typed as an OpenLABEL `OddScenery` gets the ODD properties that OpenLABEL declares on its `Odd` superclass, such as the lane count.
 - **Disjunctive leaves.** A property shape whose `sh:or` has a member with an `sh:datatype` admits literal values (SHACL §4.6.3), so it is a leaf even when another member points at a sub-resource, as in "a number, or a range node". It is a range property when every datatype among its members is numeric.
 
-Paths found only through these rules never displace anything the compiler already resolves. The compiler resolves properties by local name across domains (which domains own a name, the cross-domain OPTIONAL for a domain-less filter, the validator's domain correction), so these paths are added only for property names that have no path in any domain and belong to no shape group, and they are not used for cross-reference chains. A query over properties that already resolved compiles to the same SPARQL as before.
+Paths found only through these rules never displace anything the compiler already resolves. The compiler resolves properties by key across domains (which domains own a key, the cross-domain OPTIONAL for a domain-less filter, the validator's domain correction), so these paths are added only for property names that have no path in any domain and belong to no shape group, and they are not used for cross-reference chains. A query over properties that already resolved compiles to the same SPARQL as before.
 
 A deep path (more than the three steps of `asset → specification → group → leaf`) is walked from the specification variable only when it starts with the domain's specification hop. One that starts under another branch of the asset is walked from the asset with its own first hop.
 
 ## Filter Routing
 
-Filters are key-value pairs keyed by SHACL leaf local name — `country`, `region`, `license`, `roadTypes`, `formatType`, and so on. There is no privileged `location` or `license` slot: country, state, region, city, and license all flow through the same map. The compiler resolves each filter against the discovered property-path graph:
+Filters are key-value pairs keyed by property key — the SHACL leaf local name (`country`, `region`, `license`, `roadTypes`, `formatType`, and so on), or a qualified key (`dataRate__value`) for one of several paths a domain reaches the same local name by ([ADR 0009](https://github.com/ASCS-eV/ontology-based-nl-search/blob/main/docs/adr/0009-per-path-property-keys.md)). There is no privileged `location` or `license` slot: country, state, region, city, and license all flow through the same map. The compiler resolves each filter against the discovered property-path graph:
 
-1. For each `(filterKey, value)` pair, find every domain whose property paths end in a leaf named `filterKey`.
+1. For each `(filterKey, value)` pair, find every domain whose keyed paths hold `filterKey` — a key, or a bare name for several of the domain's paths.
 2. If the primary domain owns the path → emit the triple pattern on the primary.
 3. If not → JOIN through the first referenced domain that owns it.
 4. Referenced domains without any active filter are **not** joined (avoids over-constraint).

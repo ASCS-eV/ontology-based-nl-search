@@ -1,7 +1,6 @@
 import type { RefineResponse } from '@ontology-search/api-types'
 import { getConfig } from '@ontology-search/core/config'
 import { AppError, badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
-import { enumPropertyMembers } from '@ontology-search/core/graphql/enum'
 import {
   createComponentLogger,
   REQUEST_ID_HEADER,
@@ -9,7 +8,6 @@ import {
 } from '@ontology-search/core/logging'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { parseGraphQLToSlots, slotsToGraphQL } from '@ontology-search/graphql-ir'
-import { extractSchemaVocabulary, getInitializedStore } from '@ontology-search/search'
 import { referenceFilterWireSchema } from '@ontology-search/slots/slot-wire-schema'
 import { normalizeReferences } from '@ontology-search/slots/slots'
 import { parse, validate } from 'graphql'
@@ -22,34 +20,25 @@ import type { AppEnv } from '../types.js'
 import { handleStreamRoute } from './stream-handler.js'
 
 /**
- * Property names whose filter values the GraphQL serializer should emit as enum
- * literals (so the editor schema can suggest each value). Derived once from the
- * discovered vocabulary via the same `enumPropertyMembers` the editor schema
- * uses, so the two stay in lockstep. Cached for the process — the vocabulary is
- * static per loaded ontology.
+ * Per domain, the property keys whose filter values the GraphQL serializer
+ * should emit as enum literals (so the editor schema can suggest each value):
+ * the GraphQL contract's own, so the serializer and the schema it is
+ * validated against read one vocabulary. The contract is cached for the
+ * process.
  */
 const routeLogger = createComponentLogger('search-route')
 
-let enumPropertyNamesCache: ReadonlySet<string> | null = null
-async function getEnumPropertyNames(): Promise<ReadonlySet<string>> {
-  if (enumPropertyNamesCache) return enumPropertyNamesCache
+async function getEnumProperties(): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
   try {
-    const store = await getInitializedStore()
-    // Schema-only: this cache reads enum property names exclusively.
-    const vocab = await extractSchemaVocabulary(store)
-    const members = enumPropertyMembers(
-      vocab.enumProperties.map((p) => ({ name: p.localName, allowedValues: p.allowedValues }))
-    )
-    enumPropertyNamesCache = new Set(members.keys())
-    return enumPropertyNamesCache
+    return (await getGraphQLContract()).enumProperties
   } catch (error) {
     // Vocabulary unavailable (e.g. the store is not initialized in a unit test)
-    // — fall back to plain-string serialization. Not cached, so a later call
-    // retries once the store is ready.
+    // — fall back to plain-string serialization. The contract is not cached on
+    // failure, so a later call retries once the store is ready.
     routeLogger.warn('Enum-property set unavailable; serializing filter values as strings', {
       error: error instanceof Error ? error.message : String(error),
     })
-    return new Set()
+    return new Map()
   }
 }
 
@@ -100,7 +89,7 @@ searchRoutes.post('/stream', (c) =>
                 if (progress.data.slots) await emit(SSE_EVENT.SLOTS, progress.data.slots)
                 // Emit GraphQL intermediate representation when feature is enabled
                 if (getConfig().FEATURE_GRAPHQL_LAYER && progress.data.slots) {
-                  const enumProperties = await getEnumPropertyNames()
+                  const enumProperties = await getEnumProperties()
                   await emit(
                     SSE_EVENT.GRAPHQL,
                     slotsToGraphQL(progress.data.slots, { enumProperties })
@@ -193,7 +182,7 @@ searchRoutes.post('/refine', async (c) => {
     // Include GraphQL intermediate representation when feature is enabled
     if (getConfig().FEATURE_GRAPHQL_LAYER) {
       response.graphql = slotsToGraphQL(parseResult.data, {
-        enumProperties: await getEnumPropertyNames(),
+        enumProperties: await getEnumProperties(),
       })
     }
 
@@ -298,7 +287,7 @@ searchRoutes.post('/refine-graphql', async (c) => {
     // Re-serialize from the parsed slots (normalized form)
     if (getConfig().FEATURE_GRAPHQL_LAYER) {
       response.graphql = slotsToGraphQL(parseResult.slots, {
-        enumProperties: await getEnumPropertyNames(),
+        enumProperties: await getEnumProperties(),
       })
     }
 

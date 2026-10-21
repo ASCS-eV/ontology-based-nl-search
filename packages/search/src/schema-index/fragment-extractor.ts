@@ -191,8 +191,11 @@ export async function extractShaclFragments(
  */
 export function renderDistilledCards(cards: TermCard[]): string {
   return [...cards]
-    .sort((a, b) =>
-      a.domain === b.domain ? a.iri.localeCompare(b.iri) : a.domain.localeCompare(b.domain)
+    .sort(
+      (a, b) =>
+        a.domain.localeCompare(b.domain) ||
+        a.iri.localeCompare(b.iri) ||
+        a.localName.localeCompare(b.localName)
     )
     .map((card) => {
       const parts: string[] = [card.localName]

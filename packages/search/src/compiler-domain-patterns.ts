@@ -19,11 +19,12 @@ import {
 
 import { classifyProperty, resolvePropertyPrefix } from './compiler-helpers-domains.js'
 import {
+  emitAlternativeConstraints,
   emitDeepFilters,
   emitDirectPathFilters,
   lookupDomainSpecPredicate,
   lookupLeafDatatype,
-  lookupStepPredicate,
+  resolveDomainKey,
   SHALLOW_PATH_MAX_STEPS,
 } from './compiler-helpers-paths.js'
 import {
@@ -32,6 +33,7 @@ import {
   groupPredicate,
   groupVariableName,
   isNonEmpty,
+  leafVariable,
   prefixedPredicate,
 } from './compiler-helpers-primitives.js'
 import { type CompilerVocab } from './compiler-vocab.js'
@@ -101,36 +103,90 @@ export function buildDomainPatterns(
   // Empty values are dropped (a dangling triple with no FILTER returns zero
   // rows silently); a property with no discoverable path is left to the
   // shape-group fallback rather than walked.
-  const shapeGroupFilterEntries: [string, string | string[]][] = []
+  //
+  // Every key is resolved first (ADR 0009). A bare name the domain reaches
+  // through several chains, of which more than one can hold the value, is
+  // ALTERNATIVE: emitted as one UNION group. Every other key resolves to one
+  // path (or none) and goes to the strategies above; its leaf name — what the
+  // shape-group machinery classifies and builds the leaf predicate from — is
+  // the path's, not the key's, since a qualified key is not a leaf name.
+  const shapeGroupFilterEntries: [string, string | string[], PropertyPath | undefined][] = []
   const deepFilterEntries: [string, string | string[], PropertyPath][] = []
   const directFilterEntries: [string, string | string[], PropertyPath][] = []
+  const alternativeFilterEntries: [string, string | string[], PropertyPath[]][] = []
   const domainSpecPredicate = lookupDomainSpecPredicate(vocabIndex, domain)
   const startsAtSpecHop = (path: PropertyPath) =>
     domainSpecPredicate === null ||
     (path.steps[0] !== undefined &&
       prefixedPredicate(path.steps[0].predicate, domain) === domainSpecPredicate)
-  for (const [propName, value] of allFilterEntries) {
+  for (const [key, value] of allFilterEntries) {
     if (!isNonEmpty(value)) continue
-    const path = vocabIndex.paths.get(`${domainName}:${propName}`)
+    const resolved = resolveDomainKey(vocabIndex, domainName, key, value)
+    if (resolved.kind === 'alternatives') {
+      alternativeFilterEntries.push([key, value, resolved.paths])
+      continue
+    }
+    const path = resolved.kind === 'path' ? resolved.path : undefined
     if (path && path.steps.length > SHALLOW_PATH_MAX_STEPS) {
-      if (startsAtSpecHop(path)) deepFilterEntries.push([propName, value, path])
-      else directFilterEntries.push([propName, value, path])
-    } else if (path && !vocabIndex.shapeGroupPropertyNames.has(propName)) {
-      directFilterEntries.push([propName, value, path])
+      if (startsAtSpecHop(path)) deepFilterEntries.push([key, value, path])
+      else directFilterEntries.push([key, value, path])
+    } else if (path && !vocabIndex.shapeGroupPropertyNames.has(path.propertyName)) {
+      directFilterEntries.push([key, value, path])
     } else {
-      shapeGroupFilterEntries.push([propName, value])
+      shapeGroupFilterEntries.push([key, value, path])
     }
   }
 
-  const shapeGroupRangeEntries: [string, { min?: number; max?: number }][] = []
+  const shapeGroupRangeEntries: [
+    string,
+    { min?: number; max?: number },
+    PropertyPath | undefined,
+  ][] = []
   const directRangeEntries: [string, { min?: number; max?: number }, PropertyPath][] = []
-  for (const [propName, range] of rangeEntries) {
-    const path = vocabIndex.paths.get(`${domainName}:${propName}`)
-    if (path && !vocabIndex.shapeGroupPropertyNames.has(propName)) {
-      directRangeEntries.push([propName, range, path])
-    } else {
-      shapeGroupRangeEntries.push([propName, range])
+  const alternativeRangeEntries: [string, { min?: number; max?: number }, PropertyPath[]][] = []
+  for (const [key, range] of rangeEntries) {
+    const resolved = resolveDomainKey(vocabIndex, domainName, key)
+    if (resolved.kind === 'alternatives') {
+      alternativeRangeEntries.push([key, range, resolved.paths])
+      continue
     }
+    const path = resolved.kind === 'path' ? resolved.path : undefined
+    if (path && !vocabIndex.shapeGroupPropertyNames.has(path.propertyName)) {
+      directRangeEntries.push([key, range, path])
+    } else {
+      shapeGroupRangeEntries.push([key, range, path])
+    }
+  }
+  /** The leaf name a shape-group entry classifies and emits by. */
+  const leafNameOf = (key: string, path: PropertyPath | undefined) => path?.propertyName ?? key
+  /**
+   * The step-`idx` predicate of the first entry (by key) that has that step:
+   * its resolved path, else the domain's path of that key. Every property of
+   * one shape group shares its leading hops, so any one is representative.
+   */
+  const stepPredicateOf = (
+    entries: { key: string; path: PropertyPath | undefined }[],
+    idx: number
+  ): string | null => {
+    for (const { key, path } of [...entries].sort((a, b) => a.key.localeCompare(b.key))) {
+      const step = (path ?? vocabIndex.paths.get(`${domainName}:${key}`))?.steps[idx]
+      if (step) return prefixedPredicate(step.predicate, domain)
+    }
+    return null
+  }
+  /**
+   * The leaf predicate of a shape-group entry: the resolved path's own leaf
+   * when the key named one (a qualified key is no local name to build a
+   * predicate from), else `<prefix>:<leaf name>` by convention.
+   */
+  const leafPredicateOf = (propPrefix: string, key: string, path: PropertyPath | undefined) => {
+    const leaf = path?.steps[path.steps.length - 1]
+    if (!leaf) return `${propPrefix}:${key}`
+    const desc = findDomainForIri(leaf.predicate, registry)
+    // The leaf may live in another domain's namespace; its prefix must then be
+    // declared, like every other foreign predicate the query emits.
+    if (desc && desc.name !== domainName) foreignDomains.add(desc.name)
+    return desc ? prefixedPredicate(leaf.predicate, desc) : `<${leaf.predicate}>`
   }
 
   // Group shallow filter entries AND range entries by their classified
@@ -139,17 +195,19 @@ export function buildDomainPatterns(
   // privileged group — any shape group declared in the ontology is
   // handled uniformly, and each property's range is routed to the group
   // the SHACL graph actually puts it in.
-  const filterPropsByGroup = new Map<string, [string, string | string[]][]>()
-  const rangePropsByGroup = new Map<string, [string, { min?: number; max?: number }][]>()
+  type FilterEntry = [string, string | string[], PropertyPath | undefined]
+  type RangeEntry = [string, { min?: number; max?: number }, PropertyPath | undefined]
+  const filterPropsByGroup = new Map<string, FilterEntry[]>()
+  const rangePropsByGroup = new Map<string, RangeEntry[]>()
   // Properties whose domain has no shape groups at all — emitted directly
   // on the asset variable (flat ontology pattern).
-  const directFallbackFilters: [string, string | string[]][] = []
-  const directFallbackRanges: [string, { min?: number; max?: number }][] = []
+  const directFallbackFilters: FilterEntry[] = []
+  const directFallbackRanges: RangeEntry[] = []
 
-  for (const [propName, value] of shapeGroupFilterEntries) {
-    const shape = classifyProperty(propName, domainName, vocabIndex)
+  for (const entry of shapeGroupFilterEntries) {
+    const shape = classifyProperty(leafNameOf(entry[0], entry[2]), domainName, vocabIndex)
     if (shape === null) {
-      directFallbackFilters.push([propName, value])
+      directFallbackFilters.push(entry)
       continue
     }
     let bucket = filterPropsByGroup.get(shape)
@@ -157,13 +215,13 @@ export function buildDomainPatterns(
       bucket = []
       filterPropsByGroup.set(shape, bucket)
     }
-    bucket.push([propName, value])
+    bucket.push(entry)
   }
 
-  for (const [propName, range] of shapeGroupRangeEntries) {
-    const shape = classifyProperty(propName, domainName, vocabIndex)
+  for (const entry of shapeGroupRangeEntries) {
+    const shape = classifyProperty(leafNameOf(entry[0], entry[2]), domainName, vocabIndex)
     if (shape === null) {
-      directFallbackRanges.push([propName, range])
+      directFallbackRanges.push(entry)
       continue
     }
     let bucket = rangePropsByGroup.get(shape)
@@ -171,7 +229,7 @@ export function buildDomainPatterns(
       bucket = []
       rangePropsByGroup.set(shape, bucket)
     }
-    bucket.push([propName, range])
+    bucket.push(entry)
   }
 
   // The asset → DomainSpecification hop is needed only by the shape-group and
@@ -183,6 +241,8 @@ export function buildDomainPatterns(
     needsSpecHop ||
     directFilterEntries.length > 0 ||
     directRangeEntries.length > 0 ||
+    alternativeFilterEntries.length > 0 ||
+    alternativeRangeEntries.length > 0 ||
     directFallbackFilters.length > 0 ||
     directFallbackRanges.length > 0
 
@@ -196,14 +256,13 @@ export function buildDomainPatterns(
     // shares the first step). When the specific properties in this query have
     // no path of their own, fall back to any shape-group property in the same
     // domain — never to a hard-coded predicate name.
-    const candidatePropertyNames = [
-      ...shapeGroupFilterEntries.map(([n]) => n),
-      ...deepFilterEntries.map(([n]) => n),
-      ...shapeGroupRangeEntries.map(([n]) => n),
+    const candidatePaths = [
+      ...shapeGroupFilterEntries.map(([key, , path]) => ({ key, path })),
+      ...deepFilterEntries.map(([key, , path]) => ({ key, path })),
+      ...shapeGroupRangeEntries.map(([key, , path]) => ({ key, path })),
     ]
     const assetToSpecPredicate =
-      lookupStepPredicate(vocabIndex, domain, candidatePropertyNames, 0) ??
-      lookupDomainSpecPredicate(vocabIndex, domain)
+      stepPredicateOf(candidatePaths, 0) ?? lookupDomainSpecPredicate(vocabIndex, domain)
     if (!assetToSpecPredicate) {
       throw new CompileError(
         `Cannot determine the asset→specification predicate for domain "${domainName}": ` +
@@ -226,11 +285,7 @@ export function buildDomainPatterns(
     // variable and its own `hasGroup` triple.
     const prefixBuckets = new Map<
       string,
-      {
-        foreignDomain: string | null
-        filters: [string, string | string[]][]
-        ranges: [string, { min?: number; max?: number }][]
-      }
+      { foreignDomain: string | null; filters: FilterEntry[]; ranges: RangeEntry[] }
     >()
 
     const ensureBucket = (prefix: string, fd: string | null) => {
@@ -242,24 +297,24 @@ export function buildDomainPatterns(
       return b
     }
 
-    for (const [propName, value] of filterPropsByGroup.get(group) ?? []) {
+    for (const entry of filterPropsByGroup.get(group) ?? []) {
       const { prefix: pp, foreignDomain: fd } = resolvePropertyPrefix(
-        propName,
+        leafNameOf(entry[0], entry[2]),
         domainName,
         vocabIndex,
         registry
       )
-      ensureBucket(pp, fd).filters.push([propName, value])
+      ensureBucket(pp, fd).filters.push(entry)
     }
 
-    for (const [propName, range] of rangePropsByGroup.get(group) ?? []) {
+    for (const entry of rangePropsByGroup.get(group) ?? []) {
       const { prefix: pp, foreignDomain: fd } = resolvePropertyPrefix(
-        propName,
+        leafNameOf(entry[0], entry[2]),
         domainName,
         vocabIndex,
         registry
       )
-      ensureBucket(pp, fd).ranges.push([propName, range])
+      ensureBucket(pp, fd).ranges.push(entry)
     }
 
     // Emit each prefix bucket with its own hasGroup binding variable.
@@ -270,28 +325,30 @@ export function buildDomainPatterns(
       const groupVar = `?${groupVariableName(group)}${pfxTag}${suffix}`
 
       // Second hop: DomainSpecification → group sub-resource. Use
-      // path-discovery (lookupStepPredicate) for native-domain properties;
+      // path-discovery (stepPredicateOf) for native-domain properties;
       // fall back to conventional `${prefix}:has${Group}` for foreign
       // domains or when discovery hasn't been run.
-      const bucketPropNames = [...bucket.filters.map(([n]) => n), ...bucket.ranges.map(([n]) => n)]
+      const bucketEntries = [
+        ...bucket.filters.map(([key, , path]) => ({ key, path })),
+        ...bucket.ranges.map(([key, , path]) => ({ key, path })),
+      ]
       const specToGroupPredicate = bucket.foreignDomain
         ? `${propPrefix}:${groupPredicate(group)}`
-        : (lookupStepPredicate(vocabIndex, domain, bucketPropNames, 1) ??
-          `${domain.prefix}:${groupPredicate(group)}`)
+        : (stepPredicateOf(bucketEntries, 1) ?? `${domain.prefix}:${groupPredicate(group)}`)
       patterns.push(`${specVar} ${specToGroupPredicate} ${groupVar} .`)
 
       if (bucket.foreignDomain) foreignDomains.add(bucket.foreignDomain)
 
       // Filter properties in this bucket.
-      for (const [propName, value] of bucket.filters) {
-        const varName = `?${propName}${suffix}`
-        patterns.push(`${groupVar} ${propPrefix}:${propName} ${varName} .`)
+      for (const [key, value, path] of bucket.filters) {
+        const varName = leafVariable(key, suffix)
+        patterns.push(`${groupVar} ${leafPredicateOf(propPrefix, key, path)} ${varName} .`)
         addEnumFilter(
           patterns,
           filters,
           varName,
           value,
-          lookupLeafDatatype(vocabIndex, domainName, propName)
+          path?.datatype ?? lookupLeafDatatype(vocabIndex, domainName, key)
         )
         selectVars.add(varName)
       }
@@ -299,11 +356,12 @@ export function buildDomainPatterns(
       // Range properties in this bucket. Range2D properties (detected from
       // SHACL via `sh:node → Range2DShape`) use nested `min`/`max`; simple
       // numeric properties are filtered directly.
-      for (const [propName, range] of bucket.ranges) {
-        const range2D = vocabIndex.range2DProperties.get(propName)
+      for (const [key, range, path] of bucket.ranges) {
+        const leafPredicate = leafPredicateOf(propPrefix, key, path)
+        const range2D = vocabIndex.range2DProperties.get(leafNameOf(key, path))
         if (range2D) {
-          const rangeNode = `?${propName}Range${suffix}`
-          patterns.push(`${groupVar} ${propPrefix}:${propName} ${rangeNode} .`)
+          const rangeNode = leafVariable(key, suffix, 'Range')
+          patterns.push(`${groupVar} ${leafPredicate} ${rangeNode} .`)
           // Emit the SHACL-discovered min/max sub-predicates (prefix-compressed
           // when they live in a known namespace; full IRI otherwise). The
           // bound-overlap semantics are unchanged: a user `min` constrains the
@@ -319,20 +377,20 @@ export function buildDomainPatterns(
           if (minDesc) foreignDomains.add(minDesc.name)
           if (maxDesc) foreignDomains.add(maxDesc.name)
           if (range.min !== undefined) {
-            const maxVar = `?${propName}Max${suffix}`
+            const maxVar = leafVariable(key, suffix, 'Max')
             patterns.push(`${rangeNode} ${maxPred} ${maxVar} .`)
             filters.push(`FILTER(xsd:float(${maxVar}) >= ${range.min})`)
             selectVars.add(maxVar)
           }
           if (range.max !== undefined) {
-            const minVar = `?${propName}Min${suffix}`
+            const minVar = leafVariable(key, suffix, 'Min')
             patterns.push(`${rangeNode} ${minPred} ${minVar} .`)
             filters.push(`FILTER(xsd:float(${minVar}) <= ${range.max})`)
             selectVars.add(minVar)
           }
         } else {
-          const varName = `?${propName}${suffix}`
-          patterns.push(`${groupVar} ${propPrefix}:${propName} ${varName} .`)
+          const varName = leafVariable(key, suffix)
+          patterns.push(`${groupVar} ${leafPredicate} ${varName} .`)
           selectVars.add(varName)
           if (range.min !== undefined) {
             filters.push(`FILTER(xsd:float(${varName}) >= ${range.min})`)
@@ -365,6 +423,23 @@ export function buildDomainPatterns(
     )
   }
 
+  // Alternatives: a bare name for several chains — one UNION group per key,
+  // each branch walking its whole chain from the asset.
+  if (alternativeFilterEntries.length > 0 || alternativeRangeEntries.length > 0) {
+    emitAlternativeConstraints(
+      domainName,
+      alternativeFilterEntries,
+      alternativeRangeEntries,
+      assetVar,
+      suffix,
+      patterns,
+      selectVars,
+      foreignDomains,
+      registry,
+      vocabIndex
+    )
+  }
+
   // Direct properties: no shape group anywhere, so walk each one's discovered
   // path straight from the asset variable (flat / non-meta-model schemas).
   if (directFilterEntries.length > 0 || directRangeEntries.length > 0) {
@@ -387,21 +462,21 @@ export function buildDomainPatterns(
   // shape group (flat ontology, unknown property). Walk directly from the
   // asset using the domain prefix convention: `prefix:propName`.
   if (directFallbackFilters.length > 0 || directFallbackRanges.length > 0) {
-    for (const [propName, value] of directFallbackFilters) {
-      const varName = `?${propName}${suffix}`
-      patterns.push(`${assetVar} ${domain.prefix}:${propName} ${varName} .`)
+    for (const [key, value, path] of directFallbackFilters) {
+      const varName = leafVariable(key, suffix)
+      patterns.push(`${assetVar} ${leafPredicateOf(domain.prefix, key, path)} ${varName} .`)
       addEnumFilter(
         patterns,
         filters,
         varName,
         value,
-        lookupLeafDatatype(vocabIndex, domainName, propName)
+        path?.datatype ?? lookupLeafDatatype(vocabIndex, domainName, key)
       )
       selectVars.add(varName)
     }
-    for (const [propName, range] of directFallbackRanges) {
-      const varName = `?${propName}${suffix}`
-      patterns.push(`${assetVar} ${domain.prefix}:${propName} ${varName} .`)
+    for (const [key, range, path] of directFallbackRanges) {
+      const varName = leafVariable(key, suffix)
+      patterns.push(`${assetVar} ${leafPredicateOf(domain.prefix, key, path)} ${varName} .`)
       if (range.min !== undefined) {
         filters.push(`FILTER(${varName} >= ${range.min})`)
       }

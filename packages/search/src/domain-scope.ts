@@ -14,6 +14,8 @@ import { buildDomainRegistry, type DomainRegistry } from '@ontology-search/ontol
 import { getAssetDomains } from './asset-domains.js'
 import { standaloneVocabularyDomains } from './compiler-standalone.js'
 import { type CompilerVocab, getCompilerVocab } from './compiler-vocab.js'
+import { keyOfIndexEntry } from './property-keys.js'
+import type { PropertyPath } from './property-paths.js'
 
 /**
  * Normalize an LLM-supplied domain name toward the registry's directory-name
@@ -86,7 +88,11 @@ export async function resolveKnownDomains(
   // Slot correction may already have added asset domains (the owners of the
   // filter properties); they face the same coverage test as the rest.
   const result = candidates.filter((domain) =>
-    scope.required.every((name) => vocabIndex.paths.has(`${domain}:${name}`))
+    scope.required.every(
+      (key) =>
+        vocabIndex.paths.has(`${domain}:${key}`) ||
+        (vocabIndex.alternatives?.has(`${domain}:${key}`) ?? false)
+    )
   )
   return [...result, ...standaloneVocabularyDomains(asked.vocabularies, vocabIndex)]
 }
@@ -144,16 +150,25 @@ function vocabularyScope(
 ): { owners: string[]; required: string[] } {
   const wanted = new Set(vocabularies)
   const owners = new Set<string>()
+  // Keys (ADR 0009) whose path ends in a leaf of a wanted vocabulary — a
+  // qualified key or a bare name naming several chains included.
   const vocabularyLeaves = new Set<string>()
-  for (const path of vocabIndex.paths.values()) {
+  const isWanted = (path: PropertyPath) => {
     const leafDomain = registry.domainForIri(path.propertyIri)
-    if (!leafDomain || !wanted.has(leafDomain)) continue
-    vocabularyLeaves.add(path.propertyName)
+    return leafDomain !== undefined && wanted.has(leafDomain)
+  }
+  for (const [indexKey, path] of vocabIndex.paths) {
+    if (!isWanted(path)) continue
+    vocabularyLeaves.add(keyOfIndexEntry(indexKey))
     if (path.domain) owners.add(path.domain)
+  }
+  for (const [indexKey, paths] of vocabIndex.alternatives ?? []) {
+    if (paths.some(isWanted)) vocabularyLeaves.add(keyOfIndexEntry(indexKey))
   }
   for (const vocabulary of vocabularies) {
     for (const root of vocabIndex.vocabularyRoots?.get(vocabulary) ?? []) {
-      for (const name of root.paths.keys()) vocabularyLeaves.add(name)
+      for (const key of root.paths.keys()) vocabularyLeaves.add(key)
+      for (const name of root.alternatives?.keys() ?? []) vocabularyLeaves.add(name)
     }
   }
   return {

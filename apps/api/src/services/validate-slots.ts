@@ -29,12 +29,18 @@ export async function validateSlots(slots: SearchSlots): Promise<SearchSlots> {
   // fetched lazily — only when a violation needs them.
   const vocabulary = await extractSchemaVocabulary(store)
 
-  const result = await validateSlotsAgainstShacl(slots.filters ?? {}, shacl, vocabulary, (iris) =>
-    getInstanceValues(store, iris)
+  // The vocabulary names the property shapes of every key (ADR 0009); the
+  // slots' domains scope which of a key's chains a value has to fit.
+  const result = await validateSlotsAgainstShacl(
+    slots.filters ?? {},
+    shacl,
+    vocabulary,
+    (iris) => getInstanceValues(store, iris),
+    slots.domains
   )
 
   // Drop ranges with property names not in the schema
-  const rangeResult = validateRangesAgainstShacl(slots.ranges ?? {}, shacl)
+  const rangeResult = validateRangesAgainstShacl(slots.ranges ?? {}, shacl, vocabulary)
 
   return {
     ...slots,

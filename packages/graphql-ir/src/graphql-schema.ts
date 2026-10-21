@@ -84,7 +84,9 @@ export function buildGraphQLSchema(vocabulary: VocabularyResponse): GraphQLSchem
 
       const allowed = property.allowedValues ?? []
       const hint = allowed.length > 0 ? ` Allowed: ${allowed.join(', ')}.` : ''
-      const enumType = enumTypeByName.get(property.name)
+      // Typed by its own domain's property: a name enumerated in another
+      // domain does not make this one an enum.
+      const enumType = property.type === 'enum' ? enumTypeByName.get(property.name) : undefined
       fields[fieldName] = {
         type: FilterScalar,
         description: describeProperty(property) + hint,

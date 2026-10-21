@@ -18,6 +18,7 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 import { getAssetDomains } from './asset-domains.js'
 import { getConceptExpansionIndex } from './concept-expansion.js'
 import { getInitializedStore } from './init.js'
+import { indexPropertyKeys, keyOfIndexEntry } from './property-keys.js'
 import {
   buildReferenceChains,
   discoverPropertyPaths,
@@ -54,15 +55,24 @@ export interface CompilerVocab {
    */
   range2DProperties: Map<string, { minPredicate: string; maxPredicate: string }>
   /**
-   * Discovered property paths keyed by `${domain}:${propertyLocalName}`.
-   * Each path lists the predicate hops from an asset class to the leaf
-   * value — the compiler reads predicates from these instead of
+   * Discovered property paths keyed by `${domain}:${key}`, one per predicate
+   * chain (ADR 0009, `indexPropertyKeys`): the key is the leaf's local name,
+   * or a qualified key when the domain reaches that leaf name through more
+   * than one chain. Each path lists the predicate hops from an asset class to
+   * the leaf value — the compiler reads predicates from these instead of
    * hard-coding any specification/group predicate literals.
    *
    * Sourced from `buildPropertyPaths`, so the meta-model structure is
    * discovered from the schema graph, not assumed at compile time.
    */
   paths: Map<string, PropertyPath>
+  /**
+   * `${domain}:${leafName}` → every chain's path, for a leaf name the domain
+   * reaches through more than one predicate chain. The bare name is a key
+   * that matches any of them. Optional so hand-built fixture vocabs need not
+   * supply it.
+   */
+  alternatives?: Map<string, PropertyPath[]>
   /**
    * Discovered cross-domain reference chains keyed by parent domain.
    * Each chain lists the predicate hops from a parent asset class to
@@ -91,26 +101,42 @@ export interface CompilerVocab {
 /** One standalone vocabulary entry class and the leaf paths it reaches. */
 export interface VocabularyRootPaths {
   rootClass: string
+  /** Paths keyed by key (no domain prefix); keys are assigned per vocabulary. */
   paths: Map<string, PropertyPath>
+  /** Leaf name → this root's chains, for a name the root reaches more than one way. */
+  alternatives?: Map<string, PropertyPath[]>
+}
+
+/** One property the compiler can resolve, with the slot key that names it. */
+export interface KeyedPropertyPath {
+  key: string
+  path: PropertyPath
 }
 
 /**
- * Every property path the compiler can resolve: the asset-rooted paths PLUS
- * the leaf paths of the standalone vocabulary roots.
+ * Every property the compiler can resolve, by key: the asset-rooted paths
+ * PLUS the leaf paths of the standalone vocabulary roots, once per
+ * (domain, key).
  *
  * Both surfaces are the property universe — a vocabulary published on its own
  * (not nested inside any asset) compiles through `vocabularyRoots`, and some
  * domains are reachable ONLY that way. Consumers that enumerate "all
- * properties" must read this helper rather than `paths` alone: reading
- * `paths` silently drops those domains, which previously cost them their
- * `sh:in` value attribution (and with it, every filterable value the LLM
- * could see).
+ * properties" read this helper rather than `paths` alone, which holds the
+ * asset-rooted paths only.
  */
-export function allPropertyPaths(vocab: CompilerVocab): PropertyPath[] {
-  const roots = [...(vocab.vocabularyRoots?.values() ?? [])].flatMap((entries) =>
-    entries.flatMap((entry) => [...entry.paths.values()])
-  )
-  return [...vocab.paths.values(), ...roots]
+export function allPropertyKeys(vocab: CompilerVocab): KeyedPropertyPath[] {
+  const out: KeyedPropertyPath[] = []
+  const seen = new Set<string>()
+  const add = (domain: string, key: string, path: PropertyPath) => {
+    if (seen.has(`${domain}:${key}`)) return
+    seen.add(`${domain}:${key}`)
+    out.push({ key, path })
+  }
+  for (const [indexKey, path] of vocab.paths) add(path.domain, keyOfIndexEntry(indexKey), path)
+  for (const [domain, roots] of vocab.vocabularyRoots ?? []) {
+    for (const root of roots) for (const [key, path] of root.paths) add(domain, key, path)
+  }
+  return out
 }
 
 /**
@@ -192,9 +218,10 @@ export async function buildCompilerVocabFrom(
     range2DProperties.set(localName, { minPredicate, maxPredicate })
   }
 
-  // Index property paths by (domain, propertyLocalName) for O(1) lookup
-  // when emitting triples. A property local name may legitimately appear in
-  // multiple asset domains; each domain gets its own path.
+  // Index property paths by (domain, key) for O(1) lookup when emitting
+  // triples: one key per predicate chain (ADR 0009). A property local name may
+  // legitimately appear in multiple asset domains; each domain gets its own
+  // keys.
   //
   // An `extended` path (a leaf reached only through inheritance below the
   // asset class, or literal only through an `sh:or` member) never carries a
@@ -204,11 +231,11 @@ export async function buildCompilerVocabFrom(
   // path for it — one inherited from a superclass shape, say — would change
   // the hops of queries that compiled before. (`buildPropertyPaths` already
   // keeps extended paths off every name that has a plain path.)
-  const paths = new Map<string, PropertyPath>()
-  for (const path of propertyPaths) {
-    if (path.extended && shapeGroupPropertyNames.has(path.propertyName)) continue
-    paths.set(`${path.domain}:${path.propertyName}`, path)
-  }
+  const { byKey: paths, alternatives } = indexPropertyKeys(
+    propertyPaths.filter(
+      (path) => !(path.extended && shapeGroupPropertyNames.has(path.propertyName))
+    )
+  )
 
   // Discover cross-domain reference chains from the property paths, so
   // cross-references are emitted without hard-coding any reference-predicate
@@ -239,42 +266,64 @@ export async function buildCompilerVocabFrom(
     shapeGroupPropertyNames,
     range2DProperties,
     paths,
+    alternatives,
     referenceChains,
     vocabularyRoots: indexVocabularyRoots(discovered.vocabularyRootPaths),
   }
 }
 
-/** Stable identity of a path's route (predicates and reached classes), for tie-breaking. */
-const pathSignature = (path: PropertyPath): string =>
-  path.steps.map((s) => `${s.predicate}@${s.intermediate ?? ''}`).join('>')
-
 /**
- * Group standalone-root paths by vocabulary domain → root class. The first
- * path per (root, local name) wins after sorting by property IRI and then by
- * route signature, so the choice never depends on SHACL graph iteration order
- * (two shapes may declare the same leaf, or two vocabularies share a local
- * name).
+ * Group standalone-root paths by vocabulary domain → root class, keyed by key.
+ *
+ * Keys are assigned once per vocabulary over every root's paths
+ * (`indexPropertyKeys` over the paths with the root class taken out of the
+ * route), so one chain has one key in every root that reaches it, and the
+ * same chain reached from several entry classes is not mistaken for several
+ * properties. Each root then holds the keys of the chains it reaches, and
+ * the alternatives of a name it reaches more than one way.
  */
 function indexVocabularyRoots(rootPaths: PropertyPath[]): Map<string, VocabularyRootPaths[]> {
-  const byDomain = new Map<string, Map<string, Map<string, PropertyPath>>>()
-  const sorted = [...rootPaths].sort(
-    (a, b) =>
-      a.propertyIri.localeCompare(b.propertyIri) || pathSignature(a).localeCompare(pathSignature(b))
-  )
-  for (const path of sorted) {
-    const roots = byDomain.get(path.domain) ?? new Map<string, Map<string, PropertyPath>>()
-    byDomain.set(path.domain, roots)
-    const paths = roots.get(path.assetClass) ?? new Map<string, PropertyPath>()
-    roots.set(path.assetClass, paths)
-    if (!paths.has(path.propertyName)) paths.set(path.propertyName, path)
+  const chainKey = (path: PropertyPath) =>
+    `${path.domain}|${path.propertyName}|${path.steps.map((s) => s.predicate).join(' ')}`
+  // One key per (vocabulary, chain), whatever root reaches it.
+  const { byKey } = indexPropertyKeys(rootPaths)
+  const keyOfChain = new Map<string, string>()
+  for (const [indexKey, path] of byKey) keyOfChain.set(chainKey(path), keyOfIndexEntry(indexKey))
+
+  const byRoot = new Map<string, Map<string, PropertyPath[]>>()
+  for (const path of rootPaths) {
+    const rootId = `${path.domain}|${path.assetClass}`
+    const paths = byRoot.get(rootId) ?? new Map<string, PropertyPath[]>()
+    byRoot.set(rootId, paths)
+    paths.set(path.propertyName, [...(paths.get(path.propertyName) ?? []), path])
   }
+
   const out = new Map<string, VocabularyRootPaths[]>()
-  for (const domain of [...byDomain.keys()].sort()) {
-    const roots = byDomain.get(domain)!
-    out.set(
-      domain,
-      [...roots.keys()].sort().map((rootClass) => ({ rootClass, paths: roots.get(rootClass)! }))
+  for (const rootId of [...byRoot.keys()].sort()) {
+    const [domain, rootClass] = rootId.split('|') as [string, string]
+    const { byKey: rootKeys, alternatives } = indexPropertyKeys(
+      [...byRoot.get(rootId)!.values()].flat()
     )
+    const paths = new Map<string, PropertyPath>()
+    for (const path of rootKeys.values()) paths.set(keyOfChain.get(chainKey(path))!, path)
+    const rootAlternatives = new Map<string, PropertyPath[]>()
+    for (const [indexKey, list] of alternatives) {
+      rootAlternatives.set(keyOfIndexEntry(indexKey), list)
+    }
+    // A name ambiguous in the vocabulary but reached one way from this root
+    // still answers to its bare name here.
+    for (const path of rootKeys.values()) {
+      if (!paths.has(path.propertyName) && !rootAlternatives.has(path.propertyName)) {
+        rootAlternatives.set(path.propertyName, [path])
+      }
+    }
+    const entries = out.get(domain) ?? []
+    entries.push({
+      rootClass,
+      paths,
+      ...(rootAlternatives.size > 0 ? { alternatives: rootAlternatives } : {}),
+    })
+    out.set(domain, entries)
   }
   return out
 }

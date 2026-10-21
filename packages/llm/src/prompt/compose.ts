@@ -60,9 +60,13 @@ export function composeRetrievedSections(retrieved: RetrievedSchema): string {
     retrieved.fragments.flatMap((f) => f.propertyIris.map((iri) => coverageKey(f.domain, iri)))
   )
   const fragmentsByDomain = groupFragments(retrieved)
+  // A fragment shows a property by its `sh:path`, whose local name is the
+  // key only for a leaf the domain reaches one way. A qualified key (ADR
+  // 0009) appears in no Turtle, so its card is never covered: it renders as a
+  // distilled line, which leads with the key.
   const uncoveredByDomain = groupCards(
     retrieved,
-    (card) => !covered.has(coverageKey(card.domain, card.iri))
+    (card) => !covered.has(coverageKey(card.domain, card.iri)) || card.leafName !== undefined
   )
   const rostersByDomain = rosters(retrieved)
 

@@ -111,11 +111,11 @@ export function partitionFiltersByDomain(
 }
 
 /**
- * Domains that "own" a given property local name — i.e. the set of
- * detected-domain candidates a multi-domain query partition should
- * consider. Combines the `queryPropertyDomains` index with the
- * property-path BFS so deep-chain leaves are matched the same way as
- * shallow leaves.
+ * Domains that "own" a given slot key — i.e. the set of detected-domain
+ * candidates a multi-domain query partition should consider. Combines the
+ * `queryPropertyDomains` index (by local name) with the keyed path index —
+ * qualified keys and bare names that name several chains included (ADR
+ * 0009) — so deep-chain leaves are matched the same way as shallow leaves.
  */
 function ownersOf(propName: string, vocabIndex: CompilerVocab): Set<string> {
   const owners = new Set<string>()
@@ -123,9 +123,9 @@ function ownersOf(propName: string, vocabIndex: CompilerVocab): Set<string> {
   if (propInfo) {
     for (const d of propInfo.domains) owners.add(d)
   }
-  for (const key of vocabIndex.paths.keys()) {
-    const [pathDomain, pathProp] = key.split(':')
-    if (pathProp === propName && pathDomain) owners.add(pathDomain)
+  for (const indexKey of [...vocabIndex.paths.keys(), ...(vocabIndex.alternatives?.keys() ?? [])]) {
+    const separator = indexKey.indexOf(':')
+    if (indexKey.slice(separator + 1) === propName) owners.add(indexKey.slice(0, separator))
   }
   return owners
 }
@@ -367,7 +367,7 @@ function isKnownProperty(propName: string, vocabIndex: CompilerVocab): boolean {
   if (vocabIndex.properties.has(propName)) return true
   if (vocabIndex.range2DProperties.has(propName)) return true
   if (vocabIndex.shapeGroupPropertyNames.has(propName)) return true
-  for (const key of vocabIndex.paths.keys()) {
+  for (const key of [...vocabIndex.paths.keys(), ...(vocabIndex.alternatives?.keys() ?? [])]) {
     if (key.endsWith(`:${propName}`)) return true
   }
   return false

@@ -26,7 +26,7 @@ You communicate ONLY through tool calls — never reply with plain text.
 Follow this systematic approach:
 
 1. **Identify user intent** — What type of resource are they looking for? What constraints do they express?
-2. **Match to ontology structure** — Read the SHACL shapes below. Find properties whose \`sh:path\` local names or \`sh:name\`/\`sh:description\` annotations match the user's concepts.
+2. **Match to ontology structure** — Read the SHACL shapes below. Find properties whose keys, \`sh:path\` local names or \`sh:name\`/\`sh:description\` annotations match the user's concepts.
 3. **Resolve values** — For enumerated properties (\`sh:in\`), find the closest allowed value. For patterns (\`sh:pattern\`), generate a matching value. For numeric properties, extract min/max ranges.
 4. **Report gaps** — If a concept has NO mapping in any SHACL shape, report it as a gap.
 
@@ -36,7 +36,7 @@ Read the SHACL shapes below → fill slots → call \`submit_slots\`. The provid
 
 ## Understanding RDF/SHACL (Generic Knowledge)
 
-- **\`sh:path\`** — The RDF property this shape constrains. The local name (after last / or #) is the slot filter key.
+- **\`sh:path\`** — The RDF property this shape constrains. Its local name (after last / or #) is the slot filter key, unless the property list gives that property a **qualified key** (\`context__name\`, e.g. \`dataRate__value\`): a domain that reaches one local name through several property paths names each path by such a key. A qualified key means that path alone; the bare local name means any of them.
 - **\`sh:in (...)\`** — Enumerated allowed values. Use EXACTLY these values in filters.
 - **\`sh:pattern\`** — Regex constraint on the value. Generate values matching this pattern.
 - **\`sh:datatype xsd:string\`** — Free text. \`xsd:integer\`/\`xsd:float\` → numeric (use ranges). \`xsd:boolean\` → "true"/"false".
@@ -51,7 +51,7 @@ Slots use a generic format with three categories:
 
 ### \`filters\` — Property values (string or string[])
 
-Use the property's ontology **local name** (the part after the last \`:\` or \`/\`) as the key.
+Use the property's **key** from the property list as the filter key: its ontology local name (the part after the last \`:\` or \`/\`), or its qualified key where the list gives one.
 Read the SHACL shapes below to find valid values:
 - **\`sh:in (...)\`** → enumerated allowed values — use the EXACT listed values
 - **\`sh:pattern "..."\`** → regex constraint — generate values matching this pattern
@@ -80,7 +80,7 @@ export const STATIC_SECTIONS = `
 
 Geographic filters (country, state, region, city), license identifiers, and any
 other constraint that maps to a SHACL leaf property go into \`filters\` keyed
-by the **exact local name** declared in the SHACL shapes. There is no
+by the property's **exact key** (its local name, or its qualified key). There is no
 dedicated "location" or "license" slot — the compiler discovers the chain from
 the asset class to whatever leaf the user is constraining, and emits the
 appropriate SPARQL.
@@ -118,7 +118,7 @@ Use this when the user asks for assets that **reference or are connected to** an
 | ------------ | ---------------------------------------------------------------------------- |
 | \`domain\`     | Domain of the referenced asset (use domain names from SHACL shapes)          |
 | \`label\`      | (Optional) text filter on the referenced asset's label                       |
-| \`filters\`    | (Optional) property filters on the REFERENCED asset, keyed by SHACL leaf local name (same shape as top-level \`filters\`) |
+| \`filters\`    | (Optional) property filters on the REFERENCED asset, keyed by property key (same shape as top-level \`filters\`) |
 | \`ranges\`     | (Optional) numeric ranges on the REFERENCED asset (same shape as top-level \`ranges\`) |
 | \`references\` | (Optional) NESTED references the referenced asset must itself carry (a chain) |
 
@@ -247,7 +247,7 @@ Concretely: scan the user's word against every \`sh:in\` enumeration in the rele
 
 Call \`submit_slots\` with:
 
-- \`slots\`: Object with \`{ filters, ranges, references, domains }\` — only include non-empty fields. Geographic, license, and other constraints all live inside \`filters\` keyed by the SHACL leaf local name.
+- \`slots\`: Object with \`{ filters, ranges, references, domains }\` — only include non-empty fields. Geographic, license, and other constraints all live inside \`filters\` keyed by the property key.
 - \`interpretation\`: Summary + mapped terms with confidence
 - \`gaps\`: Array of unmapped concepts with reasons and suggestions
 

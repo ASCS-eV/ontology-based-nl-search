@@ -32,6 +32,7 @@ import {
   makeCacheKey,
   toViolation,
 } from './shacl-validator-candidates.js'
+import type { PropertyConstraintIndex } from './shacl-validator-loader.js'
 import {
   indexPropertyConstraints,
   indexPropertyTargetClasses,
@@ -39,6 +40,7 @@ import {
 } from './shacl-validator-loader.js'
 import type {
   PropertyConstraint,
+  PropertyShapeTarget,
   ShaclValidationResult,
   ShaclViolation,
 } from './shacl-validator-types.js'
@@ -56,7 +58,11 @@ import type {
 
 // Re-export the public result types (declared in `-types`) so consumers keep
 // importing them from `@ontology-search/ontology/shacl-validator` unchanged.
-export type { ShaclValidationResult, ShaclViolation } from './shacl-validator-types.js'
+export type {
+  PropertyShapeTarget,
+  ShaclValidationResult,
+  ShaclViolation,
+} from './shacl-validator-types.js'
 
 /** Singleton cached after the first fromWorkspace() call. */
 let cachedInstance: ShaclValidator | null = null
@@ -82,6 +88,12 @@ export class ShaclValidator {
    */
   readonly constraintIndex: Map<string, PropertyConstraint>
   /**
+   * The same constraints per `<targetClass>|<propertyIri>`. A value validated
+   * against one class's shape is checked against that shape's constraints
+   * only — never against an `sh:in` another class declares for the same path.
+   */
+  private readonly constraintsByTarget: Map<string, PropertyConstraint>
+  /**
    * Memoized per-(propertyIri, value, targetClass) validation outcomes.
    * Shapes are immutable for the process lifetime, but the value space
    * is unbounded — a long-running server validating user-supplied filter
@@ -103,11 +115,25 @@ export class ShaclValidator {
   private constructor(
     validator: SHACLValidator,
     propertyToTargetClass: Map<string, string[]>,
-    constraintIndex: Map<string, PropertyConstraint>
+    constraints: PropertyConstraintIndex
   ) {
     this.validator = validator
     this.propertyToTargetClass = propertyToTargetClass
-    this.constraintIndex = constraintIndex
+    this.constraintIndex = constraints.byIri
+    this.constraintsByTarget = constraints.byTarget
+  }
+
+  /**
+   * The fast-path constraints a value is checked against: the target class's
+   * own when one is given (absent → the engine decides), else the merged ones.
+   */
+  private fastPathConstraint(
+    propertyIri: string,
+    targetClass: string | undefined
+  ): PropertyConstraint | undefined {
+    return targetClass
+      ? this.constraintsByTarget.get(`${targetClass}|${propertyIri}`)
+      : this.constraintIndex.get(propertyIri)
   }
 
   /** @internal Test-only accessor — see engineCallCount JSDoc. */
@@ -138,14 +164,14 @@ export class ShaclValidator {
     if (cachedInstance) return cachedInstance
     const shapesDataset = await loadShapesFromDisk()
     const propertyToTargetClass = await indexPropertyTargetClasses(shapesDataset)
-    const constraintIndex = await indexPropertyConstraints(shapesDataset)
+    const constraints = await indexPropertyConstraints(shapesDataset)
     // The Turtle loader already pulls every workspace shape file into one
     // dataset, so owl:imports references are already satisfied. We provide
     // an empty resolver to suppress the engine's mandatory import-fetch hook.
     const validator = new SHACLValidator(shapesDataset, {
       importGraph: () => datasetFactory.dataset(),
     })
-    cachedInstance = new ShaclValidator(validator, propertyToTargetClass, constraintIndex)
+    cachedInstance = new ShaclValidator(validator, propertyToTargetClass, constraints)
     return cachedInstance
   }
 
@@ -193,7 +219,7 @@ export class ShaclValidator {
     // If the property has sh:pattern and/or sh:in constraints indexed at
     // startup, validate them in-process. This avoids the ~3s engine call
     // for simple pattern matches like country codes.
-    const constraint = this.constraintIndex.get(propertyIri)
+    const constraint = this.fastPathConstraint(propertyIri, targetClass)
     if (constraint && typeof value === 'string') {
       const fastResult = this.validateAgainstConstraintIndex(propertyIri, value, constraint)
       if (fastResult) {
@@ -328,7 +354,7 @@ export class ShaclValidator {
     // ── Fast path: check indexed constraints locally (batch) ──
     // Same correctness invariant as single-value path: only short-circuit
     // the positive case. Values that fail the index fall through to engine.
-    const constraint = this.constraintIndex.get(propertyIri)
+    const constraint = this.fastPathConstraint(propertyIri, targetClass)
     const engineNeeded: string[] = []
     if (constraint) {
       for (const v of stillNeeded) {
@@ -486,6 +512,53 @@ export class ShaclValidator {
       }
     }
     return { conforms: allConform, violations: allViolations, resolvedIris: iris }
+  }
+
+  /**
+   * Validate a value against property shapes the caller resolved itself — the
+   * (property IRI, target class) pairs one slot key names, e.g. the chains of
+   * a key that local-name resolution cannot identify. Each target is a place
+   * the value may sit, so the value conforms when it conforms under ANY of
+   * them; the violations are reported only when it conforms under none.
+   */
+  async validateAgainstTargets(
+    targets: readonly PropertyShapeTarget[],
+    value: string | number | boolean
+  ): Promise<ShaclValidationResult & { resolvedIris: string[] }> {
+    const resolvedIris = [...new Set(targets.map((t) => t.iri))]
+    if (targets.length === 0) return { conforms: true, violations: [], resolvedIris }
+    const results = await Promise.all(
+      targets.map((t) => this.validateValue(t.iri, value, t.targetClass))
+    )
+    const conforms = results.some((r) => r.conforms)
+    return {
+      conforms,
+      violations: conforms ? [] : results.flatMap((r) => r.violations),
+      resolvedIris,
+    }
+  }
+
+  /** Batch counterpart of {@link validateAgainstTargets}, one SHACL pass per target. */
+  async validateAgainstTargetsBatch(
+    targets: readonly PropertyShapeTarget[],
+    values: ReadonlyArray<string | number | boolean>
+  ): Promise<Map<string, ShaclValidationResult & { resolvedIris: string[] }>> {
+    const resolvedIris = [...new Set(targets.map((t) => t.iri))]
+    const perTarget = await Promise.all(
+      targets.map((t) => this.validateValues(t.iri, values, t.targetClass))
+    )
+    const out = new Map<string, ShaclValidationResult & { resolvedIris: string[] }>()
+    for (const v of values) {
+      const key = String(v)
+      const results = perTarget.map((m) => m.get(key)).filter((r) => r !== undefined)
+      const conforms = results.length === 0 || results.some((r) => r.conforms)
+      out.set(key, {
+        conforms,
+        violations: conforms ? [] : results.flatMap((r) => r.violations),
+        resolvedIris,
+      })
+    }
+    return out
   }
 
   /**

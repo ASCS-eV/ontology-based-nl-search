@@ -368,3 +368,34 @@ perfSuite('ShaclValidator — performance budget (R10)', () => {
     PERF_BUDGET_MS + 30_000
   )
 })
+
+describe('ShaclValidator — explicit property-shape targets', () => {
+  /**
+   * The targets one slot key names are alternatives (ADR 0009): a value
+   * conforms when it fits any of them, and the violations are reported only
+   * when it fits none.
+   */
+  it('conforms under any target and reports violations only when none fits', async () => {
+    const validator = await ShaclValidator.fromWorkspace()
+    const country = { iri: GEOREF_COUNTRY }
+    const direction = { iri: HDMAP_TRAFFIC_DIRECTION }
+
+    const none = await validator.validateAgainstTargets([country], 'europe')
+    expect(none.conforms).toBe(false)
+    expect(none.violations.length).toBeGreaterThan(0)
+
+    // Fails the country pattern, fits the traffic-direction sh:in.
+    expect(await validator.validateAgainstTargets([country, direction], 'right-hand')).toEqual({
+      conforms: true,
+      violations: [],
+      resolvedIris: [GEOREF_COUNTRY, HDMAP_TRAFFIC_DIRECTION],
+    })
+
+    const batch = await validator.validateAgainstTargetsBatch(
+      [country, direction],
+      ['right-hand', 'europe']
+    )
+    expect(batch.get('right-hand')?.conforms).toBe(true)
+    expect(batch.get('europe')?.conforms).toBe(false)
+  }, 120_000)
+})

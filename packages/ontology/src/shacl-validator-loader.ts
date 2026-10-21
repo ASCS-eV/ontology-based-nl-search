@@ -190,7 +190,32 @@ function termKey(t: Term): string {
 }
 
 /**
- * Build a fast-path constraint index: property IRI → { patterns, inValues, datatypeOnly }.
+ * The fast-path constraint indexes: per property IRI, and per
+ * (target class, property IRI).
+ */
+export interface PropertyConstraintIndex {
+  /** Property IRI → its constraints, merged across every property shape with that path. */
+  byIri: Map<string, PropertyConstraint>
+  /**
+   * `<targetClass>|<propertyIri>` → the constraints of the property shapes of
+   * the node shapes targeting that class: what a value validated against that
+   * class's shape has to meet, and nothing another class declares.
+   */
+  byTarget: Map<string, PropertyConstraint>
+}
+
+/** What one property shape declares that the fast path can use. */
+interface PropertyShapeFacts {
+  datatypes: string[]
+  patterns: RegExp[]
+  inValues: Set<string> | null
+  /** sh:datatype and no other value-constraining component on this shape. */
+  datatypeOnly: boolean
+}
+
+/**
+ * Build the fast-path constraint indexes: { patterns, inValues, datatypeOnly }
+ * per property IRI and per (target class, property IRI).
  *
  * Extracts sh:pattern, sh:in, and sh:datatype from every property shape in
  * the graph. For property shapes that have ONLY sh:datatype (no sh:pattern,
@@ -199,17 +224,22 @@ function termKey(t: Term): string {
  * will pass. We mark these as `datatypeOnly: true` so the fast path can
  * short-circuit immediately.
  *
+ * Each property shape is read once and merged into both indexes, keyed by its
+ * path and by its path with each `sh:targetClass` of the node shape declaring
+ * it ([SHACL] §2.1.3.1, §2.3).
+ *
  * This is fully generic — reads only standard SHACL vocabulary, works with
  * any shapes graph.
  */
 export async function indexPropertyConstraints(
   shapes: DatasetCore
-): Promise<Map<string, PropertyConstraint>> {
+): Promise<PropertyConstraintIndex> {
   const SH_PROPERTY = `${SH_NS}property`
   const SH_PATH = `${SH_NS}path`
   const SH_PATTERN = `${SH_NS}pattern`
   const SH_IN = `${SH_NS}in`
   const SH_DATATYPE = `${SH_NS}datatype`
+  const SH_TARGET_CLASS = `${SH_NS}targetClass`
   const RDF_FIRST = iri('rdf', 'first')
   const RDF_REST = iri('rdf', 'rest')
   const RDF_NIL = iri('rdf', 'nil')
@@ -232,7 +262,104 @@ export async function indexPropertyConstraints(
     `${SH_NS}qualifiedValueShape`,
   ]
 
-  const index = new Map<string, PropertyConstraint>()
+  const readShape = (propShape: Term): PropertyShapeFacts => {
+    // The datatype IRI is kept, not just the fact of it: candidate synthesis
+    // needs the declared datatype to build a literal the shape can actually
+    // accept [SHACL] §4.2.3.
+    const datatypes: string[] = []
+    for (const dtQ of shapes.match(propShape, namedNode(SH_DATATYPE), null, null)) {
+      if (dtQ.object.termType === 'NamedNode') datatypes.push(dtQ.object.value)
+    }
+
+    // sh:pattern — anchored, as SHACL patterns must match the entire string.
+    let hasPattern = false
+    const patterns: RegExp[] = []
+    for (const patQ of shapes.match(propShape, namedNode(SH_PATTERN), null, null)) {
+      if (patQ.object.termType !== 'Literal') continue
+      hasPattern = true
+      try {
+        patterns.push(new RegExp(`^${patQ.object.value}$`))
+      } catch {
+        // Invalid regex — skip
+      }
+    }
+
+    // sh:in (RDF list)
+    let hasIn = false
+    let inValues: Set<string> | null = null
+    for (const inQ of shapes.match(propShape, namedNode(SH_IN), null, null)) {
+      hasIn = true
+      const values = new Set<string>()
+      let node: Term = inQ.object as Term
+      while (node.value !== RDF_NIL) {
+        for (const firstQ of shapes.match(node as NamedNode, namedNode(RDF_FIRST), null, null)) {
+          if (firstQ.object.termType === 'Literal' || firstQ.object.termType === 'NamedNode') {
+            values.add(firstQ.object.value)
+          }
+        }
+        let next: Term | null = null
+        for (const restQ of shapes.match(node as NamedNode, namedNode(RDF_REST), null, null)) {
+          next = restQ.object as Term
+        }
+        if (!next) break
+        node = next
+      }
+      if (values.size > 0) inValues = inValues ? new Set([...inValues, ...values]) : values
+    }
+
+    const hasOtherConstraint = (): boolean =>
+      VALUE_CONSTRAINT_PREDS.some((pred) => {
+        for (const _q of shapes.match(propShape, namedNode(pred), null, null)) return true
+        return false
+      })
+    const datatypeOnly = datatypes.length > 0 && !hasPattern && !hasIn && !hasOtherConstraint()
+    return { datatypes, patterns, inValues, datatypeOnly }
+  }
+
+  const merge = (
+    index: Map<string, PropertyConstraint>,
+    key: string,
+    facts: PropertyShapeFacts
+  ) => {
+    const entry = index.get(key) ?? {
+      patterns: [],
+      inValues: null,
+      datatypeOnly: false,
+      datatypes: new Set<string>(),
+    }
+    for (const datatype of facts.datatypes) entry.datatypes.add(datatype)
+    for (const pattern of facts.patterns) {
+      if (!entry.patterns.some((r) => r.source === pattern.source)) entry.patterns.push(pattern)
+    }
+    if (facts.inValues) {
+      entry.inValues = entry.inValues
+        ? new Set([...entry.inValues, ...facts.inValues])
+        : facts.inValues
+    }
+    // A previous property shape for the same key may already have set
+    // patterns or inValues — if so, this shape doesn't qualify as datatypeOnly.
+    if (facts.datatypeOnly && entry.patterns.length === 0 && entry.inValues === null) {
+      entry.datatypeOnly = true
+    }
+    // Index this key if it carries anything the validator can use.
+    // `datatypes` counts even when the fast path cannot decide from it: a
+    // property with sh:datatype AND a value-constraining component (say
+    // sh:minInclusive) is not `datatypeOnly`, but candidate synthesis still
+    // needs the declared datatype to build a literal the shape can accept.
+    // Without it, a valid integer arriving as the string "5" fails both the
+    // sh:datatype check and, in cascade, the sh:minInclusive comparison.
+    if (
+      entry.patterns.length > 0 ||
+      entry.inValues !== null ||
+      entry.datatypeOnly ||
+      entry.datatypes.size > 0
+    ) {
+      index.set(key, entry)
+    }
+  }
+
+  const byIri = new Map<string, PropertyConstraint>()
+  const byTarget = new Map<string, PropertyConstraint>()
 
   // Walk all property shapes
   for (const propLink of shapes.match(null, namedNode(SH_PROPERTY), null, null)) {
@@ -248,112 +375,15 @@ export async function indexPropertyConstraints(
     }
     if (!propIri) continue
 
-    const entry = index.get(propIri) ?? {
-      patterns: [],
-      inValues: null,
-      datatypeOnly: false,
-      datatypes: new Set<string>(),
-    }
-
-    // Check if this shape has sh:datatype. The IRI is kept, not just the fact
-    // of it: candidate synthesis needs the declared datatype to build a literal
-    // the shape can actually accept [SHACL] §4.2.3.
-    let hasDatatype = false
-    for (const dtQ of shapes.match(propShape, namedNode(SH_DATATYPE), null, null)) {
-      if (dtQ.object.termType === 'NamedNode') {
-        hasDatatype = true
-        entry.datatypes.add(dtQ.object.value)
-      }
-    }
-
-    // Extract sh:pattern (deduplicate by source string)
-    let hasPattern = false
-    for (const patQ of shapes.match(propShape, namedNode(SH_PATTERN), null, null)) {
-      if (patQ.object.termType === 'Literal') {
-        hasPattern = true
-        try {
-          const source = patQ.object.value
-          // SHACL patterns are anchored (must match entire string)
-          if (!entry.patterns.some((r) => r.source === `^${source}$`)) {
-            entry.patterns.push(new RegExp(`^${source}$`))
-          }
-        } catch {
-          // Invalid regex — skip
-        }
-      }
-    }
-
-    // Extract sh:in (RDF list)
-    let hasIn = false
-    for (const inQ of shapes.match(propShape, namedNode(SH_IN), null, null)) {
-      hasIn = true
-      const values = new Set<string>()
-      let node: Term = inQ.object as Term
-      while (node.value !== RDF_NIL) {
-        for (const firstQ of shapes.match(node as NamedNode, namedNode(RDF_FIRST), null, null)) {
-          if (firstQ.object.termType === 'Literal') {
-            values.add(firstQ.object.value)
-          } else if (firstQ.object.termType === 'NamedNode') {
-            values.add(firstQ.object.value)
-          }
-        }
-        let next: Term | null = null
-        for (const restQ of shapes.match(node as NamedNode, namedNode(RDF_REST), null, null)) {
-          next = restQ.object as Term
-        }
-        if (!next) break
-        node = next
-      }
-      if (values.size > 0) {
-        entry.inValues = entry.inValues ? new Set([...entry.inValues, ...values]) : values
-      }
-    }
-
-    // Detect datatype-only: has sh:datatype but no value-constraining components.
-    // A previous property shape for the same IRI may already have set patterns or
-    // inValues — if so, this shape doesn't qualify as datatypeOnly.
-    if (
-      hasDatatype &&
-      !hasPattern &&
-      !hasIn &&
-      entry.patterns.length === 0 &&
-      entry.inValues === null
-    ) {
-      let hasOtherConstraint = false
-      for (const pred of VALUE_CONSTRAINT_PREDS) {
-        let found = false
-        for (const _q of shapes.match(propShape, namedNode(pred), null, null)) {
-          found = true
-          break
-        }
-        if (found) {
-          hasOtherConstraint = true
-          break
-        }
-      }
-      if (!hasOtherConstraint) {
-        entry.datatypeOnly = true
-      }
-    }
-
-    // Index this property if it carries anything the validator can use.
-    // `datatypes` counts even when the fast path cannot decide from it: a
-    // property with sh:datatype AND a value-constraining component (say
-    // sh:minInclusive) is not `datatypeOnly`, but candidate synthesis still
-    // needs the declared datatype to build a literal the shape can accept.
-    // Without it, a valid integer arriving as the string "5" fails both the
-    // sh:datatype check and, in cascade, the sh:minInclusive comparison.
-    if (
-      entry.patterns.length > 0 ||
-      entry.inValues !== null ||
-      entry.datatypeOnly ||
-      entry.datatypes.size > 0
-    ) {
-      index.set(propIri, entry)
+    const facts = readShape(propShape)
+    merge(byIri, propIri, facts)
+    for (const targetQ of shapes.match(propLink.subject, namedNode(SH_TARGET_CLASS), null, null)) {
+      if (targetQ.object.termType !== 'NamedNode') continue
+      merge(byTarget, `${targetQ.object.value}|${propIri}`, facts)
     }
   }
 
-  return index
+  return { byIri, byTarget }
 }
 
 // ─── Internal: candidate dataset construction ────────────────────────────────

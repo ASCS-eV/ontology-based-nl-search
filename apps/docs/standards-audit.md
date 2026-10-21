@@ -98,6 +98,13 @@ contract, however, **is**: the AI SDK serializes the tool's Zod schema to
 parameters (OpenAI, Anthropic, Mistral). JSON Schema is therefore the normative
 contract for the slot interface, and `slot-wire-schema.ts` cites it.
 
+The keys of `filters` and `ranges` are property keys (ADR 0009), one per
+SHACL property path ([SHACL] §2.3). A qualified key joins predicate local names
+with `__`, so the same key is a valid GraphQL Name ([GraphQL] §2.1.8) and,
+sanitized of any character a local name may add, a SPARQL variable name
+([SPARQL11] §19.8, rule 166). A key never becomes a predicate: every emitted
+predicate comes from the path's steps.
+
 Conceptually the IR follows the established **intent + slot-filling** convention
 from natural-language understanding (frame semantics; FrameNet) — a design
 convention, not a ratified standard — so the wire-format grounding in JSON

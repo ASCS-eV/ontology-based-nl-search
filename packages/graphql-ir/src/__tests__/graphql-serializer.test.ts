@@ -32,7 +32,9 @@ describe('slotsToGraphQL', () => {
       ranges: {},
     }
 
-    const result = slotsToGraphQL(slots, { enumProperties: new Set(['country', 'roadType']) })
+    const result = slotsToGraphQL(slots, {
+      enumProperties: new Map([['hdmap', new Set(['country', 'roadType'])]]),
+    })
 
     expect(result).toContain('country(values: [AT, DE])')
     expect(result).toContain('roadType(values: [motorway])')
@@ -45,7 +47,9 @@ describe('slotsToGraphQL', () => {
       ranges: {},
     }
 
-    const result = slotsToGraphQL(slots, { enumProperties: new Set(['country']) })
+    const result = slotsToGraphQL(slots, {
+      enumProperties: new Map([['hdmap', new Set(['country'])]]),
+    })
 
     expect(result).toContain('country(values: [DE])')
     expect(result).toContain('name(values: ["A19"])')
@@ -58,7 +62,9 @@ describe('slotsToGraphQL', () => {
       ranges: {},
     }
 
-    const result = slotsToGraphQL(slots, { enumProperties: new Set(['region']) })
+    const result = slotsToGraphQL(slots, {
+      enumProperties: new Map([['hdmap', new Set(['region'])]]),
+    })
 
     expect(result).toContain('region(values: ["A/B"])')
   })
@@ -166,6 +172,21 @@ describe('slotsToGraphQL', () => {
     expect(result).toContain('numberIntersections(min: 1)')
   })
 
+  it('emits enum literals only in the domains that enumerate the key', () => {
+    // `unit` is enumerated in hdmap and free text in ositrace (keys are per
+    // domain, ADR 0009): each block follows its own domain's schema type.
+    const slots: SearchSlots = {
+      domains: ['hdmap', 'ositrace'],
+      filters: { unit: 'metres' },
+      ranges: {},
+    }
+    const result = slotsToGraphQL(slots, {
+      enumProperties: new Map([['hdmap', new Set(['unit'])]]),
+    })
+    expect(result).toContain('hdmap {\n    unit(values: [metres])')
+    expect(result).toContain('ositrace {\n    unit(values: ["metres"])')
+  })
+
   it('emits enum literals for enum-encoded reference filter values', () => {
     const slots: SearchSlots = {
       domains: ['ositrace'],
@@ -174,7 +195,9 @@ describe('slotsToGraphQL', () => {
       references: [{ domain: 'hdmap', filters: { roadType: 'motorway' } }],
     }
 
-    const result = slotsToGraphQL(slots, { enumProperties: new Set(['roadType']) })
+    const result = slotsToGraphQL(slots, {
+      enumProperties: new Map([['hdmap', new Set(['roadType'])]]),
+    })
 
     // Unquoted enum literal (so the editor schema's per-name enum suggests it),
     // exactly as top-level filters do — references reuse the same rendering.

@@ -5,7 +5,7 @@
  */
 import type { OntologyGap } from '@ontology-search/api-types'
 import { createComponentLogger } from '@ontology-search/core/logging'
-import type { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
+import type { PropertyShapeTarget, ShaclValidator } from '@ontology-search/ontology/shacl-validator'
 import type { SchemaVocabulary } from '@ontology-search/search'
 
 import { buildAllowedValuesIndex, getSuggestions } from './slot-validator-fuzzy.js'
@@ -60,7 +60,8 @@ export async function validateSlotsAgainstShacl(
   filters: Record<string, string | string[]>,
   shaclValidator: ShaclValidator,
   vocabulary?: SchemaVocabulary,
-  instanceValues?: InstanceValueLookup
+  instanceValues?: InstanceValueLookup,
+  domains?: readonly string[]
 ): Promise<ShaclSlotValidationResult> {
   const cleanFilters: Record<string, string | string[]> = {}
   const gaps: OntologyGap[] = []
@@ -80,7 +81,8 @@ export async function validateSlotsAgainstShacl(
   // the compiler silently and produce 0 results with no diagnostic. Dropping
   // them here with a gap surfaces the mismatch to the caller.
   for (const [slotKey, value] of Object.entries(filters)) {
-    if (!shaclValidator.isKnownSlotKey(slotKey)) {
+    const targets = shapeTargetsFor(slotKey, vocabulary, domains)
+    if (!isKnownKey(slotKey, shaclValidator, vocabulary)) {
       const sample = Array.isArray(value) ? value.join(', ') : value
       gaps.push({
         term: slotKey,
@@ -110,7 +112,8 @@ export async function validateSlotsAgainstShacl(
             shaclValidator,
             gaps,
             vocabulary,
-            instanceValues
+            instanceValues,
+            targets
           )
           if (validated.length > 0) {
             const prev = cleanFilters[slotKey]
@@ -126,7 +129,8 @@ export async function validateSlotsAgainstShacl(
           shaclValidator,
           gaps,
           vocabulary,
-          instanceValues
+          instanceValues,
+          targets
         )
         if (ok) cleanFilters[slotKey] = value
       }
@@ -140,7 +144,8 @@ export async function validateSlotsAgainstShacl(
         shaclValidator,
         gaps,
         vocabulary,
-        instanceValues
+        instanceValues,
+        targets
       )
       if (kept.length > 0) cleanFilters[slotKey] = kept
     } else {
@@ -150,7 +155,8 @@ export async function validateSlotsAgainstShacl(
         shaclValidator,
         gaps,
         vocabulary,
-        instanceValues
+        instanceValues,
+        targets
       )
       if (ok) cleanFilters[slotKey] = value
     }
@@ -170,7 +176,8 @@ export async function validateSlotsAgainstShacl(
  */
 export function validateRangesAgainstShacl(
   ranges: Record<string, { min?: number; max?: number }>,
-  shaclValidator: ShaclValidator
+  shaclValidator: ShaclValidator,
+  vocabulary?: SchemaVocabulary
 ): {
   ranges: Record<string, { min?: number; max?: number }>
   gaps: OntologyGap[]
@@ -178,7 +185,7 @@ export function validateRangesAgainstShacl(
   const clean: Record<string, { min?: number; max?: number }> = {}
   const gaps: OntologyGap[] = []
   for (const [slotKey, range] of Object.entries(ranges)) {
-    if (!shaclValidator.isKnownSlotKey(slotKey)) {
+    if (!isKnownKey(slotKey, shaclValidator, vocabulary)) {
       const bound =
         range.min !== undefined && range.max !== undefined
           ? `${range.min}..${range.max}`
@@ -207,7 +214,44 @@ export function validateRangesAgainstShacl(
 }
 
 /**
+ * The property shapes to validate a key's value against, or `undefined` for a
+ * leaf name resolved by IRI local name. A key the vocabulary lists shapes for
+ * (ADR 0009) names chains in several domains; the value has to fit one of the
+ * chains of the domains being searched — every chain only when none of them
+ * owns the key (domain correction may still add an owner).
+ */
+function shapeTargetsFor(
+  slotKey: string,
+  vocabulary: SchemaVocabulary | undefined,
+  domains: readonly string[] | undefined
+): readonly PropertyShapeTarget[] | undefined {
+  const all = vocabulary?.propertyShapeTargets?.get(slotKey)
+  if (!all || !domains || domains.length === 0) return all
+  const scoped = all.filter((target) => domains.includes(target.domain))
+  return scoped.length > 0 ? scoped : all
+}
+
+/**
+ * A slot key the ontology knows: one whose property shapes the vocabulary
+ * lists (a qualified key, or a leaf name with qualified keys — ADR 0009), or
+ * a leaf name the validator resolves by IRI local name.
+ */
+function isKnownKey(
+  slotKey: string,
+  shaclValidator: ShaclValidator,
+  vocabulary?: SchemaVocabulary
+): boolean {
+  return (
+    (vocabulary?.propertyShapeTargets?.has(slotKey) ?? false) ||
+    shaclValidator.isKnownSlotKey(slotKey)
+  )
+}
+
+/**
  * Validate a single (slot, value) and accumulate a gap on failure.
+ *
+ * A key the vocabulary lists property shapes for is validated against exactly
+ * those (conforming under any of them); every other key by local name.
  *
  * When `vocabulary` is supplied, gaps are enriched with Phase 4 data-driven
  * suggestions: the top-N distinct literal values actually observed for the
@@ -220,9 +264,12 @@ async function checkAndAccumulate(
   shaclValidator: ShaclValidator,
   gaps: OntologyGap[],
   vocabulary?: SchemaVocabulary,
-  instanceValues?: InstanceValueLookup
+  instanceValues?: InstanceValueLookup,
+  targets?: readonly PropertyShapeTarget[]
 ): Promise<boolean> {
-  const result = await shaclValidator.validateBySlotName(slotKey, value)
+  const result = targets
+    ? await shaclValidator.validateAgainstTargets(targets, value)
+    : await shaclValidator.validateBySlotName(slotKey, value)
 
   // No SHACL shape for this slot → can't refute, accept.
   if (result.resolvedIris.length === 0) return true
@@ -262,13 +309,16 @@ async function checkArrayAndAccumulate(
   shaclValidator: ShaclValidator,
   gaps: OntologyGap[],
   vocabulary?: SchemaVocabulary,
-  instanceValues?: InstanceValueLookup
+  instanceValues?: InstanceValueLookup,
+  targets?: readonly PropertyShapeTarget[]
 ): Promise<string[]> {
   // Preserve input order; SHACL outcomes are looked up by stringified value.
   const candidates = values.filter((v): v is string => typeof v === 'string' && v.length > 0)
   if (candidates.length === 0) return []
 
-  const batch = await shaclValidator.validateBySlotNameBatch(slotKey, candidates)
+  const batch = targets
+    ? await shaclValidator.validateAgainstTargetsBatch(targets, candidates)
+    : await shaclValidator.validateBySlotNameBatch(slotKey, candidates)
   const kept: string[] = []
   for (const value of candidates) {
     const result = batch.get(value)
