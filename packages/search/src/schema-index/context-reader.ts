@@ -17,9 +17,9 @@
  *
  * Implements the subset of JSON-LD 1.1 context processing the artifacts
  * use: term definitions ([JSON-LD11] §9.15.1), compact IRI expansion
- * ([JSON-LD11] §3.7), `@vocab`-relative IRIs ([JSON-LD11] §4.1.2), type
- * coercion ([JSON-LD11] §4.2.1), and scoped (nested) contexts
- * ([JSON-LD11] §4.8).
+ * ([JSON-LD11] §4.1.5), `@vocab`-relative IRIs ([JSON-LD11] §4.1.2), type
+ * coercion ([JSON-LD11] §4.2.3), and scoped (nested) contexts
+ * ([JSON-LD11] §4.1.8).
  *
  * @see https://www.w3.org/TR/json-ld11/#the-context — [JSON-LD11]
  */
@@ -122,7 +122,7 @@ export function parseContextTerms(doc: unknown, domain: string): ContextTerm[] {
 
 /**
  * First pass: gather prefix declarations (string mappings to absolute
- * namespace IRIs — [JSON-LD11] §3.7) and `@vocab` ([JSON-LD11] §4.1.2)
+ * namespace IRIs — [JSON-LD11] §4.1.5) and `@vocab` ([JSON-LD11] §4.1.2)
  * into the environment, so term expansion in the second pass is
  * order-independent.
  */
@@ -176,7 +176,7 @@ function parseDefinition(
       })
     }
 
-    // Scoped context ([JSON-LD11] §4.8): nested terms live in an extended
+    // Scoped context ([JSON-LD11] §4.1.8): nested terms live in an extended
     // environment (nested definitions may add prefixes or override @vocab).
     const nested = value['@context']
     if (isRecord(nested)) {
@@ -205,7 +205,7 @@ function expandIri(value: string, env: ContextEnv): string | undefined {
 
   const colon = value.indexOf(':')
   if (colon > 0) {
-    // Compact IRI ([JSON-LD11] §3.7): prefix:suffix with a declared prefix.
+    // Compact IRI ([JSON-LD11] §4.1.5): prefix:suffix with a declared prefix.
     const prefix = value.slice(0, colon)
     const suffix = value.slice(colon + 1)
     if (!suffix.startsWith('//')) {

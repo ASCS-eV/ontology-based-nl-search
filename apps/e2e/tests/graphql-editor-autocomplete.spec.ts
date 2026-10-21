@@ -80,7 +80,7 @@ async function completionsAt(
 
 /**
  * An enum-encodable categorical property from the vocabulary — one whose values
- * are all valid, unreserved GraphQL Names (spec §2.9.6), since only those are
+ * are all valid, unreserved GraphQL Names ([GraphQL] §2.10.6), since only those are
  * modelled as a GraphQL enum (and therefore autocompleted). Mirrors core's
  * `isGraphQLEnumName` so the test picks exactly what the schema enum-encodes.
  */
@@ -105,7 +105,7 @@ async function labels(popup: Locator): Promise<string[]> {
 }
 
 /**
- * Mirror the schema/serializer's GraphQL Name sanitization (spec §2.1.9): the
+ * Mirror the schema/serializer's GraphQL Name sanitization ([GraphQL] §2.1.8): the
  * schema field for a domain/property is the sanitized name, while `/vocabulary`
  * reports the raw name (e.g. `environment-model` -> `environment_model`).
  */
@@ -173,7 +173,7 @@ test.describe('GraphQL editor autocomplete (real browser)', () => {
     // Caret right after `values:` — the editor must AUTO-OPEN the list (no
     // Ctrl-Space). This is the fix for the "quoted value gets no completion"
     // trap: a closed `sh:in` vocabulary is a GraphQL enum, whose members are
-    // unquoted Names (spec §2.9.6), so we surface them in value position rather
+    // unquoted Names ([GraphQL] §2.10.6), so we surface them in value position rather
     // than let the user type a `"` (a string literal the enum field rejects).
     const popup = await completionsAt(
       page,

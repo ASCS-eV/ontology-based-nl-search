@@ -12,17 +12,17 @@
  *
  * | Slot concept     | GraphQL construct         | Spec section |
  * |------------------|---------------------------|--------------|
- * | Query root       | OperationDefinition       | §2.3         |
- * | Domain           | Field (top-level)         | §2.5         |
- * | Domain block     | SelectionSet              | §2.4         |
- * | Filter property  | Field (nested)            | §2.5         |
- * | Filter values    | Argument `values: [...]`  | §2.6         |
- * | Range min/max    | Arguments `min:` / `max:` | §2.6         |
- * | References       | `references` field (nested) | §2.5       |
- * | Referenced asset | Field under `references`  | §2.5         |
- * | Reference label  | Argument `label:`         | §2.6         |
- * | Field names      | Name token                | §2.1.9       |
- * | String values    | StringValue               | §2.9.4       |
+ * | Query root       | OperationDefinition       | §2.4         |
+ * | Domain           | Field (top-level)         | §2.6         |
+ * | Domain block     | SelectionSet              | §2.5         |
+ * | Filter property  | Field (nested)            | §2.6         |
+ * | Filter values    | Argument `values: [...]`  | §2.7         |
+ * | Range min/max    | Arguments `min:` / `max:` | §2.7         |
+ * | References       | `references` field (nested) | §2.6       |
+ * | Referenced asset | Field under `references`  | §2.6         |
+ * | Reference label  | Argument `label:`         | §2.7         |
+ * | Field names      | Name token                | §2.1.8       |
+ * | String values    | StringValue               | §2.10.4      |
  *
  * Every output is parsed with the reference `graphql-js` library (the
  * canonical implementation maintained by the GraphQL Foundation) to
@@ -136,7 +136,7 @@ export function slotsToGraphQL(slots: SearchSlots, options: GraphQLSerializeOpti
  * domain — property fields plus its own `references` — so one routine renders
  * both, mirroring the editor schema where references are typed fields, not an
  * argument. `depth` is the indentation level (top-level domain = 1).
- * @see https://spec.graphql.org/September2025/#sec-Selection-Sets — §2.4
+ * @see https://spec.graphql.org/September2025/#sec-Selection-Sets — [GraphQL] §2.5
  */
 function buildBlock(
   name: string,
@@ -243,7 +243,7 @@ function buildFields(
 
 /**
  * Escape special characters in a GraphQL string literal.
- * @see https://spec.graphql.org/September2025/#sec-String-Value — §2.9.4
+ * @see https://spec.graphql.org/September2025/#sec-String-Value — [GraphQL] §2.10.4
  */
 function escapeGraphQLString(value: string): string {
   return value

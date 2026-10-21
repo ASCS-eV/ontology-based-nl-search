@@ -37,7 +37,7 @@ export interface PropertyConstraint {
    * The `sh:datatype` IRIs declared for this path. Candidate synthesis builds
    * the literal with the declared datatype rather than guessing one from the
    * host value's runtime type: `sh:datatype` is satisfied only when the
-   * literal's datatype IRI *equals* the declared one [SHACL] §4.2.3 — there is
+   * literal's datatype IRI *equals* the declared one [SHACL] §4.1.2 — there is
    * no numeric promotion — so an `xsd:integer` literal fails an `xsd:float`
    * shape, and a plain string fails both.
    */

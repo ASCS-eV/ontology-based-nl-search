@@ -4,7 +4,7 @@
  * be modelled as GraphQL enums (enabling value autocomplete) versus plain
  * strings. Keeping the decision in one place stops the two codecs from drifting.
  *
- * @see https://spec.graphql.org/September2025/#sec-Names — §2.1.9 (Name)
+ * @see https://spec.graphql.org/September2025/#sec-Names — [GraphQL] §2.1.8 (Name)
  * @see https://spec.graphql.org/September2025/#sec-Enum-Value — enum values are
  *      Names excluding `true`, `false`, and `null`.
  */

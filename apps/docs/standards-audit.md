@@ -127,7 +127,10 @@ construct, or a data / serialization format — you **must**:
    comment at the interface. See `slot-wire-schema.ts`, `compiler.ts`,
    `core/src/sse/events.ts`, and `graphql-serializer.ts` for the pattern.
 4. **Make the conformance claim checkable** — a reviewer can read the cited
-   section and verify the behaviour.
+   section and verify the behaviour. `scripts/check-citations.mjs` checks the
+   reference itself: the tag is registered, the stored text has the section,
+   and a term or a spec link written next to the citation belongs to that
+   section.
 
 This is criterion #31 in `CONTRIBUTING.md`, and the agent instructions
 (`.github/copilot-instructions.md`, `CLAUDE.md`) require it too.

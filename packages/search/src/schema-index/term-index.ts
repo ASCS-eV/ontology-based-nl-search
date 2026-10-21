@@ -12,7 +12,7 @@
  * enum/numeric/path extraction logic, no hardcoded ontology identifiers.
  *
  * @see https://www.w3.org/TR/shacl/ — [SHACL] §2.3 property shapes
- * @see https://www.w3.org/TR/rdf-schema/ — [RDF-SCHEMA] §5.4.1 rdfs:label
+ * @see https://www.w3.org/TR/rdf-schema/ — [RDFS] §3.6 rdfs:label
  * @see https://www.w3.org/TR/skos-reference/ — [SKOS] §5 lexical labels
  */
 import { extractLocalName } from '@ontology-search/core/rdf/iri'
@@ -211,7 +211,7 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
     })
   }
 
-  // ── Class cards: the per-domain asset target classes ([SHACL] §2.1.3.1) ─
+  // ── Class cards: the per-domain asset target classes ([SHACL] §2.1.3.2) ─
   for (const descriptor of registry.domains.values()) {
     const iri = descriptor.targetClassIri
     if (!iri) continue
@@ -277,8 +277,8 @@ interface TermAnnotation {
  * rdfs:comment), leaf datatypes, value constraints, and reference targets.
  *
  * [SHACL] §2.3.2 non-validating characteristics (sh:name/sh:description),
- * §4.1.1 sh:datatype, §4.4 sh:pattern / value-range components;
- * [RDF-SCHEMA] §5.4 annotations; [SKOS] §5 lexical labels.
+ * §4.1.2 sh:datatype, §4.4.3 sh:pattern, §4.3 value range and §4.2 cardinality
+ * components; [RDFS] §3.6 rdfs:label, §3.7 rdfs:comment; [SKOS] §5 lexical labels.
  */
 async function harvestAnnotations(store: SparqlStore): Promise<Map<string, TermAnnotation>> {
   const sparql = `

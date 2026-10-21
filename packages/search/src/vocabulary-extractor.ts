@@ -133,8 +133,8 @@ let cachedSchemaVocabulary: SchemaVocabulary | null = null
  * No part of this code knows what any specific property means; every
  * discovery is a SPARQL query over standard RDF/SHACL/SKOS vocabulary.
  *
- * @see https://www.w3.org/TR/shacl/#InConstraintComponent — [SHACL] §4.6.1 sh:in
- * @see https://www.w3.org/TR/shacl/#DatatypeConstraintComponent — [SHACL] §4.1.1 sh:datatype
+ * @see https://www.w3.org/TR/shacl/#InConstraintComponent — [SHACL] §4.8.3 sh:in
+ * @see https://www.w3.org/TR/shacl/#DatatypeConstraintComponent — [SHACL] §4.1.2 sh:datatype
  */
 export async function extractSchemaVocabulary(store: SparqlStore): Promise<SchemaVocabulary> {
   if (cachedSchemaVocabulary) return cachedSchemaVocabulary
