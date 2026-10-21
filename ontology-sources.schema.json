@@ -18,7 +18,7 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "Human-readable source name; sources that also declare `data` are promoted to searchable asset domains under this name."
+            "description": "Human-readable source name. On a source that also declares `data`, a name equal to one of the loaded domains makes that domain searchable as an asset domain, provided its shapes declare a target class."
           },
           "path": {
             "type": "string",

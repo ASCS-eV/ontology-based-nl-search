@@ -206,8 +206,9 @@ loaded:
 
 A domain left out by the selection is invisible to the whole stack: it is not
 loaded into the schema graph, not part of the domain registry, the SHACL
-validator, the JSON-LD contexts or the LLM prompt, and can therefore never be
-searched or returned. Naming a domain in both lists is rejected at startup
+validator, the term index's JSON-LD contexts or the LLM prompt, and can
+therefore never be searched or returned. Only the data loader still reads its
+JSON-LD context, to parse instance data that uses it. Naming a domain in both lists is rejected at startup
 (`OntologySourcesError`); a name that matches no subdirectory is logged as a
 warning (`unknownDomains`), since it is almost always a typo. The selection
 needs a restart of the API to take effect.
@@ -321,7 +322,7 @@ your ontology, and a single git-ignored setting points the stack at them.
    {
      "sources": [
        {
-         "name": "my-asset",
+         "name": "module-a",
          "path": "build/artifacts",
          "domains": ["module-a", "module-b"],
          "data": "examples/search-data"
@@ -333,7 +334,12 @@ your ontology, and a single git-ignored setting points the stack at them.
    - `domains` — list the per-module bundles and leave out an umbrella bundle
      that re-declares every module's shapes, or those shapes load twice.
    - `data` — once any source declares it, the built-in demo data is not
-     loaded. A source's `name` is promoted to a searchable asset domain.
+     loaded.
+   - `name` — on a source that declares `data`, a `name` equal to one of the
+     loaded domain directories makes that domain searchable as an asset
+     domain, provided its shapes declare a target class, even when no
+     `rdfs:subClassOf` hierarchy marks it as one. Any other `name` is a label
+     only.
 
 2. Point the stack at it in `.env.local` (git-ignored):
 
@@ -357,10 +363,15 @@ features use its `imports/`, search does not.
 
 - **Remote `@context`.** A context IRI is resolved offline against the
   `*.context.jsonld` files of the source's `path`, matched by their `@vocab`
-  / `@base`. The catalog form `<ontology-iri>/context` (or `#context`) matches
-  the context whose `@vocab` is `<ontology-iri>/`.
-- **Relative IRIs** in schema Turtle files resolve against the file location
-  ([TURTLE] §6.3), so generator output without `@base` still loads.
+  / `@base`. All of its domains count, including those `domains` leaves out,
+  so data may use an umbrella bundle's context; where two contexts claim the
+  same IRI, a selected domain's wins. The catalog form
+  `<ontology-iri>/context` (or `#context`) matches the context whose `@vocab`
+  is that namespace, `<ontology-iri>/` (or `<ontology-iri>#`).
+- **Relative IRIs** in Turtle files — schema and instance data alike —
+  resolve against the file's location ([TURTLE] §6.3), so generator output
+  without `@base` still loads, and the schema graph, the domain registry and
+  the SHACL validator all see the same IRIs.
 - **Validate before loading.** OMB's suite checks data against the same
   bundle:
 
