@@ -30,7 +30,7 @@ import {
   parseTtl,
   selectPrimaryAssetClass,
 } from './domain-registry-parse.js'
-import { getArtifactRoots, isDomainSelected } from './sources.js'
+import { artifactBaseIri, getArtifactRoots, isDomainSelected } from './sources.js'
 
 /** Metadata for a single ontology domain */
 export interface DomainDescriptor {
@@ -160,8 +160,12 @@ export async function buildDomainRegistry(): Promise<DomainRegistry> {
 
       // Parse each file once with a real RDF parser; every extractor below
       // traverses these resolved quads/prefixes rather than the source text.
-      const shacl = parseTtl(readFileSync(join(domainDir, shaclFile), 'utf-8'))
-      const owl = owlFile ? parseTtl(readFileSync(join(domainDir, owlFile), 'utf-8')) : parseTtl('')
+      const readTtl = (file: string) => {
+        const path = join(domainDir, file)
+        return parseTtl(readFileSync(path, 'utf-8'), artifactBaseIri(path))
+      }
+      const shacl = readTtl(shaclFile)
+      const owl = owlFile ? readTtl(owlFile) : parseTtl('')
 
       // Collect all @prefix declarations from this domain's files
       const filePrefixes = {

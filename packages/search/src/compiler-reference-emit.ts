@@ -30,6 +30,7 @@ import type {
 } from '@ontology-search/slots/slots'
 
 import { buildDomainPatterns } from './compiler-domain-patterns.js'
+import { optionalLabelPattern } from './compiler-helpers-query.js'
 import {
   emitDataReferencePath,
   emitReferenceChainTriples,
@@ -257,8 +258,11 @@ export async function emitReferenceNode(
   prefixDomains.add(ref.domain)
 
   // Bind a label for every reference so each referenced asset can be
-  // displayed (and so a label filter can apply to any of them).
-  patterns.push(`${refVar} rdfs:label ${refNameVar} .`)
+  // displayed (and so a label filter can apply to any of them). Optional, as
+  // for the primary asset: an unlabelled referenced asset still joins, and a
+  // label filter rejects it because its expression errors on the unbound
+  // variable ([SPARQL11] §17.2).
+  optionals.push(optionalLabelPattern(refVar, refNameVar))
   if (ref.label) {
     filters.push(
       `FILTER(CONTAINS(LCASE(${refNameVar}), "${escapeRdfLiteral(ref.label.toLowerCase())}"))`

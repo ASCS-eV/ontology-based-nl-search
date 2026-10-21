@@ -104,17 +104,19 @@ PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
 PREFIX georeference: <https://w3id.org/ascs-ev/envited-x/georeference/v5/>
 
 SELECT ?asset ?name ?roadTypes ?country WHERE {
-  ?asset a hdmap:HdMap ;
-    rdfs:label ?name .
+  ?asset a hdmap:HdMap .
   ?asset hdmap:hasDomainSpecification ?domSpec .
   ?domSpec hdmap:hasContent ?content .
   ?content hdmap:roadTypes ?roadTypes .
   ?domSpec hdmap:hasGeoreference ?georef .
   ?georef georeference:hasProjectLocation ?loc .
   ?loc georeference:country ?country .
+  OPTIONAL { ?asset rdfs:label ?name }
   FILTER(?roadTypes = "motorway")
   FILTER(CONTAINS(LCASE(STR(?country)), "de"))
 }
+ORDER BY ?asset
+LIMIT 500
 ```
 
 **Key properties:**
@@ -124,6 +126,7 @@ SELECT ?asset ?name ?roadTypes ?country WHERE {
 - ✅ **W3C-compliant** — `STR()` wrapping handles both literal and IRI-valued nodes
 - ✅ **Cross-domain** — referenced domains only join when they carry active filters that the referencing domain does not already carry; when a referenced domain's constraints are all shared with its parent (e.g. the same vocabulary leaf reachable from both), the domains are peers and each gets its own `UNION` arm, so no requested domain is dropped
 - ✅ **Standalone vocabularies** — a request scoped only to a support vocabulary (e.g. "OpenLABEL only") resolves to the asset domains whose discovered paths use that vocabulary **plus** the vocabulary itself — but only those that can express **every** restriction the vocabulary defines (an HD map carries scenery attributes, never a behaviour flag, so "straight motorway **and** lane keeping" is not answered by it). The vocabulary's entry classes are discovered from SHACL (classes of a non-asset domain that own properties but are never the value of a `sh:node`/`sh:class` nesting); each yields an extra `UNION` arm `?asset a <root>` guarded by `FILTER NOT EXISTS { ?_owner ?_ownerLink ?asset }`, so only unattached documents of that vocabulary match, never ones nested inside an asset. A standalone document is a closed unit: an entry class that has no path for one of the restrictions yields **no** arm (rather than dropping the restriction), and when no arm can answer the query the result is an explicit `FILTER(false)` — never an empty group, which would be one unbound row ([SPARQL11] §5.2.1). A standalone document references nothing, so with a reference (explicit, or the JOIN a parent→child hierarchy compiles to) the vocabulary contributes no arm and the asset domains compile as they would without it
+- ✅ **Labels are optional** — `rdfs:label` is an annotation ([RDFS] §3.6), and an `sh:closed` shape rejects every property it does not declare ([SHACL] §4.8.1), so the primary asset and every referenced asset bind their label in an `OPTIONAL`. An asset without a label is still returned, and the UI shows it by its IRI; a label filter on a reference matches only assets that have a matching label
 - ✅ **Syntax-validated** — post-compilation validation catches structural errors
 - ✅ **Honest result counts** — the query is ordered by asset and bounded by a single `LIMIT SPARQL_MAX_LIMIT` ([SPARQL11] §15.1, §15.5). `matchCount` is the number of distinct matching assets; if the bound was reached the trailing asset's rows are dropped, so every asset returned carries its complete set of joined rows and `meta.truncated` marks the count as a lower bound for the UI to render as `N+`
 - ✅ **Datatype-aware literals** — the comparison for a literal follows the leaf's `sh:datatype` ([SHACL] §4.1.2), never the look of the value. A leaf declared `xsd:boolean` is compared by lexical form (`STR(?v) IN ("true", "1")`; both lexical forms of each value, [RDF11] §5) because `"true"^^xsd:boolean` is never RDF-term-equal to the simple literal `"true"` ([SPARQL11] §17.4.1.7); every other literal keeps plain equality

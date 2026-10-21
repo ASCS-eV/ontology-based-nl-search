@@ -198,6 +198,38 @@ describe('ResultsDisplay', () => {
   })
 
   /**
+   * Rows are ordered by asset and the label is optional, so the first row may
+   * lack `name`. The table still shows the column and the other rows' names.
+   */
+  it('keeps the name column when the first asset has no label', () => {
+    const results: Record<string, string>[] = [
+      { asset: 'urn:book:a', genre: 'fiction' },
+      { asset: 'urn:book:b', name: 'Book B', genre: 'poetry' },
+    ]
+    render(<ResultsDisplay results={results} />)
+    expect(screen.getByRole('columnheader', { name: 'name' })).toBeInTheDocument()
+    expect(screen.getByText('Book B')).toBeInTheDocument()
+  })
+
+  /**
+   * The label of a referenced asset is optional (closed SHACL shapes cannot
+   * carry `rdfs:label`), so a row may project `refAsset` without `refName`.
+   * The reference still renders, named by its IRI.
+   */
+  it('renders a referenced asset that has no label by its IRI', () => {
+    const results = [
+      {
+        asset: 'did:web:x:Scenario:1',
+        name: 'Munich Scenario',
+        refAsset: 'did:web:x:HdMap:1',
+      },
+    ]
+    render(<ResultsDisplay results={results} />)
+    expect(screen.getByText('References (1)')).toBeInTheDocument()
+    expect(screen.getByText('did:web:x:HdMap:1')).toBeInTheDocument()
+  })
+
+  /**
    * Nested references (scenario → trace → map): the compiler projects the map
    * as `refAsset_0` under the trace `refAsset`. The UI must render the map as a
    * child of the trace (not a sibling), and the map's breadcrumb roots at the

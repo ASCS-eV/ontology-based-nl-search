@@ -26,6 +26,7 @@ import type { SearchSlots } from '@ontology-search/slots/slots'
 
 import { emitDirectPathFilters } from './compiler-helpers-paths.js'
 import { findDomainForIri, prefixedPredicate } from './compiler-helpers-primitives.js'
+import { ASSET_LABEL_PATTERN } from './compiler-helpers-query.js'
 import type { CompilerVocab } from './compiler-vocab.js'
 import type { PropertyPath } from './property-paths.js'
 
@@ -98,7 +99,7 @@ export function buildStandaloneArms(
 
     const body = [
       ...patterns,
-      'OPTIONAL { ?asset rdfs:label ?name }',
+      ASSET_LABEL_PATTERN,
       'FILTER NOT EXISTS { ?_owner ?_ownerLink ?asset }',
       ...filters,
     ]

@@ -19,6 +19,7 @@
  * meta-model-specific compiler and the ontology-name budget (per
  * CONTRIBUTING.md § 9b) has been silently inflated.
  */
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { describe, expect, it } from 'vitest'
@@ -348,6 +349,67 @@ describe('genericity proof — compiler emission on a flat schema', () => {
       ).toBe(false)
     }
     expect(sparql).not.toContain('?domSpec')
+  }, 30_000)
+
+  /**
+   * Closed asset shapes (`sh:closed true`, as LinkML-generated SHACL emits)
+   * cannot carry `rdfs:label`, so a required label pattern dropped every such
+   * asset from every result set. The label must be OPTIONAL.
+   */
+  it('returns assets that carry no rdfs:label', async () => {
+    const store = await loadFixture()
+    const registry = libraryRegistry()
+    const vocabIndex = await buildCompilerVocabFrom(store, registry as any)
+    await store.loadTurtle(`
+      @prefix library: <http://example.org/library/v1/> .
+      <urn:book:unlabelled> a library:Book ; library:genre "fiction" .
+    `)
+
+    const { sparql } = await compileSlotsWithTrace(
+      { domains: ['library'], filters: { genre: 'fiction' }, ranges: {} },
+      { registry: registry as any, vocabIndex }
+    )
+    const result = await store.query(sparql)
+
+    expect(result.results.bindings.map((b) => b['asset']?.value)).toEqual(['urn:book:unlabelled'])
+    expect(result.results.bindings[0]?.['name']).toBeUndefined()
+  }, 30_000)
+
+  /**
+   * The same holds for a referenced asset: an unlabelled one still satisfies
+   * the reference join, while a label filter on the reference only matches
+   * assets that have a matching label.
+   */
+  it('joins referenced assets that carry no rdfs:label', async () => {
+    const store = await loadFixture()
+    const registry = libraryRegistry()
+    const vocabIndex = await buildCompilerVocabFrom(store, registry as any)
+    await store.loadTurtle(`
+      @prefix library: <http://example.org/library/v1/> .
+      @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+      <urn:book:first> a library:Book ; library:relatedBook <urn:book:unlabelled> .
+      <urn:book:second> a library:Book ; library:relatedBook <urn:book:sequel> .
+      <urn:book:unlabelled> a library:Book .
+      <urn:book:sequel> a library:Book ; rdfs:label "The Sequel" .
+    `)
+    const pairs = async (references: SearchSlots['references']) => {
+      const { sparql } = await compileSlotsWithTrace(
+        { domains: ['library'], filters: {}, ranges: {}, references },
+        { registry: registry as any, vocabIndex }
+      )
+      const result = await store.query(sparql)
+      return result.results.bindings
+        .map((b) => `${b['asset']?.value} -> ${b['refAsset']?.value} (${b['refName']?.value})`)
+        .sort()
+    }
+
+    expect(await pairs([{ domain: 'library' }])).toEqual([
+      'urn:book:first -> urn:book:unlabelled (undefined)',
+      'urn:book:second -> urn:book:sequel (The Sequel)',
+    ])
+    expect(await pairs([{ domain: 'library', label: 'sequel' }])).toEqual([
+      'urn:book:second -> urn:book:sequel (The Sequel)',
+    ])
   }, 30_000)
 })
 

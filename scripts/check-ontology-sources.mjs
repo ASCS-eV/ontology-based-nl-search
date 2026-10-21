@@ -18,50 +18,127 @@
  * so it cannot import the (TypeScript) ontology package.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const strict = process.argv.includes('--strict')
-const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+import { loadEnvFileIntoProcess } from './check-env.mjs'
 
-/**
- * Resolve the artifact roots the server would search, in the same order:
- * `ontology-sources.json` → `ONTOLOGY_ARTIFACTS_PATH` → none.
- *
- * Deliberately ontology-agnostic: it reads the committed manifest rather than
- * hard-coding the demo's submodule chain, so it carries no ontology-specific
- * identifiers (the server owns the last-resort default in sources.ts). The
- * submodule remediation below is still reached because the committed manifest
- * path lives under a `submodules/` segment.
- */
+const strict = process.argv.includes('--strict')
+const checkout = join(dirname(fileURLToPath(import.meta.url)), '..')
+// The server reads ONTOLOGY_ROOT / ONTOLOGY_SOURCES_FILE / ONTOLOGY_ARTIFACTS_PATH
+// from .env.local too.
+loadEnvFileIntoProcess(checkout)
+// Workspace root the server resolves against — `getProjectRoot` in
+// packages/ontology/src/paths.ts: a relative ONTOLOGY_ROOT is relative to the
+// checkout, whatever directory this runs in.
+const root = process.env.ONTOLOGY_ROOT ? resolve(checkout, process.env.ONTOLOGY_ROOT) : checkout
+
 /**
  * Default cache path segments — mirrors DEFAULT_ONTOLOGY_CACHE_PATH in
  * packages/ontology/src/sources.ts so the preflight check matches runtime.
  */
 const DEFAULT_CACHE_SEGMENTS = ['.ontology', 'artifacts']
 
-function resolveArtifactRoots() {
-  const manifestPath = join(root, 'ontology-sources.json')
-  if (existsSync(manifestPath)) {
-    try {
-      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
-      const sources = Array.isArray(manifest?.sources) ? manifest.sources : []
-      const asSet = (list) => (Array.isArray(list) ? new Set(list) : undefined)
-      const roots = sources
-        .filter((s) => typeof s?.path === 'string')
-        .map((s) => ({
-          path: join(root, s.path),
-          allow: asSet(s.domains),
-          deny: asSet(s.excludeDomains),
-        }))
-      if (roots.length > 0) return roots
-    } catch {
-      // A malformed manifest is reported loudly by the server at startup
-      // (OntologySourcesError); the preflight just falls through.
+const configuredManifest = process.env.ONTOLOGY_SOURCES_FILE
+const manifestPath = configuredManifest
+  ? resolve(root, configuredManifest)
+  : join(root, 'ontology-sources.json')
+
+/**
+ * Read the manifest and reject what `loadOntologySourcesManifest` in
+ * packages/ontology/src/sources.ts rejects: unreadable or malformed JSON, no
+ * `sources` array, an entry without a string `path`, and a `domains` /
+ * `excludeDomains` list that is not an array of distinct names or that
+ * overlaps the other list.
+ */
+function readManifest() {
+  let manifest
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+  } catch (err) {
+    throw new Error(`Cannot read ${manifestPath} as JSON: ${err.message}`)
+  }
+  if (manifest === null || typeof manifest !== 'object' || !Array.isArray(manifest.sources)) {
+    throw new Error(`${manifestPath} must declare { sources: [...] }`)
+  }
+  for (const source of manifest.sources) {
+    if (source === null || typeof source !== 'object' || typeof source.path !== 'string') {
+      throw new Error(
+        `${manifestPath}: every sources[] entry must be { path: string }; received ${JSON.stringify(source)}`
+      )
+    }
+    for (const key of ['domains', 'excludeDomains']) {
+      const list = source[key]
+      if (list === undefined) continue
+      const names = Array.isArray(list) && list.every((d) => typeof d === 'string')
+      if (!names || new Set(list).size !== list.length) {
+        throw new Error(
+          `${manifestPath}: sources[].${key} of "${source.path}" must be an array of distinct domain names`
+        )
+      }
+    }
+    const excluded = new Set(source.excludeDomains ?? [])
+    const both = (source.domains ?? []).filter((d) => excluded.has(d))
+    if (both.length > 0) {
+      throw new Error(
+        `${manifestPath}: source "${source.path}" both includes and excludes ${both.join(', ')}`
+      )
     }
   }
+  return manifest.sources
+}
+
+/**
+ * The server rejects a configured manifest that is missing, and any manifest
+ * it cannot read, with an OntologySourcesError — it never falls back to
+ * another ontology. Report exactly that, rather than counting the shape files
+ * of a fallback the server would not load.
+ */
+function failOnManifest(message) {
+  process.stderr.write(
+    [
+      '',
+      `⚠  ${message}`,
+      '   The API starts DEGRADED and loads no ontology until the manifest is fixed',
+      configuredManifest ? '   or ONTOLOGY_SOURCES_FILE is unset.' : '   or removed.',
+      '',
+    ].join('\n')
+  )
+  process.exit(strict ? 1 : 0)
+}
+
+let manifestSources = null
+if (existsSync(manifestPath)) {
+  try {
+    manifestSources = readManifest()
+  } catch (err) {
+    failOnManifest(err.message)
+  }
+} else if (configuredManifest) {
+  failOnManifest(`ONTOLOGY_SOURCES_FILE points at a missing file: ${manifestPath}`)
+}
+
+/**
+ * Resolve the artifact roots the server would search, in the same order:
+ * the manifest (`ONTOLOGY_SOURCES_FILE`, else `ontology-sources.json`) →
+ * `ONTOLOGY_ARTIFACTS_PATH` → the default cache path. Relative source paths
+ * resolve against the manifest's own directory, as in sources.ts.
+ *
+ * Deliberately ontology-agnostic: it reads whatever the manifest declares and
+ * carries no ontology-specific identifiers.
+ */
+function resolveArtifactRoots() {
+  if (manifestSources && manifestSources.length > 0) {
+    const baseDir = dirname(manifestPath)
+    const asSet = (list) => (list ? new Set(list) : undefined)
+    return manifestSources.map((s) => ({
+      path: isAbsolute(s.path) ? s.path : resolve(baseDir, s.path),
+      allow: asSet(s.domains),
+      deny: asSet(s.excludeDomains),
+    }))
+  }
   const envOverride = process.env.ONTOLOGY_ARTIFACTS_PATH
-  if (envOverride) return [{ path: envOverride }]
+  if (envOverride) return [{ path: resolve(root, envOverride) }]
   // Last resort: the default cache path (matches runtime fallback)
   return [{ path: join(root, ...DEFAULT_CACHE_SEGMENTS) }]
 }
@@ -136,7 +213,8 @@ if (missingSubmoduleRoot) {
 }
 lines.push(
   '     • Or set ONTOLOGY_ARTIFACTS_PATH to a directory of ontology artifacts,',
-  '     • Or declare sources in ontology-sources.json ({ sources: [{ path }] }).',
+  '     • Or declare sources in ontology-sources.json ({ sources: [{ path }] })',
+  '       or in the manifest ONTOLOGY_SOURCES_FILE points at.',
   ''
 )
 process.stderr.write(lines.join('\n'))

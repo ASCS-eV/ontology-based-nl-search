@@ -34,6 +34,21 @@ export function pruneUnusedPrefixes(prefixes: string, body: string): string {
 }
 
 /**
+ * Display label of a result node, bound to `nameVar` when the node has one.
+ * OPTIONAL because `rdfs:label` is an annotation, not a constraint
+ * ([RDFS] §3.6): an `sh:closed` shape rejects every property it does not
+ * declare ([SHACL] §4.8.1), so the assets of such an ontology carry no label,
+ * and a required pattern would drop every one of them. Clients fall back to
+ * the node's IRI when `nameVar` is unbound.
+ */
+export function optionalLabelPattern(nodeVar: string, nameVar: string): string {
+  return `OPTIONAL { ${nodeVar} rdfs:label ${nameVar} }`
+}
+
+/** The primary asset's label (see {@link optionalLabelPattern}). */
+export const ASSET_LABEL_PATTERN = optionalLabelPattern('?asset', '?name')
+
+/**
  * Assemble a complete SPARQL SELECT query from its constituent parts.
  * Centralizes the query-tail pattern used by both single-domain and
  * cross-domain compilation.

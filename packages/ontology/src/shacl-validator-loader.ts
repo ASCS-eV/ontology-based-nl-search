@@ -15,7 +15,7 @@ import type { DatasetCore, NamedNode, Quad, Term } from '@rdfjs/types'
 import { DataFactory, Parser } from 'n3'
 
 import type { PropertyConstraint } from './shacl-validator-types.js'
-import { discoverShapeFiles } from './sources.js'
+import { artifactBaseIri, discoverShapeFiles } from './sources.js'
 
 const log = createComponentLogger('shacl-validator')
 
@@ -53,7 +53,6 @@ const SH_NS = RDF_PREFIXES.sh
 
 export async function loadShapesFromDisk(): Promise<DatasetCore> {
   const ds = datasetFactory.dataset()
-  const parser = new Parser()
 
   // Shapes only. The OWL files carry class axioms, not SHACL: none of them
   // declares a NodeShape, a sh:property or a sh:targetClass, and this engine
@@ -68,7 +67,7 @@ export async function loadShapesFromDisk(): Promise<DatasetCore> {
   for (const { path: filePath } of discoverShapeFiles()) {
     const turtle = readFileSync(filePath, 'utf-8')
     try {
-      const quads = parser.parse(turtle)
+      const quads = new Parser({ baseIRI: artifactBaseIri(filePath) }).parse(turtle)
       for (const q of quads) ds.add(q as unknown as Quad)
     } catch (err) {
       log.warn('Failed to parse SHACL file', { file: filePath, error: String(err) })
