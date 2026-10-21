@@ -7,7 +7,7 @@ import { resetConfig } from '@ontology-search/core/config'
 import { describe, expect, it, vi } from 'vitest'
 
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
-import { contextUrlCandidates, loadSampleData } from '../data-loader.js'
+import { contextUrlCandidates, loadSampleData, withJsonLdBase } from '../data-loader.js'
 
 describe('contextUrlCandidates', () => {
   it('keeps exact and trailing-slash variants of a plain context URL', () => {
@@ -37,6 +37,34 @@ describe('contextUrlCandidates', () => {
     expect(contextUrlCandidates('https://example.org/mycontext')).not.toContain(
       'https://example.org/my'
     )
+  })
+})
+
+describe('withJsonLdBase', () => {
+  const file = join('/data', 'items.jsonld')
+  const base = pathToFileURL(file).href
+
+  it('puts the document location first in its context', () => {
+    const doc = JSON.parse(
+      withJsonLdBase(JSON.stringify({ '@context': { a: 'b' }, '@id': 'x' }), file)
+    )
+    expect(doc['@context']).toEqual([{ '@base': base }, { a: 'b' }])
+  })
+
+  it('lets a document’s own @base win, after ours', () => {
+    const own = { '@base': 'http://own.example/' }
+    const doc = JSON.parse(withJsonLdBase(JSON.stringify({ '@context': [own], '@id': 'x' }), file))
+    expect(doc['@context']).toEqual([{ '@base': base }, own])
+  })
+
+  it('wraps a top-level array in @graph under the base', () => {
+    const doc = JSON.parse(withJsonLdBase(JSON.stringify([{ '@id': 'x' }]), file))
+    expect(doc).toEqual({ '@context': { '@base': base }, '@graph': [{ '@id': 'x' }] })
+  })
+
+  it('leaves text that is not a JSON object or array to the parser', () => {
+    expect(withJsonLdBase('not json', file)).toBe('not json')
+    expect(withJsonLdBase('42', file)).toBe('42')
   })
 })
 
@@ -86,6 +114,11 @@ describe('loadSampleData — manifest data sources', () => {
       })
     )
     writeFileSync(join(dataDir, 'more.ttl'), `<item2> a <${VOCAB}Item> .\n`)
+    // A relative @id, which a parser without the document's location drops.
+    writeFileSync(
+      join(dataDir, 'relative.jsonld'),
+      JSON.stringify({ '@context': { '@vocab': VOCAB }, '@id': 'item5', '@type': 'Item' })
+    )
     writeFileSync(
       join(root, 'ontology-sources.json'),
       JSON.stringify({ sources: [{ path: 'artifacts', data: 'data', domains: ['demo'] }] })
@@ -98,6 +131,7 @@ describe('loadSampleData — manifest data sources', () => {
       const items = await store.query(`SELECT ?s WHERE { ?s a <${VOCAB}Item> } ORDER BY ?s`)
       expect(items.results.bindings.map((b) => b['s']?.value)).toEqual([
         new URL('item2', pathToFileURL(join(dataDir, 'more.ttl'))).href,
+        new URL('item5', pathToFileURL(join(dataDir, 'relative.jsonld'))).href,
         'urn:item:1',
       ])
       const size = await store.query('SELECT ?p WHERE { <urn:item:1> ?p "L" }')

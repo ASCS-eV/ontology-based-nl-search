@@ -7,10 +7,12 @@
  *   [TURTLE]    RDF 1.1 Turtle — docs/specs/references/turtle.md
  *               https://www.w3.org/TR/turtle/      (`*.ttl` instance + fallback data)
  * `@context` URLs are resolved to local context files before `loadJsonLd`, per
- * [JSON-LD11] §3.1 (the Context).
+ * [JSON-LD11] §3.1 (the Context). Every file loads with its location as base
+ * IRI ([TURTLE] §6.3, [JSON-LD11] §4.1.3), so relative IRIs resolve.
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
 import {
+  artifactBaseIri,
   type ArtifactRoot,
   getDataSources,
   isDomainSelected,
@@ -151,6 +153,31 @@ function resolveLocalContext(jsonContent: string, contextMap: Map<string, unknow
 }
 
 /**
+ * Give a JSON-LD document its location as base IRI. A relative `@id` resolves
+ * against the document's base IRI ([JSON-LD11] §4.1.3), which is its
+ * location; the parser gets only the text, and drops a node it cannot resolve
+ * without an error. The base goes first in the document's context, so an
+ * `@base` the document declares itself still wins; a top-level array of node
+ * objects is wrapped in `@graph` under that context. Text that is not a JSON
+ * object or array is returned unchanged for the parser to reject.
+ */
+export function withJsonLdBase(json: string, filePath: string): string {
+  let doc: unknown
+  try {
+    doc = JSON.parse(json)
+  } catch {
+    return json
+  }
+  const base = { '@base': artifactBaseIri(filePath) }
+  if (Array.isArray(doc)) return JSON.stringify({ '@context': base, '@graph': doc })
+  if (doc === null || typeof doc !== 'object') return json
+  const record = doc as Record<string, unknown>
+  const own = record['@context']
+  const context = own === undefined ? base : [base, ...(Array.isArray(own) ? own : [own])]
+  return JSON.stringify({ ...record, '@context': context })
+}
+
+/**
  * Keys a remote `@context` URL may be indexed under: the URL itself with and
  * without a trailing slash, plus — for the `<ontology>/context` / `<ontology>#context`
  * form that OMB-style catalogs publish — the ontology namespace it names: the
@@ -189,8 +216,7 @@ async function loadFromDataSources(
       const content = loadDataFile(path)
       if (!content) continue
       if (file.endsWith('.jsonld') || file.endsWith('.json')) {
-        const resolved = resolveLocalContext(content, contextMap)
-        await store.loadJsonLd(resolved)
+        await store.loadJsonLd(withJsonLdBase(resolveLocalContext(content, contextMap), path))
         loaded++
         log.debug('Loaded data file', { source: sourceName, file })
       } else if (file.endsWith('.ttl')) {
@@ -234,9 +260,10 @@ export async function loadSampleData(store: SparqlStore): Promise<void> {
   const builtin = discoverBuiltinDataFiles()
 
   for (const file of builtin.jsonld) {
-    const data = loadDataFile(join(DATA_DIR, file))
+    const path = join(DATA_DIR, file)
+    const data = loadDataFile(path)
     if (data) {
-      await store.loadJsonLd(data)
+      await store.loadJsonLd(withJsonLdBase(data, path))
       loaded++
       log.debug('Loaded built-in data file', { file })
     }

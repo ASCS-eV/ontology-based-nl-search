@@ -371,7 +371,9 @@ features use its `imports/`, search does not.
 - **Relative IRIs** in Turtle files — schema and instance data alike —
   resolve against the file's location ([TURTLE] §6.3), so generator output
   without `@base` still loads, and the schema graph, the domain registry and
-  the SHACL validator all see the same IRIs.
+  the SHACL validator all see the same IRIs. A relative `@id` in JSON-LD data
+  resolves against the file's location too ([JSON-LD11] §4.1.3), unless the
+  document's own context sets `@base`.
 - **Validate before loading.** OMB's suite checks data against the same
   bundle:
 
