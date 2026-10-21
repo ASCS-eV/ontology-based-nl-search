@@ -62,12 +62,16 @@ const EMPTY_PARSE: ParsedTtl = { quads: [], prefixes: {} }
  * file must not sink registry construction — the SHACL the registry actually
  * compiles against is validated elsewhere — so a parse failure degrades to the
  * empty view (no quads, no prefixes) rather than throwing.
+ *
+ * `baseIri` is the document's base for relative IRIs — `artifactBaseIri` of
+ * the file it was read from, the base every other reader of that file uses.
  */
-export function parseTtl(ttlContent: string): ParsedTtl {
+export function parseTtl(ttlContent: string, baseIri?: string): ParsedTtl {
   if (ttlContent.length === 0) return EMPTY_PARSE
   const prefixes: Record<string, string> = {}
   try {
-    const quads = new N3Parser().parse(ttlContent, null, (prefix, iri) => {
+    const parser = new N3Parser(baseIri ? { baseIRI: baseIri } : {})
+    const quads = parser.parse(ttlContent, null, (prefix, iri) => {
       prefixes[prefix] = typeof iri === 'string' ? iri : iri.value
     })
     return { quads, prefixes }

@@ -16,6 +16,7 @@ import { getConfig } from '@ontology-search/core/config'
 import { OntologySourcesError } from '@ontology-search/core/errors'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { dirname, isAbsolute, join, resolve } from 'path'
+import { pathToFileURL } from 'url'
 
 import { getProjectRoot } from './paths.js'
 
@@ -91,6 +92,17 @@ export interface OntologySourcesManifest {
   sources: readonly OntologySource[]
   /** Absolute directory of the manifest file; relative source paths resolve against it. */
   baseDir: string
+}
+
+/**
+ * Base IRI of an artifact file: its location as a `file:` URL. A Turtle
+ * document without `@base` resolves its relative IRIs against the location it
+ * was retrieved from ([TURTLE] §6.3), so every reader of an artifact — the
+ * schema graph, the domain registry, the SHACL validator, the instance-data
+ * loader — parses it against this one base and they agree on its IRIs.
+ */
+export function artifactBaseIri(filePath: string): string {
+  return pathToFileURL(filePath).href
 }
 
 /** Workspace root — re-exported under a clearer name. */
@@ -248,11 +260,7 @@ export function getArtifactRoots(): ArtifactRoot[] {
   const root = getWorkspaceRoot()
   const manifest = loadOntologySourcesManifest()
   if (manifest && manifest.sources.length > 0) {
-    return manifest.sources.map((s) => ({
-      path: resolveSourcePath(manifest, s.path),
-      domainAllowlist: s.domains ? new Set(s.domains) : undefined,
-      domainDenylist: s.excludeDomains ? new Set(s.excludeDomains) : undefined,
-    }))
+    return manifest.sources.map((s) => artifactRootOf(manifest, s))
   }
 
   const override = getConfig().ONTOLOGY_ARTIFACTS_PATH
@@ -261,19 +269,29 @@ export function getArtifactRoots(): ArtifactRoot[] {
   return [{ path: join(root, ...DEFAULT_ONTOLOGY_CACHE_PATH) }]
 }
 
+/** The artifact root a manifest source declares, with its domain selection. */
+function artifactRootOf(manifest: OntologySourcesManifest, source: OntologySource): ArtifactRoot {
+  return {
+    path: resolveSourcePath(manifest, source.path),
+    domainAllowlist: source.domains ? new Set(source.domains) : undefined,
+    domainDenylist: source.excludeDomains ? new Set(source.excludeDomains) : undefined,
+  }
+}
+
 /**
- * Resolve data sources from `ontology-sources.json`, pairing each `data`
- * directory with its corresponding `path` (artifacts) directory so the
- * loader can resolve remote @context URLs to local context files.
+ * Resolve data sources from the manifest, pairing each `data` directory with
+ * the artifact root of the same source — including its domain selection — so
+ * the loader can resolve remote @context URLs to the local context files of
+ * the selected domains only.
  */
-export function getDataSources(): { dataDir: string; artifactsDir: string }[] {
+export function getDataSources(): { dataDir: string; artifacts: ArtifactRoot }[] {
   const manifest = loadOntologySourcesManifest()
   if (!manifest) return []
   return manifest.sources
     .filter((s): s is OntologySource & { data: string } => typeof s.data === 'string')
     .map((s) => ({
       dataDir: resolveSourcePath(manifest, s.data),
-      artifactsDir: resolveSourcePath(manifest, s.path),
+      artifacts: artifactRootOf(manifest, s),
     }))
 }
 

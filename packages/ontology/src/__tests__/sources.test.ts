@@ -323,7 +323,7 @@ describe('ontology source-tree discovery (sources.ts)', () => {
       expect(getDataSources()).toEqual([
         {
           dataDir: join(workspaceRoot, 'private', 'data'),
-          artifactsDir: join(privateDir, 'artifacts'),
+          artifacts: { path: join(privateDir, 'artifacts') },
         },
       ])
     })

@@ -10,11 +10,17 @@
  * [JSON-LD11] §3.1 (the Context).
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
-import { getDataSources } from '@ontology-search/ontology/sources'
+import {
+  type ArtifactRoot,
+  getDataSources,
+  isDomainSelected,
+} from '@ontology-search/ontology/sources'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 import { existsSync, readdirSync, readFileSync } from 'fs'
 import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
+
+import { withDocumentBase } from './schema-loader.js'
 
 const log = createComponentLogger('data-loader')
 
@@ -61,16 +67,29 @@ function discoverBuiltinDataFiles(): { jsonld: string[]; ttl: string[] } {
 }
 
 /**
- * Find all *.context.jsonld files in an artifacts directory tree and build
- * a map from their declared `@context["@base"]` or filename-derived IRI to
- * the parsed context object. Used to inline remote contexts locally.
+ * Find the *.context.jsonld files of an artifact root and build a map from
+ * their declared `@vocab` / `@base` IRI to the parsed context object. Used to
+ * inline remote contexts locally.
+ *
+ * Every domain's contexts are read, including those the source's `domains` /
+ * `excludeDomains` selection leaves out: a context only tells the parser how
+ * to read a data file, and instance data may well use the context of an
+ * unselected bundle (an umbrella bundle left out so its shapes do not load
+ * twice). Where two contexts claim the same IRI, a selected domain's wins —
+ * selected domains are read last, each tier in sorted order, so the winner
+ * never depends on directory order.
  */
-function buildContextMap(artifactsDir: string): Map<string, unknown> {
+function buildContextMap(artifacts: ArtifactRoot): Map<string, unknown> {
   const map = new Map<string, unknown>()
-  if (!existsSync(artifactsDir)) return map
+  if (!existsSync(artifacts.path)) return map
 
-  for (const domain of readdirSync(artifactsDir)) {
-    const domainDir = join(artifactsDir, domain)
+  const domains = readdirSync(artifacts.path).sort()
+  const selectedLast = [
+    ...domains.filter((d) => !isDomainSelected(artifacts, d)),
+    ...domains.filter((d) => isDomainSelected(artifacts, d)),
+  ]
+  for (const domain of selectedLast) {
+    const domainDir = join(artifacts.path, domain)
     try {
       const files = readdirSync(domainDir)
       for (const file of files) {
@@ -134,13 +153,18 @@ function resolveLocalContext(jsonContent: string, contextMap: Map<string, unknow
 /**
  * Keys a remote `@context` URL may be indexed under: the URL itself with and
  * without a trailing slash, plus — for the `<ontology>/context` / `<ontology>#context`
- * form that OMB-style catalogs publish — the ontology base IRI it names.
+ * form that OMB-style catalogs publish — the ontology namespace it names: the
+ * base followed by the separator the URL uses (`<ontology>#` for a hash
+ * namespace), then with a slash, then bare.
  */
 export function contextUrlCandidates(remoteUrl: string): string[] {
   const candidates = [remoteUrl, remoteUrl + '/', remoteUrl.replace(/\/$/, '')]
   const base = remoteUrl.replace(/[/#]context\/?$/, '')
-  if (base !== remoteUrl) candidates.push(base + '/', base)
-  return candidates
+  if (base !== remoteUrl) {
+    const separator = remoteUrl.charAt(base.length)
+    candidates.push(base + separator, base + '/', base)
+  }
+  return [...new Set(candidates)]
 }
 
 /**
@@ -152,12 +176,12 @@ export function contextUrlCandidates(remoteUrl: string): string[] {
  */
 async function loadFromDataSources(
   store: SparqlStore,
-  sources: { dataDir: string; artifactsDir: string }[]
+  sources: { dataDir: string; artifacts: ArtifactRoot }[]
 ): Promise<number> {
   let loaded = 0
-  for (const { dataDir, artifactsDir } of sources) {
+  for (const { dataDir, artifacts } of sources) {
     if (!existsSync(dataDir)) continue
-    const contextMap = buildContextMap(artifactsDir)
+    const contextMap = buildContextMap(artifacts)
     const files = readdirSync(dataDir)
     const sourceName = basename(dataDir)
     for (const file of files) {
@@ -170,7 +194,7 @@ async function loadFromDataSources(
         loaded++
         log.debug('Loaded data file', { source: sourceName, file })
       } else if (file.endsWith('.ttl')) {
-        await store.loadTurtle(content)
+        await store.loadTurtle(withDocumentBase(content, path))
         loaded++
         log.debug('Loaded data file', { source: sourceName, file })
       }
@@ -220,9 +244,10 @@ export async function loadSampleData(store: SparqlStore): Promise<void> {
 
   if (loaded === 0) {
     for (const file of builtin.ttl) {
-      const data = loadDataFile(join(DATA_DIR, file))
+      const path = join(DATA_DIR, file)
+      const data = loadDataFile(path)
       if (data) {
-        await store.loadTurtle(data)
+        await store.loadTurtle(withDocumentBase(data, path))
         loaded++
         log.debug('Loaded built-in data file', { file })
       }
