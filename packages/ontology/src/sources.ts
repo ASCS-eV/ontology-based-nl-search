@@ -263,8 +263,9 @@ export function getArtifactRoots(): ArtifactRoot[] {
     return manifest.sources.map((s) => artifactRootOf(manifest, s))
   }
 
+  // Relative to the workspace root, like ONTOLOGY_SOURCES_FILE.
   const override = getConfig().ONTOLOGY_ARTIFACTS_PATH
-  if (override) return [{ path: override }]
+  if (override) return [{ path: resolve(root, override) }]
 
   return [{ path: join(root, ...DEFAULT_ONTOLOGY_CACHE_PATH) }]
 }

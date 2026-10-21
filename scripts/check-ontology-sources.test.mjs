@@ -9,7 +9,7 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -20,10 +20,11 @@ const SCRIPT = join(SCRIPTS, 'check-ontology-sources.mjs')
 // checkout's own .env.local, so the developer's settings cannot leak in.
 const ISOLATED = { ONTOLOGY_ROOT: '', ONTOLOGY_ARTIFACTS_PATH: '', ONTOLOGY_SOURCES_FILE: '' }
 
-function runStrict(env, script = SCRIPT) {
-  return spawnSync(process.execPath, [script, '--strict'], {
+function runStrict(env, cwd = undefined) {
+  return spawnSync(process.execPath, [SCRIPT, '--strict'], {
     env: { ...process.env, ...ISOLATED, ...env },
     encoding: 'utf8',
+    cwd,
   })
 }
 
@@ -125,5 +126,23 @@ test("settings in the checkout's .env.local are honoured", () => {
     assert.match(result.stdout, /1 in .*artifacts/)
   } finally {
     rmSync(checkout, { recursive: true, force: true })
+  }
+})
+
+test('relative ONTOLOGY_ROOT and ONTOLOGY_ARTIFACTS_PATH resolve as on the server, from any cwd', () => {
+  const dir = workspaceWithArtifacts()
+  // Deeper than the checkout, so the relative path's `..` segments cannot all
+  // collapse at `/` and land on the right directory by accident.
+  const cwd = join(dir, ...Array.from({ length: 16 }, () => 'cwd'))
+  mkdirSync(cwd, { recursive: true })
+  try {
+    const result = runStrict(
+      { ONTOLOGY_ROOT: relative(join(SCRIPTS, '..'), dir), ONTOLOGY_ARTIFACTS_PATH: 'artifacts' },
+      cwd
+    )
+    assert.equal(result.status, 0, result.stderr)
+    assert.match(result.stdout, /1 in .*artifacts/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
   }
 })

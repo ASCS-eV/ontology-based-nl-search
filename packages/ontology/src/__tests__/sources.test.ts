@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { resetConfig } from '@ontology-search/core/config'
@@ -86,6 +86,13 @@ describe('ontology source-tree discovery (sources.ts)', () => {
     it('returns the directory ONTOLOGY_ROOT points at', () => {
       expect(getWorkspaceRoot()).toBe(workspaceRoot)
     })
+
+    it('resolves a relative ONTOLOGY_ROOT against the checkout, not the working directory', () => {
+      const checkout = fileURLToPath(new URL('../../../..', import.meta.url))
+      process.env['ONTOLOGY_ROOT'] = relative(checkout, workspaceRoot)
+      resetConfig()
+      expect(getWorkspaceRoot()).toBe(workspaceRoot)
+    })
   })
 
   describe('loadOntologySourcesManifest', () => {
@@ -148,6 +155,12 @@ describe('ontology source-tree discovery (sources.ts)', () => {
         { path: join(workspaceRoot, 'custom-roots/a'), domainAllowlist: undefined },
         { path: join(workspaceRoot, 'custom-roots/b'), domainAllowlist: undefined },
       ])
+    })
+
+    it('resolves a relative ONTOLOGY_ARTIFACTS_PATH against the workspace root', () => {
+      process.env['ONTOLOGY_ARTIFACTS_PATH'] = 'mounted/artifacts'
+      resetConfig()
+      expect(getArtifactRoots()).toEqual([{ path: join(workspaceRoot, 'mounted', 'artifacts') }])
     })
 
     it('falls back to ONTOLOGY_ARTIFACTS_PATH when no manifest is present', () => {

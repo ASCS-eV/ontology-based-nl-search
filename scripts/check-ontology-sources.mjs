@@ -29,8 +29,9 @@ const checkout = join(dirname(fileURLToPath(import.meta.url)), '..')
 // from .env.local too.
 loadEnvFileIntoProcess(checkout)
 // Workspace root the server resolves against — `getProjectRoot` in
-// packages/ontology/src/paths.ts.
-const root = process.env.ONTOLOGY_ROOT ? resolve(process.env.ONTOLOGY_ROOT) : checkout
+// packages/ontology/src/paths.ts: a relative ONTOLOGY_ROOT is relative to the
+// checkout, whatever directory this runs in.
+const root = process.env.ONTOLOGY_ROOT ? resolve(checkout, process.env.ONTOLOGY_ROOT) : checkout
 
 /**
  * Default cache path segments — mirrors DEFAULT_ONTOLOGY_CACHE_PATH in
@@ -137,7 +138,7 @@ function resolveArtifactRoots() {
     }))
   }
   const envOverride = process.env.ONTOLOGY_ARTIFACTS_PATH
-  if (envOverride) return [{ path: envOverride }]
+  if (envOverride) return [{ path: resolve(root, envOverride) }]
   // Last resort: the default cache path (matches runtime fallback)
   return [{ path: join(root, ...DEFAULT_CACHE_SEGMENTS) }]
 }
