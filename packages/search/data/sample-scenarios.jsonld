@@ -410,14 +410,40 @@
             "scenario:criticalityFactors": "weather"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "20.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "40.0",
+                "@type": "xsd:decimal"
+              }
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutOut": true,
-            "openlabel:MotionStop": true
+            "openlabel:MotionTurnRight": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "1.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "2.0",
+                "@type": "xsd:decimal"
+              }
+            }
           },
           {
             "@type": "openlabel:RoadUser",
             "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
+              "@id": "openlabel:VehicleBus"
             }
           }
         ],
@@ -783,15 +809,13 @@
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutIn": true
+            "openlabel:MotionCutOut": true,
+            "openlabel:MotionStop": true
           },
           {
             "@type": "openlabel:RoadUser",
             "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleMotorcycle"
-            },
-            "openlabel:RoadUserHuman": {
-              "@id": "openlabel:HumanMotorcyclist"
+              "@id": "openlabel:VehicleCar"
             }
           }
         ],
@@ -1073,18 +1097,28 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel:Behaviour",
-            "openlabel:MotionTowards": true,
-            "openlabel:MotionWalk": true
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:weatherRainValue": {
+              "@value": "6.0",
+              "@type": "xsd:decimal"
+            }
           },
           {
-            "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleTruck"
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "40.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "60.0",
+                "@type": "xsd:decimal"
+              }
             },
-            "openlabel:RoadUserHuman": {
-              "@id": "openlabel:HumanPedestrian"
-            }
+            "openlabel:MotionTurn": true
           }
         ],
         "scenario:hasQuantity": {
@@ -1355,17 +1389,26 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel:OddEnvironment",
-            "openlabel:ConnectivityPositioning": {
-              "@id": "openlabel:PositioningGps"
-            },
-            "openlabel:ConnectivityCommunication": {
-              "@id": "openlabel:V2iCellular"
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "5",
+              "@type": "xsd:integer"
             }
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true
+            "openlabel:MotionReverse": true,
+            "openlabel:MotionUTurn": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPassenger"
+            }
           }
         ],
         "scenario:hasQuantity": {
@@ -1635,45 +1678,16 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel:OddDynamicElements",
-            "openlabel:SubjectVehicleSpeed": true,
-            "openlabel:subjectVehicleSpeedValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "60.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "120.0",
-                "@type": "xsd:decimal"
-              }
-            }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutIn": true
           },
           {
-            "@type": "openlabel:Behaviour",
-            "openlabel:MotionDecelerate": true,
-            "openlabel:motionDecelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "0.5",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "2.0",
-                "@type": "xsd:decimal"
-              }
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleMotorcycle"
             },
-            "openlabel:MotionAccelerate": true,
-            "openlabel:motionAccelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "0.3",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "1.0",
-                "@type": "xsd:decimal"
-              }
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanMotorcyclist"
             }
           }
         ],
@@ -2034,8 +2048,25 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionStop": true
+            "openlabel:MotionDrive": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCycle"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanCyclist"
+            }
           }
         ],
         "scenario:hasQuantity": {
@@ -2414,24 +2445,16 @@
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDecelerate": true,
-            "openlabel:motionDecelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "2.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "4.0",
-                "@type": "xsd:decimal"
-              }
-            },
-            "openlabel:MotionDrive": true
+            "openlabel:MotionTowards": true,
+            "openlabel:MotionWalk": true
           },
           {
             "@type": "openlabel:RoadUser",
             "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
+              "@id": "openlabel:VehicleTruck"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPedestrian"
             }
           }
         ],
@@ -2709,25 +2732,7 @@
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutIn": true,
-            "openlabel:MotionDecelerate": true,
-            "openlabel:motionDecelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "1.5",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "3.5",
-                "@type": "xsd:decimal"
-              }
-            }
-          },
-          {
-            "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
-            }
+            "openlabel:MotionStop": true
           }
         ],
         "scenario:hasQuantity": {
@@ -2997,6 +3002,14 @@
             ],
             "scenario:country": "jp",
             "scenario:criticalityFactors": "occlusion"
+          },
+          {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
+            }
           },
           {
             "@type": "openlabel:Behaviour",
@@ -3290,26 +3303,16 @@
           },
           {
             "@type": "openlabel:OddEnvironment",
-            "openlabel:WeatherSnow": true,
-            "openlabel:weatherSnowValue": {
-              "@value": "1.0",
-              "@type": "xsd:decimal"
+            "openlabel:ConnectivityPositioning": {
+              "@id": "openlabel:PositioningGps"
+            },
+            "openlabel:ConnectivityCommunication": {
+              "@id": "openlabel:V2iCellular"
             }
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true,
-            "openlabel:motionDriveValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "40.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "70.0",
-                "@type": "xsd:decimal"
-              }
-            }
+            "openlabel:MotionDrive": true
           }
         ],
         "scenario:hasQuantity": {
@@ -3666,17 +3669,40 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "20.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "40.0",
+                "@type": "xsd:decimal"
+              }
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionTowards": true,
-            "openlabel:MotionOvertake": true,
-            "openlabel:BehaviourCommunication": {
-              "@id": "openlabel:CommunicationSignalEmergency"
+            "openlabel:MotionTurnRight": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "1.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "2.0",
+                "@type": "xsd:decimal"
+              }
             }
           },
           {
             "@type": "openlabel:RoadUser",
             "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleEmergency"
+              "@id": "openlabel:VehicleBus"
             }
           }
         ],
@@ -4037,22 +4063,42 @@
             "@type": "openlabel:OddDynamicElements",
             "openlabel:SubjectVehicleSpeed": true,
             "openlabel:subjectVehicleSpeedValue": {
-              "@value": "5",
-              "@type": "xsd:integer"
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "60.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "120.0",
+                "@type": "xsd:decimal"
+              }
             }
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionReverse": true,
-            "openlabel:MotionUTurn": true
-          },
-          {
-            "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "0.5",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "2.0",
+                "@type": "xsd:decimal"
+              }
             },
-            "openlabel:RoadUserHuman": {
-              "@id": "openlabel:HumanPassenger"
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "0.3",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "1.0",
+                "@type": "xsd:decimal"
+              }
             }
           }
         ],
@@ -4340,17 +4386,28 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:weatherRainValue": {
+              "@value": "6.0",
+              "@type": "xsd:decimal"
+            }
           },
           {
-            "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleMotorcycle"
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "40.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "60.0",
+                "@type": "xsd:decimal"
+              }
             },
-            "openlabel:RoadUserHuman": {
-              "@id": "openlabel:HumanMotorcyclist"
-            }
+            "openlabel:MotionTurn": true
           }
         ],
         "scenario:hasQuantity": {
@@ -4646,9 +4703,26 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "5",
+              "@type": "xsd:integer"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutOut": true,
-            "openlabel:MotionStop": true
+            "openlabel:MotionReverse": true,
+            "openlabel:MotionUTurn": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPassenger"
+            }
           }
         ],
         "scenario:hasQuantity": {
@@ -4921,14 +4995,68 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:TrafficAgentDensity": true,
+            "openlabel:trafficAgentDensityValue": {
+              "@value": "78",
+              "@type": "xsd:integer"
+            },
+            "openlabel:TrafficVolume": true,
+            "openlabel:trafficVolumeValue": {
+              "@value": "1900",
+              "@type": "xsd:integer"
+            },
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "0.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "30.0",
+                "@type": "xsd:decimal"
+              }
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionStop": true
+            "openlabel:MotionStop": true,
+            "openlabel:MotionAccelerate": true,
+            "openlabel:motionAccelerateValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "0.3",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "1.2",
+                "@type": "xsd:decimal"
+              }
+            },
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "0.5",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "2.0",
+                "@type": "xsd:decimal"
+              }
+            }
           },
           {
             "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
-            }
+            "openlabel:RoadUserVehicle": [
+              {
+                "@id": "openlabel:VehicleCar"
+              },
+              {
+                "@id": "openlabel:VehicleTruck"
+              }
+            ]
           }
         ],
         "scenario:hasQuantity": {
@@ -5284,29 +5412,24 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel:OddEnvironment",
-            "openlabel:WeatherSnow": true,
-            "openlabel:weatherSnowValue": {
-              "@value": "3.0",
-              "@type": "xsd:decimal"
-            },
-            "openlabel:EnvironmentParticulates": {
-              "@id": "openlabel:ParticulatesWater"
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
             }
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true,
-            "openlabel:motionDriveValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "50.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "80.0",
-                "@type": "xsd:decimal"
-              }
+            "openlabel:MotionDrive": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCycle"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanCyclist"
             }
           }
         ],
@@ -5662,17 +5785,24 @@
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDecelerate": true,
-            "openlabel:motionDecelerateValue": {
+            "openlabel:MotionCutIn": true,
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
               "@type": "schema:QuantitativeValue",
               "schema:minValue": {
-                "@value": "1.0",
+                "@value": "95.0",
                 "@type": "xsd:decimal"
               },
               "schema:maxValue": {
-                "@value": "2.5",
+                "@value": "115.0",
                 "@type": "xsd:decimal"
               }
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
             }
           }
         ],
@@ -5949,41 +6079,8 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel:OddDynamicElements",
-            "openlabel:SubjectVehicleSpeed": true,
-            "openlabel:subjectVehicleSpeedValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "20.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "40.0",
-                "@type": "xsd:decimal"
-              }
-            }
-          },
-          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionTurnRight": true,
-            "openlabel:MotionDecelerate": true,
-            "openlabel:motionDecelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "1.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "2.0",
-                "@type": "xsd:decimal"
-              }
-            }
-          },
-          {
-            "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleBus"
-            }
+            "openlabel:MotionStop": true
           }
         ],
         "scenario:hasQuantity": {
@@ -6259,13 +6356,22 @@
             "scenario:criticalityFactors": "weather"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true
+            "openlabel:MotionCross": true,
+            "openlabel:MotionWalk": true
           },
           {
             "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPedestrian"
             }
           }
         ],
@@ -6585,16 +6691,12 @@
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutOut": true,
             "openlabel:MotionStop": true
           },
           {
             "@type": "openlabel:RoadUser",
             "openlabel:RoadUserVehicle": {
               "@id": "openlabel:VehicleMotorcycle"
-            },
-            "openlabel:RoadUserHuman": {
-              "@id": "openlabel:HumanMotorcyclist"
             }
           }
         ],
@@ -6955,29 +7057,40 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "20.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "40.0",
+                "@type": "xsd:decimal"
+              }
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutIn": true,
-            "openlabel:MotionLaneChangeLeft": true,
+            "openlabel:MotionTurnRight": true,
             "openlabel:MotionDecelerate": true,
             "openlabel:motionDecelerateValue": {
               "@type": "schema:QuantitativeValue",
               "schema:minValue": {
-                "@value": "5.0",
+                "@value": "1.0",
                 "@type": "xsd:decimal"
               },
               "schema:maxValue": {
-                "@value": "9.0",
+                "@value": "2.0",
                 "@type": "xsd:decimal"
               }
-            },
-            "openlabel:BehaviourCommunication": {
-              "@id": "openlabel:CommunicationSignalHazard"
             }
           },
           {
             "@type": "openlabel:RoadUser",
             "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
+              "@id": "openlabel:VehicleBus"
             }
           }
         ],
@@ -7333,6 +7446,15 @@
             "scenario:criticalityFactors": "weather"
           },
           {
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:IlluminationLowLight": {
+              "@id": "openlabel:LowLightNight"
+            },
+            "openlabel:IlluminationArtificial": {
+              "@id": "openlabel:ArtificialStreetLighting"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
             "openlabel:MotionDrive": true
           }
@@ -7611,20 +7733,28 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:weatherRainValue": {
+              "@value": "6.0",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
             "openlabel:MotionDrive": true,
-            "openlabel:MotionDecelerate": true,
-            "openlabel:motionDecelerateValue": {
+            "openlabel:motionDriveValue": {
               "@type": "schema:QuantitativeValue",
               "schema:minValue": {
-                "@value": "0.5",
+                "@value": "40.0",
                 "@type": "xsd:decimal"
               },
               "schema:maxValue": {
-                "@value": "1.5",
+                "@value": "60.0",
                 "@type": "xsd:decimal"
               }
-            }
+            },
+            "openlabel:MotionTurn": true
           }
         ],
         "scenario:hasQuantity": {
@@ -7897,8 +8027,26 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "5",
+              "@type": "xsd:integer"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true
+            "openlabel:MotionReverse": true,
+            "openlabel:MotionUTurn": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPassenger"
+            }
           }
         ],
         "scenario:hasQuantity": {
@@ -8168,26 +8316,22 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel:OddDynamicElements",
-            "openlabel:SubjectVehicleSpeed": true,
-            "openlabel:subjectVehicleSpeedValue": {
-              "@value": "110",
-              "@type": "xsd:integer"
-            }
-          },
-          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true,
-            "openlabel:motionDriveValue": {
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
               "@type": "schema:QuantitativeValue",
               "schema:minValue": {
-                "@value": "100.0",
+                "@value": "7.0",
                 "@type": "xsd:decimal"
               },
               "schema:maxValue": {
-                "@value": "120.0",
+                "@value": "10.0",
                 "@type": "xsd:decimal"
               }
+            },
+            "openlabel:MotionStop": true,
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationSignalHazard"
             }
           }
         ],
@@ -8545,27 +8689,24 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel:Behaviour",
-            "openlabel:MotionDecelerate": true,
-            "openlabel:motionDecelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "6.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "9.0",
-                "@type": "xsd:decimal"
-              }
-            },
-            "openlabel:BehaviourCommunication": {
-              "@id": "openlabel:CommunicationSignalHazard"
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
             }
+          },
+          {
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionDrive": true
           },
           {
             "@type": "openlabel:RoadUser",
             "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
+              "@id": "openlabel:VehicleCycle"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanCyclist"
             }
           }
         ],
@@ -8940,19 +9081,7 @@
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutIn": true,
-            "openlabel:MotionAccelerate": true,
-            "openlabel:motionAccelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "0.8",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "2.0",
-                "@type": "xsd:decimal"
-              }
-            }
+            "openlabel:MotionDrive": true
           },
           {
             "@type": "openlabel:RoadUser",
@@ -9236,12 +9365,6 @@
           {
             "@type": "openlabel:Behaviour",
             "openlabel:MotionStop": true
-          },
-          {
-            "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserHuman": {
-              "@id": "openlabel:HumanPedestrian"
-            }
           }
         ],
         "scenario:hasQuantity": {
@@ -9526,26 +9649,22 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel:OddEnvironment",
-            "openlabel:WeatherWind": true,
-            "openlabel:weatherWindValue": {
-              "@value": "19.0",
-              "@type": "xsd:decimal"
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
             }
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true,
-            "openlabel:motionDriveValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "90.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "110.0",
-                "@type": "xsd:decimal"
-              }
+            "openlabel:MotionCross": true,
+            "openlabel:MotionWalk": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPedestrian"
             }
           }
         ],
@@ -9830,26 +9949,17 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel:OddDynamicElements",
-            "openlabel:SubjectVehicleSpeed": true,
-            "openlabel:subjectVehicleSpeedValue": {
-              "@value": "100",
-              "@type": "xsd:integer"
-            }
+            "@type": "openlabel:Behaviour",
+            "openlabel:MotionCutOut": true,
+            "openlabel:MotionStop": true
           },
           {
-            "@type": "openlabel:Behaviour",
-            "openlabel:MotionDecelerate": true,
-            "openlabel:motionDecelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "0.5",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "1.5",
-                "@type": "xsd:decimal"
-              }
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleMotorcycle"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanMotorcyclist"
             }
           }
         ],
@@ -10210,21 +10320,37 @@
             "@type": "openlabel:OddDynamicElements",
             "openlabel:SubjectVehicleSpeed": true,
             "openlabel:subjectVehicleSpeedValue": {
-              "@value": "30",
-              "@type": "xsd:integer"
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "20.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "40.0",
+                "@type": "xsd:decimal"
+              }
             }
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true
+            "openlabel:MotionTurnRight": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "1.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "2.0",
+                "@type": "xsd:decimal"
+              }
+            }
           },
           {
             "@type": "openlabel:RoadUser",
             "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCycle"
-            },
-            "openlabel:RoadUserHuman": {
-              "@id": "openlabel:HumanCyclist"
+              "@id": "openlabel:VehicleBus"
             }
           }
         ],
@@ -10580,68 +10706,30 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel:OddDynamicElements",
-            "openlabel:TrafficAgentDensity": true,
-            "openlabel:trafficAgentDensityValue": {
-              "@value": "78",
-              "@type": "xsd:integer"
-            },
-            "openlabel:TrafficVolume": true,
-            "openlabel:trafficVolumeValue": {
-              "@value": "1900",
-              "@type": "xsd:integer"
-            },
-            "openlabel:SubjectVehicleSpeed": true,
-            "openlabel:subjectVehicleSpeedValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "0.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "30.0",
-                "@type": "xsd:decimal"
-              }
-            }
-          },
-          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionStop": true,
-            "openlabel:MotionAccelerate": true,
-            "openlabel:motionAccelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "0.3",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "1.2",
-                "@type": "xsd:decimal"
-              }
-            },
+            "openlabel:MotionCutIn": true,
+            "openlabel:MotionLaneChangeLeft": true,
             "openlabel:MotionDecelerate": true,
             "openlabel:motionDecelerateValue": {
               "@type": "schema:QuantitativeValue",
               "schema:minValue": {
-                "@value": "0.5",
+                "@value": "5.0",
                 "@type": "xsd:decimal"
               },
               "schema:maxValue": {
-                "@value": "2.0",
+                "@value": "9.0",
                 "@type": "xsd:decimal"
               }
+            },
+            "openlabel:BehaviourCommunication": {
+              "@id": "openlabel:CommunicationSignalHazard"
             }
           },
           {
             "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": [
-              {
-                "@id": "openlabel:VehicleCar"
-              },
-              {
-                "@id": "openlabel:VehicleTruck"
-              }
-            ]
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
+            }
           }
         ],
         "scenario:hasQuantity": {
@@ -10931,26 +11019,28 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:weatherRainValue": {
+              "@value": "6.0",
+              "@type": "xsd:decimal"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutIn": true,
             "openlabel:MotionDrive": true,
             "openlabel:motionDriveValue": {
               "@type": "schema:QuantitativeValue",
               "schema:minValue": {
-                "@value": "95.0",
+                "@value": "40.0",
                 "@type": "xsd:decimal"
               },
               "schema:maxValue": {
-                "@value": "115.0",
+                "@value": "60.0",
                 "@type": "xsd:decimal"
               }
-            }
-          },
-          {
-            "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
-            }
+            },
+            "openlabel:MotionTurn": true
           }
         ],
         "scenario:hasQuantity": {
@@ -11239,13 +11329,25 @@
             "scenario:criticalityFactors": "weather"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "5",
+              "@type": "xsd:integer"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionStop": true
+            "openlabel:MotionReverse": true,
+            "openlabel:MotionUTurn": true
           },
           {
             "@type": "openlabel:RoadUser",
             "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleMotorcycle"
+              "@id": "openlabel:VehicleCar"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPassenger"
             }
           }
         ],
@@ -11514,15 +11616,6 @@
             ],
             "scenario:country": "us",
             "scenario:criticalityFactors": "aggressive driving"
-          },
-          {
-            "@type": "openlabel:OddEnvironment",
-            "openlabel:IlluminationLowLight": {
-              "@id": "openlabel:LowLightNight"
-            },
-            "openlabel:IlluminationArtificial": {
-              "@id": "openlabel:ArtificialStreetLighting"
-            }
           },
           {
             "@type": "openlabel:Behaviour",
@@ -11883,22 +11976,24 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDecelerate": true,
-            "openlabel:motionDecelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "7.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "10.0",
-                "@type": "xsd:decimal"
-              }
+            "openlabel:MotionDrive": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCycle"
             },
-            "openlabel:MotionStop": true,
-            "openlabel:BehaviourCommunication": {
-              "@id": "openlabel:CommunicationSignalHazard"
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanCyclist"
             }
           }
         ],
@@ -12256,28 +12351,20 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel:OddEnvironment",
-            "openlabel:WeatherRain": true,
-            "openlabel:weatherRainValue": {
-              "@value": "6.0",
-              "@type": "xsd:decimal"
-            }
-          },
-          {
             "@type": "openlabel:Behaviour",
             "openlabel:MotionDrive": true,
-            "openlabel:motionDriveValue": {
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
               "@type": "schema:QuantitativeValue",
               "schema:minValue": {
-                "@value": "40.0",
+                "@value": "0.5",
                 "@type": "xsd:decimal"
               },
               "schema:maxValue": {
-                "@value": "60.0",
+                "@value": "1.5",
                 "@type": "xsd:decimal"
               }
-            },
-            "openlabel:MotionTurn": true
+            }
           }
         ],
         "scenario:hasQuantity": {
@@ -12553,33 +12640,8 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel:OddDynamicElements",
-            "openlabel:SubjectVehicleSpeed": true,
-            "openlabel:subjectVehicleSpeedValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "90.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "120.0",
-                "@type": "xsd:decimal"
-              }
-            }
-          },
-          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true,
-            "openlabel:motionDriveValue": {
-              "@value": "105.0",
-              "@type": "xsd:decimal"
-            }
-          },
-          {
-            "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
-            }
+            "openlabel:MotionStop": true
           }
         ],
         "scenario:hasQuantity": {
@@ -12855,8 +12917,17 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutOut": true
+            "openlabel:MotionCross": true,
+            "openlabel:MotionWalk": true
           },
           {
             "@type": "openlabel:RoadUser",
@@ -13172,14 +13243,7 @@
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionLaneChangeLeft": true,
-            "openlabel:MotionAccelerate": true
-          },
-          {
-            "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleCar"
-            }
+            "openlabel:MotionDrive": true
           }
         ],
         "scenario:hasQuantity": {
@@ -13536,32 +13600,40 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
-            "@type": "openlabel:OddEnvironment",
-            "openlabel:WeatherRain": true,
-            "openlabel:weatherRainValue": {
-              "@value": "14.5",
-              "@type": "xsd:decimal"
-            },
-            "openlabel:RainType": {
-              "@id": "openlabel:RainTypeConvective"
-            },
-            "openlabel:IlluminationLowLight": {
-              "@id": "openlabel:LowLightAmbient"
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "20.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "40.0",
+                "@type": "xsd:decimal"
+              }
             }
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true,
-            "openlabel:motionDriveValue": {
+            "openlabel:MotionTurnRight": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
               "@type": "schema:QuantitativeValue",
               "schema:minValue": {
-                "@value": "60.0",
+                "@value": "1.0",
                 "@type": "xsd:decimal"
               },
               "schema:maxValue": {
-                "@value": "90.0",
+                "@value": "2.0",
                 "@type": "xsd:decimal"
               }
+            }
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleBus"
             }
           }
         ],
@@ -13924,8 +13996,25 @@
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true,
-            "openlabel:MotionLaneChangeRight": true
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "2.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "4.0",
+                "@type": "xsd:decimal"
+              }
+            },
+            "openlabel:MotionDrive": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
+            }
           }
         ],
         "scenario:hasQuantity": {
@@ -14203,23 +14292,28 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel:OddDynamicElements",
-            "openlabel:SubjectVehicleSpeed": true,
-            "openlabel:subjectVehicleSpeedValue": {
-              "@value": "30",
-              "@type": "xsd:integer"
+            "@type": "openlabel:OddEnvironment",
+            "openlabel:WeatherRain": true,
+            "openlabel:weatherRainValue": {
+              "@value": "6.0",
+              "@type": "xsd:decimal"
             }
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCross": true,
-            "openlabel:MotionWalk": true
-          },
-          {
-            "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserHuman": {
-              "@id": "openlabel:HumanPedestrian"
-            }
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "40.0",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "60.0",
+                "@type": "xsd:decimal"
+              }
+            },
+            "openlabel:MotionTurn": true
           }
         ],
         "scenario:hasQuantity": {
@@ -14489,18 +14583,25 @@
             "scenario:criticalityFactors": "aggressive driving"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "5",
+              "@type": "xsd:integer"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true,
-            "openlabel:motionDriveValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "80.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "110.0",
-                "@type": "xsd:decimal"
-              }
+            "openlabel:MotionReverse": true,
+            "openlabel:MotionUTurn": true
+          },
+          {
+            "@type": "openlabel:RoadUser",
+            "openlabel:RoadUserVehicle": {
+              "@id": "openlabel:VehicleCar"
+            },
+            "openlabel:RoadUserHuman": {
+              "@id": "openlabel:HumanPassenger"
             }
           }
         ],
@@ -14772,8 +14873,19 @@
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutOut": true,
-            "openlabel:MotionStop": true
+            "openlabel:MotionCutIn": true,
+            "openlabel:MotionDecelerate": true,
+            "openlabel:motionDecelerateValue": {
+              "@type": "schema:QuantitativeValue",
+              "schema:minValue": {
+                "@value": "1.5",
+                "@type": "xsd:decimal"
+              },
+              "schema:maxValue": {
+                "@value": "3.5",
+                "@type": "xsd:decimal"
+              }
+            }
           },
           {
             "@type": "openlabel:RoadUser",
@@ -15136,16 +15248,24 @@
             "scenario:criticalityFactors": "weather"
           },
           {
+            "@type": "openlabel:OddDynamicElements",
+            "openlabel:SubjectVehicleSpeed": true,
+            "openlabel:subjectVehicleSpeedValue": {
+              "@value": "30",
+              "@type": "xsd:integer"
+            }
+          },
+          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionCutIn": true
+            "openlabel:MotionDrive": true
           },
           {
             "@type": "openlabel:RoadUser",
             "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleMotorcycle"
+              "@id": "openlabel:VehicleCycle"
             },
             "openlabel:RoadUserHuman": {
-              "@id": "openlabel:HumanMotorcyclist"
+              "@id": "openlabel:HumanCyclist"
             }
           }
         ],
@@ -15520,14 +15640,11 @@
           },
           {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionTowards": true,
+            "openlabel:MotionCross": true,
             "openlabel:MotionWalk": true
           },
           {
             "@type": "openlabel:RoadUser",
-            "openlabel:RoadUserVehicle": {
-              "@id": "openlabel:VehicleTruck"
-            },
             "openlabel:RoadUserHuman": {
               "@id": "openlabel:HumanPedestrian"
             }
@@ -15809,17 +15926,8 @@
             "scenario:criticalityFactors": "occlusion"
           },
           {
-            "@type": "openlabel:OddEnvironment",
-            "openlabel:ConnectivityPositioning": {
-              "@id": "openlabel:PositioningGps"
-            },
-            "openlabel:ConnectivityCommunication": {
-              "@id": "openlabel:V2iCellular"
-            }
-          },
-          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDrive": true
+            "openlabel:MotionStop": true
           }
         ],
         "scenario:hasQuantity": {
@@ -16092,43 +16200,16 @@
             "scenario:criticalityFactors": "weather"
           },
           {
-            "@type": "openlabel:OddDynamicElements",
-            "openlabel:SubjectVehicleSpeed": true,
-            "openlabel:subjectVehicleSpeedValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "60.0",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "120.0",
-                "@type": "xsd:decimal"
-              }
-            }
-          },
-          {
             "@type": "openlabel:Behaviour",
-            "openlabel:MotionDecelerate": true,
-            "openlabel:motionDecelerateValue": {
+            "openlabel:MotionDrive": true,
+            "openlabel:motionDriveValue": {
               "@type": "schema:QuantitativeValue",
               "schema:minValue": {
-                "@value": "0.5",
+                "@value": "80.0",
                 "@type": "xsd:decimal"
               },
               "schema:maxValue": {
-                "@value": "2.0",
-                "@type": "xsd:decimal"
-              }
-            },
-            "openlabel:MotionAccelerate": true,
-            "openlabel:motionAccelerateValue": {
-              "@type": "schema:QuantitativeValue",
-              "schema:minValue": {
-                "@value": "0.3",
-                "@type": "xsd:decimal"
-              },
-              "schema:maxValue": {
-                "@value": "1.0",
+                "@value": "110.0",
                 "@type": "xsd:decimal"
               }
             }

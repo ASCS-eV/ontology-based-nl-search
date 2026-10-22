@@ -13,7 +13,10 @@
  *     content node holding scenery attributes only.
  *   - `sample-scenarios.jsonld` — every scenario gets separate
  *     `OddEnvironment`, `OddDynamicElements`, `Behaviour` and `RoadUser`
- *     content nodes (the scenery lives in the referenced HD map).
+ *     content nodes (the scenery lives in the referenced HD map), drawn from
+ *     the motorway situations when every HD map it references is
+ *     motorway-like and from the contrast situations when one is not, so a
+ *     scenario never carries a situation its maps contradict.
  *   - ositrace / environment-model / surface-model — NO OpenLABEL nodes: their
  *     shapes allow exactly one `hasContent` item (`sh:maxCount 1`) and name no
  *     OpenLABEL alternative.
@@ -143,7 +146,7 @@ function typedNode(type, attributes, where) {
 const isEmpty = (attributes) => !attributes || Object.keys(attributes).length === 0
 
 /** Category-pure content nodes of one situation, keyed by node type. */
-function contentNodes(situation) {
+export function contentNodes(situation) {
   const where = situation.id
   checkNames(situation.behaviour, BEHAVIOUR_ATTRIBUTES, `${where}.behaviour`)
   checkNames(situation.roadUser, ROAD_USER_ATTRIBUTES, `${where}.roadUser`)
@@ -255,6 +258,44 @@ function isMotorwayLike(contentNodesOfAsset) {
   return nativeValues(contentNodesOfAsset, 'roadTypes').some((v) => MOTORWAY_ROAD_TYPES.has(v))
 }
 
+/** Whether each HD map document of the file is motorway-like, by `@id`. */
+function mapKindsById(document) {
+  const kinds = new Map()
+  for (const node of document['@graph']) {
+    if (typesOf(node)[0] !== 'hdmap:HdMap' || !node['@id']) continue
+    const holder = contentHolder(node)
+    const content = holder
+      ? asArray(holder.owner[holder.key]).filter((n) => !isOpenLabelNode(n))
+      : []
+    kinds.set(node['@id'], isMotorwayLike(content))
+  }
+  return kinds
+}
+
+/** Every member of `ids` the node mentions anywhere, as an `@id` or a string. */
+function mentionedIds(node, ids) {
+  if (typeof node === 'string') return ids.has(node) ? [node] : []
+  if (Array.isArray(node)) return node.flatMap((item) => mentionedIds(item, ids))
+  if (node && typeof node === 'object') {
+    return Object.values(node).flatMap((value) => mentionedIds(value, ids))
+  }
+  return []
+}
+
+/**
+ * The situations a scenario draws from: `motorway` when every HD map of the
+ * same file it references is motorway-like, `other` when one is not, `any`
+ * when it references no map of the file. A scenario references a map by its
+ * `@id`, wherever its manifest holds it.
+ */
+export function situationFamily(scenario, mapKinds) {
+  const kinds = [...new Set(mentionedIds(scenario, new Set(mapKinds.keys())))].map((id) =>
+    mapKinds.get(id)
+  )
+  if (kinds.length === 0) return 'any'
+  return kinds.every(Boolean) ? 'motorway' : 'other'
+}
+
 /** Native HD-map lane types with a v1 `LaneSpecificationType` counterpart. */
 const LANE_TYPE = new Map([
   ['driving', 'LaneTypeTraffic'],
@@ -288,7 +329,7 @@ export function sceneryFromNativeContent(contentNodesOfAsset) {
   return scenery
 }
 
-function additionsFor(asset, counters) {
+function additionsFor(asset, counters, mapKinds) {
   const type = typesOf(asset)[0]
   const holder = contentHolder(asset)
   if (!holder) return []
@@ -310,7 +351,9 @@ function additionsFor(asset, counters) {
     return isEmpty(scenery) ? [] : [typedNode('OddScenery', scenery, `${situation.id}.OddScenery`)]
   }
   if (type === 'scenario:Scenario') {
-    const situation = pick(SITUATIONS, counters.scenario++)
+    const family = situationFamily(asset, mapKinds)
+    const candidates = { motorway: MOTORWAY_SITUATIONS, other: OTHER_SITUATIONS, any: SITUATIONS }
+    const situation = pick(candidates[family], counters[`scenario-${family}`]++)
     const nodes = contentNodes(situation)
     return ['OddEnvironment', 'OddDynamicElements', 'Behaviour', 'RoadUser']
       .map((nodeType) => nodes[nodeType])
@@ -327,12 +370,19 @@ const usesOpenLabelPrefix = (document) => JSON.stringify(document['@graph']).inc
  */
 export function patchDocument(document) {
   const out = structuredClone(document)
-  const counters = { hdmapMotorway: 0, hdmapOther: 0, scenario: 0 }
+  const counters = {
+    hdmapMotorway: 0,
+    hdmapOther: 0,
+    'scenario-motorway': 0,
+    'scenario-other': 0,
+    'scenario-any': 0,
+  }
+  const mapKinds = mapKindsById(out)
   for (const asset of out['@graph']) {
     const holder = contentHolder(asset)
     if (!holder) continue
     const kept = asArray(holder.owner[holder.key]).filter((node) => !isOpenLabelNode(node))
-    const additions = additionsFor(asset, counters)
+    const additions = additionsFor(asset, counters, mapKinds)
     holder.owner[holder.key] = [...kept, ...additions]
   }
   if (!usesOpenLabelPrefix(out)) delete out['@context'].openlabel
