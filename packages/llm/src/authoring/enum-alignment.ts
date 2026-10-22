@@ -21,6 +21,7 @@
  */
 import type { ValueCorrection } from '@ontology-search/api-types'
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
+import { sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import { OxigraphStore } from '@ontology-search/sparql'
 
 import { findBestMatch } from '../slot-validator-fuzzy.js'
@@ -38,8 +39,7 @@ export async function enumVocabularyFromShacl(turtle: string): Promise<EnumVocab
   const store = new OxigraphStore()
   await store.loadTurtle(turtle)
   const { results } = await store.query(`
-    PREFIX sh: <http://www.w3.org/ns/shacl#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    ${sparqlPrefixes('sh', 'rdf')}
     SELECT ?path ?value WHERE {
       ?shape sh:path ?path ; sh:in ?list .
       ?list rdf:rest*/rdf:first ?value .
