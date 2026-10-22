@@ -32,6 +32,5 @@ const summary = await evaluateAuthoring(
     runSceneAgent(evalCase.request, evalCase.archetype ? { archetype: evalCase.archetype } : {}),
   AUTHORING_EVAL_CASES
 )
-console.warn(JSON.stringify(provenance))
-console.warn(summary.table)
-console.warn(JSON.stringify(summary.gating))
+
+console.warn([JSON.stringify(provenance), summary.table, JSON.stringify(summary.gating)].join('\n'))
