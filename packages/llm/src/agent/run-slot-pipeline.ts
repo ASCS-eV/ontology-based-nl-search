@@ -288,10 +288,11 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   endCompile()
 
   // Convert dropped references into user-visible limitation gaps so the
-  // user knows which cross-reference JOINs were skipped.
+  // user knows which cross-references were not applied: there is no path
+  // from the primary domain, or the searched domains answer as peers.
   const compileGaps: OntologyGap[] = (droppedReferences ?? []).map((domain) => ({
     term: domain,
-    reason: `No known path from ${slots.domains[0] ?? 'primary domain'} to ${domain} — cross-reference skipped`,
+    reason: `${domain} could not be joined to ${slots.domains.join(', ') || 'the primary domain'} — cross-reference skipped`,
     kind: 'limitation' as const,
   }))
 
@@ -356,8 +357,7 @@ async function inferDomains(
   if (vocabularyScope.length === 0) return preferDomainsNamedInQuery(knownDomains, query)
   // A named support vocabulary is the SCOPE of the request, not its subject.
   // The tie-break runs over the asset domains using it instead: when the
-  // query names one of them outright ("HD maps in Germany", read as a
-  // georeference request), that domain is what was asked for.
+  // query names one of them outright, that domain is what was asked for.
   const owners = (await searchedDomains(vocabularyScope)).filter((d) => assetDomains.has(d))
   const named = preferDomainsNamedInQuery(owners, query)
   return named.length < owners.length ? named : knownDomains

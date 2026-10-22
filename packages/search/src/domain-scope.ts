@@ -118,8 +118,8 @@ export async function canonicalDomains(
   const unknown: string[] = []
   for (const raw of domains) {
     // A name as the registry spells it, in any case, before the
-    // normalization that turns a model's variants into one ("HDMap" is the
-    // registry's `hdmap`, not `hd-map`).
+    // normalization that turns a model's variants into one: a mixed-case
+    // spelling of a one-word name is that name, not a hyphenated one.
     const spellings = [raw, raw.toLowerCase(), normalizeDomainName(raw)]
     const canonical =
       spellings.find((name) => registry.domains.has(name)) ??

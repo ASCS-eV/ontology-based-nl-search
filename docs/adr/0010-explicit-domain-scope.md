@@ -5,29 +5,29 @@
 
 ## Context
 
-The domains a natural-language search covered were whatever the model put into
-`slots.domains`, corrected by the owners of the properties it filled. A user
-had no way to say "search only OpenLABEL" and be sure that is what happened:
-the request carried no scope, and the web UI had no control for one.
+Without a scope of its own, a request covers whatever the model puts into
+`slots.domains`, corrected by the owners of the properties it fills. A user
+then has no way to say "search only OpenLABEL" and be sure that is what
+happens.
 
 A support vocabulary roots no asset class of its own: its shapes describe
 content that asset domains embed, and some of it is also published on its own.
-A request scoped to one ("OpenLABEL only") was widened, before compilation, to
-the asset domains whose paths end in its leaves, plus the vocabulary for its
-standalone documents. After that step nothing told the compiler that those
-domains were to be searched only for the vocabulary's content. With no
-constraint of the vocabulary in the query (no constraint at all, or only one
-from outside it, such as a country), every asset of every such domain was
-returned, whether or not it carried any of that content. The same slots
-compiled through `/search/refine` meant something else again: there a
-vocabulary alone searched only its standalone documents.
+A request scoped to one ("OpenLABEL only") therefore needs a meaning the
+compiler can act on. Widening it to the asset domains whose paths end in its
+leaves is not one: with no constraint of the vocabulary in the query (no
+constraint at all, or only one from outside it, such as a country), every
+asset of every such domain answers, whether or not it carries any of that
+content. Searching its standalone documents alone is not one either: it misses
+every asset described with the vocabulary. And a meaning that differs between
+the natural-language entry point and `/search/refine` makes the same slots say
+two things.
 
 ## Decision
 
 **A vocabulary in `slots.domains` means "what is described with it", in every
 entry point.** The compiler expands it (`compiler-vocabulary-scope.ts`):
 
-1. Its standalone documents answer through its own arms, as before.
+1. Its standalone documents answer through its own arms.
 2. Each asset domain whose discovered paths end in one of its leaves (an
    _owner_) answers with the assets that carry its content. The arm requires
    that, where the domain's own paths enter the vocabulary, the node at the end
@@ -35,7 +35,7 @@ entry point.** The compiler expands it (`compiler-vocabulary-scope.ts`):
    vocabulary's namespace and in no longer namespace another domain claims
    inside it, the rule `domainForIri` applies.
 3. An owner is searched only when it can express every constraint of the query
-   that is a leaf of the vocabulary, as before.
+   that is a leaf of the vocabulary.
 4. A domain whose primary class is a subclass of a class of the vocabulary is
    an owner too, and answers with all its assets: they are described with the
    vocabulary by their type, whether or not they carry any of its properties.
@@ -46,7 +46,9 @@ entry point.** The compiler expands it (`compiler-vocabulary-scope.ts`):
 6. Whether the named domains form a parent → child JOIN is decided among them
    alone. An owner the vocabulary adds is a peer by construction; when the
    named domains JOIN, the query is one query rooted at the parent, which the
-   owners cannot join, and they are not searched.
+   owners cannot join, and they are not searched. A named child that carries
+   no constraint its parent lacks is a peer, so a scope of a parent and its
+   child with no constraints searches both.
 
 A domain counts as a vocabulary when it owns no compiler path of its own and
 other domains' paths end in its leaves, their primary classes are subclasses
@@ -75,7 +77,7 @@ replaces the model's domain choice:
 
 The web UI offers the loaded domains next to the search field and shows the
 scope a search ran with next to its interpretation. The domains stay editable
-in the refinement, as before.
+in the refinement.
 
 ## Consequences
 
@@ -83,14 +85,14 @@ in the refinement, as before.
   OpenLABEL content. On the pinned sample data every HD map and scenario
   carries some, so the result is unchanged there. On data where some do not,
   they are no longer returned.
-- The interpretation of a vocabulary-only request lists the vocabulary instead
-  of the asset domains it was widened to, and `/search/refine` with the
-  vocabulary alone now returns its owners' assets that carry its content next
-  to its standalone documents.
+- The interpretation of a vocabulary-only request lists the vocabulary, and
+  `/search/refine` with the vocabulary alone returns its owners' assets that
+  carry its content next to its standalone documents.
 - A vocabulary scope with a reference compiles through the owners that are not
   the reference's target, joined to it. Where that leaves several owners, the
-  peer `UNION` applies, and a peer `UNION` does not compile references. This is
-  the same limit an explicit multi-domain scope with a reference already has.
+  peer `UNION` applies, and a peer `UNION` does not compile references: each is
+  reported as a `limitation` gap. This is the same limit an explicit
+  multi-domain scope with a reference has.
 - The content restriction is one `FILTER EXISTS` per owner arm, sized by the
   number of distinct carrier chains, not by the number of the vocabulary's
   leaves.

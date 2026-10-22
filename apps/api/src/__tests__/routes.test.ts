@@ -49,6 +49,15 @@ vi.mock('@ontology-search/ontology/domain-registry', () => ({
   buildDomainRegistry: vi.fn(),
 }))
 
+// The refine route holds `slots.domains` to the loaded ontology; here every
+// name is known, as the slots under test are.
+vi.mock('@ontology-search/search/compiler', () => ({
+  canonicalDomains: vi.fn(async (domains: readonly string[]) => ({
+    known: [...domains],
+    unknown: [],
+  })),
+}))
+
 // The authoring routes call the LLM/gate/engine pipeline; mock it so the HTTP
 // boundary is tested without loading the WASM engine.
 vi.mock('@ontology-search/llm/authoring', () => ({

@@ -50,7 +50,7 @@ export interface SearchState {
  * - Direct POST for the refine (slot-based re-query) path
  * - Abort handling for concurrent requests
  */
-export function useSearchExecution(_availableDomains?: string[]) {
+export function useSearchExecution() {
   const [state, setState] = useState<SearchState>({
     interpretation: null,
     gaps: null,
@@ -188,6 +188,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
    * changed the query.
    */
   const handleRefine = useCallback(async (edited: SearchSlots) => {
+    // The edited domains are the scope the refinement runs with.
     setState((s) => ({
       ...s,
       loading: true,
@@ -197,6 +198,7 @@ export function useSearchExecution(_availableDomains?: string[]) {
       meta: null,
       phase: 'executing',
       slots: edited,
+      scope: edited.domains,
     }))
 
     try {

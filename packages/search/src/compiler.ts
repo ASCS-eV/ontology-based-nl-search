@@ -223,7 +223,8 @@ export async function compileSlotsWithTrace(
     // Peer domains (and/or standalone vocabulary arms): generate a UNION query
     // that searches every requested domain independently. A request for
     // vocabularies alone whose arms cannot answer it compiles to an explicit
-    // empty result.
+    // empty result. Each arm answers on its own, so no reference joins it:
+    // every reference is reported as dropped.
     return {
       sparql: await compilePeerDomainUnion(
         slots,
@@ -235,6 +236,9 @@ export async function compileSlotsWithTrace(
         standaloneArmDomains,
         scope.carried
       ),
+      ...(referenceSlots.length > 0
+        ? { droppedReferences: referenceSlots.map((reference) => reference.domain) }
+        : {}),
     }
   }
 

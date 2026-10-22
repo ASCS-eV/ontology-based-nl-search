@@ -204,9 +204,9 @@ export async function queryAssetDomains(
 /**
  * Per domain, the other domains its primary class is a subclass of a class of
  * ([RDFS] §3.4, transitively): the vocabularies that describe every one of
- * its assets by type. An HD map class below a vocabulary's asset class is
- * described with that vocabulary whether or not it carries any of the
- * vocabulary's properties.
+ * its assets by type. An asset class below a vocabulary's class is described
+ * with that vocabulary whether or not it carries any of the vocabulary's
+ * properties.
  */
 export async function queryAssetClassVocabularies(
   store: SparqlStore,

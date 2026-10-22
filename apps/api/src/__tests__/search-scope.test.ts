@@ -4,7 +4,8 @@
  * Every name must be a domain of the loaded ontology: an unknown one is
  * rejected with 400, never dropped, since searching less than the user chose
  * without saying so is what an explicit scope rules out. The names reach the
- * search canonical; an empty list selects nothing and searches everything.
+ * search canonical; an empty list selects nothing and leaves the domains to
+ * the model. `/search/refine` holds `slots.domains` to the same rule.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -74,11 +75,43 @@ describe('POST /search/stream with a domain scope', () => {
     expect(text).toContain('Invalid \\"domains\\" field')
   })
 
-  it('searches every domain when the scope is empty or absent', async () => {
+  it('passes no scope when the list is empty or absent', async () => {
     const { searchNl } = await import('../search-factory.js')
     await stream({ query: 'motorways', domains: [] })
     expect(vi.mocked(searchNl).mock.lastCall?.[0]).not.toHaveProperty('domains')
     await stream({ query: 'motorways' })
     expect(vi.mocked(searchNl).mock.lastCall?.[0]).not.toHaveProperty('domains')
+  })
+})
+
+describe('POST /search/refine with domains in the slots', () => {
+  const refine = (domains: unknown) =>
+    app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slots: { domains, filters: {}, ranges: {} } }),
+    })
+
+  it('rejects an unknown domain with 400 instead of dropping it', async () => {
+    const res = await refine(['hdmap', 'atlantis'])
+    expect(res.status).toBe(400)
+    const text = JSON.stringify(await res.json())
+    expect(text).toContain('Unknown domains: atlantis')
+    expect(text).toContain('Known domains: hdmap, openlabel')
+    const { searchRefine } = await import('../search-factory.js')
+    expect(searchRefine).not.toHaveBeenCalled()
+  })
+
+  it('runs the canonical domains', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    vi.mocked(searchRefine).mockResolvedValue({
+      sparql: 'SELECT * WHERE { ?s ?p ?o }',
+      execution: { results: [], error: undefined },
+      meta: { matchCount: 0, executionTimeMs: 1 },
+    } as never)
+    const res = await refine(['HDMap'])
+    expect(res.status).toBe(200)
+    expect(vi.mocked(searchRefine).mock.lastCall?.[0].slots.domains).toEqual(['hdmap'])
+    expect((await res.json()).slots.domains).toEqual(['hdmap'])
   })
 })

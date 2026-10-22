@@ -765,6 +765,24 @@ describe('SearchService — real pipeline integration', () => {
   }, 120_000)
 
   /**
+   * Regression: two named domains with a reference between them and no
+   * constraint on the child compiled to a JOIN rooted at the parent, so a
+   * scope of both returned none of the child's assets.
+   */
+  it('searches a parent and its child as peers when nothing constrains the child', async () => {
+    const { sparql } = await compileSlotsWithTrace({
+      domains: ['hdmap', 'scenario'],
+      filters: {},
+      ranges: {},
+    })
+    expect(sparql).toMatch(/\bUNION\b/)
+    const rows = (await (await getInitializedStore()).query(sparql)).results.bindings
+    const ids = rows.map((r) => r['asset']?.value ?? '')
+    expect(ids.some((id) => id.includes(':HdMap:'))).toBe(true)
+    expect(ids.some((id) => id.includes(':Scenario:'))).toBe(true)
+  }, 120_000)
+
+  /**
    * Two entry points, two readings of "an asset domain next to a vocabulary".
    * Natural language (`resolveKnownDomains`) treats the vocabulary as the
    * LLM's inference about the user's words, so a named asset domain wins and

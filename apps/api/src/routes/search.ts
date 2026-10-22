@@ -67,7 +67,7 @@ export const searchRoutes = new Hono<AppEnv>()
 /**
  * The fields `/search/stream` takes besides `query` ([JSON-SCHEMA-VAL] §6.4
  * array keywords): `domains`, the scope the user selected. An empty list
- * selects nothing and searches every domain, as an absent one does.
+ * selects nothing and leaves the domains to the model, as an absent one does.
  */
 const searchStreamBodySchema = z.object({
   domains: z.array(z.string().min(1)).optional(),
@@ -92,13 +92,16 @@ async function parseSearchStreamBody(
   const requested = parsed.data.domains ?? []
   if (requested.length === 0) return {}
   const { known, unknown } = await canonicalDomains(requested)
-  if (unknown.length > 0) {
-    const { domainNames } = await buildDomainRegistry()
-    return badRequest(`Unknown domains: ${unknown.join(', ')}`, [
-      `Known domains: ${domainNames.join(', ')}`,
-    ])
-  }
+  if (unknown.length > 0) return unknownDomains(unknown)
   return { domains: known }
+}
+
+/** 400 for domain names the loaded ontology does not know, listing the known ones. */
+async function unknownDomains(unknown: readonly string[]): Promise<HttpError> {
+  const { domainNames } = await buildDomainRegistry()
+  return badRequest(`Unknown domains: ${unknown.join(', ')}`, [
+    `Known domains: ${domainNames.join(', ')}`,
+  ])
 }
 
 /**
@@ -199,10 +202,19 @@ searchRoutes.post('/refine', async (c) => {
     return c.json(err.body, err.status)
   }
 
+  // The domains of the slots are the scope of the refinement; an unknown one
+  // is rejected as it is on `/search/stream`, never dropped.
+  const { known, unknown } = await canonicalDomains(parseResult.data.domains)
+  if (unknown.length > 0) {
+    const err = await unknownDomains(unknown)
+    return c.json(err.body, err.status)
+  }
+  const slots = { ...parseResult.data, domains: known }
+
   try {
-    logger.info('Refine search started', { slots: parseResult.data })
+    logger.info('Refine search started', { slots })
     const result = await searchRefine({
-      slots: parseResult.data,
+      slots,
       signal: c.req.raw.signal,
       requestId,
     })
@@ -221,14 +233,14 @@ searchRoutes.post('/refine', async (c) => {
       traceability: result.execution.traceability,
       meta: result.meta,
       // The POST-normalization slots (`references` is coerced to an array
-      // here), so the client's editable panel reflects what actually ran
-      // rather than what it happened to send.
-      slots: parseResult.data,
+      // here, the domains are canonical), so the client's editable panel
+      // reflects what actually ran rather than what it happened to send.
+      slots,
     }
 
     // Include GraphQL intermediate representation when feature is enabled
     if (getConfig().FEATURE_GRAPHQL_LAYER) {
-      response.graphql = slotsToGraphQL(parseResult.data, {
+      response.graphql = slotsToGraphQL(slots, {
         enumProperties: await getEnumProperties(),
       })
     }

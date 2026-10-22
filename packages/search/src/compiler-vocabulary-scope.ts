@@ -2,15 +2,15 @@
  * What a support vocabulary in `slots.domains` searches.
  *
  * A support vocabulary roots no asset class of its own: its shapes describe
- * content that asset domains embed (OpenLABEL tags in an HD map or a
- * scenario), and some of it is also published on its own. Scoping a search to
+ * content that asset domains embed (the tags on the assets of several
+ * domains), and some of it is also published on its own. Scoping a search to
  * such a vocabulary means "what is described with it", which is two things:
  *
  *   - its standalone documents, answered by `compiler-standalone.ts`;
  *   - the assets of every domain whose discovered paths end in one of its
  *     leaves (its *owners*), restricted to the assets that actually carry
  *     its content. Without the restriction, a scope with no constraint of
- *     the vocabulary ("OpenLABEL only", or "OpenLABEL in Germany") would
+ *     the vocabulary (the vocabulary alone, or with a country) would
  *     return every asset of every owner. A domain whose primary class is a
  *     subclass of a class of the vocabulary is an owner too, and needs no
  *     restriction: every one of its assets is described with the vocabulary
@@ -79,9 +79,9 @@ function isVocabulary(
  * vocabulary into its owners.
  *
  * An owner is searched for a vocabulary only when it can express every
- * constraint of the query that is a leaf of that vocabulary ([SHACL] §2.3): an
- * HD map carries scenery but no behaviour, so it cannot answer "a straight
- * motorway with lane keeping" however many straight motorways it has. A
+ * constraint of the query that is a leaf of that vocabulary ([SHACL] §2.3): a
+ * domain that carries one part of the vocabulary cannot answer a query that
+ * also restricts another part, however many assets match the first. A
  * domain the query references is never an owner: a reference joins its
  * target to the answers rather than adding answers of its own.
  */
@@ -107,6 +107,9 @@ export function resolveDomainScope(
       : assetDomains
     if (!list.includes(domain)) list.push(domain)
   }
+  // The same set of vocabularies compiles to the same query whatever their
+  // order in the request; the named asset domains keep theirs.
+  vocabularies.sort()
 
   const constraints = [...Object.keys(slots.filters), ...Object.keys(slots.ranges)]
   const referenced = new Set(normalizeReferences(slots.references).map((ref) => ref.domain))

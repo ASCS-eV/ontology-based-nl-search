@@ -236,5 +236,7 @@ describe('useSearchExecution', () => {
     })
 
     expect(result.current.slots).toEqual(normalized)
+    // The edited domains are the scope the refinement ran with.
+    expect(result.current.scope).toEqual(['hdmap'])
   })
 })

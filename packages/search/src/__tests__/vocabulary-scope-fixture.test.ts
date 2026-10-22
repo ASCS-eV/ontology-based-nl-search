@@ -8,6 +8,7 @@
  * `tags-v2` property, and one tag sheet is published on its own. Compiled against a
  * real Oxigraph store and checked on the rows it returns.
  */
+import type { SearchSlots } from '@ontology-search/slots/slots'
 import { describe, expect, it } from 'vitest'
 
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
@@ -79,6 +80,9 @@ const DATA = `
   garage:hasBadge [ a garage:Badge ; garage:make "B" ] ;
   garage:hasTag [ a tags:Tag ; tags:colour "blue" ] ;
   garage:hasFinish [ a tags:Finish ; tags:shine "gloss" ] .
+<urn:car:polished> a garage:Car ;
+  garage:hasBadge [ a garage:Badge ; garage:make "B" ] ;
+  garage:hasFinish [ a tags:Finish ; tags:shine "matte" ] .
 <urn:depot:tagged> a depot:Depot ;
   depot:hasAddress [ a depot:Address ; depot:city "X" ] ;
   depot:hasTag [ a tags:Tag ; tags:colour "blue" ] .
@@ -145,18 +149,17 @@ async function setup() {
   const registry = fixtureRegistry()
   // `as any`: the synthetic registry stands in for the disk-derived one.
   const vocabIndex = await buildCompilerVocabFrom(store, registry as any)
+  const compile = (slots: SearchSlots) =>
+    compileSlotsWithTrace(slots, { registry: registry as any, vocabIndex })
   const search = async (
     domains: string[],
     filters: Record<string, string | string[]> = {}
   ): Promise<string[]> => {
-    const { sparql } = await compileSlotsWithTrace(
-      { domains, filters, ranges: {} },
-      { registry: registry as any, vocabIndex }
-    )
+    const { sparql } = await compile({ domains, filters, ranges: {} })
     const rows = (await store.query(sparql)).results.bindings
     return [...new Set(rows.map((row) => row['asset']?.value ?? ''))].sort()
   }
-  return { search }
+  return { search, compile }
 }
 
 describe('a vocabulary in the scope', () => {
@@ -169,10 +172,40 @@ describe('a vocabulary in the scope', () => {
     const { search } = await setup()
     expect(await search(['tags'])).toEqual([
       'urn:car:finished',
+      'urn:car:polished',
       'urn:car:tagged',
       'urn:depot:tagged',
       'urn:sheet:standalone',
     ])
+  }, 60_000)
+
+  it('finds content through every chain the domain has into the vocabulary', async () => {
+    const { search } = await setup()
+    // Only `hasFinish` reaches the polished car's content.
+    expect(await search(['tags'], { shine: 'matte' })).toEqual(['urn:car:polished'])
+  }, 60_000)
+
+  it('compiles the same query whatever the order of the vocabularies', async () => {
+    const { compile } = await setup()
+    const one = await compile({ domains: ['tags', 'tags-v2'], filters: {}, ranges: {} })
+    const other = await compile({ domains: ['tags-v2', 'tags'], filters: {}, ranges: {} })
+    expect(other.sparql).toBe(one.sparql)
+  }, 60_000)
+
+  /**
+   * Regression: the peer arms of several named domains take no reference,
+   * and the reference went unreported, so the answer silently covered more
+   * than the request.
+   */
+  it('reports a reference the peer arms cannot apply', async () => {
+    const { compile } = await setup()
+    const { droppedReferences } = await compile({
+      domains: ['garage', 'depot'],
+      filters: {},
+      ranges: {},
+      references: [{ domain: 'tags', filters: { colour: 'red' } }],
+    })
+    expect(droppedReferences).toEqual(['tags'])
   }, 60_000)
 
   it('does not count a property of a vocabulary nested in its namespace', async () => {
@@ -210,6 +243,7 @@ describe('a vocabulary in the scope', () => {
     const { search } = await setup()
     expect(await search(['base'])).toEqual([
       'urn:car:finished',
+      'urn:car:polished',
       'urn:car:tagged',
       'urn:car:untagged',
       'urn:car:v2-only',
@@ -222,6 +256,7 @@ describe('a vocabulary in the scope', () => {
     const { search } = await setup()
     expect(await search(['garage', 'tags'])).toEqual([
       'urn:car:finished',
+      'urn:car:polished',
       'urn:car:tagged',
       'urn:car:untagged',
       'urn:car:v2-only',

@@ -69,7 +69,7 @@ export function SearchPage() {
     handleSearch: executeSearch,
     handleRefine,
     handleGraphQLRun,
-  } = useSearchExecution(stats?.availableDomains ?? [])
+  } = useSearchExecution()
 
   const [graphQLEntryMode, setGraphQLEntryMode] = useState(false)
   // The domains the next search is scoped to; empty lets the model choose.
