@@ -1,12 +1,12 @@
 /**
  * SPARQL store capability probe.
  *
- * The compiler emits SPARQL 1.1 property-path expressions
- * (`rdfs:subClassOf*`, `skos:broaderTransitive*`) to expand
- * hierarchical filter values to their subclasses. Stores that do not
- * honour property paths will silently return only the literal value
- * — a "broad" query like "give me all vehicles" then comes back
- * empty even when subclasses are present in the data.
+ * Search depends on SPARQL 1.1 property paths ([SPARQL11] §9): schema
+ * discovery walks RDF lists along `rdf:rest` zero or more times, and the
+ * last-resort reference join compiles an arbitrary-length path. A store that
+ * does not honour them answers those queries with nothing rather than an
+ * error, so discovery finds no vocabulary and such a reference matches no
+ * asset.
  *
  * This probe runs a tiny SELECT with a `rdfs:subClassOf*` term at
  * startup. If the store rejects the query or returns no bindings for
@@ -77,11 +77,9 @@ export async function probePropertyPathSupport(store: SparqlStore): Promise<void
   } catch (cause) {
     throw new StoreCapabilityError(
       `SPARQL store rejected the property-path probe query (rdfs:subClassOf*). ` +
-        `The compiler emits property-path expressions for hierarchical filter ` +
-        `expansion — a store without property-path support silently returns ` +
-        `empty results for broad queries. ${
-          cause instanceof Error ? cause.message : String(cause)
-        }`,
+        `Schema discovery walks RDF lists and the compiler emits arbitrary-length ` +
+        `paths — a store without property-path support silently returns ` +
+        `empty results. ${cause instanceof Error ? cause.message : String(cause)}`,
       { cause }
     )
   }
@@ -100,8 +98,7 @@ export async function probePropertyPathSupport(store: SparqlStore): Promise<void
       `SPARQL store does not support rdfs:subClassOf* property paths. ` +
         `Probe expected {<${PROBE_CLASS_A}>, <${PROBE_CLASS_B}>} but got ` +
         `${bound.size === 0 ? '{}' : `{${[...bound].join(', ')}}`}. ` +
-        `Configure a SPARQL 1.1 compliant store (Oxigraph, Fuseki, Stardog, …) ` +
-        `or disable hierarchical filter expansion.`
+        `Configure a SPARQL 1.1 compliant store (Oxigraph, Fuseki, Stardog, …).`
     )
   }
 

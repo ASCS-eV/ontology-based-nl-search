@@ -114,8 +114,9 @@ export async function warmup(): Promise<WarmupResult> {
   const warnings: string[] = []
 
   // [1/8] Store init + property-path capability probe. Probe runs first
-  // so a store that silently drops `rdfs:subClassOf*` fails loudly at
-  // startup rather than returning zero rows for hierarchical queries.
+  // so a store that silently drops arbitrary-length property paths fails
+  // loudly at startup rather than returning zero rows for the queries that
+  // use them (see `capability-probe.ts`).
   const storeMs = await runStep(
     1,
     'SPARQL store + capability probe',

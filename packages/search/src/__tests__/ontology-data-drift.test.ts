@@ -24,7 +24,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { getInitializedStore } from '../init.js'
-import { SCHEMA_GRAPH, VALUE_HIERARCHY_PREDICATES } from '../schema-loader.js'
+import { SCHEMA_GRAPH } from '../schema-loader.js'
+import { VALUE_HIERARCHY_PREDICATES } from '../value-hierarchy.js'
 
 const PREFIXES = `
 PREFIX sh: <http://www.w3.org/ns/shacl#>
@@ -43,12 +44,8 @@ describe('instance data stays grounded in the loaded ontology', () => {
       return results.bindings.map((binding) => binding[variable]?.value ?? '')
     }
 
-    // Instance data lives in the default graph, the schema in its named graph
-    // — apart from the hierarchy edges the loader mirrors for compiled queries.
-    const mirrored = new Set(VALUE_HIERARCHY_PREDICATES)
-    const dataPredicates = (await select(`SELECT DISTINCT ?p WHERE { ?s ?p ?o }`, 'p')).filter(
-      (p) => !mirrored.has(p)
-    )
+    // Instance data lives in the default graph, the schema in its named graph.
+    const dataPredicates = await select(`SELECT DISTINCT ?p WHERE { ?s ?p ?o }`, 'p')
 
     // Blank-node paths are SHACL path expressions (sequence/alternative/…),
     // not terms the data can carry, so only IRI paths are registrations.
@@ -100,4 +97,23 @@ describe('instance data stays grounded in the loaded ontology', () => {
             `shapes now declare) or the data was authored against terms that never existed.`
     ).toEqual([])
   }, 180_000)
+
+  /**
+   * The value hierarchy the schema declares stays in the schema graph: the
+   * compiler lists a broad filter value's narrower values from there
+   * (`value-hierarchy.ts`), so no loader copies its edges into the default
+   * graph of any store, the remote one included. A hierarchy the instance
+   * data asserts itself is instance data and may stay.
+   */
+  it('holds none of the schema hierarchy', async () => {
+    const store = await getInitializedStore()
+    const predicates = VALUE_HIERARCHY_PREDICATES.map((p) => `<${p}>`).join(' ')
+    const { results } = await store.query(`
+      SELECT (COUNT(*) AS ?n) WHERE {
+        VALUES ?p { ${predicates} }
+        GRAPH <${SCHEMA_GRAPH}> { ?s ?p ?o }
+        ?s ?p ?o
+      }`)
+    expect(Number(results.bindings[0]?.['n']?.value)).toBe(0)
+  }, 120_000)
 })

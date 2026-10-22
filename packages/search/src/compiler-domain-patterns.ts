@@ -344,7 +344,6 @@ export function buildDomainPatterns(
         const varName = leafVariable(key, suffix)
         patterns.push(`${groupVar} ${leafPredicateOf(propPrefix, key, path)} ${varName} .`)
         addEnumFilter(
-          patterns,
           filters,
           varName,
           value,
@@ -466,7 +465,6 @@ export function buildDomainPatterns(
       const varName = leafVariable(key, suffix)
       patterns.push(`${assetVar} ${leafPredicateOf(domain.prefix, key, path)} ${varName} .`)
       addEnumFilter(
-        patterns,
         filters,
         varName,
         value,

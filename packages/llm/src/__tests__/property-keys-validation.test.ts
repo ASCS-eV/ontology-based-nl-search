@@ -72,7 +72,6 @@ const vocabulary: SchemaVocabulary = {
     ['price__amount', [{ domain: 'garage', iri: `${EX}amount`, targetClass: `${EX}Money` }]],
   ]),
   conceptSchemes: new Map(),
-  classHierarchy: [],
 }
 
 /** A SHACL engine stub: knows no key by local name, records target calls. */

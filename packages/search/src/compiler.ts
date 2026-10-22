@@ -57,6 +57,7 @@ import {
 import { standaloneVocabularyDomains } from './compiler-standalone.js'
 import { type CompilerVocab, getCompilerVocab, getDomainReferences } from './compiler-vocab.js'
 import { normalizeDomainName } from './domain-scope.js'
+import { expandNarrowerValues } from './value-hierarchy.js'
 
 // Re-export the extracted compiler submodules (ADR 0003, step 1) so the existing
 // `@ontology-search/search` public surface and intra-package importers keep
@@ -140,6 +141,9 @@ export async function compileSlotsWithTrace(
     ...slots,
     domains: slots.domains.map(normalizeDomainName),
   }
+  // A broad IRI value also matches the values below it in the schema's
+  // hierarchy; the query carries them as an explicit list (`value-hierarchy.ts`).
+  slots = expandNarrowerValues(slots, vocabIndex.narrowerValues ?? new Map())
 
   // When no domain is specified, use cross-domain search
   if (slots.domains.length === 0) {

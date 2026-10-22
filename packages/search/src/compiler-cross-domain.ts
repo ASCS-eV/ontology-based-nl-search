@@ -322,7 +322,7 @@ export function emitCrossDomainFilters(
       const v = leafVariable(key)
       optionalLines.push(`    ${cursor} ${leafPred} ${v} .`)
       if (leafPath.leafKind === 'literal') {
-        addEnumFilter(optionalLines, filters, v, value, leafPath.datatype)
+        addEnumFilter(filters, v, value, leafPath.datatype)
       } else {
         addLocationFilter(filters, v, value)
       }
@@ -354,7 +354,7 @@ export function emitCrossDomainFilters(
     const datatypes = new Set(paths.map((path) => path.datatype))
     const datatype = datatypes.size === 1 ? paths[0]!.datatype : undefined
     if (paths.every((path) => path.leafKind === 'literal')) {
-      addEnumFilter(optionalLines, filters, v, value, datatype)
+      addEnumFilter(filters, v, value, datatype)
     } else {
       addLocationFilter(filters, v, value)
     }
