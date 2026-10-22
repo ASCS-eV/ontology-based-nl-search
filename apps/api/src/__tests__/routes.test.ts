@@ -50,8 +50,10 @@ vi.mock('@ontology-search/ontology/domain-registry', () => ({
 }))
 
 // The refine route holds `slots.domains` to the loaded ontology; here every
-// name is known, as the slots under test are.
-vi.mock('@ontology-search/search/compiler', () => ({
+// name is known, as the slots under test are. The rest of the module stays
+// real: the GraphQL contract reads the compiler vocabulary from it.
+vi.mock('@ontology-search/search/compiler', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@ontology-search/search/compiler')>()),
   canonicalDomains: vi.fn(async (domains: readonly string[]) => ({
     known: [...domains],
     unknown: [],

@@ -16,7 +16,8 @@ vi.mock('../search-factory.js', () => ({
   searchRefine: vi.fn(),
 }))
 
-vi.mock('@ontology-search/search/compiler', () => ({
+vi.mock('@ontology-search/search/compiler', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@ontology-search/search/compiler')>()),
   canonicalDomains: vi.fn(async (domains: readonly string[]) => ({
     known: domains
       .filter((d) => ['hdmap', 'openlabel'].includes(d.toLowerCase()))
