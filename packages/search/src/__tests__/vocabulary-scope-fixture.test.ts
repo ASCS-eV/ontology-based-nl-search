@@ -5,8 +5,10 @@
  * Two asset domains (`garage`, `depot`, both below `base:Asset`) embed tags of
  * the `tags` vocabulary; `tags-v2` lives in a namespace nested inside the
  * `tags` one. Some assets carry tags, some do not, one carries only a
- * `tags-v2` property, and one tag sheet is published on its own. Compiled against a
- * real Oxigraph store and checked on the rows it returns.
+ * `tags-v2` property. Tag sheets are published on their own: one that another
+ * document merely points at, and one a car composes through its tag
+ * predicate. Compiled against a real Oxigraph store and checked on the rows
+ * it returns.
  */
 import type { SearchSlots } from '@ontology-search/slots/slots'
 import { describe, expect, it } from 'vitest'
@@ -90,6 +92,10 @@ const DATA = `
   depot:hasAddress [ a depot:Address ; depot:city "X" ] .
 <urn:sheet:standalone> a tags:Sheet ;
   tags:entry [ a tags:Tag ; tags:colour "red" ] .
+<urn:note:1> tags:mentions <urn:sheet:standalone> .
+<urn:sheet:composed> a tags:Sheet ;
+  tags:entry [ a tags:Tag ; tags:colour "red" ] .
+<urn:car:tagged> garage:hasTag <urn:sheet:composed> .
 `
 
 const DOMAINS: [string, string, string][] = [
@@ -177,6 +183,21 @@ describe('a vocabulary in the scope', () => {
       'urn:depot:tagged',
       'urn:sheet:standalone',
     ])
+  }, 60_000)
+
+  /**
+   * Regression: a standalone document that any triple pointed at was taken
+   * as nested in an asset.
+   */
+  it('keeps a document standalone whatever merely points at it', async () => {
+    const { search, compile } = await setup()
+    const found = await search(['tags'], { colour: 'red' })
+    // Pointed at by a note, not composed: standalone.
+    expect(found).toContain('urn:sheet:standalone')
+    // Composed into a car through its tag predicate: the car answers.
+    expect(found).not.toContain('urn:sheet:composed')
+    const { sparql } = await compile({ domains: ['tags'], filters: {}, ranges: {} })
+    expect(sparql).toContain('VALUES ?_ownerLink')
   }, 60_000)
 
   it('finds content through every chain the domain has into the vocabulary', async () => {

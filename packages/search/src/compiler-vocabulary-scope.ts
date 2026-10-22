@@ -176,6 +176,30 @@ function vocabularyOwners(
 }
 
 /**
+ * The predicates through which the asset domains compose content of
+ * `vocabulary` into their assets: on every discovered asset path that ends in
+ * a leaf of the vocabulary, the step just before the first step of the
+ * vocabulary. Sorted, so the query text is the same for the same schema. Empty
+ * when no asset path reaches the vocabulary.
+ */
+export function compositionPredicates(
+  vocabulary: string,
+  registry: DomainRegistry,
+  vocabIndex: CompilerVocab
+): string[] {
+  const predicates = new Set<string>()
+  for (const path of assetPaths(vocabIndex)) {
+    if (registry.domainForIri(path.propertyIri) !== vocabulary) continue
+    const entry = path.steps.findIndex(
+      (step) => registry.domainForIri(step.predicate) === vocabulary
+    )
+    const composer = path.steps[entry - 1]
+    if (composer) predicates.add(composer.predicate)
+  }
+  return [...predicates].sort()
+}
+
+/**
  * The restriction an owner's arm carries: the asset holds content of at least
  * one of `vocabularies`.
  *

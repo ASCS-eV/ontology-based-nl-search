@@ -9,9 +9,16 @@
  * the asset arms that match the vocabulary nested inside assets.
  *
  * "Standalone" is decided structurally, not by any ontology term: the node is
- * the object of no triple at all (`FILTER NOT EXISTS`, [SPARQL11] §8.1), so a
- * vocabulary node composed into an asset (and therefore already answered by
- * that asset's arm) is never reported twice.
+ * the object of none of the predicates through which the asset domains
+ * compose the vocabulary's content (`compositionPredicates`; `FILTER NOT
+ * EXISTS` over a `VALUES` list, [SPARQL11] §8.1, §10.2), so a vocabulary node
+ * composed into an asset (and therefore already answered by that asset's arm)
+ * is never reported twice, while a document some other triple merely points
+ * at stays standalone. The arm matches the entry class itself: a class below
+ * it that declares properties of its own is an entry class in its own right
+ * and gets its own arm, and listing the whole closure would not do, since a
+ * vocabulary may put every class, nested node classes and value classes
+ * included, below its entry class.
  *
  * A standalone document is a closed unit: it cannot acquire a property from
  * anywhere else. An entry class therefore yields an arm only when it can
@@ -32,6 +39,7 @@ import {
 import { findDomainForIri, prefixedPredicate } from './compiler-helpers-primitives.js'
 import { ASSET_LABEL_PATTERN } from './compiler-helpers-query.js'
 import type { CompilerVocab } from './compiler-vocab.js'
+import { compositionPredicates } from './compiler-vocabulary-scope.js'
 import type { PropertyPath } from './property-paths.js'
 
 /** The requested domains that are standalone vocabularies (have entry classes). */
@@ -47,11 +55,12 @@ export function standaloneVocabularyDomains(
  * every constraint of the query (every entry class when the query has no
  * constraints).
  *
- * Shape of an arm ([SPARQL11] §5.2 group, §6 OPTIONAL, §8.1 NOT EXISTS):
+ * Shape of an arm ([SPARQL11] §5.2 group, §6 OPTIONAL, §8.1 NOT EXISTS,
+ * §10.2 VALUES):
  *   ?asset a <EntryClass> .
  *   <leaf path patterns + FILTERs>
  *   OPTIONAL { ?asset rdfs:label ?name }
- *   FILTER NOT EXISTS { ?_owner ?_ownerLink ?asset }
+ *   FILTER NOT EXISTS { VALUES ?_ownerLink { <composer> … } ?_owner ?_ownerLink ?asset }
  */
 export function buildStandaloneArms(
   domainName: string,
@@ -62,6 +71,13 @@ export function buildStandaloneArms(
   selectVars: Set<string>
 ): string[] {
   const arms: string[] = []
+  const composers = compositionPredicates(domainName, registry, vocabIndex)
+  const guard =
+    composers.length === 0
+      ? []
+      : [
+          `FILTER NOT EXISTS { VALUES ?_ownerLink { ${composers.map((p) => `<${p}>`).join(' ')} } ?_owner ?_ownerLink ?asset }`,
+        ]
   for (const root of vocabIndex.vocabularyRoots?.get(domainName) ?? []) {
     // Keys resolve against this entry class's own paths (ADR 0009).
     const filterEntries: [string, string | string[], PropertyPath][] = []
@@ -123,12 +139,7 @@ export function buildStandaloneArms(
     for (const d of foreign) prefixDomains.add(d)
     for (const v of armVars) selectVars.add(v)
 
-    const body = [
-      ...patterns,
-      ASSET_LABEL_PATTERN,
-      'FILTER NOT EXISTS { ?_owner ?_ownerLink ?asset }',
-      ...filters,
-    ]
+    const body = [...patterns, ASSET_LABEL_PATTERN, ...guard, ...filters]
       .map((line) => `    ${line}`)
       .join('\n')
     arms.push(`  {\n${body}\n  }`)
