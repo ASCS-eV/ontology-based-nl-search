@@ -67,6 +67,35 @@ describe('runScenePipeline — semantic gate has teeth', () => {
   })
 })
 
+describe('runScenePipeline — aligns listed values before the gates', () => {
+  /**
+   * Regression: a listed value in another spelling went to the structural
+   * gate as a schema violation, costing a repair turn for what a lookup
+   * settles.
+   */
+  it('replaces a value by the member it is closest to and records it in the trace', async () => {
+    const ir = cutInIR()
+    const laneChange = ir.actions.find((a) => a.kind === 'LaneChangeAction')!
+    laneChange.properties = { ...laneChange.properties, dynamicsShape: 'Cubic' }
+
+    const result = await runScenePipeline({ ir })
+
+    expect(result.valid).toBe(true)
+    const alignment = result.trace[0]
+    expect(alignment?.gate).toBe('alignment')
+    expect(alignment?.corrections).toEqual([
+      {
+        where: `action ${laneChange.actor} LaneChangeAction`,
+        property: 'dynamicsShape',
+        from: 'Cubic',
+        to: 'cubic',
+      },
+    ])
+    const gated = result.ir.actions.find((a) => a.kind === 'LaneChangeAction')
+    expect(gated?.properties['dynamicsShape']).toBe('cubic')
+  })
+})
+
 describe('runScenePipeline — structural gate has teeth', () => {
   it('flags an invalid enum the engine rejects (a structural violation)', async () => {
     const ir = cutInIR()

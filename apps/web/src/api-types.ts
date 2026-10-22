@@ -33,4 +33,5 @@ export type {
   TraceabilityEdge,
   TraceabilityNode,
   TraceabilityResponse,
+  ValueCorrection,
 } from '@ontology-search/api-types'
