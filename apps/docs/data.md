@@ -92,7 +92,7 @@ Because the scenario file embeds the assets it references, the loaded store repo
 
 ### OpenLABEL sample data
 
-Every `openlabel:*` node in the sample files is owned by one script, `scripts/generate-openlabel-sample-data.mjs` (`--check` fails on drift; `pnpm run test:scripts` runs it). It rewrites **only** the OpenLABEL nodes of the other sample files — the general generator `generate-sample-data.mjs` (which no longer emits any OpenLABEL content) has drifted from the committed files (for example it emits `gx:name` where the files hold `schema:name`), so a full regeneration would rewrite thousands of unrelated lines.
+Every `openlabel:*` node in the sample files is owned by one script, `scripts/generate-openlabel-sample-data.mjs` (`--check` fails on drift; `pnpm run test:scripts` runs it). It rewrites **only** the OpenLABEL nodes of the sample files; the rest of each file is committed data with no generator.
 
 The content comes from a catalogue of 44 functional situations in `scripts/openlabel-situations.mjs`: 38 motorway situations inspired by the families of automated lane keeping (nominal following, lead-vehicle braking and cut-out reveals, cut-in and merging, stationary and crossing road users, environment and perception disturbances, ODD boundaries, emergency behaviour, traffic rules) and 6 non-motorway _contrast_ situations that must not match motorway queries. They are expressed in what OpenLABEL V1-0-0 can say — ODD attributes, behaviour flags, road users. Driver state, system faults, transition demands and lateral wandering within a lane have no v1 tag and are deliberately absent.
 

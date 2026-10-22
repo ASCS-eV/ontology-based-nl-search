@@ -2,9 +2,8 @@
  * OpenLABEL V1-0-0 sample content.
  *
  * Owns every `openlabel:*` node in the sample data and rewrites ONLY those
- * nodes, leaving the rest of the sample files untouched (the general
- * generator `generate-sample-data.mjs` has drifted from the committed files,
- * so a full regeneration would churn thousands of unrelated lines):
+ * nodes, leaving the rest of the sample files untouched (the rest is committed
+ * data with no generator):
  *
  *   - `sample-openlabel.jsonld` — standalone `openlabel:Tag` documents, one
  *     per situation in `openlabel-situations.mjs` (Tag → AdminTag / Odd /
