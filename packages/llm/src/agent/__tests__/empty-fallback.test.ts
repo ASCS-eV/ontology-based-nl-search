@@ -23,7 +23,6 @@ function vocab(partial: Partial<SchemaVocabulary>): SchemaVocabulary {
     domains: [],
     propertyDomains: new Map(),
     conceptSchemes: new Map(),
-    classHierarchy: [],
     ...partial,
   }
 }

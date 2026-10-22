@@ -29,6 +29,20 @@ describe('withNarrowerValues', () => {
   it('lists only the value when nothing is below it', () => {
     expect(withNarrowerValues(`${EX}Rural`, NARROWER)).toEqual([`${EX}Rural`])
   })
+
+  it('lists a value reached along several paths once', () => {
+    const diamond = new Map([
+      [`${EX}Top`, [`${EX}Left`, `${EX}Right`]],
+      [`${EX}Left`, [`${EX}Bottom`]],
+      [`${EX}Right`, [`${EX}Bottom`]],
+    ])
+    expect(withNarrowerValues(`${EX}Top`, diamond)).toEqual([
+      `${EX}Bottom`,
+      `${EX}Left`,
+      `${EX}Right`,
+      `${EX}Top`,
+    ])
+  })
 })
 
 describe('expandNarrowerValues', () => {
@@ -46,6 +60,24 @@ describe('expandNarrowerValues', () => {
       country: 'DE',
     })
     expect(slots.ranges).toEqual({ lanes: { min: 2 } })
+  })
+
+  it('keeps a list a list and a single value single, as the compiler reads them apart', () => {
+    // A one-element list means "equal to this value"; a single string means
+    // "contains this text" on an IRI-typed leaf, so the shape must survive.
+    const slots = expandNarrowerValues(
+      {
+        domains: ['d'],
+        filters: { endpoint: [`${EX}api`], site: `${EX}Rural`, roadType: `${EX}Motorway` },
+        ranges: {},
+      },
+      NARROWER
+    )
+    expect(slots.filters).toEqual({
+      endpoint: [`${EX}api`],
+      site: `${EX}Rural`,
+      roadType: [`${EX}Motorway`, `${EX}MotorwayManaged`],
+    })
   })
 
   it('expands the filters of references at every depth', () => {

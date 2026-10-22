@@ -99,18 +99,21 @@ describe('instance data stays grounded in the loaded ontology', () => {
   }, 180_000)
 
   /**
-   * Regression: the loader copied the schema's `rdfs:subClassOf` and
-   * `skos:broaderTransitive` edges (about 9,400) into the default graph, for
-   * any store, the remote one included, and never removed them. The compiler
-   * now expands a broad filter value from the schema graph itself
-   * (`value-hierarchy.ts`), so the instance data holds only instance data.
+   * The value hierarchy the schema declares stays in the schema graph: the
+   * compiler lists a broad filter value's narrower values from there
+   * (`value-hierarchy.ts`), so no loader copies its edges into the default
+   * graph of any store, the remote one included. A hierarchy the instance
+   * data asserts itself is instance data and may stay.
    */
   it('holds none of the schema hierarchy', async () => {
     const store = await getInitializedStore()
     const predicates = VALUE_HIERARCHY_PREDICATES.map((p) => `<${p}>`).join(' ')
-    const { results } = await store.query(
-      `SELECT (COUNT(*) AS ?n) WHERE { VALUES ?p { ${predicates} } ?s ?p ?o }`
-    )
+    const { results } = await store.query(`
+      SELECT (COUNT(*) AS ?n) WHERE {
+        VALUES ?p { ${predicates} }
+        GRAPH <${SCHEMA_GRAPH}> { ?s ?p ?o }
+        ?s ?p ?o
+      }`)
     expect(Number(results.bindings[0]?.['n']?.value)).toBe(0)
   }, 120_000)
 })

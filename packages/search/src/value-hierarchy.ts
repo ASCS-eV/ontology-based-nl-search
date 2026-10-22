@@ -2,16 +2,17 @@
  * Narrower values of an IRI filter value, read from the schema graph.
  *
  * A filter on a broad class or concept also matches data that stores a
- * narrower one: `rdfs:subClassOf` ([RDFS] §3.4) and `skos:broaderTransitive`
- * ([SKOS] §8.1) are transitive, so a scenario tagged `MotorwayManaged`
- * answers a filter on `RoadTypeMotorway`. Compiled queries see the default
- * graph only (the SPARQL policy forbids `GRAPH` and `FROM`, [SPARQL11] §13.2),
- * while the hierarchy lives in the schema graph. The compiler therefore
- * expands each IRI value into itself and every value below it before it emits
- * the filter, so the query carries the hierarchy as an explicit list and the
- * instance data is never written to.
+ * narrower one: a subclass under `rdfs:subClassOf` ([RDFS] §3.4), or a
+ * concept under `skos:broader` / `skos:narrower` and their transitive forms
+ * ([SKOS] §8), so a scenario tagged `MotorwayManaged` answers a filter on
+ * `RoadTypeMotorway`. Compiled queries see the default graph only (the SPARQL
+ * policy forbids `GRAPH` and `FROM`, [SPARQL11] §13.2), while the hierarchy
+ * lives in the schema graph. The compiler therefore expands each IRI value
+ * into itself and every value below it before it emits the filter, so the
+ * query carries the hierarchy as an explicit list and the instance data is
+ * never written to. The list is as long as the value's closure.
  *
- * Generic: the hierarchy is whatever the loaded schema declares with these two
+ * Generic: the hierarchy is whatever the loaded schema declares with these
  * predicates; no class or concept is named here.
  *
  * @see https://www.w3.org/TR/rdf-schema/ — [RDFS]
@@ -25,22 +26,39 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { SCHEMA_GRAPH } from './schema-loader.js'
 
-/** The schema predicates that order filter values from narrower to broader. */
-export const VALUE_HIERARCHY_PREDICATES: readonly string[] = [
+/** Predicates whose subject is the narrower value and object the broader. */
+const NARROWER_TO_BROADER: readonly string[] = [
   iri('rdfs', 'subClassOf'),
+  iri('skos', 'broader'),
   iri('skos', 'broaderTransitive'),
+]
+
+/** Predicates whose subject is the broader value and object the narrower. */
+const BROADER_TO_NARROWER: readonly string[] = [
+  iri('skos', 'narrower'),
+  iri('skos', 'narrowerTransitive'),
+]
+
+/** Every schema predicate that orders filter values. */
+export const VALUE_HIERARCHY_PREDICATES: readonly string[] = [
+  ...NARROWER_TO_BROADER,
+  ...BROADER_TO_NARROWER,
 ]
 
 /** Broader value IRI → the value IRIs directly below it, sorted. */
 export type NarrowerValues = ReadonlyMap<string, readonly string[]>
 
+const terms = (predicates: readonly string[]): string => predicates.map((p) => `<${p}>`).join(' ')
+
 /** The value hierarchy the schema graph declares. Only IRI → IRI edges count. */
 export async function queryNarrowerValues(store: SparqlStore): Promise<NarrowerValues> {
-  const predicates = VALUE_HIERARCHY_PREDICATES.map((p) => `<${p}>`).join(' ')
   const { results } = await store.query(`
     SELECT DISTINCT ?narrower ?broader WHERE {
-      VALUES ?p { ${predicates} }
-      GRAPH <${SCHEMA_GRAPH}> { ?narrower ?p ?broader }
+      GRAPH <${SCHEMA_GRAPH}> {
+        { VALUES ?up { ${terms(NARROWER_TO_BROADER)} } ?narrower ?up ?broader }
+        UNION
+        { VALUES ?down { ${terms(BROADER_TO_NARROWER)} } ?broader ?down ?narrower }
+      }
       FILTER(isIRI(?narrower) && isIRI(?broader) && ?narrower != ?broader)
     }
   `)
@@ -73,7 +91,9 @@ export function withNarrowerValues(value: string, narrower: NarrowerValues): str
  * The slots with every IRI filter value, at every reference depth, replaced by
  * itself and the values below it. Literal values and ranges are unchanged. A
  * filter's values are alternatives (IN semantics), so the expanded values of
- * all its IRIs form one list.
+ * all its IRIs form one list. A list stays a list, however short: the
+ * compiler reads a single string as text to contain and a list as values to
+ * equal.
  */
 export function expandNarrowerValues(slots: SearchSlots, narrower: NarrowerValues): SearchSlots {
   if (narrower.size === 0) return slots
@@ -117,7 +137,7 @@ function expandFilters(
       else for (const below of withNarrowerValues(v, narrower)) expanded.add(below)
     }
     const list = [...expanded].sort()
-    out[key] = list.length === 1 ? list[0]! : list
+    out[key] = Array.isArray(value) || list.length > 1 ? list : list[0]!
   }
   return out
 }

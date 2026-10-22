@@ -74,7 +74,6 @@ const testVocabulary: SchemaVocabulary = {
     ['surfaceType', ['hdmap', 'ositrace']],
   ]),
   conceptSchemes: new Map(),
-  classHierarchy: [],
 }
 
 describe('correctFilters', () => {

@@ -23,9 +23,7 @@ import { SCHEMA_GRAPH } from './schema-loader.js'
 import {
   queryInstanceValueDistribution,
   querySkosConcepts,
-  querySubClassEdges,
   type SkosConceptInfo,
-  type SubClassEdge,
 } from './schema-queries.js'
 
 export type { NumericProperty } from './numeric-properties.js'
@@ -106,11 +104,6 @@ export interface SchemaVocabulary {
    * any loaded graph. Empty if no SKOS schemes are loaded.
    */
   conceptSchemes: Map<string, SkosConceptInfo[]>
-  /**
-   * rdfs:subClassOf edges, used by the compiler to expand class-typed
-   * filter values to all subclasses generically.
-   */
-  classHierarchy: SubClassEdge[]
 }
 
 /** Cached singleton (schema-only — instance values are never cached here) */
@@ -122,7 +115,6 @@ let cachedSchemaVocabulary: SchemaVocabulary | null = null
  * In parallel:
  *  - sh:in enumerations and numeric properties (from the schema graph),
  *  - SKOS concept schemes (declared vocabulary — generic),
- *  - rdfs:subClassOf edges (for compiler hierarchy expansion).
  *
  * Issues NO instance-data value scan: per-property literal distributions are
  * fetched lazily via `getInstanceValues` by the callers that need them.
@@ -180,11 +172,10 @@ export async function extractSchemaVocabulary(store: SparqlStore): Promise<Schem
   )
   const propertyShapeTargets = shapeTargetsByKey(keyed)
 
-  const [enumByIri, numericByIri, skosConcepts, subClassEdges] = await Promise.all([
+  const [enumByIri, numericByIri, skosConcepts] = await Promise.all([
     extractEnumProperties(store),
     extractNumericProperties(store, domainsByPropertyIri),
     querySkosConcepts(store),
-    querySubClassEdges(store),
   ])
   const enumProperties = enumPropertiesByKey(keyed, enumByIri)
   const numericProperties = numericPropertiesByKey(keyed, numericByIri)
@@ -211,7 +202,6 @@ export async function extractSchemaVocabulary(store: SparqlStore): Promise<Schem
     propertyDomains,
     propertyShapeTargets,
     conceptSchemes,
-    classHierarchy: subClassEdges,
   }
   return cachedSchemaVocabulary
 }

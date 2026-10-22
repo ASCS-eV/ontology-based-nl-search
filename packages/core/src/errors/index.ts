@@ -139,10 +139,9 @@ export class CredentialsPermissionError extends AppError {
 
 /**
  * A SPARQL store's capabilities don't meet the runtime contract — e.g. it
- * doesn't support the property-path syntax (`*`, `+`) that the compiler
- * emits for `rdfs:subClassOf` / `skos:broaderTransitive` hierarchy walks.
- * Probed at startup so a mis-provisioned store is rejected loudly instead
- * of silently returning zero rows for every hierarchical filter.
+ * doesn't support the property-path syntax (`*`, `+`) that schema discovery
+ * and the compiler emit. Probed at startup so a mis-provisioned store is
+ * rejected loudly instead of silently returning zero rows.
  */
 export class StoreCapabilityError extends AppError {
   readonly code = ERROR_CODE.SERVICE_UNAVAILABLE

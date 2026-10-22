@@ -96,9 +96,8 @@ export async function querySkosConcepts(store: SparqlStore): Promise<SkosConcept
 }
 
 /**
- * Discover the rdfs:subClassOf edges declared anywhere in the store.
- * The compiler walks this transitively via SPARQL property paths; we
- * pre-extract the edges so callers can introspect available hierarchies.
+ * Discover the rdfs:subClassOf edges declared anywhere in the store, for
+ * callers that follow shape inheritance themselves.
  */
 export async function querySubClassEdges(store: SparqlStore): Promise<SubClassEdge[]> {
   const sparql = `
