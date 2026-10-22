@@ -2,10 +2,11 @@
  * Empty-slot fallback shared by every agent.
  *
  * Fires when the LLM does not call `submit_slots` (a provider auth quirk, a
- * cold model, or a payload Zod rejected). Emits the broadest cross-domain
- * query and a gap that nudges the user toward concrete property names — drawn
- * from the LIVE vocabulary so the hint never names a property absent from the
- * loaded ontology.
+ * cold model, or a payload Zod rejected). Emits the broadest query the request
+ * allows — every asset domain, or the scope the user selected — and a gap that
+ * nudges the user toward concrete property names, drawn from the LIVE
+ * vocabulary so the hint never names a property absent from the loaded
+ * ontology.
  *
  * Shared so the message cannot drift between the Vercel-SDK and Copilot agents.
  *
@@ -22,9 +23,11 @@ const MAX_EXAMPLE_PROPERTIES = 3
 
 export async function buildEmptyFallbackResponse(
   query: string,
-  vocabulary: SchemaVocabulary
+  vocabulary: SchemaVocabulary,
+  scope?: readonly string[]
 ): Promise<LlmStructuredResponse> {
-  const fallbackSlots: SearchSlots = { domains: [], filters: {}, ranges: {} }
+  const domains = [...(scope ?? [])]
+  const fallbackSlots: SearchSlots = { domains, filters: {}, ranges: {} }
   const sparql = await compileSlots(fallbackSlots)
 
   // Derive a couple of representative property local names from whatever
@@ -44,8 +47,12 @@ export async function buildEmptyFallbackResponse(
 
   return {
     interpretation: {
-      summary: 'Searching across all asset domains (LLM did not extract specific filters)',
+      summary:
+        domains.length > 0
+          ? `Searching all of ${domains.join(', ')} (LLM did not extract specific filters)`
+          : 'Searching across all asset domains (LLM did not extract specific filters)',
       mappedTerms: [],
+      ...(domains.length > 0 ? { domains } : {}),
     },
     gaps: [{ term: query, reason: `Could not extract structured filters from the query. ${hint}` }],
     sparql,

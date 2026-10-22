@@ -40,6 +40,13 @@ export interface RetrievalOptions {
   embedding?: EmbeddingProvider
   /** Cancels in-flight schema queries (SSE close, request abort). */
   signal?: AbortSignal
+  /**
+   * The domains a request is scoped to (see `searchedDomains`). When given,
+   * exactly these are routed, ordered by the query's signal for each, and
+   * `maxDomains` does not apply: the scope is the user's choice, not a
+   * relevance guess. Cards of other domains enter only as dependencies.
+   */
+  domains?: readonly string[]
 }
 
 export interface RetrievedSchema {
@@ -139,7 +146,9 @@ export async function retrieveRelevantSchema(
   // — a named domain that overflows the budget degrades to its top-ranked
   // cards plus the always-attached catalog, which is what keeps gap
   // reporting honest without an unbounded prompt.
-  const domains = selectRoutedDomains(domainSignal, maxDomains)
+  const domains = options.domains
+    ? scopedDomains(options.domains, domainSignal)
+    : selectRoutedDomains(domainSignal, maxDomains)
 
   const confidence = Math.min(1, Math.max(domainRanking[0]?.score ?? 0, cardRanking[0]?.score ?? 0))
 
@@ -228,6 +237,20 @@ export async function retrieveRelevantSchema(
   }
 
   return { domains, cards: selected, fragments, confidence, catalog: index.domainCatalog }
+}
+
+/** The scope's domains, strongest signal first, then by name. */
+function scopedDomains(
+  scope: readonly string[],
+  signal: ReadonlyMap<string, { score: number; nameScore: number }>
+): string[] {
+  const strength = (domain: string) => signal.get(domain) ?? { score: 0, nameScore: 0 }
+  return [...new Set(scope)].sort(
+    (a, b) =>
+      strength(b).score - strength(a).score ||
+      strength(b).nameScore - strength(a).nameScore ||
+      a.localeCompare(b)
+  )
 }
 
 /**

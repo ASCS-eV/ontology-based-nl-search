@@ -57,6 +57,29 @@ describe('useSearchExecution', () => {
   })
 
   /**
+   * The scope the user selected rides with the query, so the server searches
+   * exactly those domains; with none selected, the body carries no scope.
+   */
+  it('sends the selected domain scope with the query, and none when nothing is selected', async () => {
+    const post = vi
+      .spyOn(api, 'apiPostStream')
+      .mockImplementation(async () => sseResponse('event: done\ndata: {}\n\n'))
+    const { result } = renderHook(() => useSearchExecution())
+
+    await act(async () => {
+      await result.current.handleSearch('motorways', ['hdmap', 'openlabel'])
+    })
+    expect(post.mock.lastCall?.[1]).toEqual({ query: 'motorways', domains: ['hdmap', 'openlabel'] })
+    expect(result.current.scope).toEqual(['hdmap', 'openlabel'])
+
+    await act(async () => {
+      await result.current.handleSearch('motorways')
+    })
+    expect(post.mock.lastCall?.[1]).toEqual({ query: 'motorways' })
+    expect(result.current.scope).toEqual([])
+  })
+
+  /**
    * Regression: starting search B while search A is still streaming used to
    * abort A's controller, then let A's `finally` unconditionally overwrite
    * shared state with `{ loading: false, phase: 'done' }` once A's aborted
@@ -213,5 +236,7 @@ describe('useSearchExecution', () => {
     })
 
     expect(result.current.slots).toEqual(normalized)
+    // The edited domains are the scope the refinement ran with.
+    expect(result.current.scope).toEqual(['hdmap'])
   })
 })

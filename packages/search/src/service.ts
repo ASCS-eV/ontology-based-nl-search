@@ -79,7 +79,7 @@ export class SearchService {
    * without waiting for the full pipeline to complete.
    */
   async searchNl(options: NlSearchOptions): Promise<SearchResult> {
-    const { query, domain, signal, onProgress } = options
+    const { query, domains, signal, onProgress } = options
     const requestId = options.requestId ?? generateRequestId()
     const logger = new RequestLogger({ requestId, query })
 
@@ -94,7 +94,10 @@ export class SearchService {
 
     // LLM interpretation (generates slots → compiles → returns SPARQL)
     const endLlm = logger.time('llm-total')
-    const structured = await this.deps.interpretQuery(query, { domain, signal })
+    const structured = await this.deps.interpretQuery(query, {
+      ...(domains && domains.length > 0 ? { domains } : {}),
+      signal,
+    })
     endLlm()
 
     // Merge LLM sub-timings into the logger's timing list

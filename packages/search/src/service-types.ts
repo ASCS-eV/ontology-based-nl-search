@@ -31,7 +31,7 @@ export interface SearchDependencies {
   /** Translate natural language → structured interpretation + SPARQL */
   interpretQuery: (
     query: string,
-    options: { domain?: string; signal?: AbortSignal }
+    options: { domains?: readonly string[]; signal?: AbortSignal }
   ) => Promise<LlmStructuredResponse>
   /**
    * Compile search slots into a SPARQL query and (when the query
@@ -126,7 +126,12 @@ export interface SearchProgress {
 /** Options for a full NL search */
 export interface NlSearchOptions {
   query: string
-  domain?: string
+  /**
+   * The domains the search is scoped to, as the user selected them. When
+   * given, exactly these are searched: the model's own domain choice is not
+   * applied, and a constraint none of them can express is reported as a gap.
+   */
+  domains?: readonly string[]
   signal?: AbortSignal
   /**
    * Correlation id from the upstream HTTP middleware. When supplied, the

@@ -76,4 +76,17 @@ describe('InterpretationDisplay', () => {
     expect(screen.getByText('MotorwayManaged')).toHaveAttribute('title', iri)
     expect(screen.queryByText(iri)).not.toBeInTheDocument()
   })
+
+  it('shows the scope the user selected next to the interpretation', () => {
+    render(
+      <InterpretationDisplay interpretation={baseInterpretation} scope={['hdmap', 'openlabel']} />
+    )
+    expect(screen.getByText('Interpreted within your selection:')).toBeInTheDocument()
+    expect(screen.getByText('openlabel')).toBeInTheDocument()
+  })
+
+  it('shows no scope when the model chose the domains', () => {
+    render(<InterpretationDisplay interpretation={baseInterpretation} />)
+    expect(screen.queryByText('Interpreted within your selection:')).not.toBeInTheDocument()
+  })
 })

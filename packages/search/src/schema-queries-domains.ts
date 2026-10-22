@@ -200,3 +200,40 @@ export async function queryAssetDomains(
 
   return domains
 }
+
+/**
+ * Per domain, the other domains its primary class is a subclass of a class of
+ * ([RDFS] §3.4, transitively): the vocabularies that describe every one of
+ * its assets by type. An asset class below a vocabulary's class is described
+ * with that vocabulary whether or not it carries any of the vocabulary's
+ * properties.
+ */
+export async function queryAssetClassVocabularies(
+  store: SparqlStore,
+  registry: DomainRegistry
+): Promise<Map<string, Set<string>>> {
+  const domainOfClass = new Map<string, string>()
+  for (const [name, desc] of registry.domains) {
+    if (desc.targetClassIri) domainOfClass.set(desc.targetClassIri, name)
+  }
+  const out = new Map<string, Set<string>>()
+  if (domainOfClass.size === 0) return out
+  const values = [...domainOfClass.keys()].map((iri) => `<${iri}>`).join(' ')
+  const { results } = await store.query(`
+    ${sparqlPrefixes('rdfs')}
+    SELECT DISTINCT ?cls ?super WHERE {
+      VALUES ?cls { ${values} }
+      GRAPH <${SCHEMA_GRAPH}> { ?cls rdfs:subClassOf+ ?super }
+      FILTER(isIRI(?super))
+    }
+  `)
+  for (const row of results.bindings) {
+    const domain = domainOfClass.get(row['cls']?.value ?? '')
+    const vocabulary = registry.domainForIri(row['super']?.value ?? '')
+    if (!domain || !vocabulary || vocabulary === domain) continue
+    const set = out.get(domain) ?? new Set<string>()
+    set.add(vocabulary)
+    out.set(domain, set)
+  }
+  return out
+}

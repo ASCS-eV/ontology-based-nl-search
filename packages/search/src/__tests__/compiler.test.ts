@@ -65,6 +65,7 @@ vi.mock('../schema-queries.js', () => ({
       targetClass: 'https://w3id.org/ascs-ev/envited-x/scenario/v6/Scenario',
     },
   ]),
+  queryAssetClassVocabularies: vi.fn().mockResolvedValue(new Map()),
   queryAssetDomains: vi.fn().mockResolvedValue([
     { domainName: 'hdmap', assetClass: 'https://w3id.org/ascs-ev/envited-x/hdmap/v6/HDMap' },
     {

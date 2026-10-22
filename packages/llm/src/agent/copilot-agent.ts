@@ -288,7 +288,9 @@ export async function runCopilotAgent(
   options?: AgentOptions
 ): Promise<LlmStructuredResponse> {
   const sw = new Stopwatch()
-  const targetDomain = options?.domain ?? (await getPrimaryDomain())
+  const targetDomain = await getPrimaryDomain()
+  // An empty selection selects nothing: the model chooses the domains.
+  const scope = options?.domains?.length ? options.domains : undefined
   const policy = getAgentPolicy()
 
   const endSetup = sw.time('setup')
@@ -300,6 +302,7 @@ export async function runCopilotAgent(
   const endRetrieval = sw.time('retrieval')
   const { tail: retrievedTail } = await buildRequestPrompt(naturalLanguageQuery, {
     signal: options?.signal,
+    ...(scope === undefined ? {} : { scope }),
     maxDomains: policy.retrieval.maxDomains,
     maxCards: policy.retrieval.maxCards,
     maxContextChars: policy.retrieval.maxContextChars,
@@ -395,6 +398,7 @@ export async function runCopilotAgent(
       submission,
       vocabulary,
       targetDomain,
+      ...(scope === undefined ? {} : { scope }),
       sw,
       query: naturalLanguageQuery,
     })
@@ -402,6 +406,6 @@ export async function runCopilotAgent(
   }
 
   // Fallback: LLM didn't call submit_slots
-  const fallback = await buildEmptyFallbackResponse(naturalLanguageQuery, vocabulary)
+  const fallback = await buildEmptyFallbackResponse(naturalLanguageQuery, vocabulary, scope)
   return { ...fallback, timings: sw.getTimings() }
 }

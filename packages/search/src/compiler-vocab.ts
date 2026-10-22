@@ -27,6 +27,7 @@ import {
 } from './property-paths.js'
 import { getReferenceIndex } from './reference-index.js'
 import {
+  queryAssetClassVocabularies,
   queryAssetDomains,
   queryDomainReferences,
   queryPropertyDomains,
@@ -103,6 +104,12 @@ export interface CompilerVocab {
    * with it. Optional so hand-built fixture vocabs need not supply it.
    */
   narrowerValues?: NarrowerValues
+  /**
+   * Per domain, the vocabularies its primary class is a subclass of a class
+   * of (`queryAssetClassVocabularies`): every asset of the domain is described
+   * with them by type. Optional so hand-built fixture vocabs need not supply it.
+   */
+  assetClassVocabularies?: ReadonlyMap<string, ReadonlySet<string>>
 }
 
 /** One standalone vocabulary entry class and the leaf paths it reaches. */
@@ -186,14 +193,21 @@ export async function buildCompilerVocabFrom(
   store: SparqlStore,
   registry: DomainRegistry
 ): Promise<CompilerVocab> {
-  const [propertyDomains, shapeGroupInfos, range2DInfos, discovered, narrowerValues] =
-    await Promise.all([
-      queryPropertyDomains(store, registry),
-      queryPropertyShapeGroups(store, registry),
-      queryRange2DProperties(store, registry),
-      discoverPropertyPaths(store, registry),
-      queryNarrowerValues(store),
-    ])
+  const [
+    propertyDomains,
+    shapeGroupInfos,
+    range2DInfos,
+    discovered,
+    narrowerValues,
+    assetClassVocabularies,
+  ] = await Promise.all([
+    queryPropertyDomains(store, registry),
+    queryPropertyShapeGroups(store, registry),
+    queryRange2DProperties(store, registry),
+    discoverPropertyPaths(store, registry),
+    queryNarrowerValues(store),
+    queryAssetClassVocabularies(store, registry),
+  ])
   const propertyPaths = discovered.assetPaths
 
   const properties = new Map<string, CompilerProperty>()
@@ -279,6 +293,7 @@ export async function buildCompilerVocabFrom(
     referenceChains,
     vocabularyRoots: indexVocabularyRoots(discovered.vocabularyRootPaths),
     narrowerValues,
+    assetClassVocabularies,
   }
 }
 

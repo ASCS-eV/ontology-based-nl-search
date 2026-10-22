@@ -45,7 +45,12 @@ export async function warmupAgentPrompt(): Promise<void> {
 }
 
 export interface AgentOptions {
-  domain?: string
+  /**
+   * The domains the search is scoped to, as the user selected them. When
+   * given, exactly these are searched: the model's own domain choice is not
+   * applied, and a constraint none of them can express is reported as a gap.
+   */
+  domains?: readonly string[]
   /** Cancel the LLM round-trip when the caller aborts. */
   signal?: AbortSignal
 }
@@ -76,7 +81,7 @@ export async function runSparqlAgent(
   // and override the policy — the very thing the "LLM never writes SPARQL"
   // invariant depends on not being reachable from a request path.
   const run = await executeAgentRun(naturalLanguageQuery, getModel(), {
-    ...(options?.domain === undefined ? {} : { domain: options.domain }),
+    ...(options?.domains === undefined ? {} : { domains: options.domains }),
     ...(options?.signal === undefined ? {} : { signal: options.signal }),
   })
   return buildValidatedResponse(run)
@@ -119,6 +124,7 @@ interface AgentRun {
   vocabulary: Awaited<ReturnType<typeof getAgentContext>>['vocabulary']
   submitCall: ToolResultLike | undefined
   targetDomain: string
+  scope: readonly string[] | undefined
   naturalLanguageQuery: string
   sw: Stopwatch
 }
@@ -135,7 +141,9 @@ async function executeAgentRun(
 ): Promise<AgentRun> {
   const sw = new Stopwatch()
   const policy = options?.policy ?? getAgentPolicy()
-  const targetDomain = options?.domain ?? (await getPrimaryDomain())
+  const targetDomain = await getPrimaryDomain()
+  // An empty selection selects nothing: the model chooses the domains.
+  const scope = options?.domains?.length ? options.domains : undefined
 
   const endSetup = sw.time('setup')
   const { vocabulary } = await getAgentContext()
@@ -146,6 +154,7 @@ async function executeAgentRun(
   const endRetrieval = sw.time('retrieval')
   const { prompt, retrieved } = await buildRequestPrompt(naturalLanguageQuery, {
     signal: options?.signal,
+    ...(scope === undefined ? {} : { scope }),
     maxDomains: policy.retrieval.maxDomains,
     maxCards: policy.retrieval.maxCards,
     maxContextChars: policy.retrieval.maxContextChars,
@@ -213,6 +222,7 @@ async function executeAgentRun(
     vocabulary,
     submitCall,
     targetDomain,
+    scope,
     naturalLanguageQuery,
     sw,
   }
@@ -226,6 +236,7 @@ async function buildValidatedResponse(run: AgentRun): Promise<LlmStructuredRespo
       submission: answer,
       vocabulary: run.vocabulary,
       targetDomain: run.targetDomain,
+      ...(run.scope === undefined ? {} : { scope: run.scope }),
       sw: run.sw,
       query: run.naturalLanguageQuery,
     })
@@ -233,7 +244,11 @@ async function buildValidatedResponse(run: AgentRun): Promise<LlmStructuredRespo
   }
   // Fallback: LLM didn't call submit_slots — shared with the Copilot
   // adapter so the cross-domain query and vocabulary hint stay identical.
-  const fallback = await buildEmptyFallbackResponse(run.naturalLanguageQuery, run.vocabulary)
+  const fallback = await buildEmptyFallbackResponse(
+    run.naturalLanguageQuery,
+    run.vocabulary,
+    run.scope
+  )
   return { ...fallback, timings: run.sw.getTimings() }
 }
 

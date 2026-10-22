@@ -12,7 +12,6 @@
  * breaking downstream packages.
  */
 import { getConfig } from '@ontology-search/core/config'
-import { getPrimaryDomain } from '@ontology-search/ontology/domain-registry'
 import { getInitializedStore, warmupRetrievalIndex } from '@ontology-search/search'
 
 import { warmupAgentPrompt } from './agent/index.js'
@@ -29,7 +28,12 @@ export type { InstanceValueLookup, ShaclSlotValidationResult } from './slot-vali
 export { validateRangesAgainstShacl, validateSlotsAgainstShacl } from './slot-validator.js'
 
 export interface SearchOptions {
-  domain?: string
+  /**
+   * The domains the search is scoped to, as the user selected them. When
+   * given, exactly these are searched: the model's own domain choice is not
+   * applied, and a constraint none of them can express is reported as a gap.
+   */
+  domains?: readonly string[]
   /**
    * Cancel the in-flight LLM call when the caller aborts (SSE close, request
    * cancel, etc.). Honoured natively by the Vercel-SDK provider; the Copilot
@@ -96,7 +100,7 @@ export async function generateStructuredSearch(
   options?: SearchOptions
 ): Promise<LlmStructuredResponse> {
   const config = getConfig()
-  const domain = options?.domain ?? (await getPrimaryDomain())
+  const domains = options?.domains
   const signal = options?.signal
 
   // One choke point for provider faults: an unreachable Ollama, a rejected
@@ -104,7 +108,7 @@ export async function generateStructuredSearch(
   // setting and the command, instead of the SDK's transport-level wording.
   return withProviderErrorTranslation(providerContextFromConfig(config), () =>
     getAgentBackend().fillSlots(naturalLanguageQuery, {
-      domain,
+      ...(domains === undefined ? {} : { domains }),
       ...(signal === undefined ? {} : { signal }),
     })
   )

@@ -75,11 +75,11 @@ describe('runClaudeCodeAgent', () => {
   it('compiles only from a submission that validates, via the shared slot pipeline', async () => {
     h.run.mockResolvedValue({ structuredOutput: submission, numTurns: 2, durationApiMs: 900 })
 
-    const response = await runClaudeCodeAgent('any query', { domain: 'any-domain' })
+    const response = await runClaudeCodeAgent('any query', { domains: ['any-domain'] })
 
     expect(response.sparql).toBe(h.PIPELINE_SPARQL)
     expect(vi.mocked(runSlotPipeline)).toHaveBeenCalledWith(
-      expect.objectContaining({ submission, targetDomain: 'any-domain', query: 'any query' })
+      expect.objectContaining({ submission, scope: ['any-domain'], query: 'any query' })
     )
   })
 
@@ -87,11 +87,13 @@ describe('runClaudeCodeAgent', () => {
     h.run.mockResolvedValue({ structuredOutput: submission, numTurns: 2, durationApiMs: 900 })
     const signal = new AbortController().signal
 
-    await runClaudeCodeAgent('any query', { domain: 'any-domain', signal })
+    await runClaudeCodeAgent('any query', { domains: ['any-domain'], signal })
 
-    // Retrieval reads the policy's budgets, like the other adapters.
+    // Retrieval reads the policy's budgets, like the other adapters, and the
+    // scope the user selected.
     expect(vi.mocked(buildRequestPrompt)).toHaveBeenCalledWith('any query', {
       signal,
+      scope: ['any-domain'],
       maxDomains: 2,
       maxCards: 30,
       maxContextChars: 20_000,
@@ -115,7 +117,7 @@ describe('runClaudeCodeAgent', () => {
       durationApiMs: 900,
     })
 
-    const response = await runClaudeCodeAgent('any query', { domain: 'any-domain' })
+    const response = await runClaudeCodeAgent('any query', { domains: ['any-domain'] })
 
     expect(response.sparql).toBe(h.FALLBACK_SPARQL)
     expect(response.sparql).not.toContain('DELETE')
@@ -126,6 +128,6 @@ describe('runClaudeCodeAgent', () => {
     const fault = new AgentError('Claude Code is not signed in.')
     h.run.mockRejectedValue(fault)
 
-    await expect(runClaudeCodeAgent('any query', { domain: 'any-domain' })).rejects.toBe(fault)
+    await expect(runClaudeCodeAgent('any query', { domains: ['any-domain'] })).rejects.toBe(fault)
   })
 })

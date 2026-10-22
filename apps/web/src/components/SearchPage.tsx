@@ -8,6 +8,7 @@ import { useQueryHistory } from '../hooks/useQueryHistory'
 import { useSearchExecution } from '../hooks/useSearchExecution'
 import { useVocabulary } from '../hooks/useVocabulary'
 import { apiGet } from '../lib/api-client'
+import { DomainScopeSelector } from './DomainScopeSelector'
 import { InterpretationDisplay } from './InterpretationDisplay'
 import { OntologyGapsDisplay } from './OntologyGapsDisplay'
 import type { PipelineStep } from './PipelineStepper'
@@ -61,19 +62,23 @@ export function SearchPage() {
     results,
     traceability,
     meta,
+    scope: searchedScope,
     phase,
     loading,
     error,
     handleSearch: executeSearch,
     handleRefine,
     handleGraphQLRun,
-  } = useSearchExecution(stats?.availableDomains ?? [])
+  } = useSearchExecution()
 
   const [graphQLEntryMode, setGraphQLEntryMode] = useState(false)
+  // The domains the next search is scoped to; empty lets the model choose.
+  const [scope, setScope] = useState<string[]>([])
+  const availableDomains = stats?.availableDomains ?? []
 
   const handleSearch = async (query: string) => {
     setGraphQLEntryMode(false)
-    await executeSearch(query)
+    await executeSearch(query, scope)
     addToHistory(query)
   }
 
@@ -112,6 +117,12 @@ export function SearchPage() {
               disabled={!apiReady}
               history={history}
             />
+            <DomainScopeSelector
+              available={availableDomains}
+              selected={scope}
+              onChange={setScope}
+              disabled={loading || !apiReady}
+            />
             {apiLoading && (
               <p className="text-gray-400 text-xs mt-2 text-center h-4 animate-pulse">
                 Connecting to search API…
@@ -130,7 +141,9 @@ export function SearchPage() {
         label: 'LLM Interpretation & Ontology Mapping',
         summary: interpretation?.summary,
         hasContent: !!interpretation,
-        content: interpretation ? <InterpretationDisplay interpretation={interpretation} /> : null,
+        content: interpretation ? (
+          <InterpretationDisplay interpretation={interpretation} scope={searchedScope} />
+        ) : null,
       },
       {
         id: 'filters',
@@ -190,6 +203,9 @@ export function SearchPage() {
       handleGraphQLRun,
       vocabulary,
       gapLogEnabled,
+      scope,
+      searchedScope,
+      availableDomains,
     ]
   )
 
@@ -230,9 +246,17 @@ export function SearchPage() {
             disabled={!apiReady}
             history={history}
           />
+          <DomainScopeSelector
+            available={availableDomains}
+            selected={scope}
+            onChange={setScope}
+            disabled={loading || !apiReady}
+          />
           {hasResponse && (
             <div className="mt-8 space-y-4">
-              {interpretation && <InterpretationDisplay interpretation={interpretation} />}
+              {interpretation && (
+                <InterpretationDisplay interpretation={interpretation} scope={searchedScope} />
+              )}
               {slots && hasEditableSlots(slots) && (
                 <QueryRefinement slots={slots} onRerun={handleRefine} loading={loading} />
               )}

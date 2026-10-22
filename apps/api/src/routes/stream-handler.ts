@@ -50,7 +50,7 @@ export interface StreamRouteOptions<TBody> {
    * to reject the request; the helper emits it as an `error` event and closes.
    * Omit when the endpoint takes nothing but `query`.
    */
-  parseBody?: (raw: Record<string, unknown>) => TBody | HttpError
+  parseBody?: (raw: Record<string, unknown>) => TBody | HttpError | Promise<TBody | HttpError>
   handler: (ctx: StreamContext<TBody>) => Promise<void>
 }
 
@@ -132,7 +132,7 @@ export function handleStreamRoute<TBody = undefined>(
 
       let body = undefined as TBody
       if (options.parseBody) {
-        const parsed = options.parseBody(raw)
+        const parsed = await options.parseBody(raw)
         if (isHttpError(parsed)) {
           await reject(parsed)
           return

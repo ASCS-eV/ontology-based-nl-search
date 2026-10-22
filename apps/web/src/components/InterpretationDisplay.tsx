@@ -5,6 +5,8 @@ import { compactIri } from '../lib/iri'
 
 interface InterpretationDisplayProps {
   interpretation: QueryInterpretation
+  /** The domains the user scoped the search to; empty when the model chose. */
+  scope?: readonly string[]
 }
 
 const CONFIDENCE_TONE: Record<MappedTerm['confidence'], Tone> = {
@@ -21,13 +23,24 @@ function confidenceBadge(confidence: MappedTerm['confidence']) {
   )
 }
 
-export function InterpretationDisplay({ interpretation }: InterpretationDisplayProps) {
+export function InterpretationDisplay({ interpretation, scope = [] }: InterpretationDisplayProps) {
   return (
     <div className="w-full" role="region" aria-label="Query interpretation" aria-live="polite">
       <Heading level={4} className="mb-2">
         Interpreted as
       </Heading>
       <p className="text-base text-gray-800 mb-3">{interpretation.summary}</p>
+
+      {scope.length > 0 && (
+        <p className="flex flex-wrap items-center gap-2 mb-3 text-sm text-gray-600">
+          <span>Interpreted within your selection:</span>
+          {scope.map((domain) => (
+            <Pill key={domain} tone="info">
+              {domain}
+            </Pill>
+          ))}
+        </p>
+      )}
 
       {interpretation.mappedTerms.length > 0 && (
         <div className="flex flex-wrap gap-2">

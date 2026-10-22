@@ -7,6 +7,7 @@
  * fallbacks previously embedded in both agents.
  */
 import type { SchemaVocabulary } from '@ontology-search/search'
+import { compileSlots } from '@ontology-search/search/compiler'
 import { describe, expect, it, vi } from 'vitest'
 
 // Mock the compiler so the helper doesn't need a real schema graph / store.
@@ -87,5 +88,21 @@ describe('buildEmptyFallbackResponse', () => {
     expect(reason).toContain('p0')
     expect(reason).toContain('p2')
     expect(reason).not.toContain('p3')
+  })
+
+  /**
+   * Regression: when the model submitted nothing, the fallback searched every
+   * asset domain even for a request the user had scoped, while the UI said
+   * the search covered only the selection.
+   */
+  it('searches the scope the user selected, and says so', async () => {
+    const res = await buildEmptyFallbackResponse('anything', vocab({}), ['library', 'archive'])
+    expect(vi.mocked(compileSlots)).toHaveBeenLastCalledWith({
+      domains: ['library', 'archive'],
+      filters: {},
+      ranges: {},
+    })
+    expect(res.interpretation.domains).toEqual(['library', 'archive'])
+    expect(res.interpretation.summary).toContain('library, archive')
   })
 })

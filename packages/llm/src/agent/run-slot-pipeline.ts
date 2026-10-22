@@ -34,7 +34,9 @@ import {
 import {
   canonicalAssetDomains,
   compileSlotsWithTrace,
+  constraintsOutsideScope,
   resolveKnownDomains,
+  searchedDomains,
 } from '@ontology-search/search/compiler'
 import type { LlmStructuredResponse } from '@ontology-search/search/types'
 import type { ReferenceFilter, SearchSlots } from '@ontology-search/slots/slots'
@@ -80,6 +82,13 @@ export interface SlotPipelineInput {
   vocabulary: SchemaVocabulary
   /** Fallback domain when the submission's `slots.domains` is empty. */
   targetDomain: string
+  /**
+   * The domains the user scoped the request to, canonical. When given they
+   * replace the model's domain choice: exactly these are searched, and a
+   * constraint none of them can express becomes a gap instead of widening
+   * the search.
+   */
+  scope?: readonly string[]
   /**
    * The user's own words. Used only to break a tie between domains that all
    * declare the requested property: when the query names one of them, the
@@ -158,7 +167,8 @@ async function validateReferenceTree(
  * this helper.
  */
 export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStructuredResponse> {
-  const { submission, vocabulary, targetDomain, sw, query } = input
+  const { submission, vocabulary, targetDomain, scope, sw, query } = input
+  const requestedDomains = scope ? [...scope] : (submission.slots.domains ?? [targetDomain])
 
   const endValidation = sw.time('post-llm-validation')
   // 1. Fuzzy match: case / typo correction against sh:in enums. Prefixed names
@@ -187,47 +197,23 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
     shacl,
     vocabulary,
     instanceValueLookup,
-    submission.slots.domains ?? [targetDomain]
+    scope ? await searchedDomains(scope) : requestedDomains
   )
   // 3. Ranges go through their own check: numeric values always pass SHACL
   // datatype constraints, so we only need to confirm the property name is
   // known. Hallucinated keys (e.g. `numberLanes`) are dropped here.
   const rangeResult = validateRangesAgainstShacl(submission.slots.ranges ?? {}, shacl, vocabulary)
-  // 4. Reassign domains based on the union of surviving filter / range keys.
-  const correctedDomains = correctDomains(
-    submission.slots.domains ?? [targetDomain],
-    shaclResult.filters,
-    rangeResult.ranges,
-    vocabulary
-  )
-  // 4b. Drop any domain the registry can't resolve — an LLM-hallucinated
-  // "unknown", a typo, or an extraction artifact. The compiler skips these
-  // silently when building UNION arms, so leaving them in `slots.domains`
-  // only pollutes the interpretation with a phantom `domain:unknown` row
-  // that never affected the SPARQL. Filtering here keeps the interpretation
-  // honest about what was actually compiled.
-  //
-  // The LLM's own domain list is passed alongside: when it named only a
-  // support vocabulary ("<vocabulary> only"), the result keeps that vocabulary
-  // (searched standalone) next to the asset domains that use it.
-  const knownDomains = await resolveKnownDomains(
-    correctedDomains,
-    submission.slots.domains ?? [targetDomain],
-    [...Object.keys(shaclResult.filters), ...Object.keys(rangeResult.ranges)]
-  )
-
-  // 4b-ii. A property declared by several domains keeps them all — the safe
-  // default. But when the query names one of those domains outright ("maps
-  // …"), the others were never asked for, and answering from them buries the
-  // asked-for results among assets the user had already ruled out. Narrows
-  // only on a clear, unambiguous naming; every other case passes through.
-  // A named support vocabulary is the SCOPE of the request, not its subject:
-  // its name would always win the tie-break and drop the asset domains that
-  // use it, so the tie-break is skipped whenever such a scope is present.
-  const assetDomains = await getAssetDomains()
-  const vocabularyScope = knownDomains.filter((d) => !assetDomains.has(d))
-  const preferredDomains =
-    vocabularyScope.length > 0 ? knownDomains : preferDomainsNamedInQuery(knownDomains, query)
+  // 4. The domains to search. A scope the user stated is searched as stated
+  // (see `scopeToSlots`); otherwise they follow from the model's choice.
+  const preferredDomains = scope
+    ? [...scope]
+    : await inferDomains(
+        requestedDomains,
+        shaclResult.filters,
+        rangeResult.ranges,
+        vocabulary,
+        query
+      )
 
   // 4c. references.* are cross-reference JOIN targets (parent → child via the
   // discovered chain), not peers of the primary domain. Normalize to an array,
@@ -258,14 +244,26 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
       normalizedReferences.push({ ...ref, domain: canonical })
     }
   }
-  const primaryDomains = preferredDomains.filter((d) => !referencedDomains.has(d))
+  const scoped = scope
+    ? await scopeToSlots(
+        scope,
+        shaclResult.filters,
+        rangeResult.ranges,
+        normalizedReferences,
+        submission
+      )
+    : undefined
+  const primaryDomains =
+    scoped?.domains ?? preferredDomains.filter((d) => !referencedDomains.has(d))
+  const filters = scoped?.filters ?? shaclResult.filters
+  const ranges = scoped?.ranges ?? rangeResult.ranges
 
   // Validate reference-scoped filters/ranges with the same gates as the
   // top-level slots (fuzzy-match, SKOS expansion, SHACL). Gaps surface to the
   // user just like primary-slot gaps.
   const referenceGaps: OntologyGap[] = []
   const validatedReferences = await validateReferenceTree(
-    normalizedReferences,
+    scoped?.references ?? normalizedReferences,
     vocabulary,
     conceptIndex,
     shacl,
@@ -277,8 +275,8 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
 
   const slots: SearchSlots = {
     domains: primaryDomains,
-    filters: shaclResult.filters,
-    ranges: rangeResult.ranges,
+    filters,
+    ranges,
     references: validatedReferences.length > 0 ? validatedReferences : undefined,
   }
 
@@ -290,10 +288,11 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   endCompile()
 
   // Convert dropped references into user-visible limitation gaps so the
-  // user knows which cross-reference JOINs were skipped.
+  // user knows which cross-references were not applied: there is no path
+  // from the primary domain, or the searched domains answer as peers.
   const compileGaps: OntologyGap[] = (droppedReferences ?? []).map((domain) => ({
     term: domain,
-    reason: `No known path from ${slots.domains[0] ?? 'primary domain'} to ${domain} — cross-reference skipped`,
+    reason: `${domain} could not be joined to ${slots.domains.join(', ') || 'the primary domain'} — cross-reference skipped`,
     kind: 'limitation' as const,
   }))
 
@@ -312,6 +311,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
       ...shaclResult.gaps,
       ...rangeResult.gaps,
       ...referenceGaps,
+      ...(scoped?.gaps ?? []),
       ...compileGaps,
     ],
     sparql,
@@ -321,4 +321,98 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
 
   // 6. Final post-compile sanity / confidence-floor pass.
   return validateSlots(rawResponse, vocabulary, prefixes)
+}
+
+/**
+ * The domains a natural-language request searches when the user stated no
+ * scope, from the model's choice and the properties it filled.
+ */
+async function inferDomains(
+  requested: string[],
+  filters: Record<string, string | string[]>,
+  ranges: Record<string, { min?: number; max?: number }>,
+  vocabulary: SchemaVocabulary,
+  query: string
+): Promise<string[]> {
+  // Reassign domains based on the union of surviving filter / range keys.
+  const correctedDomains = correctDomains(requested, filters, ranges, vocabulary)
+  // Drop any domain the registry can't resolve — an LLM-hallucinated
+  // "unknown", a typo, or an extraction artifact. The compiler skips these
+  // silently when building UNION arms, so leaving them in `slots.domains`
+  // only pollutes the interpretation with a phantom `domain:unknown` row
+  // that never affected the SPARQL. Filtering here keeps the interpretation
+  // honest about what was actually compiled.
+  //
+  // The LLM's own domain list is passed alongside: when it named only a
+  // support vocabulary ("<vocabulary> only"), that vocabulary is the scope.
+  const knownDomains = await resolveKnownDomains(correctedDomains, requested)
+
+  // A property declared by several domains keeps them all — the safe
+  // default. But when the query names one of those domains outright ("maps
+  // …"), the others were never asked for, and answering from them buries the
+  // asked-for results among assets the user had already ruled out. Narrows
+  // only on a clear, unambiguous naming; every other case passes through.
+  const assetDomains = await getAssetDomains()
+  const vocabularyScope = knownDomains.filter((d) => !assetDomains.has(d))
+  if (vocabularyScope.length === 0) return preferDomainsNamedInQuery(knownDomains, query)
+  // A named support vocabulary is the SCOPE of the request, not its subject.
+  // The tie-break runs over the asset domains using it instead: when the
+  // query names one of them outright, that domain is what was asked for.
+  const owners = (await searchedDomains(vocabularyScope)).filter((d) => assetDomains.has(d))
+  const named = preferDomainsNamedInQuery(owners, query)
+  return named.length < owners.length ? named : knownDomains
+}
+
+/**
+ * The slots of a request the user scoped to `scope`. The scope is searched as
+ * stated and is never narrowed or widened:
+ *
+ *   - its domains are the answers, so a reference to one of them is the
+ *     model reading the scope as a constraint; it is dropped and reported;
+ *   - a constraint none of the searched domains can express is removed and
+ *     reported as a limitation, never answered by searching further.
+ *
+ * A gap names the user's own words for the constraint where the model
+ * recorded them.
+ */
+async function scopeToSlots(
+  scope: readonly string[],
+  filters: Record<string, string | string[]>,
+  ranges: Record<string, { min?: number; max?: number }>,
+  references: readonly ReferenceFilter[],
+  submission: SlotPipelineSubmission
+): Promise<{
+  domains: string[]
+  filters: Record<string, string | string[]>
+  ranges: Record<string, { min?: number; max?: number }>
+  references: ReferenceFilter[]
+  gaps: OntologyGap[]
+}> {
+  const domains = [...scope]
+  const selection = domains.join(', ')
+  const kept = references.filter((reference) => !domains.includes(reference.domain))
+  const gaps: OntologyGap[] = references
+    .filter((reference) => domains.includes(reference.domain))
+    .map((reference) => ({
+      term: reference.domain,
+      reason: `A reference to ${reference.domain}, which the selected domains (${selection}) search themselves`,
+      kind: 'limitation',
+      suggestions: [],
+    }))
+  const outside = new Set(
+    await constraintsOutsideScope({ domains, filters, ranges, references: kept })
+  )
+  const keep = <T>(entries: Record<string, T>) =>
+    Object.fromEntries(Object.entries(entries).filter(([key]) => !outside.has(key)))
+  for (const key of outside) {
+    gaps.push({
+      term:
+        (submission.interpretation.mappedTerms ?? []).find((term) => term.property === key)
+          ?.input ?? key,
+      reason: `Not a property of the selected domains (${selection})`,
+      kind: 'limitation',
+      suggestions: [],
+    })
+  }
+  return { domains, filters: keep(filters), ranges: keep(ranges), references: kept, gaps }
 }
