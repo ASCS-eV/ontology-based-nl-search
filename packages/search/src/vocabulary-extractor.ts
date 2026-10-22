@@ -17,7 +17,7 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from './compiler.js'
 import { allPropertyKeys, type KeyedPropertyPath } from './compiler-vocab.js'
-import { queryDisjunctiveEnumerations } from './disjunctive-enumerations.js'
+import { CLOSED_UNION_PATTERN, queryDisjunctiveEnumerations } from './disjunctive-enumerations.js'
 import { extractNumericProperties, type NumericProperty } from './numeric-properties.js'
 import { PROPERTY_KEY_SEPARATOR } from './property-keys.js'
 import { SCHEMA_GRAPH } from './schema-loader.js'
@@ -352,31 +352,33 @@ interface EnumBase {
 }
 
 /**
- * Extract the sh:in enumerations of every property IRI from the schema graph,
- * merged across the property shapes that declare it, including the union of
- * an `sh:or` whose members are all `sh:in` lists
- * (`disjunctive-enumerations.ts`).
+ * Extract the enumerated values of every property IRI from the schema graph,
+ * merged across the property shapes that declare it. A shape lists its values
+ * at the top level with `sh:in`, or through a closed `sh:or` union
+ * (`disjunctive-enumerations.ts`, which also narrows the union to the shape's
+ * top-level list when it has both).
  */
 async function extractEnumProperties(store: SparqlStore): Promise<Map<string, EnumBase>> {
-  const disjunctive = queryDisjunctiveEnumerations(store)
-  const sparql = `
-    ${sparqlPrefixes('sh', 'rdf')}
+  const [results, disjunctive] = await Promise.all([
+    store.query(`
+      ${sparqlPrefixes('sh', 'rdf')}
 
-    SELECT ?path ?name ?description ?value
-    FROM <${SCHEMA_GRAPH}>
-    WHERE {
-      ?shape sh:property ?propShape .
-      ?propShape sh:path ?path .
-      FILTER(isIRI(?path))
-      ?propShape sh:in ?list .
-      ?list rdf:rest*/rdf:first ?value .
-      OPTIONAL { ?propShape sh:name ?name }
-      OPTIONAL { ?propShape sh:description ?description }
-    }
-    ORDER BY ?path ?value
-  `
-
-  const results = await store.query(sparql)
+      SELECT ?path ?name ?description ?value
+      FROM <${SCHEMA_GRAPH}>
+      WHERE {
+        ?shape sh:property ?propShape .
+        ?propShape sh:path ?path .
+        FILTER(isIRI(?path))
+        ?propShape sh:in ?list .
+        ?list rdf:rest*/rdf:first ?value .
+        MINUS { ${CLOSED_UNION_PATTERN} }
+        OPTIONAL { ?propShape sh:name ?name }
+        OPTIONAL { ?propShape sh:description ?description }
+      }
+      ORDER BY ?path ?value
+    `),
+    queryDisjunctiveEnumerations(store),
+  ])
 
   // Accumulate the sh:in values per property IRI; keys are attributed by
   // `enumPropertiesByKey`.
@@ -399,7 +401,7 @@ async function extractEnumProperties(store: SparqlStore): Promise<Map<string, En
     }
     if (!base.allowedValues.includes(value)) base.allowedValues.push(value)
   }
-  for (const { propertyIri, values, name, description } of await disjunctive) {
+  for (const { propertyIri, values, name, description } of disjunctive) {
     let base = byIri.get(propertyIri)
     if (!base) {
       base = {

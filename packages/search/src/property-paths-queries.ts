@@ -9,7 +9,7 @@
 import { iri, sparqlPrefixes } from '@ontology-search/core/rdf/prefixes'
 import type { SparqlStore } from '@ontology-search/sparql/types'
 
-import { queryDisjunctiveEnumerations } from './disjunctive-enumerations.js'
+import { CLOSED_UNION_PATTERN, queryDisjunctiveEnumerations } from './disjunctive-enumerations.js'
 import { type LeafKind, type PropertyPath } from './property-paths-types.js'
 import { SCHEMA_GRAPH } from './schema-loader.js'
 
@@ -207,7 +207,7 @@ export interface LeafRow {
   owningClass: string
   propertyIri: string
   leafKind: LeafKind
-  /** The property is a literal leaf only through an `sh:or` member's datatype. */
+  /** The property is a leaf only through an `sh:or` member: its datatype or its `sh:in` list. */
   viaDisjunction?: boolean
 }
 
@@ -258,25 +258,32 @@ export async function queryLeafDatatypes(
  * ([SHACL] §2.3). Values are sorted, so the result never depends on list
  * walk order.
  *
+ * A shape that enumerates through a closed `sh:or` union contributes the
+ * values that union accepts (`disjunctive-enumerations.ts`); its top-level
+ * list, if any, is read there, narrowing the union.
+ *
  * The list walk is a property path in a UNION-free query (see
  * {@link queryResolvedEdges} for why that matters on Oxigraph WASM).
  */
 export async function queryLeafEnumerations(store: SparqlStore): Promise<Map<string, string[]>> {
-  const disjunctive = queryDisjunctiveEnumerations(store)
-  const result = await store.query(`
-    ${sparqlPrefixes('sh', 'rdf')}
+  const [result, disjunctive] = await Promise.all([
+    store.query(`
+      ${sparqlPrefixes('sh', 'rdf')}
 
-    SELECT DISTINCT ?owningClass ?propertyIri ?value WHERE {
-      GRAPH <${SCHEMA_GRAPH}> {
-        ?shape sh:targetClass ?owningClass .
-        ?shape sh:property ?propShape .
-        ?propShape sh:path ?propertyIri .
-        FILTER(isIRI(?propertyIri))
-        ?propShape sh:in ?list .
-        ?list rdf:rest*/rdf:first ?value .
+      SELECT DISTINCT ?owningClass ?propertyIri ?value WHERE {
+        GRAPH <${SCHEMA_GRAPH}> {
+          ?shape sh:targetClass ?owningClass .
+          ?shape sh:property ?propShape .
+          ?propShape sh:path ?propertyIri .
+          FILTER(isIRI(?propertyIri))
+          ?propShape sh:in ?list .
+          ?list rdf:rest*/rdf:first ?value .
+          MINUS { ${CLOSED_UNION_PATTERN} }
+        }
       }
-    }
-  `)
+    `),
+    queryDisjunctiveEnumerations(store),
+  ])
   const out = new Map<string, string[]>()
   for (const row of result.results.bindings) {
     const owningClass = row['owningClass']?.value
@@ -288,8 +295,7 @@ export async function queryLeafEnumerations(store: SparqlStore): Promise<Map<str
     if (!values.includes(value)) values.push(value)
     out.set(key, values)
   }
-  // An `sh:or` of `sh:in` lists enumerates the union of its lists.
-  for (const { owningClasses, propertyIri, values: listed } of await disjunctive) {
+  for (const { owningClasses, propertyIri, values: listed } of disjunctive) {
     for (const owningClass of owningClasses) {
       const key = `${owningClass}|${propertyIri}`
       const values = out.get(key) ?? []
