@@ -26,13 +26,19 @@ describe('bindCatalogRoad', () => {
     expect(bound.ir.roadNetwork?.logicFile).toBe(road.logicFile)
   })
 
-  it('falls back to the default road and normalizes an unknown logicFile', () => {
+  it('falls back to the default road, normalizes an unknown logicFile and says so', () => {
     const road = defaultRoad()
     const ir: AuthoringIR = { ...cutInIR(), roadNetwork: { logicFile: 'nonexistent.xodr' } }
     const bound = bindCatalogRoad(ir, undefined)
     expect(bound.roadNetworkXodr).toBe(road.xodr)
-    // The emitted .xosc must name the road that was actually validated.
+    // The emitted .xosc must name the road that was actually validated …
     expect(bound.ir.roadNetwork?.logicFile).toBe(road.logicFile)
+    // … and the substitution is reported, never silent.
+    expect(bound.unresolvedLogicFile).toBe('nonexistent.xodr')
+  })
+
+  it('reports nothing when the IR names a catalog road', () => {
+    expect(bindCatalogRoad(cutInIR(), undefined).unresolvedLogicFile).toBeUndefined()
   })
 
   it('binds the default road when the IR declares no road network', () => {
