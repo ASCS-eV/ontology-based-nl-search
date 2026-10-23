@@ -236,6 +236,7 @@ searchRoutes.post('/refine', async (c) => {
       // here, the domains are canonical), so the client's editable panel
       // reflects what actually ran rather than what it happened to send.
       slots,
+      gaps: result.gaps,
     }
 
     // Include GraphQL intermediate representation when feature is enabled
@@ -341,6 +342,7 @@ searchRoutes.post('/refine-graphql', async (c) => {
       // this its refinement panel would keep showing the PREVIOUS query's IR
       // and a subsequent re-run would silently execute that instead.
       slots: parseResult.slots,
+      gaps: result.gaps,
     }
 
     // Re-serialize from the parsed slots (normalized form)

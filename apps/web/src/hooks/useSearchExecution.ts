@@ -17,6 +17,12 @@ export type SearchPhase = 'idle' | 'interpreting' | 'executing' | 'done'
 export interface SearchState {
   interpretation: QueryInterpretation | null
   gaps: OntologyGap[] | null
+  /**
+   * What the latest refine or GraphQL run could not apply (values the SHACL
+   * gate removed, references the compiler could not join). Kept apart from
+   * `gaps`, the interpretation's gaps, which the gap log records.
+   */
+  refineGaps: OntologyGap[] | null
   sparql: string | null
   graphql: string | null
   /**
@@ -54,6 +60,7 @@ export function useSearchExecution() {
   const [state, setState] = useState<SearchState>({
     interpretation: null,
     gaps: null,
+    refineGaps: null,
     sparql: null,
     graphql: null,
     slots: null,
@@ -77,6 +84,7 @@ export function useSearchExecution() {
       setState({
         interpretation: null,
         gaps: null,
+        refineGaps: null,
         sparql: null,
         graphql: null,
         slots: null,
@@ -196,6 +204,7 @@ export function useSearchExecution() {
       results: null,
       traceability: null,
       meta: null,
+      refineGaps: null,
       phase: 'executing',
       slots: edited,
       scope: edited.domains,
@@ -214,6 +223,7 @@ export function useSearchExecution() {
         results: data.results,
         traceability: data.traceability ?? null,
         meta: data.meta,
+        refineGaps: data.gaps,
         phase: 'done',
       }))
     } catch (err) {
@@ -234,6 +244,7 @@ export function useSearchExecution() {
       results: null,
       traceability: null,
       meta: null,
+      refineGaps: null,
       phase: 'executing',
     }))
 
@@ -254,6 +265,7 @@ export function useSearchExecution() {
         results: data.results,
         traceability: data.traceability ?? null,
         meta: data.meta,
+        refineGaps: data.gaps,
         phase: 'done',
       }))
     } catch (err) {

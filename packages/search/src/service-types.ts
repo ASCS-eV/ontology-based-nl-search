@@ -47,12 +47,12 @@ export interface SearchDependencies {
   enforcePolicy: (sparql: string) => PolicyResult & { query: string }
   /**
    * Apply ontology-level SHACL validation to refine-path slots, dropping
-   * any value that violates a declared constraint. The LLM agent path runs
-   * SHACL validation itself; this dependency closes the same gap for any
-   * caller that supplies pre-filled slots directly. Optional — when omitted,
-   * slots flow through unchanged (matches the pre-Phase-1 behaviour).
+   * any value that violates a declared constraint and reporting each drop as
+   * a gap. The LLM agent path runs SHACL validation itself; this dependency
+   * closes the same gap for any caller that supplies pre-filled slots
+   * directly. Optional — when omitted, slots flow through unchanged.
    */
-  validateSlots?: (slots: SearchSlots) => Promise<SearchSlots>
+  validateSlots?: (slots: SearchSlots) => Promise<ValidatedSlots>
   /**
    * Receive the gaps of every interpreted natural-language search, with the
    * domains it was scoped to: the feed of the ontology gap log
@@ -64,6 +64,12 @@ export interface SearchDependencies {
 }
 
 // ─── Result Types ────────────────────────────────────────────────────────────
+
+/** Slots after the SHACL gate, with a gap for every value it removed. */
+export interface ValidatedSlots {
+  slots: SearchSlots
+  gaps: OntologyGap[]
+}
 
 /** Result of executing a compiled SPARQL query */
 export interface ExecutionResult {
@@ -101,6 +107,12 @@ export interface RefineResult {
   sparql: string
   execution: ExecutionResult
   meta: SearchMeta
+  /**
+   * What the refine could not apply: values the SHACL gate removed and
+   * references the compile could not join. Not recorded in the gap log, which
+   * counts the words of natural-language searches.
+   */
+  gaps: OntologyGap[]
 }
 
 /**

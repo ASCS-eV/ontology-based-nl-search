@@ -7,7 +7,7 @@ import type { SearchSlots } from '@ontology-search/slots'
 import type { SparqlResults, SparqlStore } from '@ontology-search/sparql/types'
 import { vi } from 'vitest'
 
-import type { SearchDependencies } from '../service.js'
+import type { SearchDependencies, ValidatedSlots } from '../service.js'
 import { SearchService } from '../service.js'
 import type { LlmStructuredResponse } from '../types.js'
 
@@ -631,12 +631,12 @@ describe('SearchService.searchRefine', () => {
    * that prevents a refine caller from bypassing SHACL validation.
    */
   it('applies validateSlots before compileSlots (R4)', async () => {
-    const validateSlots = vi.fn(async (s: SearchSlots): Promise<SearchSlots> => {
+    const validateSlots = vi.fn(async (s: SearchSlots): Promise<ValidatedSlots> => {
       // Pretend the validator dropped a bad country value (e.g. it failed
       // sh:pattern). Strip `country` from the filter map so the
       // post-validation slots no longer carry it.
       const { country: _dropped, ...kept } = s.filters as Record<string, string | string[]>
-      return { ...s, filters: kept }
+      return { slots: { ...s, filters: kept }, gaps: [] }
     })
     const deps = createMockDeps({ validateSlots })
     const service = new SearchService(deps)
@@ -665,5 +665,36 @@ describe('SearchService.searchRefine', () => {
     await service.searchRefine({ slots })
 
     expect(deps.compileSlots).toHaveBeenCalledWith(slots)
+  })
+
+  /**
+   * Regression: a refine dropped a value the SHACL gate rejected, and a
+   * reference the compiler could not join, and answered as if both had been
+   * applied: the result carried no gap, so the edited chip kept showing a
+   * filter the query no longer had.
+   */
+  it('returns a gap for every value it removed and every reference it could not join', async () => {
+    const removed = {
+      term: 'country',
+      reason: '"europe" is not a valid value',
+      kind: 'unmapped' as const,
+    }
+    const deps = createMockDeps({
+      validateSlots: vi.fn(
+        async (s: SearchSlots): Promise<ValidatedSlots> => ({
+          slots: s,
+          gaps: [removed],
+        })
+      ),
+      compileSlots: vi
+        .fn()
+        .mockResolvedValue({ sparql: MOCK_SPARQL, droppedReferences: ['ositrace'] }),
+    })
+    const result = await new SearchService(deps).searchRefine({ slots })
+
+    expect(result.gaps).toEqual([
+      removed,
+      expect.objectContaining({ term: 'ositrace', kind: 'limitation' }),
+    ])
   })
 })

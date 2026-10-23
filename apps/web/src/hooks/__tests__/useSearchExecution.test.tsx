@@ -239,4 +239,42 @@ describe('useSearchExecution', () => {
     // The edited domains are the scope the refinement ran with.
     expect(result.current.scope).toEqual(['hdmap'])
   })
+
+  /**
+   * Regression: a refine that dropped a value answered without saying so, and
+   * the panel kept showing the filter the query no longer had.
+   */
+  it('keeps what a refine could not apply apart from the interpretation gaps', async () => {
+    const interpreted = [{ term: 'cats', reason: 'Animals are not defined' }]
+    vi.spyOn(api, 'apiPostStream').mockResolvedValue(
+      sseResponse(`event: gaps\ndata: ${JSON.stringify(interpreted)}\n\nevent: done\ndata: {}\n\n`)
+    )
+    const removed = [{ term: 'country', reason: '"europe" is not a valid value' }]
+    vi.spyOn(api, 'apiPost').mockResolvedValue({
+      sparql: 'SELECT * WHERE {}',
+      results: [],
+      meta: {},
+      slots: { domains: ['hdmap'], filters: {}, ranges: {} },
+      gaps: removed,
+    } as never)
+
+    const { result } = renderHook(() => useSearchExecution())
+    await act(async () => {
+      await result.current.handleSearch('maps in europe with cats')
+    })
+    await act(async () => {
+      await result.current.handleRefine({
+        domains: ['hdmap'],
+        filters: { country: 'europe' },
+        ranges: {},
+      })
+    })
+    expect(result.current.gaps).toEqual(interpreted)
+    expect(result.current.refineGaps).toEqual(removed)
+
+    await act(async () => {
+      await result.current.handleSearch('maps in germany')
+    })
+    expect(result.current.refineGaps).toBeNull()
+  })
 })

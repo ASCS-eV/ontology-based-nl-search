@@ -35,6 +35,7 @@ import {
   canonicalAssetDomains,
   compileSlotsWithTrace,
   constraintsOutsideScope,
+  droppedReferenceGaps,
   resolveKnownDomains,
   searchedDomains,
 } from '@ontology-search/search/compiler'
@@ -290,11 +291,7 @@ export async function runSlotPipeline(input: SlotPipelineInput): Promise<LlmStru
   // Convert dropped references into user-visible limitation gaps so the
   // user knows which cross-references were not applied: there is no path
   // from the primary domain, or the searched domains answer as peers.
-  const compileGaps: OntologyGap[] = (droppedReferences ?? []).map((domain) => ({
-    term: domain,
-    reason: `${domain} could not be joined to ${slots.domains.join(', ') || 'the primary domain'} — cross-reference skipped`,
-    kind: 'limitation' as const,
-  }))
+  const compileGaps = droppedReferenceGaps(droppedReferences, slots.domains)
 
   // Enrich interpretation with the final domains and applied filters
   // so the user can see exactly what was compiled.

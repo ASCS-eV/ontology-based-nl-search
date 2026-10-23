@@ -324,6 +324,32 @@ describe('POST /search/refine', () => {
   })
 
   /**
+   * Regression: the route answered without the refine's gaps, so a value the
+   * SHACL gate removed vanished from the query without a word to the client.
+   */
+  it('returns the gaps of the refine', async () => {
+    const { searchRefine } = await import('../search-factory.js')
+    const gaps = [
+      { term: 'country', reason: '"europe" is not a valid value', kind: 'unmapped' as const },
+    ]
+    vi.mocked(searchRefine).mockResolvedValue({
+      sparql: 'SELECT * WHERE { ?s ?p ?o }',
+      execution: { results: [], error: undefined },
+      meta: { matchCount: 0, executionTimeMs: 10, timings: [] },
+      gaps,
+    })
+
+    const res = await app.request('/search/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slots: { domains: ['hdmap'], filters: { country: 'europe' } } }),
+    })
+
+    expect(res.status).toBe(200)
+    expect((await res.json()).gaps).toEqual(gaps)
+  })
+
+  /**
    * Regression: the wire schema must accept `references` so the refine
    * path can reach the cross-reference JOIN compiler — without it,
    * `references: { domain: 'hdmap' }` was silently stripped, the

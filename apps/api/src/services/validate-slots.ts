@@ -11,6 +11,7 @@
  */
 import { validateRangesAgainstShacl, validateSlotsAgainstShacl } from '@ontology-search/llm'
 import { ShaclValidator } from '@ontology-search/ontology/shacl-validator'
+import type { ValidatedSlots } from '@ontology-search/search'
 import {
   extractSchemaVocabulary,
   getInitializedStore,
@@ -20,9 +21,9 @@ import type { SearchSlots } from '@ontology-search/slots/slots'
 
 /**
  * Validate search slots against SHACL constraints.
- * Returns cleaned slots with invalid values removed.
+ * Returns cleaned slots with invalid values removed, and a gap for each.
  */
-export async function validateSlots(slots: SearchSlots): Promise<SearchSlots> {
+export async function validateSlots(slots: SearchSlots): Promise<ValidatedSlots> {
   const shacl = await ShaclValidator.fromWorkspace()
   const store = await getInitializedStore()
   // Schema-only vocabulary; observed instance values for gap suggestions are
@@ -43,8 +44,7 @@ export async function validateSlots(slots: SearchSlots): Promise<SearchSlots> {
   const rangeResult = validateRangesAgainstShacl(slots.ranges ?? {}, shacl, vocabulary)
 
   return {
-    ...slots,
-    filters: result.filters,
-    ranges: rangeResult.ranges,
+    slots: { ...slots, filters: result.filters, ranges: rangeResult.ranges },
+    gaps: [...result.gaps, ...rangeResult.gaps],
   }
 }

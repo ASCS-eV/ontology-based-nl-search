@@ -35,27 +35,34 @@ describe('validateSlots (refine) — property keys', () => {
 
   it('keeps a range on a qualified key', async () => {
     const { key, domain } = qualifiedNumeric!
-    const slots = await validateSlots({
+    const { slots, gaps } = await validateSlots({
       domains: [domain],
       filters: {},
       ranges: { [key]: { min: 0 } },
     })
     expect(slots.ranges).toEqual({ [key]: { min: 0 } })
+    expect(gaps).toEqual([])
   }, 120_000)
 
   it('keeps an allowed value of a qualified enumerated key', async () => {
     const { key, domain, value } = qualifiedEnum!
-    const slots = await validateSlots({ domains: [domain], filters: { [key]: value }, ranges: {} })
+    const { slots, gaps } = await validateSlots({
+      domains: [domain],
+      filters: { [key]: value },
+      ranges: {},
+    })
     expect(slots.filters).toEqual({ [key]: value })
+    expect(gaps).toEqual([])
   }, 120_000)
 
   it('still drops a range on a key no ontology declares', async () => {
     const { domain } = qualifiedNumeric!
-    const slots = await validateSlots({
+    const { slots, gaps } = await validateSlots({
       domains: [domain],
       filters: {},
       ranges: { notAProperty__anywhere: { min: 0 } },
     })
     expect(slots.ranges).toEqual({})
+    expect(gaps.length).toBeGreaterThan(0)
   }, 120_000)
 })

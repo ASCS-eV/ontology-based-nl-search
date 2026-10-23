@@ -15,7 +15,9 @@
  *   - the vocabulary root matches standalone tags only (not tags nested in
  *     an asset), via `FILTER NOT EXISTS` ([SPARQL11] §8.1);
  *   - the vocabulary alone also searches the asset domains using it, for the
- *     assets carrying its content (`FILTER EXISTS`, [SPARQL11] §8.1).
+ *     assets carrying its content (`FILTER EXISTS`, [SPARQL11] §8.1);
+ *   - a value the SHACL gate removes comes back as a gap, and the query no
+ *     longer carries it.
  */
 
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
@@ -33,6 +35,7 @@ interface RefineBody {
   sparql: string
   results: Record<string, string>[]
   meta: { matchCount: number }
+  gaps: { term: string; reason: string }[]
 }
 
 const post = (path: string, body: unknown): Promise<Response> =>
@@ -99,5 +102,27 @@ describe('OpenLABEL-only refine (unmocked end-to-end)', () => {
     expect(ids.some((id) => id.includes(':HdMap:'))).toBe(true)
     expect(ids).toContain(LANE_KEEPING_TAG)
     expect(ids).not.toContain(CONTRAST_TAG)
+  }, 180_000)
+
+  /**
+   * Regression: the refine removed a value its SHACL gate rejected and
+   * answered as if it had been applied: no gap, while the client still showed
+   * the filter.
+   */
+  it('POST /search/refine reports a value the SHACL gate removed as a gap', async () => {
+    const res = await post('/search/refine', {
+      slots: {
+        domains: ['openlabel'],
+        filters: { DrivableAreaType: `${OL}FlyingCarpetLane` },
+        ranges: {},
+      },
+    })
+    const text = await res.text()
+    expect(res.status, text).toBe(200)
+    const body = JSON.parse(text) as RefineBody
+    expect(body.sparql).not.toContain('FlyingCarpetLane')
+    expect(body.gaps.some((gap) => `${gap.term} ${gap.reason}`.includes('FlyingCarpetLane'))).toBe(
+      true
+    )
   }, 180_000)
 })
