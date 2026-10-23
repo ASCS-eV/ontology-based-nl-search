@@ -28,7 +28,12 @@ export const AUTHORING_EVAL_CASES: AuthoringCase[] = [
       'action.CutIn.LaneChangeAction.startTime': '2',
       'action.CutIn.LaneChangeAction.references.relativeTo': 'Ego',
     },
-    gaps: [],
+    roles: {
+      Ego: { performsNo: 'LaneChangeAction' },
+      CutIn: { performs: 'LaneChangeAction' },
+    },
+    // The only catalog road has two driving lanes per direction.
+    gaps: ['three-lane'],
     valid: true,
     gating: true,
   },
@@ -40,7 +45,9 @@ export const AUTHORING_EVAL_CASES: AuthoringCase[] = [
       'entities.count': '1',
       'action.Ego.SpeedAction.speed': '10',
     },
-    gaps: ['traffic light'],
+    roles: { Ego: { performs: 'SpeedAction' } },
+    // The only catalog road is a motorway section without a junction.
+    gaps: ['traffic light', 'junction'],
     valid: true,
     gating: true,
   },
@@ -97,7 +104,13 @@ export const RECORDED_SUBMISSIONS: Record<string, SceneSubmissionParams> = {
     interpretation: interpretation(
       'A cut-in on a motorway: the ego car at 25 m/s, a second car cuts in after 2 s.'
     ),
-    gaps: [],
+    gaps: [
+      {
+        term: 'three-lane motorway',
+        reason:
+          'The catalog road has two driving lanes per direction, so a third lane cannot be used.',
+      },
+    ],
   },
   'traffic light the scene cannot express': {
     scene: {
@@ -117,6 +130,10 @@ export const RECORDED_SUBMISSIONS: Record<string, SceneSubmissionParams> = {
       {
         term: 'traffic light',
         reason: 'The scene IR has no traffic signal state, so the red phase cannot be expressed.',
+      },
+      {
+        term: 'junction',
+        reason: 'The catalog road is a motorway section without a junction to approach.',
       },
     ],
   },

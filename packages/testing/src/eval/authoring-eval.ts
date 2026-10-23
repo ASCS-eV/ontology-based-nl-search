@@ -18,6 +18,18 @@ import { runScenePipeline } from '@ontology-search/llm/authoring'
 
 export type AuthoredIR = SceneResult['ir']
 
+/**
+ * An entity named by what it does in the scene. The prompt leaves every
+ * entity `ref` to the model, so a case that named entities by ref would score
+ * a correct scene as missing every field of an entity the model named
+ * differently.
+ */
+export type EntityRole =
+  /** The one entity that acts in an action of this kind. */
+  | { performs: string }
+  /** The one entity that acts in no action of this kind. */
+  | { performsNo: string }
+
 export interface AuthoringCase {
   name: string
   /** The natural-language request (live mode). */
@@ -32,6 +44,13 @@ export interface AuthoringCase {
    * comma-joined.
    */
   fields: Record<string, string>
+  /**
+   * Role name → role. A role name used as `<ref>` or `<actor>` in a field
+   * path stands for the entity the role picks, and a reference to that entity
+   * reads as the role name. A role no entity or several entities fill picks
+   * none, so its fields miss.
+   */
+  roles?: Record<string, EntityRole>
   /** Concepts the model must report as gaps (matched in a gap's term or reason). */
   gaps: string[]
   /** The validity the pipeline must end with; omitted = not asserted. */
@@ -105,9 +124,29 @@ export interface AuthoringEvalSummary {
 const join = (value: string | string[] | undefined): string | undefined =>
   value === undefined ? undefined : Array.isArray(value) ? value.join(',') : value
 
+/** The ref of the one entity `role` picks in `ir`; undefined when none or several fit. */
+export function roleRef(ir: AuthoredIR, role: EntityRole): string | undefined {
+  const acts = (ref: string, kind: string): boolean =>
+    ir.actions.some((a) => a.actor === ref && a.kind === kind)
+  const fits = ir.entities
+    .map((e) => e.ref)
+    .filter((ref) => ('performs' in role ? acts(ref, role.performs) : !acts(ref, role.performsNo)))
+  return fits.length === 1 ? fits[0] : undefined
+}
+
 /** The value a field path names in the IR, as a string; undefined when absent. */
-export function fieldValue(ir: AuthoredIR, path: string): string | undefined {
+export function fieldValue(
+  ir: AuthoredIR,
+  path: string,
+  roles: Readonly<Record<string, EntityRole>> = {}
+): string | undefined {
   const parts = path.split('.')
+  const refOf = (name: string | undefined): string | undefined => {
+    const role = name === undefined ? undefined : roles[name]
+    return role ? roleRef(ir, role) : name
+  }
+  const roleOf = (ref: string | undefined): string | undefined =>
+    Object.keys(roles).find((name) => ref !== undefined && refOf(name) === ref) ?? ref
   switch (parts[0]) {
     case 'entities':
       if (parts[1] === 'count') return String(ir.entities.length)
@@ -117,16 +156,21 @@ export function fieldValue(ir: AuthoredIR, path: string): string | undefined {
       if (parts[1] === 'kinds') return [...ir.actions.map((a) => a.kind)].sort().join(',')
       return undefined
     case 'entity': {
-      const [, ref, property] = parts
-      const entity = ir.entities.find((e) => e.ref === ref)
+      const [, name, property] = parts
+      const ref = refOf(name)
+      const entity = ref === undefined ? undefined : ir.entities.find((e) => e.ref === ref)
       return property === undefined ? undefined : join(entity?.properties[property])
     }
     case 'action': {
-      const [, actor, kind, property, name] = parts
-      const action = ir.actions.find((a) => a.actor === actor && a.kind === kind)
+      const [, actorName, kind, property, name] = parts
+      const actor = refOf(actorName)
+      const action =
+        actor === undefined
+          ? undefined
+          : ir.actions.find((a) => a.actor === actor && a.kind === kind)
       if (!action || property === undefined) return undefined
       if (property === 'references')
-        return name === undefined ? undefined : action.references?.[name]
+        return name === undefined ? undefined : roleOf(action.references?.[name])
       return join(action.properties[property])
     }
     case 'parameters':
@@ -149,7 +193,7 @@ export function scoreCase(
   durationMs: number
 ): AuthoringCaseResult {
   const fields = Object.entries(evalCase.fields).map(([field, expected]) => {
-    const actual = fieldValue(authored.ir, field)
+    const actual = fieldValue(authored.ir, field, evalCase.roles)
     return { field, expected, actual, agree: actual === expected }
   })
   const fieldAgreement =
