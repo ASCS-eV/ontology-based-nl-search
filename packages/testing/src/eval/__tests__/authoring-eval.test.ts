@@ -2,6 +2,9 @@
  * The authoring eval harness: the scoring on fixed inputs, and the recorded
  * submissions replayed through the real gate pipeline as the CI gate.
  */
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
 import type { SceneSubmissionParams } from '@ontology-search/llm/authoring'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -110,5 +113,25 @@ describe('recorded submissions through the real pipeline (CI gate)', () => {
   it('fails loudly on a case without a recording', async () => {
     const author = replayRecorded({} as Record<string, SceneSubmissionParams>)
     await expect(author(CUT_IN)).rejects.toThrow('No recorded submission')
+  })
+})
+
+describe('the live runner', () => {
+  /**
+   * Regression: the live command started `tsx` without the root `.env.local`,
+   * so "the configured provider" was the config default, not the provider
+   * the API runs with.
+   */
+  it('reads the same .env.local as the API', () => {
+    const root = fileURLToPath(new URL('../../../../../', import.meta.url))
+    const scripts = (file: string): Record<string, string> =>
+      (JSON.parse(readFileSync(`${root}${file}`, 'utf8')) as { scripts: Record<string, string> })
+        .scripts
+    const envFlag = /--env-file-if-exists=\S+\.env\.local/.exec(
+      scripts('apps/api/package.json')['dev'] ?? ''
+    )?.[0]
+    expect(envFlag).toBeDefined()
+    expect(scripts('packages/testing/package.json')['eval:authoring:live']).toContain(envFlag)
+    expect(scripts('package.json')['eval:authoring:live']).toContain('run eval:authoring:live')
   })
 })

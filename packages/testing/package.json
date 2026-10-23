@@ -16,6 +16,7 @@
     }
   },
   "scripts": {
+    "eval:authoring:live": "tsx --env-file-if-exists=../../.env.local src/eval/run-authoring-eval.ts",
     "check-types": "tsc --noEmit",
     "check-types:tests": "tsc -p tsconfig.test.json",
     "test": "vitest run"
