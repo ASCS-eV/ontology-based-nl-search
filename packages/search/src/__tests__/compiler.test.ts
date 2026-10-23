@@ -677,6 +677,23 @@ describe('peer-domain UNION queries', () => {
     expect(policy.allowed).toBe(true)
   })
 
+  /**
+   * Regression: a vocabulary in the scope switched hierarchy detection off for
+   * the named domains as well, so adding it turned their scenario → HD map
+   * JOIN into a UNION that returned no scenario at all.
+   */
+  it('keeps the JOIN of the named domains when a vocabulary is in the scope', async () => {
+    const slots: SearchSlots = {
+      domains: ['scenario', 'hdmap'],
+      filters: { roadTypes: 'motorway' },
+      ranges: {},
+    }
+    const plain = await compileSlots(slots)
+    const scoped = await compileSlots({ ...slots, domains: [...slots.domains, 'georeference'] })
+    expect(plain).toContain('manifest:hasReferencedArtifacts')
+    expect(scoped).toBe(plain)
+  })
+
   it('skips UNION arms for domains with no applicable filters (Bug #1 regression)', async () => {
     // automotive-simulator has no roadTypes property — should be skipped
     const slots: SearchSlots = {

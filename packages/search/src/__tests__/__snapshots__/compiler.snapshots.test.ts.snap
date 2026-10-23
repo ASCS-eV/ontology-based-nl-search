@@ -459,31 +459,56 @@ ORDER BY ?asset
 LIMIT 500"
 `;
 
-exports[`compileSlots — determinism + snapshot suite > scenario + hdmap cross-domain (primary scenario references hdmap) 1`] = `
+exports[`compileSlots — determinism + snapshot suite > scenario + hdmap with a range only the HD map carries → peer UNION 1`] = `
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
-SELECT ?asset ?name ?scenarioCategory WHERE {
-  ?asset a scenario:Scenario .
-  ?asset scenario:hasDomainSpecification ?domSpec .
-  ?domSpec scenario:hasContent ?content .
-  ?content scenario:scenarioCategory ?scenarioCategory .
-  OPTIONAL { ?asset rdfs:label ?name }
-  FILTER(?scenarioCategory = "urban")
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+SELECT ?asset ?name ?scenarioCategory ?numberIntersections WHERE {
+    {
+    ?asset a scenario:Scenario .
+    ?asset scenario:hasDomainSpecification ?domSpec .
+    ?domSpec scenario:hasContent ?content .
+    ?content scenario:scenarioCategory ?scenarioCategory .
+    OPTIONAL { ?asset rdfs:label ?name }
+    FILTER(?scenarioCategory = "urban")
+  }
+  UNION
+  {
+    ?asset a hdmap:HdMap .
+    ?asset hdmap:hasDomainSpecification ?domSpec .
+    ?domSpec hdmap:hasQuantity ?quantity .
+    ?quantity hdmap:numberIntersections ?numberIntersections .
+    OPTIONAL { ?asset rdfs:label ?name }
+    FILTER(xsd:float(?numberIntersections) >= 3)
+  }
 }
 ORDER BY ?asset
 LIMIT 500"
 `;
 
-exports[`compileSlots — determinism + snapshot suite > scenario + hdmap cross-domain with range on referenced domain 1`] = `
+exports[`compileSlots — determinism + snapshot suite > scenario + hdmap with a reference no chain joins → peer UNION 1`] = `
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX scenario: <https://w3id.org/ascs-ev/envited-x/scenario/v6/>
-SELECT ?asset ?name ?scenarioCategory WHERE {
-  ?asset a scenario:Scenario .
-  ?asset scenario:hasDomainSpecification ?domSpec .
-  ?domSpec scenario:hasContent ?content .
-  ?content scenario:scenarioCategory ?scenarioCategory .
-  OPTIONAL { ?asset rdfs:label ?name }
-  FILTER(?scenarioCategory = "urban")
+PREFIX hdmap: <https://w3id.org/ascs-ev/envited-x/hdmap/v6/>
+SELECT ?asset ?name ?scenarioCategory ?roadTypes WHERE {
+    {
+    ?asset a scenario:Scenario .
+    ?asset scenario:hasDomainSpecification ?domSpec .
+    ?domSpec scenario:hasContent ?content .
+    ?content scenario:scenarioCategory ?scenarioCategory .
+    OPTIONAL { ?asset rdfs:label ?name }
+    FILTER(?scenarioCategory = "urban")
+  }
+  UNION
+  {
+    ?asset a hdmap:HdMap .
+    ?asset hdmap:hasDomainSpecification ?domSpec .
+    ?domSpec hdmap:hasContent ?content .
+    ?content hdmap:roadTypes ?roadTypes .
+    OPTIONAL { ?asset rdfs:label ?name }
+    FILTER(?roadTypes = "motorway")
+  }
 }
 ORDER BY ?asset
 LIMIT 500"

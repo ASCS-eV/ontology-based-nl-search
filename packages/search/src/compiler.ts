@@ -49,6 +49,7 @@ import {
   resolvePrimaryDomain,
 } from './compiler-helpers-domains.js'
 import { assembleQuery, ASSET_LABEL_PATTERN } from './compiler-helpers-query.js'
+import { joinableReferences } from './compiler-helpers-references.js'
 import {
   emitReferencedDomainJoins,
   emitReferenceNode,
@@ -187,9 +188,16 @@ export async function compileSlotsWithTrace(
   // described with the vocabulary" on its own, never through another. A JOIN
   // among the named domains is one query rooted at the parent, which they
   // cannot join as peers, so they are then not searched (ADR 0010).
+  //
+  // Only a reference the compiler can join counts: one the schema declares
+  // without a discovered chain would make a JOIN that has to leave the child
+  // out, so its domains stay peers (`joinableReferences`).
   let hasHierarchy = false
+  const domainRefs =
+    namedDomains.length > 1
+      ? joinableReferences(await getDomainReferences(), vocabIndex)
+      : new Map<string, Set<string>>()
   if (namedDomains.length > 1) {
-    const domainRefs = await getDomainReferences()
     hasHierarchy =
       detectHierarchy(namedDomains, domainRefs) &&
       !referencedDomainsOnlyShareConstraints(
@@ -243,7 +251,7 @@ export async function compileSlotsWithTrace(
   }
 
   // Determine primary domain — the one that references others, or the single domain
-  const primaryDomain = await resolvePrimaryDomain(detectedDomains, filtersByDomain)
+  const primaryDomain = resolvePrimaryDomain(detectedDomains, filtersByDomain, domainRefs)
   const domain = registry.domains.get(primaryDomain)
 
   if (!domain) {

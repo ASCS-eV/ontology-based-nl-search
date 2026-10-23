@@ -117,6 +117,27 @@ export function emitDataReferencePath(
   }
 }
 
+/**
+ * The parent → child domain references the compiler can join: those for which
+ * {@link pickReferenceChain} finds a chain. The schema can declare a reference
+ * in a form path discovery does not follow, and such a reference has no chain;
+ * deciding on a JOIN from it would build a query rooted at the parent that has
+ * to leave the child, and every constraint on it, out. Reading the decision
+ * from the same chains the JOIN is built from keeps the two consistent: a
+ * reference without a chain leaves its domains peers.
+ */
+export function joinableReferences(
+  references: ReadonlyMap<string, ReadonlySet<string>>,
+  vocabIndex: CompilerVocab
+): Map<string, Set<string>> {
+  const joinable = new Map<string, Set<string>>()
+  for (const [parent, children] of references) {
+    const kept = [...children].filter((child) => pickReferenceChain(vocabIndex, parent, child))
+    if (kept.length > 0) joinable.set(parent, new Set(kept))
+  }
+  return joinable
+}
+
 export function pickReferenceChain(
   vocabIndex: CompilerVocab,
   parentDomain: string,

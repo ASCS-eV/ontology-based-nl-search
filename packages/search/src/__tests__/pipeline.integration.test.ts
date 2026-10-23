@@ -745,23 +745,24 @@ describe('SearchService — real pipeline integration', () => {
   }, 120_000)
 
   /**
-   * Regression: a vocabulary in the scope switched hierarchy detection off for
-   * the named domains as well, so adding it turned their scenario → HD map
-   * JOIN into a UNION that returned no scenario at all.
+   * Regression: the schema declares that scenarios reference HD maps, but path
+   * discovery finds no chain to join them. Naming both with a constraint only
+   * an HD map expresses still chose the JOIN, which then had to leave the HD
+   * map out: a scenario-only query without the constraint, no result, no gap.
+   * A reference no chain joins leaves the domains peers.
    */
-  it('keeps the JOIN of the named domains when a vocabulary is in the scope', async () => {
-    const slots: SearchSlots = {
-      domains: ['scenario', 'hdmap'],
-      filters: { roadTypes: 'motorway' },
-      ranges: {},
-    }
-    const plain = await compileSlotsWithTrace(slots)
-    const scoped = await compileSlotsWithTrace({
-      ...slots,
-      domains: [...slots.domains, 'georeference'],
+  it('searches a parent and its child as peers when no chain joins them', async () => {
+    const { sparql, droppedReferences } = await compileSlotsWithTrace({
+      domains: ['hdmap', 'scenario'],
+      filters: { country: 'DE', roadTypes: 'motorway' },
+      ranges: { laneSpecificationLaneCountValue: { min: 3, max: 3 } },
     })
-    expect(plain.sparql).not.toMatch(/\bUNION\b/)
-    expect(scoped.sparql).toBe(plain.sparql)
+    expect(sparql).toMatch(/\bUNION\b/)
+    expect(sparql).toContain('roadTypes')
+    expect(droppedReferences).toBeUndefined()
+    const rows = (await (await getInitializedStore()).query(sparql)).results.bindings
+    const ids = rows.map((r) => r['asset']?.value ?? '')
+    expect(ids.some((id) => id.includes(':HdMap:'))).toBe(true)
   }, 120_000)
 
   /**
