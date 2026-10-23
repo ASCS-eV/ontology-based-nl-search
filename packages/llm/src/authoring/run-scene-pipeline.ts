@@ -56,19 +56,28 @@ export type { GateTrace, SceneGap, SceneGateName }
  * In the catalog path the IR's `logicFile` is normalized to the bound road so
  * the emitted `.xosc` names exactly the road that was validated — never a silent
  * substitution where the gates check one road and the viewer renders another.
+ * A name no catalog road has is returned as `unresolvedLogicFile`, so the
+ * pipeline reports the substitution instead of hiding it.
  */
 export function bindCatalogRoad(
   ir: AuthoringIR,
   explicitXodr: string | undefined
-): { readonly ir: AuthoringIR; readonly roadNetworkXodr: string } {
+): {
+  readonly ir: AuthoringIR
+  readonly roadNetworkXodr: string
+  /** The `logicFile` the IR asked for when no catalog road has that name. */
+  readonly unresolvedLogicFile?: string
+} {
   if (explicitXodr !== undefined) {
     return { ir, roadNetworkXodr: explicitXodr }
   }
   const wanted = ir.roadNetwork?.logicFile
-  const road = (wanted !== undefined ? getRoad(wanted) : undefined) ?? defaultRoad()
+  const named = wanted !== undefined ? getRoad(wanted) : undefined
+  const road = named ?? defaultRoad()
   return {
     ir: { ...ir, roadNetwork: { ...ir.roadNetwork, logicFile: road.logicFile } },
     roadNetworkXodr: road.xodr,
+    ...(wanted !== undefined && named === undefined ? { unresolvedLogicFile: wanted } : {}),
   }
 }
 
@@ -112,7 +121,7 @@ export interface SceneResult {
  */
 export async function runScenePipeline(input: ScenePipelineInput): Promise<SceneResult> {
   const bound = bindCatalogRoad(input.ir, input.roadNetworkXodr)
-  const { roadNetworkXodr } = bound
+  const { roadNetworkXodr, unresolvedLogicFile } = bound
   const { signal } = input
   const gaps: SceneGap[] = []
   const trace: GateTrace[] = []
@@ -130,15 +139,32 @@ export async function runScenePipeline(input: ScenePipelineInput): Promise<Scene
   })
 
   // ── 1. Semantic gate (design-time, IR-only) ────────────────────────────────
+  // A road the IR names that no catalog road has is a road reference that does
+  // not resolve: the scene was gated and lowered on the road bound instead, and
+  // the gap says so, so the request is never answered with another road
+  // silently.
+  const bindingGaps: SceneGap[] =
+    unresolvedLogicFile === undefined
+      ? []
+      : [
+          {
+            term: unresolvedLogicFile,
+            reason: `No road in the catalog is named ${unresolvedLogicFile}; the scene was bound to ${ir.roadNetwork?.logicFile} instead.`,
+            ruleUid: QC_RULES.resolvableRoadReference.uid,
+            gate: 'semantic',
+            focusNode: unresolvedLogicFile,
+          },
+        ]
   const semantic = await runSemanticGate(ir, {
     roadNetworkXodr,
     ...(signal ? { signal } : {}),
   })
-  gaps.push(...semantic.gaps)
+  const semanticOk = semantic.ok && bindingGaps.length === 0
+  gaps.push(...bindingGaps, ...semantic.gaps)
   trace.push({
     gate: 'semantic',
-    ok: semantic.ok,
-    gapCount: semantic.gaps.length,
+    ok: semanticOk,
+    gapCount: bindingGaps.length + semantic.gaps.length,
     ...(semantic.skipped ? { skipped: semantic.skipped } : {}),
   })
 
@@ -206,7 +232,7 @@ export async function runScenePipeline(input: ScenePipelineInput): Promise<Scene
   return {
     ir,
     ...(xosc !== undefined ? { xosc } : {}),
-    valid: semantic.ok && structuralOk,
+    valid: semanticOk && structuralOk,
     gaps,
     diagnostics,
     trace,

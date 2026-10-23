@@ -9,6 +9,7 @@
  */
 
 import { QC_RULES } from '@ontology-search/authoring-gate'
+import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { describe, expect, it } from 'vitest'
 
 import { repairableGaps, runScenePipeline } from '../run-scene-pipeline.js'
@@ -93,6 +94,26 @@ describe('runScenePipeline — aligns listed values before the gates', () => {
     ])
     const gated = result.ir.actions.find((a) => a.kind === 'LaneChangeAction')
     expect(gated?.properties['dynamicsShape']).toBe('cubic')
+  })
+})
+
+describe('runScenePipeline — a road the catalog lacks', () => {
+  /**
+   * Regression: an unknown `logicFile` was replaced by the default road with
+   * no trace of it, so a scene on another road than the one asked for passed
+   * as valid.
+   */
+  it('is a semantic gap naming the road asked for and the road bound', async () => {
+    const ir: AuthoringIR = { ...cutInIR(), roadNetwork: { logicFile: 'atlantis.xodr' } }
+
+    const result = await runScenePipeline({ ir })
+
+    expect(result.valid).toBe(false)
+    const gap = result.gaps.find((g) => g.ruleUid === QC_RULES.resolvableRoadReference.uid)
+    expect(gap?.gate).toBe('semantic')
+    expect(gap?.term).toBe('atlantis.xodr')
+    expect(gap?.reason).toContain(result.ir.roadNetwork?.logicFile)
+    expect(result.trace.find((t) => t.gate === 'semantic')?.ok).toBe(false)
   })
 })
 
