@@ -19,7 +19,9 @@ import {
   ASSET_FILES,
   buildTagDocument,
   computeOutputs,
+  contentNodes,
   patchDocument,
+  situationFamily,
   splitOdd,
   TAG_FILE,
 } from './generate-openlabel-sample-data.mjs'
@@ -185,6 +187,49 @@ test('every HD map restates its own road type, lane types and travel direction',
       where
     )
   }
+})
+
+test('a scenario draws from the situations of the HD maps it references', () => {
+  const maps = new Map([
+    ['urn:map:motorway', true],
+    ['urn:map:city', false],
+  ])
+  const scenario = (...ids) => ({
+    'x:manifest': { 'x:artifacts': ids.map((id) => ({ 'x:iri': id })) },
+  })
+  assert.equal(situationFamily(scenario('urn:map:motorway'), maps), 'motorway')
+  assert.equal(situationFamily(scenario('urn:map:motorway', 'urn:map:city'), maps), 'other')
+  assert.equal(situationFamily(scenario('urn:map:city'), maps), 'other')
+  assert.equal(situationFamily(scenario('urn:map:unknown'), maps), 'any')
+  assert.equal(situationFamily(scenario(), maps), 'any')
+})
+
+test("every committed scenario carries a situation of its maps' family", () => {
+  const document = readDocument('sample-scenarios.jsonld')
+  const graph = document['@graph']
+  const maps = new Map(
+    graph
+      .filter((node) => typesOf(node).includes('hdmap:HdMap'))
+      .map((node) => [
+        node['@id'],
+        nativeContentValues(node, 'roadTypes').some((v) => ['motorway', 'highway'].includes(v)),
+      ])
+  )
+  const SCENARIO_NODES = ['OddEnvironment', 'OddDynamicElements', 'Behaviour', 'RoadUser']
+  const bySituation = SITUATIONS.map((situation) => {
+    const nodes = contentNodes(situation)
+    return [situation, JSON.stringify(SCENARIO_NODES.map((type) => nodes[type]).filter(Boolean))]
+  })
+  const seen = { motorway: 0, other: 0, any: 0 }
+  for (const scenario of graph.filter((node) => typesOf(node).includes('scenario:Scenario'))) {
+    const family = situationFamily(scenario, maps)
+    seen[family]++
+    const embedded = JSON.stringify(embeddedOpenLabelNodes(scenario))
+    const match = bySituation.find(([, text]) => text === embedded)
+    assert.ok(match, `${scenario['@id']} carries no catalogue situation`)
+    if (family !== 'any') assert.equal(match[0].road, family, scenario['@id'])
+  }
+  assert.ok(seen.motorway > 0 && seen.other > 0, JSON.stringify(seen))
 })
 
 test('files embed OpenLABEL only where the domain shapes allow it', () => {
