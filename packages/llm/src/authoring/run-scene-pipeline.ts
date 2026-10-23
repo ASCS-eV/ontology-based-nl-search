@@ -37,6 +37,8 @@ import { QC_RULES, runResidualGate, runSemanticGate } from '@ontology-search/aut
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { defaultRoad, getRoad } from '@ontology-search/road-catalog'
 
+import { alignEnumValues, getEnumVocabulary } from './enum-alignment.js'
+
 export type { GateTrace, SceneGap, SceneGateName }
 
 /**
@@ -109,10 +111,23 @@ export interface SceneResult {
  * invalid result.
  */
 export async function runScenePipeline(input: ScenePipelineInput): Promise<SceneResult> {
-  const { ir, roadNetworkXodr } = bindCatalogRoad(input.ir, input.roadNetworkXodr)
+  const bound = bindCatalogRoad(input.ir, input.roadNetworkXodr)
+  const { roadNetworkXodr } = bound
   const { signal } = input
   const gaps: SceneGap[] = []
   const trace: GateTrace[] = []
+
+  // ── 0. Vocabulary alignment (deterministic, before any gate) ───────────────
+  // A listed value written in another spelling is replaced by its member; the
+  // gates then judge the IR the model meant, and the trace shows each change.
+  const aligned = alignEnumValues(bound.ir, await getEnumVocabulary())
+  const ir = aligned.ir
+  trace.push({
+    gate: 'alignment',
+    ok: true,
+    gapCount: 0,
+    ...(aligned.corrections.length > 0 ? { corrections: aligned.corrections } : {}),
+  })
 
   // ── 1. Semantic gate (design-time, IR-only) ────────────────────────────────
   const semantic = await runSemanticGate(ir, {

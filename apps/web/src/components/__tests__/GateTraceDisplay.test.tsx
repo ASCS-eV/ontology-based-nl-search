@@ -25,6 +25,23 @@ describe('GateTraceDisplay', () => {
     expect(screen.getByText('skipped')).toBeInTheDocument()
   })
 
+  it('shows how many values the alignment step replaced, and which', () => {
+    const trace: GateTrace[] = [
+      {
+        gate: 'alignment',
+        ok: true,
+        gapCount: 0,
+        corrections: [
+          { where: 'action Ego LaneChangeAction', property: 'shape', from: 'Linear', to: 'linear' },
+        ],
+      },
+    ]
+    render(<GateTraceDisplay trace={trace} valid={true} />)
+    expect(screen.getByText('Vocabulary')).toBeInTheDocument()
+    expect(screen.getByText('1 aligned')).toBeInTheDocument()
+    expect(screen.getByTitle(/shape Linear → linear/)).toBeInTheDocument()
+  })
+
   it('shows an invalid badge and the failing gap count', () => {
     const failing: GateTrace[] = [{ gate: 'semantic', ok: false, gapCount: 2 }]
     render(<GateTraceDisplay trace={failing} valid={false} attempts={3} />)

@@ -375,7 +375,19 @@ export interface DomainGroupAggregate {
  * Which authoring gate produced a violation: the two design-time gates
  * (`semantic`, `residual`) plus the engine's `structural` (XSD) gate.
  */
-export type SceneGateName = 'semantic' | 'structural' | 'residual'
+export type SceneGateName = 'alignment' | 'semantic' | 'structural' | 'residual'
+
+/**
+ * One IR value replaced, before the gates, by the vocabulary member it is
+ * closest to ([SHACL] §4.8.3 `sh:in`).
+ */
+export interface ValueCorrection {
+  /** The entity or action holding the value. */
+  readonly where: string
+  readonly property: string
+  readonly from: string
+  readonly to: string
+}
 
 /**
  * A scene-pipeline violation. An {@link OntologyGap} (the same shape the search
@@ -406,6 +418,8 @@ export interface GateTrace {
   readonly gapCount: number
   /** Rule UIDs deliberately not evaluated (never a silent pass). */
   readonly skipped?: readonly string[]
+  /** The values the alignment step replaced, when it is the step reported. */
+  readonly corrections?: readonly ValueCorrection[]
 }
 
 /**

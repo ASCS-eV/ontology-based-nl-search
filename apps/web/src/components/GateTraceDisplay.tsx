@@ -12,6 +12,7 @@ interface GateTraceDisplayProps {
 
 /** Human-readable label per gate. */
 const GATE_LABEL: Record<GateTrace['gate'], string> = {
+  alignment: 'Vocabulary',
   semantic: 'Semantic',
   structural: 'Structural (XSD)',
   residual: 'Residual (geometry)',
@@ -31,17 +32,27 @@ export function GateTraceDisplay({ trace, valid, attempts }: GateTraceDisplayPro
         )}
         {trace.map((t) => {
           const skipped = t.skipped && t.skipped.length > 0
+          const corrections = t.corrections ?? []
           const tone = t.ok ? 'success' : 'danger'
+          const title = skipped
+            ? `Rules not evaluated: ${t.skipped?.join(', ')}`
+            : corrections.length > 0
+              ? corrections.map((c) => `${c.where}: ${c.property} ${c.from} → ${c.to}`).join('\n')
+              : `${t.gapCount} gap(s)`
           return (
             <span
               key={t.gate}
               className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-50 border border-gray-200 rounded-lg text-sm"
-              title={
-                skipped ? `Rules not evaluated: ${t.skipped?.join(', ')}` : `${t.gapCount} gap(s)`
-              }
+              title={title}
             >
               <span className="font-medium text-gray-700">{GATE_LABEL[t.gate]}</span>
-              <Pill tone={tone}>{t.ok ? 'pass' : `${t.gapCount} gap(s)`}</Pill>
+              <Pill tone={tone}>
+                {corrections.length > 0
+                  ? `${corrections.length} aligned`
+                  : t.ok
+                    ? 'pass'
+                    : `${t.gapCount} gap(s)`}
+              </Pill>
               {skipped && <span className="text-xs text-gray-400">skipped</span>}
             </span>
           )

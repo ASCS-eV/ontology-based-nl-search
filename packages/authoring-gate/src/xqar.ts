@@ -80,9 +80,11 @@ function checkerIdFor(gate: SceneGateName): string {
  * Severity of a gate's findings ([QC-FW] `level`). Semantic and structural
  * findings make the pipeline invalid, so they are errors; residual findings
  * describe the input road network rather than the authored scene and are
- * warnings — the same line `repairableGaps` draws.
+ * warnings — the same line `repairableGaps` draws. The alignment step reports
+ * no findings, only the values it replaced, which is information.
  */
 const GATE_LEVEL: Record<SceneGateName, XqarLevel> = {
+  alignment: XQAR_LEVEL.information,
   semantic: XQAR_LEVEL.error,
   structural: XQAR_LEVEL.error,
   residual: XQAR_LEVEL.warning,

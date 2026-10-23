@@ -13,33 +13,10 @@
  * delimiter — user text never enters the system core.
  */
 
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import { defaultRoad, describeRoadForPrompt } from '@ontology-search/road-catalog'
 
+import { readOpenScenarioShacl } from './openscenario-shacl.js'
 import type { SceneGap } from './run-scene-pipeline.js'
-
-// ─── Derived-SHACL grounding ─────────────────────────────────────────────────
-
-/**
- * Locate and read the derived OpenSCENARIO SHACL. Resolved relative to
- * this module so it works from both `src` (vitest) and `dist` (runtime), which
- * sit at the same depth below the repo root.
- */
-function readOpenScenarioShacl(): string {
-  try {
-    const here = dirname(fileURLToPath(import.meta.url))
-    const root = join(here, '..', '..', '..', '..')
-    const shacl = join(root, 'artifacts', 'openscenario', 'openscenario.shacl.ttl')
-    return readFileSync(shacl, 'utf-8')
-  } catch {
-    // Grounding is best-effort: if the artifact is unavailable the agent still
-    // runs on the archetype contract below. Never throw from prompt assembly.
-    return ''
-  }
-}
 
 // ─── Static core (cached) ────────────────────────────────────────────────────
 
