@@ -20,17 +20,26 @@ import {
 
 const CUT_IN = AUTHORING_EVAL_CASES[0]!
 
-/** The recorded cut-in with the wrong speed and no lane change. */
+/**
+ * The recorded cut-in with the wrong ego speed, a late lane change, and the
+ * lane change relative to the cutting-in car itself.
+ */
 function knownWrong(): Authored {
   const right = RECORDED_SUBMISSIONS[CUT_IN.name]!.scene
   return {
     ir: {
       ...right,
-      actions: right.actions
-        .filter((a) => a.kind !== 'LaneChangeAction')
-        .map((a) =>
-          a.actor === 'Ego' && a.kind === 'SpeedAction' ? { ...a, properties: { speed: '30' } } : a
-        ),
+      actions: right.actions.map((a) =>
+        a.actor === 'Ego' && a.kind === 'SpeedAction'
+          ? { ...a, properties: { speed: '30' } }
+          : a.kind === 'LaneChangeAction'
+            ? {
+                ...a,
+                properties: { ...a.properties, startTime: '5' },
+                references: { relativeTo: 'CutIn' },
+              }
+            : a
+      ),
     } as Authored['ir'],
     valid: true,
     trace: [
@@ -60,6 +69,49 @@ describe('scoreCase', () => {
     expect(result.attempts).toBe(2)
   })
 
+  /**
+   * Regression: fields were looked up by the entity refs of the recording, so
+   * a live model that named the cutting-in car `A1` missed every field of it
+   * on a correct scene.
+   */
+  it('finds each entity by its role, whatever ref the model gave it', () => {
+    const right = RECORDED_SUBMISSIONS[CUT_IN.name]!.scene
+    const rename = (ref: string): string => ({ Ego: 'Host', CutIn: 'A1' })[ref] ?? ref
+    const renamed: Authored = {
+      ...knownWrong(),
+      ir: {
+        ...right,
+        entities: right.entities.map((e) => ({ ...e, ref: rename(e.ref) })),
+        actions: right.actions.map((a) => ({
+          ...a,
+          actor: rename(a.actor),
+          ...(a.references
+            ? {
+                references: Object.fromEntries(
+                  Object.entries(a.references).map(([k, v]) => [k, rename(v)])
+                ),
+              }
+            : {}),
+        })),
+      } as Authored['ir'],
+    }
+    expect(scoreCase(CUT_IN, renamed, 5).fieldAgreement).toBe(1)
+  })
+
+  it('misses the fields of a role no entity or several entities fill', () => {
+    const wrong = knownWrong()
+    const laneChange = wrong.ir.actions.find((a) => a.kind === 'LaneChangeAction')!
+    const bothChange: Authored = {
+      ...wrong,
+      ir: { ...wrong.ir, actions: [...wrong.ir.actions, { ...laneChange, actor: 'Ego' }] },
+    }
+    const result = scoreCase(CUT_IN, bothChange, 5)
+    const actual = (field: string) => result.fields.find((f) => f.field === field)?.actual
+    // Both cars change lanes, so neither role picks a car.
+    expect(actual('action.CutIn.SpeedAction.speed')).toBeUndefined()
+    expect(actual('entity.Ego.vehicleCategory')).toBeUndefined()
+  })
+
   it('never counts a gate that skipped rules as a pass', () => {
     const result = scoreCase(CUT_IN, knownWrong(), 5)
     expect(result.gates.map((g) => g.outcome)).toEqual(['pass', 'pass', 'skipped'])
@@ -72,7 +124,7 @@ describe('scoreCase', () => {
       { concept: 'rain', outcome: 'reported' },
       { concept: 'fog', outcome: 'dropped' },
     ])
-    const invented = scoreCase(CUT_IN, knownWrong(), 5).gaps
+    const invented = scoreCase({ ...CUT_IN, gaps: [] }, knownWrong(), 5).gaps
     expect(invented).toEqual([{ concept: 'weather', outcome: 'invented' }])
   })
 
