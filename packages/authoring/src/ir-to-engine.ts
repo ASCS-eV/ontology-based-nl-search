@@ -46,7 +46,13 @@
  * [OSC-XSD] OpenSCENARIO 1.3 — the produced tree mirrors the standard's model
  * elements; the writer factory (packages/authoring-wasm) enforces order/choice.
  */
-import type { AuthoringIR, SceneAction } from '@ontology-search/authoring-ir'
+import {
+  actionPath,
+  type AuthoringIR,
+  entityPath,
+  type LoweringDefault,
+  type SceneAction,
+} from '@ontology-search/authoring-ir'
 import type {
   EngineEntity,
   EngineEntityTrigger,
@@ -63,6 +69,12 @@ import { defaultRoad, entrySegment, travelSideLanes } from '@ontology-search/roa
  * [OSC-XSD] OpenSCENARIO 1.3 §StoryboardElement — `Storyboard.StopTrigger`.
  */
 const DEFAULT_STOP_TIME = 30
+
+/** Initial speed (m/s) of a `SpeedAction` that carries none: 100 km/h. */
+const DEFAULT_INITIAL_SPEED = 27.778
+
+/** What a vehicle default stands for. */
+const STANDARD_CAR = 'standard passenger car'
 
 /** A standard passenger car — defaults for any vehicle field the IR omits. */
 const DEFAULT_CAR = {
@@ -86,6 +98,13 @@ const DEFAULT_CAR = {
 
 type PropertyBag = Readonly<Record<string, string | string[]>>
 
+/**
+ * Receives each property the lowering fills because the IR carries no usable
+ * value for it, with the value it fills. Element names (story, act, event
+ * names) are labels, not scenario conditions, and are not reported.
+ */
+type DefaultSink = (property: string, value: string | number) => void
+
 /** First value of a possibly-multi-valued property. */
 function first(props: PropertyBag, key: string): string | undefined {
   const v = props[key]
@@ -94,16 +113,20 @@ function first(props: PropertyBag, key: string): string | undefined {
 }
 
 /** Numeric property with a fallback (non-finite parses fall back too). */
-function num(props: PropertyBag, key: string, fallback: number): number {
+function num(props: PropertyBag, key: string, fallback: number, onDefault?: DefaultSink): number {
   const raw = first(props, key)
-  if (raw === undefined) return fallback
-  const n = Number.parseFloat(raw)
-  return Number.isFinite(n) ? n : fallback
+  const n = raw === undefined ? Number.NaN : Number.parseFloat(raw)
+  if (Number.isFinite(n)) return n
+  onDefault?.(key, fallback)
+  return fallback
 }
 
 /** String property with a fallback. */
-function str(props: PropertyBag, key: string, fallback: string): string {
-  return first(props, key) ?? fallback
+function str(props: PropertyBag, key: string, fallback: string, onDefault?: DefaultSink): string {
+  const raw = first(props, key)
+  if (raw !== undefined) return raw
+  onDefault?.(key, fallback)
+  return fallback
 }
 
 /** Boolean property (`"true"`/`"false"`) with a fallback; omitted key = fallback. */
@@ -120,22 +143,22 @@ function inferParameterType(value: string): string {
   return 'string'
 }
 
-function toVehicle(name: string, props: PropertyBag): EngineVehicle {
+function toVehicle(name: string, props: PropertyBag, onDefault?: DefaultSink): EngineVehicle {
   const d = DEFAULT_CAR
   return {
     name: str(props, 'name', name),
-    vehicleCategory: str(props, 'vehicleCategory', d.vehicleCategory),
+    vehicleCategory: str(props, 'vehicleCategory', d.vehicleCategory, onDefault),
     performance: {
-      maxSpeed: num(props, 'maxSpeed', d.performance.maxSpeed),
-      maxAcceleration: num(props, 'maxAcceleration', d.performance.maxAcceleration),
-      maxDeceleration: num(props, 'maxDeceleration', d.performance.maxDeceleration),
+      maxSpeed: num(props, 'maxSpeed', d.performance.maxSpeed, onDefault),
+      maxAcceleration: num(props, 'maxAcceleration', d.performance.maxAcceleration, onDefault),
+      maxDeceleration: num(props, 'maxDeceleration', d.performance.maxDeceleration, onDefault),
     },
     boundingBox: {
       center: { ...d.boundingBox.center },
       dimensions: {
-        width: num(props, 'width', d.boundingBox.dimensions.width),
-        length: num(props, 'length', d.boundingBox.dimensions.length),
-        height: num(props, 'height', d.boundingBox.dimensions.height),
+        width: num(props, 'width', d.boundingBox.dimensions.width, onDefault),
+        length: num(props, 'length', d.boundingBox.dimensions.length, onDefault),
+        height: num(props, 'height', d.boundingBox.dimensions.height, onDefault),
       },
     },
     axles: { front: { ...d.axles.front }, rear: { ...d.axles.rear } },
@@ -155,13 +178,13 @@ const DEFAULT_PLACEMENT = (() => {
   return { roadId: entry.id, laneId: inner?.laneId ?? '-1' }
 })()
 
-function toPosition(action: SceneAction): EnginePosition {
+function toPosition(action: SceneAction, onDefault?: DefaultSink): EnginePosition {
   const relativeTo = action.references?.relativeTo ?? action.references?.entityRef
   if (relativeTo !== undefined) {
     const rel: EnginePosition['relativeLane'] = {
       entityRef: relativeTo,
-      dLane: num(action.properties, 'dLane', 0),
-      ds: num(action.properties, 'ds', 0),
+      dLane: num(action.properties, 'dLane', 0, onDefault),
+      ds: num(action.properties, 'ds', 0, onDefault),
     }
     const offset = first(action.properties, 'offset')
     return {
@@ -170,10 +193,10 @@ function toPosition(action: SceneAction): EnginePosition {
   }
   return {
     lane: {
-      roadId: str(action.properties, 'roadId', DEFAULT_PLACEMENT.roadId),
-      laneId: str(action.properties, 'laneId', DEFAULT_PLACEMENT.laneId),
-      s: num(action.properties, 's', 0),
-      offset: num(action.properties, 'offset', 0),
+      roadId: str(action.properties, 'roadId', DEFAULT_PLACEMENT.roadId, onDefault),
+      laneId: str(action.properties, 'laneId', DEFAULT_PLACEMENT.laneId, onDefault),
+      s: num(action.properties, 's', 0, onDefault),
+      offset: num(action.properties, 'offset', 0, onDefault),
     },
   }
 }
@@ -185,7 +208,7 @@ function toPosition(action: SceneAction): EnginePosition {
  * carries no `triggerKind`, so the lowering falls back to the default
  * `startTime`-based trigger, unchanged.
  */
-function toTrigger(action: SceneAction): EngineEntityTrigger | undefined {
+function toTrigger(action: SceneAction, onDefault?: DefaultSink): EngineEntityTrigger | undefined {
   const kind = first(action.properties, 'triggerKind')
   if (kind === undefined) return undefined
   const entityRef = action.references?.triggerEntityRef ?? action.references?.relativeTo ?? ''
@@ -198,8 +221,8 @@ function toTrigger(action: SceneAction): EngineEntityTrigger | undefined {
     kind,
     triggeringEntityRef: action.actor,
     entityRef,
-    rule: str(action.properties, 'triggerRule', 'lessThan'),
-    value: num(action.properties, 'triggerValue', 0),
+    rule: str(action.properties, 'triggerRule', 'lessThan', onDefault),
+    value: num(action.properties, 'triggerValue', 0, onDefault),
     ...(freespace !== undefined ? { freespace } : {}),
     ...(relativeDistanceType !== undefined ? { relativeDistanceType } : {}),
     ...(coordinateSystem !== undefined ? { coordinateSystem } : {}),
@@ -208,9 +231,9 @@ function toTrigger(action: SceneAction): EngineEntityTrigger | undefined {
   }
 }
 
-function toManeuver(action: SceneAction, index: number): EngineManeuver {
+function toManeuver(action: SceneAction, index: number, onDefault?: DefaultSink): EngineManeuver {
   const target = action.references?.relativeTo ?? action.references?.targetRef ?? ''
-  const trigger = toTrigger(action)
+  const trigger = toTrigger(action, onDefault)
   return {
     storyName: str(action.properties, 'storyName', 'Story1'),
     actName: str(action.properties, 'actName', 'Act1'),
@@ -220,16 +243,20 @@ function toManeuver(action: SceneAction, index: number): EngineManeuver {
     actionName: str(action.properties, 'actionName', `Action${index + 1}`),
     priority: str(action.properties, 'priority', 'override'),
     actorRef: action.actor,
-    startTime: num(action.properties, 'startTime', 0),
+    // An entity trigger replaces the time trigger, so its start time is unused.
+    startTime: num(action.properties, 'startTime', 0, trigger ? undefined : onDefault),
     ...(trigger ? { trigger } : {}),
     laneChange: {
-      targetLaneOffset: num(action.properties, 'targetLaneOffset', 0),
+      targetLaneOffset: num(action.properties, 'targetLaneOffset', 0, onDefault),
       dynamics: {
-        dynamicsShape: str(action.properties, 'dynamicsShape', 'cubic'),
-        dynamicsDimension: str(action.properties, 'dynamicsDimension', 'distance'),
-        value: num(action.properties, 'dynamicsValue', 25),
+        dynamicsShape: str(action.properties, 'dynamicsShape', 'cubic', onDefault),
+        dynamicsDimension: str(action.properties, 'dynamicsDimension', 'distance', onDefault),
+        value: num(action.properties, 'dynamicsValue', 25, onDefault),
       },
-      relativeTarget: { entityRef: target, value: num(action.properties, 'targetValue', 0) },
+      relativeTarget: {
+        entityRef: target,
+        value: num(action.properties, 'targetValue', 0, onDefault),
+      },
     },
   }
 }
@@ -255,12 +282,33 @@ export interface DroppedAction {
  * (the tree) and {@link unexpressibleActions} (the drops), so the two can never
  * disagree on what "supported" means.
  */
-function lowerScene(ir: AuthoringIR): { tree: EngineTree; dropped: DroppedAction[] } {
+function lowerScene(ir: AuthoringIR): {
+  tree: EngineTree
+  dropped: DroppedAction[]
+  defaults: LoweringDefault[]
+} {
   const dropped: DroppedAction[] = []
-  const entities: EngineEntity[] = ir.entities.map((e) => ({
-    name: e.ref,
-    vehicle: toVehicle(e.ref, e.properties),
-  }))
+  const defaults: LoweringDefault[] = []
+  const sink =
+    (path: (property: string) => string, reason: string): DefaultSink =>
+    (property, value) =>
+      defaults.push({ path: path(property), value: String(value), reason })
+
+  const entities: EngineEntity[] = ir.entities.map((e) => {
+    const vehicle = toVehicle(
+      e.ref,
+      e.properties,
+      sink((property) => entityPath(e.ref, property), STANDARD_CAR)
+    )
+    // The IR has no property for the axles or the bounding-box centre, so
+    // they are always the standard car's.
+    defaults.push({
+      path: entityPath(e.ref),
+      value: 'standard axles and bounding-box centre',
+      reason: STANDARD_CAR,
+    })
+    return { name: e.ref, vehicle }
+  })
 
   // Group Init actions (speed + teleport) per entity, preserving IR order.
   const initByEntity = new Map<string, { speed?: number; teleport?: EnginePosition }>()
@@ -281,15 +329,35 @@ function lowerScene(ir: AuthoringIR): { tree: EngineTree; dropped: DroppedAction
       case 'SpeedAction':
       case 'AbsoluteTargetSpeed': {
         const raw = first(action.properties, 'speed') ?? first(action.properties, 'value')
-        ensureInit(action.actor).speed = raw === undefined ? 27.778 : Number.parseFloat(raw)
+        if (raw === undefined) {
+          defaults.push({
+            path: actionPath(action.actor, action.kind, 'speed'),
+            value: String(DEFAULT_INITIAL_SPEED),
+            reason: 'default initial speed',
+          })
+        }
+        ensureInit(action.actor).speed =
+          raw === undefined ? DEFAULT_INITIAL_SPEED : Number.parseFloat(raw)
         break
       }
       case 'TeleportAction':
-        ensureInit(action.actor).teleport = toPosition(action)
+        ensureInit(action.actor).teleport = toPosition(
+          action,
+          sink((property) => actionPath(action.actor, action.kind, property), 'default placement')
+        )
         break
       case 'LaneChangeAction':
         // Every LaneChangeAction lowers to its own maneuver — none are dropped.
-        maneuvers.push(toManeuver(action, index))
+        maneuvers.push(
+          toManeuver(
+            action,
+            index,
+            sink(
+              (property) => actionPath(action.actor, action.kind, property),
+              'default lane change'
+            )
+          )
+        )
         break
       default:
         dropped.push({
@@ -326,6 +394,13 @@ function lowerScene(ir: AuthoringIR): { tree: EngineTree; dropped: DroppedAction
     init,
     stopTime: ir.stopTime ?? DEFAULT_STOP_TIME,
   }
+  if (ir.stopTime === undefined) {
+    defaults.push({
+      path: 'stopTime',
+      value: String(DEFAULT_STOP_TIME),
+      reason: 'default simulation end',
+    })
+  }
   return {
     tree: {
       ...tree,
@@ -334,6 +409,7 @@ function lowerScene(ir: AuthoringIR): { tree: EngineTree; dropped: DroppedAction
       ...(maneuvers.length > 0 ? { maneuvers } : {}),
     },
     dropped,
+    defaults,
   }
 }
 
@@ -354,4 +430,16 @@ export function irToEngineTree(ir: AuthoringIR): EngineTree {
  */
 export function unexpressibleActions(ir: AuthoringIR): DroppedAction[] {
   return lowerScene(ir).dropped
+}
+
+/**
+ * Every value the lowering fills in because the IR carries no usable one, in
+ * IR order: the standard-car vehicle fields, a default placement or speed,
+ * lane-change dynamics, and the stop time. Read from the same lowering that
+ * emits the document, so the report and the `.xosc` cannot disagree. A path
+ * names the first action of a kind by an actor (`@ontology-search/authoring-ir`
+ * value paths).
+ */
+export function loweringDefaults(ir: AuthoringIR): LoweringDefault[] {
+  return lowerScene(ir).defaults
 }

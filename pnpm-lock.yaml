@@ -527,6 +527,9 @@ importers:
 
   packages/api-types:
     dependencies:
+      '@ontology-search/authoring-ir':
+        specifier: workspace:*
+        version: link:../authoring-ir
       '@ontology-search/slots':
         specifier: workspace:*
         version: link:../slots

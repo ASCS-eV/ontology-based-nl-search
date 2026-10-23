@@ -31,10 +31,16 @@ import type { GateTrace, SceneGap, SceneGateName } from '@ontology-search/api-ty
 import {
   type AuthoringDiagnostic,
   getAuthoringBackend,
+  loweringDefaults,
   unexpressibleActions,
 } from '@ontology-search/authoring'
 import { QC_RULES, runResidualGate, runSemanticGate } from '@ontology-search/authoring-gate'
-import type { AuthoringIR } from '@ontology-search/authoring-ir'
+import {
+  type AuthoringIR,
+  irValueAt,
+  type LoweringDefault,
+  type SceneAssumption,
+} from '@ontology-search/authoring-ir'
 import { defaultRoad, getRoad } from '@ontology-search/road-catalog'
 
 import { alignEnumValues, getEnumVocabulary } from './enum-alignment.js'
@@ -94,6 +100,8 @@ export interface ScenePipelineInput {
   readonly roadNetworkXodr?: string
   /** Cooperative cancellation, honoured at each gate boundary. */
   readonly signal?: AbortSignal
+  /** The values the model says it chose without the user stating them. */
+  readonly assumptions?: readonly SceneAssumption[]
 }
 
 export interface SceneResult {
@@ -109,6 +117,14 @@ export interface SceneResult {
   readonly diagnostics: readonly AuthoringDiagnostic[]
   /** Per-gate verdicts, in evaluation order. */
   readonly trace: readonly GateTrace[]
+  /**
+   * The model's assumptions that name a value of the gated IR. One naming a
+   * value the scene does not carry says nothing about the scene and is left
+   * out.
+   */
+  readonly assumptions: readonly SceneAssumption[]
+  /** Every value the lowering filled in because the IR carries none. */
+  readonly loweringDefaults: readonly LoweringDefault[]
 }
 
 /**
@@ -236,6 +252,8 @@ export async function runScenePipeline(input: ScenePipelineInput): Promise<Scene
     gaps,
     diagnostics,
     trace,
+    assumptions: (input.assumptions ?? []).filter((a) => irValueAt(ir, a.path) !== undefined),
+    loweringDefaults: loweringDefaults(ir),
   }
 }
 

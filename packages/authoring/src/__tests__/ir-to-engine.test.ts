@@ -1,7 +1,7 @@
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { describe, expect, it } from 'vitest'
 
-import { irToEngineTree, unexpressibleActions } from '../ir-to-engine.js'
+import { irToEngineTree, loweringDefaults, unexpressibleActions } from '../ir-to-engine.js'
 import { cutInIR } from './fixtures/cut-in-ir.js'
 
 describe('irToEngineTree', () => {
@@ -214,5 +214,62 @@ describe('unexpressibleActions', () => {
 
   it('reports nothing when every action is expressible (the cut-in archetype)', () => {
     expect(unexpressibleActions(cutInIR())).toEqual([])
+  })
+})
+
+/**
+ * Regression: the lowering filled standard-car fields, a default placement and
+ * lane-change dynamics without telling anyone, so the scene view showed them
+ * neither as stated nor as assumed: they were simply absent while the
+ * document carried them.
+ */
+describe('loweringDefaults', () => {
+  const minimal: AuthoringIR = {
+    entities: [
+      { ref: 'Ego', type: 'Vehicle', properties: { width: '1.9' } },
+      { ref: 'A1', type: 'Vehicle', properties: {} },
+    ],
+    actions: [
+      { actor: 'Ego', kind: 'SpeedAction', properties: {} },
+      { actor: 'Ego', kind: 'TeleportAction', properties: { laneId: '-3' } },
+      {
+        actor: 'A1',
+        kind: 'LaneChangeAction',
+        properties: { startTime: '2', dynamicsShape: 'linear' },
+        references: { relativeTo: 'Ego' },
+      },
+    ],
+  }
+
+  it('names every value the lowering fills, with the value the document carries', () => {
+    const defaults = new Map(loweringDefaults(minimal).map((d) => [d.path, d.value]))
+    // A stated property is not a default; an omitted one is, with its value.
+    expect(defaults.has('entity.Ego.width')).toBe(false)
+    expect(defaults.get('entity.Ego.length')).toBe('4.5')
+    expect(defaults.get('entity.A1.vehicleCategory')).toBe('car')
+    expect(defaults.get('entity.A1')).toBe('standard axles and bounding-box centre')
+    expect(defaults.get('action.Ego.SpeedAction.speed')).toBe('27.778')
+    expect(defaults.has('action.Ego.TeleportAction.laneId')).toBe(false)
+    expect(defaults.get('action.Ego.TeleportAction.s')).toBe('0')
+    expect(defaults.has('action.A1.LaneChangeAction.startTime')).toBe(false)
+    expect(defaults.get('action.A1.LaneChangeAction.dynamicsDimension')).toBe('distance')
+    expect(defaults.get('stopTime')).toBe('30')
+  })
+
+  it('reports exactly the values the emitted tree carries', () => {
+    const tree = irToEngineTree(minimal)
+    const defaults = new Map(loweringDefaults(minimal).map((d) => [d.path, d.value]))
+    expect(String(tree.stopTime)).toBe(defaults.get('stopTime'))
+    const a1 = tree.entities?.find((e) => e.name === 'A1')
+    expect(String(a1?.vehicle.boundingBox?.dimensions.height)).toBe(
+      defaults.get('entity.A1.height')
+    )
+    const dynamics = tree.maneuvers![0]!.laneChange.dynamics
+    expect(String(dynamics.value)).toBe(defaults.get('action.A1.LaneChangeAction.dynamicsValue'))
+  })
+
+  it('reports no default for a value the IR states', () => {
+    const stated = loweringDefaults({ ...minimal, stopTime: 12 })
+    expect(stated.some((d) => d.path === 'stopTime')).toBe(false)
   })
 })

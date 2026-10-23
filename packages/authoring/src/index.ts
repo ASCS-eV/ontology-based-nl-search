@@ -48,6 +48,11 @@ export type {
 } from './backend.js'
 export type { ExpectedEngine } from './capability-probe.js'
 export { EXPECTED_ENGINE, probeEngineVersions } from './capability-probe.js'
-export { type DroppedAction, irToEngineTree, unexpressibleActions } from './ir-to-engine.js'
+export {
+  type DroppedAction,
+  irToEngineTree,
+  loweringDefaults,
+  unexpressibleActions,
+} from './ir-to-engine.js'
 export { NullAuthoringBackend } from './null-backend.js'
 export { WasmAuthoringBackend } from './wasm-backend.js'

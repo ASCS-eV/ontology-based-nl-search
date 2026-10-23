@@ -61,7 +61,22 @@ export const authoringIrWireSchema = z.strictObject({
     .describe('Simulation end time in seconds → the <StopTrigger> condition value.'),
 })
 
+/**
+ * A value the model chose without the user stating it, named by its path in
+ * the scene (`./value-path.ts`). [JSON-SCHEMA-CORE] object/required keywords.
+ */
+export const sceneAssumptionWireSchema = z.strictObject({
+  path: z
+    .string()
+    .describe(
+      'Path of the value in the scene: entity.<ref>.<property>, action.<actor>.<kind>.<property>, ' +
+        'entity.<ref>, action.<actor>.<kind>, parameters.<name>, roadNetwork.logicFile or stopTime.'
+    ),
+  reason: z.string().describe('Why you chose this value although the user did not state it.'),
+})
+
 export type SceneEntityWire = z.infer<typeof sceneEntityWireSchema>
 export type SceneActionWire = z.infer<typeof sceneActionWireSchema>
 export type RoadNetworkWire = z.infer<typeof roadNetworkWireSchema>
 export type AuthoringIRWire = z.infer<typeof authoringIrWireSchema>
+export type SceneAssumptionWire = z.infer<typeof sceneAssumptionWireSchema>

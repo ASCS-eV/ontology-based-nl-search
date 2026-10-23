@@ -36,6 +36,7 @@
  */
 
 /** A single term mapped from user input to an ontology concept. */
+import type { LoweringDefault, SceneAssumption } from '@ontology-search/authoring-ir'
 import type { SearchSlots } from '@ontology-search/slots/slots'
 
 export interface MappedTerm {
@@ -453,6 +454,8 @@ export interface AuthoringRefineResponse {
   /** Raw engine diagnostics from the structural gate (warnings included). */
   readonly diagnostics: SceneDiagnostic[]
   readonly trace: GateTrace[]
+  /** Every value the lowering filled in because the scene carries none. */
+  readonly loweringDefaults: LoweringDefault[]
 }
 
 /** Final `meta` event of the `POST /author/stream` SSE stream. */
@@ -465,6 +468,13 @@ export interface AuthoringMeta {
   readonly reportedGaps: OntologyGap[]
   /** Per-gate trace from the final pass. */
   readonly trace: GateTrace[]
+  /**
+   * The values of the scene the model chose without the user stating them,
+   * by IR value path (`@ontology-search/authoring-ir`).
+   */
+  readonly assumptions: SceneAssumption[]
+  /** Every value the lowering filled in because the scene carries none. */
+  readonly loweringDefaults: LoweringDefault[]
 }
 
 /** Per-attempt `validation` event of the `POST /author/stream` SSE stream. */

@@ -33,6 +33,21 @@ describe('sceneSubmissionSchema', () => {
       })
     ).toThrow()
   })
+
+  it('carries the values the model assumed, by path, and keeps that list strict', () => {
+    const base = {
+      scene: { entities: [{ ref: 'Ego', type: 'Vehicle', properties: {} }], actions: [] },
+      interpretation: { summary: 'ego only', mappedTerms: [] },
+      gaps: [],
+    }
+    const assumption = { path: 'entity.Ego', reason: 'a scene needs an ego vehicle' }
+    expect(sceneSubmissionSchema.parse({ ...base, assumptions: [assumption] }).assumptions).toEqual(
+      [assumption]
+    )
+    expect(() =>
+      sceneSubmissionSchema.parse({ ...base, assumptions: [{ ...assumption, value: '25' }] })
+    ).toThrow()
+  })
 })
 
 describe('scene prompt', () => {
