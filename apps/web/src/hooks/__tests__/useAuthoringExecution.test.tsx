@@ -134,4 +134,55 @@ describe('useAuthoringExecution', () => {
     expect(result.current.loading).toBe(true)
     expect(result.current.phase).toBe('authoring')
   })
+
+  /**
+   * Regression: the scene's provenance never reached the client, and a value
+   * the user edits is the user's, not an assumption any more.
+   */
+  it('keeps the assumptions and defaults of a run, and drops an assumption the user edits', async () => {
+    const scene = {
+      entities: [{ ref: 'Ego', type: 'Vehicle', properties: {} }],
+      actions: [{ actor: 'Ego', kind: 'SpeedAction', properties: { speed: '25' } }],
+    }
+    const meta = {
+      valid: true,
+      attempts: 1,
+      reportedGaps: [],
+      trace: [],
+      assumptions: [
+        { path: 'action.Ego.SpeedAction.speed', reason: 'no speed was given' },
+        { path: 'entity.Ego', reason: 'a scene needs an ego vehicle' },
+      ],
+      loweringDefaults: [{ path: 'stopTime', value: '30', reason: 'default simulation end' }],
+    }
+    vi.spyOn(api, 'apiPostStream').mockResolvedValue(
+      sseResponse(
+        `event: scene\ndata: ${JSON.stringify(scene)}\n\n` +
+          `event: meta\ndata: ${JSON.stringify(meta)}\n\nevent: done\ndata: {}\n\n`
+      )
+    )
+    vi.spyOn(api, 'apiPost').mockResolvedValue({
+      valid: true,
+      gaps: [],
+      diagnostics: [],
+      trace: [],
+      loweringDefaults: [],
+    } as never)
+
+    const { result } = renderHook(() => useAuthoringExecution())
+    await act(async () => {
+      await result.current.handleAuthor('a car')
+    })
+    expect(result.current.assumptions).toEqual(meta.assumptions)
+    expect(result.current.loweringDefaults).toEqual(meta.loweringDefaults)
+
+    await act(async () => {
+      await result.current.handleRefine({
+        ...scene,
+        actions: [{ actor: 'Ego', kind: 'SpeedAction', properties: { speed: '30' } }],
+      })
+    })
+    expect(result.current.assumptions).toEqual([meta.assumptions[1]])
+    expect(result.current.loweringDefaults).toEqual([])
+  })
 })

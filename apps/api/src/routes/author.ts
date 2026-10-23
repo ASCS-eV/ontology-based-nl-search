@@ -18,7 +18,7 @@
  *   [JSON-SCHEMA-CORE] JSON Schema 2020-12 (packages/authoring-ir).
  */
 
-import type { AuthoringRefineResponse } from '@ontology-search/api-types'
+import type { AuthoringMeta, AuthoringRefineResponse } from '@ontology-search/api-types'
 import type { AuthoringIR } from '@ontology-search/authoring-ir'
 import { authoringIrWireSchema } from '@ontology-search/authoring-ir/scene-wire-schema'
 import { AppError, badRequest, internalError, unprocessable } from '@ontology-search/core/errors'
@@ -92,9 +92,11 @@ authoringRoutes.post('/stream', (c) =>
       await emit(SSE_EVENT.META, {
         valid: result.valid,
         attempts: result.attempts,
-        reportedGaps: result.reportedGaps,
-        trace: result.trace,
-      })
+        reportedGaps: [...result.reportedGaps],
+        trace: [...result.trace],
+        assumptions: [...result.assumptions],
+        loweringDefaults: [...result.loweringDefaults],
+      } satisfies AuthoringMeta)
       await emit(SSE_EVENT.DONE, {})
 
       logger.info('Authoring stream completed', {
@@ -163,6 +165,7 @@ authoringRoutes.post('/refine', async (c) => {
       gaps: [...result.gaps],
       diagnostics: [...result.diagnostics],
       trace: [...result.trace],
+      loweringDefaults: [...result.loweringDefaults],
     }
     return c.json(response, 200, { [REQUEST_ID_HEADER]: requestId })
   } catch (error) {

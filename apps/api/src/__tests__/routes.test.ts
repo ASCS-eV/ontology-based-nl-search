@@ -675,6 +675,8 @@ describe('POST /author/refine', () => {
       gaps: [],
       diagnostics: [{ severity: 'warning', line: 3, col: 5, message: 'note' }],
       trace: [{ gate: 'semantic', ok: true, gapCount: 0 }],
+      assumptions: [],
+      loweringDefaults: [{ path: 'stopTime', value: '30', reason: 'default simulation end' }],
     } as never)
 
     const res = await app.request('/author/refine', {
@@ -685,10 +687,52 @@ describe('POST /author/refine', () => {
     expect(res.status).toBe(200)
     expect(res.headers.get('x-request-id')).toBeTruthy()
     const json = await res.json()
-    expect(Object.keys(json).sort()).toEqual(['diagnostics', 'gaps', 'trace', 'valid', 'xosc'])
+    expect(Object.keys(json).sort()).toEqual([
+      'diagnostics',
+      'gaps',
+      'loweringDefaults',
+      'trace',
+      'valid',
+      'xosc',
+    ])
     expect(json.diagnostics).toEqual([{ severity: 'warning', line: 3, col: 5, message: 'note' }])
+    expect(json.loweringDefaults).toEqual([
+      { path: 'stopTime', value: '30', reason: 'default simulation end' },
+    ])
     expect(json.valid).toBe(true)
     expect(json.ir).toBeUndefined()
+  })
+})
+
+describe('POST /author/stream', () => {
+  /**
+   * Regression: the final event carried no provenance, so the client could
+   * not tell an assumed or defaulted value from a stated one.
+   */
+  it('ends with the assumptions and the lowering defaults of the scene', async () => {
+    const { runSceneAgent } = await import('@ontology-search/llm/authoring')
+    const assumptions = [{ path: 'action.Ego.SpeedAction.speed', reason: 'no speed was given' }]
+    const loweringDefaults = [{ path: 'stopTime', value: '30', reason: 'default simulation end' }]
+    vi.mocked(runSceneAgent).mockResolvedValue({
+      ir: { entities: [], actions: [] },
+      valid: true,
+      gaps: [],
+      reportedGaps: [],
+      trace: [],
+      attempts: 1,
+      assumptions,
+      loweringDefaults,
+    } as never)
+
+    const res = await app.request('/author/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'a car at some speed' }),
+    })
+    const text = await res.text()
+    const meta = /event: meta\ndata: (.*)\n/.exec(text)?.[1]
+    expect(meta, text).toBeDefined()
+    expect(JSON.parse(meta!)).toMatchObject({ assumptions, loweringDefaults })
   })
 })
 

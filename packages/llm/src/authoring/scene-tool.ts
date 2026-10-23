@@ -15,7 +15,10 @@
  * (criterion #31, same as `authoringIrWireSchema`).
  */
 
-import { authoringIrWireSchema } from '@ontology-search/authoring-ir/scene-wire-schema'
+import {
+  authoringIrWireSchema,
+  sceneAssumptionWireSchema,
+} from '@ontology-search/authoring-ir/scene-wire-schema'
 import { gapsWireSchema, interpretationWireSchema } from '@ontology-search/slots/slot-wire-schema'
 import { tool, type ToolSet } from 'ai'
 import { z } from 'zod'
@@ -26,7 +29,9 @@ import { z } from 'zod'
  * `scene` is the authoring IR the lowering materializes; `interpretation`
  * mirrors the search feature's interpretation block (a human summary + the
  * terms the model mapped); `gaps` are user concepts the model could not express
- * in the IR (reported, never silently dropped — same contract as search).
+ * in the IR (reported, never silently dropped — same contract as search);
+ * `assumptions` name the scene values the user did not state, so a reader can
+ * tell them from the stated ones.
  */
 export const sceneSubmissionSchema = z.object({
   scene: authoringIrWireSchema.describe(
@@ -40,6 +45,13 @@ export const sceneSubmissionSchema = z.object({
   gaps: gapsWireSchema.describe(
     'User concepts you could NOT express in the scene IR, each with a reason. Report them; never drop silently.'
   ),
+  assumptions: z
+    .array(sceneAssumptionWireSchema)
+    .optional()
+    .describe(
+      'Every value in the scene the user did not state (a speed, a position, a time, an extra entity), ' +
+        'by its path, with why you chose it. A value the user stated is not listed. Not a gap.'
+    ),
 })
 
 export type SceneSubmissionParams = z.infer<typeof sceneSubmissionSchema>

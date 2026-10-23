@@ -44,4 +44,37 @@ describe('SceneSummary', () => {
     expect(screen.getAllByText('Ego').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText(/entityRef/)).toBeInTheDocument()
   })
+
+  /**
+   * Regression: a speed the model assumed and a length the lowering filled in
+   * rendered like the values the user stated, or not at all.
+   */
+  it('marks an assumed value and lists the lowering defaults apart from stated values', () => {
+    render(
+      <SceneSummary
+        scene={SCENE}
+        assumptions={[{ path: 'entity.Ego.speed', reason: 'no speed was given' }]}
+        loweringDefaults={[
+          { path: 'entity.A2.length', value: '4.5', reason: 'standard passenger car' },
+          { path: 'stopTime', value: '30', reason: 'default simulation end' },
+        ]}
+      />
+    )
+
+    const assumed = screen.getByTitle('no speed was given')
+    expect(assumed).toHaveTextContent('assumed')
+    expect(assumed.parentElement).toHaveTextContent('27.78')
+    // A stated value carries no mark.
+    expect(screen.getByText('linear').textContent).toBe('linear')
+    const length = screen.getByText('length')
+    expect(length.nextElementSibling).toHaveTextContent('4.5')
+    expect(length.nextElementSibling).toHaveTextContent('default')
+    expect(screen.getByText('30 s')).toBeInTheDocument()
+  })
+
+  it('shows no marks and no legend when nothing was assumed or filled in', () => {
+    render(<SceneSummary scene={SCENE} />)
+    expect(screen.queryByText('assumed')).not.toBeInTheDocument()
+    expect(screen.queryByText('default')).not.toBeInTheDocument()
+  })
 })

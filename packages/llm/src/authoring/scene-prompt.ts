@@ -78,7 +78,13 @@ the road ids and lane ids it lists — do not invent road or lane ids, and keep
 - name → value. Reference a parameter elsewhere as \`$name\` (e.g. \`$Ego\`).
 
 Fill ONLY what the user expresses. Report anything you cannot express as a gap —
-never invent geometry or omit it silently.
+never invent geometry or omit it silently. A scene often needs a value the user
+did not state (a start position, a speed, a time): choose a plausible one and
+list its path in \`assumptions\` with why you chose it, e.g.
+\`{ "path": "action.Ego.SpeedAction.speed", "reason": "no speed was given" }\`.
+Paths: entity.<ref>.<property>, action.<actor>.<kind>.<property>, entity.<ref>
+for an entity the user did not ask for, parameters.<name>, stopTime. An
+assumption is not a gap.
 `.trim()
 
 let cachedStaticCore: string | null = null

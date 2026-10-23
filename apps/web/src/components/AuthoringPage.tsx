@@ -31,6 +31,8 @@ export function AuthoringPage() {
   const {
     interpretation,
     scene,
+    assumptions,
+    loweringDefaults,
     xosc,
     gaps,
     trace,
@@ -107,7 +109,13 @@ export function AuthoringPage() {
           ? `${scene.entities.length} entities · ${scene.actions.length} actions`
           : undefined,
         hasContent: !!scene,
-        content: scene ? <SceneSummary scene={scene} /> : null,
+        content: scene ? (
+          <SceneSummary
+            scene={scene}
+            assumptions={assumptions ?? []}
+            loweringDefaults={loweringDefaults ?? []}
+          />
+        ) : null,
       },
       {
         id: 'validation',
@@ -132,6 +140,8 @@ export function AuthoringPage() {
     [
       interpretation,
       scene,
+      assumptions,
+      loweringDefaults,
       xosc,
       gaps,
       trace,

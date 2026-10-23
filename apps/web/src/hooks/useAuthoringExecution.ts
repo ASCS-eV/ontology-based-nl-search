@@ -1,4 +1,9 @@
-import type { AuthoringIR } from '@ontology-search/authoring-ir'
+import {
+  type AuthoringIR,
+  irValueAt,
+  type LoweringDefault,
+  type SceneAssumption,
+} from '@ontology-search/authoring-ir'
 import { SSE_EVENT } from '@ontology-search/core/sse/events'
 import { useCallback, useRef, useState } from 'react'
 
@@ -27,6 +32,10 @@ export interface AuthoringState {
   gaps: SceneGap[] | null
   /** Concepts the model self-reported it could not express in the IR. */
   reportedGaps: OntologyGap[] | null
+  /** Scene values the model chose without the user stating them. */
+  assumptions: SceneAssumption[] | null
+  /** Values the lowering filled in because the scene carries none. */
+  loweringDefaults: LoweringDefault[] | null
   /** Per-gate verdicts (semantic → structural → residual) of the final pass. */
   trace: GateTrace[] | null
   /** Whether the final pass passed the semantic + structural gates. */
@@ -46,6 +55,8 @@ const INITIAL_STATE: AuthoringState = {
   xosc: null,
   gaps: null,
   reportedGaps: null,
+  assumptions: null,
+  loweringDefaults: null,
   trace: null,
   valid: null,
   attempts: null,
@@ -133,6 +144,8 @@ export function useAuthoringExecution() {
                 attempts: meta.attempts,
                 reportedGaps: meta.reportedGaps,
                 trace: meta.trace,
+                assumptions: meta.assumptions,
+                loweringDefaults: meta.loweringDefaults,
               }))
               break
             }
@@ -167,7 +180,19 @@ export function useAuthoringExecution() {
    * `.xosc` is read-only (derived).
    */
   const handleRefine = useCallback(async (scene: AuthoringIR, roadNetworkXodr?: string) => {
-    setState((s) => ({ ...s, loading: true, error: null, phase: 'authoring', scene }))
+    setState((s) => ({
+      ...s,
+      loading: true,
+      error: null,
+      phase: 'authoring',
+      scene,
+      // A value the user edited is theirs now: an assumption holds only while
+      // the scene still carries the value the model chose.
+      assumptions:
+        s.assumptions && s.scene
+          ? s.assumptions.filter((a) => irValueAt(scene, a.path) === irValueAt(s.scene!, a.path))
+          : s.assumptions,
+    }))
 
     try {
       const data = await apiPost<AuthoringRefineResponse>('/api/author/refine', {
@@ -181,6 +206,7 @@ export function useAuthoringExecution() {
         gaps: data.gaps,
         trace: data.trace,
         valid: data.valid,
+        loweringDefaults: data.loweringDefaults,
         phase: 'done',
       }))
     } catch (err) {

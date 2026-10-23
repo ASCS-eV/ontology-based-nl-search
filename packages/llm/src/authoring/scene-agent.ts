@@ -14,7 +14,12 @@
  */
 
 import { QC_RULES } from '@ontology-search/authoring-gate'
-import { type AuthoringIR, createEmptyScene } from '@ontology-search/authoring-ir'
+import {
+  type AuthoringIR,
+  createEmptyScene,
+  type LoweringDefault,
+  type SceneAssumption,
+} from '@ontology-search/authoring-ir'
 import { getConfig } from '@ontology-search/core/config'
 
 import { getAgentBackend } from '../backend.js'
@@ -73,6 +78,10 @@ export interface SceneAgentResult {
   readonly trace: readonly GateTrace[]
   /** Number of LLM authoring turns performed (1 + repairs used). */
   readonly attempts: number
+  /** The values of the final scene the model chose without the user stating them. */
+  readonly assumptions: readonly SceneAssumption[]
+  /** The values the lowering filled in for the final scene. */
+  readonly loweringDefaults: readonly LoweringDefault[]
 }
 
 /**
@@ -127,6 +136,7 @@ export async function runSceneAgent(
       ir,
       ...(roadNetworkXodr !== undefined ? { roadNetworkXodr } : {}),
       ...(signal ? { signal } : {}),
+      ...(submission.assumptions ? { assumptions: submission.assumptions } : {}),
     })
     await emit({
       phase: 'gated',
@@ -146,6 +156,8 @@ export async function runSceneAgent(
         reportedGaps: submission.gaps,
         trace: result.trace,
         attempts,
+        assumptions: result.assumptions,
+        loweringDefaults: result.loweringDefaults,
       }
     }
 
@@ -161,6 +173,8 @@ export async function runSceneAgent(
         reportedGaps: submission.gaps,
         trace: result.trace,
         attempts,
+        assumptions: result.assumptions,
+        loweringDefaults: result.loweringDefaults,
       }
     }
     feedback = renderRepairFeedback(ir, fixable)
@@ -176,6 +190,8 @@ export async function runSceneAgent(
         reportedGaps: submission.gaps,
         trace: result.trace,
         attempts,
+        assumptions: result.assumptions,
+        loweringDefaults: result.loweringDefaults,
       }
     }
   }
@@ -196,5 +212,7 @@ export async function runSceneAgent(
     reportedGaps: lastSubmission?.gaps ?? [],
     trace: [],
     attempts,
+    assumptions: [],
+    loweringDefaults: [],
   }
 }

@@ -31,6 +31,7 @@ Like the slot IR, it is **generic by construction**: entities, actions, paramete
 | IR5 | `createEmptyScene` yields a valid empty IR, optionally archetype-tagged, so a model that never submits still produces a well-formed artifact to attach gaps to.                  | `__tests__/scene-wire-schema.test.ts` — `describe('createEmptyScene')`      |
 | IR6 | The IR wire format is held to **JSON Schema 2020-12** (`[JSON-SCHEMA-CORE]`) — the AI SDK serializes this Zod schema for the `submit_scene` tool call.                           | review checklist; `apps/docs/standards-audit.md`                            |
 | IR7 | Zero ontology-specific identifiers in source (criterion 9b).                                                                                                                     | review checklist                                                            |
+| IR8 | A scene value is named by an **IR value path** (`entity.<ref>.<property>`, …); `irValueAt` reads it, undefined for a value the scene lacks.                                      | `__tests__/value-path.test.ts`                                              |
 
 ## How to interface
 

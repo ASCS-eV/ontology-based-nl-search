@@ -157,6 +157,32 @@ describe('runScenePipeline — reports what the lowering cannot express', () => 
   })
 })
 
+describe('runScenePipeline — where each value came from', () => {
+  /**
+   * Regression: the model's assumed values and the lowering's defaults were
+   * shown as ordinary scene values, indistinguishable from what the user
+   * stated.
+   */
+  it('keeps the assumptions that name a scene value and reports the lowering defaults', async () => {
+    const ir = cutInIR()
+    const result = await runScenePipeline({
+      ir,
+      assumptions: [
+        { path: 'action.Ego.SpeedAction.speed', reason: 'no speed was given' },
+        { path: 'entity.Ghost.vehicleCategory', reason: 'names no entity of the scene' },
+      ],
+    })
+
+    expect(result.assumptions).toEqual([
+      { path: 'action.Ego.SpeedAction.speed', reason: 'no speed was given' },
+    ])
+    const defaults = new Map(result.loweringDefaults.map((d) => [d.path, d.value]))
+    expect(defaults.get('entity.Ego.length')).toBe('4.5')
+    expect(defaults.has('action.A2.LaneChangeAction.dynamicsShape')).toBe(false)
+    expect(defaults.get('stopTime')).toBe('30')
+  })
+})
+
 describe('runScenePipeline — repairableGaps', () => {
   it('excludes residual road-geometry gaps (not IR-fixable)', () => {
     const gaps = [
