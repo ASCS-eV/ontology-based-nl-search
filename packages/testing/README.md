@@ -20,6 +20,7 @@ Encapsulates the repeated setup that integration suites need — most importantl
 - **Test-only**: nothing here is shipped or imported from production code paths.
 - `getSearchTestContext` loads the **real** ontology from disk into an in-memory store; the first call is slow because it is warmup, not a bug.
 - Search and ontology suites that use it need generous timeouts (≈120 s) and low concurrency — call it inside a `beforeAll` with an explicit timeout.
+- **Authoring eval** (`src/eval/authoring-eval.ts`): cases assert individual IR fields, expected gaps and validity; a gate that skipped rules is reported as skipped, never as a pass. The deterministic mode replays the recorded submissions in `authoring-cases.ts` through the real gate pipeline and gates CI (`pnpm run eval:authoring`); the live mode (`pnpm run eval:authoring:live`) is report-only and pins the model, ontology and engine.
 
 ## How to interface
 
