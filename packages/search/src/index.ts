@@ -40,6 +40,7 @@ export type {
   RefineResult,
   SearchProgress,
   SearchResult,
+  ValidatedSlots,
 } from './service.js'
 export type { SearchDependencies } from './service.js'
 export { SearchService } from './service.js'

@@ -9,6 +9,8 @@ interface OntologyGapsDisplayProps {
    * When set, the display says so beneath gaps the log counts.
    */
   logged?: boolean
+  /** Names where the gaps come from; also the region's accessible name. */
+  caption?: string
 }
 
 /**
@@ -59,13 +61,19 @@ const SECTIONS: {
 /** Gaps default to `unmapped` when the server omits `kind` (back-compat). */
 const gapKind = (gap: OntologyGap): GapKind => gap.kind ?? 'unmapped'
 
-export function OntologyGapsDisplay({ gaps, logged = false }: OntologyGapsDisplayProps) {
+export function OntologyGapsDisplay({ gaps, logged = false, caption }: OntologyGapsDisplayProps) {
   if (gaps.length === 0) return null
   // The log counts unmapped and recognized terms, not engine limitations.
   const showLogNotice = logged && gaps.some((g) => gapKind(g) !== 'limitation')
 
   return (
-    <div className="w-full space-y-4" role="region" aria-label="Ontology gaps" aria-live="polite">
+    <div
+      className="w-full space-y-4"
+      role="region"
+      aria-label={caption ?? 'Ontology gaps'}
+      aria-live="polite"
+    >
+      {caption && <p className="text-sm text-gray-600 dark:text-gray-400">{caption}</p>}
       {SECTIONS.map((section) => {
         const sectionGaps = gaps.filter((g) => gapKind(g) === section.kind)
         if (sectionGaps.length === 0) return null

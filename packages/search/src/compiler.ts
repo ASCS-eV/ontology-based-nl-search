@@ -64,6 +64,7 @@ import { expandNarrowerValues } from './value-hierarchy.js'
 // Re-export the extracted compiler submodules (ADR 0003, step 1) so the existing
 // `@ontology-search/search` public surface and intra-package importers keep
 // resolving these from `./compiler.js` unchanged.
+export { droppedReferenceGaps } from './compile-gaps.js'
 export { buildCompilerVocabFrom, getCompilerVocab, warmupCompiler } from './compiler-vocab.js'
 export { compileAllCountQueries, compileCountQuery } from './count-query.js'
 export {

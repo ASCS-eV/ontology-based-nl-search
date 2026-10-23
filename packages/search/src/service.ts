@@ -30,6 +30,7 @@ import { generateRequestId, RequestLogger } from '@ontology-search/core/logging'
 import type { ReferenceFilter, TraceabilityPlan } from '@ontology-search/slots/slots'
 import type { SparqlBinding } from '@ontology-search/sparql/types'
 
+import { droppedReferenceGaps } from './compile-gaps.js'
 import { normalizeGapTerm } from './gap-log.js'
 import type { LlmStructuredResponse } from './types.js'
 
@@ -44,6 +45,7 @@ export type {
   SearchMeta,
   SearchProgress,
   SearchResult,
+  ValidatedSlots,
 } from './service-types.js'
 import type {
   ExecutionResult,
@@ -207,14 +209,20 @@ export class SearchService {
     // LLM agent (e.g. the /refine API). Drops any value that violates a
     // declared SHACL constraint so it never reaches SPARQL compilation.
     const endValidate = logger.time('shacl-validation')
-    const validatedSlots = this.deps.validateSlots ? await this.deps.validateSlots(slots) : slots
+    const validated = this.deps.validateSlots
+      ? await this.deps.validateSlots(slots)
+      : { slots, gaps: [] }
     endValidate()
 
     // Compile slots to SPARQL — capture trace plan when present so the
     // executor can attach per-row breadcrumbs.
     const endCompile = logger.time('compile-slots')
-    const { sparql, trace } = await this.deps.compileSlots(validatedSlots)
+    const { sparql, trace, droppedReferences } = await this.deps.compileSlots(validated.slots)
     endCompile()
+    const gaps = [
+      ...validated.gaps,
+      ...droppedReferenceGaps(droppedReferences, validated.slots.domains),
+    ]
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
@@ -233,7 +241,7 @@ export class SearchService {
       truncated: meta.truncated ?? false,
     })
 
-    return { sparql, execution, meta }
+    return { sparql, execution, meta, gaps }
   }
 
   // ─── Private Helpers ─────────────────────────────────────────────────────

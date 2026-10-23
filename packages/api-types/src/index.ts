@@ -234,6 +234,14 @@ export interface RefineResponse {
    * own copy would drift the moment the server normalized anything.
    */
   slots: SearchSlots
+  /**
+   * What this refine could not apply: a value the SHACL gate removed
+   * ([SHACL] §3.4) and a reference the compiler could not join, each as a
+   * gap. Empty when everything sent was applied. Refine gaps are not
+   * recorded in the gap log, which counts the words of natural-language
+   * searches.
+   */
+  gaps: OntologyGap[]
 }
 
 /** Body of the `/stats` JSON response. */

@@ -116,4 +116,17 @@ describe('OntologyGapsDisplay', () => {
     )
     expect(screen.queryByText(/are counted/)).not.toBeInTheDocument()
   })
+
+  it('names the region by its caption', () => {
+    render(
+      <OntologyGapsDisplay
+        gaps={[{ term: 'country', reason: '"europe" is not a valid value' }]}
+        caption="Not applied in the last refinement"
+      />
+    )
+    expect(
+      screen.getByRole('region', { name: 'Not applied in the last refinement' })
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/are counted/)).not.toBeInTheDocument()
+  })
 })

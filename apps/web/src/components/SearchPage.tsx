@@ -56,6 +56,7 @@ export function SearchPage() {
   const {
     interpretation,
     gaps,
+    refineGaps,
     sparql,
     graphql,
     slots,
@@ -87,8 +88,22 @@ export function SearchPage() {
   }
 
   const hasResponse = interpretation || gaps || sparql || results
-  const showGraphQLFeature = stats?.features?.graphqlLayer !== false
   const gapLogEnabled = stats?.features?.gapLog === true
+  // The interpretation's gaps (recorded by the gap log) and what the latest
+  // refine could not apply (not recorded), shown together.
+  const gapCount = (gaps?.length ?? 0) + (refineGaps?.length ?? 0)
+  const gapsContent = useMemo(
+    () => (
+      <>
+        {gaps && <OntologyGapsDisplay gaps={gaps} logged={gapLogEnabled} />}
+        {refineGaps && (
+          <OntologyGapsDisplay gaps={refineGaps} caption="Not applied in the last refinement" />
+        )}
+      </>
+    ),
+    [gaps, refineGaps, gapLogEnabled]
+  )
+  const showGraphQLFeature = stats?.features?.graphqlLayer !== false
 
   // Determine which step is currently active (by step ID)
   const activeStepId = useMemo(() => {
@@ -158,9 +173,9 @@ export function SearchPage() {
       {
         id: 'gaps',
         label: 'Ontology Gaps',
-        summary: gaps && gaps.length > 0 ? `${gaps.length} gap(s) detected` : undefined,
-        hasContent: !!(gaps && gaps.length > 0),
-        content: gaps ? <OntologyGapsDisplay gaps={gaps} logged={gapLogEnabled} /> : null,
+        summary: gapCount > 0 ? `${gapCount} gap(s) detected` : undefined,
+        hasContent: gapCount > 0,
+        content: gapCount > 0 ? gapsContent : null,
       },
       {
         id: 'graphql',
@@ -189,7 +204,8 @@ export function SearchPage() {
     ],
     [
       interpretation,
-      gaps,
+      gapCount,
+      gapsContent,
       sparql,
       graphql,
       phase,
@@ -260,7 +276,7 @@ export function SearchPage() {
               {slots && hasEditableSlots(slots) && (
                 <QueryRefinement slots={slots} onRerun={handleRefine} loading={loading} />
               )}
-              {gaps && <OntologyGapsDisplay gaps={gaps} logged={gapLogEnabled} />}
+              {gapCount > 0 && gapsContent}
               {sparql && <SparqlPreview sparql={sparql} />}
               {results && <ResultsDisplay results={results} traceability={traceability} />}
             </div>
