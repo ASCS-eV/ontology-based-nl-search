@@ -61,8 +61,9 @@ export interface ReferenceEmitContext {
 
 /**
  * Emit implicit cross-domain JOINs for every referenced (non-primary) domain
- * that carries its own filters/ranges. Skips constraint-free referenced domains
- * and domains with no SHACL-declared reference chain (logged).
+ * that carries its own filters/ranges. Skips constraint-free referenced domains;
+ * a constrained domain no SHACL-declared reference chain joins is skipped and
+ * recorded in `droppedReferences`, so its constraints are reported as a gap.
  */
 export function emitReferencedDomainJoins(
   detectedDomains: string[],
@@ -110,10 +111,13 @@ export function emitReferencedDomainJoins(
 
     const chain = pickReferenceChain(vocabIndex, primaryDomain, refDomainName)
     if (!chain) {
+      // The domain and its constraints are left out of the query, so the
+      // caller reports it as a gap instead of answering as if it were applied.
       log.warn(
         'No cross-reference chain declared in SHACL for parent → child; skipping referenced domain',
         { parent: primaryDomain, child: refDomainName }
       )
+      ctx.droppedReferences.push(refDomainName)
       continue
     }
     emitReferenceChainTriples(

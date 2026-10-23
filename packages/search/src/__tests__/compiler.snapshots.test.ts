@@ -254,21 +254,27 @@ describe('compileSlots — determinism + snapshot suite', () => {
     expect(sparql).toMatchSnapshot()
   })
 
-  it('scenario + hdmap cross-domain (primary scenario references hdmap)', async () => {
+  // The schema declares that scenarios reference HD maps, but no discovered
+  // chain joins them, so the two are peers and each keeps its own constraint.
+  it('scenario + hdmap with a reference no chain joins → peer UNION', async () => {
     const sparql = await assertDeterministic({
       domains: ['scenario', 'hdmap'],
       filters: { scenarioCategory: 'urban', roadTypes: 'motorway' },
       ranges: {},
     })
+    expect(sparql).toContain('UNION')
+    expect(sparql).toContain('roadTypes')
     expect(sparql).toMatchSnapshot()
   })
 
-  it('scenario + hdmap cross-domain with range on referenced domain', async () => {
+  it('scenario + hdmap with a range only the HD map carries → peer UNION', async () => {
     const sparql = await assertDeterministic({
       domains: ['scenario', 'hdmap'],
       filters: { scenarioCategory: 'urban' },
       ranges: { numberIntersections: { min: 3 } },
     })
+    expect(sparql).toContain('UNION')
+    expect(sparql).toContain('numberIntersections')
     expect(sparql).toMatchSnapshot()
   })
 

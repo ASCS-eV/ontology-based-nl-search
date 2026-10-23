@@ -9,7 +9,7 @@ import { createComponentLogger } from '@ontology-search/core/logging'
 import { sparqlPrefix } from '@ontology-search/core/rdf/prefixes'
 import { buildDomainRegistry } from '@ontology-search/ontology/domain-registry'
 
-import { type CompilerProperty, type CompilerVocab, getDomainReferences } from './compiler-vocab.js'
+import { type CompilerProperty, type CompilerVocab } from './compiler-vocab.js'
 
 const log = createComponentLogger('compiler')
 
@@ -173,19 +173,18 @@ export function partitionRangesByDomain(
 /**
  * Determine the primary domain — the composite one that references others.
  * E.g., if two domains' filters are present and one references the other,
- * the referencing domain is primary.
+ * the referencing domain is primary. `domainRefs` are the references the
+ * hierarchy was decided from, so the primary is the parent of that decision.
  */
-export async function resolvePrimaryDomain(
+export function resolvePrimaryDomain(
   detectedDomains: string[],
-  filtersByDomain: Record<string, Record<string, string | string[]>>
-): Promise<string> {
+  filtersByDomain: Record<string, Record<string, string | string[]>>,
+  domainRefs: ReadonlyMap<string, ReadonlySet<string>>
+): string {
   const allDomains = new Set([...detectedDomains, ...Object.keys(filtersByDomain)])
 
-  // A single domain is always its own primary — skip the (global) reference
-  // index entirely so single-domain compilation has no cross-domain dependency.
+  // A single domain is always its own primary.
   if (allDomains.size === 1) return detectedDomains[0] ?? [...allDomains][0]!
-
-  const domainRefs = await getDomainReferences()
 
   // Check if any domain references others that are present
   for (const [parent, children] of domainRefs.entries()) {

@@ -48,7 +48,9 @@ entry point.** The compiler expands it (`compiler-vocabulary-scope.ts`):
    named domains JOIN, the query is one query rooted at the parent, which the
    owners cannot join, and they are not searched. A named child that carries
    no constraint its parent lacks is a peer, so a scope of a parent and its
-   child with no constraints searches both.
+   child with no constraints searches both. Only a reference a discovered
+   chain joins counts: one the schema declares without such a chain leaves
+   the named domains peers, since its JOIN would have to leave the child out.
 
 A domain counts as a vocabulary when it owns no compiler path of its own and
 other domains' paths end in its leaves, their primary classes are subclasses
