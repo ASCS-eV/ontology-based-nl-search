@@ -77,12 +77,25 @@ export function lookupStepPredicate(
   stepIdx: number
 ): string | null {
   for (const propName of [...candidatePropNames].sort()) {
-    const path = vocabIndex.paths.get(`${domain.name}:${propName}`)
+    const path = breadthFirstPathOf(vocabIndex, `${domain.name}:${propName}`)
     if (!path) continue
     const step = path.steps[stepIdx]
     if (step) return prefixedPredicate(step.predicate, domain)
   }
   return null
+}
+
+/**
+ * The one path a name has apart from its alternate routes: the path a key
+ * names, or the breadth-first chain of a bare name that only further routes
+ * to the same class made ambiguous. A name with several chains of its own
+ * has none, as before those routes were searched.
+ */
+function breadthFirstPathOf(vocabIndex: CompilerVocab, indexKey: string): PropertyPath | undefined {
+  const path = vocabIndex.paths.get(indexKey)
+  if (path) return path
+  const own = (vocabIndex.alternatives?.get(indexKey) ?? []).filter((p) => !p.alternateRoute)
+  return own.length === 1 ? own[0] : undefined
 }
 
 /**
@@ -344,8 +357,15 @@ function emitLeafRange(
  * holds it. The branches share no node with the query's other constraints —
  * the key does not say which chain, so it cannot say which node either.
  *
+ * Except with each other: constraints whose chains end on exactly the same
+ * nodes ({@link pathPrefixKey}), the leaves of one class reached by the same
+ * routes such as a latitude and a longitude, share one group. Each branch
+ * walks one route once and tests every leaf on its node, so the leaves hold
+ * on one node, as they do when the class has a single route. Constraints
+ * whose nodes only overlap keep a group each.
+ *
  * Branches follow the order of the chains (IRI-chain order) and the groups the
- * order of the keys, so the SPARQL is deterministic.
+ * order of their first keys, so the SPARQL is deterministic.
  */
 export function emitAlternativeConstraints(
   domainName: string,
@@ -372,43 +392,54 @@ export function emitAlternativeConstraints(
     ...rangeEntries.map(([key, range, paths]): Entry => ({ kind: 'range', key, range, paths })),
   ].sort((a, b) => a.key.localeCompare(b.key) || a.kind.localeCompare(b.kind))
 
+  // Branch i of a group walks the route of every entry's chain i, so only
+  // entries that reach each of their nodes once can share one.
+  const groups = new Map<string, Entry[]>()
   entries.forEach((entry, entryIdx) => {
-    const branches = entry.paths.map((path, branchIdx) => {
+    const nodes = entry.paths.map(pathPrefixKey)
+    const group = new Set(nodes).size === nodes.length ? nodes.join('\n') : `#${entryIdx}`
+    groups.set(group, [...(groups.get(group) ?? []), entry])
+  })
+  ;[...groups.values()].forEach((group, groupIdx) => {
+    const branches = group[0]!.paths.map((route, branchIdx) => {
       const lines: string[] = []
       const tests: string[] = []
       let cursor = assetVar
-      for (let i = 0; i < path.steps.length - 1; i++) {
-        const intVar = `?_alt${entryIdx}_${branchIdx}_${i}${suffix}`
-        lines.push(`${cursor} ${emitPredicate(path.steps[i]!.predicate)} ${intVar} .`)
+      for (let i = 0; i < route.steps.length - 1; i++) {
+        const intVar = `?_alt${groupIdx}_${branchIdx}_${i}${suffix}`
+        lines.push(`${cursor} ${emitPredicate(route.steps[i]!.predicate)} ${intVar} .`)
         cursor = intVar
       }
-      const leafPred = emitPredicate(path.steps[path.steps.length - 1]!.predicate)
-      if (entry.kind === 'filter') {
-        emitLeafFilter(
-          cursor,
-          leafPred,
-          entry.key,
-          suffix,
-          entry.value,
-          path,
-          lines,
-          tests,
-          selectVars
-        )
-      } else {
-        emitLeafRange(
-          cursor,
-          leafPred,
-          entry.key,
-          suffix,
-          entry.range,
-          path,
-          lines,
-          tests,
-          selectVars,
-          emitPredicate,
-          vocabIndex
-        )
+      for (const entry of group) {
+        const path = entry.paths[branchIdx]!
+        const leafPred = emitPredicate(path.steps[path.steps.length - 1]!.predicate)
+        if (entry.kind === 'filter') {
+          emitLeafFilter(
+            cursor,
+            leafPred,
+            entry.key,
+            suffix,
+            entry.value,
+            path,
+            lines,
+            tests,
+            selectVars
+          )
+        } else {
+          emitLeafRange(
+            cursor,
+            leafPred,
+            entry.key,
+            suffix,
+            entry.range,
+            path,
+            lines,
+            tests,
+            selectVars,
+            emitPredicate,
+            vocabIndex
+          )
+        }
       }
       return `{\n    ${[...lines, ...tests].join('\n    ')}\n  }`
     })

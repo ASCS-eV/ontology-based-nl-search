@@ -23,6 +23,7 @@ import {
   type PredecessorLink,
   reachedAsAncestor,
   reachedByInheritance,
+  routesFromRoots,
 } from './property-paths-graph.js'
 import {
   enrichLeafKinds,
@@ -35,7 +36,7 @@ import {
 import { type AssetDomainInfo, queryAssetDomains, querySubClassEdges } from './schema-queries.js'
 
 export type { LeafKind, PathStep, PropertyPath, ReferenceChain } from './property-paths-types.js'
-import type { PropertyPath, ReferenceChain } from './property-paths-types.js'
+import type { PathStep, PropertyPath, ReferenceChain } from './property-paths-types.js'
 
 const log = createComponentLogger('property-paths')
 
@@ -64,7 +65,13 @@ export interface DiscoveredPropertyPaths {
   vocabularyRootPaths: PropertyPath[]
 }
 
-/** Emit one PropertyPath per leaf whose owning class is reachable. */
+/**
+ * Emit one PropertyPath per leaf whose owning class is reachable, along the
+ * breadth-first route only. Below a vocabulary's entry class, reused party
+ * and address classes multiply the routes (one address class under every
+ * party, once per kind of address), and the card budget is not sized for
+ * that; {@link emitPaths} keeps the further routes below an asset class.
+ */
 function pathsFrom(
   rootClass: string,
   domain: string,
@@ -86,6 +93,32 @@ function pathsFrom(
       ...(reachedAsAncestor(owningClass, predecessors) && { inheritedLeaf: true }),
     })
   }
+}
+
+/**
+ * The most routes kept to one class ({@link routesFromRoots}). Each route
+ * gives every leaf of the class a key and a term card of its own: a class
+ * with k leaves reached by r routes costs r·k cards. Four keeps the cards of
+ * one leaf name within a tenth of retrieval's default card budget per query
+ * (`DEFAULT_MAX_CARDS`, 40). The pinned ontology's asset classes need three.
+ */
+export const MAX_ROUTES_PER_CLASS = 4
+
+/**
+ * A path along each further route to its owning class, flagged
+ * `alternateRoute`: a class used in several contexts is reached through a
+ * different sequence path from the asset in each ([SHACL] §2.3.1.2). The
+ * first route is the breadth-first one `path` was built from, so it is
+ * skipped. A class reached only through inheritance has no predicate routes
+ * and gets none.
+ */
+function alternateRoutesOf(path: PropertyPath, routes: Map<string, PathStep[][]>): PropertyPath[] {
+  const further = (path.owningClass && routes.get(path.owningClass)?.slice(1)) || []
+  return further.map((route) => ({
+    ...path,
+    steps: [...route, { predicate: path.propertyIri }],
+    alternateRoute: true,
+  }))
 }
 
 export async function discoverPropertyPaths(
@@ -138,8 +171,8 @@ export async function discoverPropertyPaths(
     forwardEdges.set(parentClass, list)
   }
 
-  // For each asset class, walk forward and emit one PropertyPath per leaf
-  // whose owning class is reachable.
+  // For each asset class, walk forward and emit a PropertyPath per route to
+  // each leaf whose owning class is reachable.
   const bfsEnd = log.time('property-paths/bfs')
   const out = emitPaths(assetDomainRows, leaves, forwardEdges, ancestorsOf)
 
@@ -194,7 +227,8 @@ export async function discoverPropertyPaths(
 }
 
 /**
- * One PropertyPath per (asset domain, reachable leaf).
+ * A PropertyPath per (asset domain, reachable leaf), and one more per
+ * further route to the leaf's owning class (see below).
  *
  * The domain of a path is the domain of the asset-domain row the traversal was
  * seeded from — NOT the namespace of the asset class IRI. Several domains may
@@ -217,6 +251,13 @@ export async function discoverPropertyPaths(
  * domain already resolves would change those queries; a new name cannot.
  * `buildCompilerVocabFrom` additionally keeps them off shape-group names.
  *
+ * A plain path's owning class may be reached by several routes: one class
+ * used in several contexts. Each further route adds a path flagged
+ * `alternateRoute` right after the breadth-first one
+ * ({@link alternateRoutesOf}), so every context is searchable and the bare
+ * leaf name covers them all (`indexPropertyKeys` alternatives). The
+ * breadth-first path is unchanged.
+ *
  * @internal Exported for the domain-attribution regression test.
  */
 export function emitPaths(
@@ -227,14 +268,23 @@ export function emitPaths(
 ): PropertyPath[] {
   const out: PropertyPath[] = []
   const extended: PropertyPath[] = []
+  const truncated = new Set<string>()
   // A class several domains declare is traversed once; only the name differs.
-  const predecessorsOf = new Map<string, Map<string, PredecessorLink>>()
+  const traversals = new Map<
+    string,
+    { predecessors: Map<string, PredecessorLink>; routes: Map<string, PathStep[][]> }
+  >()
   for (const { domainName, assetClass } of assetDomains) {
-    let predecessors = predecessorsOf.get(assetClass)
-    if (!predecessors) {
-      predecessors = bfsFromRoots(ancestorsOf(assetClass), forwardEdges, ancestorsOf)
-      predecessorsOf.set(assetClass, predecessors)
+    let traversal = traversals.get(assetClass)
+    if (!traversal) {
+      const roots = ancestorsOf(assetClass)
+      const predecessors = bfsFromRoots(roots, forwardEdges, ancestorsOf)
+      const found = routesFromRoots(roots, forwardEdges, MAX_ROUTES_PER_CLASS, predecessors)
+      for (const cls of found.truncated) truncated.add(cls)
+      traversal = { predecessors, routes: found.routes }
+      traversals.set(assetClass, traversal)
     }
+    const { predecessors, routes } = traversal
     for (const { owningClass, propertyIri, leafKind, viaDisjunction } of leaves) {
       const steps = pathStepsTo(owningClass, predecessors, propertyIri)
       if (!steps) continue
@@ -250,10 +300,16 @@ export function emitPaths(
       }
       if (viaDisjunction || reachedByInheritance(owningClass, predecessors)) {
         extended.push({ ...path, extended: true })
-      } else {
-        out.push(path)
+        continue
       }
+      out.push(path, ...alternateRoutesOf(path, routes))
     }
+  }
+  if (truncated.size > 0) {
+    log.warn('Classes reached by more routes than are kept; the rest are not searchable', {
+      maxRoutesPerClass: MAX_ROUTES_PER_CLASS,
+      classes: [...truncated].sort(),
+    })
   }
   const plainNames = new Set(out.map((p) => p.propertyName))
   const added = new Set<string>()
@@ -280,9 +336,10 @@ export function buildReferenceChains(
   for (const path of paths) {
     if (path.leafKind === 'literal') continue
     // The compiler joins through the shortest chain, so a chain that needs a
-    // discovery extension could replace the join an existing cross-reference
-    // compiles to. Extended paths only ever add filterable properties.
-    if (path.extended) continue
+    // discovery extension, or an alternate route of the same length, could
+    // replace the join an existing cross-reference compiles to. Such paths
+    // only ever add filterable properties.
+    if (path.extended || path.alternateRoute) continue
     const parentDomain = path.domain || extractDomainFromRegistry(path.assetClass, registry)
     if (!parentDomain) continue
 
