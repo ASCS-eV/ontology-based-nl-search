@@ -1,5 +1,5 @@
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process'
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,6 +11,7 @@ import { exerciseServer } from './lsp-process.js'
 
 const packageRoot = fileURLToPath(new URL('../..', import.meta.url))
 const fixturePath = fileURLToPath(new URL('../__fixtures__/vocabulary.json', import.meta.url))
+const builtCli = fileURLToPath(new URL('../../dist/cli.js', import.meta.url))
 
 // pnpm/npm ship as `.cmd`/`.ps1` shims on Windows, which Node refuses to spawn
 // by bare name without a shell (the CVE-2024-27980 hardening). Run those through
@@ -34,10 +35,17 @@ describe('packed LSP artifact', () => {
   it('installs and runs without workspace dependencies', { timeout: 60_000 }, async () => {
     const temp = await mkdtemp(join(tmpdir(), 'ontology-search-lsp-pack-'))
     try {
-      const packed = runPackageManager('pnpm', ['pack', '--pack-destination', temp], {
-        cwd: packageRoot,
-      })
+      // Pack the dist/ the `test` script just built. `prepack` would rebuild it,
+      // and `build.mjs` empties dist/ first, while the stdio test spawns the
+      // same dist/cli.js from a parallel worker.
+      const built = await stat(builtCli)
+      const packed = runPackageManager(
+        'pnpm',
+        ['--config.ignore-scripts=true', 'pack', '--pack-destination', temp],
+        { cwd: packageRoot }
+      )
       expect(packed.status, packed.stderr || packed.stdout).toBe(0)
+      expect((await stat(builtCli)).mtimeMs, 'pnpm pack rebuilt dist/').toBe(built.mtimeMs)
       const reportedTarball = packed.stdout.trim().split('\n').at(-1)!
       const tarball = isAbsolute(reportedTarball) ? reportedTarball : join(temp, reportedTarball)
       await extract({ file: tarball, cwd: temp })
