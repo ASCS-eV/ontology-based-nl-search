@@ -23,7 +23,8 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from '../compiler.js'
 import { allPropertyKeys } from '../compiler-vocab.js'
-import type { LeafKind } from '../property-paths.js'
+import { PROPERTY_KEY_SEPARATOR } from '../property-keys.js'
+import type { LeafKind, PropertyPath } from '../property-paths.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
 import { extractSchemaVocabulary, keyLabel } from '../vocabulary-extractor.js'
 import { readContextTerms } from './context-reader.js'
@@ -185,6 +186,15 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
         ? `${RDF_PREFIXES.xsd}${numericProp.datatype}`
         : declared
 
+    const description = propertyDescription(
+      key,
+      path,
+      annotations,
+      annotation?.description,
+      enumProp?.description,
+      numericProp?.description
+    )
+
     cards.push({
       kind: 'property',
       iri,
@@ -202,7 +212,7 @@ async function buildIndex(store: SparqlStore): Promise<TermIndex> {
         localName,
         path.propertyName
       ),
-      ...(descriptionOf(annotation, enumProp?.description, numericProp?.description) ?? {}),
+      ...(description ? { description } : {}),
       ...(datatype ? { datatype } : {}),
       ...(enumProp ? { allowedValues: [...enumProp.allowedValues] } : {}),
       ...(annotation?.constraints ? { constraints: annotation.constraints } : {}),
@@ -381,6 +391,60 @@ function descriptionOf(
 ): { description: string } | undefined {
   const description = annotation?.description ?? fallbacks.find((d) => d && d.length > 0)
   return description ? { description } : undefined
+}
+
+/**
+ * The description of a property card, in the order a reader of the schema
+ * would pick one.
+ *
+ * A property shape is identified by the shape that declares it and its path
+ * ([SHACL] §2.3), never by the local name of that path, so one predicate may
+ * be the leaf of many unrelated chains. Ontologies that wrap values in value
+ * objects do exactly that: every coded enum, or every quantity, ends in one
+ * shared predicate whose `sh:description` ([SHACL] §2.3.2) describes the
+ * wrapper and so reads identically for every chain ending in it. Such a
+ * description cannot tell two chains apart — which is the one thing a
+ * qualified key exists to do, and the one thing a schema-retrieval ranking
+ * needs of it. The hops the key names carry the descriptions that can
+ * ({@link qualifyingDescriptionsOf}), so a qualified key prefers them and
+ * falls back to the leaf's only when no hop it names is described.
+ *
+ * An unqualified key IS its leaf, so it keeps the leaf's own description.
+ */
+export function propertyDescription(
+  key: string,
+  path: Pick<PropertyPath, 'propertyName' | 'steps'>,
+  annotations: ReadonlyMap<string, { description?: string }>,
+  ...fallbacks: (string | undefined)[]
+): string | undefined {
+  const candidates =
+    key === path.propertyName
+      ? fallbacks
+      : [...qualifyingDescriptionsOf(key, path, annotations), ...fallbacks]
+  return candidates.find((d) => d !== undefined && d.length > 0)
+}
+
+/**
+ * The descriptions of the hops a qualified key names, outermost first.
+ *
+ * A qualified key is the shortest suffix of its chain's predicate local names
+ * that no other chain of the leaf shares (ADR 0009), so the suffix one hop
+ * shorter IS shared with another chain: the outermost hop the key names is
+ * the one that tells the chain apart, and its description is the one that
+ * can tell the keys apart. The inner hops follow as fallbacks. A key led by
+ * the owning class, or carrying an ordinal, names more segments than the
+ * chain has hops and so gets every non-leaf hop.
+ */
+function qualifyingDescriptionsOf(
+  key: string,
+  path: Pick<PropertyPath, 'steps'>,
+  annotations: ReadonlyMap<string, { description?: string }>
+): (string | undefined)[] {
+  const hops = path.steps.length - 1
+  const named = Math.min(key.split(PROPERTY_KEY_SEPARATOR).length - 1, hops)
+  return path.steps
+    .slice(hops - named, hops)
+    .map((step) => annotations.get(step.predicate)?.description)
 }
 
 function referencedDomain(

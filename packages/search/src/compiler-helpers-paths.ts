@@ -99,13 +99,14 @@ export function lookupLeafDatatype(
 }
 
 /**
- * The asset → specification predicate (the first hop) for a domain, derived
- * from any of its shape-group properties' discovered paths. Every shape-group
- * property in a domain nests under the same specification node, so they all
- * share this first hop — any one with a discovered path is a valid
- * representative. Used as a generic fallback when the specific properties in a
- * query have no path of their own, so the predicate is never hard-coded.
- * Returns null only when the domain declares no shape-group property with a
+ * An asset → specification predicate (a first hop) for a domain: that of the
+ * alphabetically-first shape-group property with a discovered path. A domain
+ * need not nest every shape-group property under one specification node —
+ * `sh:path` decides where each lives ([SHACL] §2.3), and `buildDomainPatterns`
+ * emits one specification variable per distinct first hop — so this is only
+ * the generic fallback for when the properties in a query have no path of
+ * their own, which keeps the predicate from ever being hard-coded. Returns
+ * null only when the domain declares no shape-group property with a
  * discovered path at all.
  */
 export function lookupDomainSpecPredicate(
@@ -145,11 +146,26 @@ export const SHALLOW_PATH_MAX_STEPS = 3
  * [SPARQL11] §18.1.8).
  */
 export function pathPrefixKey(path: PropertyPath): string {
-  const prefix = path.steps
-    .slice(0, -1)
+  const prefix = pathNodeKey(path, path.steps.length - 1)
+  return path.inheritedLeaf ? `${prefix}|${path.propertyIri}` : prefix
+}
+
+/**
+ * Identity of the RDF node a discovered path reaches after `depth` hops: the
+ * predicate and the class reached of every step walked so far. Two paths may
+ * share a SPARQL variable for that node only when these agree — otherwise
+ * they reach different nodes and binding them together is unsatisfiable. A
+ * property shape is identified by its `sh:path` ([SHACL] §2.3), so the path —
+ * not a property's name or group — decides node identity. {@link pathPrefixKey}
+ * is this key for the node the leaf hangs off, so the deep-chain buckets and
+ * the specification / group variables of `buildDomainPatterns` agree on what
+ * one node is.
+ */
+export function pathNodeKey(path: Pick<PropertyPath, 'steps'>, depth: number): string {
+  return path.steps
+    .slice(0, depth)
     .map((s) => `${s.predicate}@${s.intermediate ?? ''}`)
     .join('|')
-  return path.inheritedLeaf ? `${prefix}|${path.propertyIri}` : prefix
 }
 
 /**
@@ -402,23 +418,24 @@ export function emitAlternativeConstraints(
 
 /**
  * Emit a deep-chain filter group. Each entry's discovered path has
- * `> SHALLOW_PATH_MAX_STEPS` steps; emission walks every step from
- * `?specVar` to the leaf, sharing intermediate variables whenever
- * multiple entries agree on a path prefix.
+ * `> SHALLOW_PATH_MAX_STEPS` steps; emission walks every step from the
+ * specification variable its first hop binds (`specVarOf`) to the leaf,
+ * sharing intermediate variables whenever multiple entries agree on a path
+ * prefix.
  *
  * Generic over which properties qualify as "deep" — driven entirely by
  * the SHACL property-path discovery, with no hard-coded field names.
  *
  * Variable naming: intermediates use `?_dN_${suffix}` where N is the
- * depth from `specVar` (which is itself step 1's source — the
- * compiler has already emitted the asset → spec hop). Leaves use the
- * filter property's local name, suffixed for cross-domain queries.
+ * depth from the bucket's specification variable (which is itself step 1's
+ * source — the compiler has already emitted the asset → spec hop). Leaves
+ * use the filter property's local name, suffixed for cross-domain queries.
  */
 export function emitDeepFilters(
   domainName: string,
   domain: DomainDescriptor,
   entries: [string, string | string[], PropertyPath][],
-  specVar: string,
+  specVarOf: (path: PropertyPath) => string,
   suffix: string,
   patterns: string[],
   filters: string[],
@@ -450,8 +467,11 @@ export function emitDeepFilters(
     const referencePath = bucket.referencePath
     // Walk steps[1..n-2] — step 0 is the asset → spec edge already
     // emitted by buildDomainPatterns, and step n-1 (the leaf) gets a
-    // per-entry emission below.
-    let cursor = specVar
+    // per-entry emission below. The starting node is resolved from this
+    // bucket's own path: a domain whose properties hang off several
+    // top-level containers has one spec variable per distinct first hop,
+    // and binding a chain to the wrong one makes the query unsatisfiable.
+    let cursor = specVarOf(referencePath)
     for (let i = 1; i < referencePath.steps.length - 1; i++) {
       const step = referencePath.steps[i]!
       const intVar = `?_d${bucketIdx}_${i}${suffix}`

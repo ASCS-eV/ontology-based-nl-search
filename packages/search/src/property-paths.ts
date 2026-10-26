@@ -32,7 +32,7 @@ import {
   queryLeafProperties,
   queryResolvedEdges,
 } from './property-paths-queries.js'
-import { queryAssetDomains, querySubClassEdges } from './schema-queries.js'
+import { type AssetDomainInfo, queryAssetDomains, querySubClassEdges } from './schema-queries.js'
 
 export type { LeafKind, PathStep, PropertyPath, ReferenceChain } from './property-paths-types.js'
 import type { PropertyPath, ReferenceChain } from './property-paths-types.js'
@@ -141,7 +141,7 @@ export async function discoverPropertyPaths(
   // For each asset class, walk forward and emit one PropertyPath per leaf
   // whose owning class is reachable.
   const bfsEnd = log.time('property-paths/bfs')
-  const out = emitPaths(assetClasses, leaves, forwardEdges, ancestorsOf, registry)
+  const out = emitPaths(assetDomainRows, leaves, forwardEdges, ancestorsOf)
 
   // Standalone vocabulary entry classes get the same traversal, so a document
   // typed only with a support vocabulary's top-level class is searchable too.
@@ -194,7 +194,17 @@ export async function discoverPropertyPaths(
 }
 
 /**
- * One PropertyPath per (asset class, reachable leaf).
+ * One PropertyPath per (asset domain, reachable leaf).
+ *
+ * The domain of a path is the domain of the asset-domain row the traversal was
+ * seeded from — NOT the namespace of the asset class IRI. Several domains may
+ * declare the SAME asset class (an umbrella module that bundles another
+ * domain's shapes, say): the class IRI then resolves to exactly one of their
+ * namespaces, so deriving the domain from it would attribute every path to
+ * that one domain and leave the others advertised as searchable but resolving
+ * nothing. Seeding per row keeps each declaring domain's paths under its own
+ * name; a class two domains share is simply traversed once per domain (the
+ * traversal itself is memoised).
  *
  * Paths that need either discovery extension — a leaf whose owning class is
  * reached only by inheritance below the root, or a leaf that is literal only
@@ -206,23 +216,30 @@ export async function discoverPropertyPaths(
  * correction all read every domain's paths. A new path for a name another
  * domain already resolves would change those queries; a new name cannot.
  * `buildCompilerVocabFrom` additionally keeps them off shape-group names.
+ *
+ * @internal Exported for the domain-attribution regression test.
  */
-function emitPaths(
-  assetClasses: string[],
+export function emitPaths(
+  assetDomains: readonly AssetDomainInfo[],
   leaves: LeafRow[],
   forwardEdges: Map<string, { predicate: string; child: string }[]>,
-  ancestorsOf: (cls: string) => Set<string>,
-  registry: DomainRegistry | undefined
+  ancestorsOf: (cls: string) => Set<string>
 ): PropertyPath[] {
   const out: PropertyPath[] = []
   const extended: PropertyPath[] = []
-  for (const assetClass of assetClasses) {
-    const predecessors = bfsFromRoots(ancestorsOf(assetClass), forwardEdges, ancestorsOf)
+  // A class several domains declare is traversed once; only the name differs.
+  const predecessorsOf = new Map<string, Map<string, PredecessorLink>>()
+  for (const { domainName, assetClass } of assetDomains) {
+    let predecessors = predecessorsOf.get(assetClass)
+    if (!predecessors) {
+      predecessors = bfsFromRoots(ancestorsOf(assetClass), forwardEdges, ancestorsOf)
+      predecessorsOf.set(assetClass, predecessors)
+    }
     for (const { owningClass, propertyIri, leafKind, viaDisjunction } of leaves) {
       const steps = pathStepsTo(owningClass, predecessors, propertyIri)
       if (!steps) continue
       const path: PropertyPath = {
-        domain: extractDomainFromRegistry(assetClass, registry),
+        domain: domainName,
         propertyName: extractLocalName(propertyIri),
         propertyIri,
         assetClass,
