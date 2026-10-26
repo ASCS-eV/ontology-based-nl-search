@@ -29,7 +29,7 @@
     "@ontology-search/sparql": "workspace:*",
     "graphql": "^17.0.1",
     "hono": "^4.12.34",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",
