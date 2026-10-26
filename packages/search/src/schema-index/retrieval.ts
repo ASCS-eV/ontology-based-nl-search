@@ -160,9 +160,8 @@ export async function retrieveRelevantSchema(
   const selected: TermCard[] = []
   const selectedKeys = new Set<string>()
   const push = (card: TermCard): void => {
-    const key = `${card.domain}|${card.kind}|${card.iri}`
-    if (selectedKeys.has(key)) return
-    selectedKeys.add(key)
+    if (selectedKeys.has(cardIdentity(card))) return
+    selectedKeys.add(cardIdentity(card))
     selected.push(card)
   }
   for (const { card } of cardRanking) {
@@ -197,10 +196,10 @@ export async function retrieveRelevantSchema(
       visited.add(domain)
       const domainCards = index.byDomain.get(domain) ?? []
       const slice: TermCard[] = []
-      const sliceIris = new Set<string>()
+      const sliceKeys = new Set<string>()
       const take = (card: TermCard): void => {
-        if (sliceIris.has(card.iri)) return
-        sliceIris.add(card.iri)
+        if (sliceKeys.has(cardIdentity(card))) return
+        sliceKeys.add(cardIdentity(card))
         slice.push(card)
       }
       // The dependency slice: the domain's class card, its query-relevant
@@ -237,6 +236,28 @@ export async function retrieveRelevantSchema(
   }
 
   return { domains, cards: selected, fragments, confidence, catalog: index.domainCatalog }
+}
+
+/**
+ * A card's identity for selection de-duplication: the **(domain, kind, key)**
+ * triple a card is built on, not its IRI.
+ *
+ * A property shape is identified by the shape that declares it and its
+ * `sh:path` ([SHACL] §2.3), never by that path's IRI alone, so a domain may
+ * reach ONE predicate through many different chains — the whole reason the
+ * term index emits one card per chain and names it with a qualified key.
+ * De-duplicating on the IRI collapses every one of those chains back into a
+ * single card, so an ontology that wraps values in value objects (every coded
+ * enum ending in one shared `code` predicate, say) could surface only ONE of
+ * its coded properties per domain, whichever happened to rank highest. Every
+ * other one silently never reached the LLM, which then reported the term as a
+ * gap. The IRI stays in the key so two distinct predicates that share a local
+ * name are still kept apart.
+ *
+ * @internal Exported for the card-identity regression test.
+ */
+export function cardIdentity(card: TermCard): string {
+  return `${card.domain}|${card.kind}|${card.localName}|${card.iri}`
 }
 
 /** The scope's domains, strongest signal first, then by name. */

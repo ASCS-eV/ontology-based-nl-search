@@ -418,7 +418,7 @@ export function emitDeepFilters(
   domainName: string,
   domain: DomainDescriptor,
   entries: [string, string | string[], PropertyPath][],
-  specVar: string,
+  specVarOf: (path: PropertyPath) => string,
   suffix: string,
   patterns: string[],
   filters: string[],
@@ -450,8 +450,11 @@ export function emitDeepFilters(
     const referencePath = bucket.referencePath
     // Walk steps[1..n-2] — step 0 is the asset → spec edge already
     // emitted by buildDomainPatterns, and step n-1 (the leaf) gets a
-    // per-entry emission below.
-    let cursor = specVar
+    // per-entry emission below. The starting node is resolved from this
+    // bucket's own path: a domain whose properties hang off several
+    // top-level containers has one spec variable per distinct first hop,
+    // and binding a chain to the wrong one makes the query unsatisfiable.
+    let cursor = specVarOf(referencePath)
     for (let i = 1; i < referencePath.steps.length - 1; i++) {
       const step = referencePath.steps[i]!
       const intVar = `?_d${bucketIdx}_${i}${suffix}`

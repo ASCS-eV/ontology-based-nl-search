@@ -199,15 +199,34 @@ export function buildDomainPatterns(
   type RangeEntry = [string, { min?: number; max?: number }, PropertyPath | undefined]
   const filterPropsByGroup = new Map<string, FilterEntry[]>()
   const rangePropsByGroup = new Map<string, RangeEntry[]>()
-  // Properties whose domain has no shape groups at all — emitted directly
-  // on the asset variable (flat ontology pattern).
+  // Properties the domain classifies into no shape group AND whose key has no
+  // discovered path: nothing says how to reach them, so they are walked from
+  // the asset by the domain prefix convention (`prefix:propName`). A key that
+  // DID resolve to a path never lands here — see `unclassified` below.
   const directFallbackFilters: FilterEntry[] = []
   const directFallbackRanges: RangeEntry[] = []
+  /**
+   * A property whose leaf name carries a shape group in SOME domain, but not
+   * in THIS one, still reaches its leaf through the chain its own path
+   * declares. Walking it from the asset by its leaf predicate alone would drop
+   * every intermediate hop and match nothing (a leaf nested two hops down is
+   * not a property of the asset). Route it to the path-walking emission and
+   * keep the prefix-convention fallback for keys with no path at all.
+   */
+  const unclassified = <V>(
+    entry: [string, V, PropertyPath | undefined],
+    withPath: [string, V, PropertyPath][],
+    withoutPath: [string, V, PropertyPath | undefined][]
+  ): void => {
+    const [key, value, path] = entry
+    if (path) withPath.push([key, value, path])
+    else withoutPath.push(entry)
+  }
 
   for (const entry of shapeGroupFilterEntries) {
     const shape = classifyProperty(leafNameOf(entry[0], entry[2]), domainName, vocabIndex)
     if (shape === null) {
-      directFallbackFilters.push(entry)
+      unclassified(entry, directFilterEntries, directFallbackFilters)
       continue
     }
     let bucket = filterPropsByGroup.get(shape)
@@ -221,7 +240,7 @@ export function buildDomainPatterns(
   for (const entry of shapeGroupRangeEntries) {
     const shape = classifyProperty(leafNameOf(entry[0], entry[2]), domainName, vocabIndex)
     if (shape === null) {
-      directFallbackRanges.push(entry)
+      unclassified(entry, directRangeEntries, directFallbackRanges)
       continue
     }
     let bucket = rangePropsByGroup.get(shape)
@@ -250,10 +269,35 @@ export function buildDomainPatterns(
 
   const suffix = assetVar === '?asset' ? '' : `_${domainName.replace(/-/g, '_')}`
 
+  /**
+   * Identity of the RDF node a discovered path reaches after `depth` hops:
+   * the predicate and the intermediate class of every step walked so far.
+   * Two paths may share a SPARQL variable only when these agree — otherwise
+   * they reach different nodes and binding them together is unsatisfiable.
+   * A property shape is identified by its `sh:path` ([SHACL] §2.3), so the
+   * path — not a property's name or group — decides node identity.
+   */
+  const nodeKey = (path: PropertyPath | undefined, depth: number): string =>
+    path === undefined
+      ? ''
+      : path.steps
+          .slice(0, depth)
+          .map((s) => `${s.predicate}@${s.intermediate ?? ''}`)
+          .join('|')
+
+  /** First-hop node identity → the spec variable bound by that hop. */
+  const specVarByFirstHop = new Map<string, string>()
+
   if (needsSpecHop) {
     // First hop: asset → specification node. The predicate is discovered from
-    // any shape-group/deep property's path (every such property in this domain
-    // shares the first step). When the specific properties in this query have
+    // the properties' own paths. A domain need NOT funnel everything through
+    // a single specification node: `sh:path` ([SHACL] §2.3) is the only
+    // authority on where a property lives, and a schema may hang its
+    // properties off several top-level containers. Each distinct first hop
+    // then reaches a different node and gets its own variable and its own
+    // triple. Collapsing them onto one variable would demand that one node
+    // satisfy every container's constraints at once — an unsatisfiable query
+    // that silently returns nothing. When the properties in this query have
     // no path of their own, fall back to any shape-group property in the same
     // domain — never to a hard-coded predicate name.
     const candidatePaths = [
@@ -261,38 +305,80 @@ export function buildDomainPatterns(
       ...deepFilterEntries.map(([key, , path]) => ({ key, path })),
       ...shapeGroupRangeEntries.map(([key, , path]) => ({ key, path })),
     ]
-    const assetToSpecPredicate =
-      stepPredicateOf(candidatePaths, 0) ?? lookupDomainSpecPredicate(vocabIndex, domain)
-    if (!assetToSpecPredicate) {
-      throw new CompileError(
-        `Cannot determine the asset→specification predicate for domain "${domainName}": ` +
-          `no shape-group property has a discovered SHACL path. The schema declares shape ` +
-          `groups whose property paths could not be resolved.`
-      )
+    const firstHops = new Map<string, string>()
+    for (const { key, path } of [...candidatePaths].sort((a, b) => a.key.localeCompare(b.key))) {
+      const resolved = path ?? vocabIndex.paths.get(`${domainName}:${key}`)
+      const step = resolved?.steps[0]
+      if (!step) continue
+      const hopKey = nodeKey(resolved, 1)
+      if (!firstHops.has(hopKey)) firstHops.set(hopKey, prefixedPredicate(step.predicate, domain))
     }
-    patterns.push(`${assetVar} ${assetToSpecPredicate} ${specVar} .`)
+    if (firstHops.size === 0) {
+      const fallback = lookupDomainSpecPredicate(vocabIndex, domain)
+      if (!fallback) {
+        throw new CompileError(
+          `Cannot determine the asset→specification predicate for domain "${domainName}": ` +
+            `no shape-group property has a discovered SHACL path. The schema declares shape ` +
+            `groups whose property paths could not be resolved.`
+        )
+      }
+      firstHops.set('', fallback)
+    }
+    let hopIdx = 0
+    for (const [hopKey, predicate] of firstHops) {
+      const hopVar = hopIdx === 0 ? specVar : `${specVar}_s${hopIdx + 1}`
+      specVarByFirstHop.set(hopKey, hopVar)
+      patterns.push(`${assetVar} ${predicate} ${hopVar} .`)
+      hopIdx++
+    }
   }
+
+  /** The spec variable a path's chain continues from. */
+  const primarySpecVar = [...specVarByFirstHop.values()][0] ?? specVar
+  const specVarOf = (path: PropertyPath | undefined): string =>
+    specVarByFirstHop.get(nodeKey(path, 1)) ?? primarySpecVar
 
   const groupsToEmit = new Set<string>([...filterPropsByGroup.keys(), ...rangePropsByGroup.keys()])
 
+  /** Base group-variable name → how many buckets have already claimed it. */
+  const groupVarUses = new Map<string, number>()
+
   for (const group of [...groupsToEmit].sort()) {
-    // Pre-resolve all property prefixes and sub-group by prefix.
+    // Pre-resolve all property prefixes and sub-group by prefix AND by the
+    // node each property's discovered path actually reaches.
     // Properties from different ontology domains may live on separate RDF
     // nodes even when they share the same shape group (two domains' group
     // nodes reachable via the same group predicate). Binding them
     // to the same SPARQL variable would produce an unsatisfiable pattern.
-    // Sub-grouping by prefix ensures each type-disjoint node gets its own
-    // variable and its own `hasGroup` triple.
+    // The same is true within one domain: a shape group is identified by the
+    // shape that declares it and its `sh:path` ([SHACL] §2.3), so it names a
+    // CLASS of node, not a singleton — one asset may reach many nodes of that
+    // class through different predicates. Keying the bucket on the path
+    // prefix as well as the prefix ensures each type-disjoint node gets its
+    // own variable and its own group triple.
     const prefixBuckets = new Map<
       string,
-      { foreignDomain: string | null; filters: FilterEntry[]; ranges: RangeEntry[] }
+      {
+        foreignDomain: string | null
+        prefix: string
+        specVar: string
+        filters: FilterEntry[]
+        ranges: RangeEntry[]
+      }
     >()
 
-    const ensureBucket = (prefix: string, fd: string | null) => {
-      let b = prefixBuckets.get(prefix)
+    const ensureBucket = (prefix: string, fd: string | null, path: PropertyPath | undefined) => {
+      const bucketKey = `${prefix}\u0000${nodeKey(path, 2)}`
+      let b = prefixBuckets.get(bucketKey)
       if (!b) {
-        b = { foreignDomain: fd, filters: [], ranges: [] }
-        prefixBuckets.set(prefix, b)
+        b = {
+          foreignDomain: fd,
+          prefix,
+          specVar: specVarOf(path),
+          filters: [],
+          ranges: [],
+        }
+        prefixBuckets.set(bucketKey, b)
       }
       return b
     }
@@ -304,7 +390,7 @@ export function buildDomainPatterns(
         vocabIndex,
         registry
       )
-      ensureBucket(pp, fd).filters.push(entry)
+      ensureBucket(pp, fd, entry[2]).filters.push(entry)
     }
 
     for (const entry of rangePropsByGroup.get(group) ?? []) {
@@ -314,15 +400,22 @@ export function buildDomainPatterns(
         vocabIndex,
         registry
       )
-      ensureBucket(pp, fd).ranges.push(entry)
+      ensureBucket(pp, fd, entry[2]).ranges.push(entry)
     }
 
-    // Emit each prefix bucket with its own hasGroup binding variable.
-    for (const [propPrefix, bucket] of [...prefixBuckets].sort(([a], [b]) => a.localeCompare(b))) {
+    // Emit each bucket with its own hasGroup binding variable.
+    for (const [, bucket] of [...prefixBuckets].sort(([a], [b]) => a.localeCompare(b))) {
+      const propPrefix = bucket.prefix
       // Foreign-domain properties get a prefix-qualified variable name to
       // avoid colliding with the native domain's group variable.
       const pfxTag = bucket.foreignDomain ? `_${propPrefix.replace(/-/g, '_')}` : ''
-      const groupVar = `?${groupVariableName(group)}${pfxTag}${suffix}`
+      // Sibling buckets of one group share a base name; the first keeps it
+      // (so single-node schemas emit exactly as before) and each further
+      // bucket is numbered.
+      const groupVarBase = `?${groupVariableName(group)}${pfxTag}`
+      const taken = groupVarUses.get(groupVarBase) ?? 0
+      groupVarUses.set(groupVarBase, taken + 1)
+      const groupVar = `${groupVarBase}${taken === 0 ? '' : `_${taken + 1}`}${suffix}`
 
       // Second hop: DomainSpecification → group sub-resource. Use
       // path-discovery (stepPredicateOf) for native-domain properties;
@@ -335,7 +428,7 @@ export function buildDomainPatterns(
       const specToGroupPredicate = bucket.foreignDomain
         ? `${propPrefix}:${groupPredicate(group)}`
         : (stepPredicateOf(bucketEntries, 1) ?? `${domain.prefix}:${groupPredicate(group)}`)
-      patterns.push(`${specVar} ${specToGroupPredicate} ${groupVar} .`)
+      patterns.push(`${bucket.specVar} ${specToGroupPredicate} ${groupVar} .`)
 
       if (bucket.foreignDomain) foreignDomains.add(bucket.foreignDomain)
 
@@ -412,7 +505,7 @@ export function buildDomainPatterns(
       domainName,
       domain,
       deepFilterEntries,
-      specVar,
+      specVarOf,
       suffix,
       patterns,
       filters,
