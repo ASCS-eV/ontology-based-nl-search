@@ -32,7 +32,7 @@ import {
   queryLeafProperties,
   queryResolvedEdges,
 } from './property-paths-queries.js'
-import { queryAssetDomains, querySubClassEdges } from './schema-queries.js'
+import { type AssetDomainInfo, queryAssetDomains, querySubClassEdges } from './schema-queries.js'
 
 export type { LeafKind, PathStep, PropertyPath, ReferenceChain } from './property-paths-types.js'
 import type { PropertyPath, ReferenceChain } from './property-paths-types.js'
@@ -220,7 +220,7 @@ export async function discoverPropertyPaths(
  * @internal Exported for the domain-attribution regression test.
  */
 export function emitPaths(
-  assetDomains: readonly { domainName: string; assetClass: string }[],
+  assetDomains: readonly AssetDomainInfo[],
   leaves: LeafRow[],
   forwardEdges: Map<string, { predicate: string; child: string }[]>,
   ancestorsOf: (cls: string) => Set<string>

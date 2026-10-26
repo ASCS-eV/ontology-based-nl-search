@@ -12,7 +12,7 @@
  * All three failed before, and all three failed SILENTLY: no error, just a
  * query that matched nothing or a term the LLM could not tell apart.
  *
- * @see https://www.w3.org/TR/shacl/ — [SHACL] §2.3 property shapes, §2.1.3.3 sh:targetClass
+ * @see https://www.w3.org/TR/shacl/ — [SHACL] §2.3 property shapes, §2.1.3.2 sh:targetClass
  */
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { describe, expect, it } from 'vitest'
@@ -175,6 +175,60 @@ describe('propertyDescription — chains through one shared leaf predicate', () 
   it('falls back to the leaf when no hop of the chain is described', () => {
     const undescribed = propertyDescription('other__code', chain('other'), annotations, 'from leaf')
     expect(undescribed).toBe('from leaf')
+  })
+
+  it('describes a key qualified by several hops by the hop that tells its chain apart', () => {
+    // Two chains share their last two hops (`road_type → code`), so their
+    // keys are qualified one hop further out (ADR 0009: the shortest suffix
+    // no other chain shares). The shared hop's description reads the same
+    // for both; only the outermost qualifying hop's can tell them apart.
+    const deep = (container: string): Pick<PropertyPath, 'propertyName' | 'steps'> => ({
+      propertyName: 'code',
+      steps: [
+        { predicate: `${NS}traffic_scenario`, intermediate: `${NS}TrafficScenario` },
+        { predicate: `${NS}${container}`, intermediate: `${NS}Area` },
+        { predicate: `${NS}road_type`, intermediate: `${NS}Coded` },
+        { predicate: `${SHARED}code` },
+      ],
+    })
+    const deepAnnotations = new Map([
+      ...annotations,
+      [`${NS}road_type`, { description: 'Type of the road.' }],
+      [`${NS}road_network`, { description: 'The road network the scenario runs on.' }],
+      [`${NS}urban_area`, { description: 'The urban area the scenario is set in.' }],
+    ])
+    const network = propertyDescription(
+      'road_network__road_type__code',
+      deep('road_network'),
+      deepAnnotations
+    )
+    const urban = propertyDescription(
+      'urban_area__road_type__code',
+      deep('urban_area'),
+      deepAnnotations
+    )
+    expect(network).toBe('The road network the scenario runs on.')
+    expect(urban).toBe('The urban area the scenario is set in.')
+  })
+
+  it('falls inward to a described hop the key names when the outermost is not described', () => {
+    const deep: Pick<PropertyPath, 'propertyName' | 'steps'> = {
+      propertyName: 'code',
+      steps: [
+        { predicate: `${NS}traffic_scenario`, intermediate: `${NS}TrafficScenario` },
+        { predicate: `${NS}undescribed`, intermediate: `${NS}Area` },
+        { predicate: `${NS}road_type`, intermediate: `${NS}Coded` },
+        { predicate: `${SHARED}code` },
+      ],
+    }
+    const deepAnnotations = new Map([
+      ...annotations,
+      [`${NS}road_type`, { description: 'Type of the road.' }],
+      [`${NS}traffic_scenario`, { description: 'NOT named by the key.' }],
+    ])
+    expect(propertyDescription('undescribed__road_type__code', deep, deepAnnotations)).toBe(
+      'Type of the road.'
+    )
   })
 
   it('keeps the leaf description for an unqualified key — the key IS the leaf', () => {
@@ -340,5 +394,85 @@ describe('buildDomainPatterns — a shape group reached by several predicates', 
   it('still emits a single spec hop when every chain shares its first', () => {
     const patterns = compile({ fog__code: 'dense', time_of_day__code: 'night' })
     expect(triplesVia(patterns, 'environment_conditions')).toHaveLength(1)
+  })
+})
+
+// ─── 6. A first hop belongs to the entries that continue from it ─────────────
+
+describe('buildDomainPatterns — first hops of entries walked from the asset', () => {
+  const coded = (container: string, hop: string): PropertyPath => ({
+    domain: 'scenario',
+    propertyName: 'code',
+    propertyIri: `${SHARED}code`,
+    assetClass: `${NS}Scenario`,
+    owningClass: `${NS}Coded`,
+    leafKind: 'literal',
+    steps: [
+      { predicate: `${NS}${container}`, intermediate: `${NS}${container}Node` },
+      { predicate: `${NS}${hop}`, intermediate: `${NS}Coded` },
+      { predicate: `${SHARED}code` },
+    ],
+  })
+  const deepCoded: PropertyPath = {
+    ...coded('traffic_scenario', 'road_type'),
+    steps: [
+      { predicate: `${NS}traffic_scenario`, intermediate: `${NS}TrafficScenario` },
+      { predicate: `${NS}road_network`, intermediate: `${NS}RoadNetwork` },
+      { predicate: `${NS}road_type`, intermediate: `${NS}Coded` },
+      { predicate: `${SHARED}code` },
+    ],
+  }
+
+  // `code` is a shape-group name in ANOTHER domain only: `scenario` has no
+  // group, so its shallow `code` entry walks its own chain from the asset
+  // while its deep entry needs a specification variable.
+  const vocab = {
+    properties: new Map(),
+    shapeGroups: new Map([['code:other', 'Content']]),
+    shapeGroupPropertyNames: new Set(['code']),
+    range2DProperties: new Map(),
+    paths: new Map<string, PropertyPath>([
+      ['scenario:fog__code', coded('environment_conditions', 'fog')],
+      ['scenario:road_type__code', deepCoded],
+    ]),
+  } as unknown as CompilerVocab
+
+  function compile(filters: Record<string, string>): string[] {
+    const patterns: string[] = []
+    buildDomainPatterns(
+      'scenario',
+      { prefix: 'scenario', namespace: NS } as never,
+      filters,
+      {},
+      patterns,
+      [],
+      [],
+      new Set(),
+      vocab,
+      { domains: new Map() } as unknown as DomainRegistry,
+      '?asset',
+      '?spec'
+    )
+    return patterns
+  }
+  const triplesVia = (patterns: string[], localName: string): string[] =>
+    patterns.filter((p) =>
+      new RegExp(`(^|\\s)(scenario:${localName}|<${NS}${localName}>)\\s`).test(p)
+    )
+
+  it('emits the first hop of an entry walked from the asset exactly once', () => {
+    // The asset-walked entry binds its own first hop; a specification
+    // variable for the same hop would be a second, unused binding of it —
+    // and the compiled SELECT is not DISTINCT, so a multi-valued hop would
+    // multiply every row by its value count.
+    const patterns = compile({ fog__code: 'dense', road_type__code: 'highway' })
+    expect(triplesVia(patterns, 'environment_conditions')).toHaveLength(1)
+    expect(triplesVia(patterns, 'traffic_scenario')).toHaveLength(1)
+  })
+
+  it('binds the specification variable to the hop a deep entry continues from', () => {
+    const patterns = compile({ fog__code: 'dense', road_type__code: 'highway' })
+    expect(patterns).toContain(`?asset scenario:traffic_scenario ?spec .`)
+    expect(patterns).toContain(`?spec <${NS}road_network> ?_d0_1 .`)
   })
 })

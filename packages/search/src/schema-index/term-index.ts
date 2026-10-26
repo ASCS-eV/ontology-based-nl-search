@@ -23,6 +23,7 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getCompilerVocab } from '../compiler.js'
 import { allPropertyKeys } from '../compiler-vocab.js'
+import { PROPERTY_KEY_SEPARATOR } from '../property-keys.js'
 import type { LeafKind, PropertyPath } from '../property-paths.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
 import { extractSchemaVocabulary, keyLabel } from '../vocabulary-extractor.js'
@@ -404,9 +405,9 @@ function descriptionOf(
  * wrapper and so reads identically for every chain ending in it. Such a
  * description cannot tell two chains apart — which is the one thing a
  * qualified key exists to do, and the one thing a schema-retrieval ranking
- * needs of it. The hop the key is named after carries the description that
- * can, so a qualified key prefers it and falls back to the leaf's only when
- * no hop of its chain is described.
+ * needs of it. The hops the key names carry the descriptions that can
+ * ({@link qualifyingDescriptionsOf}), so a qualified key prefers them and
+ * falls back to the leaf's only when no hop it names is described.
  *
  * An unqualified key IS its leaf, so it keeps the leaf's own description.
  */
@@ -419,20 +420,31 @@ export function propertyDescription(
   const candidates =
     key === path.propertyName
       ? fallbacks
-      : [qualifyingDescriptionOf(path, annotations), ...fallbacks]
+      : [...qualifyingDescriptionsOf(key, path, annotations), ...fallbacks]
   return candidates.find((d) => d !== undefined && d.length > 0)
 }
 
-/** The deepest non-leaf hop of a chain that carries a description. */
-function qualifyingDescriptionOf(
+/**
+ * The descriptions of the hops a qualified key names, outermost first.
+ *
+ * A qualified key is the shortest suffix of its chain's predicate local names
+ * that no other chain of the leaf shares (ADR 0009), so the suffix one hop
+ * shorter IS shared with another chain: the outermost hop the key names is
+ * the one that tells the chain apart, and its description is the one that
+ * can tell the keys apart. The inner hops follow as fallbacks. A key led by
+ * the owning class, or carrying an ordinal, names more segments than the
+ * chain has hops and so gets every non-leaf hop.
+ */
+function qualifyingDescriptionsOf(
+  key: string,
   path: Pick<PropertyPath, 'steps'>,
   annotations: ReadonlyMap<string, { description?: string }>
-): string | undefined {
-  for (let i = path.steps.length - 2; i >= 0; i--) {
-    const description = annotations.get(path.steps[i]!.predicate)?.description
-    if (description && description.length > 0) return description
-  }
-  return undefined
+): (string | undefined)[] {
+  const hops = path.steps.length - 1
+  const named = Math.min(key.split(PROPERTY_KEY_SEPARATOR).length - 1, hops)
+  return path.steps
+    .slice(hops - named, hops)
+    .map((step) => annotations.get(step.predicate)?.description)
 }
 
 function referencedDomain(

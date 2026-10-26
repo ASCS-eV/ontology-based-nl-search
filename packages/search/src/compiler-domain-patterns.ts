@@ -24,6 +24,7 @@ import {
   emitDirectPathFilters,
   lookupDomainSpecPredicate,
   lookupLeafDatatype,
+  pathNodeKey,
   resolveDomainKey,
   SHALLOW_PATH_MAX_STEPS,
 } from './compiler-helpers-paths.js'
@@ -270,20 +271,12 @@ export function buildDomainPatterns(
   const suffix = assetVar === '?asset' ? '' : `_${domainName.replace(/-/g, '_')}`
 
   /**
-   * Identity of the RDF node a discovered path reaches after `depth` hops:
-   * the predicate and the intermediate class of every step walked so far.
-   * Two paths may share a SPARQL variable only when these agree — otherwise
-   * they reach different nodes and binding them together is unsatisfiable.
-   * A property shape is identified by its `sh:path` ([SHACL] §2.3), so the
-   * path — not a property's name or group — decides node identity.
+   * {@link pathNodeKey} of an entry's path — the identity of the node it
+   * reaches after `depth` hops, which decides whether two entries may share a
+   * SPARQL variable. An entry with no path has no node of its own.
    */
   const nodeKey = (path: PropertyPath | undefined, depth: number): string =>
-    path === undefined
-      ? ''
-      : path.steps
-          .slice(0, depth)
-          .map((s) => `${s.predicate}@${s.intermediate ?? ''}`)
-          .join('|')
+    path === undefined ? '' : pathNodeKey(path, depth)
 
   /** First-hop node identity → the spec variable bound by that hop. */
   const specVarByFirstHop = new Map<string, string>()
@@ -297,13 +290,17 @@ export function buildDomainPatterns(
     // then reaches a different node and gets its own variable and its own
     // triple. Collapsing them onto one variable would demand that one node
     // satisfy every container's constraints at once — an unsatisfiable query
-    // that silently returns nothing. When the properties in this query have
-    // no path of their own, fall back to any shape-group property in the same
-    // domain — never to a hard-coded predicate name.
+    // that silently returns nothing. Only the entries that continue from a
+    // specification variable contribute a hop: an entry walked from the asset
+    // (`unclassified` with a path) binds its own first hop, and a second,
+    // unused binding of that hop would multiply every row by the hop's value
+    // count — the SELECT is not DISTINCT. When the properties in this query
+    // have no path of their own, fall back to any shape-group property in the
+    // same domain — never to a hard-coded predicate name.
     const candidatePaths = [
-      ...shapeGroupFilterEntries.map(([key, , path]) => ({ key, path })),
+      ...[...filterPropsByGroup.values()].flat().map(([key, , path]) => ({ key, path })),
       ...deepFilterEntries.map(([key, , path]) => ({ key, path })),
-      ...shapeGroupRangeEntries.map(([key, , path]) => ({ key, path })),
+      ...[...rangePropsByGroup.values()].flat().map(([key, , path]) => ({ key, path })),
     ]
     const firstHops = new Map<string, string>()
     for (const { key, path } of [...candidatePaths].sort((a, b) => a.key.localeCompare(b.key))) {

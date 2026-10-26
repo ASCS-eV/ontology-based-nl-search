@@ -1,7 +1,7 @@
 import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import { describe, expect, it } from 'vitest'
 
-import { emitDirectPathFilters, pathPrefixKey } from '../compiler-helpers-paths.js'
+import { emitDirectPathFilters, pathNodeKey, pathPrefixKey } from '../compiler-helpers-paths.js'
 import type { CompilerVocab } from '../compiler-vocab.js'
 import type { PropertyPath } from '../property-paths.js'
 
@@ -68,6 +68,15 @@ describe('emitDirectPathFilters — intermediate sharing', () => {
   it('keys on predicate and reached class', () => {
     expect(pathPrefixKey(path('a', 'Odd'))).not.toBe(pathPrefixKey(path('a', 'Behaviour')))
     expect(pathPrefixKey(path('a', 'Odd'))).toBe(pathPrefixKey(path('b', 'Odd')))
+  })
+
+  it('is the node key of the hop the leaf hangs off', () => {
+    // The deep-chain buckets and the specification / group variables must
+    // agree on what one node is, or a chain could continue from a variable
+    // bound to a different node than the one its leaf is on.
+    const p = path('a', 'Odd')
+    expect(pathPrefixKey(p)).toBe(pathNodeKey(p, p.steps.length - 1))
+    expect(pathNodeKey(p, 1)).toBe(`${NS}hasSpec@${NS}Spec`)
   })
 })
 
