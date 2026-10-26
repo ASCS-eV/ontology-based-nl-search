@@ -141,10 +141,31 @@ describe('buildPropertyPaths', () => {
   }, 120_000)
 
   /**
-   * Determinism: discovery is BFS-based, so each (assetClass, leaf)
-   * pair should yield exactly one path. Re-running must produce the
-   * same sequence — without this guarantee the eventual compiler
-   * rewire (21b) would emit non-deterministic SPARQL.
+   * One class used under several properties: the scenario's motion
+   * behaviour bounds share one value class behind three predicates. Each
+   * route is a different sequence path from the asset ([SHACL] §2.3.1.2);
+   * keeping only the shortest attributed every bound to the first motion
+   * property and left the others unsearchable.
+   */
+  it('reaches a class used under several properties through each of them', async () => {
+    const store = await getInitializedStore()
+    const registry = await buildDomainRegistry()
+    const paths = await buildPropertyPaths(store, registry)
+
+    const hops = paths
+      .filter((p) => p.domain === 'scenario' && p.propertyName === 'maxValue')
+      .map((p) => p.steps.at(-2)!.predicate.split('/').pop())
+    expect(hops.sort()).toEqual([
+      'motionAccelerateValue',
+      'motionDecelerateValue',
+      'motionDriveValue',
+    ])
+  }, 120_000)
+
+  /**
+   * Determinism: re-running must produce the same paths in the same
+   * order — without this guarantee the compiler would emit
+   * non-deterministic SPARQL.
    */
   it('is deterministic across repeated calls', async () => {
     const store = await getInitializedStore()

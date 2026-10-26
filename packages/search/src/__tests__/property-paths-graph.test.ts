@@ -10,6 +10,7 @@ import {
   findVocabularyRoots,
   pathStepsTo,
   reachedByInheritance,
+  routesFromRoots,
 } from '../property-paths-graph.js'
 
 type Edges = Map<string, { predicate: string; child: string }[]>
@@ -120,6 +121,117 @@ describe('bfsFromRoots', () => {
     expect(predicatesOf(pathStepsTo('X', reached, 'leaf'))).toEqual(['a', 'b', 'c', 'd', 'leaf'])
     expect(reachedByInheritance('X', reached)).toBe(true)
     expect(reachedByInheritance('D4', reached)).toBe(false)
+  })
+})
+
+/**
+ * One class used in several contexts: each route to it is its own property
+ * shape path ([SHACL] §2.3), not only the shortest one.
+ */
+describe('routesFromRoots', () => {
+  const NS = 'http://example.org/'
+  const iri = (local: string) => `${NS}${local}`
+  const localsOf = (route: { predicate: string }[] | undefined) =>
+    route?.map((step) => step.predicate.slice(NS.length))
+
+  // The ego and every other road user share one manoeuvre class: four hops
+  // from the asset through the ego, five through the road users.
+  const graph = edges([
+    ['Asset', iri('ego_behavior_model'), 'EgoBehavior'],
+    ['EgoBehavior', iri('intended'), 'Intent'],
+    ['Intent', iri('lane_maneuver'), 'LaneManeuver'],
+    ['LaneManeuver', iri('maneuver_type'), 'ManeuverType'],
+    ['Asset', iri('traffic_scenario'), 'Traffic'],
+    ['Traffic', iri('road_users'), 'RoadUsers'],
+    ['RoadUsers', iri('users'), 'RoadUser'],
+    ['RoadUser', iri('lane_maneuver'), 'LaneManeuver'],
+  ])
+
+  it('reaches a class through every route, the breadth-first one first', () => {
+    const { routes, truncated } = routesFromRoots(['Asset'], graph, 4)
+    expect(routes.get('ManeuverType')?.map(localsOf)).toEqual([
+      ['ego_behavior_model', 'intended', 'lane_maneuver', 'maneuver_type'],
+      ['traffic_scenario', 'road_users', 'users', 'lane_maneuver', 'maneuver_type'],
+    ])
+    const breadthFirst = pathStepsTo('ManeuverType', bfsFromRoots(['Asset'], graph), 'code')
+    expect(routes.get('ManeuverType')?.[0]).toEqual(breadthFirst?.slice(0, -1))
+    expect(truncated).toEqual([])
+  })
+
+  it('records the class each hop reaches', () => {
+    const [, viaUsers] = routesFromRoots(['Asset'], graph, 4).routes.get('ManeuverType') ?? []
+    expect(viaUsers?.map((step) => step.intermediate)).toEqual([
+      'Traffic',
+      'RoadUsers',
+      'RoadUser',
+      'LaneManeuver',
+      'ManeuverType',
+    ])
+  })
+
+  it('keeps the breadth-first route first where IRI order would pick another', () => {
+    const tie = edges([
+      ['Asset', iri('zeta'), 'X'],
+      ['Asset', iri('alpha'), 'X'],
+    ])
+    expect(routesFromRoots(['Asset'], tie, 4).routes.get('X')?.map(localsOf)).toEqual([
+      ['zeta'],
+      ['alpha'],
+    ])
+  })
+
+  it('counts routes whose predicates share their local names once', () => {
+    // A shape re-declaring a superclass shape's property in its own namespace.
+    const redeclared = edges([
+      ['Asset', `${NS}asset/hasDescription`, 'Description'],
+      ['Base', `${NS}base/hasDescription`, 'Description'],
+    ])
+    const { routes } = routesFromRoots(['Asset', 'Base'], redeclared, 4)
+    expect(routes.get('Description')?.map((r) => r.map((s) => s.predicate))).toEqual([
+      [`${NS}asset/hasDescription`],
+    ])
+  })
+
+  it('never passes a class twice on one route', () => {
+    const cyclic = edges([
+      ['Asset', iri('a'), 'B'],
+      ['B', iri('b'), 'C'],
+      ['C', iri('c'), 'B'],
+      ['C', iri('d'), 'D'],
+      ['C', iri('e'), 'Asset'],
+    ])
+    const { routes } = routesFromRoots(['Asset'], cyclic, 4)
+    expect(routes.get('B')?.map(localsOf)).toEqual([['a']])
+    expect(routes.get('D')?.map(localsOf)).toEqual([['a', 'b', 'd']])
+    expect(routes.has('Asset')).toBe(false)
+  })
+
+  it('keeps at most the cap per class, the rest in IRI order, and names the class', () => {
+    const fan = (order: string[]) =>
+      edges(order.map((p): [string, string, string] => ['Asset', iri(p), 'X']))
+    const kept = (order: string[]) =>
+      routesFromRoots(['Asset'], fan(order), 2).routes.get('X')?.map(localsOf)
+    // The breadth-first route depends on edge order, as it always has; the
+    // routes kept after it do not.
+    expect(kept(['p3', 'p2', 'p1'])).toEqual([['p3'], ['p1']])
+    expect(kept(['p2', 'p3', 'p1'])).toEqual([['p2'], ['p1']])
+    expect(routesFromRoots(['Asset'], fan(['p1', 'p2', 'p3']), 2).truncated).toEqual(['X'])
+  })
+
+  it('does not continue a route it does not keep', () => {
+    const fanThenHop = edges([
+      ['Asset', iri('p1'), 'X'],
+      ['Asset', iri('p2'), 'X'],
+      ['Asset', iri('p3'), 'X'],
+      ['X', iri('q'), 'Y'],
+    ])
+    const { routes, truncated } = routesFromRoots(['Asset'], fanThenHop, 2)
+    expect(routes.get('Y')?.map(localsOf)).toEqual([
+      ['p1', 'q'],
+      ['p2', 'q'],
+    ])
+    // Continuing the dropped route would have offered Y a third one.
+    expect(truncated).toEqual(['X'])
   })
 })
 

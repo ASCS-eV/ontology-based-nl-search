@@ -67,6 +67,12 @@ export interface PropertyPath {
    */
   extended?: true
   /**
+   * The leaf's owning class is reached by several routes and this path takes
+   * one other than the breadth-first route. Like `extended`, such a path
+   * never becomes a reference chain: it only adds a filterable property.
+   */
+  alternateRoute?: true
+  /**
    * The leaf is declared by a shape targeting a superclass of the class the
    * last hop reaches ([SHACL] §2.1.3.2). Every subclass reachable through that
    * hop inherits it, so the schema does not say which value node of the hop

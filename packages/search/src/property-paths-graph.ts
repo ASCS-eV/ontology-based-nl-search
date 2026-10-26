@@ -4,6 +4,8 @@
  *
  * @see https://www.w3.org/TR/shacl/ — [SHACL]
  */
+import { extractLocalName } from '@ontology-search/core/rdf/iri'
+
 import { type PathStep } from './property-paths-types.js'
 
 export interface PredecessorLink {
@@ -154,6 +156,115 @@ function inheritBelowRoots(
   }
 }
 
+/** The routes {@link routesFromRoots} found, and the classes it capped. */
+export interface ClassRoutes {
+  /**
+   * Class → its routes, each the hops from a root to the class (every step
+   * carries the class it reaches). The breadth-first route comes first.
+   */
+  routes: Map<string, PathStep[][]>
+  /** Classes reached by more routes than the cap kept, sorted. */
+  truncated: string[]
+}
+
+/**
+ * Every route by which predicates alone reach each class from `roots`, not
+ * only the one {@link bfsFromRoots} keeps. A class used in several contexts
+ * (one behaviour class under the ego and under every other road user, say)
+ * is reached through a different chain of property shapes in each
+ * ([SHACL] §2.3): a different sequence path from the root
+ * ([SHACL] §2.3.1.2), so each route is searchable on its own.
+ *
+ * A breadth-first walk over routes instead of classes: a class is entered
+ * once per route that reaches it, and a route never enters a class it has
+ * already passed, so cycles end. Within one hop count the breadth-first
+ * route comes first, so the first route of every class is the one
+ * {@link bfsFromRoots} picks; the others follow in IRI order. Edge order
+ * decides only the breadth-first route (as it always has), and through it
+ * which of two routes with the same local names is kept.
+ *
+ * Two routes whose predicates have the same local names count once. Slot
+ * keys are built from those names (ADR 0009), so the second could only be
+ * told apart by an ordinal; a shape that re-declares a superclass shape's
+ * property in its own namespace produces exactly such a pair.
+ *
+ * At most `maxRoutes` routes are kept per class. A route that is not kept is
+ * not continued, so the cap also bounds every class below it, and the number
+ * of routes grows with the number of classes instead of multiplying along
+ * every chain of reused classes.
+ *
+ * `breadthFirst` is the result of {@link bfsFromRoots} for the same roots
+ * and edges, when the caller has it already; its predicate links are the
+ * same with or without inheritance.
+ */
+export function routesFromRoots(
+  roots: Iterable<string>,
+  forwardEdges: Map<string, { predicate: string; child: string }[]>,
+  maxRoutes: number,
+  breadthFirst?: Map<string, PredecessorLink>
+): ClassRoutes {
+  const rootSet = new Set(roots)
+  const firstRoute = breadthFirst ?? bfsFromRoots(rootSet, forwardEdges)
+  const routes = new Map<string, PathStep[][]>()
+  const names = new Map<string, Set<string>>()
+  const truncated = new Set<string>()
+
+  interface Route {
+    cls: string
+    steps: PathStep[]
+    passed: Set<string>
+    first: boolean
+  }
+  let layer: Route[] = [...rootSet].map((cls) => ({ cls, steps: [], passed: rootSet, first: true }))
+  while (layer.length > 0) {
+    const candidates = new Map<string, Route[]>()
+    for (const route of layer) {
+      for (const { predicate, child } of forwardEdges.get(route.cls) ?? []) {
+        if (route.passed.has(child)) continue
+        const link = firstRoute.get(child)
+        const list = candidates.get(child) ?? []
+        list.push({
+          cls: child,
+          steps: [...route.steps, { predicate, intermediate: child }],
+          passed: new Set(route.passed).add(child),
+          first: route.first && link?.parent === route.cls && link.predicate === predicate,
+        })
+        candidates.set(child, list)
+      }
+    }
+    const next: Route[] = []
+    for (const [cls, list] of candidates) {
+      const kept = routes.get(cls) ?? []
+      const seen = names.get(cls) ?? new Set<string>()
+      for (const route of list.sort(byFirstThenIri)) {
+        const chain = route.steps.map((step) => extractLocalName(step.predicate)).join(' ')
+        if (seen.has(chain)) continue
+        if (kept.length >= maxRoutes) {
+          truncated.add(cls)
+          break
+        }
+        seen.add(chain)
+        kept.push(route.steps)
+        next.push(route)
+      }
+      routes.set(cls, kept)
+      names.set(cls, seen)
+    }
+    layer = next
+  }
+  return { routes, truncated: [...truncated].sort() }
+}
+
+const routeIris = (route: { steps: PathStep[] }): string =>
+  route.steps.map((step) => `${step.predicate} ${step.intermediate ?? ''}`).join(' ')
+
+function byFirstThenIri(
+  a: { steps: PathStep[]; first: boolean },
+  b: { steps: PathStep[]; first: boolean }
+): number {
+  return Number(b.first) - Number(a.first) || routeIris(a).localeCompare(routeIris(b))
+}
+
 /**
  * True when `target` is reached as an `rdfs:subClassOf` ancestor of the class
  * the last hop lands on, i.e. a leaf owned by `target` is inherited there.
@@ -207,10 +318,11 @@ export function pathStepsTo(
  * property paths (`*`, `+`) can test reachability but cannot bind
  * intermediate predicates along the way.
  *
- * Picks one path per (asset, leaf) pair via BFS; if the schema has
- * multiple parallel paths, only the shortest is emitted — among
- * predicate-only paths first (see {@link bfsFromRoots} for how paths that
- * need inheritance are chosen).
+ * The shortest route to each class comes from BFS — among predicate-only
+ * routes first (see {@link bfsFromRoots} for how routes that need
+ * inheritance are chosen). A class predicates reach by several routes gets
+ * the others too ({@link routesFromRoots}): distinct by the local names of
+ * their predicates, at most a fixed number per class.
  */
 
 /** A top-level class of a non-asset vocabulary that instance data may use standalone. */

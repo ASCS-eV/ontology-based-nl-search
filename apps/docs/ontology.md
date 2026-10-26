@@ -405,3 +405,21 @@ qualifying predicates, and its own card, so "red cars" and "small cars" map to
 different keys. The bare name (`value`) stays a key and matches any chain that
 can hold the value: those whose own `sh:in` contains it, and those that declare
 none. Check the keys a domain resolves with `curl localhost:3003/vocabulary`.
+
+The same holds for one class used in several places. When the asset reaches a
+class by several routes (a behaviour class under the ego and under every other
+road user, say), each route is a different sequence path from the asset
+([SHACL](https://www.w3.org/TR/shacl/#property-path-sequence) §2.3.1.2), so
+each leaf of the class gets one key per route
+(`intended__lane_maneuver__maneuver_type__code`,
+`users__lane_maneuver__maneuver_type__code`) and the bare name matches every
+route. Bare names filtered together that sit on the same class and reach it by
+the same routes (a latitude and a longitude) are matched on one node of each
+route, not the latitude of one point with the longitude of another. Routes
+whose predicates have the same
+local names count once, since no key could tell them apart, and at most four
+routes per class are kept, so reused classes cannot multiply the keys without
+bound; a class with more logs a warning at startup. A domain's own shape-group
+properties keep their one route, since the meta-model places them on one node
+per group, and below the entry class of a standalone vocabulary only the
+shortest route is searched.

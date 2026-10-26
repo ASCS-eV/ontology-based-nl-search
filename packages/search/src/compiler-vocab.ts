@@ -184,6 +184,38 @@ async function buildCompilerVocab(): Promise<CompilerVocab> {
 }
 
 /**
+ * Whether a discovered path gets a slot key.
+ *
+ * An `extended` path (a leaf reached only through inheritance below the
+ * asset class, or literal only through an `sh:or` member) never carries a
+ * shape-group property name. Shape-group emission takes its hops from the
+ * path of ANY property in the group (`lookupStepPredicate`), and such a
+ * name can resolve through its group without a path of its own, so a new
+ * path for it — one inherited from a superclass shape, say — would change
+ * the hops of queries that compiled before. (`buildPropertyPaths` already
+ * keeps extended paths off every name that has a plain path.)
+ *
+ * An `alternateRoute` path (a further route to a class several routes
+ * reach) stays off the names that are shape-group properties of its own
+ * domain: it would make such a name a bare name for several chains, which
+ * drops it from the domain's shape-group facets in the metadata index and
+ * parts it from the node its group siblings share. Elsewhere the name is
+ * an ordinary property, and `lookupStepPredicate` still reads it as the
+ * breadth-first chain it was before.
+ *
+ * @internal Exported for the shape-group guard regression test.
+ */
+export function isKeyedPath(
+  path: PropertyPath,
+  shapeGroupPropertyNames: ReadonlySet<string>,
+  shapeGroups: ReadonlyMap<string, string>
+): boolean {
+  if (path.extended) return !shapeGroupPropertyNames.has(path.propertyName)
+  if (path.alternateRoute) return !shapeGroups.has(`${path.propertyName}:${path.domain}`)
+  return true
+}
+
+/**
  * Build the compiler vocabulary from an explicit store + registry. Extracted
  * from {@link buildCompilerVocab} so tests can build a vocab against a fixture
  * graph (an arbitrary schema) without the global store/registry singletons —
@@ -245,19 +277,8 @@ export async function buildCompilerVocabFrom(
   // triples: one key per predicate chain (ADR 0009). A property local name may
   // legitimately appear in multiple asset domains; each domain gets its own
   // keys.
-  //
-  // An `extended` path (a leaf reached only through inheritance below the
-  // asset class, or literal only through an `sh:or` member) never carries a
-  // shape-group property name. Shape-group emission takes its hops from the
-  // path of ANY property in the group (`lookupStepPredicate`), and such a
-  // name can resolve through its group without a path of its own, so a new
-  // path for it — one inherited from a superclass shape, say — would change
-  // the hops of queries that compiled before. (`buildPropertyPaths` already
-  // keeps extended paths off every name that has a plain path.)
   const { byKey: paths, alternatives } = indexPropertyKeys(
-    propertyPaths.filter(
-      (path) => !(path.extended && shapeGroupPropertyNames.has(path.propertyName))
-    )
+    propertyPaths.filter((path) => isKeyedPath(path, shapeGroupPropertyNames, shapeGroups))
   )
 
   // Discover cross-domain reference chains from the property paths, so

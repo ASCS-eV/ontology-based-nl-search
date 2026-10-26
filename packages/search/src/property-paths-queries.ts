@@ -183,9 +183,10 @@ export async function queryResolvedEdges(store: SparqlStore): Promise<ResolvedEd
     edges.push({ parentClass, predicate, childClass })
   }
 
-  // Sort deterministically. The downstream BFS reconstructs ONE path per
-  // (asset, leaf) and breaks ties among equal-length paths by edge-insertion
-  // order — so a stable edge order is what makes path discovery reproducible.
+  // Sort deterministically. The downstream BFS picks the breadth-first path
+  // per (asset, leaf) and breaks ties among equal-length paths by
+  // edge-insertion order — so a stable edge order is what makes path
+  // discovery reproducible.
   // The previous fixed-depth UNION happened to emit sh:or members in RDF-list
   // order; the `rdf:rest*/rdf:first` property path does NOT (SPARQL leaves
   // path-result order unspecified), so without this sort the chosen

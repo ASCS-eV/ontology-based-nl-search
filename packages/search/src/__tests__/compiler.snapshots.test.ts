@@ -223,6 +223,17 @@ describe('compileSlots — determinism + snapshot suite', () => {
     expect(sparql).toMatchSnapshot()
   })
 
+  it('coordinate box — latitude and longitude of one point per route', async () => {
+    // The coordinate class is reached as the georeference origin and as its
+    // view point: each branch must hold both bounds on ONE point.
+    const sparql = await assertDeterministic({
+      domains: ['hdmap'],
+      filters: {},
+      ranges: { lat: { min: 48, max: 49 }, lon: { min: 11, max: 12 } },
+    })
+    expect(sparql).toMatchSnapshot()
+  })
+
   // ─── License (task 21d-flat: ordinary filter keyed by `license`) ───────
 
   it('license filter only', async () => {
