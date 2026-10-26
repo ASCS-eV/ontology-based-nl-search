@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "HTTP-boundary wire types shared between the API server and the web client. Zero workspace dependencies — browser-safe.",
+  "description": "HTTP-boundary wire types shared between the API server and the web client. Browser-safe: type-only imports of the slot and authoring IRs it embeds.",
   "exports": {
     ".": {
       "types": "./src/index.ts",

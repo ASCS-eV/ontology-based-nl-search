@@ -5,7 +5,7 @@
  * (asset domains and their filterable properties), and its output is a
  * `GraphQLSchema` / CodeMirror `Extension[]`. The contract is **single-sourced
  * from `@ontology-search/api-types`** (the `/vocabulary` wire shape) — a pure,
- * zero-dependency, browser-safe type leaf, not app code — so the editor and the
+ * browser-safe type package, not app code — so the editor and the
  * API route cannot drift. `EditorVocabulary` is this module's name for that
  * response shape.
  */

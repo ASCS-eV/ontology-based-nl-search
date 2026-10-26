@@ -194,6 +194,10 @@ pnpm run test:e2e     # E2E tests (Playwright)
 
 ### Troubleshooting
 
+**Build fails with `TS2307: Cannot find module '@ontology-search/…'`?**
+
+- Check that the importing package links it: `packages/<pkg>/node_modules/@ontology-search/<dep>` must exist. If it is missing, run `pnpm install`: it checks `node_modules` against the lockfile and recreates the link. `pnpm run build` alone does not.
+
 **White page in browser?**
 
 - Press **Ctrl+Shift+R** (hard refresh) to clear cache

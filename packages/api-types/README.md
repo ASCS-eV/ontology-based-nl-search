@@ -2,7 +2,7 @@
 
 > HTTP-boundary wire types shared between the API server and the web client.
 
-**Layer:** a leaf contract package with **zero workspace dependencies** — browser-safe, imported by both `apps/api` and `apps/web` without coupling them (`core ← sparql, ontology ← search ← llm ← apps`).
+**Layer:** a contract package one rank above the leaf IR packages it embeds (`slots`, `authoring-ir`) — browser-safe, imported by both `apps/api` and `apps/web` without coupling them (`core ← sparql, ontology ← search ← llm ← apps`).
 
 ## Purpose
 
@@ -16,7 +16,7 @@ The single source of truth for the request/response/SSE-event JSON shapes that c
 
 ## Requirements & invariants
 
-- **Zero workspace dependencies — browser-safe.** Must never import another `@ontology-search/*` package or any Node-only/server-only code.
+- **Browser-safe.** Depends only on the leaf IR packages its wire shapes embed — `slots` (a refine takes the slot IR and reports the slots it ran) and `authoring-ir` (the author stream reports scene assumptions and lowering defaults) — and imports them type-only, so the built module has no runtime imports. Never imports Node-only/server-only code. `scripts/check-layers.mjs` ranks it above those leaves only.
 - These are wire-format types only; they carry no ontology-specific identifiers, so the ontology-name budget (criterion 9b) does not apply.
 - The shapes are exchanged as `[RFC8259]` JSON over `[RFC9110]` HTTP, with the streaming search results delivered as `[SSE]` `data:` frames; field changes here are observable on the wire and must stay backward-compatible (e.g. `OntologyGap.kind` defaults to `unmapped` when absent).
 - Server-internal extensions re-use these types as their HTTP surface rather than redefining them.

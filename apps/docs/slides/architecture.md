@@ -175,9 +175,9 @@ flowchart LR
       <p><code>SearchSlots</code> + the Zod wire schema. The system's central contract; held to JSON Schema 2020-12.</p>
     </div>
     <div class="stack-card">
-      <span>api-types · rank 0</span>
+      <span>api-types · rank 1</span>
       <strong>Wire shapes</strong>
-      <p>Zero-dependency, browser-safe HTTP/SSE types shared by server and client — drift is impossible by construction.</p>
+      <p>Browser-safe HTTP/SSE types shared by server and client, embedding the slot and authoring IRs — drift is impossible by construction.</p>
     </div>
     <div class="stack-card">
       <span>core · rank 1</span>

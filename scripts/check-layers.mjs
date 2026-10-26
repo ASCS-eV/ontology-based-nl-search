@@ -4,7 +4,8 @@
  * CLAUDE.md / CONTRIBUTING describe a strict layering with no cycles and no
  * upward dependencies:
  *
- *   configs <- core <- {sparql, ontology, api-types} <- search <- llm <- apps
+ *   configs <- leaves (slots, authoring-ir, …) <- {core, api-types}
+ *     <- {sparql, ontology, …} <- search <- llm <- apps
  *
  * `madge --circular` cannot enforce this here: production code imports packages
  * via `exports`-map subpaths (e.g. `@ontology-search/core/graphql/enum`) and the
@@ -27,10 +28,11 @@ const WORKSPACE_PREFIX = '@ontology-search/'
 /**
  * Layer rank per workspace package. An edge `A -> B` is legal only when
  * `rank(B) < rank(A)` (strictly downward). Build-only configs are rank -1 (any
- * package may depend on them); `api-types` and `design-system` are rank-0 leaves
- * importable by any higher layer. This rank map is the only hardcoded knob — the
- * edges themselves are read from `package.json`. A new package that is not ranked
- * here fails the gate (so it cannot silently bypass the layering).
+ * package may depend on them); the leaves (`slots`, `authoring-ir`,
+ * `design-system`, …) are rank 0, importable by any higher layer; `api-types` is
+ * rank 1, above the IR leaves it embeds. This rank map is the only hardcoded
+ * knob — the edges themselves are read from `package.json`. A new package that is
+ * not ranked here fails the gate (so it cannot silently bypass the layering).
  */
 export const RANKS = {
   '@ontology-search/typescript-config': -1,
@@ -42,8 +44,10 @@ export const RANKS = {
   '@ontology-search/road-catalog': 0,
   '@ontology-search/scenario-viewer-wasm': 0,
   // api-types sits above the leaf IR packages: the wire contract EMBEDS the
-  // slot IR (a refine takes slots in and reports the slots it ran), so it must
-  // be able to depend on `slots`. Nothing at rank <= 1 depends on api-types.
+  // slot IR (a refine takes slots in and reports the slots it ran) and the
+  // authoring IR (the author stream reports assumptions and lowering defaults),
+  // so it must be able to depend on `slots` and `authoring-ir`. Nothing at
+  // rank <= 1 depends on api-types.
   '@ontology-search/api-types': 1,
   '@ontology-search/core': 1,
   '@ontology-search/sparql': 2,
