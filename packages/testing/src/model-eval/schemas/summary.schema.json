@@ -340,23 +340,15 @@
       "type": "object",
       "properties": {
         "protocol": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "boolean",
+            "null"
           ]
         },
         "quality": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "boolean",
+            "null"
           ]
         },
         "passing": {

@@ -33,7 +33,7 @@
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "vitest": "^4.0.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "dependencies": {
     "@ontology-search/slots": "workspace:*"
