@@ -47,7 +47,7 @@
     "@ontology-search/slots": "workspace:*",
     "@ontology-search/sparql": "workspace:*",
     "ai": "^7.0.42",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",

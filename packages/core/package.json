@@ -82,8 +82,8 @@
   },
   "dependencies": {
     "@zazuko/prefixes": "^2.6.1",
-    "undici": "^8.10.2",
-    "zod": "^4.4.3"
+    "undici": "^8.12.2",
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@ontology-search/typescript-config": "workspace:*",
