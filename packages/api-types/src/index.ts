@@ -11,11 +11,13 @@
  * their own package lets both sides of the HTTP boundary import the
  * SAME declarations — drift is impossible by construction.
  *
- * The only workspace dependency is `@ontology-search/slots`, and it is a
- * dependency of the CONTRACT, not an implementation detail: `/search/refine`
- * takes the slot IR as its request body and reports the slots it ran. Slots is
- * itself a zero-dependency, browser-safe leaf (types plus Zod schemas), so this
- * costs the client bundle nothing.
+ * The workspace dependencies are `@ontology-search/slots` and
+ * `@ontology-search/authoring-ir`, and they are dependencies of the CONTRACT,
+ * not implementation details: `/search/refine` takes the slot IR as its request
+ * body and reports the slots it ran, and the author stream reports the scene's
+ * assumptions and lowering defaults by IR value path. Both are browser-safe
+ * leaves (types plus Zod schemas) imported type-only, so this costs the client
+ * bundle nothing.
  *
  * Server-internal extensions (e.g. `LlmStructuredResponse` which
  * carries `core/logging` `TimingEntry`s) live in the search package
@@ -436,8 +438,9 @@ export interface GateTrace {
  * the browser-safe wire mirror of the engine's `AuthoringDiagnostic`
  * (`Diagnostic` + optional rule UID). Distinct from {@link SceneGap}: gaps are
  * gate-attributed and error-only, whereas diagnostics carry the engine's full
- * message stream (warnings included). Defined locally so `@ontology-search/api-types`
- * stays zero-dependency; kept field-identical to the engine type.
+ * message stream (warnings included). Defined locally because the engine type's
+ * package, `@ontology-search/authoring`, ranks above `@ontology-search/api-types`;
+ * kept field-identical to the engine type.
  */
 export interface SceneDiagnostic {
   readonly severity: 'error' | 'warning' | 'info'

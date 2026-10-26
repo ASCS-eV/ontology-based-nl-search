@@ -81,7 +81,8 @@ fix or surface it within the PR's scope, do not bundle.
    `ontology` depend only on `core`; `search` depends only on
    `core`/`sparql`/`ontology`/`api-types`; `llm` depends only on the above;
    apps depend on packages — packages never depend on apps. (`api-types` is a
-   zero-dependency, browser-safe leaf any layer may import.) No upward import.
+   browser-safe contract any layer above it may import; it depends only on the
+   leaf IR packages it embeds, `slots` and `authoring-ir`.) No upward import.
    CI gate: `pnpm run check:layers` (`scripts/check-layers.mjs`) asserts the
    declared workspace-dependency graph is acyclic and strictly downward against a
    layer-rank map; its regression tests live in `scripts/check-layers.test.mjs`.

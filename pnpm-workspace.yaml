@@ -11,6 +11,14 @@ packages:
 # This setting MUST live here, not in `.npmrc`: pnpm 11 reads its own settings
 # from this file, and silently ignores them in `.npmrc`.
 engineStrict: true
+# Make every `pnpm install` check `node_modules` against the lockfile, so it
+# recreates a workspace link that has gone missing. The default fast check
+# compares only the manifests, the lockfile and the patch files, so it reports
+# "Already up to date" over a missing link, and the build then fails with
+# TS2307 "Cannot find module '@ontology-search/…'". A repeat install on an
+# intact tree takes about a tenth of a second longer.
+# https://pnpm.io/settings/other#optimisticrepeatinstall
+optimisticRepeatInstall: false
 allowBuilds:
   '@swc/core': true
   esbuild: true
