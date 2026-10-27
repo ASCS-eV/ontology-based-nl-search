@@ -58,9 +58,13 @@ export function predicateChain(path: PropertyPath): string {
   return path.steps.map((step) => step.predicate).join(' ')
 }
 
+/** A path's hops with the class each reaches: the nodes it walks through. */
+const routeOf = (path: PropertyPath): string =>
+  path.steps.map((s) => `${s.predicate}@${s.intermediate ?? ''}`).join('>')
+
 /** Stable order of the paths that share one chain: asset class, then route. */
 const routeSignature = (path: PropertyPath): string =>
-  `${path.assetClass} ${path.steps.map((s) => `${s.predicate}@${s.intermediate ?? ''}`).join('>')} ${path.owningClass ?? ''}`
+  `${path.assetClass} ${routeOf(path)} ${path.owningClass ?? ''}`
 
 /**
  * Index paths by key, per domain. Paths that share a predicate chain collapse
@@ -120,9 +124,12 @@ function representativeOf(same: PropertyPath[]): PropertyPath {
   // A chain some asset class reaches breadth-first is no alternate route,
   // whichever route another asset class takes to it.
   if (ordered.some((p) => !p.alternateRoute)) delete representative.alternateRoute
-  // Nor is its leaf only inherited when a class the chain reaches declares it
-  // itself: that class's node carries it ([SHACL] §2.3).
-  if (ordered.some((p) => !p.inheritedLeaf)) delete representative.inheritedLeaf
+  // Nor is its leaf only inherited when the class the representative reaches
+  // declares it itself — a path of the same route that inherits nothing: that
+  // class's node carries it ([SHACL] §2.3).
+  if (ordered.some((p) => !p.inheritedLeaf && routeOf(p) === routeOf(first))) {
+    delete representative.inheritedLeaf
+  }
   const enumerated = ordered.filter((p) => p.allowedValues)
   // Some paths of the chain declare no `sh:in`: the chain is not closed.
   if (enumerated.length < ordered.length) {

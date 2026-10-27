@@ -261,7 +261,8 @@ fleet:RoadTypeShape a sh:NodeShape ;
 fleet:LaneTypeShape a sh:NodeShape ;
   sh:targetClass fleet:LaneType ;
   sh:property [ sh:path fleet:code ; sh:in ( "bus" "bike" ) ] ;
-  sh:property [ sh:path fleet:link ; sh:nodeKind sh:IRI ] .
+  sh:property [ sh:path fleet:link ; sh:nodeKind sh:IRI ;
+    sh:in ( <http://example.org/maps/bus-lane> ) ] .
 `,
         '; sh:property [ sh:path fleet:lane ; sh:node fleet:LaneTypeShape ] '
       ),
@@ -270,7 +271,10 @@ fleet:LaneTypeShape a sh:NodeShape ;
   fleet:road [ a fleet:RoadType ; fleet:code "motorway" ; fleet:link <http://example.org/maps/example-road> ] ] .
 `
     )
+    // `example` is no lane link, so `link` narrows to the road like `code`:
+    // both are singles there too, and every emission matches it textually.
     expect(await assets({ code: 'motorway', link: 'example' })).toEqual(['urn:vehicle:7'])
+    expect(await assets({ link: 'example' })).toEqual(['urn:vehicle:7'])
   }, 30_000)
 
   it('keeps them on one node when their names fall into different shape groups', async () => {

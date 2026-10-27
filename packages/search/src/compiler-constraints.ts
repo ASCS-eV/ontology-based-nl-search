@@ -128,14 +128,14 @@ function nodeKeysOf(path: PropertyPath): string[] | undefined {
  * every node, the bare names that can sit there form a set; each largest set
  * (no other contains it) with two or more members is a group, restricted to
  * the nodes it shares. A bare name in no such set keeps a group of its own
- * over all its chains. Members, branches and groups follow key order and
- * chain order, so the result does not depend on the order the slots were
- * written in.
+ * over all its chains, or is only a single when one chain is left. Members,
+ * branches and groups follow key order and chain order, so the result does
+ * not depend on the order the slots were written in.
  *
  * Every constraint with at most one chain is a single, also when a group
- * holds it: its own emission keeps it on the node it shares with unique and
- * qualified siblings, and the group adds its bare siblings. Joining a group
- * thus only ever adds a condition.
+ * holds it: it keeps the emission it has on its own, with whatever node that
+ * shares with unique and qualified siblings, and the group adds its bare
+ * siblings. Joining a group thus only ever adds a condition.
  *
  * One function on purpose: placement, the largest sets and their branches are
  * steps of one algorithm over the same per-node index.

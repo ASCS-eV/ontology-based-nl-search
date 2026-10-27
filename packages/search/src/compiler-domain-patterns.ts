@@ -34,6 +34,7 @@ import {
 } from './compiler-helpers-paths.js'
 import {
   addEnumFilter,
+  addLeafFilter,
   findDomainForIri,
   groupPredicate,
   groupVariableName,
@@ -440,12 +441,12 @@ export function buildDomainPatterns(
       for (const [key, value, path] of bucket.filters) {
         const varName = leafVariable(key, suffix)
         patterns.push(`${groupVar} ${leafPredicateOf(propPrefix, key, path)} ${varName} .`)
-        addEnumFilter(
-          filters,
-          varName,
-          value,
-          path?.datatype ?? lookupLeafDatatype(vocabIndex, domainName, key)
-        )
+        // The value test follows the leaf's kind, as on every other emission
+        // path; a key with no path of its own is read as a literal.
+        addLeafFilter(filters, varName, value, {
+          leafKind: path?.leafKind ?? 'literal',
+          datatype: path?.datatype ?? lookupLeafDatatype(vocabIndex, domainName, key),
+        })
         selectVars.add(varName)
       }
 

@@ -5,9 +5,16 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { type Constraint, emitConstraintGroups, groupConstraints } from '../compiler-constraints.js'
+import {
+  type Constraint,
+  emitConstraintGroups,
+  groupConstraints,
+  resolveConstraints,
+} from '../compiler-constraints.js'
+import { resolveKey } from '../compiler-helpers-paths.js'
 import { buildStandaloneArms } from '../compiler-standalone.js'
 import type { CompilerVocab } from '../compiler-vocab.js'
+import { indexPropertyKeys } from '../property-keys.js'
 import type { PropertyPath } from '../property-paths-types.js'
 import { syntheticRegistry } from './__fixtures__/synthetic-registry.js'
 
@@ -147,6 +154,35 @@ describe('groupConstraints', () => {
     ])
     const reason = bare('reason', [chain('ego', 'M', 'reason'), chain('road', 'R', 'reason')])
     expect(shape([inherited, reason]).groups).toEqual(['label: ego | road', 'reason: ego | road'])
+  })
+
+  it('groups names on a chain whose class declares the leaf that a superclass declares too', () => {
+    // Keyed as discovery hands the paths over: per chain, the superclass's
+    // inherited declaration first (Entity sorts before Participant).
+    const declarations = (hop: string, leaf: string) => [
+      {
+        ...chain(hop, 'Participant', leaf),
+        owningClass: `${NS}Entity`,
+        inheritedLeaf: true as const,
+      },
+      chain(hop, 'Participant', leaf),
+    ]
+    const paths = ['description', 'label'].flatMap((leaf) => [
+      ...declarations('consumer', leaf),
+      ...declarations('provider', leaf),
+    ])
+    const { byKey, alternatives } = indexPropertyKeys(paths)
+    const constraints = resolveConstraints(
+      [
+        ['description', 'zz'],
+        ['label', 'yy'],
+      ],
+      [],
+      (key, value) => resolveKey(byKey, alternatives, `fleet:${key}`, value)
+    )
+    expect(shape(constraints).groups).toEqual([
+      'description+label: consumer consumer | provider provider',
+    ])
   })
 
   it('passes every other constraint through as a single, in order', () => {

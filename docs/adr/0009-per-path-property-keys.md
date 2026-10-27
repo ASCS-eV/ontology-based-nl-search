@@ -99,8 +99,8 @@ enum literals per domain from that same contract.
   shares, so the leaves of one class read as one thing. A bare name in such a
   set matches on its shared nodes only; a name in several sets holds once in
   each, so a further filter only ever narrows a query; a bare name a value
-  narrowed to one chain also keeps the node it shares with qualified keys and
-  unique names. A bare name that shares no node, reaches one node through
+  narrowed to one chain also keeps the emission it has on its own, beside
+  qualified keys and unique names. A bare name that shares no node, reaches one node through
   several chains, or has a leaf only inherited on some chain, stays on its
   own. A qualified key keeps the existing node sharing.
 - The key spelling is an interface: the slot IR, the prompt, GraphQL and the
