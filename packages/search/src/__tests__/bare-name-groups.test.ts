@@ -214,6 +214,40 @@ fleet:ExtraShape a sh:NodeShape ;
   }, 30_000)
 })
 
+describe('a bare name narrowed to one chain, next to a unique name on its node', () => {
+  // `unit` only the road declares: a unique name. `motorway` narrows `code`
+  // to the road, where `unit` sits; `reason` can sit there too.
+  const schema = codedSchema(
+    `
+fleet:RoadTypeShape a sh:NodeShape ;
+  sh:targetClass fleet:RoadType ;
+  sh:property [ sh:path fleet:code ; sh:in ( "motorway" "rural" ) ] ;
+  sh:property [ sh:path fleet:reason ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path fleet:unit ; sh:datatype xsd:string ] .
+`,
+    ''
+  )
+  // Vehicle 1 has the motorway and the km/h on two different roads.
+  const data = `
+<urn:vehicle:1> a fleet:Vehicle ; fleet:hasSpec [ a fleet:Spec ;
+  fleet:road [ a fleet:RoadType ; fleet:code "motorway" ; fleet:reason "overtake" ] ,
+             [ a fleet:RoadType ; fleet:code "rural" ; fleet:unit "kmh" ] ] .
+<urn:vehicle:2> a fleet:Vehicle ; fleet:hasSpec [ a fleet:Spec ;
+  fleet:road [ a fleet:RoadType ; fleet:code "motorway" ; fleet:reason "overtake" ; fleet:unit "kmh" ] ] .
+`
+
+  it('only narrows when a bare name joins it', async () => {
+    const { assets, assetsOfAnyDomain } = await setup(schema, data)
+    expect(await assets({ code: 'motorway', unit: 'kmh' })).toEqual(['urn:vehicle:2'])
+    expect(await assets({ code: 'motorway', unit: 'kmh', reason: 'overtake' })).toEqual([
+      'urn:vehicle:2',
+    ])
+    expect(await assetsOfAnyDomain({ code: 'motorway', unit: 'kmh', reason: 'overtake' })).toEqual([
+      'urn:vehicle:2',
+    ])
+  }, 30_000)
+})
+
 describe('bare names held on a shared node, whatever single paths would do', () => {
   it('matches an IRI-valued name textually there', async () => {
     const { assets } = await setup(
@@ -290,6 +324,9 @@ fleet:CShape a sh:NodeShape ; sh:targetClass fleet:C ;
       `
 <urn:vehicle:8> a fleet:Vehicle ; fleet:hasSpec [ a fleet:Spec ;
   fleet:p [ a fleet:B ; fleet:code "x" ; fleet:reason "y" ] ] .
+<urn:vehicle:9> a fleet:Vehicle ; fleet:hasSpec [ a fleet:Spec ;
+  fleet:p [ a fleet:B ; fleet:code "x" ] ;
+  fleet:q [ a fleet:C ; fleet:reason "y" ] ] .
 `
     )
     expect(await assets({ code: 'x', reason: 'y' })).toEqual(['urn:vehicle:8'])

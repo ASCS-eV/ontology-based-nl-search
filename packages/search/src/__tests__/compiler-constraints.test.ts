@@ -128,6 +128,27 @@ describe('groupConstraints', () => {
     expect(groupConstraints([code, value])).toEqual(groupConstraints([value, code]))
   })
 
+  it('keeps a bare name narrowed to one chain a single when a group holds it too', () => {
+    // Its single emission keeps it on the node of its unique siblings; the
+    // group only adds its bare ones, so joining a group never widens a query.
+    const code = bare('code', [chain('road', 'R', 'code')])
+    const reason = bare('reason', [chain('ego', 'M', 'reason'), chain('road', 'R', 'reason')])
+    expect(shape([code, reason])).toEqual({
+      groups: ['code+reason: road road'],
+      singles: ['code'],
+    })
+  })
+
+  it('leaves a name with a leaf only inherited on some chain in a group of its own', () => {
+    // An inherited leaf may sit on any value node of its hop: no one node.
+    const inherited = bare('label', [
+      { ...chain('ego', 'M', 'label'), inheritedLeaf: true },
+      chain('road', 'R', 'label'),
+    ])
+    const reason = bare('reason', [chain('ego', 'M', 'reason'), chain('road', 'R', 'reason')])
+    expect(shape([inherited, reason]).groups).toEqual(['label: ego | road', 'reason: ego | road'])
+  })
+
   it('passes every other constraint through as a single, in order', () => {
     const qualified: Constraint = { ...bare('ego__code', [chain('ego', 'M', 'code')]), bare: false }
     const unknown: Constraint = { ...bare('nothing', []), bare: false }
@@ -136,12 +157,14 @@ describe('groupConstraints', () => {
 })
 
 describe('emitConstraintGroups', () => {
-  it('gives a name in two groups a variable of its own in each', () => {
+  it('binds a name bound elsewhere to a variable of the group, not projected', () => {
+    // `reason` is in two groups; `code` and `unit` are singles as well.
     const code = bare('code', [chain('ego', 'M', 'code')])
     const reason = bare('reason', [chain('ego', 'M', 'reason'), chain('road', 'R', 'reason')])
     const unit = bare('unit', [chain('road', 'R', 'unit')])
     const { groups } = groupConstraints([code, reason, unit])
     const patterns: string[] = []
+    const selectVars = new Set<string>()
     const vocab = { range2DProperties: new Map() } as unknown as CompilerVocab
     const registry = syntheticRegistry([{ name: 'fleet', namespace: NS, assetClass: 'Vehicle' }])
     emitConstraintGroups(
@@ -150,14 +173,17 @@ describe('emitConstraintGroups', () => {
       '?asset',
       '',
       patterns,
-      new Set(),
+      selectVars,
       new Set(),
       registry,
       vocab
     )
     expect(patterns).toHaveLength(2)
+    expect(patterns[0]).toContain('fleet:code ?_alt0_m0 .')
     expect(patterns[0]).toContain('fleet:reason ?reason .')
-    expect(patterns[1]).toContain('fleet:reason ?reason_2 .')
+    expect(patterns[1]).toContain('fleet:reason ?_alt1_m0 .')
+    expect(patterns[1]).toContain('fleet:unit ?_alt1_m1 .')
+    expect([...selectVars]).toEqual(['?reason'])
   })
 })
 

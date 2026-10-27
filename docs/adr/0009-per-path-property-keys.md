@@ -98,9 +98,11 @@ enum literals per domain from that same contract.
   names whose chains can end on a common node holds on one node of the nodes it
   shares, so the leaves of one class read as one thing. A bare name in such a
   set matches on its shared nodes only; a name in several sets holds once in
-  each, so a further filter only ever narrows a query. A bare name that shares
-  no node, or reaches one node through several chains, stays on its own. A
-  qualified key keeps the existing node sharing.
+  each, so a further filter only ever narrows a query; a bare name a value
+  narrowed to one chain also keeps the node it shares with qualified keys and
+  unique names. A bare name that shares no node, reaches one node through
+  several chains, or has a leaf only inherited on some chain, stays on its
+  own. A qualified key keeps the existing node sharing.
 - The key spelling is an interface: the slot IR, the prompt, GraphQL and the
   `/vocabulary` route all carry it. Adding a chain to an ontology can turn a
   unique name into a qualified one, and, since a qualified key is the shortest

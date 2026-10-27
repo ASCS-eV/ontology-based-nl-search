@@ -120,6 +120,9 @@ function representativeOf(same: PropertyPath[]): PropertyPath {
   // A chain some asset class reaches breadth-first is no alternate route,
   // whichever route another asset class takes to it.
   if (ordered.some((p) => !p.alternateRoute)) delete representative.alternateRoute
+  // Nor is its leaf only inherited when a class the chain reaches declares it
+  // itself: that class's node carries it ([SHACL] §2.3).
+  if (ordered.some((p) => !p.inheritedLeaf)) delete representative.inheritedLeaf
   const enumerated = ordered.filter((p) => p.allowedValues)
   // Some paths of the chain declare no `sh:in`: the chain is not closed.
   if (enumerated.length < ordered.length) {

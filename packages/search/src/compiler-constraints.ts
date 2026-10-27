@@ -12,8 +12,9 @@
  * names that can sit on a common node is one group, emitted as a `UNION` with
  * a branch per node the set shares ([SPARQL11] §7); a name in several such
  * sets holds once in each, so a further constraint only ever narrows a query.
- * Every other constraint — a qualified key, a unique name, a bare name left
- * with one chain and no sibling — is a single, routed by its compile path.
+ * Every constraint with at most one chain — a qualified key, a unique name, a
+ * bare name a value narrowed to one chain — is a single, routed by its
+ * compile path, also when a group holds it too.
  *
  * @see https://www.w3.org/TR/sparql11-query/ — [SPARQL11]
  * @see https://www.w3.org/TR/shacl/ — [SHACL]
@@ -96,12 +97,15 @@ export function resolveConstraints(
  * The nodes a chain's leaf may hang off ({@link pathPrefixKey}), one per class
  * whose node shape declares the leaf for this chain ([SHACL] §2.3): a chain
  * several classes declare stands for a node of any of them, though its path
- * names the first class only.
+ * names the first class only. None for a leaf only inherited from a
+ * superclass of the class reached: it may sit on any value node of its hop
+ * ([SHACL] §2.1.3.2), so no one node can be named for it.
  */
-function nodeKeysOf(path: PropertyPath): string[] {
+function nodeKeysOf(path: PropertyPath): string[] | undefined {
+  if (path.inheritedLeaf) return undefined
   const owners = path.owningClasses ?? []
   const lastHop = path.steps.length - 2
-  if (path.inheritedLeaf || owners.length < 2 || lastHop < 0) return [pathPrefixKey(path)]
+  if (owners.length < 2 || lastHop < 0) return [pathPrefixKey(path)]
   return owners.map((owner) =>
     pathNodeKey(
       {
@@ -119,13 +123,19 @@ function nodeKeysOf(path: PropertyPath): string[] {
  * and the singles each compile path routes itself.
  *
  * A bare name is placed by the nodes its chains end on; one that reaches a
- * node through two chains cannot be placed on one node per branch and stays a
- * group of its own. For every node, the bare names that can sit there form a
- * set; each largest set (no other contains it) with two or more members is a
- * group, restricted to the nodes it shares. A bare name in no such set keeps
- * a group of its own over all its chains, or is a single when one chain is
- * left. Members, branches and groups follow key order and chain order, so the
- * result does not depend on the order the slots were written in.
+ * node through two chains, or has a chain whose leaf is only inherited,
+ * cannot be placed on one node per branch and stays a group of its own. For
+ * every node, the bare names that can sit there form a set; each largest set
+ * (no other contains it) with two or more members is a group, restricted to
+ * the nodes it shares. A bare name in no such set keeps a group of its own
+ * over all its chains. Members, branches and groups follow key order and
+ * chain order, so the result does not depend on the order the slots were
+ * written in.
+ *
+ * Every constraint with at most one chain is a single, also when a group
+ * holds it: its own emission keeps it on the node it shares with unique and
+ * qualified siblings, and the group adds its bare siblings. Joining a group
+ * thus only ever adds a condition.
  *
  * One function on purpose: placement, the largest sets and their branches are
  * steps of one algorithm over the same per-node index.
@@ -140,7 +150,9 @@ export function groupConstraints(constraints: readonly Constraint[]): {
   const chainAt = bare.map((constraint) => {
     const byNode = new Map<string, PropertyPath>()
     for (const path of constraint.paths) {
-      for (const node of nodeKeysOf(path)) {
+      const nodes = nodeKeysOf(path)
+      if (!nodes) return undefined
+      for (const node of nodes) {
         if (byNode.has(node) && byNode.get(node) !== path) return undefined
         byNode.set(node, path)
       }
@@ -170,7 +182,7 @@ export function groupConstraints(constraints: readonly Constraint[]): {
     // only in a declaring class can leave every member on the same chain: one
     // branch walks it.
     for (const path of bare[set[0]!]!.paths) {
-      for (const node of nodeKeysOf(path)) {
+      for (const node of nodeKeysOf(path) ?? []) {
         if (!set.every((i) => chainAt[i]!.has(node))) continue
         const chains = set.map((i) => chainAt[i]!.get(node)!)
         const identity = chains.map((chain, j) => bare[set[j]!]!.paths.indexOf(chain)).join(' ')
@@ -189,10 +201,9 @@ export function groupConstraints(constraints: readonly Constraint[]): {
       })
     }
   })
-  const grouped = new Set(groups.flatMap(({ group }) => group.members))
   return {
     groups: groups.sort((a, b) => a.first - b.first).map(({ group }) => group),
-    singles: constraints.filter((constraint) => !grouped.has(constraint)),
+    singles: constraints.filter((constraint) => constraint.paths.length <= 1),
   }
 }
 
@@ -201,9 +212,14 @@ export function groupConstraints(constraints: readonly Constraint[]): {
  * ([SPARQL11] §7): a branch walks one node's route once from the asset, with
  * intermediates of its own, and tests every member's leaf on that node, so
  * the members hold on one node. Every branch binds each member's variable,
- * so a value is projected whichever node holds it. A member of several groups
- * gets a variable of its own in each, so its groups need not share a value
- * node. The branches share no node with the query's other constraints.
+ * so a value is projected whichever node holds it. A member bound elsewhere
+ * already — by its single emission, or by an earlier group — gets a variable
+ * of the group's own in each further group, which is not projected: its
+ * groups need not share a value node. The branches share no node with the
+ * query's other constraints.
+ *
+ * One function on purpose: a branch's route, its members' leaves and their
+ * variables are emitted together, once per branch.
  */
 export function emitConstraintGroups(
   domainName: string,
@@ -221,12 +237,15 @@ export function emitConstraintGroups(
     if (desc && desc.name !== domainName) foreignDomains.add(desc.name)
     return desc ? prefixedPredicate(predicateIri, desc) : `<${predicateIri}>`
   }
-  const occurrences = new Map<Constraint, number>()
+  // A constraint with one chain is bound by its single emission already.
+  const bound = new Set<Constraint>()
   groups.forEach((group, groupIdx) => {
-    const leafSuffixes = group.members.map((member) => {
-      const seen = occurrences.get(member) ?? 0
-      occurrences.set(member, seen + 1)
-      return seen === 0 ? suffix : `_${seen + 1}${suffix}`
+    const leaves = group.members.map((member, memberIdx) => {
+      const first = !bound.has(member) && member.paths.length > 1
+      bound.add(member)
+      return first
+        ? { key: member.key, vars: selectVars }
+        : { key: `_alt${groupIdx}_m${memberIdx}`, vars: new Set<string>() }
     })
     const branches = group.branches.map((chains, branchIdx) => {
       const lines: string[] = []
@@ -241,30 +260,30 @@ export function emitConstraintGroups(
       group.members.forEach((member, memberIdx) => {
         const path = chains[memberIdx]!
         const leafPred = emitPredicate(path.steps[path.steps.length - 1]!.predicate)
-        const leafSuffix = leafSuffixes[memberIdx]!
+        const leaf = leaves[memberIdx]!
         if (member.kind === 'filter') {
           emitLeafFilter(
             cursor,
             leafPred,
-            member.key,
-            leafSuffix,
+            leaf.key,
+            suffix,
             member.value,
             path,
             lines,
             tests,
-            selectVars
+            leaf.vars
           )
         } else {
           emitLeafRange(
             cursor,
             leafPred,
-            member.key,
-            leafSuffix,
+            leaf.key,
+            suffix,
             member.range,
             path,
             lines,
             tests,
-            selectVars,
+            leaf.vars,
             emitPredicate,
             vocabIndex
           )
