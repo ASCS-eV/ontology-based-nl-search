@@ -143,6 +143,21 @@ export function addLocationFilter(
 }
 
 /**
+ * Add the value test a leaf calls for: {@link addEnumFilter} for a literal
+ * leaf, the textual {@link addLocationFilter} for an IRI-valued one (`iri` or
+ * `class:` — see `LeafKind`).
+ */
+export function addLeafFilter(
+  filters: string[],
+  varName: string,
+  value: string | string[],
+  leaf: { leafKind: string; datatype?: string }
+): void {
+  if (leaf.leafKind === 'literal') addEnumFilter(filters, varName, value, leaf.datatype)
+  else addLocationFilter(filters, varName, value)
+}
+
+/**
  * Lexical forms of the two `xsd:boolean` values — each value has two
  * representations ([RDF11] §5 Datatypes: `"true"`/`"1"` and `"false"`/`"0"`).
  */

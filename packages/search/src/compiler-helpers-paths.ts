@@ -11,8 +11,7 @@ import {
 } from '@ontology-search/ontology/domain-registry'
 
 import {
-  addEnumFilter,
-  addLocationFilter,
+  addLeafFilter,
   findDomainForIri,
   leafVariable,
   prefixedPredicate,
@@ -285,7 +284,7 @@ export function emitDirectPathFilters(
 }
 
 /** Bind a filter's leaf from `cursor` and constrain it to `value`. */
-function emitLeafFilter(
+export function emitLeafFilter(
   cursor: string,
   leafPred: string,
   key: string,
@@ -298,11 +297,7 @@ function emitLeafFilter(
 ): void {
   const v = leafVariable(key, suffix)
   patterns.push(`${cursor} ${leafPred} ${v} .`)
-  if (path.leafKind === 'literal') {
-    addEnumFilter(filters, v, value, path.datatype)
-  } else {
-    addLocationFilter(filters, v, value)
-  }
+  addLeafFilter(filters, v, value, path)
   selectVars.add(v)
 }
 
@@ -312,7 +307,7 @@ function emitLeafFilter(
  * SHACL-discovered lower/upper predicates: a user `min` constrains the
  * interval's upper bound and vice versa.
  */
-function emitLeafRange(
+export function emitLeafRange(
   cursor: string,
   leafPred: string,
   key: string,
@@ -348,105 +343,6 @@ function emitLeafRange(
   selectVars.add(v)
   if (range.min !== undefined) filters.push(`FILTER(xsd:float(${v}) >= ${range.min})`)
   if (range.max !== undefined) filters.push(`FILTER(xsd:float(${v}) <= ${range.max})`)
-}
-
-/**
- * Emit the constraints whose key names several chains (a bare leaf name the
- * domain reaches more than one way, ADR 0009) as one `UNION` group each
- * ([SPARQL11] §7): a branch per chain walks the whole chain from the asset
- * with intermediates of its own and carries its own value test, and every
- * branch binds the key's variable, so the value is projected whichever chain
- * holds it. The branches share no node with the query's other constraints —
- * the key does not say which chain, so it cannot say which node either.
- *
- * Except with each other: constraints whose chains end on exactly the same
- * nodes ({@link pathPrefixKey}), the leaves of one class reached by the same
- * routes such as a latitude and a longitude, share one group. Each branch
- * walks one route once and tests every leaf on its node, so the leaves hold
- * on one node, as they do when the class has a single route. Constraints
- * whose nodes only overlap keep a group each.
- *
- * Branches follow the order of the chains (IRI-chain order) and the groups the
- * order of their first keys, so the SPARQL is deterministic.
- */
-export function emitAlternativeConstraints(
-  domainName: string,
-  filterEntries: [string, string | string[], PropertyPath[]][],
-  rangeEntries: [string, { min?: number; max?: number }, PropertyPath[]][],
-  assetVar: string,
-  suffix: string,
-  patterns: string[],
-  selectVars: Set<string>,
-  foreignDomains: Set<string>,
-  registry: DomainRegistry,
-  vocabIndex: CompilerVocab
-): void {
-  const emitPredicate = (predicateIri: string): string => {
-    const desc = findDomainForIri(predicateIri, registry)
-    if (desc && desc.name !== domainName) foreignDomains.add(desc.name)
-    return desc ? prefixedPredicate(predicateIri, desc) : `<${predicateIri}>`
-  }
-  type Entry =
-    | { kind: 'filter'; key: string; value: string | string[]; paths: PropertyPath[] }
-    | { kind: 'range'; key: string; range: { min?: number; max?: number }; paths: PropertyPath[] }
-  const entries: Entry[] = [
-    ...filterEntries.map(([key, value, paths]): Entry => ({ kind: 'filter', key, value, paths })),
-    ...rangeEntries.map(([key, range, paths]): Entry => ({ kind: 'range', key, range, paths })),
-  ].sort((a, b) => a.key.localeCompare(b.key) || a.kind.localeCompare(b.kind))
-
-  // Branch i of a group walks the route of every entry's chain i, so only
-  // entries that reach each of their nodes once can share one.
-  const groups = new Map<string, Entry[]>()
-  entries.forEach((entry, entryIdx) => {
-    const nodes = entry.paths.map(pathPrefixKey)
-    const group = new Set(nodes).size === nodes.length ? nodes.join('\n') : `#${entryIdx}`
-    groups.set(group, [...(groups.get(group) ?? []), entry])
-  })
-  ;[...groups.values()].forEach((group, groupIdx) => {
-    const branches = group[0]!.paths.map((route, branchIdx) => {
-      const lines: string[] = []
-      const tests: string[] = []
-      let cursor = assetVar
-      for (let i = 0; i < route.steps.length - 1; i++) {
-        const intVar = `?_alt${groupIdx}_${branchIdx}_${i}${suffix}`
-        lines.push(`${cursor} ${emitPredicate(route.steps[i]!.predicate)} ${intVar} .`)
-        cursor = intVar
-      }
-      for (const entry of group) {
-        const path = entry.paths[branchIdx]!
-        const leafPred = emitPredicate(path.steps[path.steps.length - 1]!.predicate)
-        if (entry.kind === 'filter') {
-          emitLeafFilter(
-            cursor,
-            leafPred,
-            entry.key,
-            suffix,
-            entry.value,
-            path,
-            lines,
-            tests,
-            selectVars
-          )
-        } else {
-          emitLeafRange(
-            cursor,
-            leafPred,
-            entry.key,
-            suffix,
-            entry.range,
-            path,
-            lines,
-            tests,
-            selectVars,
-            emitPredicate,
-            vocabIndex
-          )
-        }
-      }
-      return `{\n    ${[...lines, ...tests].join('\n    ')}\n  }`
-    })
-    patterns.push(branches.join('\n  UNION\n  '))
-  })
 }
 
 /**
