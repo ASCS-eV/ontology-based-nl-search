@@ -139,7 +139,8 @@ export function lookupDomainSpecPredicate(
  * domain-specification meta-model. Paths longer than that
  * (e.g. a location leaf reached via `asset → spec → georef → loc → leaf`)
  * would route to a misclassified group predicate. Generic deep
- * emission walks the actual SHACL-discovered chain instead.
+ * emission walks the actual SHACL-discovered chain instead. A shorter path
+ * has no group node at all and is walked the same way.
  */
 export const SHALLOW_PATH_MAX_STEPS = 3
 

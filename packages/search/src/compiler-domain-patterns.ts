@@ -48,10 +48,11 @@ import { type PropertyPath } from './property-paths.js'
  *
  * Filters split into two emission paths:
  *
- *   - **Shallow** (path ≤ 3 steps): emitted via the shape-group
+ *   - **Shallow** (path of 3 steps): emitted via the shape-group
  *     machinery — properties classified by their SHACL parent shape's
  *     `rdfs:subClassOf` superclass, then grouped into `asset → spec →
- *     hasGroup → leaf` triples that share intermediate variables.
+ *     hasGroup → leaf` triples that share intermediate variables. A
+ *     shorter path has no group node and is walked as a direct property.
  *   - **Deep** (path > 3 steps): emitted by walking the full
  *     SHACL-discovered chain via {@link emitDeepFilters}, grouped by
  *     shared path prefix so multiple deep filters under the same
@@ -120,6 +121,13 @@ export function buildDomainPatterns(
     domainSpecPredicate === null ||
     (path.steps[0] !== undefined &&
       prefixedPredicate(path.steps[0].predicate, domain) === domainSpecPredicate)
+  // The shape-group emission builds exactly `asset → spec → group → leaf`. A
+  // path of a shape-group name with any other length has no group node there
+  // — a group class hung straight off the asset, or nested below another
+  // class — so it is walked as its `sh:path` chain declares ([SHACL] §2.3.1.2).
+  const hasGroupShape = (path: PropertyPath) =>
+    path.steps.length === SHALLOW_PATH_MAX_STEPS &&
+    vocabIndex.shapeGroupPropertyNames.has(path.propertyName)
   for (const [key, value] of allFilterEntries) {
     if (!isNonEmpty(value)) continue
     const resolved = resolveDomainKey(vocabIndex, domainName, key, value)
@@ -131,7 +139,7 @@ export function buildDomainPatterns(
     if (path && path.steps.length > SHALLOW_PATH_MAX_STEPS) {
       if (startsAtSpecHop(path)) deepFilterEntries.push([key, value, path])
       else directFilterEntries.push([key, value, path])
-    } else if (path && !vocabIndex.shapeGroupPropertyNames.has(path.propertyName)) {
+    } else if (path && !hasGroupShape(path)) {
       directFilterEntries.push([key, value, path])
     } else {
       shapeGroupFilterEntries.push([key, value, path])
@@ -152,7 +160,7 @@ export function buildDomainPatterns(
       continue
     }
     const path = resolved.kind === 'path' ? resolved.path : undefined
-    if (path && !vocabIndex.shapeGroupPropertyNames.has(path.propertyName)) {
+    if (path && !hasGroupShape(path)) {
       directRangeEntries.push([key, range, path])
     } else {
       shapeGroupRangeEntries.push([key, range, path])
