@@ -15,12 +15,16 @@ import { sparqlPrefix } from '@ontology-search/core/rdf/prefixes'
 import { type DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SearchSlots } from '@ontology-search/slots/slots'
 
+import {
+  emitConstraintGroups,
+  groupConstraints,
+  resolveConstraints,
+} from './compiler-constraints.js'
 import { buildDomainPatterns } from './compiler-domain-patterns.js'
 import { buildPrefixes } from './compiler-helpers-domains.js'
 import { pathPrefixKey, resolveDomainKey } from './compiler-helpers-paths.js'
 import {
-  addEnumFilter,
-  addLocationFilter,
+  addLeafFilter,
   findDomainForIri,
   isNonEmpty,
   leafVariable,
@@ -229,10 +233,16 @@ export function compileCrossDomainQuery(
   // Filters that share a path prefix reuse intermediate variables;
   // filters with no discoverable path are skipped with a logger
   // warning.
-  emitCrossDomainFilters(slots.filters, vocabIndex, registry, optionals, filters, selectVars, {
-    usedPrefixes,
-    prefixLines,
-  })
+  emitCrossDomainFilters(
+    slots.filters,
+    vocabIndex,
+    registry,
+    patterns,
+    optionals,
+    filters,
+    selectVars,
+    { usedPrefixes, prefixLines }
+  )
 
   // Build the query
   const prefixes = prefixLines.join('\n')
@@ -246,10 +256,10 @@ export function compileCrossDomainQuery(
  * whose keyed path index holds the key, resolves it there (ADR 0009), then
  * walks the path step by step. Multiple filter keys that share a path prefix
  * (e.g. country and city under `hasGeoreference → hasProjectLocation`)
- * reuse the intermediate variables for a compact OPTIONAL block. A bare name
- * the domain reaches through several chains that can hold the value gets an
- * OPTIONAL of its own around one UNION branch per chain, all binding the
- * key's variable; its value test stays outside, like every other filter's.
+ * reuse the intermediate variables for a compact OPTIONAL block. Bare names
+ * the domain reaches through several chains are constraint groups, held on a
+ * node they share with sibling bare names as in every compile path
+ * (`groupConstraints`, `emitConstraintGroups`).
  *
  * Ontology-agnostic by design: no filter key is privileged, no
  * predicate name is literal, and the absence of any single path just
@@ -259,6 +269,7 @@ export function emitCrossDomainFilters(
   filterMap: Record<string, string | string[]>,
   vocabIndex: CompilerVocab,
   registry: DomainRegistry,
+  patterns: string[],
   optionals: string[],
   filters: string[],
   selectVars: string[],
@@ -266,27 +277,31 @@ export function emitCrossDomainFilters(
 ): void {
   // Resolve each filter key in the first domain that knows it. Skip keys
   // with no path in any registered domain.
-  type Entry = { key: string; value: string | string[]; path: PropertyPath }
-  const resolved: Entry[] = []
-  const alternatives: { key: string; value: string | string[]; paths: PropertyPath[] }[] = []
   const indexKeys = [...vocabIndex.paths.keys(), ...(vocabIndex.alternatives?.keys() ?? [])]
-  for (const [key, value] of Object.entries(filterMap)) {
-    if (!isNonEmpty(value)) continue
-    const domain = indexKeys
+  const domainOf = (key: string) =>
+    indexKeys
       .filter((indexKey) => indexKey.endsWith(`:${key}`))
       .map((indexKey) => indexKey.slice(0, indexKey.indexOf(':')))
       .sort()[0]
-    const resolution = domain ? resolveDomainKey(vocabIndex, domain, key, value) : undefined
-    if (resolution?.kind === 'path') {
-      resolved.push({ key, value, path: resolution.path })
-    } else if (resolution?.kind === 'alternatives') {
-      alternatives.push({ key, value, paths: resolution.paths })
-    } else {
-      log.warn('Cross-domain filter skipped — no SHACL property path discovered for key', { key })
+  const constraints = resolveConstraints(
+    Object.entries(filterMap).filter(([, value]) => isNonEmpty(value)),
+    [],
+    (key, value) => {
+      const domain = domainOf(key)
+      return domain ? resolveDomainKey(vocabIndex, domain, key, value) : { kind: 'none' }
     }
+  )
+  for (const { key, paths } of constraints) {
+    if (paths.length > 0) continue
+    log.warn('Cross-domain filter skipped — no SHACL property path discovered for key', { key })
   }
+  const { groups, singles } = groupConstraints(constraints.filter((c) => c.paths.length > 0))
+  type Entry = { key: string; value: string | string[]; path: PropertyPath }
+  const resolved = singles.flatMap((c): Entry[] =>
+    c.kind === 'filter' ? [{ key: c.key, value: c.value, path: c.paths[0]! }] : []
+  )
 
-  if (resolved.length === 0 && alternatives.length === 0) return
+  if (resolved.length === 0 && groups.length === 0) return
 
   const ensurePrefix = (predicateIri: string): string => {
     const desc = findDomainForIri(predicateIri, registry)
@@ -332,11 +347,7 @@ export function emitCrossDomainFilters(
       const leafPred = ensurePrefix(leafStep.predicate)
       const v = leafVariable(key)
       optionalLines.push(`    ${cursor} ${leafPred} ${v} .`)
-      if (leafPath.leafKind === 'literal') {
-        addEnumFilter(filters, v, value, leafPath.datatype)
-      } else {
-        addLocationFilter(filters, v, value)
-      }
+      addLeafFilter(filters, v, value, leafPath)
       selectVars.push(v)
     }
     optionalLines.push('  }')
@@ -344,33 +355,27 @@ export function emitCrossDomainFilters(
     bucketIdx++
   }
 
-  for (const [entryIdx, { key, value, paths }] of alternatives
-    .sort((a, b) => a.key.localeCompare(b.key))
-    .entries()) {
-    const v = leafVariable(key)
-    const branches = paths.map((path, branchIdx) => {
-      const lines: string[] = []
-      let cursor = '?asset'
-      for (let i = 0; i < path.steps.length - 1; i++) {
-        const intVar = `?_xa${entryIdx}_${branchIdx}_${i}`
-        lines.push(`${cursor} ${ensurePrefix(path.steps[i]!.predicate)} ${intVar} .`)
-        cursor = intVar
+  if (groups.length > 0) {
+    const foreign = new Set<string>()
+    const groupVars = new Set<string>()
+    emitConstraintGroups(
+      '',
+      groups,
+      '?asset',
+      '',
+      patterns,
+      groupVars,
+      foreign,
+      registry,
+      vocabIndex
+    )
+    for (const name of [...foreign].sort()) {
+      const desc = registry.domains.get(name)
+      if (desc && !prefixCtx.usedPrefixes.has(desc.name)) {
+        prefixCtx.usedPrefixes.add(desc.name)
+        prefixCtx.prefixLines.push(`PREFIX ${desc.prefix}: <${desc.namespace}>`)
       }
-      lines.push(`${cursor} ${ensurePrefix(path.steps[path.steps.length - 1]!.predicate)} ${v} .`)
-      return `    { ${lines.join(' ')} }`
-    })
-    const optionalLines = ['OPTIONAL {', branches.join('\n    UNION\n')]
-    // One test for every chain: the comparison a datatype calls for applies
-    // only when all chains declare that datatype.
-    const datatypes = new Set(paths.map((path) => path.datatype))
-    const datatype = datatypes.size === 1 ? paths[0]!.datatype : undefined
-    if (paths.every((path) => path.leafKind === 'literal')) {
-      addEnumFilter(filters, v, value, datatype)
-    } else {
-      addLocationFilter(filters, v, value)
     }
-    optionalLines.push('  }')
-    optionals.push(optionalLines.join('\n'))
-    selectVars.push(v)
+    selectVars.push(...groupVars)
   }
 }

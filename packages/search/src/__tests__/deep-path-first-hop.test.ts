@@ -16,6 +16,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
 import { buildCompilerVocabFrom, compileSlotsWithTrace } from '../compiler.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
+import { syntheticRegistry } from './__fixtures__/synthetic-registry.js'
 
 const FLEET = 'http://example.org/fleet/v1/'
 const CORE = 'http://example.org/core/v1/'
@@ -75,48 +76,10 @@ const DATA_TTL = `
     fleet:hasTag [ a fleet:TagHolder ; fleet:hasLabel [ a fleet:Label ; fleet:labelText "slow" ] ] ] .
 `
 
-/** The minimum DomainRegistry surface the discovery and compiler read. */
-function fleetRegistry() {
-  const desc = {
-    name: 'fleet',
-    namespace: FLEET,
-    prefix: 'fleet',
-    targetClass: 'fleet:Vehicle',
-    targetClassIri: `${FLEET}Vehicle`,
-    version: 'v1',
-    shapes: ['Vehicle'],
-    declaredPrefixes: { fleet: FLEET },
-  }
-  return {
-    domains: new Map([['fleet', desc]]),
-    domainNames: ['fleet'],
-    prefixesFor() {
-      return [
-        'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>',
-        'PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>',
-        `PREFIX fleet: <${FLEET}>`,
-      ].join('\n')
-    },
-    allPrefixes() {
-      return this.prefixesFor()
-    },
-    resolveByIriDomain(iriDomain: string) {
-      return iriDomain === 'fleet' ? desc : undefined
-    },
-    domainForIri(iri: string) {
-      if (iri.startsWith(FLEET)) return 'fleet'
-      if (iri.startsWith(CORE)) return 'core'
-      return undefined
-    },
-    getAllNamespaces() {
-      return new Set([FLEET, CORE])
-    },
-  }
-}
+const fleetRegistry = () =>
+  syntheticRegistry([{ name: 'fleet', namespace: FLEET, assetClass: 'Vehicle' }], { core: CORE })
 
 let store: OxigraphStore
-// `any`: the synthetic registry stands in for the disk-derived DomainRegistry,
-// as in the flat-ontology genericity tests.
 let registry: any
 let vocabIndex: Awaited<ReturnType<typeof buildCompilerVocabFrom>>
 

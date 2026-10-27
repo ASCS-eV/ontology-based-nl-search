@@ -17,9 +17,13 @@ import {
   type DomainDescriptor,
 } from '@ontology-search/ontology/domain-registry'
 
+import {
+  emitConstraintGroups,
+  groupConstraints,
+  resolveConstraints,
+} from './compiler-constraints.js'
 import { classifyProperty, resolvePropertyPrefix } from './compiler-helpers-domains.js'
 import {
-  emitAlternativeConstraints,
   emitDeepFilters,
   emitDirectPathFilters,
   lookupDomainSpecPredicate,
@@ -30,6 +34,7 @@ import {
 } from './compiler-helpers-paths.js'
 import {
   addEnumFilter,
+  addLeafFilter,
   findDomainForIri,
   groupPredicate,
   groupVariableName,
@@ -108,14 +113,14 @@ export function buildDomainPatterns(
   //
   // Every key is resolved first (ADR 0009). A bare name the domain reaches
   // through several chains, of which more than one can hold the value, is
-  // ALTERNATIVE: emitted as one UNION group. Every other key resolves to one
-  // path (or none) and goes to the strategies above; its leaf name — what the
+  // ALTERNATIVE: emitted as one UNION group, together with the bare names that
+  // can hold on a node it shares (`groupConstraints`). Every other key resolves
+  // to one path (or none) and goes to the strategies above; its leaf name — what the
   // shape-group machinery classifies and builds the leaf predicate from — is
   // the path's, not the key's, since a qualified key is not a leaf name.
   const shapeGroupFilterEntries: [string, string | string[], PropertyPath | undefined][] = []
   const deepFilterEntries: [string, string | string[], PropertyPath][] = []
   const directFilterEntries: [string, string | string[], PropertyPath][] = []
-  const alternativeFilterEntries: [string, string | string[], PropertyPath[]][] = []
   const domainSpecPredicate = lookupDomainSpecPredicate(vocabIndex, domain)
   const startsAtSpecHop = (path: PropertyPath) =>
     domainSpecPredicate === null ||
@@ -130,14 +135,18 @@ export function buildDomainPatterns(
   const hasGroupShape = (path: PropertyPath) =>
     path.steps.length === SHALLOW_PATH_MAX_STEPS &&
     vocabIndex.shapeGroups.has(`${path.propertyName}:${domainName}`)
-  for (const [key, value] of allFilterEntries) {
-    if (!isNonEmpty(value)) continue
-    const resolved = resolveDomainKey(vocabIndex, domainName, key, value)
-    if (resolved.kind === 'alternatives') {
-      alternativeFilterEntries.push([key, value, resolved.paths])
-      continue
-    }
-    const path = resolved.kind === 'path' ? resolved.path : undefined
+  const { groups, singles } = groupConstraints(
+    resolveConstraints(
+      allFilterEntries.filter(([, value]) => isNonEmpty(value)),
+      rangeEntries,
+      (key, value) => resolveDomainKey(vocabIndex, domainName, key, value)
+    )
+  )
+
+  for (const constraint of singles) {
+    if (constraint.kind !== 'filter') continue
+    const { key, value } = constraint
+    const path = constraint.paths[0]
     if (path && path.steps.length > SHALLOW_PATH_MAX_STEPS) {
       if (startsAtSpecHop(path)) deepFilterEntries.push([key, value, path])
       else directFilterEntries.push([key, value, path])
@@ -155,14 +164,10 @@ export function buildDomainPatterns(
   ][] = []
   const deepRangeEntries: [string, { min?: number; max?: number }, PropertyPath][] = []
   const directRangeEntries: [string, { min?: number; max?: number }, PropertyPath][] = []
-  const alternativeRangeEntries: [string, { min?: number; max?: number }, PropertyPath[]][] = []
-  for (const [key, range] of rangeEntries) {
-    const resolved = resolveDomainKey(vocabIndex, domainName, key)
-    if (resolved.kind === 'alternatives') {
-      alternativeRangeEntries.push([key, range, resolved.paths])
-      continue
-    }
-    const path = resolved.kind === 'path' ? resolved.path : undefined
+  for (const constraint of singles) {
+    if (constraint.kind !== 'range') continue
+    const { key, range } = constraint
+    const path = constraint.paths[0]
     // A deep range hangs off the specification node like a deep filter, so
     // the two share the nodes of a common prefix.
     if (path && path.steps.length > SHALLOW_PATH_MAX_STEPS && startsAtSpecHop(path)) {
@@ -264,8 +269,7 @@ export function buildDomainPatterns(
     needsSpecHop ||
     directFilterEntries.length > 0 ||
     directRangeEntries.length > 0 ||
-    alternativeFilterEntries.length > 0 ||
-    alternativeRangeEntries.length > 0 ||
+    groups.length > 0 ||
     directFallbackFilters.length > 0 ||
     directFallbackRanges.length > 0
 
@@ -437,12 +441,12 @@ export function buildDomainPatterns(
       for (const [key, value, path] of bucket.filters) {
         const varName = leafVariable(key, suffix)
         patterns.push(`${groupVar} ${leafPredicateOf(propPrefix, key, path)} ${varName} .`)
-        addEnumFilter(
-          filters,
-          varName,
-          value,
-          path?.datatype ?? lookupLeafDatatype(vocabIndex, domainName, key)
-        )
+        // The value test follows the leaf's kind, as on every other emission
+        // path; a key with no path of its own is read as a literal.
+        addLeafFilter(filters, varName, value, {
+          leafKind: path?.leafKind ?? 'literal',
+          datatype: path?.datatype ?? lookupLeafDatatype(vocabIndex, domainName, key),
+        })
         selectVars.add(varName)
       }
 
@@ -517,13 +521,12 @@ export function buildDomainPatterns(
     )
   }
 
-  // Alternatives: a bare name for several chains — one UNION group per key,
-  // each branch walking its whole chain from the asset.
-  if (alternativeFilterEntries.length > 0 || alternativeRangeEntries.length > 0) {
-    emitAlternativeConstraints(
+  // Bare names for several chains, and those that hold on a node they share:
+  // one UNION group each, every branch walking its node's route from the asset.
+  if (groups.length > 0) {
+    emitConstraintGroups(
       domainName,
-      alternativeFilterEntries,
-      alternativeRangeEntries,
+      groups,
       assetVar,
       suffix,
       patterns,

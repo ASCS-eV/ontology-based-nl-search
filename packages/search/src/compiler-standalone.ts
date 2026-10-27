@@ -32,10 +32,11 @@ import type { DomainRegistry } from '@ontology-search/ontology/domain-registry'
 import type { SearchSlots } from '@ontology-search/slots/slots'
 
 import {
-  emitAlternativeConstraints,
-  emitDirectPathFilters,
-  resolveKey,
-} from './compiler-helpers-paths.js'
+  emitConstraintGroups,
+  groupConstraints,
+  resolveConstraints,
+} from './compiler-constraints.js'
+import { emitDirectPathFilters, resolveKey } from './compiler-helpers-paths.js'
 import { findDomainForIri, prefixedPredicate } from './compiler-helpers-primitives.js'
 import { ASSET_LABEL_PATTERN } from './compiler-helpers-query.js'
 import type { CompilerVocab } from './compiler-vocab.js'
@@ -79,28 +80,22 @@ export function buildStandaloneArms(
           `FILTER NOT EXISTS { VALUES ?_ownerLink { ${composers.map((p) => `<${p}>`).join(' ')} } ?_owner ?_ownerLink ?asset }`,
         ]
   for (const root of vocabIndex.vocabularyRoots?.get(domainName) ?? []) {
-    // Keys resolve against this entry class's own paths (ADR 0009).
-    const filterEntries: [string, string | string[], PropertyPath][] = []
-    const alternativeFilters: [string, string | string[], PropertyPath[]][] = []
-    for (const [key, value] of Object.entries(slots.filters)) {
-      const resolved = resolveKey(root.paths, root.alternatives, key, value)
-      if (resolved.kind === 'path') filterEntries.push([key, value, resolved.path])
-      if (resolved.kind === 'alternatives') alternativeFilters.push([key, value, resolved.paths])
-    }
-    const rangeEntries: [string, { min?: number; max?: number }, PropertyPath][] = []
-    const alternativeRanges: [string, { min?: number; max?: number }, PropertyPath[]][] = []
-    for (const [key, range] of Object.entries(slots.ranges)) {
-      const resolved = resolveKey(root.paths, root.alternatives, key)
-      if (resolved.kind === 'path') rangeEntries.push([key, range, resolved.path])
-      if (resolved.kind === 'alternatives') alternativeRanges.push([key, range, resolved.paths])
-    }
-    const constraintCount = Object.keys(slots.filters).length + Object.keys(slots.ranges).length
-    const expressible =
-      filterEntries.length +
-      rangeEntries.length +
-      alternativeFilters.length +
-      alternativeRanges.length
-    if (expressible < constraintCount) continue
+    // Keys resolve against this entry class's own paths (ADR 0009); a document
+    // that cannot express every constraint is no answer.
+    const constraints = resolveConstraints(
+      Object.entries(slots.filters),
+      Object.entries(slots.ranges),
+      (key, value) => resolveKey(root.paths, root.alternatives, key, value)
+    )
+    if (constraints.some((constraint) => constraint.paths.length === 0)) continue
+    const { groups, singles } = groupConstraints(constraints)
+    const filterEntries = singles.flatMap((c): [string, string | string[], PropertyPath][] =>
+      c.kind === 'filter' ? [[c.key, c.value, c.paths[0]!]] : []
+    )
+    const rangeEntries = singles.flatMap(
+      (c): [string, { min?: number; max?: number }, PropertyPath][] =>
+        c.kind === 'range' ? [[c.key, c.range, c.paths[0]!]] : []
+    )
 
     const rootDesc = findDomainForIri(root.rootClass, registry)
     if (rootDesc) prefixDomains.add(rootDesc.name)
@@ -124,10 +119,9 @@ export function buildStandaloneArms(
       registry,
       vocabIndex
     )
-    emitAlternativeConstraints(
+    emitConstraintGroups(
       domainName,
-      alternativeFilters,
-      alternativeRanges,
+      groups,
       '?asset',
       '',
       patterns,

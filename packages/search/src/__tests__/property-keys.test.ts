@@ -139,6 +139,47 @@ describe('indexPropertyKeys', () => {
     )
   })
 
+  it('reads a chain one of its classes declares itself as no inherited leaf', () => {
+    // A superclass shape declares the leaf too, and sorts first: the node the
+    // chain reaches still carries it, so it is no leaf of an unknown node.
+    const route = [`${EX}consumer`, `${OTHER}description`]
+    const inherited: PropertyPath = {
+      ...path(route, { owningClass: `${OTHER}Entity` }),
+      inheritedLeaf: true,
+    }
+    const own = path(route, { owningClass: `${OTHER}Participant` })
+    for (const order of [
+      [inherited, own],
+      [own, inherited],
+    ]) {
+      expect(indexPropertyKeys(order).byKey.get('ex:description')?.inheritedLeaf).toBeUndefined()
+    }
+    expect(indexPropertyKeys([inherited]).byKey.get('ex:description')?.inheritedLeaf).toBe(true)
+  })
+
+  it('keeps a chain inherited where the class it reaches does not declare the leaf', () => {
+    // Same predicates, other classes: `consumer` reaches a Customer, which
+    // inherits the leaf, or a Participant, which declares it. The chain's
+    // representative is the Customer route; its node still carries the leaf
+    // only by inheritance.
+    const via = (cls: string): PropertyPath => ({
+      ...path([`${EX}consumer`, `${OTHER}description`]),
+      steps: [
+        { predicate: `${EX}consumer`, intermediate: `${EX}${cls}` },
+        { predicate: `${OTHER}description` },
+      ],
+    })
+    const inherited: PropertyPath = {
+      ...via('Customer'),
+      owningClass: `${OTHER}Entity`,
+      inheritedLeaf: true,
+    }
+    const own: PropertyPath = { ...via('Participant'), owningClass: `${EX}Participant` }
+    expect(indexPropertyKeys([own, inherited]).byKey.get('ex:description')?.inheritedLeaf).toBe(
+      true
+    )
+  })
+
   it('does not depend on the order the paths arrive in', () => {
     const paths = [
       path([`${EX}colour`, `${EX}value`], { allowedValues: ['red'] }),

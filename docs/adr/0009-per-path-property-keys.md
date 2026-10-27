@@ -94,9 +94,15 @@ enum literals per domain from that same contract.
   arbitrary chain; it now matches any chain that can hold the value. For the 7
   affected demo keys this returns the assets the old query missed.
 - `UNION` branches do not share intermediate nodes with the query's other
-  filters. A bare ambiguous name therefore does not require its value to sit on
-  the same node as a sibling filter's. A qualified key keeps the existing node
-  sharing.
+  filters, except with other bare ambiguous names: every largest set of bare
+  names whose chains can end on a common node holds on one node of the nodes it
+  shares, so the leaves of one class read as one thing. A bare name in such a
+  set matches on its shared nodes only; a name in several sets holds once in
+  each, so a further filter only ever narrows a query; a bare name a value
+  narrowed to one chain also keeps the emission it has on its own, beside
+  qualified keys and unique names. A bare name that shares no node, reaches one node through
+  several chains, or has a leaf only inherited on some chain, stays on its
+  own. A qualified key keeps the existing node sharing.
 - The key spelling is an interface: the slot IR, the prompt, GraphQL and the
   `/vocabulary` route all carry it. Adding a chain to an ontology can turn a
   unique name into a qualified one, and, since a qualified key is the shortest

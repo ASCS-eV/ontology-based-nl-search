@@ -29,6 +29,7 @@ import { buildCompilerVocabFrom, compileSlotsWithTrace } from '../compiler.js'
 import { buildPropertyPaths, buildReferenceChains } from '../property-paths.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
 import { queryRange2DProperties } from '../schema-queries.js'
+import { syntheticRegistry } from './__fixtures__/synthetic-registry.js'
 
 /** ENVITED-X meta-model predicates the compiler must NEVER emit
  *  against a non-ENVITED-X ontology. Each is a fragment-only match
@@ -48,55 +49,10 @@ const FORBIDDEN_PREDICATE_LOCAL_NAMES = [
   'hasReferencedArtifacts',
 ] as const
 
-/**
- * Build a registry-like view of the fixture so the compiler can
- * navigate the library namespace. We synthesize the minimum
- * `DomainRegistry` surface the compiler reads — `domains.get`,
- * `domains.values`, `domainNames`, `domainForIri`, `resolveByIriDomain`,
- * `prefixesFor`, `allPrefixes`, `getAllNamespaces`.
- *
- * Construction is intentionally inline (not a fixture helper file) so
- * the test stays self-contained — anyone reading this single file
- * sees the entire genericity contract.
- */
-function libraryRegistry() {
-  const desc = {
-    name: 'library',
-    namespace: 'http://example.org/library/v1/',
-    prefix: 'library',
-    targetClass: 'library:Book',
-    targetClassIri: 'http://example.org/library/v1/Book',
-    version: 'v1',
-    shapes: ['Book'],
-    declaredPrefixes: {
-      library: 'http://example.org/library/v1/',
-    },
-  }
-  const domains = new Map([['library', desc]])
-  return {
-    domains,
-    domainNames: ['library'],
-    prefixesFor() {
-      return [
-        'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>',
-        'PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>',
-        `PREFIX library: <${desc.namespace}>`,
-      ].join('\n')
-    },
-    allPrefixes() {
-      return this.prefixesFor()
-    },
-    resolveByIriDomain(iriDomain: string) {
-      return iriDomain === 'library' ? desc : undefined
-    },
-    domainForIri(iri: string) {
-      return iri.startsWith(desc.namespace) ? 'library' : undefined
-    },
-    getAllNamespaces() {
-      return new Set([desc.namespace])
-    },
-  }
-}
+const libraryRegistry = () =>
+  syntheticRegistry([
+    { name: 'library', namespace: 'http://example.org/library/v1/', assetClass: 'Book' },
+  ])
 
 async function loadFixture() {
   const ttl = readFileSync(

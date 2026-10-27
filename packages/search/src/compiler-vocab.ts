@@ -205,10 +205,8 @@ async function buildCompilerVocab(): Promise<CompilerVocab> {
  * An `alternateRoute` path (a further route to a class several routes
  * reach) is keyed like any other chain, whatever its leaf name: a property
  * shape is its node shape and its path ([SHACL] §2.3), so each route is a
- * property of its own. Every leaf of the class gets the route, so leaves whose
- * chains end on the same nodes keep sharing one node on each route; a bare
- * name whose chains differ from a sibling's (narrowed by `sh:in` to some of
- * the classes, say) shares none, as ADR 0009 states for any ambiguous name. A
+ * property of its own. Every leaf of the class gets the route, so bare names
+ * of its leaves hold on one node of the routes they share (ADR 0009). A
  * shape-group facet lists each route's key, and `lookupStepPredicate` still
  * reads a name only further routes made ambiguous as the breadth-first chain
  * it was before.

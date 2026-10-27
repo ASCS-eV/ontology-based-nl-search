@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest'
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
 import { buildCompilerVocabFrom, compileSlotsWithTrace } from '../compiler.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
+import { syntheticRegistry } from './__fixtures__/synthetic-registry.js'
 
 const NS = 'http://example.org/garage/v1/'
 
@@ -60,49 +61,14 @@ const DATA = `
   garage:weight [ a garage:Measure ; garage:amount 1200 ] .
 `
 
-/** The minimum `DomainRegistry` surface the compiler reads, for one domain. */
-function garageRegistry() {
-  const desc = {
-    name: 'garage',
-    namespace: NS,
-    prefix: 'garage',
-    targetClass: 'garage:Car',
-    targetClassIri: `${NS}Car`,
-    version: 'v1',
-    shapes: ['Car'],
-    declaredPrefixes: { garage: NS },
-  }
-  return {
-    domains: new Map([['garage', desc]]),
-    domainNames: ['garage'],
-    prefixesFor() {
-      return [
-        'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>',
-        'PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>',
-        `PREFIX garage: <${NS}>`,
-      ].join('\n')
-    },
-    allPrefixes() {
-      return this.prefixesFor()
-    },
-    resolveByIriDomain(iriDomain: string) {
-      return iriDomain === 'garage' ? desc : undefined
-    },
-    domainForIri(iri: string) {
-      return iri.startsWith(NS) ? 'garage' : undefined
-    },
-    getAllNamespaces() {
-      return new Set([NS])
-    },
-  }
-}
+const garageRegistry = () =>
+  syntheticRegistry([{ name: 'garage', namespace: NS, assetClass: 'Car' }])
 
 async function setup() {
   const store = new OxigraphStore()
   await store.loadTurtle(SHAPES, SCHEMA_GRAPH)
   await store.loadTurtle(DATA)
   const registry = garageRegistry()
-  // `as any`: the synthetic registry stands in for the disk-derived one.
   const vocabIndex = await buildCompilerVocabFrom(store, registry as any)
   const compile = async (
     filters: Record<string, string | string[]>,
