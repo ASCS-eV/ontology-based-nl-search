@@ -18,7 +18,7 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 import { getAssetDomains } from './asset-domains.js'
 import { getConceptExpansionIndex } from './concept-expansion.js'
 import { getInitializedStore } from './init.js'
-import { indexPropertyKeys, keyOfIndexEntry } from './property-keys.js'
+import { indexPropertyKeys, keyOfIndexEntry, predicateChain } from './property-keys.js'
 import {
   buildReferenceChains,
   discoverPropertyPaths,
@@ -203,16 +203,48 @@ async function buildCompilerVocab(): Promise<CompilerVocab> {
  * an ordinary property, and `lookupStepPredicate` still reads it as the
  * breadth-first chain it was before.
  *
+ * That harm is in the *making*: `severalChainsAlready` lists the names the
+ * domain reaches through more than one chain with no further route at all.
+ * Under a value-object idiom the shape group IS the value class, so its
+ * properties are the terminal of every coded chain in the domain and are
+ * bare names for dozens of chains already ([SHACL] §2.3 — a property shape
+ * is its node shape and its path, so each chain is its own property). The
+ * guard would then drop every further route in the domain while the facets
+ * it protects are long gone, so for those names it does not apply.
+ *
  * @internal Exported for the shape-group guard regression test.
  */
 export function isKeyedPath(
   path: PropertyPath,
   shapeGroupPropertyNames: ReadonlySet<string>,
-  shapeGroups: ReadonlyMap<string, string>
+  shapeGroups: ReadonlyMap<string, string>,
+  severalChainsAlready: ReadonlySet<string> = new Set()
 ): boolean {
   if (path.extended) return !shapeGroupPropertyNames.has(path.propertyName)
-  if (path.alternateRoute) return !shapeGroups.has(`${path.propertyName}:${path.domain}`)
+  if (path.alternateRoute) {
+    const name = `${path.propertyName}:${path.domain}`
+    return !shapeGroups.has(name) || severalChainsAlready.has(name)
+  }
   return true
+}
+
+/**
+ * The `<leaf name>:<domain>` names a domain reaches through more than one
+ * predicate chain among `paths` — the paths that would be keyed if no
+ * further route were admitted. Used by {@link isKeyedPath} to tell a name a
+ * further route would make ambiguous from one that is ambiguous regardless.
+ *
+ * @internal Exported for the shape-group guard regression test.
+ */
+export function namesWithSeveralChains(paths: readonly PropertyPath[]): Set<string> {
+  const chainsOf = new Map<string, Set<string>>()
+  for (const path of paths) {
+    const name = `${path.propertyName}:${path.domain}`
+    const chains = chainsOf.get(name) ?? new Set<string>()
+    chains.add(predicateChain(path))
+    chainsOf.set(name, chains)
+  }
+  return new Set([...chainsOf].flatMap(([name, chains]) => (chains.size > 1 ? [name] : [])))
 }
 
 /**
@@ -277,8 +309,19 @@ export async function buildCompilerVocabFrom(
   // triples: one key per predicate chain (ADR 0009). A property local name may
   // legitimately appear in multiple asset domains; each domain gets its own
   // keys.
+  //
+  // A further route is admitted against the names that would be keyed without
+  // any further route, so the shape-group guard can tell a name it would make
+  // ambiguous from one that is ambiguous regardless (`isKeyedPath`).
+  const severalChainsAlready = namesWithSeveralChains(
+    propertyPaths.filter(
+      (path) => !path.alternateRoute && isKeyedPath(path, shapeGroupPropertyNames, shapeGroups)
+    )
+  )
   const { byKey: paths, alternatives } = indexPropertyKeys(
-    propertyPaths.filter((path) => isKeyedPath(path, shapeGroupPropertyNames, shapeGroups))
+    propertyPaths.filter((path) =>
+      isKeyedPath(path, shapeGroupPropertyNames, shapeGroups, severalChainsAlready)
+    )
   )
 
   // Discover cross-domain reference chains from the property paths, so

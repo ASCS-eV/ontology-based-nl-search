@@ -13,7 +13,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { buildDomainPatterns } from '../compiler-domain-patterns.js'
 import { lookupDomainSpecPredicate, resolveKey } from '../compiler-helpers-paths.js'
-import { type CompilerVocab, isKeyedPath } from '../compiler-vocab.js'
+import { type CompilerVocab, isKeyedPath, namesWithSeveralChains } from '../compiler-vocab.js'
 import { indexPropertyKeys } from '../property-keys.js'
 import { buildReferenceChains, emitPaths, MAX_ROUTES_PER_CLASS } from '../property-paths.js'
 import type { LeafKind, PropertyPath } from '../property-paths-types.js'
@@ -307,6 +307,63 @@ describe('emitPaths — a class reachable by several routes', () => {
     const groupElsewhere = new Map([['code:other', 'Content']])
     expect(isKeyedPath(other!, new Set(['code']), groupHere)).toBe(false)
     expect(isKeyedPath(other!, new Set(['code']), groupElsewhere)).toBe(true)
+  })
+
+  it('keeps a further route to a shape-group property the domain already reaches through several chains', () => {
+    // A value-object idiom makes the shape group the value class, so its
+    // properties terminate every coded chain in the domain: the name is a
+    // bare name for many chains with no further route at all. The guard then
+    // protects facets that are already gone, and would drop every further
+    // route in the domain.
+    const [shortest, other] = pathsFor()
+    const elsewhere: PropertyPath = {
+      ...shortest!,
+      steps: [{ predicate: `${NS}road_network` }, { predicate: `${SHARED}code` }],
+    }
+    const groupHere = new Map([['code:scenario', 'Content']])
+    const already = namesWithSeveralChains([shortest!, elsewhere])
+    expect(already.has('code:scenario')).toBe(true)
+    expect(isKeyedPath(other!, new Set(['code']), groupHere, already)).toBe(true)
+  })
+
+  it('still keeps a further route off a shape-group property the domain reaches through one chain', () => {
+    // Admitting this route IS what makes the name ambiguous, so the guard
+    // still applies: the harm it names is in the making.
+    const [shortest, other] = pathsFor()
+    const groupHere = new Map([['code:scenario', 'Content']])
+    const already = namesWithSeveralChains([shortest!])
+    expect(already.has('code:scenario')).toBe(false)
+    expect(isKeyedPath(other!, new Set(['code']), groupHere, already)).toBe(false)
+  })
+
+  it('counts chains rather than paths, so one chain declared twice stays one', () => {
+    // A leaf declared at several levels of a class hierarchy yields one path
+    // per declaring shape with the same chain: one property, not two.
+    const [shortest] = pathsFor()
+    const redeclared: PropertyPath = { ...shortest!, owningClass: `${NS}SuperManeuverType` }
+    expect(namesWithSeveralChains([shortest!, redeclared]).has('code:scenario')).toBe(false)
+  })
+
+  it('gives each route of an already-ambiguous shape-group property its own key', () => {
+    // What the narrowing buys: both contexts are searchable, and the bare
+    // name still matches them all.
+    const [shortest, other] = pathsFor()
+    const elsewhere: PropertyPath = {
+      ...shortest!,
+      steps: [{ predicate: `${NS}road_network` }, { predicate: `${SHARED}code` }],
+    }
+    const groupHere = new Map([['code:scenario', 'Content']])
+    const already = namesWithSeveralChains([shortest!, elsewhere])
+    const admitted = [shortest!, other!, elsewhere].filter((path) =>
+      isKeyedPath(path, new Set(['code']), groupHere, already)
+    )
+    const { byKey, alternatives } = indexPropertyKeys(admitted)
+    expect([...byKey.keys()].sort()).toEqual([
+      'scenario:intended__lane_maneuver__maneuver_type__code',
+      'scenario:road_network__code',
+      'scenario:users__lane_maneuver__maneuver_type__code',
+    ])
+    expect(alternatives.get('scenario:code')).toHaveLength(3)
   })
 
   it('keeps alternate routes out of reference chains', () => {

@@ -41,11 +41,18 @@ describe('property keys on the pinned ontology', () => {
 
   it('gives a shape-group property of a domain no further route there', () => {
     // The domain's shape-group facets and group nodes read such a name as one
-    // path; a further route would make it a bare name for several.
+    // path; a further route would make it a bare name for several. Unless the
+    // domain reaches the name through several chains anyway — under a
+    // value-object idiom the group IS the value class, so its properties
+    // terminate every coded chain — in which case there is no single path to
+    // part from and the guard does not apply (`isKeyedPath`).
     const keyed = [...vocab.paths.values(), ...[...(vocab.alternatives?.values() ?? [])].flat()]
-    const offending = keyed.filter(
-      (path) => path.alternateRoute && vocab.shapeGroups.has(`${path.propertyName}:${path.domain}`)
-    )
+    const offending = keyed.filter((path) => {
+      if (!path.alternateRoute) return false
+      if (!vocab.shapeGroups.has(`${path.propertyName}:${path.domain}`)) return false
+      const chains = vocab.alternatives?.get(`${path.domain}:${path.propertyName}`) ?? []
+      return chains.filter((chain) => !chain.alternateRoute).length <= 1
+    })
     expect(offending.map((path) => `${path.domain}:${path.propertyName}`)).toEqual([])
   })
 
