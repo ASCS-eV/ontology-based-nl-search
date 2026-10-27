@@ -16,6 +16,7 @@ import { describe, expect, it } from 'vitest'
 import { OxigraphStore } from '../../../sparql/src/oxigraph-store.js'
 import { buildCompilerVocabFrom, compileSlotsWithTrace } from '../compiler.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
+import { syntheticRegistry } from './__fixtures__/synthetic-registry.js'
 
 const BASE = 'http://example.org/base/'
 const GARAGE = 'http://example.org/garage/'
@@ -106,54 +107,16 @@ const DOMAINS: [string, string, string][] = [
   ['tags-v2', TAGS_V2, 'Grade'],
 ]
 
-/** The `DomainRegistry` surface the compiler reads, for the five domains. */
-function fixtureRegistry() {
-  const descriptors = DOMAINS.map(([name, namespace, cls]) => {
-    const prefix = name.replace('-', '')
-    return {
-      name,
-      namespace,
-      prefix,
-      targetClass: `${prefix}:${cls}`,
-      targetClassIri: `${namespace}${cls}`,
-      version: 'v1',
-      shapes: [cls],
-      declaredPrefixes: { [prefix]: namespace },
-    }
-  })
-  const domains = new Map(descriptors.map((d) => [d.name, d]))
-  const prefixLines = [
-    'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>',
-    'PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>',
-    ...descriptors.map((d) => `PREFIX ${d.prefix}: <${d.namespace}>`),
-  ].join('\n')
-  return {
-    domains,
-    domainNames: [...domains.keys()],
-    prefixesFor: () => prefixLines,
-    allPrefixes: () => prefixLines,
-    resolveByIriDomain: (name: string) => domains.get(name),
-    domainForIri(iri: string) {
-      let best: string | undefined
-      let length = 0
-      for (const d of descriptors) {
-        if (iri.startsWith(d.namespace) && d.namespace.length > length) {
-          best = d.name
-          length = d.namespace.length
-        }
-      }
-      return best
-    },
-    getAllNamespaces: () => new Set(descriptors.map((d) => d.namespace)),
-  }
-}
+const fixtureRegistry = () =>
+  syntheticRegistry(
+    DOMAINS.map(([name, namespace, assetClass]) => ({ name, namespace, assetClass }))
+  )
 
 async function setup() {
   const store = new OxigraphStore()
   await store.loadTurtle(SHAPES, SCHEMA_GRAPH)
   await store.loadTurtle(DATA)
   const registry = fixtureRegistry()
-  // `as any`: the synthetic registry stands in for the disk-derived one.
   const vocabIndex = await buildCompilerVocabFrom(store, registry as any)
   const compile = (slots: SearchSlots) =>
     compileSlotsWithTrace(slots, { registry: registry as any, vocabIndex })

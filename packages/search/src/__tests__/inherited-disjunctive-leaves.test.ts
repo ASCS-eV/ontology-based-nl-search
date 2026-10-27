@@ -20,6 +20,7 @@ import { buildCompilerVocabFrom, compileSlotsWithTrace } from '../compiler.js'
 import { extractNumericProperties } from '../numeric-properties.js'
 import { buildPropertyPaths } from '../property-paths.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
+import { syntheticRegistry } from './__fixtures__/synthetic-registry.js'
 
 const NS = 'http://example.org/fleet/v1/'
 
@@ -109,42 +110,8 @@ const DATA_TTL = `
                 [ a fleet:Engine ; fleet:fuel "electric" ; fleet:rating 9 ] .
 `
 
-/** The minimum DomainRegistry surface the discovery and compiler read. */
-function fleetRegistry() {
-  const desc = {
-    name: 'fleet',
-    namespace: NS,
-    prefix: 'fleet',
-    targetClass: 'fleet:Vehicle',
-    targetClassIri: `${NS}Vehicle`,
-    version: 'v1',
-    shapes: ['Vehicle'],
-    declaredPrefixes: { fleet: NS },
-  }
-  return {
-    domains: new Map([['fleet', desc]]),
-    domainNames: ['fleet'],
-    prefixesFor() {
-      return [
-        'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>',
-        'PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>',
-        `PREFIX fleet: <${NS}>`,
-      ].join('\n')
-    },
-    allPrefixes() {
-      return this.prefixesFor()
-    },
-    resolveByIriDomain(iriDomain: string) {
-      return iriDomain === 'fleet' ? desc : undefined
-    },
-    domainForIri(iri: string) {
-      return iri.startsWith(NS) ? 'fleet' : undefined
-    },
-    getAllNamespaces() {
-      return new Set([NS])
-    },
-  }
-}
+const fleetRegistry = () =>
+  syntheticRegistry([{ name: 'fleet', namespace: NS, assetClass: 'Vehicle' }])
 
 async function loadStore(): Promise<OxigraphStore> {
   const store = new OxigraphStore()

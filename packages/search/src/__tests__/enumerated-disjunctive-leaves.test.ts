@@ -19,6 +19,7 @@ import { buildPropertyPaths } from '../property-paths.js'
 import { queryLeafEnumerations } from '../property-paths-queries.js'
 import { SCHEMA_GRAPH } from '../schema-loader.js'
 import { extractSchemaVocabulary, resetVocabulary } from '../vocabulary-extractor.js'
+import { syntheticRegistry } from './__fixtures__/synthetic-registry.js'
 
 vi.mock('../compiler.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../compiler.js')>()
@@ -69,36 +70,10 @@ const DATA_TTL = `
   depot:colour "red" ; depot:shift "night" .
 `
 
-/** The minimum DomainRegistry surface the discovery and compiler read. */
-function depotRegistry() {
-  const desc = {
-    name: 'depot',
-    namespace: NS,
-    prefix: 'depot',
-    targetClass: 'depot:Vehicle',
-    targetClassIri: `${NS}Vehicle`,
-    version: 'v1',
-    shapes: ['Vehicle'],
-    declaredPrefixes: { depot: NS },
-  }
-  const prefixes = [
-    'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>',
-    'PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>',
-    `PREFIX depot: <${NS}>`,
-  ].join('\n')
-  return {
-    domains: new Map([['depot', desc]]),
-    domainNames: ['depot'],
-    prefixesFor: () => prefixes,
-    allPrefixes: () => prefixes,
-    resolveByIriDomain: (name: string) => (name === 'depot' ? desc : undefined),
-    domainForIri: (iri: string) => (iri.startsWith(NS) ? 'depot' : undefined),
-    getAllNamespaces: () => new Set([NS]),
-  }
-}
+const depotRegistry = () =>
+  syntheticRegistry([{ name: 'depot', namespace: NS, assetClass: 'Vehicle' }])
 
 let store: OxigraphStore
-// `as any`: the synthetic registry stands in for the disk-derived one.
 const registry = depotRegistry() as any
 
 beforeAll(async () => {
