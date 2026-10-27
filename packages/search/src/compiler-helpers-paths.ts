@@ -140,7 +140,8 @@ export function lookupDomainSpecPredicate(
  * (e.g. a location leaf reached via `asset → spec → georef → loc → leaf`)
  * would route to a misclassified group predicate. Generic deep
  * emission walks the actual SHACL-discovered chain instead. A shorter path
- * has no group node at all and is walked the same way.
+ * has no group node at all and is walked from the asset as a direct property:
+ * the shape-group emission takes only paths of exactly this length.
  */
 export const SHALLOW_PATH_MAX_STEPS = 3
 
@@ -449,11 +450,11 @@ export function emitAlternativeConstraints(
 }
 
 /**
- * Emit a deep-chain filter group. Each entry's discovered path has
- * `> SHALLOW_PATH_MAX_STEPS` steps; emission walks every step from the
- * specification variable its first hop binds (`specVarOf`) to the leaf,
- * sharing intermediate variables whenever multiple entries agree on a path
- * prefix.
+ * Emit a deep-chain constraint group: filters and ranges whose discovered
+ * path has `> SHALLOW_PATH_MAX_STEPS` steps. Emission walks every step from
+ * the specification variable its first hop binds (`specVarOf`) to the leaf,
+ * sharing intermediate variables whenever entries agree on a path prefix, so
+ * a filter and a range on one deep node hold on that one node.
  *
  * Generic over which properties qualify as "deep" — driven entirely by
  * the SHACL property-path discovery, with no hard-coded field names.
@@ -461,33 +462,44 @@ export function emitAlternativeConstraints(
  * Variable naming: intermediates use `?_dN_${suffix}` where N is the
  * depth from the bucket's specification variable (which is itself step 1's
  * source — the compiler has already emitted the asset → spec hop). Leaves
- * use the filter property's local name, suffixed for cross-domain queries.
+ * use the property's key, suffixed for cross-domain queries.
  */
 export function emitDeepFilters(
   domainName: string,
-  domain: DomainDescriptor,
-  entries: [string, string | string[], PropertyPath][],
+  filterEntries: [string, string | string[], PropertyPath][],
+  rangeEntries: [string, { min?: number; max?: number }, PropertyPath][],
   specVarOf: (path: PropertyPath) => string,
   suffix: string,
   patterns: string[],
   filters: string[],
   selectVars: Set<string>,
   foreignDomains: Set<string>,
-  registry: DomainRegistry
+  registry: DomainRegistry,
+  vocabIndex: CompilerVocab
 ): void {
+  type Entry =
+    | { kind: 'filter'; name: string; value: string | string[]; path: PropertyPath }
+    | { kind: 'range'; name: string; range: { min?: number; max?: number }; path: PropertyPath }
+  const all: Entry[] = [
+    ...filterEntries.map(([name, value, path]): Entry => ({ kind: 'filter', name, value, path })),
+    ...rangeEntries.map(([name, range, path]): Entry => ({ kind: 'range', name, range, path })),
+  ]
+
+  // Compress a predicate IRI to prefix form, registering any foreign domain.
+  const emitPredicate = (predicateIri: string): string => {
+    const desc = findDomainForIri(predicateIri, registry)
+    if (desc && desc.name !== domainName) foreignDomains.add(desc.name)
+    return desc ? prefixedPredicate(predicateIri, desc) : `<${predicateIri}>`
+  }
+
   // Bucket entries by their full path-prefix (everything except the
   // leaf). Sharing a prefix means sharing intermediate variables.
-  type Bucket = {
-    referencePath: PropertyPath
-    entries: [string, string | string[], PropertyPath][]
-  }
-  const buckets = new Map<string, Bucket>()
-  for (const entry of entries) {
-    const path = entry[2]
-    const prefixKey = pathPrefixKey(path)
+  const buckets = new Map<string, { referencePath: PropertyPath; entries: Entry[] }>()
+  for (const entry of all) {
+    const prefixKey = pathPrefixKey(entry.path)
     let bucket = buckets.get(prefixKey)
     if (!bucket) {
-      bucket = { referencePath: path, entries: [] }
+      bucket = { referencePath: entry.path, entries: [] }
       buckets.set(prefixKey, bucket)
     }
     bucket.entries.push(entry)
@@ -505,43 +517,46 @@ export function emitDeepFilters(
     // and binding a chain to the wrong one makes the query unsatisfiable.
     let cursor = specVarOf(referencePath)
     for (let i = 1; i < referencePath.steps.length - 1; i++) {
-      const step = referencePath.steps[i]!
       const intVar = `?_d${bucketIdx}_${i}${suffix}`
-      const desc = findDomainForIri(step.predicate, registry)
-      const pred = desc ? prefixedPredicate(step.predicate, desc) : `<${step.predicate}>`
-      if (desc && desc.name !== domainName) foreignDomains.add(desc.name)
-      patterns.push(`${cursor} ${pred} ${intVar} .`)
+      patterns.push(`${cursor} ${emitPredicate(referencePath.steps[i]!.predicate)} ${intVar} .`)
       cursor = intVar
     }
     // Emit leaf for each entry under this shared chain. Sort for
     // determinism so the compiler emits the same SPARQL across
     // invocations regardless of the input map's iteration order.
-    const sortedEntries = [...bucket.entries].sort((a, b) => a[0].localeCompare(b[0]))
-    for (const [propName, value, path] of sortedEntries) {
-      const leafStep = path.steps[path.steps.length - 1]!
-      const leafDomain = findDomainForIri(leafStep.predicate, registry)
-      const leafPredicate = leafDomain
-        ? prefixedPredicate(leafStep.predicate, leafDomain)
-        : `<${leafStep.predicate}>`
-      if (leafDomain && leafDomain.name !== domainName) foreignDomains.add(leafDomain.name)
-      // The leaf value kind picks the test: literal leaves want exact
-      // equality, IRI-typed (`iri` / `class:`) leaves STR/LCASE matching.
-      emitLeafFilter(
-        cursor,
-        leafPredicate,
-        propName,
-        suffix,
-        value,
-        path,
-        patterns,
-        filters,
-        selectVars
-      )
+    for (const entry of [...bucket.entries].sort((a, b) => a.name.localeCompare(b.name))) {
+      const leafStep = entry.path.steps[entry.path.steps.length - 1]!
+      const leafPred = emitPredicate(leafStep.predicate)
+      if (entry.kind === 'filter') {
+        // The leaf value kind picks the test: literal leaves want exact
+        // equality, IRI-typed (`iri` / `class:`) leaves STR/LCASE matching.
+        emitLeafFilter(
+          cursor,
+          leafPred,
+          entry.name,
+          suffix,
+          entry.value,
+          entry.path,
+          patterns,
+          filters,
+          selectVars
+        )
+      } else {
+        emitLeafRange(
+          cursor,
+          leafPred,
+          entry.name,
+          suffix,
+          entry.range,
+          entry.path,
+          patterns,
+          filters,
+          selectVars,
+          emitPredicate,
+          vocabIndex
+        )
+      }
     }
     bucketIdx++
   }
-  // The reference to `domain` is intentional for future extension —
-  // currently only the leaf domain matters, but `domain` is the
-  // primary asset domain context for any cross-domain warnings.
-  void domain
 }

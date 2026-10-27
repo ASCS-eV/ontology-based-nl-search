@@ -121,13 +121,15 @@ export function buildDomainPatterns(
     domainSpecPredicate === null ||
     (path.steps[0] !== undefined &&
       prefixedPredicate(path.steps[0].predicate, domain) === domainSpecPredicate)
-  // The shape-group emission builds exactly `asset → spec → group → leaf`. A
-  // path of a shape-group name with any other length has no group node there
-  // — a group class hung straight off the asset, or nested below another
-  // class — so it is walked as its `sh:path` chain declares ([SHACL] §2.3.1.2).
+  // The shape-group emission builds exactly `asset → spec → group → leaf` for
+  // a leaf name a group of THIS domain classifies. A path of any other length
+  // has no group node there — a leaf of a group asset class, a group class
+  // hung straight off the asset, or one nested below another class — and a
+  // leaf only another domain's group classifies is no group property here.
+  // Either is walked as its `sh:path` chain declares ([SHACL] §2.3.1.2).
   const hasGroupShape = (path: PropertyPath) =>
     path.steps.length === SHALLOW_PATH_MAX_STEPS &&
-    vocabIndex.shapeGroupPropertyNames.has(path.propertyName)
+    vocabIndex.shapeGroups.has(`${path.propertyName}:${domainName}`)
   for (const [key, value] of allFilterEntries) {
     if (!isNonEmpty(value)) continue
     const resolved = resolveDomainKey(vocabIndex, domainName, key, value)
@@ -151,6 +153,7 @@ export function buildDomainPatterns(
     { min?: number; max?: number },
     PropertyPath | undefined,
   ][] = []
+  const deepRangeEntries: [string, { min?: number; max?: number }, PropertyPath][] = []
   const directRangeEntries: [string, { min?: number; max?: number }, PropertyPath][] = []
   const alternativeRangeEntries: [string, { min?: number; max?: number }, PropertyPath[]][] = []
   for (const [key, range] of rangeEntries) {
@@ -160,7 +163,11 @@ export function buildDomainPatterns(
       continue
     }
     const path = resolved.kind === 'path' ? resolved.path : undefined
-    if (path && !hasGroupShape(path)) {
+    // A deep range hangs off the specification node like a deep filter, so
+    // the two share the nodes of a common prefix.
+    if (path && path.steps.length > SHALLOW_PATH_MAX_STEPS && startsAtSpecHop(path)) {
+      deepRangeEntries.push([key, range, path])
+    } else if (path && !hasGroupShape(path)) {
       directRangeEntries.push([key, range, path])
     } else {
       shapeGroupRangeEntries.push([key, range, path])
@@ -211,31 +218,16 @@ export function buildDomainPatterns(
   // Properties the domain classifies into no shape group AND whose key has no
   // discovered path: nothing says how to reach them, so they are walked from
   // the asset by the domain prefix convention (`prefix:propName`). A key that
-  // DID resolve to a path never lands here — see `unclassified` below.
+  // DID resolve to a path never lands here: it reaches the shape-group
+  // emission only when a group of this domain classifies its leaf
+  // (`hasGroupShape`), and is walked along its own chain otherwise.
   const directFallbackFilters: FilterEntry[] = []
   const directFallbackRanges: RangeEntry[] = []
-  /**
-   * A property whose leaf name carries a shape group in SOME domain, but not
-   * in THIS one, still reaches its leaf through the chain its own path
-   * declares. Walking it from the asset by its leaf predicate alone would drop
-   * every intermediate hop and match nothing (a leaf nested two hops down is
-   * not a property of the asset). Route it to the path-walking emission and
-   * keep the prefix-convention fallback for keys with no path at all.
-   */
-  const unclassified = <V>(
-    entry: [string, V, PropertyPath | undefined],
-    withPath: [string, V, PropertyPath][],
-    withoutPath: [string, V, PropertyPath | undefined][]
-  ): void => {
-    const [key, value, path] = entry
-    if (path) withPath.push([key, value, path])
-    else withoutPath.push(entry)
-  }
 
   for (const entry of shapeGroupFilterEntries) {
     const shape = classifyProperty(leafNameOf(entry[0], entry[2]), domainName, vocabIndex)
     if (shape === null) {
-      unclassified(entry, directFilterEntries, directFallbackFilters)
+      directFallbackFilters.push(entry)
       continue
     }
     let bucket = filterPropsByGroup.get(shape)
@@ -249,7 +241,7 @@ export function buildDomainPatterns(
   for (const entry of shapeGroupRangeEntries) {
     const shape = classifyProperty(leafNameOf(entry[0], entry[2]), domainName, vocabIndex)
     if (shape === null) {
-      unclassified(entry, directRangeEntries, directFallbackRanges)
+      directFallbackRanges.push(entry)
       continue
     }
     let bucket = rangePropsByGroup.get(shape)
@@ -264,7 +256,10 @@ export function buildDomainPatterns(
   // deep strategies (both route through `specVar`); direct properties walk
   // straight from the asset, so a purely-flat domain emits no spec hop at all.
   const needsSpecHop =
-    filterPropsByGroup.size > 0 || rangePropsByGroup.size > 0 || deepFilterEntries.length > 0
+    filterPropsByGroup.size > 0 ||
+    rangePropsByGroup.size > 0 ||
+    deepFilterEntries.length > 0 ||
+    deepRangeEntries.length > 0
   const hasAnyEntry =
     needsSpecHop ||
     directFilterEntries.length > 0 ||
@@ -300,7 +295,7 @@ export function buildDomainPatterns(
     // satisfy every container's constraints at once — an unsatisfiable query
     // that silently returns nothing. Only the entries that continue from a
     // specification variable contribute a hop: an entry walked from the asset
-    // (`unclassified` with a path) binds its own first hop, and a second,
+    // (a direct one) binds its own first hop, and a second,
     // unused binding of that hop would multiply every row by the hop's value
     // count — the SELECT is not DISTINCT. When the properties in this query
     // have no path of their own, fall back to any shape-group property in the
@@ -309,6 +304,7 @@ export function buildDomainPatterns(
       ...[...filterPropsByGroup.values()].flat().map(([key, , path]) => ({ key, path })),
       ...deepFilterEntries.map(([key, , path]) => ({ key, path })),
       ...[...rangePropsByGroup.values()].flat().map(([key, , path]) => ({ key, path })),
+      ...deepRangeEntries.map(([key, , path]) => ({ key, path })),
     ]
     const firstHops = new Map<string, string>()
     for (const { key, path } of [...candidatePaths].sort((a, b) => a.key.localeCompare(b.key))) {
@@ -505,18 +501,19 @@ export function buildDomainPatterns(
   // prefix (e.g. two location leaves under the same intermediate node)
   // reuse the same intermediate
   // variables for a compact query.
-  if (deepFilterEntries.length > 0) {
+  if (deepFilterEntries.length > 0 || deepRangeEntries.length > 0) {
     emitDeepFilters(
       domainName,
-      domain,
       deepFilterEntries,
+      deepRangeEntries,
       specVarOf,
       suffix,
       patterns,
       filters,
       selectVars,
       foreignDomains,
-      registry
+      registry,
+      vocabIndex
     )
   }
 
