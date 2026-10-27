@@ -51,6 +51,13 @@ export interface CompilerVocab {
   /** All property local names that appear in shapeGroups (for O(1) isKnownProperty checks) */
   shapeGroupPropertyNames: Set<string>
   /**
+   * Class IRI → the shape group that classifies it and the domain it belongs
+   * to, for every class whose node shape declares a shape-group property. A
+   * group classifies a class, so it is what tells which chains of a leaf name
+   * a group covers (the metadata facets).
+   */
+  shapeGroupClasses: Map<string, { group: string; domain: string }>
+  /**
    * Properties that wrap a numeric min/max interval, keyed by leaf local
    * name. The value carries the SHACL-discovered lower/upper-bound predicate
    * IRIs so the compiler emits those instead of literal `:min`/`:max`.
@@ -168,7 +175,7 @@ let cachedCompilerVocabPromise: Promise<CompilerVocab> | null = null
  * Build the compiler vocabulary from the ontology schema graph via
  * SPARQL queries. Exported (intra-package only — not on the public
  * surface of `@ontology-search/search`) so the metadata index can
- * reuse the same `shapeGroups` and `paths` indices the compiler
+ * reuse the same `shapeGroupClasses` and `paths` indices the compiler
  * builds, avoiding parallel discovery and drift.
  */
 export async function getCompilerVocab(): Promise<CompilerVocab> {
@@ -196,23 +203,23 @@ async function buildCompilerVocab(): Promise<CompilerVocab> {
  * keeps extended paths off every name that has a plain path.)
  *
  * An `alternateRoute` path (a further route to a class several routes
- * reach) stays off the names that are shape-group properties of its own
- * domain: it would make such a name a bare name for several chains, which
- * drops it from the domain's shape-group facets in the metadata index and
- * parts it from the node its group siblings share. Elsewhere the name is
- * an ordinary property, and `lookupStepPredicate` still reads it as the
- * breadth-first chain it was before.
+ * reach) is keyed like any other chain, whatever its leaf name: a property
+ * shape is its node shape and its path ([SHACL] §2.3), so each route is a
+ * property of its own. Every leaf of the class gets the route, so leaves whose
+ * chains end on the same nodes keep sharing one node on each route; a bare
+ * name whose chains differ from a sibling's (narrowed by `sh:in` to some of
+ * the classes, say) shares none, as ADR 0009 states for any ambiguous name. A
+ * shape-group facet lists each route's key, and `lookupStepPredicate` still
+ * reads a name only further routes made ambiguous as the breadth-first chain
+ * it was before.
  *
- * @internal Exported for the shape-group guard regression test.
+ * @internal Exported for the key-admission regression tests.
  */
 export function isKeyedPath(
   path: PropertyPath,
-  shapeGroupPropertyNames: ReadonlySet<string>,
-  shapeGroups: ReadonlyMap<string, string>
+  shapeGroupPropertyNames: ReadonlySet<string>
 ): boolean {
-  if (path.extended) return !shapeGroupPropertyNames.has(path.propertyName)
-  if (path.alternateRoute) return !shapeGroups.has(`${path.propertyName}:${path.domain}`)
-  return true
+  return !path.extended || !shapeGroupPropertyNames.has(path.propertyName)
 }
 
 /**
@@ -258,13 +265,19 @@ export async function buildCompilerVocabFrom(
     }
   }
 
-  // Build shape group index: "propName:domain" → shapeGroup
+  // Build shape group index: "propName:domain" → shapeGroup (the first class
+  // declaring the name decides), and the class index the groups come from.
   // Also collect distinct property names for O(1) isKnownProperty checks.
   const shapeGroups = new Map<string, string>()
   const shapeGroupPropertyNames = new Set<string>()
-  for (const { localName, domain, shapeGroup } of shapeGroupInfos) {
-    shapeGroups.set(`${localName}:${domain}`, shapeGroup)
+  const shapeGroupClasses = new Map<string, { group: string; domain: string }>()
+  for (const { localName, domain, shapeGroup, targetClass } of shapeGroupInfos) {
+    const name = `${localName}:${domain}`
+    if (!shapeGroups.has(name)) shapeGroups.set(name, shapeGroup)
     shapeGroupPropertyNames.add(localName)
+    if (!shapeGroupClasses.has(targetClass)) {
+      shapeGroupClasses.set(targetClass, { group: shapeGroup, domain })
+    }
   }
 
   // Build Range2D property index: leaf local name → discovered min/max predicates.
@@ -278,7 +291,7 @@ export async function buildCompilerVocabFrom(
   // legitimately appear in multiple asset domains; each domain gets its own
   // keys.
   const { byKey: paths, alternatives } = indexPropertyKeys(
-    propertyPaths.filter((path) => isKeyedPath(path, shapeGroupPropertyNames, shapeGroups))
+    propertyPaths.filter((path) => isKeyedPath(path, shapeGroupPropertyNames))
   )
 
   // Discover cross-domain reference chains from the property paths, so
@@ -308,6 +321,7 @@ export async function buildCompilerVocabFrom(
     properties,
     shapeGroups,
     shapeGroupPropertyNames,
+    shapeGroupClasses,
     range2DProperties,
     paths,
     alternatives,

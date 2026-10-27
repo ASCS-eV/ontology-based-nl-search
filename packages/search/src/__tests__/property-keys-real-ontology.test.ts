@@ -39,17 +39,7 @@ describe('property keys on the pinned ontology', () => {
     expect(vocab.alternatives?.size ?? 0).toBeGreaterThan(0)
   })
 
-  it('gives a shape-group property of a domain no further route there', () => {
-    // The domain's shape-group facets and group nodes read such a name as one
-    // path; a further route would make it a bare name for several.
-    const keyed = [...vocab.paths.values(), ...[...(vocab.alternatives?.values() ?? [])].flat()]
-    const offending = keyed.filter(
-      (path) => path.alternateRoute && vocab.shapeGroups.has(`${path.propertyName}:${path.domain}`)
-    )
-    expect(offending.map((path) => `${path.domain}:${path.propertyName}`)).toEqual([])
-  })
-
-  it('keeps every further route of a name that is a shape-group property elsewhere only', async () => {
+  it('keys every further route discovery finds', async () => {
     const { assetPaths } = await discoverPropertyPaths(
       await getInitializedStore(),
       await buildDomainRegistry()
@@ -59,9 +49,7 @@ describe('property keys on the pinned ontology', () => {
         (path) => `${path.domain} ${predicateChain(path)}`
       )
     )
-    const kept = assetPaths.filter(
-      (path) => path.alternateRoute && !vocab.shapeGroups.has(`${path.propertyName}:${path.domain}`)
-    )
+    const kept = assetPaths.filter((path) => path.alternateRoute)
     expect(kept.length).toBeGreaterThan(0)
     const lost = kept.filter((path) => !keyed.has(`${path.domain} ${predicateChain(path)}`))
     expect(lost.map((path) => `${path.domain}:${path.propertyName}`)).toEqual([])

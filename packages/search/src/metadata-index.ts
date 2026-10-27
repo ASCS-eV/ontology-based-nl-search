@@ -1,11 +1,11 @@
 /**
  * Metadata / shape-group facet index.
  *
- * Discovers facets generically from the SHACL `shapeGroups` index that
- * `getCompilerVocab` already builds: any property whose target shape
- * inherits from a base class in another domain gets bucketed under the
- * local name of that base class (`Content`, `Format`, `Quality`,
- * `DataSource`, …). Quality is one such facet; the indexer treats it
+ * Discovers facets generically from the `shapeGroupClasses` index that
+ * `getCompilerVocab` already builds: any chain whose leaf is declared by a
+ * class that inherits from a base class in another domain gets bucketed,
+ * under its slot key, by the local name of that base class (`Content`,
+ * `Format`, `Quality`, `DataSource`, …). Quality is one such facet; the indexer treats it
  * uniformly with the others so new ontologies with different facet
  * names work out of the box.
  *
@@ -26,8 +26,11 @@
  *
  * Ontology-agnostic: the facet names come from discovered SHACL
  * inheritance, not literal strings in code. The walker reads
- * `CompilerVocab.shapeGroups` and `CompilerVocab.paths`, both of which
- * are populated by `buildPropertyPaths` from the live shapes graph.
+ * `CompilerVocab.shapeGroupClasses` and `CompilerVocab.paths`, both of
+ * which are populated from the live shapes graph.
+ *
+ * @see https://www.w3.org/TR/shacl/ — [SHACL]
+ * @see https://www.w3.org/TR/rdf-schema/ — [RDFS]
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { escapeRdfLiteral } from '@ontology-search/core/rdf/literal'
@@ -37,7 +40,6 @@ import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { getAssetDomains } from './asset-domains.js'
 import { getCompilerVocab } from './compiler.js'
-import { SHALLOW_PATH_MAX_STEPS } from './compiler-helpers-paths.js'
 import type { CompilerVocab } from './compiler-vocab.js'
 import { getInitializedStore } from './init.js'
 import { keyOfIndexEntry } from './property-keys.js'
@@ -45,25 +47,41 @@ import type { PropertyPath } from './property-paths.js'
 
 const log = createComponentLogger('metadata-index')
 
+/** A literal-leaf chain a shape group covers, under the key that names it. */
+export interface FacetEntry {
+  group: string
+  /** The chain's slot key (ADR 0009): its leaf name, or a qualified key. */
+  key: string
+  path: PropertyPath
+}
+
 /**
- * The path a shape-group leaf name denotes in a domain, with the key that
- * names it. A name the domain reaches through several chains (ADR 0009) has
- * no path under its bare name: its shape-group chain is the one shallow
- * enough for the group (`asset → spec → group → leaf`), under its own key.
+ * The literal-leaf chains of a domain that its shape groups cover, one entry
+ * per key. A group classifies a class (by its `rdfs:subClassOf` superclass,
+ * [RDFS] §3.4), and a property shape is identified by the node shape that
+ * declares it and its path ([SHACL] §2.3), so a chain belongs to the group of
+ * the class that declares its leaf, when that class is one of the domain's
+ * own. Every route to a group class is listed under
+ * its own key; a chain of the same leaf name on a class no group classifies
+ * is not.
+ *
+ * @internal Exported for the shape-group facet tests.
  */
-function shapeGroupPath(
-  vocab: CompilerVocab,
-  domain: string,
-  property: string
-): { key: string; path: PropertyPath } | undefined {
-  const path = vocab.paths.get(`${domain}:${property}`)
-  if (path) return { key: property, path }
-  const shallow = (vocab.alternatives?.get(`${domain}:${property}`) ?? []).filter(
-    (chain) => chain.steps.length <= SHALLOW_PATH_MAX_STEPS
-  )
-  if (shallow.length !== 1) return undefined
-  for (const [indexKey, candidate] of vocab.paths) {
-    if (candidate === shallow[0]) return { key: keyOfIndexEntry(indexKey), path: candidate }
+export function shapeGroupFacets(vocab: CompilerVocab, domain: string): FacetEntry[] {
+  const facets: FacetEntry[] = []
+  for (const [indexKey, path] of vocab.paths) {
+    if (path.domain !== domain || path.leafKind !== 'literal') continue
+    const group = groupOfChain(vocab, path)
+    if (group) facets.push({ group, key: keyOfIndexEntry(indexKey), path })
+  }
+  return facets
+}
+
+/** The group of the domain's class that declares a chain's leaf, if any. */
+function groupOfChain(vocab: CompilerVocab, path: PropertyPath): string | undefined {
+  for (const owner of path.owningClasses ?? (path.owningClass ? [path.owningClass] : [])) {
+    const declared = vocab.shapeGroupClasses.get(owner)
+    if (declared?.domain === path.domain) return declared.group
   }
   return undefined
 }
@@ -88,7 +106,7 @@ const XSD_NUMERIC = new Set(
 const SAMPLE_LIMIT = 12
 
 export interface FacetValue {
-  /** Property local name (e.g. `precision`). */
+  /** The chain's slot key (ADR 0009): its leaf local name (e.g. `precision`), or a qualified key. */
   property: string
   /** Bound literal values on this specific asset. */
   values: string[]
@@ -143,22 +161,13 @@ export async function getAssetMetadata(assetIri: string): Promise<AssetMetadata>
     return result
   }
 
-  // Collect every (propLocalName, group) entry for this domain. Filter
-  // to literal-leaf paths — IRI / class leaves are cross-references,
-  // handled by the lineage explorer (task #19).
-  //
-  // Mind the key order: `shapeGroups` is keyed `localName:domain` while
-  // `paths` is keyed `domain:localName` (the compiler's two indices
-  // happen to use opposite conventions). The lookup must invert the
-  // key, or the path resolves to undefined and the facet is dropped.
-  const entries: { property: string; group: string; path: PropertyPath }[] = []
-  for (const [key, group] of vocab.shapeGroups) {
-    const [leafName, propDomain] = key.split(':')
-    if (!leafName || propDomain !== domain) continue
-    const resolved = shapeGroupPath(vocab, domain, leafName)
-    if (!resolved || resolved.path.leafKind !== 'literal') continue
-    entries.push({ property: resolved.key, group, path: resolved.path })
-  }
+  // Every literal-leaf chain a group covers — IRI / class leaves are
+  // cross-references, handled by the lineage explorer.
+  const entries = shapeGroupFacets(vocab, domain).map(({ group, key, path }) => ({
+    property: key,
+    group,
+    path,
+  }))
   if (entries.length === 0) {
     end()
     return result
@@ -216,16 +225,9 @@ export async function getDomainMetadataAggregate(
   }
 
   // Properties in this domain that belong to the requested group.
-  // (See comment in `getAssetMetadata` re. opposite key conventions.)
-  const properties: { property: string; path: PropertyPath }[] = []
-  for (const [key, g] of vocab.shapeGroups) {
-    if (g !== group) continue
-    const [leafName, propDomain] = key.split(':')
-    if (!leafName || propDomain !== domain) continue
-    const resolved = shapeGroupPath(vocab, domain, leafName)
-    if (!resolved || resolved.path.leafKind !== 'literal') continue
-    properties.push({ property: resolved.key, path: resolved.path })
-  }
+  const properties = shapeGroupFacets(vocab, domain)
+    .filter((facet) => facet.group === group)
+    .map(({ key, path }) => ({ property: key, path }))
 
   const assetCount = await countAssetsOfClass(store, domainDesc.targetClassIri)
   const propertyStats: PropertyStats[] = []

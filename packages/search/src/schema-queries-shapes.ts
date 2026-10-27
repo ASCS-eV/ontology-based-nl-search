@@ -20,6 +20,11 @@ export interface PropertyShapeGroupInfo {
   domain: string
   /** Shape group from rdfs:subClassOf hierarchy (e.g. a "Content" / "Format" / "Quantity" sub-shape) */
   shapeGroup: string
+  /**
+   * The class whose node shape declares the property (`sh:targetClass`,
+   * [SHACL] §2.1.3.2) — the class the group classifies.
+   */
+  targetClass: string
 }
 
 /** Property that uses a Range2D structure (min/max sub-properties) */
@@ -43,7 +48,11 @@ export interface Range2DPropertyInfo {
  *
  * Detects cross-domain inheritance: a domain-specific class inherits from
  * a base class in a different domain. The superclass local name is the
- * shape group label (e.g., "Content", "Format").
+ * shape group label (e.g., "Content", "Format"). One row per property and
+ * declaring class: a group classifies a class, so which of a property's
+ * paths it covers depends on the class each path's leaf is declared by. The
+ * rows are fully ordered, so where a class or a name has several groups the
+ * first one is the same on every store.
  */
 export async function queryPropertyShapeGroups(
   store: SparqlStore,
@@ -63,7 +72,7 @@ export async function queryPropertyShapeGroups(
         FILTER(isIRI(?superclass))
       }
     }
-    ORDER BY ?propIri
+    ORDER BY ?propIri ?targetClass ?superclass
   `
 
   const result = await store.query(sparql)
@@ -80,7 +89,7 @@ export async function queryPropertyShapeGroups(
     const domain = extractDomainFromRegistry(targetClass, registry)
     const superDomain = extractDomainFromRegistry(superclass, registry)
     const shapeGroup = extractLocalName(superclass)
-    const key = `${localName}:${domain}`
+    const key = `${localName}:${domain}:${targetClass}`
 
     // Only include cross-domain inheritance (property's class inherits from
     // a base class in a different domain). Same-domain subClassOf is just
@@ -94,7 +103,7 @@ export async function queryPropertyShapeGroups(
       !seen.has(key)
     ) {
       seen.add(key)
-      groups.push({ localName, domain, shapeGroup })
+      groups.push({ localName, domain, shapeGroup, targetClass })
     }
   }
 

@@ -301,12 +301,12 @@ describe('emitPaths — a class reachable by several routes', () => {
     expect(byKey.get('scenario:code')?.alternateRoute).toBeUndefined()
   })
 
-  it('keeps further routes off a shape-group property of their own domain only', () => {
+  it('keys a further route to a shape-group property like any other chain', () => {
+    // Only an `extended` path stays off a shape-group name: a further route
+    // is a property of its own ([SHACL] §2.3), whatever its leaf name.
     const [, other] = pathsFor()
-    const groupHere = new Map([['code:scenario', 'Content']])
-    const groupElsewhere = new Map([['code:other', 'Content']])
-    expect(isKeyedPath(other!, new Set(['code']), groupHere)).toBe(false)
-    expect(isKeyedPath(other!, new Set(['code']), groupElsewhere)).toBe(true)
+    expect(isKeyedPath(other!, new Set(['code']))).toBe(true)
+    expect(isKeyedPath({ ...other!, extended: true }, new Set(['code']))).toBe(false)
   })
 
   it('keeps alternate routes out of reference chains', () => {
