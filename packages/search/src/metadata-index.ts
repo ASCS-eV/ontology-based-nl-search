@@ -31,6 +31,7 @@
  *
  * @see https://www.w3.org/TR/shacl/ — [SHACL]
  * @see https://www.w3.org/TR/rdf-schema/ — [RDFS]
+ * @see https://www.w3.org/TR/sparql11-query/ — [SPARQL11]
  */
 import { createComponentLogger } from '@ontology-search/core/logging'
 import { escapeRdfLiteral } from '@ontology-search/core/rdf/literal'
@@ -230,64 +231,108 @@ export async function getDomainMetadataAggregate(
     .map(({ key, path }) => ({ property: key, path }))
 
   const assetCount = await countAssetsOfClass(store, domainDesc.targetClassIri)
-  const propertyStats: PropertyStats[] = []
-  for (const { property, path } of properties) {
-    propertyStats.push(await aggregateProperty(store, domainDesc.targetClassIri, property, path))
-  }
+  const values = await countValues(store, domainDesc.targetClassIri, properties)
+  const propertyStats = properties.map(({ property }) =>
+    valueStats(property, values.get(property) ?? [])
+  )
   end()
   return { domain, group, assetCount, properties: propertyStats }
 }
 
 // ─── internals ───────────────────────────────────────────────────────────────
 
+/**
+ * A `UNION` with one arm per entry ([SPARQL11] §7): each walks the entry's
+ * path from `subject` to `?value` and binds the entry's key to `?propName`,
+ * so one query reads every property and each row says whose value it is.
+ * `head` opens every arm: a pattern the arms share goes in each of them
+ * rather than outside the `UNION`, which is the same solutions (a join
+ * distributes over a union, [SPARQL11] §18.5) but lets a store evaluate each
+ * arm from its own path instead of joining the whole union at once.
+ */
+function facetUnion(
+  subject: string,
+  entries: { property: string; path: PropertyPath }[],
+  head = ''
+): string {
+  return entries
+    .map(({ property, path }) => {
+      const pathExpr = path.steps.map((s) => `<${s.predicate}>`).join('/')
+      // Local names are tame ASCII in practice; escaping is defensive so a
+      // future ontology with a quote, backslash or line break in a name cannot
+      // produce a malformed BIND clause.
+      return `{ ${head}${subject} ${pathExpr} ?value . BIND("${escapeRdfLiteral(property)}" AS ?propName) }`
+    })
+    .join(' UNION ')
+}
+
 function buildAssetFacetQuery(
   assetIri: string,
   entries: { property: string; path: PropertyPath }[]
 ): string {
-  const arms = entries.map(({ property, path }) => {
-    const pathExpr = path.steps.map((s) => `<${s.predicate}>`).join('/')
-    // Local names are tame ASCII in practice; escaping is defensive so a
-    // future ontology with a quote, backslash or line break in a name cannot
-    // produce a malformed BIND clause.
-    return `{ <${assetIri}> ${pathExpr} ?value . BIND("${escapeRdfLiteral(property)}" AS ?propName) }`
-  })
   return `
     SELECT ?propName ?value WHERE {
-      ${arms.join(' UNION ')}
+      ${facetUnion(`<${assetIri}>`, entries)}
     }
   `
 }
 
-async function aggregateProperty(
+/** One distinct value of a property and how many path solutions reach it from the domain's assets. */
+interface ValueCount {
+  value: string
+  count: number
+  datatype?: string
+}
+
+/**
+ * The distinct values of every entry across the instances of a class, with
+ * their counts, in one query: the solutions of {@link facetUnion} grouped by
+ * key, value and datatype ([SPARQL11] §11.2). The samples are ordered and cut
+ * in {@link valueStats}, once the counts are known, so they are the most
+ * common values rather than an arbitrary slice.
+ */
+async function countValues(
   store: SparqlStore,
   targetClassIri: string,
-  property: string,
-  path: PropertyPath
-): Promise<PropertyStats> {
-  const pathExpr = path.steps.map((s) => `<${s.predicate}>`).join('/')
-  // Distinct values + per-value count. ORDER + LIMIT for the samples
-  // happens in JS after we know the count, so we get the most common
-  // values rather than an arbitrary slice.
-  const sparql = `
-    SELECT ?value (COUNT(?asset) AS ?count) ?datatype WHERE {
-      ?asset a <${targetClassIri}> .
-      ?asset ${pathExpr} ?value .
+  entries: { property: string; path: PropertyPath }[]
+): Promise<Map<string, ValueCount[]>> {
+  const byProperty = new Map<string, ValueCount[]>()
+  if (entries.length === 0) return byProperty
+  const rows = await store.query(`
+    SELECT ?propName ?value ?datatype (COUNT(?asset) AS ?count) WHERE {
+      ${facetUnion('?asset', entries, `?asset a <${targetClassIri}> . `)}
       BIND(DATATYPE(?value) AS ?datatype)
     }
-    GROUP BY ?value ?datatype
-  `
-  const rows = await store.query(sparql)
-  let totalValues = 0
-  const distincts: { value: string; count: number; datatype?: string }[] = []
+    GROUP BY ?propName ?value ?datatype
+  `)
   for (const row of rows.results.bindings) {
+    const property = row['propName']?.value
     const value = row['value']?.value
-    const count = Number(row['count']?.value ?? '0')
-    const datatype = row['datatype']?.value
-    if (value === undefined) continue
-    distincts.push({ value, count, datatype })
-    totalValues += count
+    if (property === undefined || value === undefined) continue
+    const counts = byProperty.get(property) ?? []
+    counts.push({
+      value,
+      count: Number(row['count']?.value ?? '0'),
+      datatype: row['datatype']?.value,
+    })
+    byProperty.set(property, counts)
   }
-  distincts.sort((a, b) => b.count - a.count)
+  return byProperty
+}
+
+/**
+ * Distribution stats of one property from its value counts. Samples are the
+ * most common values, ties in value order, so the result does not depend on
+ * the order the store returns its groups in.
+ *
+ * @internal Exported for the aggregate tests.
+ */
+export function valueStats(property: string, counts: readonly ValueCount[]): PropertyStats {
+  // Ties by code point, not locale: the order must not depend on the host.
+  const distincts = [...counts].sort(
+    (a, b) => b.count - a.count || (a.value < b.value ? -1 : a.value > b.value ? 1 : 0)
+  )
+  const totalValues = distincts.reduce((sum, d) => sum + d.count, 0)
   const samples = distincts.slice(0, SAMPLE_LIMIT).map((d) => d.value)
 
   // Numeric range — detect when ALL observed values share an XSD-numeric
