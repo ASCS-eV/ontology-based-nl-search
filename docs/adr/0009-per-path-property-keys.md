@@ -99,5 +99,7 @@ enum literals per domain from that same contract.
   sharing.
 - The key spelling is an interface: the slot IR, the prompt, GraphQL and the
   `/vocabulary` route all carry it. Adding a chain to an ontology can turn a
-  unique name into a qualified one. The bare name keeps matching, now across
-  every chain.
+  unique name into a qualified one, and, since a qualified key is the shortest
+  suffix no other chain shares, lengthen the key of a chain that was already
+  qualified — a further route to a class is such a chain. The bare name keeps
+  matching, now across every chain.

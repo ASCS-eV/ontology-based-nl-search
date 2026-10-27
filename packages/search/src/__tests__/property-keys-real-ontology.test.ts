@@ -39,24 +39,7 @@ describe('property keys on the pinned ontology', () => {
     expect(vocab.alternatives?.size ?? 0).toBeGreaterThan(0)
   })
 
-  it('gives a shape-group property of a domain no further route there', () => {
-    // The domain's shape-group facets and group nodes read such a name as one
-    // path; a further route would make it a bare name for several. Unless the
-    // domain reaches the name through several chains anyway — under a
-    // value-object idiom the group IS the value class, so its properties
-    // terminate every coded chain — in which case there is no single path to
-    // part from and the guard does not apply (`isKeyedPath`).
-    const keyed = [...vocab.paths.values(), ...[...(vocab.alternatives?.values() ?? [])].flat()]
-    const offending = keyed.filter((path) => {
-      if (!path.alternateRoute) return false
-      if (!vocab.shapeGroups.has(`${path.propertyName}:${path.domain}`)) return false
-      const chains = vocab.alternatives?.get(`${path.domain}:${path.propertyName}`) ?? []
-      return chains.filter((chain) => !chain.alternateRoute).length <= 1
-    })
-    expect(offending.map((path) => `${path.domain}:${path.propertyName}`)).toEqual([])
-  })
-
-  it('keeps every further route of a name that is a shape-group property elsewhere only', async () => {
+  it('keys every further route discovery finds', async () => {
     const { assetPaths } = await discoverPropertyPaths(
       await getInitializedStore(),
       await buildDomainRegistry()
@@ -66,9 +49,7 @@ describe('property keys on the pinned ontology', () => {
         (path) => `${path.domain} ${predicateChain(path)}`
       )
     )
-    const kept = assetPaths.filter(
-      (path) => path.alternateRoute && !vocab.shapeGroups.has(`${path.propertyName}:${path.domain}`)
-    )
+    const kept = assetPaths.filter((path) => path.alternateRoute)
     expect(kept.length).toBeGreaterThan(0)
     const lost = kept.filter((path) => !keyed.has(`${path.domain} ${predicateChain(path)}`))
     expect(lost.map((path) => `${path.domain}:${path.propertyName}`)).toEqual([])

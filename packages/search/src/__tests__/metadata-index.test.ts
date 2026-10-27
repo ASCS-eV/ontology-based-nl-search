@@ -21,6 +21,7 @@ import {
   type AssetMetadata,
   getAssetMetadata,
   getDomainMetadataAggregate,
+  shapeGroupFacets,
 } from '../metadata-index.js'
 import { resetReferenceIndex } from '../reference-index.js'
 
@@ -35,15 +36,14 @@ afterAll(() => {
 })
 
 /**
- * Pick (domain, group) from the live shapeGroups index so the test
- * targets a real facet without hardcoding its name.
+ * Pick (domain, group) from the live facet index so the test targets a
+ * real facet without hardcoding its name.
  */
 async function pickDomainAndGroup(): Promise<{ domain: string; group: string } | null> {
   const [vocab, assetDomains] = await Promise.all([getCompilerVocab(), getAssetDomains()])
-  for (const [key, group] of vocab.shapeGroups) {
-    const propDomain = key.split(':')[1]
-    if (!propDomain || !assetDomains.has(propDomain)) continue
-    return { domain: propDomain, group }
+  for (const domain of [...assetDomains.keys()].sort()) {
+    const facet = shapeGroupFacets(vocab, domain)[0]
+    if (facet) return { domain, group: facet.group }
   }
   return null
 }

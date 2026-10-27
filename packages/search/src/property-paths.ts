@@ -97,10 +97,15 @@ function pathsFrom(
 
 /**
  * The most routes kept to one class ({@link routesFromRoots}). Each route
- * gives every leaf of the class a key and a term card of its own: a class
- * with k leaves reached by r routes costs r·k cards. Four keeps the cards of
- * one leaf name within a tenth of retrieval's default card budget per query
- * (`DEFAULT_MAX_CARDS`, 40). The pinned ontology's asset classes need three.
+ * gives every leaf of the class a key and a term card of its own, and the
+ * bare leaf name one more `UNION` branch: a class with k leaves reached by r
+ * routes costs r·k cards. Four keeps the cards one leaf of one class adds
+ * within a tenth of retrieval's default card budget per query
+ * (`DEFAULT_MAX_CARDS`, 40). The bound is per class, not per leaf name: a
+ * name several classes declare — the leaves of a value class that ends many
+ * chains — has a card per chain before any route is counted, and each class
+ * multiplies its own share by at most four. The pinned ontology's asset
+ * classes need three.
  */
 export const MAX_ROUTES_PER_CLASS = 4
 
