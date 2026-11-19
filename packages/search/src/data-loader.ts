@@ -126,8 +126,12 @@ function buildContextMap(artifacts: ArtifactRoot): Map<string, unknown> {
 }
 
 /**
- * Resolve a remote @context reference to a local inline context.
- * Returns the modified JSON string with the context inlined, or the
+ * Resolve remote @context references to local inline contexts: the
+ * `@context` IRI itself, or each IRI entry of an `@context` array. An
+ * array's contexts are processed in order ([JSON-LD11] §4.1), so an inlined
+ * entry keeps its place, and the entries that follow it (e.g. a local
+ * `{"@vocab": null}`) still refine it.
+ * Returns the modified JSON string with the contexts inlined, or the
  * original string if no local context matches.
  */
 function resolveLocalContext(jsonContent: string, contextMap: Map<string, unknown>): string {
@@ -135,17 +139,22 @@ function resolveLocalContext(jsonContent: string, contextMap: Map<string, unknow
 
   try {
     const doc = JSON.parse(jsonContent)
-    if (typeof doc['@context'] !== 'string') return jsonContent
+    const own: unknown = doc['@context']
+    const entries = Array.isArray(own) ? own : [own]
+    let inlined = false
+    const resolved = entries.map((entry: unknown) => {
+      if (typeof entry !== 'string') return entry
+      const localCtx = contextUrlCandidates(entry)
+        .map((url) => contextMap.get(url))
+        .find((ctx) => ctx !== undefined)
+      if (localCtx === undefined) return entry
+      inlined = true
+      return localCtx
+    })
 
-    const remoteUrl = doc['@context']
-    const localCtx = contextUrlCandidates(remoteUrl)
-      .map((url) => contextMap.get(url))
-      .find((ctx) => ctx !== undefined)
+    if (!inlined) return jsonContent
 
-    if (!localCtx) return jsonContent
-
-    // Replace remote URL with inline context
-    doc['@context'] = localCtx
+    doc['@context'] = Array.isArray(own) ? resolved : resolved[0]
     return JSON.stringify(doc)
   } catch {
     return jsonContent

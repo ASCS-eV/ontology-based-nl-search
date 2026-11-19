@@ -146,4 +146,42 @@ describe('loadSampleData — manifest data sources', () => {
       resetConfig()
     }
   }, 120_000)
+
+  it('resolves a context IRI inside an @context array, keeping the other entries', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'data-sources-'))
+    const dataDir = join(root, 'data')
+    mkdirSync(join(root, 'artifacts', 'demo'), { recursive: true })
+    mkdirSync(dataDir)
+    writeFileSync(join(root, 'artifacts', 'demo', 'demo.context.jsonld'), context(`${VOCAB}size`))
+    writeFileSync(
+      join(dataDir, 'item.jsonld'),
+      JSON.stringify({
+        '@context': ['http://example.org/demo#context', { colour: `${VOCAB}colour` }],
+        '@id': 'urn:item:1',
+        '@type': 'Item',
+        size: 'L',
+        colour: 'red',
+      })
+    )
+    writeFileSync(
+      join(root, 'ontology-sources.json'),
+      JSON.stringify({ sources: [{ path: 'artifacts', data: 'data' }] })
+    )
+    vi.stubEnv('ONTOLOGY_ROOT', root)
+    resetConfig()
+    try {
+      const store = new OxigraphStore()
+      await loadSampleData(store)
+      const item = await store.query(
+        `SELECT ?size ?colour WHERE { <urn:item:1> a <${VOCAB}Item> ; <${VOCAB}size> ?size ; <${VOCAB}colour> ?colour }`
+      )
+      expect(item.results.bindings.map((b) => [b['size']?.value, b['colour']?.value])).toEqual([
+        ['L', 'red'],
+      ])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+      vi.unstubAllEnvs()
+      resetConfig()
+    }
+  }, 120_000)
 })
