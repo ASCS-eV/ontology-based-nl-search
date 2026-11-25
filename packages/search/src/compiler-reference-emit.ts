@@ -28,6 +28,7 @@ import type {
   TraceabilityPlan,
   TraceabilityStep,
 } from '@ontology-search/slots/slots'
+import type { SparqlStore } from '@ontology-search/sparql/types'
 
 import { buildDomainPatterns } from './compiler-domain-patterns.js'
 import { optionalLabelPattern } from './compiler-helpers-query.js'
@@ -39,9 +40,43 @@ import {
 } from './compiler-helpers-references.js'
 import { type CompilerVocab } from './compiler-vocab.js'
 import { getInitializedStore } from './init.js'
+import { type ReferenceChain } from './property-paths.js'
 import { getReferenceIndex, pickLiveReferenceEdge } from './reference-index.js'
 
 const log = createComponentLogger('compiler')
+
+/**
+ * The SHACL chain that joins `parentDomain` to `childDomain`. A chain whose
+ * leaf is declared `sh:class` of the child is exact. An open IRI leaf
+ * (`sh:nodeKind sh:IRI`) may point at anything, and a class often declares
+ * several (a licence, a source, the subject matter, …), so the first one in
+ * build order is a guess: when there are several, each is probed against the
+ * data — live, shortest first — and the first that reaches an instance of the
+ * child class is used. Without such evidence the static pick stands.
+ */
+export async function pickPopulatedReferenceChain(
+  vocabIndex: CompilerVocab,
+  registry: DomainRegistry,
+  parentDomain: string,
+  childDomain: string,
+  loadStore: () => Promise<Pick<SparqlStore, 'query'>> = getInitializedStore
+): Promise<ReferenceChain | null> {
+  const chain = pickReferenceChain(vocabIndex, parentDomain, childDomain)
+  if (chain?.kind !== 'iri') return chain
+  const open = (vocabIndex.referenceChains.get(parentDomain) ?? []).filter((c) => c.kind === 'iri')
+  const childClass = registry.domains.get(childDomain)?.targetClassIri
+  if (open.length < 2 || !childClass) return chain
+
+  const store = await loadStore()
+  for (const candidate of open) {
+    const path = candidate.steps.map((step) => `<${step.predicate}>`).join('/')
+    const probe = await store.query(
+      `SELECT ?s WHERE { ?s a <${candidate.parentClass}> ; ${path} ?t . ?t a <${childClass}> . } LIMIT 1`
+    )
+    if (probe.results.bindings.length > 0) return candidate
+  }
+  return chain
+}
 
 /**
  * Mutable compile state shared by the reference emitters. The arrays/sets are
@@ -65,13 +100,13 @@ export interface ReferenceEmitContext {
  * a constrained domain no SHACL-declared reference chain joins is skipped and
  * recorded in `droppedReferences`, so its constraints are reported as a gap.
  */
-export function emitReferencedDomainJoins(
+export async function emitReferencedDomainJoins(
   detectedDomains: string[],
   primaryDomain: string,
   filtersByDomain: Record<string, Record<string, string | string[]>>,
   rangesByDomain: Record<string, Record<string, { min?: number; max?: number }>>,
   ctx: ReferenceEmitContext
-): void {
+): Promise<void> {
   const { registry, vocabIndex, patterns, filters, optionals, selectVars, prefixDomains } = ctx
   // Build cross-domain joins for referenced domains. Only include
   // domains that have actual filters or ranges — domains selected by
@@ -109,7 +144,12 @@ export function emitReferencedDomainJoins(
     const refVar = `?ref_${refDomainName.replace(/-/g, '_')}`
     const refSpecVar = `?refSpec_${refDomainName.replace(/-/g, '_')}`
 
-    const chain = pickReferenceChain(vocabIndex, primaryDomain, refDomainName)
+    const chain = await pickPopulatedReferenceChain(
+      vocabIndex,
+      registry,
+      primaryDomain,
+      refDomainName
+    )
     if (!chain) {
       // The domain and its constraints are left out of the query, so the
       // caller reports it as a gap instead of answering as if it were applied.
@@ -181,7 +221,7 @@ export async function emitReferenceNode(
   const dataPrefix = varBase.replace('refAsset', 'ref') // data-path step prefix
   const traceSteps: TraceabilityStep[] = []
 
-  const chain = pickReferenceChain(vocabIndex, parentDomain, ref.domain)
+  const chain = await pickPopulatedReferenceChain(vocabIndex, registry, parentDomain, ref.domain)
   if (chain) {
     emitReferenceChainTriples(
       chain,

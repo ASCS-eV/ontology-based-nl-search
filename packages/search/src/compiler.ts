@@ -327,7 +327,13 @@ export async function compileSlotsWithTrace(
 
   // Implicit cross-domain JOINs: referenced (non-primary) domains that carry
   // their own filters/ranges.
-  emitReferencedDomainJoins(detectedDomains, primaryDomain, filtersByDomain, rangesByDomain, refCtx)
+  await emitReferencedDomainJoins(
+    detectedDomains,
+    primaryDomain,
+    filtersByDomain,
+    rangesByDomain,
+    refCtx
+  )
 
   // License is handled as a regular `slots.filters` entry keyed by the
   // SHACL leaf local name. The chain is emitted by the generic deep-filter
